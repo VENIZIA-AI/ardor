@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# =============================================================================
+# Pre-commit Hook
+# Lints all packages before allowing commit
+# =============================================================================
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+# Get the root directory of the git repository
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+# Run lint on all packages
+echo "📦 Linting all packages..."
+make lint
+
+echo ""
+echo "✅ Pre-commit checks passed!"

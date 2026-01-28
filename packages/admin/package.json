@@ -1,0 +1,116 @@
+{
+  "name": "@venizia/ardor-admin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Ardor - Admin UI Kit",
+  "type": "module",
+  "keywords": [
+    "venizia",
+    "ardor",
+    "react",
+    "ui",
+    "components",
+    "tailwindcss",
+    "radix-ui",
+    "shadcn",
+    "admin"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles/*": "./src/styles/*"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "src/styles"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "force-update": "sh ./scripts/force-update.sh",
+    "gen:index": "bun ./src/generate-index.ts",
+    "build": "sh ./scripts/build.sh",
+    "clean": "sh ./scripts/clean.sh",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts}\" -l",
+    "prettier:fix": "bun run prettier:cli --write",
+    "rebuild": "sh ./scripts/rebuild.sh no-version",
+    "prepublishOnly": "bun run rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/admin"
+  },
+  "author": {
+    "name": "VENIZIA AI Developer",
+    "email": "developer@venizia.ai",
+    "url": "https://venizia.ai"
+  },
+  "bugs": {
+    "url": "https://github.com/VENIZIA-AI/ardor/issues"
+  },
+  "homepage": "https://venizia-ai.github.io/ardor",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9.36.0",
+    "prettier": "3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "shadcn": "^3.5.1",
+    "tw-animate-css": "^1.4.0",
+    "@venizia/dev-configs": "^0.0.5-0",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": ">=4.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-accordion": "^1.2.12",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-checkbox": "^1.3.3",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-context-menu": "^2.2.16",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-radio-group": "^1.3.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "lucide-react": "^0.562.0",
+    "next-themes": "^0.4.6",
+    "react-day-picker": "^9.11.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
+    "vaul": "^1.1.2"
+  }
+}

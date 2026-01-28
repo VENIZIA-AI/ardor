@@ -1,0 +1,25 @@
+{
+  "name": "@venizia/ardor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [
+    "ui",
+    "components"
+  ],
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "force-update": "bun run --filter \"@venizia/*\" force-update"
+  },
+  "author": {
+    "name": "VENIZIA AI Developer",
+    "email": "developer@venizia.ai",
+    "url": "https://venizia.ai"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ]
+}
