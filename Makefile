@@ -2,7 +2,8 @@
         help install clean setup-hooks \
         lint lint-packages \
         lint-admin \
-        update update-all update-admin 
+        update update-all update-admin \
+        docs docs-dev 
 
 DEFAULT_GOAL := help
 
@@ -67,6 +68,18 @@ lint-admin:
 	@bun run --filter "@venizia/ardor-admin" --elide-lines=0 lint
 
 # ============================================================================
+# DOCUMENTATION
+# ============================================================================
+docs:
+	@echo "📚 Building documentation site..."
+	@cd packages/docs/site && bun run docs:build
+	@echo "✅ Documentation built successfully."
+
+docs-dev:
+	@echo "📚 Starting documentation dev server..."
+	@cd packages/docs/site && bun run docs:dev
+
+# ============================================================================
 # HELP
 # ============================================================================
 help:
@@ -95,9 +108,9 @@ help:
 	@printf "  %-25s - %s\n" "lint-packages" 		"Lint packages/ directory only."
 	@printf "  %-25s - %s\n" "lint-admin" 			"Lint @venizia/ardor-admin."
 	@echo ""
+	@echo "Documentation:"
+	@printf "  %-25s - %s\n" "docs" 						"Build documentation site."
+	@printf "  %-25s - %s\n" "docs-dev" 				"Start documentation dev server."
+	@echo ""
 	@echo "Other:"
 	@printf "  %-25s - %s\n" "help" 						"Show this help message."
-	@echo ""
-	@echo "Development (use bun run directly):"
-	@printf "  %-25s - %s\n" "bun run docs:dev" "Start documentation site in development mode."
-	@printf "  %-25s - %s\n" "bun run mcp:dev" "Start MCP server in development mode."
