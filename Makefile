@@ -64,7 +64,7 @@ lint-packages:
 
 lint-admin:
 	@echo "🔍 Linting @venizia/ardor-admin..."
-	@bun run --filter "@venizia/ardor-admin" --elide-lines=0 lint
+	@bun run --filter "@venizia/ardor-admin" lint
 
 # ============================================================================
 # HELP
