@@ -10,7 +10,7 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
         'relative w-full overflow-x-auto',
         // 'border',
         // 'rounded-md',
-        'full-size',
+        'size-full',
       )}>
       <table
         data-slot="table"

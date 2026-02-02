@@ -1,8 +1,8 @@
-.PHONY: all build build-all admin \
+.PHONY: all build build-all ui-kit \
         help install clean setup-hooks \
         lint lint-packages \
-        lint-admin \
-        update update-all update-admin \
+        lint-ui-kit \
+        update update-all update-ui-kit \
         docs docs-dev 
 
 DEFAULT_GOAL := help
@@ -34,12 +34,12 @@ setup-hooks:
 # ============================================================================
 build: build-all
 
-build-all: admin
+build-all: ui-kit
 	@echo "🚀 All packages rebuilt successfully."
 
-admin:
-	@echo "📦 Rebuilding @venizia/ardor-admin..."
-	@bun run --filter "@venizia/ardor-admin" rebuild
+ui-kit:
+	@echo "📦 Rebuilding @venizia/ardor-ui-kit..."
+	@bun run --filter "@venizia/ardor-ui-kit" rebuild
 
 # ============================================================================
 # FORCE UPDATE TARGETS (fetch latest from NPM registry)
@@ -49,9 +49,9 @@ update: install
 
 update-all: install
 
-update-admin:
-	@echo "🔄 Force updating @venizia/ardor-admin..."
-	@bun run --filter "@venizia/ardor-admin" force-update
+update-ui-kit:
+	@echo "🔄 Force updating @venizia/ardor-ui-kit..."
+	@bun run --filter "@venizia/ardor-ui-kit" force-update
 
 # ============================================================================
 # LINT TARGETS
@@ -63,9 +63,9 @@ lint-packages:
 	@echo "🔍 Linting all packages..."
 	@bun run --filter "./packages/*" lint
 
-lint-admin:
-	@echo "🔍 Linting @venizia/ardor-admin..."
-	@bun run --filter "@venizia/ardor-admin" --elide-lines=0 lint
+lint-ui-kit:
+	@echo "🔍 Linting @venizia/ardor-ui-kit..."
+	@bun run --filter "@venizia/ardor-ui-kit" lint
 
 # ============================================================================
 # DOCUMENTATION
@@ -98,15 +98,15 @@ help:
 	@echo "Force Update (fetch latest from NPM):"
 	@printf "  %-25s - %s\n" "update" 					"Force update all packages from NPM registry."
 	@printf "  %-25s - %s\n" "update-all" 			"Same as 'update'."
-	@printf "  %-25s - %s\n" "update-admin" 		"Force update @venizia/ardor-admin dependencies."
+	@printf "  %-25s - %s\n" "update-ui-kit" 		"Force update @venizia/ardor-ui-kit dependencies."
 	@echo ""
 	@echo "Individual Package Builds:"
-	@printf "  %-25s - %s\n" "admin" 						"Rebuilds @venizia/ardor-admin."
+	@printf "  %-25s - %s\n" "ui-kit" 					"Rebuilds @venizia/ardor-ui-kit."
 	@echo ""
 	@echo "Linting:"
 	@printf "  %-25s - %s\n" "lint" 						"Lint all packages (alias for lint-packages)."
 	@printf "  %-25s - %s\n" "lint-packages" 		"Lint packages/ directory only."
-	@printf "  %-25s - %s\n" "lint-admin" 			"Lint @venizia/ardor-admin."
+	@printf "  %-25s - %s\n" "lint-ui-kit" 			"Lint @venizia/ardor-ui-kit."
 	@echo ""
 	@echo "Documentation:"
 	@printf "  %-25s - %s\n" "docs" 						"Build documentation site."
