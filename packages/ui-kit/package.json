@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-ui-kit",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Ardor - UI Kit",
   "type": "module",
   "keywords": [
@@ -38,7 +38,6 @@
     "bun": ">=1.3"
   },
   "scripts": {
-    "size": "size-limit",
     "force-update": "sh ./scripts/force-update.sh",
     "gen:index": "bun ./src/generate-index.ts",
     "build": "sh ./scripts/build.sh",
@@ -54,7 +53,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/VENIZIA-AI/ardor.git",
-    "directory": "packages/admin"
+    "directory": "packages/ui-kit"
   },
   "author": {
     "name": "VENIZIA AI Developer",
