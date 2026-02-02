@@ -5,7 +5,7 @@
     "": {
       "name": "@venizia/ardor",
     },
-    "packages/ui-klt": {
+    "packages/ui-kit": {
       "name": "@venizia/ardor-ui-kit",
       "version": "0.0.0",
       "dependencies": {
@@ -345,7 +345,7 @@
 
     "@typescript-eslint/visitor-keys": ["@typescript-eslint/visitor-keys@8.54.0", "", { "dependencies": { "@typescript-eslint/types": "8.54.0", "eslint-visitor-keys": "^4.2.1" } }, "sha512-VFlhGSl4opC0bprJiItPQ1RfUhGDIBokcPwaFH4yiBCaNPeld/9VeXbiPO1cLyorQi1G1vL+ecBk1x8o1axORA=="],
 
-    "@venizia/ardor-ui-kit": ["@venizia/ardor-ui-kit@workspace:packages/ui-klt"],
+    "@venizia/ardor-ui-kit": ["@venizia/ardor-ui-kit@workspace:packages/ui-kit"],
 
     "@venizia/dev-configs": ["@venizia/dev-configs@0.0.5", "", { "dependencies": { "@minimaltech/eslint-node": "^0.2.1", "eslint-plugin-unicorn": "^62.0.0" }, "peerDependencies": { "eslint": "^9.0.0", "prettier": "^3.0.0", "typescript": "^5.0.0" }, "optionalPeers": ["eslint", "prettier", "typescript"] }, "sha512-POXUe3cIOXmq9S0G8Fw3/0Ezl4XcKc+my9qzQYajmPOKPXFApjRcJTqAQPWNLaySpmXAG3TzlRlN/r0fFhvO6w=="],
 
