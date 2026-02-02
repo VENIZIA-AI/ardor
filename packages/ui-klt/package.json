@@ -1,8 +1,7 @@
 {
-  "name": "@venizia/ardor-admin",
-  "version": "0.0.1",
-  "private": true,
-  "description": "Ardor - Admin UI Kit",
+  "name": "@venizia/ardor-ui-kit",
+  "version": "0.0.0",
+  "description": "Ardor - UI Kit",
   "type": "module",
   "keywords": [
     "venizia",
@@ -13,7 +12,7 @@
     "tailwindcss",
     "radix-ui",
     "shadcn",
-    "admin"
+    "ui-kit"
   ],
   "exports": {
     ".": {
@@ -106,6 +105,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "dayjs": "^1.11.19",
     "lucide-react": "^0.562.0",
     "next-themes": "^0.4.6",
     "react-day-picker": "^9.11.1",

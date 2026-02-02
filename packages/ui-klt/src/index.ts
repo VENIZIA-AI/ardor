@@ -1,12 +1,15 @@
 // 🚀 AUTO GENERATE - DON'T EDIT THIS FILE
 
 // Exports from components
+export * from './components/core/adaptive/adaptive-dialog';
+export * from './components/core/adaptive/adaptive-popover';
 export * from './components/core/backdrop/Backdrop';
 export * from './components/core/common/ComingSoon';
 export * from './components/icons/akar-icons-check-box-fill';
 export * from './components/icons/akar-icons-circle-check-fill';
 export * from './components/shadcn/accordion';
 export * from './components/shadcn/alert-dialog';
+export * from './components/shadcn/alert';
 export * from './components/shadcn/avatar';
 export * from './components/shadcn/badge';
 export * from './components/shadcn/breadcrumb';
