@@ -62,8 +62,11 @@ export default defineConfig({
         {
           text: 'Data Display',
           items: [
+            { text: 'Avatar', link: '/components/avatar' },
             { text: 'Badge', link: '/components/badge' },
             { text: 'Card', link: '/components/card' },
+            { text: 'Empty', link: '/components/empty' },
+            { text: 'Kbd', link: '/components/kbd' },
             { text: 'Table', link: '/components/table' }
           ]
         },
@@ -121,9 +124,26 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Form Fields (ARDOR) ⭐',
+          items: [
+            { text: 'Checkbox Input', link: '/components/checkbox-input' },
+            { text: 'Date Picker', link: '/components/date-picker' },
+            { text: 'Switch Input', link: '/components/switch-input' },
+            { text: 'Text Field', link: '/components/text-field' }
+          ]
+        },
+        {
           text: 'Adaptive Components ⭐',
           items: [
-            { text: 'Adaptive Dialog', link: '/components/adaptive-dialog' }
+            { text: 'Adaptive Dialog', link: '/components/adaptive-dialog' },
+            { text: 'Adaptive Popover', link: '/components/adaptive-popover' }
+          ]
+        },
+        {
+          text: 'ARDOR Utilities ⭐',
+          items: [
+            { text: 'Backdrop', link: '/components/backdrop' },
+            { text: 'Coming Soon', link: '/components/coming-soon' }
           ]
         }
       ],
