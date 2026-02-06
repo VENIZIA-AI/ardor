@@ -46,17 +46,37 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Components',
+          text: 'Form Components',
           items: [
             { text: 'Button', link: '/components/button' },
-            { text: 'Input', link: '/components/input' },
-            { text: 'Card', link: '/components/card' },
-            { text: 'Dialog', link: '/components/dialog' },
-            { text: 'Table', link: '/components/table' },
-            { text: 'Select', link: '/components/select' },
             { text: 'Checkbox', link: '/components/checkbox' },
-            { text: 'Tabs', link: '/components/tabs' },
-            { text: 'Badge', link: '/components/badge' }
+            { text: 'Field', link: '/components/field' },
+            { text: 'Input', link: '/components/input' },
+            { text: 'Label', link: '/components/label' },
+            { text: 'Radio Group', link: '/components/radio-group' },
+            { text: 'Select', link: '/components/select' },
+            { text: 'Switch', link: '/components/switch' },
+            { text: 'Textarea', link: '/components/textarea' }
+          ]
+        },
+        {
+          text: 'Data Display',
+          items: [
+            { text: 'Badge', link: '/components/badge' },
+            { text: 'Card', link: '/components/card' },
+            { text: 'Table', link: '/components/table' }
+          ]
+        },
+        {
+          text: 'Navigation',
+          items: [
+            { text: 'Tabs', link: '/components/tabs' }
+          ]
+        },
+        {
+          text: 'Overlay',
+          items: [
+            { text: 'Dialog', link: '/components/dialog' }
           ]
         },
         {
