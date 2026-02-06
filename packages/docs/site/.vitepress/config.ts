@@ -104,6 +104,23 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Advanced',
+          items: [
+            { text: 'Calendar', link: '/components/calendar' },
+            { text: 'Command', link: '/components/command' },
+            { text: 'Context Menu', link: '/components/context-menu' },
+            { text: 'Dropdown Menu', link: '/components/dropdown-menu' },
+            { text: 'Input Group', link: '/components/input-group' }
+          ]
+        },
+        {
+          text: 'Loading',
+          items: [
+            { text: 'Skeleton', link: '/components/skeleton' },
+            { text: 'Spinner', link: '/components/spinner' }
+          ]
+        },
+        {
           text: 'Adaptive Components ⭐',
           items: [
             { text: 'Adaptive Dialog', link: '/components/adaptive-dialog' }
