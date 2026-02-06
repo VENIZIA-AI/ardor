@@ -82,6 +82,10 @@
 
 @theme {
   --spacing: 4px;
+  --spacing-safe-top: env(safe-area-inset-top, 0px);
+  --spacing-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --spacing-safe-left: env(safe-area-inset-left, 0px);
+  --spacing-safe-right: env(safe-area-inset-right, 0px);
 
   --animate-collapsible-open-width: collapsible-open-width
     var(--tw-animation-duration, var(--tw-duration, 0.2s)) var(--tw-ease, ease-out)
@@ -159,10 +163,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
   }
 }
 
@@ -182,7 +182,7 @@
     @apply flex items-center justify-center;
   }
 
-  .full-screen {
+  .screen-full {
     @apply h-screen w-screen;
   }
 

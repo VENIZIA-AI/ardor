@@ -8,7 +8,7 @@ on:
         type: choice
         description: Package to release
         options:
-          - admin
+          - ui-kit
         required: true
       build_mode:
         type: choice

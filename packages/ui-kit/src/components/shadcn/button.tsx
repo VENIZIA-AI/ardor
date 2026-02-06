@@ -19,6 +19,10 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
         ['default-active']: 'bg-primary/10 text-primary [&_svg]:text-primary hover:bg-primary/20',
+        ['destructive-active']:
+          'bg-destructive/10 text-destructive [&_svg]:text-destructive hover:bg-destructive/20',
+        ['glassmorphism']:
+          'bg-white/20 backdrop-blur-md active:bg-white/30 active:scale-95 duration-200 rounded-full border border-white/20',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
