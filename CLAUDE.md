@@ -8,7 +8,7 @@ ARDOR is a UI Kit library built by VENIZIA AI. It's a Bun-based monorepo that pr
 
 - **Package Manager**: Bun (>= 1.3)
 - **Language**: TypeScript (strict mode)
-- **Main Package**: `@venizia/ardor-admin` - Admin UI Kit with React 19
+- **Main Package**: `@venizia/ardor-ui-kit` - UI Kit with React 19
 
 ## Common Commands
 
@@ -32,8 +32,8 @@ make build
 # or
 make build-all
 
-# Build admin package specifically
-make admin
+# Build ui-kit package specifically
+make ui-kit
 
 # Clean build artifacts
 make clean
@@ -42,12 +42,12 @@ make clean
 ### Development
 
 ```bash
-# Generate index.ts exports for admin package
-bun --filter "@venizia/ardor-admin" run gen:index
+# Generate index.ts exports for ui-kit package
+bun --filter "@venizia/ardor-ui-kit" run gen:index
 
 # Force update dependencies from NPM registry
 make update           # Update all packages
-make update-admin     # Update admin package only
+make update-ui-kit     # Update ui-kit package only
 ```
 
 ### Linting & Code Quality
@@ -58,11 +58,21 @@ make lint
 # or
 bun run --filter "./packages/*" lint
 
-# Lint admin package only
-make lint-admin
+# Lint ui-kit package only
+make lint-ui-kit
 
 # Auto-fix linting issues
-bun --filter "@venizia/ardor-admin" run lint:fix
+bun --filter "@venizia/ardor-ui-kit" run lint:fix
+```
+
+### Documentation Site
+
+```bash
+# Build documentation site
+make docs
+
+# Start documentation dev server
+make docs-dev
 ```
 
 ### Individual Package Commands
@@ -70,13 +80,13 @@ bun --filter "@venizia/ardor-admin" run lint:fix
 All package-specific commands use Bun's filter syntax:
 
 ```bash
-# Run any script in admin package
-bun run --filter "@venizia/ardor-admin" <script-name>
+# Run any script in ui-kit package
+bun run --filter "@venizia/ardor-ui-kit" <script-name>
 
 # Examples:
-bun run --filter "@venizia/ardor-admin" rebuild
-bun run --filter "@venizia/ardor-admin" clean
-bun run --filter "@venizia/ardor-admin" gen:index
+bun run --filter "@venizia/ardor-ui-kit" rebuild
+bun run --filter "@venizia/ardor-ui-kit" clean
+bun run --filter "@venizia/ardor-ui-kit" gen:index
 ```
 
 ## Architecture
@@ -86,14 +96,17 @@ bun run --filter "@venizia/ardor-admin" gen:index
 ```
 ardor/
 ├── packages/
-│   └── admin/              # @venizia/ardor-admin package
+│   ├── docs/                # VitePress documentation site
+│   │   └── site/            # VitePress project root
+│   └── ui-kit/              # @venizia/ardor-ui-kit package
 │       ├── src/
 │       │   ├── components/
 │       │   │   ├── shadcn/        # shadcn/ui components (auto-generated, don't edit)
 │       │   │   ├── core/          # Custom core components
 │       │   │   │   ├── adaptive/  # Adaptive components (responsive dialogs/popovers)
 │       │   │   │   ├── backdrop/  # Backdrop utilities
-│       │   │   │   └── common/    # Common shared components
+│       │   │   │   ├── common/    # Common shared components
+│       │   │   │   └── input/     # Custom input components
 │       │   │   └── icons/         # Icon components
 │       │   ├── hooks/             # React hooks
 │       │   ├── utilities/         # Utility functions
@@ -111,18 +124,19 @@ ardor/
 
 - **TypeScript Compilation**: Uses `tsc` with `tsconfig.build.json`
 - **Path Alias Resolution**: `tsc-alias` resolves `@/*` imports after compilation
-- **Build Scripts**: Shell scripts in `packages/admin/scripts/` (build.sh, rebuild.sh, clean.sh)
+- **Build Scripts**: Shell scripts in `packages/ui-kit/scripts/` (build.sh, rebuild.sh, clean.sh)
 - **Auto-generated Exports**: `generate-index.ts` scans components/hooks/utilities and creates barrel exports
 
 ### Component Architecture
 
-The admin package follows a layered component architecture:
+The UI kit follows a layered component architecture:
 
 1. **shadcn/** - Base UI primitives from shadcn/ui (auto-generated, don't manually edit)
 2. **core/** - Custom components built on top of shadcn primitives:
    - **adaptive/** - Components that adapt between desktop/mobile (Dialog↔Sheet, Popover↔Drawer)
-   - **common/** - Shared utility components
    - **backdrop/** - Backdrop and overlay utilities
+   - **common/** - Shared utility components
+   - **input/** - Custom input components
 3. **icons/** - Icon components using lucide-react
 
 ### Path Aliases
@@ -146,6 +160,11 @@ TypeScript and tooling are configured with these path aliases:
 - lucide-react for icons
 - class-variance-authority (cva) for component variants
 - clsx + tailwind-merge for className utilities
+- cmdk for command palette components
+- react-day-picker + dayjs for date/calendar components
+- sonner for toast notifications
+- vaul for mobile drawer components
+- next-themes for theme management
 
 **Build & Dev Tools:**
 - @venizia/dev-configs (shared ESLint/TypeScript configs)
@@ -158,18 +177,18 @@ TypeScript and tooling are configured with these path aliases:
 
 1. **For shadcn components**: Use the shadcn CLI
    ```bash
-   cd packages/admin
+   cd packages/ui-kit
    bunx shadcn@latest add <component-name>
    ```
    This auto-generates components in `src/components/shadcn/`
 
 2. **For custom components**: Create in `src/components/core/`
-   - Place in appropriate subdirectory (adaptive/common/backdrop)
+   - Place in appropriate subdirectory (adaptive/backdrop/common/input)
    - Follow existing patterns using Radix UI primitives
 
 3. **After adding components**: Regenerate exports
    ```bash
-   bun run --filter "@venizia/ardor-admin" gen:index
+   bun run --filter "@venizia/ardor-ui-kit" gen:index
    ```
 
 ### Modifying Components
@@ -184,10 +203,10 @@ The `force-update.sh` script fetches latest versions of @venizia packages from N
 
 ```bash
 # Update to latest stable versions
-make update-admin
+make update-ui-kit
 
 # Update to next/canary versions
-bun run --filter "@venizia/ardor-admin" force-update next
+bun run --filter "@venizia/ardor-ui-kit" force-update next
 ```
 
 Currently updates: `@venizia/dev-configs`, `@venizia/ignis-inversion`, `@venizia/ignis-helpers`, `@venizia/ignis-boot`
@@ -248,7 +267,7 @@ Prettier is configured with:
 
 ## Package Publishing
 
-The `@venizia/ardor-admin` package is published to NPM via GitHub Actions workflow (`package-release.yml`).
+The `@venizia/ardor-ui-kit` package is published to NPM via GitHub Actions workflow (`package-release.yml`).
 
 **Workflow**: Manual trigger with version bump selection (patch/minor/major/pre*)
 
