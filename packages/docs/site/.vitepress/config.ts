@@ -88,7 +88,19 @@ export default defineConfig({
         {
           text: 'Navigation',
           items: [
+            { text: 'Breadcrumb', link: '/components/breadcrumb' },
+            { text: 'Sidebar', link: '/components/sidebar' },
             { text: 'Tabs', link: '/components/tabs' }
+          ]
+        },
+        {
+          text: 'Layout',
+          items: [
+            { text: 'Accordion', link: '/components/accordion' },
+            { text: 'Button Group', link: '/components/button-group' },
+            { text: 'Collapsible', link: '/components/collapsible' },
+            { text: 'Scroll Area', link: '/components/scroll-area' },
+            { text: 'Separator', link: '/components/separator' }
           ]
         },
         {
