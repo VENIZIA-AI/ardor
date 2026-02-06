@@ -68,15 +68,27 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Navigation',
+          text: 'Feedback',
           items: [
-            { text: 'Tabs', link: '/components/tabs' }
+            { text: 'Alert', link: '/components/alert' },
+            { text: 'Sonner (Toast)', link: '/components/sonner' },
+            { text: 'Tooltip', link: '/components/tooltip' }
           ]
         },
         {
           text: 'Overlay',
           items: [
-            { text: 'Dialog', link: '/components/dialog' }
+            { text: 'Alert Dialog', link: '/components/alert-dialog' },
+            { text: 'Dialog', link: '/components/dialog' },
+            { text: 'Drawer', link: '/components/drawer' },
+            { text: 'Popover', link: '/components/popover' },
+            { text: 'Sheet', link: '/components/sheet' }
+          ]
+        },
+        {
+          text: 'Navigation',
+          items: [
+            { text: 'Tabs', link: '/components/tabs' }
           ]
         },
         {
