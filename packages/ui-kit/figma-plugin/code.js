@@ -88,7 +88,7 @@ const STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '90
       return o;
     };
 
-    // ---- palette.json: hover/active = next darker steps of each theme's own primary ----
+    // ---- palette.json: hover/active = adjacent steps of each theme's own primary ----
     const pv = {}; for (const v of varsOf(palC)) pv[v.name] = v;
     const palette = { palette: {} };
     for (const m of palC.modes) {

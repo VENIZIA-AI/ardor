@@ -1,5 +1,5 @@
 {
-  "$comment": "Accent palette themes. primary = min ramp step passing WCAG AA on white text; hover/active = next darker steps. Emitted as .theme-<name> classes (code equivalent of the Figma Palette modes).",
+  "$comment": "Accent palette themes. primary = min ramp step passing WCAG AA on white text; hover/active = adjacent steps. Emitted as .theme-<name> classes (code equivalent of the Figma Palette modes).",
   "palette": {
     "neutral": { "primary": "{color.neutral.500}", "primaryHover": "{color.neutral.600}", "primaryActive": "{color.neutral.700}" },
     "red":     { "primary": "{color.red.600}",     "primaryHover": "{color.red.700}",     "primaryActive": "{color.red.800}" },
