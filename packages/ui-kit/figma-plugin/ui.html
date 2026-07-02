@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font: 12px/1.5 Inter, -apple-system, sans-serif; margin: 0; padding: 16px; color: #0f172a; }
+      h3 { margin: 0 0 4px; font-size: 14px; }
+      #status { color: #64748b; margin: 0 0 12px; }
+      #list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+      .row { display: flex; gap: 6px; }
+      button { font: inherit; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; text-align: left; }
+      button:hover { background: #f1f5f9; }
+      .dl { flex: 1; }
+      .cp { flex: none; width: 64px; text-align: center; color: #475569; }
+      #all { background: #2563eb; color: #fff; border-color: #2563eb; text-align: center; font-weight: 600; width: 100%; }
+      #all:hover { background: #1d4ed8; }
+      code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+      .hint { color: #64748b; margin-top: 12px; }
+      .err { color: #dc2626; }
+    </style>
+  </head>
+  <body>
+    <h3>Export Design Tokens</h3>
+    <p id="status">Reading variables…</p>
+    <div id="list"></div>
+    <button id="all" style="display:none">↓ Download all 6 files</button>
+    <p class="hint" id="hint" style="display:none">
+      Save the files into <code>packages/ui-kit/tokens/</code>, then run:<br />
+      <code>bun run tokens:build</code><br />
+      <span style="color:#94a3b8">If downloads are blocked, use “copy” and paste into the file.</span>
+    </p>
+    <script>
+      let FILES = null;
+      function dl(name, content) {
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      function copyText(text, btn) {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); btn.textContent = '✓ copied'; } catch (e) { btn.textContent = 'failed'; }
+        ta.remove();
+        setTimeout(() => { btn.textContent = 'copy'; }, 1500);
+      }
+      onmessage = (e) => {
+        const m = e.data.pluginMessage;
+        if (!m) return;
+        if (m.type === 'error') {
+          document.getElementById('status').innerHTML = '<span class="err">Error: ' + m.message + '</span>';
+          return;
+        }
+        if (m.type === 'files') {
+          FILES = m.files;
+          document.getElementById('status').textContent =
+            'Read ' + m.counts.primitives + ' primitives · ' + m.counts.semantic + ' semantic · ' +
+            m.counts.palette + ' themes · ' + m.counts.component + ' component tokens.';
+          const list = document.getElementById('list');
+          list.innerHTML = '';
+          Object.keys(FILES).forEach((name) => {
+            const row = document.createElement('div'); row.className = 'row';
+            const b = document.createElement('button'); b.className = 'dl';
+            b.textContent = '↓ ' + name;
+            b.onclick = () => dl(name, FILES[name]);
+            const c = document.createElement('button'); c.className = 'cp';
+            c.textContent = 'copy';
+            c.onclick = () => copyText(FILES[name], c);
+            row.appendChild(b); row.appendChild(c); list.appendChild(row);
+          });
+          document.getElementById('all').style.display = 'block';
+          document.getElementById('hint').style.display = 'block';
+        }
+      };
+      document.getElementById('all').onclick = () => {
+        if (!FILES) return;
+        Object.keys(FILES).forEach((n, i) => setTimeout(() => dl(n, FILES[n]), i * 350));
+      };
+    </script>
+  </body>
+</html>
