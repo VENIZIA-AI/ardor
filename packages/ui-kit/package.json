@@ -40,6 +40,8 @@
   "scripts": {
     "force-update": "sh ./scripts/force-update.sh",
     "gen:index": "bun ./src/generate-index.ts",
+    "tokens:build": "bun ./scripts/build-tokens.mjs",
+    "example:build": "bunx @tailwindcss/cli@4 -i examples/tokens.css -o examples/tokens.build.css",
     "build": "sh ./scripts/build.sh",
     "clean": "sh ./scripts/clean.sh",
     "eslint": "eslint --report-unused-disable-directives .",

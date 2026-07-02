@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@source "./index.html";
+
+/* The generated design tokens (Figma -> DTCG -> this file). Provides
+   :root/.dark colors, @theme (radius/text/...), @theme inline (semantic -> utilities),
+   and .theme-* accent palette classes. */
+@import '../src/styles/tokens.generated.css';

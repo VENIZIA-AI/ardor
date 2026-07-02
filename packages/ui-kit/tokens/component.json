@@ -1,0 +1,27 @@
+{
+  "$comment": "Component tokens (M3/Polaris tier 3). Each aliases a semantic/state role. Consumed as CSS vars (var(--button-primary-bg)); they inherit light/dark automatically because the semantic vars they reference switch by mode.",
+  "$type": "color",
+  "button": {
+    "primary":     { "bg": { "$value": "{primary}" }, "bg-hover": { "$value": "{primary-hover}" }, "bg-active": { "$value": "{primary-active}" }, "fg": { "$value": "{primary-foreground}" } },
+    "secondary":   { "bg": { "$value": "{secondary}" }, "bg-hover": { "$value": "{secondary-hover}" }, "fg": { "$value": "{secondary-foreground}" } },
+    "outline":     { "border": { "$value": "{input}" }, "bg-hover": { "$value": "{accent}" }, "fg": { "$value": "{foreground}" } },
+    "ghost":       { "bg-hover": { "$value": "{accent}" }, "fg": { "$value": "{foreground}" } },
+    "destructive": { "bg": { "$value": "{destructive}" }, "bg-hover": { "$value": "{destructive-hover}" }, "fg": { "$value": "{destructive-foreground}" } },
+    "disabled":    { "bg": { "$value": "{disabled}" }, "fg": { "$value": "{disabled-foreground}" } }
+  },
+  "input": {
+    "bg": { "$value": "{background}" }, "border": { "$value": "{input}" }, "border-hover": { "$value": "{input-hover}" }, "border-focus": { "$value": "{ring}" }, "fg": { "$value": "{foreground}" }, "placeholder": { "$value": "{muted-foreground}" }
+  },
+  "card": { "bg": { "$value": "{card}" }, "border": { "$value": "{border}" }, "fg": { "$value": "{card-foreground}" } },
+  "badge": {
+    "primary":   { "bg": { "$value": "{primary}" }, "fg": { "$value": "{primary-foreground}" } },
+    "secondary": { "bg": { "$value": "{secondary}" }, "fg": { "$value": "{secondary-foreground}" } },
+    "outline":   { "border": { "$value": "{border}" }, "fg": { "$value": "{muted-foreground}" } }
+  },
+  "alert": {
+    "success":     { "bg": { "$value": "{success}" }, "fg": { "$value": "{success-foreground}" } },
+    "warning":     { "bg": { "$value": "{warning}" }, "fg": { "$value": "{warning-foreground}" } },
+    "info":        { "bg": { "$value": "{info}" }, "fg": { "$value": "{info-foreground}" } },
+    "destructive": { "bg": { "$value": "{destructive}" }, "fg": { "$value": "{destructive-foreground}" } }
+  }
+}

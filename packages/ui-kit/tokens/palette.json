@@ -1,0 +1,15 @@
+{
+  "$comment": "Accent palette themes. primary = min ramp step passing WCAG AA on white text; hover/active = next darker steps. Emitted as .theme-<name> classes (code equivalent of the Figma Palette modes).",
+  "palette": {
+    "neutral": { "primary": "{color.neutral.500}", "primaryHover": "{color.neutral.600}", "primaryActive": "{color.neutral.700}" },
+    "red":     { "primary": "{color.red.600}",     "primaryHover": "{color.red.700}",     "primaryActive": "{color.red.800}" },
+    "orange":  { "primary": "{color.orange.700}",  "primaryHover": "{color.orange.800}",  "primaryActive": "{color.orange.900}" },
+    "yellow":  { "primary": "{color.yellow.700}",  "primaryHover": "{color.yellow.800}",  "primaryActive": "{color.yellow.900}" },
+    "green":   { "primary": "{color.green.700}",   "primaryHover": "{color.green.800}",   "primaryActive": "{color.green.900}" },
+    "teal":    { "primary": "{color.teal.700}",    "primaryHover": "{color.teal.800}",    "primaryActive": "{color.teal.900}" },
+    "cyan":    { "primary": "{color.cyan.700}",    "primaryHover": "{color.cyan.800}",    "primaryActive": "{color.cyan.900}" },
+    "blue":    { "primary": "{color.blue.600}",    "primaryHover": "{color.blue.700}",    "primaryActive": "{color.blue.800}" },
+    "purple":  { "primary": "{color.purple.600}",  "primaryHover": "{color.purple.700}",  "primaryActive": "{color.purple.800}" },
+    "pink":    { "primary": "{color.pink.600}",    "primaryHover": "{color.pink.700}",    "primaryActive": "{color.pink.800}" }
+  }
+}

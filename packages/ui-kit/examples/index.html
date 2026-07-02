@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" class="theme-blue">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ardor UI Kit — Tokens × Tailwind example</title>
+    <link rel="stylesheet" href="./tokens.build.css" />
+  </head>
+  <body class="bg-background text-foreground min-h-screen">
+    <!-- Top bar -->
+    <header class="border-b border-border sticky top-0 z-10 bg-background/80 backdrop-blur">
+      <div class="mx-auto max-w-5xl flex items-center gap-4 px-6 py-4">
+        <h1 class="text-xl font-semibold">Ardor — Tokens × Tailwind</h1>
+        <span class="text-sm text-muted-foreground">every class below is powered by a design token</span>
+        <div class="ml-auto flex items-center gap-3">
+          <label class="text-sm text-muted-foreground">Palette</label>
+          <select id="palette" class="rounded-md border border-input bg-background px-2 py-1 text-sm">
+            <option value="theme-neutral">Neutral</option>
+            <option value="theme-red">Red</option>
+            <option value="theme-orange">Orange</option>
+            <option value="theme-yellow">Yellow</option>
+            <option value="theme-green">Green</option>
+            <option value="theme-teal">Teal</option>
+            <option value="theme-cyan">Cyan</option>
+            <option value="theme-blue" selected>Blue</option>
+            <option value="theme-purple">Purple</option>
+            <option value="theme-pink">Pink</option>
+          </select>
+          <button id="darkToggle" class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
+            Toggle dark
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl space-y-10 px-6 py-10">
+      <!-- Buttons -->
+      <section class="space-y-4">
+        <h2 class="text-lg font-semibold">Buttons</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">Primary</button>
+          <button class="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90">Secondary</button>
+          <button class="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">Outline</button>
+          <button class="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground">Ghost</button>
+          <button class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">Destructive</button>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Small</button>
+          <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Default</button>
+          <button class="rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground">Large</button>
+        </div>
+      </section>
+
+      <!-- Button states -->
+      <section class="space-y-4">
+        <h2 class="text-lg font-semibold">Button — interaction states (state tokens)</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Default</button>
+          <button class="rounded-md bg-primary-hover px-4 py-2 text-sm font-medium text-primary-foreground">Hover</button>
+          <button class="rounded-md bg-primary-active px-4 py-2 text-sm font-medium text-primary-foreground">Active</button>
+          <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background">Focus</button>
+          <button disabled class="rounded-md bg-disabled px-4 py-2 text-sm font-medium text-disabled-foreground">Disabled</button>
+          <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover active:bg-primary-active focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">Live (hover / focus me)</button>
+        </div>
+        <p class="text-sm text-muted-foreground">Tokens: <code>--primary</code>, <code>--primary-hover</code>, <code>--primary-active</code>, <code>--disabled</code>, <code>--ring</code> → utilities <code>bg-primary-hover</code>, <code>active:bg-primary-active</code>, <code>disabled</code> styling.</p>
+      </section>
+
+      <!-- Status / alerts -->
+      <section class="space-y-4">
+        <h2 class="text-lg font-semibold">Status colours (WCAG-safe, white text)</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-lg bg-success px-4 py-3 text-success-foreground text-sm">Success — saved successfully.</div>
+          <div class="rounded-lg bg-warning px-4 py-3 text-warning-foreground text-sm">Warning — check your input.</div>
+          <div class="rounded-lg bg-info px-4 py-3 text-info-foreground text-sm">Info — a new update is available.</div>
+          <div class="rounded-lg bg-destructive px-4 py-3 text-destructive-foreground text-sm">Error — something went wrong.</div>
+        </div>
+      </section>
+
+      <!-- Form + Card -->
+      <section class="grid gap-6 md:grid-cols-2">
+        <div class="rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm space-y-4">
+          <div>
+            <h3 class="font-semibold">Sign in</h3>
+            <p class="text-sm text-muted-foreground">Card surface · muted text · tokenised border</p>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">Email</label>
+            <input class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="you@example.com" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">Password</label>
+            <input type="password" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="••••••••" />
+          </div>
+          <button class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Continue</button>
+        </div>
+
+        <div class="rounded-xl border border-border bg-card p-6 text-card-foreground shadow-md space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">New</span>
+            <span class="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">Beta</span>
+            <span class="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">v0.0.1</span>
+          </div>
+          <h3 class="text-2xl font-bold">Radius · spacing · shadow</h3>
+          <p class="text-sm text-muted-foreground">This card uses <code>rounded-xl</code>, <code>p-6</code>, <code>shadow-md</code>, <code>gap-3</code> — all resolved from tokens.</p>
+          <div class="flex gap-2">
+            <div class="h-10 w-10 rounded-none bg-primary"></div>
+            <div class="h-10 w-10 rounded-sm bg-primary"></div>
+            <div class="h-10 w-10 rounded-md bg-primary"></div>
+            <div class="h-10 w-10 rounded-lg bg-primary"></div>
+            <div class="h-10 w-10 rounded-xl bg-primary"></div>
+            <div class="h-10 w-10 rounded-full bg-primary"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cheatsheet -->
+      <section class="space-y-4">
+        <h2 class="text-lg font-semibold">Cheatsheet — token → Tailwind class</h2>
+        <div class="overflow-hidden rounded-xl border border-border">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted text-muted-foreground">
+              <tr><th class="px-4 py-2 font-medium">Preview</th><th class="px-4 py-2 font-medium">Tailwind class</th><th class="px-4 py-2 font-medium">Token</th></tr>
+            </thead>
+            <tbody id="cheatsheet"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Dark toggle
+      document.getElementById('darkToggle').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+      });
+      // Palette switch
+      const paletteClasses = ['theme-neutral','theme-red','theme-orange','theme-yellow','theme-green','theme-teal','theme-cyan','theme-blue','theme-purple','theme-pink'];
+      document.getElementById('palette').addEventListener('change', (e) => {
+        document.documentElement.classList.remove(...paletteClasses);
+        document.documentElement.classList.add(e.target.value);
+      });
+      // Cheatsheet rows
+      const rows = [
+        ['bg-background','--background','bg-background border border-border'],
+        ['bg-card','--card','bg-card border border-border'],
+        ['bg-primary','--primary','bg-primary'],
+        ['bg-secondary','--secondary','bg-secondary'],
+        ['bg-muted','--muted','bg-muted'],
+        ['bg-accent','--accent','bg-accent'],
+        ['bg-destructive','--destructive','bg-destructive'],
+        ['bg-success','--success','bg-success'],
+        ['bg-warning','--warning','bg-warning'],
+        ['bg-info','--info','bg-info'],
+        ['border-border','--border','bg-background border-2 border-border'],
+        ['ring','--ring','bg-background ring-2 ring-ring'],
+      ];
+      document.getElementById('cheatsheet').innerHTML = rows.map(([cls, token, preview]) => `
+        <tr class="border-t border-border">
+          <td class="px-4 py-2"><div class="h-7 w-16 rounded-md ${preview}"></div></td>
+          <td class="px-4 py-2"><code>${cls}</code></td>
+          <td class="px-4 py-2 text-muted-foreground"><code>${token}</code></td>
+        </tr>`).join('');
+    </script>
+  </body>
+</html>
