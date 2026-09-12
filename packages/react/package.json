@@ -1,0 +1,129 @@
+{
+  "name": "@venizia/ardor-react",
+  "version": "0.1.0",
+  "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). No react-admin.",
+  "keywords": [
+    "ardor",
+    "ardor-react",
+    "context",
+    "dependency-injection",
+    "hooks",
+    "ignis",
+    "react",
+    "react-hooks",
+    "react-redux",
+    "typescript",
+    "venizia"
+  ],
+  "homepage": "https://ardor.venizia.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/VENIZIA-AI/ardor/issues"
+  },
+  "author": {
+    "name": "VENIZIA AI Developer",
+    "email": "developer@venizia.ai",
+    "url": "https://venizia.ai"
+  },
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "force-update": "sh ./scripts/force-update.sh",
+    "build": "sh ./scripts/build.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "clean": "sh ./scripts/clean.sh",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
+    "prettier:fix": "bun run prettier:cli --write",
+    "rebuild": "sh ./scripts/rebuild.sh no-version",
+    "prepublishOnly": "bun run rebuild",
+    "test": "NODE_ENV=test bun test --env-file=.env.test",
+    "test:watch": "NODE_ENV=test bun test --watch --env-file=.env.test",
+    "size": "size-limit"
+  },
+  "dependencies": {
+    "@venizia/ardor-kernel": "^0.1.0",
+    "lodash": "catalog:"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": ">=2.12.0",
+    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "react": ">=18.0",
+    "react-redux": ">=9.3.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "catalog:",
+    "@reduxjs/toolkit": "catalog:",
+    "@size-limit/preset-small-lib": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/lodash": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-redux": "catalog:",
+    "reflect-metadata": "catalog:",
+    "size-limit": "catalog:",
+    "tsc-alias": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@reduxjs/toolkit": {
+      "optional": true
+    },
+    "react-redux": {
+      "optional": true
+    }
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "import": "*",
+      "ignore": [
+        "@reduxjs/toolkit",
+        "@venizia/ardor-kernel",
+        "@venizia/ignis-inversion",
+        "lodash",
+        "react",
+        "react-redux"
+      ],
+      "limit": "2.0 KB"
+    }
+  ]
+}

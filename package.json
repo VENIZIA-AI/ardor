@@ -1,17 +1,26 @@
 {
-  "name": "@venizia/ardor",
+  "name": "@venizia/ardor-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "",
+  "description": "ARDOR - frontend application framework for the VENIZIA family, built on IGNIS inversion of control.",
   "keywords": [
-    "ui",
-    "components"
+    "ardor",
+    "frontend",
+    "framework",
+    "react",
+    "react-admin",
+    "ignis",
+    "venizia",
+    "dependency-injection",
+    "monorepo"
   ],
-  "engines": {
-    "bun": ">=1.3"
+  "homepage": "https://ardor.venizia.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git"
   },
-  "scripts": {
-    "force-update": "bun run --filter \"@venizia/*\" force-update"
+  "bugs": {
+    "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
   "author": {
     "name": "VENIZIA AI Developer",
@@ -19,7 +28,55 @@
     "url": "https://venizia.ai"
   },
   "license": "MIT",
-  "workspaces": [
-    "packages/*"
-  ]
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "force-update": "bun run --filter \"@venizia/*\" force-update",
+    "docs:dev": "bun run --filter \"@venizia/ardor-docs\" docs:dev"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "docs/*",
+      "examples/*"
+    ],
+    "catalog": {
+      "@happy-dom/global-registrator": "^20.0.0",
+      "@reduxjs/toolkit": "^2.12.0",
+      "@size-limit/preset-small-lib": "^11.2.0",
+      "@tanstack/react-query": "^5.101.2",
+      "@testing-library/dom": "^10.4.1",
+      "@testing-library/react": "^16.3.0",
+      "@types/bun": "^1.3.8",
+      "@types/lodash": "^4.17.24",
+      "@types/react": "^19",
+      "@types/react-dom": "^19",
+      "@venizia/dev-configs": "^0.2.0-3",
+      "@venizia/ignis-filter": "^0.2.0-7",
+      "@venizia/ignis-inversion": "^0.2.0-7",
+      "axios": "^1.13.2",
+      "eslint": "^9.36.0",
+      "lodash": "^4.18.1",
+      "prettier": "^3.8.4",
+      "ra-core": "^5.15.0",
+      "ra-i18n-polyglot": "^5.15.0",
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7",
+      "react-redux": "^9.3.0",
+      "react-router-dom": "^7.9.4",
+      "reflect-metadata": "^0.2.2",
+      "size-limit": "^11.2.0",
+      "socket.io-client": "^4.8.3",
+      "tsc-alias": "^1.8.16",
+      "typescript": "^6.0.3"
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
 }

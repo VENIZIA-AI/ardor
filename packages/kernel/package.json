@@ -1,0 +1,128 @@
+{
+  "name": "@venizia/ardor-kernel",
+  "version": "0.1.0",
+  "description": "ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and CRUD bases, request/auth constants, binding keys, logger, network fetchers and socket client. No React and no react-admin.",
+  "keywords": [
+    "ardor",
+    "ardor-kernel",
+    "browser",
+    "crud",
+    "dependency-injection",
+    "fetch",
+    "framework",
+    "ignis",
+    "inversion-of-control",
+    "isomorphic",
+    "logger",
+    "network",
+    "socket-io",
+    "typescript",
+    "venizia"
+  ],
+  "homepage": "https://ardor.venizia.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/kernel"
+  },
+  "bugs": {
+    "url": "https://github.com/VENIZIA-AI/ardor/issues"
+  },
+  "author": {
+    "name": "VENIZIA AI Developer",
+    "email": "developer@venizia.ai",
+    "url": "https://venizia.ai"
+  },
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "force-update": "sh ./scripts/force-update.sh",
+    "build": "sh ./scripts/build.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "clean": "sh ./scripts/clean.sh",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
+    "prettier:fix": "bun run prettier:cli --write",
+    "rebuild": "sh ./scripts/rebuild.sh no-version",
+    "prepublishOnly": "bun run rebuild",
+    "test": "NODE_ENV=test bun test --env-file=.env.test",
+    "test:watch": "NODE_ENV=test bun test --watch --env-file=.env.test",
+    "size": "size-limit"
+  },
+  "dependencies": {
+    "lodash": "catalog:"
+  },
+  "peerDependencies": {
+    "@venizia/ignis-filter": ">=0.2.0-7",
+    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "axios": ">=1.13.2",
+    "reflect-metadata": ">=0.2.2",
+    "socket.io-client": ">=4.8.3"
+  },
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/lodash": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "axios": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "reflect-metadata": "catalog:",
+    "size-limit": "catalog:",
+    "socket.io-client": "catalog:",
+    "tsc-alias": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "import": "*",
+      "ignore": [
+        "@venizia/ignis-filter",
+        "@venizia/ignis-inversion",
+        "axios",
+        "lodash",
+        "reflect-metadata",
+        "socket.io-client"
+      ],
+      "limit": "7.7 KB"
+    }
+  ]
+}

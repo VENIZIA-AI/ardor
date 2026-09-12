@@ -5,3 +5,7 @@ coverage
 build
 *.min.js
 *.min.css
+
+# Figma plugin bundle and the token/export build scripts are not ARDOR-formatted sources.
+figma-plugin
+scripts

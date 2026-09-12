@@ -1,0 +1,142 @@
+{
+  "name": "@venizia/ardor-admin",
+  "version": "0.1.0",
+  "description": "ARDOR react-admin adapter - the REST data provider, auth provider and i18n provider wired through IGNIS inversion, the ArdorApplication root component, the translate and notify hooks, and the English and Vietnamese message bundles.",
+  "keywords": [
+    "admin",
+    "ardor",
+    "ardor-admin",
+    "auth-provider",
+    "data-provider",
+    "i18n",
+    "ignis",
+    "ra-core",
+    "react",
+    "react-admin",
+    "rest",
+    "typescript",
+    "venizia"
+  ],
+  "homepage": "https://ardor.venizia.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/admin"
+  },
+  "bugs": {
+    "url": "https://github.com/VENIZIA-AI/ardor/issues"
+  },
+  "author": {
+    "name": "VENIZIA AI Developer",
+    "email": "developer@venizia.ai",
+    "url": "https://venizia.ai"
+  },
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "force-update": "sh ./scripts/force-update.sh",
+    "build": "sh ./scripts/build.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "clean": "sh ./scripts/clean.sh",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
+    "prettier:fix": "bun run prettier:cli --write",
+    "rebuild": "sh ./scripts/rebuild.sh no-version",
+    "prepublishOnly": "bun run rebuild",
+    "test": "NODE_ENV=test bun test --env-file=.env.test",
+    "test:watch": "NODE_ENV=test bun test --watch --env-file=.env.test",
+    "size": "size-limit"
+  },
+  "dependencies": {
+    "@venizia/ardor-kernel": "^0.1.0",
+    "@venizia/ardor-react": "^0.1.0",
+    "lodash": "catalog:",
+    "ra-i18n-polyglot": "catalog:"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": ">=2.12.0",
+    "@tanstack/react-query": ">=5.101.2",
+    "@venizia/ignis-filter": ">=0.2.0-7",
+    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "ra-core": ">=5.15.0",
+    "react": ">=18.0",
+    "react-dom": ">=18.0",
+    "react-redux": ">=9.3.0",
+    "react-router-dom": ">=7.9.4"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "catalog:",
+    "@reduxjs/toolkit": "catalog:",
+    "@size-limit/preset-small-lib": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/lodash": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "ra-core": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:",
+    "size-limit": "catalog:",
+    "tsc-alias": "catalog:",
+    "typescript": "catalog:"
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "import": "*",
+      "ignore": [
+        "@reduxjs/toolkit",
+        "@tanstack/react-query",
+        "@venizia/ardor-kernel",
+        "@venizia/ardor-react",
+        "@venizia/ignis-filter",
+        "@venizia/ignis-inversion",
+        "lodash",
+        "ra-core",
+        "ra-i18n-polyglot",
+        "react",
+        "react-dom",
+        "react-redux",
+        "react-router-dom"
+      ],
+      "limit": "9.7 KB"
+    }
+  ]
+}

@@ -42,8 +42,8 @@ const AdaptivePopover = ({
   const [isOpenState, setIsOpenState] = React.useState(defaultOpen);
 
   // --------------------------------------------------
-  const isOpen = openProp !== undefined ? openProp : isOpenState;
-  const setIsOpen = setOpenProp !== undefined ? setOpenProp : setIsOpenState;
+  const isOpen = openProp ?? isOpenState;
+  const setIsOpen = setOpenProp ?? setIsOpenState;
 
   // --------------------------------------------------
   const contextValue = React.useMemo<AdaptivePopoverContextProps>(

@@ -1,0 +1,186 @@
+import { type TFilter, type TWhere } from '@venizia/ignis-filter';
+
+import {
+  BaseService,
+  type EntityRelationType,
+  type ICrudService,
+  type IdType,
+  RequestMethods,
+} from '@venizia/ardor-kernel';
+
+import { type IDataProvider } from '@/common';
+
+export interface ICrudServiceOptions {
+  basePath: string;
+}
+
+export class BaseCrudService<E extends { id: IdType; [extra: string | symbol]: any } = any>
+  extends BaseService
+  implements ICrudService<E>
+{
+  protected dataProvider: IDataProvider;
+  protected serviceOptions: ICrudServiceOptions;
+
+  constructor(opts: {
+    scope: string;
+    dataProvider: IDataProvider;
+    serviceOptions: ICrudServiceOptions;
+  }) {
+    super({ scope: opts.scope });
+    this.dataProvider = opts.dataProvider;
+    this.serviceOptions = opts.serviceOptions;
+  }
+
+  find(filter: TFilter<E>): Promise<(E & EntityRelationType)[]> {
+    return new Promise<Array<E>>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath].join('/'),
+          params: {
+            method: RequestMethods.GET,
+            query: { filter },
+          },
+        })
+        .then((rs) => {
+          resolve(rs.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  findById(id: IdType, filter: TFilter<E>): Promise<E & EntityRelationType> {
+    return new Promise<E & EntityRelationType>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, id].join('/'),
+          params: {
+            method: RequestMethods.GET,
+            query: { filter },
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  findOne(filter: TFilter<E>): Promise<(E & EntityRelationType) | null> {
+    return new Promise<E & EntityRelationType>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, 'find-one'].join('/'),
+          params: {
+            method: RequestMethods.GET,
+            query: { filter },
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  count(where: TWhere<E>): Promise<{ count: number }> {
+    return new Promise<{ count: number }>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, 'count'].join('/'),
+          params: {
+            method: RequestMethods.GET,
+            query: { where },
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  create(data: Omit<E, 'id'>): Promise<E> {
+    return new Promise<E>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath].join('/'),
+          params: {
+            method: RequestMethods.POST,
+            body: data,
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  updateAll(data: Partial<E>, where: TWhere<E>): Promise<{ count: number }> {
+    return new Promise<{ count: number }>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath].join('/'),
+          params: {
+            method: RequestMethods.PATCH,
+            query: { where },
+            body: data,
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  updateById(id: IdType, data: Partial<E>): Promise<E> {
+    return new Promise<E>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, id].join('/'),
+          params: {
+            method: RequestMethods.PATCH,
+            body: data,
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  replaceById(id: IdType, data: E): Promise<E> {
+    return new Promise<E>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, id].join('/'),
+          params: {
+            method: RequestMethods.PUT,
+            body: data,
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+
+  deleteById(id: IdType): Promise<{ id: IdType }> {
+    return new Promise<E>((resolve, reject) => {
+      this.dataProvider
+        .send({
+          resource: [this.serviceOptions.basePath, id].join('/'),
+          params: {
+            method: RequestMethods.DELETE,
+          },
+        })
+        .then((rs) => {
+          resolve(rs?.data);
+        })
+        .catch(reject);
+    });
+  }
+}

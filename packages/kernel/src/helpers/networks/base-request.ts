@@ -1,0 +1,135 @@
+import { getError } from '@venizia/ignis-inversion';
+import isEmpty from 'lodash/isEmpty';
+
+import { type AnyObject } from '@/common/types';
+import { BaseHelper } from '../base-helper';
+import { type IFetchable, type IRequestOptions } from './fetchers';
+import { AxiosFetcher, type IAxiosRequestOptions } from './fetchers/axios';
+import { NodeFetcher } from './fetchers/node-fetch';
+import type { TFetcherResponse, TFetcherVariant } from './common/types';
+
+// -----------------------------------------------------------------------------
+export interface IFetcherRequestOptions<T extends TFetcherVariant> {
+  name: string;
+  variant: TFetcherVariant;
+  networkOptions: {
+    baseUrl?: string;
+    headers?: AnyObject;
+    timeout?: number;
+    [extra: symbol | string]: any;
+  };
+  fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
+}
+
+export interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'> {
+  variant: 'axios';
+}
+
+export interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'> {
+  variant: 'node-fetch';
+}
+
+// -----------------------------------------------------------------------------
+export class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper {
+  protected baseUrl: string;
+  protected fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
+
+  constructor(opts: IFetcherRequestOptions<T>) {
+    super({ scope: opts.name });
+
+    const { networkOptions } = opts;
+    const { baseUrl = '' } = networkOptions;
+
+    this.baseUrl = baseUrl;
+    this.fetcher = opts.fetcher;
+  }
+
+  getRequestPath(opts: { paths: Array<string> }) {
+    const paths = opts?.paths ?? [];
+
+    const rs = paths
+      .map((path: string) => {
+        if (!path.startsWith('/')) {
+          path = `/${path}`; // Add / to the start of url path
+        }
+
+        return path;
+      })
+      .join('');
+
+    return rs;
+  }
+
+  getRequestUrl(opts: { baseUrl?: string; paths: Array<string> }) {
+    let baseUrl = opts?.baseUrl ?? this.baseUrl ?? '';
+    const paths = opts?.paths ?? [];
+
+    if (!baseUrl || isEmpty(baseUrl)) {
+      throw getError({
+        statusCode: 500,
+        message: '[getRequestUrl] Invalid configuration for third party request base url!',
+      });
+    }
+
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1); // Remove / at the end
+    }
+
+    const joined = this.getRequestPath({ paths });
+    return `${baseUrl ?? this.baseUrl}${joined}`;
+  }
+
+  getNetworkService() {
+    return this.fetcher;
+  }
+
+  getWorker() {
+    return this.fetcher.getWorker();
+  }
+}
+
+// -----------------------------------------------------------------------------
+export class AxiosNetworkRequest extends BaseNetworkRequest<'axios'> {
+  constructor(opts: Omit<IAxiosNetworkOptions, 'fetcher' | 'variant'>) {
+    const { name, networkOptions } = opts;
+    const { headers = {}, baseUrl, timeout = 60 * 1000, withCredentials, ...rest } = networkOptions;
+
+    const defaultConfigs: Partial<IAxiosRequestOptions> = {
+      ...rest,
+      baseURL: baseUrl,
+      withCredentials: withCredentials ?? false, // Default to false to avoid CORS issues
+      headers: Object.assign({}, headers, {
+        ['content-type']: headers['content-type'] ?? 'application/json; charset=utf-8',
+      }),
+      validateStatus: (status: number) => status < 500,
+      timeout,
+    };
+
+    super({
+      ...opts,
+      variant: 'axios',
+      fetcher: new AxiosFetcher({ name, defaultConfigs }),
+    });
+  }
+}
+
+// -----------------------------------------------------------------------------
+export class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'> {
+  constructor(opts: Omit<INodeFetchNetworkOptions, 'fetcher' | 'variant'>) {
+    const { name, networkOptions } = opts;
+    const { headers = {}, ...rest } = networkOptions;
+
+    const defaultConfigs: Partial<RequestInit> = {
+      ...rest,
+      headers: Object.assign({}, headers, {
+        ['content-type']: headers['content-type'] ?? 'application/json; charset=utf-8',
+      }),
+    };
+
+    super({
+      ...opts,
+      variant: 'node-fetch',
+      fetcher: new NodeFetcher({ name, defaultConfigs }),
+    });
+  }
+}

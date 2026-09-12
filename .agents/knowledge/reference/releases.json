@@ -1,0 +1,52 @@
+{
+  "livePackages": [
+    "admin",
+    "ardor",
+    "kernel",
+    "react",
+    "ui-kit"
+  ],
+  "releases": {
+    "admin": [
+      {
+        "version": "0.0.1",
+        "date": "2026-02-02",
+        "sha": "c4e8e894",
+        "order": 6
+      }
+    ],
+    "ui-kit": [
+      {
+        "version": "0.0.1",
+        "date": "2026-02-02",
+        "sha": "29187e66",
+        "order": 10
+      }
+    ]
+  },
+  "changelogs": [
+    {
+      "id": "changelog:2026-09-11-kernel-hardening",
+      "file": "2026-09-11-kernel-hardening.md",
+      "date": "2026-09-11",
+      "title": "One logger per scope, singleton services, and a kernel that owns its headers",
+      "packages": [],
+      "kind": "Enhancement",
+      "order": 9007199254740991
+    },
+    {
+      "id": "changelog:2026-09-11-ardor-from-ra-core-infra",
+      "file": "2026-09-11-ardor-from-ra-core-infra.md",
+      "date": "2026-09-11",
+      "title": "ARDOR Replaces @minimaltech/ra-core-infra",
+      "packages": [
+        "admin",
+        "ardor",
+        "kernel",
+        "react"
+      ],
+      "kind": "New Feature",
+      "order": 9007199254740991
+    }
+  ]
+}

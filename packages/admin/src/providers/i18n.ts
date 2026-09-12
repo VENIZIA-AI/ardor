@@ -1,0 +1,41 @@
+import { Container, inject } from '@venizia/ignis-inversion';
+import { type I18nProvider } from 'ra-core';
+import polyglotI18nProvider from 'ra-i18n-polyglot';
+
+import { BaseProvider, CoreBindings } from '@venizia/ardor-kernel';
+import { type II18nProviderOptions } from '@/common';
+import { englishMessages } from '@/common/locales';
+
+const [language] = (navigator?.language?.length ? navigator.language : 'en-US').split('-');
+
+export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
+  constructor(
+    @inject({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+    protected i18nProviderOptions: II18nProviderOptions,
+  ) {
+    super({ scope: DefaultI18nProvider.name });
+  }
+
+  override value(_container: Container): I18nProvider {
+    const {
+      i18nSources = { en: englishMessages },
+      listLanguages = [{ locale: 'en', name: 'English' }],
+    } = this.i18nProviderOptions;
+
+    const listLocales = listLanguages.map(({ locale }) => locale);
+
+    const initialLocale = listLocales.includes(language) ? language : 'en';
+
+    return polyglotI18nProvider(
+      (locale) => {
+        return i18nSources?.[locale] ?? englishMessages;
+      },
+      initialLocale,
+      listLanguages,
+      {
+        allowMissing: true,
+        onMissingKey: (key: string, _options: unknown, _locale: unknown) => key,
+      },
+    );
+  }
+}

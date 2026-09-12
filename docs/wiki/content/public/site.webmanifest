@@ -1,0 +1,19 @@
+{
+  "name": "ARDOR",
+  "short_name": "ARDOR",
+  "theme_color": "#0369a1",
+  "background_color": "#020617",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-export function CircleCheckFillIcon({
+export const CircleCheckFillIcon = ({
   size = 24,
   color = 'currentColor',
   strokeWidth = 2,
@@ -10,7 +10,7 @@ export function CircleCheckFillIcon({
   size?: number;
   color?: string;
   strokeWidth?: number;
-}) {
+}) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -31,4 +31,4 @@ export function CircleCheckFillIcon({
       />
     </svg>
   );
-}
+};

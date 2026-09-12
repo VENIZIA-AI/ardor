@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ardor-atlas": {
+      "command": "bunx",
+      "args": [
+        "@venizia/ignis-atlas",
+        "mcp",
+        "--root",
+        "."
+      ]
+    }
+  }
+}

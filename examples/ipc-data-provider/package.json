@@ -1,0 +1,45 @@
+{
+  "name": "ipc-data-provider",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DefaultRestDataProvider.send overridden for a non-HTTP transport - the pattern a desktop (Tauri) shell uses - run as a Bun script with no server",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "bun run typecheck",
+    "clean": "rm -rf *.tsbuildinfo",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts}\" -l",
+    "prettier:fix": "bun run prettier:cli --write"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@venizia/ardor": "workspace:*",
+    "@venizia/ardor-admin": "workspace:*",
+    "@venizia/ardor-react": "workspace:*",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "ra-core": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

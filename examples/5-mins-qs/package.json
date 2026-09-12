@@ -1,0 +1,49 @@
+{
+  "name": "5-mins-qs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "5-minute quickstart: one ARDOR application, one service, one resource page, and a stub API to run it against",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "api": "bun run api/server.ts",
+    "dev": "vite",
+    "build": "bun run typecheck && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p api/tsconfig.json",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
+    "prettier:fix": "bun run prettier:cli --write"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@venizia/ardor": "workspace:*",
+    "@venizia/ardor-admin": "workspace:*",
+    "@venizia/ardor-react": "workspace:*",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "ra-core": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^7.1.10"
+  }
+}

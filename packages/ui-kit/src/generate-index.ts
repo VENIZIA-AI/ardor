@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFile = fileURLToPath(import.meta.url);
+const currentDirectory = path.dirname(currentFile);
 
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -17,8 +17,8 @@ const logger = (opts: { level: 'info' | 'error' | 'success' | 'warning'; message
   const { level, message } = opts;
   const timestamp = new Date().toISOString();
 
-  let colorCode = '';
-  let levelLabel = '';
+  let colorCode: string;
+  let levelLabel: string;
 
   switch (level) {
     case 'info': {
@@ -50,7 +50,7 @@ const logger = (opts: { level: 'info' | 'error' | 'success' | 'warning'; message
   console.log(`[${timestamp}] ${colorCode}${BOLD}${levelLabel}${RESET} - ${message}`);
 };
 
-const SRC_DIR = path.resolve(__dirname, '../src');
+const SRC_DIR = path.resolve(currentDirectory, '../src');
 const OUTPUT_FILE = path.join(SRC_DIR, 'index.ts');
 
 const TARGET_DIRS = ['components', 'hooks', 'utilities'];

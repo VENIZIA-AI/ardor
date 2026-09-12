@@ -213,7 +213,7 @@ Then create a Pull Request on GitHub targeting the `develop` branch.
 
 ## Getting Help
 
-- **Documentation**: [https://venizia-ai.github.io/ardor](https://venizia-ai.github.io/ardor)
+- **Documentation**: [https://ardor.venizia.ai](https://ardor.venizia.ai)
 - **Issues**: Search [existing issues](https://github.com/VENIZIA-AI/ardor/issues) before creating new ones
 - **Questions**: Use GitHub Discussions or Issues
 

@@ -1,0 +1,48 @@
+{
+  "name": "vert-admin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The family reference: an ARDOR admin console over IGNIS's `examples/vert` API - sign-in through the IGNIS auth component, token refresh, RBAC-gated pages, CRUD on configurations",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "bun run typecheck && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "eslint": "eslint --report-unused-disable-directives .",
+    "lint": "bun run eslint && bun run prettier:cli",
+    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
+    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
+    "prettier:fix": "bun run prettier:cli --write"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@venizia/ardor": "workspace:*",
+    "@venizia/ardor-admin": "workspace:*",
+    "@venizia/ardor-react": "workspace:*",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "ra-core": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^7.1.10"
+  }
+}

@@ -1,0 +1,120 @@
+/* =============================================================================
+ * ARDOR DOCS - DESIGN TOKENS  (source of truth)
+ * -----------------------------------------------------------------------------
+ * Every value here is grounded in a standard - nothing is set by feel:
+ *   · Typography : base 16px, modular scale Major Third 1.25 (Material Design)
+ *   · Spacing    : 8-point grid, 4px half-step (Tailwind/Material convention)
+ *   · Color      : WCAG 2.1 AA - 4.5:1 normal text, 3:1 large/UI (ratios below)
+ *   · Measure    : prose ≤ 70ch (50-75 CPL, 66 optimal - Bringhurst/Baymard)
+ *   · Line-height: body 1.6, headings 1.15-1.3
+ *
+ * Refs: w3.org/TR/WCAG21 · webaim.org/resources/contrastchecker
+ *       designsystems.com/space-grids-and-layouts · baymard.com/blog/line-length-readability
+ *
+ * Usage: import in `theme/index.ts` BEFORE style.css. The --vp-* mappings make
+ * it drop-in for VitePress; the --ar-* tokens are the canonical primitives.
+ * ============================================================================= */
+
+:root {
+  /* ---- Brand ramp (theme-agnostic primitives) ------------------------------ */
+  --ar-brand:     #0369a1;   /* primary brand - deep water (sky.700). fills + large accents */
+  --ar-brand-lt:  #38bdf8;   /* 9.42:1 on dark - link / accent text (dark theme)  */
+  --ar-brand-deep:#075985;   /* 7.56:1 white-on - extra-safe button bg (sky.800) */
+  --ar-teal:      #2dd4bf;   /* 10.8:1 on dark - eyebrow, code decorators (teal.400) */
+  --ar-aqua:      #67e8f9;   /* 13.9:1 on dark - accent, code keywords, gradient end (cyan.300) */
+  --ar-gradient:  linear-gradient(115deg, #0369a1 0%, #2dd4bf 55%, #67e8f9 100%);
+  --ar-glow:      radial-gradient(720px 440px at 18% -2%, rgba(3,105,161,.32), transparent 60%),
+                  radial-gradient(680px 420px at 92% 6%, rgba(229,181,103,.12), transparent 62%);
+
+  /* ---- Typography : scale = 16 × 1.25^n ------------------------------------ */
+  --ar-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ar-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ar-fs-caption: 0.75rem;    /* 12px - labels, captions, badges               */
+  --ar-fs-sm:      0.875rem;   /* 14px - secondary, tables, inline code         */
+  --ar-fs-body:    1rem;       /* 16px - BASE body / docs prose                 */
+  --ar-fs-lede:    1.125rem;   /* 18px - intro paragraphs                       */
+  --ar-fs-h4:      1.25rem;    /* 20px                                          */
+  --ar-fs-h3:      1.5625rem;  /* 25px                                          */
+  --ar-fs-h2:      1.9375rem;  /* 31px - section heading                        */
+  --ar-fs-h1:      2.4375rem;  /* 39px - page heading                           */
+  --ar-fs-display: 3.0625rem;  /* 49px                                          */
+  --ar-fs-hero:    3.8125rem;  /* 61px - hero only (desktop)                    */
+  --ar-lh-tight:   1.05;       /* hero / display                               */
+  --ar-lh-snug:    1.2;        /* h1 / h2                                       */
+  --ar-lh-heading: 1.25;       /* h3 / h4                                       */
+  --ar-lh-normal:  1.5;        /* UI text                                       */
+  --ar-lh-body:    1.6;        /* body / docs prose                            */
+  --ar-lh-code:    1.7;        /* code blocks                                  */
+
+  /* ---- Spacing : 8-point grid (4px half-step) ------------------------------ */
+  --ar-s1: 4px;  --ar-s2: 8px;  --ar-s3: 12px; --ar-s4: 16px; --ar-s5: 24px;
+  --ar-s6: 32px; --ar-s7: 48px; --ar-s8: 64px; --ar-s9: 96px;
+
+  /* ---- Radii --------------------------------------------------------------- */
+  --ar-r-sm: 8px;   /* buttons, inputs, chips     */
+  --ar-r-md: 12px;  /* cards                      */
+  --ar-r-lg: 16px;  /* panels, code windows       */
+  --ar-r-xl: 24px;  /* hero / CTA panels          */
+  --ar-r-pill: 999px;
+
+  /* ---- Reading measure ----------------------------------------------------- */
+  --ar-measure:      70ch;   /* docs prose max width  */
+  --ar-measure-lede: 62ch;
+
+  /* ---- Layout (centered + generous; the header stays full-width) ----------- */
+  --ar-layout-max: 1440px;   /* centered container - fills laptops, modest margins on wide screens, no dead-space */
+  --ar-sidebar-w:  272px;    /* left nav             */
+  --ar-toc-w:      240px;    /* right "on this page" */
+  --ar-gutter:     var(--ar-s7);  /* 48px - column gap / page padding */
+
+  /* ===========================================================================
+   * SEMANTIC - LIGHT THEME (VitePress default :root)
+   * On #ffffff: text 17.9:1 · text-2 10.4:1 · text-3 7.58:1 · brand(link) 5.93:1 (AA).
+   * Light-theme accent text MUST use --ar-brand (teal/aqua are too light → large only).
+   * ========================================================================= */
+  --ar-bg:      #ffffff;
+  --ar-surface: #f8fafc;
+  --ar-border:  rgba(15, 23, 42, .10);
+  --ar-text:    #0f172a;
+  --ar-text-2:  #334155;
+  --ar-text-3:  #475569;
+  --ar-faint:   #94a3b8;          /* large/decorative only */
+  --ar-link:    var(--ar-brand);  /* 5.93:1 on white - AA  */
+  --ar-primary: var(--ar-brand);
+  --ar-on-primary: #ffffff;       /* 5.93:1 on brand - AA  */
+
+  /* ---- VitePress mapping --------------------------------------------------- */
+  --vp-c-brand-1: var(--ar-link);
+  --vp-c-brand-2: var(--ar-brand-deep);
+  --vp-c-brand-3: var(--ar-primary);
+  --vp-c-bg:      var(--ar-bg);
+  --vp-c-bg-alt:  var(--ar-surface);
+  --vp-c-bg-soft: var(--ar-surface);
+  --vp-c-text-1:  var(--ar-text);
+  --vp-c-text-2:  var(--ar-text-2);
+  --vp-c-text-3:  var(--ar-text-3);
+  --vp-button-brand-bg:    var(--ar-primary);
+  --vp-button-brand-text:  var(--ar-on-primary);
+  --vp-button-brand-hover-bg: var(--ar-brand-deep);
+  --vp-home-hero-name-background: var(--ar-gradient);
+  --vp-font-family-base: var(--ar-font-sans);
+  --vp-font-family-mono: var(--ar-font-mono);
+}
+
+/* ===========================================================================
+ * SEMANTIC - DARK THEME
+ * On #020617: text 19.3:1 · text-2 13.6:1 · text-3 7.87:1 · brand-lt(link) 9.42:1.
+ * Dark-theme accent text MUST use --ar-brand-lt (brand #0369a1 is 3.40:1 → fill/large only).
+ * ========================================================================= */
+.dark {
+  --ar-bg:      #020617;
+  --ar-surface: #0f172a;
+  --ar-border:  rgba(255, 255, 255, .09);
+  --ar-text:    #f8fafc;
+  --ar-text-2:  #cbd5e1;
+  --ar-text-3:  #94a3b8;
+  --ar-faint:   #64748b;            /* 4.06:1 - large/decorative only */
+  --ar-link:    var(--ar-brand-lt); /* 9.42:1 on dark - AAA           */
+  --ar-primary: var(--ar-brand);
+  --ar-on-primary: #ffffff;         /* 5.93:1 on brand - AA           */
+}

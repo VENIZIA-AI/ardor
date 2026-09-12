@@ -8,6 +8,10 @@ on:
         type: choice
         description: Package to release
         options:
+          - kernel
+          - react
+          - admin
+          - ardor
           - ui-kit
         required: true
       build_mode:
@@ -85,16 +89,18 @@ jobs:
           echo "│ Dist:        $DIST_DIRS"
           echo "└─────────────────────────────────────────────────"
 
+      # BEFORE the install, and across the WHOLE workspace - not just the package being released.
+      # `force-update` rewrites version ranges; an install that ran first has already resolved the
+      # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
+      # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
+      # per-package script refreshes any range the catalog does not own.
+      - name: Force update workspace
+        run: |
+          bun scripts/refresh-catalog.ts highest
+          bun run --filter "@venizia/*" force-update highest
+
       - name: Install
         run: bun install
-
-      - name: Force update package
-        run: |
-          case $BUILD_MODE in
-            patch|minor|major) NPM_TAG="latest" ;;
-            *)                 NPM_TAG="next" ;;
-          esac
-          bun run --filter "$PACKAGE_NAME" force-update "$NPM_TAG"
 
       # =========================================================================
       # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
