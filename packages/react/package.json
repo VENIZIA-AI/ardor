@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-react",
-  "version": "0.1.0",
+  "version": "0.1.1-0",
   "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). No react-admin.",
   "keywords": [
     "ardor",
@@ -73,12 +73,12 @@
     "size": "size-limit"
   },
   "dependencies": {
-    "@venizia/ardor-kernel": "^0.1.0",
+    "@venizia/ardor-kernel": "^0.1.1-0",
     "lodash": "catalog:"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "react": ">=18.0",
     "react-redux": ">=9.3.0"
   },
@@ -93,7 +93,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
