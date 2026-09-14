@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-kernel",
-  "version": "0.1.0",
+  "version": "0.1.1-0",
   "description": "ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and CRUD bases, request/auth constants, binding keys, logger, network fetchers and socket client. No React and no react-admin.",
   "keywords": [
     "ardor",
@@ -80,8 +80,8 @@
     "lodash": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-filter": ">=0.2.0-7",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "axios": ">=1.13.2",
     "reflect-metadata": ">=0.2.2",
     "socket.io-client": ">=4.8.3"
@@ -91,8 +91,8 @@
     "@types/bun": "catalog:",
     "@types/lodash": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/ignis-filter": "catalog:",
-    "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "axios": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
