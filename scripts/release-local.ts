@@ -4,7 +4,7 @@
  * than once per package, and it consumes no GitHub Actions minutes.
  *
  *   bun scripts/release-local.ts                      # every package, in dependency order
- *   bun scripts/release-local.ts kernel connectors    # just these, still ordered, still sequential
+ *   bun scripts/release-local.ts kernel react         # just these, still ordered, still sequential
  *   bun scripts/release-local.ts --dry-run            # run every gate, publish and write nothing
  *   bun scripts/release-local.ts --mode patch         # default is prerelease
  *   bun scripts/release-local.ts --yes                # skip the confirmation prompt
@@ -27,17 +27,7 @@ import { join } from 'node:path';
 const BRANCH = 'develop';
 
 /** Dependency order, mirrored from `scripts/release.ts` - a package publishes after everything it depends on. */
-const RELEASE_ORDER = [
-  'dev-configs',
-  'inversion',
-  'filter',
-  'helpers',
-  'boot',
-  'kernel',
-  'connectors',
-  'core-worker',
-  'core-server',
-] as const;
+const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'] as const;
 
 type TPackageName = (typeof RELEASE_ORDER)[number];
 

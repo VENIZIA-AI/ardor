@@ -133,7 +133,7 @@ Everything in the generated index is re-exported from the package root, so one i
 
 `AdaptiveDialog` and `AdaptivePopover` follow the shadcn composition pattern - a root, a trigger, a content container, and header/title/description/close parts:
 
-```tsxx
+```tsx
 import {
   AdaptiveDialog,
   AdaptiveDialogTrigger,
@@ -174,7 +174,7 @@ import { TextField, CheckboxInput, SwitchInput, DatePicker } from '@venizia/ardo
 
 The `components/shadcn/*` modules are shadcn-style components. They export the usual composed parts, for example accordion. The `Accordion` root requires a `type` prop - `"single"` or `"multiple"` - because its props are a union of the two modes:
 
-```tsxx
+```tsx
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@venizia/ardor-ui-kit';
 
 export function Faq() {

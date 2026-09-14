@@ -23,7 +23,9 @@ folders, and [packages/kernel](/packages/kernel.md), [packages/react](/packages/
 ## Release order
 
 Because `admin` depends on `react`, `react` depends on `kernel`, and `ardor` bundles all three, a
-release chain runs in dependency order: **kernel, then react, then admin, then ardor**. Releasing
+release chain runs in dependency order: **kernel, then react, then admin, then ardor**, with
+**ui-kit** closing it - ui-kit depends on none of the four, so its place is convention, not a
+constraint. Releasing
 out of order means a downstream package builds against a stale floor for its own dependency, and the
 force-update step below cannot invent a published version that does not exist yet.
 

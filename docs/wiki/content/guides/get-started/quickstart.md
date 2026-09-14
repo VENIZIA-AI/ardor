@@ -49,7 +49,7 @@ The application lives in one file, `src/main.tsx`. It holds the container side -
 
 Replace `src/main.tsx` with:
 
-```tsxx
+```tsx
 import 'reflect-metadata';
 
 import { configureStore } from '@reduxjs/toolkit';

@@ -3,12 +3,11 @@
  * to finish before dispatching the next.
  *
  * The waiting is the whole point. `package-release.yml` runs `force-update` over the WHOLE workspace
- * (`--filter "@venizia/*"`), so a range that goes stale mid-flight fails the run: a core-worker
- * release once died on a range belonging to core-server, six minutes after a connectors release made
- * it stale. Dispatching by hand invites exactly that.
+ * (`--filter "@venizia/*"`), so a range that goes stale mid-flight fails the run. Dispatching by
+ * hand invites exactly that.
  *
  *   bun scripts/release.ts                      # every package that needs one, in order
- *   bun scripts/release.ts kernel connectors    # just these, still ordered and still sequential
+ *   bun scripts/release.ts kernel react         # just these, still ordered and still sequential
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
@@ -264,11 +263,8 @@ const waitForCompletion = async (opts: { runId: string }): Promise<string> => {
  * reverse - a green run whose publish silently did nothing - is exactly what this catches.
  */
 const assertPublished = async (opts: { state: IPackageState }): Promise<string> => {
-  // Four minutes, not one. The `next` dist-tag can lag the publish by minutes - measured: a
-  // core-worker release reported "green but nothing published" while every workflow step had
-  // succeeded and the version was already in `npm view versions`. A verification window shorter than
-  // the registry's own propagation turns a healthy release into a false alarm, which is worse than
-  // not checking, because the next person stops believing the check.
+  // Four minutes, not one: the `next` dist-tag can lag the publish by minutes. A window shorter
+  // than the registry's own propagation turns a healthy release into a false alarm.
   for (let attempt = 0; attempt < 48; attempt += 1) {
     const published = await resolvePublishedVersion({ packageName: opts.state.packageName });
 
