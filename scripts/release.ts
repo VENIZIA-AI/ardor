@@ -290,12 +290,17 @@ const releasePackage = async (opts: {
 
   const previousRunId = await resolveLatestRunId();
 
+  // `--ref` is not optional: without it `gh` dispatches against the DEFAULT branch, and GitHub
+  // validates the inputs against that branch's copy of the workflow. `main` still carries the
+  // pre-ARDOR dropdown, so every package but `ui-kit` comes back HTTP 422.
   await run({
     command: [
       'gh',
       'workflow',
       'run',
       WORKFLOW,
+      '--ref',
+      BRANCH,
       '-f',
       `package=${state.name}`,
       '-f',

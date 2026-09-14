@@ -15,6 +15,15 @@ human triggers it from the Actions tab (or `gh workflow run`) and picks two requ
 - `build_mode`: the semver bump - `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, or
   `prerelease` (default `patch`).
 
+**The dispatch must name the ref.** GitHub validates `workflow_dispatch` inputs against the copy of
+the workflow on the ref being dispatched, and `gh workflow run` defaults to the repository's DEFAULT
+branch. That branch is `main`, which still carries the pre-ARDOR dropdown listing only `ui-kit`, so
+any other package comes back `HTTP 422: Provided value 'kernel' for input 'package' not in the list
+of allowed values`. `scripts/release.ts` passes `--ref develop`; a hand-run `gh workflow run` needs
+it too. The same staleness is why `ci.yml` is not dispatchable at all - it exists only on `develop`,
+and `gh` reports `workflow ci.yml not found on the default branch`. Both stop being true once ARDOR
+lands on `main`.
+
 There is no fan-out step that releases every package in one dispatch: each package is released with
 its own run. See [Monorepo layout](/overview/monorepo-layout.md) for how the packages map to
 folders, and [packages/kernel](/packages/kernel.md), [packages/react](/packages/react.md),
