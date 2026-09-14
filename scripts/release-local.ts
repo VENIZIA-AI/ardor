@@ -105,7 +105,7 @@ const assertNpmToken = (): void => {
 /**
  * The `npm` binary sits in PATH on a developer machine, which CI's controlled image made unlikely.
  * npm ships `catalog:`/`workspace:` verbatim and breaks every consumer, so this asserts the script
- * has not drifted onto it - the same assertion the workflow makes about its own YAML.
+ * has not drifted onto it. `release.ts` makes the same assertion about the workflow YAML.
  */
 const assertPublisherIsBun = (): void => {
   const source = readFileSync('scripts/release-local.ts', 'utf8');

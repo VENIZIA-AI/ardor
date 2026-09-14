@@ -9,13 +9,49 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.1-0",
+        "date": "2026-09-14",
+        "sha": "fe6101da",
+        "order": 28
+      },
+      {
         "version": "0.0.1",
         "date": "2026-02-02",
         "sha": "c4e8e894",
         "order": 6
       }
     ],
+    "ardor": [
+      {
+        "version": "0.1.1-0",
+        "date": "2026-09-14",
+        "sha": "68401a45",
+        "order": 29
+      }
+    ],
+    "kernel": [
+      {
+        "version": "0.1.1-0",
+        "date": "2026-09-14",
+        "sha": "ac58d60c",
+        "order": 26
+      }
+    ],
+    "react": [
+      {
+        "version": "0.1.1-0",
+        "date": "2026-09-14",
+        "sha": "cdce5980",
+        "order": 27
+      }
+    ],
     "ui-kit": [
+      {
+        "version": "0.0.2-0",
+        "date": "2026-09-14",
+        "sha": "2dfeff69",
+        "order": 30
+      },
       {
         "version": "0.0.1",
         "date": "2026-02-02",

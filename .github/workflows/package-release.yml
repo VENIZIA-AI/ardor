@@ -159,13 +159,18 @@ jobs:
             *)                 NPM_TAG="next" ;;
           esac
 
-          # Skip prepublishOnly since we already built
-          npm publish --access public --tag $NPM_TAG --ignore-scripts
+          # `bun`, never `npm`: npm ships `catalog:` and `workspace:` verbatim, and a consumer then
+          # fails to install with `lodash@catalog: failed to resolve`. Only bun resolves them while
+          # packing. `--ignore-scripts` skips prepublishOnly, since the build already ran.
+          bun publish --access public --tag $NPM_TAG --ignore-scripts
 
           echo "IS_PUBLISHED=true" >> $GITHUB_ENV
           echo "✓ Published $PACKAGE_NAME@$NEW_VERSION ($NPM_TAG)"
         env:
+          # NODE_AUTH_TOKEN feeds the .npmrc setup-node wrote; NPM_CONFIG_TOKEN is what bun reads
+          # directly, so the publish does not depend on how bun parses that file.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       # =========================================================================
       # ROLLBACK

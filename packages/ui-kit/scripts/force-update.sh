@@ -28,11 +28,12 @@ if [ -z "$(echo "$PACKAGES" | tr -d ' ')" ]; then
 fi
 
 for pkg in $PACKAGES; do
-  # The root workspaces.catalog owns a catalogued range; overwriting it with a registry version
-  # breaks `make catalog-check`, which the release workflow runs a few steps later.
-  CURRENT=$(jq -r --arg p "$pkg" '[(.dependencies // {}), (.devDependencies // {}), (.peerDependencies // {})] | add // {} | .[$p] // ""' package.json)
-  if [ "$CURRENT" = "catalog:" ]; then
-    echo "[$pkg] pinned by the root workspaces.catalog, SKIP..."
+  # Counted over the two blocks this script rewrites, never over a merged view of all three: a real
+  # range in peerDependencies shadowed a `catalog:` in devDependencies, so the release rewrote the
+  # one it could not see and broke `make catalog-check`.
+  PINNABLE=$(jq -r --arg p "$pkg" '[(.dependencies // {}), (.devDependencies // {})] | map(.[$p] // empty) | map(select(test(":") | not)) | length' package.json)
+  if [ "$PINNABLE" = "0" ]; then
+    echo "[$pkg] nothing to pin - catalog:/workspace: or peer-only, SKIP..."
     continue
   fi
 
@@ -57,12 +58,20 @@ for pkg in $PACKAGES; do
 
   echo "[$pkg] $TAG version: $VERSION"
 
-  # Escape package name for sed (replace @ and / with escaped versions)
-  PACKAGE_NAME=$(echo "$pkg" | sed 's/[\/&]/\\&/g')
-
-  # This handles both dependencies and devDependencies
-  # Matches: "package-name": "any-version" and replaces with specific version
-  sed -i "s/\"${PACKAGE_NAME}\": \"[^\"]*\"/\"${PACKAGE_NAME}\": \"^${VERSION}\"/g" package.json
+  # jq over named blocks, not sed over the file. Two things sed got wrong: it rewrote
+  # peerDependencies, turning the compatibility window the author chose (`>=0.2.0-7`) into `^` and
+  # silently narrowing what a consumer may install; and it matched protocol specifiers, so
+  # `catalog:` reached the tarball as a literal and every consumer failed with
+  # `lodash@catalog: failed to resolve`. jq round-trips this file byte-for-byte.
+  UPDATED=$(jq --arg p "$pkg" --arg v "^${VERSION}" '
+    reduce ("dependencies", "devDependencies") as $block (.;
+      if (.[$block] | type) != "object" then .
+      elif ((.[$block][$p] // "") == "") then .
+      elif (.[$block][$p] | test(":")) then .
+      else .[$block][$p] = $v
+      end)
+  ' package.json)
+  printf "%s\n" "$UPDATED" > package.json
 
   echo "[$pkg] Updated to version ^$VERSION"
 done

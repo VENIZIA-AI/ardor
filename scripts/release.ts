@@ -205,6 +205,16 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
       `${behind} commit(s) behind origin/${BRANCH}. Pull first, or you will read stale versions.`,
     );
   }
+
+  // npm ships `catalog:` and `workspace:` verbatim, so a package published with it installs as
+  // `lodash@catalog: failed to resolve` on every consumer. `release-local.ts` asserts this about
+  // its own source; nothing asserted it about the YAML this script dispatches, and four packages
+  // shipped broken before anyone tried to install one.
+  const workflowPath = '.github/workflows/package-release.yml';
+  const workflow = await Bun.file(workflowPath).text();
+  if (!/^\s*bun publish\b/m.test(workflow)) {
+    complain(`${workflowPath} must publish with \`bun publish\` - npm ships catalog: verbatim.`);
+  }
 };
 
 /** The most recent run id for this workflow, so a new dispatch can be told apart from it. */
