@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-admin",
-  "version": "0.1.0",
+  "version": "0.1.1-0",
   "description": "ARDOR react-admin adapter - the REST data provider, auth provider and i18n provider wired through IGNIS inversion, the ArdorApplication root component, the translate and notify hooks, and the English and Vietnamese message bundles.",
   "keywords": [
     "admin",
@@ -75,16 +75,16 @@
     "size": "size-limit"
   },
   "dependencies": {
-    "@venizia/ardor-kernel": "^0.1.0",
-    "@venizia/ardor-react": "^0.1.0",
+    "@venizia/ardor-kernel": "^0.1.1-0",
+    "@venizia/ardor-react": "^0.1.1-0",
     "lodash": "catalog:",
     "ra-i18n-polyglot": "catalog:"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-filter": ">=0.2.0-7",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "ra-core": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
@@ -103,8 +103,8 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/ignis-filter": "catalog:",
-    "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "ra-core": "catalog:",
