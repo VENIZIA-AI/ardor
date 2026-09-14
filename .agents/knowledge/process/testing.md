@@ -38,7 +38,7 @@ CI (`process/testing.md` counterpart in `.github/workflows`) is manual-only (`wo
 
 Two jobs:
 
-- **Source gates**: `make catalog-check` (dependency catalog), `make okf-check` (knowledge bundle - currently `continue-on-error` until milestone M3 makes it blocking), `make purity-test` (browser purity probe).
-- **Build, test and lint**: `make build-all`, then `make test-kernel`, `make test-react`, `make test-admin`, `make test-scripts`, `make layer-check`, `make surface-check`, `make size-check`, `make lint`, and a purity loop over `purity-inversion`, `purity-filter`, `purity-helpers`, `purity-kernel`, `purity-core-worker`, `purity-connectors` - one loop with no allowlist, so the CI gate and the release workflow's `make purity-<pkg>` always agree.
+- **Source gates**: `make catalog-check` (dependency catalog), `make okf-check` (knowledge bundle), `make purity-test` (browser purity probe).
+- **Build, test and lint**: `make build-all`, then `make test-kernel`, `make test-react`, `make test-admin`, `make test-scripts`, `make layer-check`, `make surface-check`, `make size-check`, `make examples-check`, `make lint`, and `make purity` - one loop over the whole manifest, so this gate and a release read the same rows.
 
 See [Build system](/process/build-system.md) for how these targets relate to the build pipeline, and [Debugging](/process/debugging.md) when a suite fails locally but not in CI or vice versa.
