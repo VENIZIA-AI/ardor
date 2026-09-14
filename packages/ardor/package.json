@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.1.0",
+  "version": "0.1.1-0",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -73,15 +73,15 @@
     "size": "size-limit"
   },
   "dependencies": {
-    "@venizia/ardor-admin": "^0.1.0",
-    "@venizia/ardor-kernel": "^0.1.0",
-    "@venizia/ardor-react": "^0.1.0"
+    "@venizia/ardor-admin": "^0.1.1-0",
+    "@venizia/ardor-kernel": "^0.1.1-0",
+    "@venizia/ardor-react": "^0.1.1-0"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-filter": ">=0.2.0-7",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "ra-core": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
@@ -97,8 +97,8 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/ignis-filter": "catalog:",
-    "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-filter": "^0.2.0-7",
+    "@venizia/ignis-inversion": "^0.2.0-7",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "ra-core": "catalog:",
