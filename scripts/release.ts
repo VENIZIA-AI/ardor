@@ -11,23 +11,19 @@
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
- *   bun scripts/release.ts kernel --no-atlas    # release the chain without the atlas tail
+ *   bun scripts/release.ts kernel --no-tables   # release without refreshing the atlas tables
  *
- * Atlas closes every chain. Its snapshot carries the generated symbol and release tables, so a
- * chain that ships without it leaves the published tables one release behind and `changes` answers
- * "unknown version" for what just shipped. The tail regenerates the tables, commits them, and
- * releases atlas last; `--no-atlas` opts out for a one-package fix.
+ * Every chain ends by regenerating the symbol and release tables atlas serves. They are generated
+ * FROM release commits, so the chain that just shipped is exactly what makes them stale: skip the
+ * refresh and `version` reports a consumer as current while it is ahead of the table, and `changes`
+ * answers "unknown version" for what just shipped. `--no-tables` opts out for a one-package fix.
+ *
+ * ARDOR ships no atlas package - the MCP server is `@venizia/ignis-atlas` run against this checkout
+ * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
  */
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
-
-/**
- * ARDOR ships no atlas package: the MCP server is `@venizia/ignis-atlas` run against this checkout,
- * so the generated tables are refreshed and committed after the chain, and nothing else releases.
- * `ATLAS` stays as the sentinel the tail logic keys on; no package carries that name here.
- */
-const ATLAS = '__no-atlas-package__';
 
 /** What `refreshGeneratedTables` regenerates and commits, relative to the repository root. */
 const TABLE_PATHS = [
@@ -337,9 +333,9 @@ const releasePackage = async (opts: {
 };
 
 /**
- * Regenerates the tables atlas ships and commits them when they moved. Run between the last
- * framework release and atlas's own: the tables are generated FROM release commits, so they are
- * always stale by exactly the chain that just shipped.
+ * Regenerates the tables atlas serves and commits them when they moved. Runs after the chain, never
+ * as a member of it: the tables are generated FROM release commits, so they are always stale by
+ * exactly the chain that just shipped.
  */
 const refreshGeneratedTables = async (): Promise<void> => {
   console.log('\n▶ refreshing the tables atlas ships');
@@ -366,18 +362,13 @@ const main = async (): Promise<void> => {
   const args = Bun.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
-  const skipAtlas = args.includes('--no-atlas');
+  const skipTables = args.includes('--no-tables');
   const modeIndex = args.indexOf('--mode');
   const mode = (modeIndex >= 0 ? args[modeIndex + 1] : 'prerelease') as TReleaseMode;
 
   const requested = args.filter(arg => !arg.startsWith('--') && arg !== mode);
-  // Atlas closes any chain that carries a framework package: its snapshot must know what shipped.
-  const withAtlasTail =
-    !skipAtlas && requested.length > 0 && !requested.includes(ATLAS)
-      ? [...requested, ATLAS]
-      : requested;
   const candidates =
-    withAtlasTail.length > 0 ? RELEASE_ORDER.filter(n => withAtlasTail.includes(n)) : RELEASE_ORDER;
+    requested.length > 0 ? RELEASE_ORDER.filter(n => requested.includes(n)) : RELEASE_ORDER;
 
   const unknown = requested.filter(name => !RELEASE_ORDER.includes(name as never));
   if (unknown.length > 0) {
@@ -390,15 +381,7 @@ const main = async (): Promise<void> => {
 
   const states = await collectState({ names: candidates });
   // An explicit request is honoured as given; a full sweep releases only what actually changed.
-  const changed =
-    withAtlasTail.length > 0 ? states : states.filter(state => state.changedFiles > 0);
-  // A sweep that ships any framework package ships atlas too, whether or not atlas itself changed.
-  const needsTail =
-    !skipAtlas &&
-    changed.some(state => state.name !== ATLAS) &&
-    !changed.some(state => state.name === ATLAS);
-  const tail = needsTail ? states.filter(state => state.name === ATLAS) : [];
-  const plan = [...changed, ...tail];
+  const plan = requested.length > 0 ? states : states.filter(state => state.changedFiles > 0);
 
   if (plan.length === 0) {
     console.log('Nothing to release - no package has source changes since its last release.');
@@ -427,12 +410,13 @@ const main = async (): Promise<void> => {
   }
 
   for (const state of plan) {
-    // The tables are generated from release commits, so they are refreshed after the framework
-    // packages have shipped and before atlas packages them.
-    if (state.name === ATLAS && plan.length > 1) {
-      await refreshGeneratedTables();
-    }
     await releasePackage({ state, mode });
+  }
+
+  // After the loop, not inside it: every release commit in this chain has to exist before the
+  // tables are generated from them. Hanging this off a tail entry is how it silently never ran.
+  if (!skipTables) {
+    await refreshGeneratedTables();
   }
 
   console.log(`\n✓ Released ${plan.length} package(s).`);
