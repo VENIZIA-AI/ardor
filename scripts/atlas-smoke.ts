@@ -1,10 +1,9 @@
 /**
- * Proves the atlas MCP server answers over THIS repository's corpora: starts the server in repo
- * mode with `--root` at the ARDOR checkout, drives `initialize`, `tools/list`, a knowledge `search`
- * and a `symbol` lookup over stdio JSON-RPC, and fails on the first answer that is not ARDOR's.
+ * Proves the atlas MCP server answers over THIS repository's corpora, not IGNIS's.
  *
- * The server comes from `@venizia/ignis-atlas`; `ARDOR_ATLAS_CLI` overrides the entry (e.g. the
- * IGNIS checkout's `packages/atlas/src/cli.ts` while the family-checkout support is unreleased).
+ * The version is pinned because the `latest` dist-tag of `@venizia/ignis-atlas` still points at
+ * 0.1.0-1, which predates family-checkout support. `ARDOR_ATLAS_CLI` overrides the entry with a
+ * local checkout's `packages/atlas/src/cli.ts`.
  *
  * Usage: bun scripts/atlas-smoke.ts
  */
@@ -14,7 +13,7 @@ const REPO = resolve(import.meta.dir, '..');
 const cli = process.env.ARDOR_ATLAS_CLI;
 const command = cli
   ? ['bun', cli, 'mcp', '--root', REPO]
-  : ['bunx', '@venizia/ignis-atlas', 'mcp', '--root', REPO];
+  : ['bunx', '@venizia/ignis-atlas@0.1.0-13', 'mcp', '--root', REPO];
 
 const server = Bun.spawn(command, { cwd: REPO, stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' });
 const decoder = new TextDecoder();

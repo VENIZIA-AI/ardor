@@ -1,5 +1,5 @@
 {
-  "$comment": "Until @venizia/ignis-atlas ships family-checkout support, point at the IGNIS checkout: copy to .mcp.local.json (gitignored) or edit .mcp.json locally.",
+  "$comment": "Optional. `.mcp.json` runs the published atlas; point it at a local IGNIS checkout instead when you are changing the server itself. Copy to .mcp.local.json (gitignored) or edit .mcp.json locally.",
   "mcpServers": {
     "ardor-atlas": {
       "command": "bun",
