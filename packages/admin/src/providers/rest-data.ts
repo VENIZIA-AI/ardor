@@ -77,12 +77,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  //---------------------------------------------------------------------------
   getNetworkService() {
     return this.networkService;
   }
 
-  //---------------------------------------------------------------------------
   getListHelper<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     type: TRequestType;
@@ -104,9 +102,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // GET_LIST
-  // -------------------------------------------------------------
   getList<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetListParams & QueryFunctionContext & ICustomParams;
@@ -196,9 +191,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // GET_ONE
-  // -------------------------------------------------------------
   getOne<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
@@ -232,9 +224,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // GET_MANY
-  // -------------------------------------------------------------
   getMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
@@ -274,9 +263,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // GET_MANY_REFERENCE
-  // -------------------------------------------------------------
   getManyReference<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetManyReferenceParams & QueryFunctionContext & ICustomParams;
@@ -299,7 +285,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['noLimit'] = filterGetMany?.noLimit;
     }
 
-    // Add target id to filter
     filter.where[target] = id;
 
     if (sort?.field) {
@@ -370,9 +355,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // UPDATE
-  // -------------------------------------------------------------
   update<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: UpdateParams;
@@ -398,9 +380,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // UPDATE_MANY
-  // -------------------------------------------------------------
   updateMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: UpdateManyParams;
@@ -432,9 +411,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // CREATE
-  // -------------------------------------------------------------
   create<
     RecordType extends Omit<RaRecord, 'id'> = AnyType,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
@@ -460,9 +436,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // DELETE
-  // -------------------------------------------------------------
   delete<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: DeleteParams<RecordType>;
@@ -487,9 +460,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  // -------------------------------------------------------------
-  // DELETE_MANY
-  // -------------------------------------------------------------
   deleteMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: DeleteManyParams<RecordType>;
@@ -530,9 +500,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return rs;
   }
 
-  // -------------------------------------------------------------
-  // SEND
-  // -------------------------------------------------------------
   send<ReturnType = AnyType>(opts: {
     resource: TResource;
     params: ISendParams;

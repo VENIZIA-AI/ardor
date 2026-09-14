@@ -12,7 +12,6 @@ export interface IAxiosRequestOptions extends AxiosRequestConfig, IRequestOption
   headers?: AnyObject;
 }
 
-// -------------------------------------------------------------
 export class AxiosFetcher extends AbstractNetworkFetchableHelper<
   'axios',
   IAxiosRequestOptions,
@@ -25,9 +24,6 @@ export class AxiosFetcher extends AbstractNetworkFetchableHelper<
     opts?.logger?.info('Creating new network request worker instance! Name: %s', opts.name);
   }
 
-  // -------------------------------------------------------------
-  // SEND REQUEST
-  // -------------------------------------------------------------
   override send<T = any>(opts: IAxiosRequestOptions, logger?: any) {
     const { url, method = 'get', params = {}, body: data, headers, ...rest } = opts;
     const props: AxiosRequestConfig = {

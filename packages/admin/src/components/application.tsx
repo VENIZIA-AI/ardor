@@ -40,7 +40,6 @@ const Wrapper: React.FC<{
   );
 };
 
-// -----------------------------------------------------------------
 export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
   const {
     container,
@@ -54,7 +53,6 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   const { routes } = customRoutes ?? {};
 
-  // -------------------------------------------------------------------------------
   const adminProps = React.useMemo(() => {
     const dataProvider = container.get<IDataProvider>({
       key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
@@ -69,7 +67,6 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return { dataProvider, authProvider, i18nProvider, ...raProps };
   }, [container, raProps]);
 
-  // -------------------------------------------------------------------------------
   return (
     <Wrapper
       container={container}

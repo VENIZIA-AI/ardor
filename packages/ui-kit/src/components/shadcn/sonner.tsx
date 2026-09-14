@@ -6,10 +6,8 @@ import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  // --------------------------------------------------
   const { theme = 'system' } = useTheme();
 
-  // --------------------------------------------------
   const toasterContent = (
     <Sonner
       theme={theme as ToasterProps['theme']}
@@ -35,12 +33,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
     />
   );
 
-  // --------------------------------------------------
   if (typeof window === 'undefined') {
     return null;
   }
 
-  // --------------------------------------------------
   return createPortal(toasterContent, document.body);
 };
 

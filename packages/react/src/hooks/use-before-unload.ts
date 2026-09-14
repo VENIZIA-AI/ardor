@@ -8,7 +8,6 @@ export interface IUseBeforeUnloadParams {
 export const useBeforeUnload = (params: IUseBeforeUnloadParams) => {
   const { enabled, message } = params;
 
-  //---------------------------------------------------------------------------
   const handleBeforeUnload = React.useCallback(
     (event: BeforeUnloadEvent) => {
       const isEnabled = enabled instanceof Function ? enabled() : enabled;
@@ -27,7 +26,6 @@ export const useBeforeUnload = (params: IUseBeforeUnloadParams) => {
     [enabled, message],
   );
 
-  //---------------------------------------------------------------------------
   React.useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {

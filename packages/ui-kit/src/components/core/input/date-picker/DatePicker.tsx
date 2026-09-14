@@ -26,12 +26,8 @@ export interface IDatePickerProps {
   onChange?: (date: string | null) => void;
 }
 
-/**
- *
- * @param value format: YYYY-MM-DD
- */
+/** @param value format: YYYY-MM-DD */
 export const DatePicker: React.FC<IDatePickerProps> = (props) => {
-  // --------------------------------------------------
   const {
     id,
     required: isRequired,
@@ -45,13 +41,10 @@ export const DatePicker: React.FC<IDatePickerProps> = (props) => {
     onChange,
   } = props;
 
-  // --------------------------------------------------
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // --------------------------------------------------
   const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value) : undefined);
 
-  // --------------------------------------------------
   React.useEffect(() => {
     setDate(value ? new Date(value) : undefined);
     return () => {};

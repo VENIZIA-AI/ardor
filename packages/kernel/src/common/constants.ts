@@ -5,18 +5,14 @@ export class App {
   static readonly DEFAULT_DEBOUNCE_TIME = 500;
 }
 
-// --------------------------------------------------
 export class Authentication {
-  // Jwt
   static readonly TYPE_BASIC = 'Basic';
   static readonly TYPE_BEARER = 'Bearer';
 
-  // Strategy
   static readonly STRATEGY_BASIC = 'basic';
   static readonly STRATEGY_JWT = 'jwt';
 }
 
-// --------------------------------------------------
 export class RequestMethods {
   static readonly HEAD = 'HEAD';
   static readonly OPTIONS = 'OPTIONS';
@@ -41,7 +37,6 @@ export class RequestMethods {
   }
 }
 
-// --------------------------------------------------
 export class RequestTypes {
   static readonly SEND = 'SEND';
 
@@ -74,7 +69,6 @@ export class RequestTypes {
   }
 }
 
-// --------------------------------------------------
 export class RequestBodyTypes {
   static readonly NONE = 'none';
   static readonly FORM_DATA = 'form-data';
@@ -95,7 +89,6 @@ export class RequestBodyTypes {
   }
 }
 
-// --------------------------------------------------
 export class Environments {
   static readonly DEVELOPMENT = 'development';
   static readonly PRODUCTION = 'production';
@@ -107,7 +100,6 @@ export class Environments {
   }
 }
 
-// --------------------------------------------------
 export class HeaderConsts {
   static readonly CONTENT_TYPE = 'content-type';
 
@@ -144,12 +136,10 @@ export class HeaderConsts {
   static readonly ATTACHMENT_CONTENT_DISPOSITION_RE = /^attachment/i;
 }
 
-// --------------------------------------------------
 export class RequestChannel {
   static readonly WEB = '100_WEB';
 }
 
-// --------------------------------------------------
 export class RequestCountData {
   /**
    * @description Only the data is returned in the response body

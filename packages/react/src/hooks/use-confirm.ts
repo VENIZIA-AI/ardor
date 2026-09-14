@@ -9,13 +9,10 @@ export interface IUseConfirmReturn {
 }
 
 export const useConfirm = (): IUseConfirmReturn => {
-  //--------------------------------------------------
   const [resolve, setResolve] = React.useState<(value: boolean) => void>();
 
-  //--------------------------------------------------
   const [message, setMessage] = React.useState<string>();
 
-  //--------------------------------------------------
   const confirm = React.useCallback((opts: { message: string }) => {
     return new Promise<boolean>((_resolve) => {
       setResolve(() => {
@@ -27,19 +24,16 @@ export const useConfirm = (): IUseConfirmReturn => {
     });
   }, []);
 
-  //--------------------------------------------------
   const handleClose = React.useCallback(() => {
     setResolve(undefined);
     setMessage(undefined);
   }, []);
 
-  //--------------------------------------------------
   const handleConfirm = React.useCallback(() => {
     resolve?.(true);
     handleClose();
   }, [handleClose, resolve]);
 
-  //--------------------------------------------------
   const handleAbort = React.useCallback(() => {
     resolve?.(false);
     handleClose();

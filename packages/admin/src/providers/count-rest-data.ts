@@ -12,7 +12,6 @@ import { DefaultRestDataProvider } from './rest-data';
 export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
-  //---------------------------------------------------------------------------
   override getListHelper<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     type: TRequestType;

@@ -34,18 +34,14 @@ const AdaptivePopover = ({
   onOpenChange: setOpenProp,
   ...props
 }: React.ComponentProps<typeof Popover>) => {
-  // --------------------------------------------------
   const isMobile = useIsMobile();
 
-  // --------------------------------------------------
   const [isMounted, setIsMounted] = React.useState(false);
   const [isOpenState, setIsOpenState] = React.useState(defaultOpen);
 
-  // --------------------------------------------------
   const isOpen = openProp ?? isOpenState;
   const setIsOpen = setOpenProp ?? setIsOpenState;
 
-  // --------------------------------------------------
   const contextValue = React.useMemo<AdaptivePopoverContextProps>(
     () => ({
       isMobile,
@@ -53,19 +49,16 @@ const AdaptivePopover = ({
     [isMobile],
   );
 
-  // --------------------------------------------------
   React.useEffect(() => {
     setIsMounted(true);
 
     return () => {};
   }, []);
 
-  // --------------------------------------------------
   if (!isMounted) {
     return null;
   }
 
-  // --------------------------------------------------
   const Component = isMobile ? Drawer : Popover;
 
   return (
@@ -85,15 +78,12 @@ const AdaptivePopoverTrigger = (props: React.ComponentProps<typeof PopoverTrigge
 const AdaptivePopoverContent = (props: React.ComponentProps<typeof PopoverContent>) => {
   const { children, ...rest } = props;
 
-  // --------------------------------------------------
   const { isMobile } = useAdaptivePopover();
 
-  // --------------------------------------------------
   if (isMobile) {
     return <DrawerContent {...rest}>{children}</DrawerContent>;
   }
 
-  // --------------------------------------------------
   return <PopoverContent {...props} />;
 };
 

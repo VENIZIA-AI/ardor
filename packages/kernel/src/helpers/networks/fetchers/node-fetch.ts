@@ -6,7 +6,6 @@ export interface INodeFetchRequestOptions extends RequestInit, IRequestOptions {
   params?: Record<string | symbol, any>;
 }
 
-// -------------------------------------------------------------
 export class NodeFetcher extends AbstractNetworkFetchableHelper<
   'node-fetch',
   INodeFetchRequestOptions,
@@ -23,9 +22,6 @@ export class NodeFetcher extends AbstractNetworkFetchableHelper<
     this.defaultConfigs = defaultConfigs;
   }
 
-  // -------------------------------------------------------------
-  // SEND REQUEST
-  // -------------------------------------------------------------
   override async send(opts: INodeFetchRequestOptions, logger?: any) {
     const { url, method = 'get', params, body, headers, timeout, signal, ...rest } = opts;
 

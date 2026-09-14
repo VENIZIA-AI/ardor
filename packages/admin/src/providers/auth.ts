@@ -25,9 +25,6 @@ export class DefaultAuthProvider<
     super({ scope: DefaultAuthProvider.name });
   }
 
-  // -------------------------------------------------------------
-  // LOGIN
-  // -------------------------------------------------------------
   login(params: AnyType) {
     return new Promise((resolve, reject) => {
       this.restDataProvider
@@ -51,9 +48,6 @@ export class DefaultAuthProvider<
     });
   }
 
-  // -------------------------------------------------------------
-  // LOGOUT
-  // -------------------------------------------------------------
   logout(_params: AnyType) {
     return new Promise<void>((resolve) => {
       this.authService.cleanUp();
@@ -61,9 +55,6 @@ export class DefaultAuthProvider<
     });
   }
 
-  // -------------------------------------------------------------
-  // CHECK_AUTH
-  // -------------------------------------------------------------
   async checkAuth(_params: AnyType) {
     const token = this.authService.getAuth();
 
@@ -87,9 +78,6 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  // -------------------------------------------------------------
-  // CHECK_ERROR
-  // -------------------------------------------------------------
   checkError(params: AnyType) {
     const { status } = params;
 
@@ -108,9 +96,6 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  // -------------------------------------------------------------
-  // GET_IDENTIFIER
-  // -------------------------------------------------------------
   getIdentity(_params: AnyType) {
     const user = this.authService.getUser();
 
@@ -121,28 +106,18 @@ export class DefaultAuthProvider<
     return Promise.resolve(user);
   }
 
-  // -------------------------------------------------------------
-  // GET_PERMISSIONS
-  // -------------------------------------------------------------
   getPermissions(_params: AnyType) {
     return Promise.resolve();
   }
 
-  //-------------------------------------------------------------
-  // GET_ROLES
-  //-------------------------------------------------------------
   getRoles(_params: AnyType) {
     return Promise.resolve(this.authService.getRoles());
   }
 
-  // -------------------------------------------------------------
-  // REFRESH_TOKEN
-  // -------------------------------------------------------------
   refreshToken(): Promise<AnyType> {
     return Promise.resolve();
   }
 
-  // -------------------------------------------------------------
   override value(_container: Container): IAuthProvider {
     return {
       login: (params: AnyType) => this.login(params),

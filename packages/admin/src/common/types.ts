@@ -38,7 +38,6 @@ import {
   type ISendResponse,
 } from '@venizia/ardor-kernel';
 
-// ----------------------------------------------------------------------
 export interface IReactAdminDataProvider<TResource extends string = string> {
   getList: <RecordType extends RaRecord = AnyType>(
     resource: TResource,
@@ -89,7 +88,6 @@ export interface IReactAdminDataProvider<TResource extends string = string> {
   ) => Promise<DeleteManyResult<RecordType>>;
 }
 
-// ----------------------------------------------------------------------
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
@@ -101,7 +99,6 @@ export interface IDataProvider<
   getNetworkService(): DefaultNetworkRequestService;
 }
 
-// ----------------------------------------------------------------------
 export interface IReactAdminAuthProvider {
   login: (params: AnyType) => Promise<{ redirectTo?: string | boolean } | void | AnyType>;
   logout: (params: AnyType) => Promise<void | false | string>;
@@ -111,19 +108,16 @@ export interface IReactAdminAuthProvider {
   getPermissions: (params: AnyType & QueryFunctionContext) => Promise<AnyType>;
 }
 
-// ----------------------------------------------------------------------
 export interface IAuthProvider extends IReactAdminAuthProvider {
   getRoles: (params?: AnyType) => Promise<Set<string>>;
   refreshToken: () => Promise<AnyType>;
 }
 
-// ----------------------------------------------------------------------
 export interface II18nProviderOptions {
   i18nSources?: Record<string | symbol, AnyType>;
   listLanguages?: Locale[];
 }
 
-// ----------------------------------------------------------------------
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   container: Container;
 

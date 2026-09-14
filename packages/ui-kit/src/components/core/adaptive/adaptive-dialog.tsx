@@ -42,18 +42,14 @@ const AdaptiveDialog = ({
   onOpenChange: setOpenProp,
   ...props
 }: React.ComponentProps<typeof Dialog>) => {
-  // --------------------------------------------------
   const isMobile = useIsMobile();
 
-  // --------------------------------------------------
   const [isMounted, setIsMounted] = React.useState(false);
   const [isOpenState, setIsOpenState] = React.useState(defaultOpen);
 
-  // --------------------------------------------------
   const isOpen = openProp ?? isOpenState;
   const setIsOpen = setOpenProp ?? setIsOpenState;
 
-  // --------------------------------------------------
   const contextValue = React.useMemo<AdaptiveDialogContextProps>(
     () => ({
       isMobile,
@@ -61,19 +57,16 @@ const AdaptiveDialog = ({
     [isMobile],
   );
 
-  // --------------------------------------------------
   React.useEffect(() => {
     setIsMounted(true);
 
     return () => {};
   }, []);
 
-  // --------------------------------------------------
   if (!isMounted) {
     return null;
   }
 
-  // --------------------------------------------------
   const Component = isMobile ? Drawer : Dialog;
 
   return (
@@ -93,15 +86,12 @@ const AdaptiveDialogTrigger = (props: React.ComponentProps<typeof DialogTrigger>
 const AdaptiveDialogContent = (props: React.ComponentProps<typeof DialogContent>) => {
   const { children, ...rest } = props;
 
-  // --------------------------------------------------
   const { isMobile } = useAdaptiveDialog();
 
-  // --------------------------------------------------
   if (isMobile) {
     return <DrawerContent {...rest}>{children}</DrawerContent>;
   }
 
-  // --------------------------------------------------
   return <DialogContent {...props} />;
 };
 

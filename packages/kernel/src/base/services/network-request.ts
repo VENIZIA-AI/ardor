@@ -142,7 +142,6 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  //-------------------------------------------------------------
   isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
     if (!this.useAuth) {
       return true;
@@ -174,22 +173,18 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  //-------------------------------------------------------------
   setUseAuth(useAuth: boolean) {
     this.useAuth = useAuth;
   }
 
-  //-------------------------------------------------------------
   setNoAuthPaths(noAuthPaths?: string[]) {
     this.noAuthPaths = noAuthPaths;
   }
 
-  //-------------------------------------------------------------
   setNoAuthPathRegex(noAuthPathRegex?: TNoAuthPathRegex) {
     this.noAuthPathRegexes = normalizeNoAuthPathRegex(noAuthPathRegex);
   }
 
-  //-------------------------------------------------------------
   private ensureRefreshed(): Promise<boolean> {
     const rec = this.authRecovery;
     const refreshToken = rec?.refreshToken;
@@ -219,7 +214,6 @@ export class DefaultNetworkRequestService extends BaseService {
     return this.refreshing;
   }
 
-  //-------------------------------------------------------------
   private canRecover(paths: string[]): boolean {
     const rec = this.authRecovery;
     if (!rec?.refreshToken) {
@@ -237,7 +231,6 @@ export class DefaultNetworkRequestService extends BaseService {
     return true;
   }
 
-  //-------------------------------------------------------------
   getRequestAuthorizationHeader() {
     const storedToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
     const authToken = this.authToken ?? JSON.parse(storedToken?.length ? storedToken : '{}');
@@ -255,28 +248,23 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
-  //-------------------------------------------------------------
   setAuthToken(opts: { type?: string; value: string }) {
     const { type, value } = opts;
     this.authToken = { type, value };
   }
 
-  //-------------------------------------------------------------
   setAuthRecovery(authRecovery: Partial<IAuthRecoveryOptions>) {
     this.authRecovery = { ...this.authRecovery, ...authRecovery };
   }
 
-  //-------------------------------------------------------------
   getAuthRecovery() {
     return this.authRecovery;
   }
 
-  //-------------------------------------------------------------
   setHeaders(headers: HeadersInit) {
     this.headers = merge(this.headers, toHeaderRecord(headers));
   }
 
-  //-------------------------------------------------------------
   removeHeaders(keys: string[]) {
     if (!keys?.length) {
       return;
@@ -287,7 +275,6 @@ export class DefaultNetworkRequestService extends BaseService {
     }
   }
 
-  //-------------------------------------------------------------
   getRequestHeader(opts: { resource: string }): Record<string, string> {
     const { resource } = opts;
 
@@ -310,7 +297,6 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
-  //-------------------------------------------------------------
   getRequestProps(params: IGetRequestPropsParams) {
     const {
       bodyType,
@@ -403,7 +389,6 @@ export class DefaultNetworkRequestService extends BaseService {
     return rs;
   }
 
-  //-------------------------------------------------------------
   convertResponse<TData = AnyType>(opts: {
     response: {
       data: TData | { data: TData; count?: number };
@@ -449,7 +434,6 @@ export class DefaultNetworkRequestService extends BaseService {
           };
         }
 
-        // --------------------------------------------------
         const normalizedData = !Array.isArray(data) ? [data] : data;
 
         const contentRange = headers?.get(HeaderConsts.CONTENT_RANGE) ?? `${normalizedData.length}`;
@@ -474,7 +458,6 @@ export class DefaultNetworkRequestService extends BaseService {
     }
   }
 
-  //-------------------------------------------------------------
   private async parseResponse<ReturnType = AnyType>(opts: {
     response: Response;
     type: TRequestType;
@@ -521,7 +504,6 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  //-------------------------------------------------------------
   async doRequest<ReturnType = AnyType>(
     opts: IGetRequestPropsResult & {
       baseUrl?: string;

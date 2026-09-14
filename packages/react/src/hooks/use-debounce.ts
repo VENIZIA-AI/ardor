@@ -17,10 +17,8 @@ export const useDebounce = <TValue>(
 ): IUseDebounceReturn<TValue> => {
   const { value, delay, disabled } = params;
 
-  //---------------------------------------------------------------------------
   const [debouncedValue, setDebouncedValue] = React.useState<TValue>(value);
 
-  //---------------------------------------------------------------------------
   React.useEffect(() => {
     if (!isBrowser() || disabled) {
       return;

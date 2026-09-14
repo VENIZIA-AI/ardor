@@ -16,10 +16,8 @@ export type TUseTranslateFn = (key: TUseTranslateKeys, options?: AnyType) => str
 const identity = (key: AnyType) => key;
 
 export const useTranslate = () => {
-  // --------------------------------------------------
   const i18nProvider = useI18nProvider();
 
-  // --------------------------------------------------
   const translate: TUseTranslateFn = React.useCallback(
     (key: TUseTranslateKeys, options?: AnyType) => {
       return i18nProvider.translate(key, options) as string;

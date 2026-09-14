@@ -9,7 +9,6 @@ import {
   RequestTypes,
 } from './constants';
 
-//-----------------------------------------------------------
 export type NumberIdType = number;
 export type StringIdType = string;
 export type IdType = string | number;
@@ -24,9 +23,6 @@ export type ValueOf<T> = T[keyof T];
 export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
 
-/**
- * Alias for {@link ValueOf<T>}
- */
 export type ClassProps<T> = ValueOf<T>;
 
 export type ClassType<T> = Function & { prototype: T };
@@ -41,14 +37,11 @@ export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string |
 
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 
-//-----------------------------------------------------------
 export type EntityRelationType = {};
 
-//-----------------------------------------------------------
 export type TRequestMethod = TStatusFromClass<typeof RequestMethods>;
 export type TEnvironment = TStatusFromClass<typeof Environments>;
 
-//-----------------------------------------------------------
 export interface IRequestProps {
   headers?: { [key: string]: string | number };
   body?: any;
@@ -95,7 +88,6 @@ export interface ICustomParams {
   [key: string]: AnyType;
 }
 
-// ----------------------------------------------------------------------
 export interface IAuthProviderOptions {
   endpoints?: {
     afterLogin?: string;
@@ -107,17 +99,14 @@ export interface IAuthProviderOptions {
   };
 }
 
-// ----------------------------------------------------------------------
 export interface IAuthRecoveryOptions {
   refreshToken?: () => Promise<unknown>;
   onAuthFailure?: () => ValueOrPromise<unknown>;
   refreshTokenPath?: string;
 }
 
-// ----------------------------------------------------------------------
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
-// ----------------------------------------------------------------------
 export interface INoAuthOptions {
   /**
    * Enable/disable attaching authorization header by default.
@@ -139,7 +128,6 @@ export interface INoAuthOptions {
   noAuthPathRegex?: TNoAuthPathRegex;
 }
 
-// ----------------------------------------------------------------------
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
   requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
@@ -150,10 +138,8 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
   authRecovery?: IAuthRecoveryOptions;
 }
 
-// ----------------------------------------------------------------------
 export interface IService {}
 
-// ----------------------------------------------------------------------
 export interface ICrudService<
   E extends { id: IdType; [extra: string | symbol]: any } = any,
 > extends IService {
@@ -162,7 +148,6 @@ export interface ICrudService<
   findOne(filter: TFilter<E>): Promise<(E & EntityRelationType) | null>;
   count(where: TWhere<E>): Promise<{ count: number }>;
 
-  // CUD
   create(data: Omit<E, 'id'>): Promise<E>;
   updateAll(data: Partial<E>, where: TWhere<E>): Promise<{ count: number }>;
   updateById(id: IdType, data: Partial<E>): Promise<E>;
@@ -170,25 +155,20 @@ export interface ICrudService<
   deleteById(id: IdType): Promise<{ id: IdType }>;
 }
 
-// ----------------------------------------------------------------------
 export interface IArdorApplication {
   preConfigure(): ValueOrPromise<void>;
   postConfigure(): ValueOrPromise<void>;
   bindContext(): ValueOrPromise<void>;
   bindingList(): Record<string, TClass<unknown>>;
 
-  // ------------------------------------------------------------------------------
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
   service<T>(value: TClass<T>): void;
 
-  // ------------------------------------------------------------------------------
   start(): ValueOrPromise<void>;
 }
 
-// --------------------------------------------------
 type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-// --------------------------------------------------
 export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
   ? never
   : T extends Array<AnyType>
@@ -205,7 +185,6 @@ export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
         }[keyof T]
       : never;
 
-// --------------------------------------------------
 export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never
   ? never
   : T extends Array<infer U>
@@ -220,7 +199,6 @@ export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends nev
         }[keyof T]
       : never;
 
-// --------------------------------------------------
 export interface IApplicationInfo {
   name: string;
   version: string;
@@ -229,7 +207,6 @@ export interface IApplicationInfo {
   [extra: string | symbol]: any;
 }
 
-// --------------------------------------------------
 export type TDataCount<T> = {
   data: T;
   count?: number;

@@ -21,7 +21,6 @@ export class SocketIOClientHelper extends BaseHelper {
   private options: IOptions;
   private client: Socket;
 
-  // -----------------------------------------------------------------
   constructor(opts: ISocketIOClientOptions) {
     super({ scope: SocketIOClientHelper.name });
 
@@ -32,7 +31,6 @@ export class SocketIOClientHelper extends BaseHelper {
     this.configure();
   }
 
-  // -----------------------------------------------------------------
   configure() {
     if (this.client) {
       this.logger.info(
@@ -46,12 +44,10 @@ export class SocketIOClientHelper extends BaseHelper {
     this.client = io(this.host, this.options);
   }
 
-  // -----------------------------------------------------------------
   getSocketClient(): Socket {
     return this.client;
   }
 
-  // -----------------------------------------------------------------
   subscribe(opts: {
     events: Record<string, (...props: AnyType) => void>;
     ignoreDuplicate?: boolean;
@@ -87,7 +83,6 @@ export class SocketIOClientHelper extends BaseHelper {
     }
   }
 
-  // -----------------------------------------------------------------
   unsubscribe(opts: { events: Array<string> }) {
     const { events: eventNames } = opts;
     this.logger.info('[unsubscribe][%s] Handling events: %j', this.identifier, eventNames);
@@ -100,7 +95,6 @@ export class SocketIOClientHelper extends BaseHelper {
     }
   }
 
-  // -----------------------------------------------------------------
   connect() {
     if (!this.client) {
       this.logger.info('[connect][%s] Invalid client to connect!', this.identifier);
@@ -110,7 +104,6 @@ export class SocketIOClientHelper extends BaseHelper {
     this.client.connect();
   }
 
-  // -----------------------------------------------------------------
   disconnect() {
     if (!this.client) {
       this.logger.info('[disconnect][%s] Invalid client to disconnect!', this.identifier);
@@ -120,7 +113,6 @@ export class SocketIOClientHelper extends BaseHelper {
     this.client.disconnect();
   }
 
-  // -----------------------------------------------------------------
   emit(opts: { topic: string; message: string; doLog?: boolean }) {
     if (!this.client?.connected) {
       throw getError({

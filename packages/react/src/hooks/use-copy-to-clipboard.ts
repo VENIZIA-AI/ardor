@@ -5,7 +5,6 @@ export interface IUseCopyToClipboardReturn {
 }
 
 export const useCopyToClipboard = (): IUseCopyToClipboardReturn => {
-  //-------------------------------------------------------------------
   const copy = React.useCallback(async (opts: { value: string }) => {
     if (!navigator?.clipboard) {
       console.warn('Clipboard not supported');

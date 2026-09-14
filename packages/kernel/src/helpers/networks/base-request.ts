@@ -8,7 +8,6 @@ import { AxiosFetcher, type IAxiosRequestOptions } from './fetchers/axios';
 import { NodeFetcher } from './fetchers/node-fetch';
 import type { TFetcherResponse, TFetcherVariant } from './common/types';
 
-// -----------------------------------------------------------------------------
 export interface IFetcherRequestOptions<T extends TFetcherVariant> {
   name: string;
   variant: TFetcherVariant;
@@ -29,7 +28,6 @@ export interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-f
   variant: 'node-fetch';
 }
 
-// -----------------------------------------------------------------------------
 export class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper {
   protected baseUrl: string;
   protected fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
@@ -88,7 +86,6 @@ export class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper {
   }
 }
 
-// -----------------------------------------------------------------------------
 export class AxiosNetworkRequest extends BaseNetworkRequest<'axios'> {
   constructor(opts: Omit<IAxiosNetworkOptions, 'fetcher' | 'variant'>) {
     const { name, networkOptions } = opts;
@@ -113,7 +110,6 @@ export class AxiosNetworkRequest extends BaseNetworkRequest<'axios'> {
   }
 }
 
-// -----------------------------------------------------------------------------
 export class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'> {
   constructor(opts: Omit<INodeFetchNetworkOptions, 'fetcher' | 'variant'>) {
     const { name, networkOptions } = opts;

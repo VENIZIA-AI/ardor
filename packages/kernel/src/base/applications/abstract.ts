@@ -7,14 +7,10 @@ import {
   type ValueOrPromise,
 } from '@/common';
 
-// --------------------------------------------------------------------------------
 export abstract class AbstractArdorApplication extends Container implements IArdorApplication {
   abstract bindContext(): ValueOrPromise<void>;
   abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
 
-  // ------------------------------------------------------------------------------
-  // Context Binding
-  // ------------------------------------------------------------------------------
   preConfigure(): ValueOrPromise<void> {
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
@@ -36,10 +32,8 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     return {};
   }
 
-  // ------------------------------------------------------------------------------
   postConfigure(): ValueOrPromise<void> {}
 
-  // ------------------------------------------------------------------------------
   // Singleton by default: a service or provider registered by class is one instance per
   // application, which is what every consumer bound by hand before this default existed.
   // Keys on `value.name` - see `bindingList()` for the build-proof form.
@@ -50,17 +44,14 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       .setTags(...(tags ?? []));
   }
 
-  // ------------------------------------------------------------------------------
   service<T>(value: TClass<T>) {
     this.injectable('services', value);
   }
 
-  // ------------------------------------------------------------------------------
   async start() {
     await this.preConfigure();
     await this.postConfigure();
   }
 }
 
-// --------------------------------------------------------------------------------
 export abstract class BaseArdorApplication extends AbstractArdorApplication {}

@@ -5,10 +5,8 @@ import type { NotificationOptions, NotificationType } from 'ra-core';
 import { useNotify } from 'ra-core';
 
 export const useNotifyError = () => {
-  // --------------------------------------------------
   const notify = useNotify();
 
-  // --------------------------------------------------
   return React.useCallback(
     (
       error: ApplicationError,

@@ -8,7 +8,6 @@ export interface IBackdropProps extends React.ComponentProps<'div'> {
 export const Backdrop = (props: IBackdropProps) => {
   const { className, open: isOpen, ...rest } = props;
 
-  // --------------------------------------------------
   if (!isOpen) {
     return null;
   }

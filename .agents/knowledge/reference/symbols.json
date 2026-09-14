@@ -15,7 +15,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 11,
+      "line": 10,
       "signature": "class AbstractArdorApplication extends Container implements IArdorApplication"
     },
     {
@@ -35,7 +35,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 19,
+      "line": 18,
       "signature": "type AnyObject = Record<string | symbol | number, any>"
     },
     {
@@ -45,7 +45,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 18,
+      "line": 17,
       "signature": "type AnyType = any"
     },
     {
@@ -75,7 +75,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/admin/src/components/application.tsx",
-      "line": 44,
+      "line": 43,
       "signature": "ArdorApplication: React.FC<IApplication>"
     },
     {
@@ -85,7 +85,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 9,
+      "line": 8,
       "signature": "class Authentication"
     },
     {
@@ -95,7 +95,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 16,
+      "line": 15,
       "signature": "class AxiosFetcher extends AbstractNetworkFetchableHelper<'axios', IAxiosRequestOptions, AxiosResponse<any, any>>"
     },
     {
@@ -105,7 +105,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 92,
+      "line": 89,
       "signature": "class AxiosNetworkRequest extends BaseNetworkRequest<'axios'>"
     },
     {
@@ -125,7 +125,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 66,
+      "line": 57,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -155,7 +155,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 33,
+      "line": 31,
       "signature": "class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper"
     },
     {
@@ -185,7 +185,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 30,
+      "line": 26,
       "signature": "type ClassProps<T> = ValueOf<T>"
     },
     {
@@ -195,7 +195,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 32,
+      "line": 28,
       "signature": "type ClassType<T> = Function & { prototype: T; }"
     },
     {
@@ -275,7 +275,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 45,
+      "line": 40,
       "signature": "type EntityRelationType = {}"
     },
     {
@@ -285,7 +285,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 99,
+      "line": 92,
       "signature": "class Environments"
     },
     {
@@ -295,7 +295,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 111,
+      "line": 103,
       "signature": "class HeaderConsts"
     },
     {
@@ -305,7 +305,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 127,
+      "line": 121,
       "signature": "interface IApplication extends Omit<CoreAdminProps, 'children'>"
     },
     {
@@ -315,7 +315,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 224,
+      "line": 202,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -325,7 +325,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 174,
+      "line": 158,
       "signature": "interface IArdorApplication"
     },
     {
@@ -335,7 +335,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 115,
+      "line": 111,
       "signature": "interface IAuthProvider extends IReactAdminAuthProvider"
     },
     {
@@ -345,7 +345,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 99,
+      "line": 91,
       "signature": "interface IAuthProviderOptions"
     },
     {
@@ -355,7 +355,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 111,
+      "line": 102,
       "signature": "interface IAuthRecoveryOptions"
     },
     {
@@ -365,7 +365,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 24,
+      "line": 23,
       "signature": "interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'>"
     },
     {
@@ -385,7 +385,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 157,
+      "line": 143,
       "signature": "interface ICrudService<E extends { id: IdType; [extra: string | symbol]: any; } = any> extends IService"
     },
     {
@@ -405,7 +405,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 93,
+      "line": 86,
       "signature": "interface ICustomParams"
     },
     {
@@ -415,7 +415,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 93,
+      "line": 91,
       "signature": "interface IDataProvider<TResource extends string = string> extends IReactAdminDataProvider<TResource>"
     },
     {
@@ -435,7 +435,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 12,
+      "line": 11,
       "signature": "interface IFetcherRequestOptions<T extends TFetcherVariant>"
     },
     {
@@ -445,7 +445,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 79,
+      "line": 72,
       "signature": "interface IGetRequestPropsParams"
     },
     {
@@ -455,7 +455,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 88,
+      "line": 81,
       "signature": "interface IGetRequestPropsResult"
     },
     {
@@ -465,7 +465,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 121,
+      "line": 116,
       "signature": "interface II18nProviderOptions"
     },
     {
@@ -485,7 +485,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 5,
+      "line": 4,
       "signature": "INTL_0_DIGITS_FORMATER: Intl.NumberFormat"
     },
     {
@@ -495,7 +495,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 10,
+      "line": 9,
       "signature": "INTL_2_DIGITS_FORMATER: Intl.NumberFormat"
     },
     {
@@ -505,7 +505,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 121,
+      "line": 110,
       "signature": "interface INoAuthOptions"
     },
     {
@@ -515,7 +515,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 28,
+      "line": 27,
       "signature": "interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'>"
     },
     {
@@ -535,7 +535,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 105,
+      "line": 102,
       "signature": "interface IReactAdminAuthProvider"
     },
     {
@@ -545,7 +545,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 42,
+      "line": 41,
       "signature": "interface IReactAdminDataProvider<TResource extends string = string>"
     },
     {
@@ -565,7 +565,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 52,
+      "line": 45,
       "signature": "interface IRequestProps"
     },
     {
@@ -575,7 +575,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 143,
+      "line": 131,
       "signature": "interface IRestDataProviderOptions extends INoAuthOptions"
     },
     {
@@ -585,7 +585,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 58,
+      "line": 51,
       "signature": "interface ISendParams"
     },
     {
@@ -595,7 +595,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 71,
+      "line": 64,
       "signature": "interface ISendResponse<T = AnyType>"
     },
     {
@@ -605,7 +605,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 154,
+      "line": 141,
       "signature": "interface IService"
     },
     {
@@ -705,7 +705,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 15,
+      "line": 14,
       "signature": "type IdType = string | number"
     },
     {
@@ -735,7 +735,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 117,
+      "line": 113,
       "signature": "class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'>"
     },
     {
@@ -745,7 +745,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/fetchers/node-fetch.ts",
-      "line": 10,
+      "line": 9,
       "signature": "class NodeFetcher extends AbstractNetworkFetchableHelper<'node-fetch', INodeFetchRequestOptions, Awaited<ReturnType<typeof fetch>>>"
     },
     {
@@ -755,7 +755,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 16,
+      "line": 15,
       "signature": "type NullableType = undefined | null | void"
     },
     {
@@ -765,7 +765,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 13,
+      "line": 12,
       "signature": "type NumberIdType = number"
     },
     {
@@ -775,7 +775,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 78,
+      "line": 72,
       "signature": "class RequestBodyTypes"
     },
     {
@@ -785,7 +785,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 148,
+      "line": 139,
       "signature": "class RequestChannel"
     },
     {
@@ -795,7 +795,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 153,
+      "line": 143,
       "signature": "class RequestCountData"
     },
     {
@@ -805,7 +805,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 20,
+      "line": 16,
       "signature": "class RequestMethods"
     },
     {
@@ -815,7 +815,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 45,
+      "line": 40,
       "signature": "class RequestTypes"
     },
     {
@@ -835,7 +835,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 14,
+      "line": 13,
       "signature": "type StringIdType = string"
     },
     {
@@ -845,7 +845,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/react/src/common/types.ts",
-      "line": 7,
+      "line": 3,
       "signature": "interface SyncFC<P = {}>"
     },
     {
@@ -855,7 +855,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 40,
+      "line": 36,
       "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>"
     },
     {
@@ -865,7 +865,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 233,
+      "line": 210,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -875,7 +875,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 49,
+      "line": 43,
       "signature": "type TEnvironment = TStatusFromClass<typeof Environments>"
     },
     {
@@ -915,7 +915,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 209,
+      "line": 188,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -935,7 +935,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 118,
+      "line": 108,
       "signature": "type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>"
     },
     {
@@ -945,7 +945,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 39,
+      "line": 35,
       "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>"
     },
     {
@@ -955,7 +955,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 192,
+      "line": 172,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {
@@ -965,7 +965,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 42,
+      "line": 38,
       "signature": "type TPrettify<T> = { [K in keyof T]: T[K]; } & {}"
     },
     {
@@ -975,7 +975,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 76,
+      "line": 69,
       "signature": "type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>"
     },
     {
@@ -985,7 +985,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 48,
+      "line": 42,
       "signature": "type TRequestMethod = TStatusFromClass<typeof RequestMethods>"
     },
     {
@@ -995,7 +995,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 77,
+      "line": 70,
       "signature": "type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>"
     },
     {
@@ -1005,7 +1005,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 34,
+      "line": 30,
       "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>>"
     },
     {
@@ -1015,7 +1015,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 38,
+      "line": 34,
       "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>"
     },
     {
@@ -1085,7 +1085,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 22,
+      "line": 21,
       "signature": "type ValueOf<T> = T[keyof T]"
     },
     {
@@ -1095,7 +1095,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 24,
+      "line": 23,
       "signature": "type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>"
     },
     {
@@ -1105,7 +1105,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 25,
+      "line": 24,
       "signature": "type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>"
     },
     {
@@ -1115,7 +1115,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 21,
+      "line": 20,
       "signature": "type ValueOrPromise<T> = T | Promise<T>"
     },
     {
@@ -1135,7 +1135,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/file.ts",
-      "line": 2,
+      "line": 1,
       "signature": "blobToBase64: (blob: Blob) => Promise<string>"
     },
     {
@@ -1175,7 +1175,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 87,
+      "line": 79,
       "signature": "float: (input: any, digit?: number) => number"
     },
     {
@@ -1185,7 +1185,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 138,
+      "line": 127,
       "signature": "getNumberValue: (input: string, method?: \"int\" | \"float\") => number"
     },
     {
@@ -1195,7 +1195,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 16,
+      "line": 14,
       "signature": "getUID: () => string"
     },
     {
@@ -1205,7 +1205,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 77,
+      "line": 70,
       "signature": "int: (input: any) => number"
     },
     {
@@ -1245,7 +1245,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 68,
+      "line": 62,
       "signature": "isFloat: (n: any) => boolean"
     },
     {
@@ -1255,7 +1255,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 59,
+      "line": 54,
       "signature": "isInt: (n: any) => boolean"
     },
     {
@@ -1305,7 +1305,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 26,
+      "line": 22,
       "signature": "keysToCamel: (object: object) => any"
     },
     {
@@ -1335,7 +1335,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 97,
+      "line": 88,
       "signature": "toBoolean: (input: any) => boolean"
     },
     {
@@ -1345,7 +1345,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 19,
+      "line": 16,
       "signature": "toCamel: (s: string) => string"
     },
     {
@@ -1355,7 +1355,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 110,
+      "line": 100,
       "signature": "toStringDecimal: (input: any, digit?: number, options?: { localeFormat: boolean; }) => string | 0"
     },
     {
@@ -1385,7 +1385,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/react/src/hooks/use-autosave.ts",
-      "line": 29,
+      "line": 14,
       "signature": "useAutosave: <TData, TReturn>(params: IUseAutosaveParams<TData, TReturn>) => void"
     },
     {
@@ -1455,7 +1455,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-refresh-token.ts",
-      "line": 25,
+      "line": 9,
       "signature": "useRefreshToken: () => TRefreshToken"
     },
     {
@@ -1465,7 +1465,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-request-header-locale.ts",
-      "line": 12,
+      "line": 9,
       "signature": "useRequestHeaderLocale: (params?: { key?: string; }) => void"
     },
     {
@@ -1515,7 +1515,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "const",
       "file": "packages/admin/src/components/application.tsx",
-      "line": 44,
+      "line": 43,
       "signature": "ArdorApplication: React.FC<IApplication>"
     },
     {
@@ -1575,7 +1575,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 127,
+      "line": 121,
       "signature": "interface IApplication extends Omit<CoreAdminProps, 'children'>"
     },
     {
@@ -1585,7 +1585,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 115,
+      "line": 111,
       "signature": "interface IAuthProvider extends IReactAdminAuthProvider"
     },
     {
@@ -1605,7 +1605,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 93,
+      "line": 91,
       "signature": "interface IDataProvider<TResource extends string = string> extends IReactAdminDataProvider<TResource>"
     },
     {
@@ -1615,7 +1615,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 121,
+      "line": 116,
       "signature": "interface II18nProviderOptions"
     },
     {
@@ -1625,7 +1625,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 105,
+      "line": 102,
       "signature": "interface IReactAdminAuthProvider"
     },
     {
@@ -1635,7 +1635,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 42,
+      "line": 41,
       "signature": "interface IReactAdminDataProvider<TResource extends string = string>"
     },
     {
@@ -1705,7 +1705,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-refresh-token.ts",
-      "line": 25,
+      "line": 9,
       "signature": "useRefreshToken: () => TRefreshToken"
     },
     {
@@ -1715,7 +1715,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-request-header-locale.ts",
-      "line": 12,
+      "line": 9,
       "signature": "useRequestHeaderLocale: (params?: { key?: string; }) => void"
     },
     {
@@ -1745,7 +1745,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 11,
+      "line": 10,
       "signature": "class AbstractArdorApplication extends Container implements IArdorApplication"
     },
     {
@@ -1765,7 +1765,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 19,
+      "line": 18,
       "signature": "type AnyObject = Record<string | symbol | number, any>"
     },
     {
@@ -1775,7 +1775,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 18,
+      "line": 17,
       "signature": "type AnyType = any"
     },
     {
@@ -1795,7 +1795,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 9,
+      "line": 8,
       "signature": "class Authentication"
     },
     {
@@ -1805,7 +1805,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 16,
+      "line": 15,
       "signature": "class AxiosFetcher extends AbstractNetworkFetchableHelper<'axios', IAxiosRequestOptions, AxiosResponse<any, any>>"
     },
     {
@@ -1815,7 +1815,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 92,
+      "line": 89,
       "signature": "class AxiosNetworkRequest extends BaseNetworkRequest<'axios'>"
     },
     {
@@ -1835,7 +1835,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 66,
+      "line": 57,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -1855,7 +1855,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 33,
+      "line": 31,
       "signature": "class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper"
     },
     {
@@ -1885,7 +1885,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 30,
+      "line": 26,
       "signature": "type ClassProps<T> = ValueOf<T>"
     },
     {
@@ -1895,7 +1895,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 32,
+      "line": 28,
       "signature": "type ClassType<T> = Function & { prototype: T; }"
     },
     {
@@ -1935,7 +1935,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 45,
+      "line": 40,
       "signature": "type EntityRelationType = {}"
     },
     {
@@ -1945,7 +1945,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 99,
+      "line": 92,
       "signature": "class Environments"
     },
     {
@@ -1955,7 +1955,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 111,
+      "line": 103,
       "signature": "class HeaderConsts"
     },
     {
@@ -1965,7 +1965,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 224,
+      "line": 202,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -1975,7 +1975,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 174,
+      "line": 158,
       "signature": "interface IArdorApplication"
     },
     {
@@ -1985,7 +1985,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 99,
+      "line": 91,
       "signature": "interface IAuthProviderOptions"
     },
     {
@@ -1995,7 +1995,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 111,
+      "line": 102,
       "signature": "interface IAuthRecoveryOptions"
     },
     {
@@ -2005,7 +2005,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 24,
+      "line": 23,
       "signature": "interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'>"
     },
     {
@@ -2025,7 +2025,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 157,
+      "line": 143,
       "signature": "interface ICrudService<E extends { id: IdType; [extra: string | symbol]: any; } = any> extends IService"
     },
     {
@@ -2035,7 +2035,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 93,
+      "line": 86,
       "signature": "interface ICustomParams"
     },
     {
@@ -2055,7 +2055,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 12,
+      "line": 11,
       "signature": "interface IFetcherRequestOptions<T extends TFetcherVariant>"
     },
     {
@@ -2065,7 +2065,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 79,
+      "line": 72,
       "signature": "interface IGetRequestPropsParams"
     },
     {
@@ -2075,7 +2075,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 88,
+      "line": 81,
       "signature": "interface IGetRequestPropsResult"
     },
     {
@@ -2095,7 +2095,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 5,
+      "line": 4,
       "signature": "INTL_0_DIGITS_FORMATER: Intl.NumberFormat"
     },
     {
@@ -2105,7 +2105,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 10,
+      "line": 9,
       "signature": "INTL_2_DIGITS_FORMATER: Intl.NumberFormat"
     },
     {
@@ -2115,7 +2115,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 121,
+      "line": 110,
       "signature": "interface INoAuthOptions"
     },
     {
@@ -2125,7 +2125,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 28,
+      "line": 27,
       "signature": "interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'>"
     },
     {
@@ -2155,7 +2155,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 52,
+      "line": 45,
       "signature": "interface IRequestProps"
     },
     {
@@ -2165,7 +2165,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 143,
+      "line": 131,
       "signature": "interface IRestDataProviderOptions extends INoAuthOptions"
     },
     {
@@ -2175,7 +2175,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 58,
+      "line": 51,
       "signature": "interface ISendParams"
     },
     {
@@ -2185,7 +2185,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 71,
+      "line": 64,
       "signature": "interface ISendResponse<T = AnyType>"
     },
     {
@@ -2195,7 +2195,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 154,
+      "line": 141,
       "signature": "interface IService"
     },
     {
@@ -2215,7 +2215,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 15,
+      "line": 14,
       "signature": "type IdType = string | number"
     },
     {
@@ -2245,7 +2245,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 117,
+      "line": 113,
       "signature": "class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'>"
     },
     {
@@ -2255,7 +2255,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/fetchers/node-fetch.ts",
-      "line": 10,
+      "line": 9,
       "signature": "class NodeFetcher extends AbstractNetworkFetchableHelper<'node-fetch', INodeFetchRequestOptions, Awaited<ReturnType<typeof fetch>>>"
     },
     {
@@ -2265,7 +2265,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 16,
+      "line": 15,
       "signature": "type NullableType = undefined | null | void"
     },
     {
@@ -2275,7 +2275,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 13,
+      "line": 12,
       "signature": "type NumberIdType = number"
     },
     {
@@ -2285,7 +2285,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 78,
+      "line": 72,
       "signature": "class RequestBodyTypes"
     },
     {
@@ -2295,7 +2295,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 148,
+      "line": 139,
       "signature": "class RequestChannel"
     },
     {
@@ -2305,7 +2305,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 153,
+      "line": 143,
       "signature": "class RequestCountData"
     },
     {
@@ -2315,7 +2315,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 20,
+      "line": 16,
       "signature": "class RequestMethods"
     },
     {
@@ -2325,7 +2325,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/constants.ts",
-      "line": 45,
+      "line": 40,
       "signature": "class RequestTypes"
     },
     {
@@ -2345,7 +2345,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 14,
+      "line": 13,
       "signature": "type StringIdType = string"
     },
     {
@@ -2355,7 +2355,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 40,
+      "line": 36,
       "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>"
     },
     {
@@ -2365,7 +2365,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 233,
+      "line": 210,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -2375,7 +2375,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 49,
+      "line": 43,
       "signature": "type TEnvironment = TStatusFromClass<typeof Environments>"
     },
     {
@@ -2415,7 +2415,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 209,
+      "line": 188,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -2435,7 +2435,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 118,
+      "line": 108,
       "signature": "type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>"
     },
     {
@@ -2445,7 +2445,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 39,
+      "line": 35,
       "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>"
     },
     {
@@ -2455,7 +2455,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 192,
+      "line": 172,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {
@@ -2465,7 +2465,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 42,
+      "line": 38,
       "signature": "type TPrettify<T> = { [K in keyof T]: T[K]; } & {}"
     },
     {
@@ -2475,7 +2475,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 76,
+      "line": 69,
       "signature": "type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>"
     },
     {
@@ -2485,7 +2485,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 48,
+      "line": 42,
       "signature": "type TRequestMethod = TStatusFromClass<typeof RequestMethods>"
     },
     {
@@ -2495,7 +2495,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 77,
+      "line": 70,
       "signature": "type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>"
     },
     {
@@ -2505,7 +2505,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 34,
+      "line": 30,
       "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>>"
     },
     {
@@ -2515,7 +2515,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 38,
+      "line": 34,
       "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>"
     },
     {
@@ -2525,7 +2525,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 22,
+      "line": 21,
       "signature": "type ValueOf<T> = T[keyof T]"
     },
     {
@@ -2535,7 +2535,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 24,
+      "line": 23,
       "signature": "type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>"
     },
     {
@@ -2545,7 +2545,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 25,
+      "line": 24,
       "signature": "type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>"
     },
     {
@@ -2555,7 +2555,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 21,
+      "line": 20,
       "signature": "type ValueOrPromise<T> = T | Promise<T>"
     },
     {
@@ -2575,7 +2575,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/file.ts",
-      "line": 2,
+      "line": 1,
       "signature": "blobToBase64: (blob: Blob) => Promise<string>"
     },
     {
@@ -2585,7 +2585,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 87,
+      "line": 79,
       "signature": "float: (input: any, digit?: number) => number"
     },
     {
@@ -2595,7 +2595,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 138,
+      "line": 127,
       "signature": "getNumberValue: (input: string, method?: \"int\" | \"float\") => number"
     },
     {
@@ -2605,7 +2605,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 16,
+      "line": 14,
       "signature": "getUID: () => string"
     },
     {
@@ -2615,7 +2615,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 77,
+      "line": 70,
       "signature": "int: (input: any) => number"
     },
     {
@@ -2655,7 +2655,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 68,
+      "line": 62,
       "signature": "isFloat: (n: any) => boolean"
     },
     {
@@ -2665,7 +2665,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 59,
+      "line": 54,
       "signature": "isInt: (n: any) => boolean"
     },
     {
@@ -2715,7 +2715,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 26,
+      "line": 22,
       "signature": "keysToCamel: (object: object) => any"
     },
     {
@@ -2745,7 +2745,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 97,
+      "line": 88,
       "signature": "toBoolean: (input: any) => boolean"
     },
     {
@@ -2755,7 +2755,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 19,
+      "line": 16,
       "signature": "toCamel: (s: string) => string"
     },
     {
@@ -2765,7 +2765,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
       "file": "packages/kernel/src/utilities/parse.ts",
-      "line": 110,
+      "line": 100,
       "signature": "toStringDecimal: (input: any, digit?: number, options?: { localeFormat: boolean; }) => string | 0"
     },
     {
@@ -2855,7 +2855,7 @@
       "specifier": "@venizia/ardor-react",
       "kind": "interface",
       "file": "packages/react/src/common/types.ts",
-      "line": 7,
+      "line": 3,
       "signature": "interface SyncFC<P = {}>"
     },
     {
@@ -2935,7 +2935,7 @@
       "specifier": "@venizia/ardor-react",
       "kind": "const",
       "file": "packages/react/src/hooks/use-autosave.ts",
-      "line": 29,
+      "line": 14,
       "signature": "useAutosave: <TData, TReturn>(params: IUseAutosaveParams<TData, TReturn>) => void"
     },
     {
@@ -3065,7 +3065,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 124,
+      "line": 114,
       "signature": "AdaptiveDialogClose: (props: React.ComponentProps<typeof DialogClose>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3075,7 +3075,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 93,
+      "line": 86,
       "signature": "AdaptiveDialogContent: (props: React.ComponentProps<typeof DialogContent>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3085,7 +3085,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 119,
+      "line": 109,
       "signature": "AdaptiveDialogDescription: (props: React.ComponentProps<typeof DialogDescription>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3095,7 +3095,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 108,
+      "line": 98,
       "signature": "AdaptiveDialogHeader: (props: React.ComponentProps<typeof DialogHeader>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3105,7 +3105,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 113,
+      "line": 103,
       "signature": "AdaptiveDialogTitle: (props: React.ComponentProps<typeof DialogTitle>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3115,7 +3115,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 88,
+      "line": 81,
       "signature": "AdaptiveDialogTrigger: (props: React.ComponentProps<typeof DialogTrigger>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3135,7 +3135,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 115,
+      "line": 105,
       "signature": "AdaptivePopoverClose: (props: React.ComponentProps<typeof DrawerClose>) => import(\"react/jsx-runtime\").JSX.Element | null"
     },
     {
@@ -3145,7 +3145,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 85,
+      "line": 78,
       "signature": "AdaptivePopoverContent: (props: React.ComponentProps<typeof PopoverContent>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3155,7 +3155,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 110,
+      "line": 100,
       "signature": "AdaptivePopoverDescription: (props: React.ComponentProps<typeof DrawerDescription>) => import(\"react/jsx-runtime\").JSX.Element | null"
     },
     {
@@ -3165,7 +3165,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 100,
+      "line": 90,
       "signature": "AdaptivePopoverHeader: (props: React.ComponentProps<typeof DrawerHeader>) => import(\"react/jsx-runtime\").JSX.Element | null"
     },
     {
@@ -3175,7 +3175,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 105,
+      "line": 95,
       "signature": "AdaptivePopoverTitle: (props: React.ComponentProps<typeof DrawerTitle>) => import(\"react/jsx-runtime\").JSX.Element | null"
     },
     {
@@ -3185,7 +3185,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 80,
+      "line": 73,
       "signature": "AdaptivePopoverTrigger: (props: React.ComponentProps<typeof PopoverTrigger>) => import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -3915,7 +3915,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/components/core/input/date-picker/DatePicker.tsx",
-      "line": 33,
+      "line": 30,
       "signature": "DatePicker: React.FC<IDatePickerProps>"
     },
     {
@@ -4845,7 +4845,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 166,
+      "line": 154,
       "signature": "function Sidebar({ side, variant, collapsible, className, children, ...props }: React.ComponentProps<'div'> & { side?: 'left' | 'right'; variant?: 'sidebar' | 'floating' | 'inset'; collapsible?: 'offcanvas' | 'icon' | 'none'; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4855,7 +4855,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 367,
+      "line": 354,
       "signature": "function SidebarContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4865,7 +4865,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 345,
+      "line": 332,
       "signature": "function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4875,7 +4875,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 381,
+      "line": 368,
       "signature": "function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4885,7 +4885,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 413,
+      "line": 400,
       "signature": "function SidebarGroupAction({ className, asChild, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4895,7 +4895,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 436,
+      "line": 423,
       "signature": "function SidebarGroupContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4905,7 +4905,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 392,
+      "line": 379,
       "signature": "function SidebarGroupLabel({ className, asChild, ...props }: React.ComponentProps<'div'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4915,7 +4915,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "interface",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 57,
+      "line": 55,
       "signature": "interface SidebarHandleRef"
     },
     {
@@ -4925,7 +4925,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 334,
+      "line": 321,
       "signature": "function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4935,7 +4935,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 323,
+      "line": 310,
       "signature": "function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4945,7 +4945,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 309,
+      "line": 296,
       "signature": "function SidebarInset({ className, ...props }: React.ComponentProps<'main'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4955,7 +4955,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 447,
+      "line": 434,
       "signature": "function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4965,7 +4965,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 541,
+      "line": 528,
       "signature": "function SidebarMenuAction({ className, asChild, showOnHover, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; showOnHover?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4975,7 +4975,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 573,
+      "line": 560,
       "signature": "function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -4985,7 +4985,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 491,
+      "line": 478,
       "signature": "function SidebarMenuButton({ asChild, isActive, variant, size, tooltip, className, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; isActive?: boolean; tooltip?: string | React.ComponentProps<typeof TooltipContent>; } & VariantProps<typeof sidebarMenuButtonVariants>): import(\"react/"
     },
     {
@@ -4995,7 +4995,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 458,
+      "line": 445,
       "signature": "function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5005,7 +5005,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 592,
+      "line": 579,
       "signature": "function SidebarMenuSkeleton({ className, showIcon, ...props }: React.ComponentProps<'div'> & { showIcon?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5015,7 +5015,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 624,
+      "line": 610,
       "signature": "function SidebarMenuSub({ className, ...props }: React.ComponentProps<'ul'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5025,7 +5025,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 650,
+      "line": 636,
       "signature": "function SidebarMenuSubButton({ asChild, size, isActive, className, ...props }: React.ComponentProps<'a'> & { asChild?: boolean; size?: 'sm' | 'md'; isActive?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5035,7 +5035,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 639,
+      "line": 625,
       "signature": "function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5045,7 +5045,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 61,
+      "line": 59,
       "signature": "function SidebarProvider({ defaultOpen, open: openProp, onOpenChange: setOpenProp, className, style, children, defaultWidth, keyboardShortcuts, sidebarHandleRef, ...props }: React.ComponentProps<'div'> & { defaultOpen?: boolean; open?: boolean; onOpenChange?: (open: boolean) => void; defaultWidth?: "
     },
     {
@@ -5055,7 +5055,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 284,
+      "line": 271,
       "signature": "function SidebarRail({ className, ...props }: React.ComponentProps<'button'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5065,7 +5065,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 356,
+      "line": 343,
       "signature": "function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof Separator>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5075,7 +5075,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 263,
+      "line": 250,
       "signature": "function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5155,7 +5155,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 37,
+      "line": 34,
       "signature": "function TableBody({ className, ...props }: React.ComponentProps<'tbody'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5165,7 +5165,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 91,
+      "line": 83,
       "signature": "function TableCaption({ className, ...props }: React.ComponentProps<'caption'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5175,7 +5175,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 76,
+      "line": 71,
       "signature": "function TableCell({ className, ...props }: React.ComponentProps<'td'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5185,7 +5185,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 47,
+      "line": 44,
       "signature": "function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5195,7 +5195,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 61,
+      "line": 58,
       "signature": "function TableHead({ className, ...props }: React.ComponentProps<'th'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5205,7 +5205,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 24,
+      "line": 22,
       "signature": "function TableHeader({ className, ...props }: React.ComponentProps<'thead'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5215,7 +5215,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 57,
+      "line": 54,
       "signature": "function TableRow({ className, ...props }: React.ComponentProps<'tr'>): import(\"react/jsx-runtime\").JSX.Element"
     },
     {
@@ -5365,7 +5365,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "const",
       "file": "packages/ui-kit/src/utilities/tw.utility.ts",
-      "line": 5,
+      "line": 4,
       "signature": "cn: (...inputs: ClassValue[]) => string"
     },
     {
@@ -5385,7 +5385,7 @@
       "specifier": "@venizia/ardor-ui-kit",
       "kind": "function",
       "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 48,
+      "line": 46,
       "signature": "function useSidebar(): SidebarContextProps"
     }
   ]
