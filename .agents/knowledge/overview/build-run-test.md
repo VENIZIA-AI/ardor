@@ -34,6 +34,7 @@ Beyond build/test/lint, the Makefile exposes gate scripts that must pass for a c
 - `make catalog-check` - guards dependency versions against the root catalog (the mechanism [Design decisions](/overview/design-decisions.md) explains for tracking the highest published IGNIS line).
 - `make purity` - probes kernel/react/admin `dist/` for Node builtins and `ra-core` leaks, enforcing that ARDOR ships browser-pure output. Run `make purity-test` to test the purity probe's own regression suite.
 - `make layer-check` - enforces package layering boundaries (kernel must not depend upward on react/admin, etc).
+- `make cycles-check` - fails on an import cycle in any built `dist`; bun turns every member of a cycle into a lazy initializer, so a barrel `export *` over one can publish an undefined export.
 - `make surface-check` - compares the built public surface (read from `.d.ts` files) against the committed snapshot; run `make surface-gen` after `make build-all` to regenerate that snapshot when the surface intentionally changes. See [Public surface](/reference/public-surface.md).
 - `make size-check` - measures brotli-compressed bundle size against budgets for kernel, react, admin and ardor, run after a build.
 - `make okf-check` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of).
@@ -47,6 +48,6 @@ These gates are what CI and reviewers hold a change to; running `make build-all`
 2. `make <affected-pkg>` (and its downstream packages, in order) to rebuild through `dist/`.
 3. `make test` (or the specific `test-<pkg>` targets) - remember these test `dist/`, so step 2 must have succeeded first.
 4. `make lint` for the touched packages.
-5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `surface-check`, `size-check`, `okf-check`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check`.
+5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `cycles-check`, `surface-check`, `size-check`, `okf-check`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check`.
 
 For the wider workflow this build cycle sits inside, see [Onboarding](/overview/onboarding.md) and [Monorepo layout](/overview/monorepo-layout.md).

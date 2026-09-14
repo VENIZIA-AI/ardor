@@ -92,6 +92,9 @@ jobs:
       - name: Layer boundaries
         run: make layer-check
 
+      - name: Import cycles
+        run: make cycles-check
+
       - name: Public surface
         run: make surface-check
 

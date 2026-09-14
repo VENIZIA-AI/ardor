@@ -39,6 +39,6 @@ CI (`process/testing.md` counterpart in `.github/workflows`) is manual-only (`wo
 Two jobs:
 
 - **Source gates**: `make catalog-check` (dependency catalog), `make okf-check` (knowledge bundle), `make purity-test` (browser purity probe).
-- **Build, test and lint**: `make build-all`, then `make test-kernel`, `make test-react`, `make test-admin`, `make test-scripts`, `make layer-check`, `make surface-check`, `make size-check`, `make examples-check`, `make lint`, and `make purity` - one loop over the whole manifest, so this gate and a release read the same rows.
+- **Build, test and lint**: `make build-all`, then `make test-kernel`, `make test-react`, `make test-admin`, `make test-scripts`, `make layer-check`, `make cycles-check`, `make surface-check`, `make size-check`, `make examples-check`, `make lint`, and `make purity` - one loop over the whole manifest, so this gate and a release read the same rows.
 
 See [Build system](/process/build-system.md) for how these targets relate to the build pipeline, and [Debugging](/process/debugging.md) when a suite fails locally but not in CI or vice versa.

@@ -8,7 +8,7 @@ tags: [reference, make, build]
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**57 targets.**
+**58 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -33,6 +33,7 @@ tags: [reference, make, build]
 | `make catalog-check` | - | - |
 | `make purity` | - | Checking browser purity for all claimed entries |
 | `make layer-check` | - | - |
+| `make cycles-check` | - | - |
 | `make size-check` | - | - |
 | `make purity-test` | - | Running the purity probe's regression tests |
 | `make test-scripts` | - | Running the repository gate scripts' regression tests |

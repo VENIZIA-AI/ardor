@@ -1,6 +1,6 @@
 .PHONY: all build build-all kernel react admin ardor ui-kit docs \
         agent-setup okf-check okf-gen okf-coverage okf-viz split-report surface-gen surface-check \
-        wiki-links-check symbols-gen symbols-check releases-gen releases-check atlas-smoke catalog-check purity layer-check size-check examples-check lint-examples purity-test test-scripts lint-scripts \
+        wiki-links-check symbols-gen symbols-check releases-gen releases-check atlas-smoke catalog-check purity layer-check cycles-check size-check examples-check lint-examples purity-test test-scripts lint-scripts \
         test test-all test-kernel test-react test-admin \
         help install clean setup-hooks \
         lint lint-packages \
@@ -90,6 +90,12 @@ purity:
 
 layer-check:
 	@bun scripts/layer-boundaries.ts
+
+# `--max 0` is what makes this a gate; without it the script only reports. Run after a build.
+cycles-check:
+	@for package in kernel react admin ardor ui-kit; do \
+		bun scripts/module-cycles.ts packages/$$package/dist --max 0 || exit 1; \
+	done
 
 # Bundle budgets, measured brotlied with every third-party peer external; run after a build.
 size-check:
