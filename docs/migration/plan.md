@@ -166,7 +166,7 @@ MCP serves it; everything before release.
 | **M2 Documented** | WS4 | `make docs` green with the sidebar gate; every legacy page either rewritten against the code, replaced, or deleted with the reason in the changelog; first changelog published |
 | **M3 Curated** | WS5, WS6 | `make okf-check` green; atlas answers over the ARDOR corpora |
 | **M4 Demonstrated** | WS8 | three examples run; `vert-admin` talks to IGNIS `vert` |
-| **M5 Shipped** | WS7 (chain), WS9, BANA migration (codemod `--apply`, inversion bump, per-app `tsc`, the hand-crosscheck list: 4 `AuthProvider` subclasses, `TauriIpcDataProvider`, `NxOAuthNetworkService`, 24 `getNetworkService()` files, 10 augmentation files), `npm deprecate` of the legacy package | BANA green on 9 apps; `@venizia/ardor` on `latest`; this file deleted |
+| **M5 Shipped** | WS7 (chain), WS9, BANA migration (by hand, inversion bump, per-app `tsc`, the hand-crosscheck list: 4 `AuthProvider` subclasses, `TauriIpcDataProvider`, `NxOAuthNetworkService`, 24 `getNetworkService()` files, 10 augmentation files), `npm deprecate` of the legacy package | BANA green on 9 apps; `@venizia/ardor` on `latest`; this file deleted |
 
 ## 5. Decisions required
 
@@ -187,7 +187,7 @@ MCP serves it; everything before release.
 
 - `@minimaltech/ra-infra` (MUI predecessor): 0 BANA imports.
 - Making the data layer react-admin-independent: `admin` already confines `ra-core`; swapping it is a later design once the reference example exists.
-- BANA's own test suite: theirs to run; ARDOR supplies the measurement procedure and the codemod.
+- BANA's own test suite: theirs to run; ARDOR supplies the measurement procedure and the migration guide.
 
 ## Appendix A - Behavioral commitments the suite pins
 
@@ -227,5 +227,5 @@ Remaining, in order - each is a git write or a registry write, which an agent ne
 1. Commit this working tree on a `feature/*` branch and open the PR to `develop`.
 2. In IGNIS: commit `packages/atlas` (family checkouts) with its changelog and release `atlas`; until then `.mcp.local.example.json` shows how to run atlas from the IGNIS checkout.
 3. `bun scripts/release.ts --dry-run`, then release the chain `kernel -> react -> admin -> ardor -> ui-kit` (prerelease first).
-4. Measure BANA against the fresh build the way `process/release-publish.md` describes, run the codemod with `--apply`, bump `@venizia/ignis-inversion` there to the highest line, `tsc` per app.
-5. `npm deprecate @minimaltech/ra-core-infra`, then delete `scripts/migrate-ra-core-infra.ts`, `docs/migration/` and this file.
+4. Measure BANA against the fresh build the way `process/release-publish.md` describes, migrate its 9 apps by hand the way `ra-core-infra.md` describes, bump `@venizia/ignis-inversion` there to the highest line, `tsc` per app.
+5. `npm deprecate @minimaltech/ra-core-infra`, then delete `docs/migration/` and this file.

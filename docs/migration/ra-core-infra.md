@@ -2,7 +2,7 @@
 
 `@minimaltech/ra-core-infra` became ARDOR. The code is the same code; it was split along its real
 dependency seams and rebranded. Everything a consumer imported is still importable from one
-specifier, so the bulk of the migration is a codemod.
+specifier, so the migration is four mechanical edits, not a redesign.
 
 > **`@minimaltech/ra-core-infra` is frozen at 0.0.3-18.** No further release will be cut from it.
 > ARDOR is the only home for this code - a fix belongs in `packages/kernel`, `packages/react` or
@@ -79,7 +79,7 @@ Two removals and one requirement:
   ```
 
   The hooks themselves are still imported from `@venizia/ardor`; only the `declare module` target
-  changes. The codemod rewrites these blocks.
+  changes.
 
 - **`@venizia/ignis-inversion` must be `>=0.2.0-7`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
@@ -89,32 +89,32 @@ One bug fix worth knowing about, because it changes behavior:
 - `Logger.toggleDebug({ state: false })` now disables debug logging. It previously fell through to
   a toggle, so asking it to turn debug off could turn it on.
 
-## Running the codemod
+## Migrating a consumer, by hand
 
-From the consumer repository root:
+Work through these four edits per repository, in this order, then let the type checker close the
+gap. They are mechanical, but the last one is the reason this is a reviewed pass rather than a
+search-and-replace.
 
-```bash
-bun /path/to/ardor/scripts/migrate-ra-core-infra.ts            # dry run, prints the plan
-bun /path/to/ardor/scripts/migrate-ra-core-infra.ts --apply    # writes it
-```
+1. **The dependency.** Swap `@minimaltech/ra-core-infra` for `@venizia/ardor` in every
+   `package.json`, and pin `@venizia/ignis-inversion` to `>=0.2.0-7` (a Bun catalog entry, or
+   each manifest).
+2. **The import specifier.** `@minimaltech/ra-core-infra` -> `@venizia/ardor` in every `import`
+   and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three
+   layers under the same names.
+3. **The four renames** from the table above.
+4. **The `declare module` blocks.** Retarget each one to the package that *declares* the
+   interface - `IUseInjectableKeysOverrides` to `@venizia/ardor-react`,
+   `IUseTranslateKeysOverrides` to `@venizia/ardor-admin` - splitting a block that augments both.
+   Pointing the whole block at `@venizia/ardor` compiles clean and silently drops the
+   augmentation, leaving `useInjectable` typed as `string`. A type checker never reports this;
+   only reading the block does.
 
-It performs four transforms and reports a count per transform:
+Grep for `DIContainer` before you start - it was dropped, and every use becomes the inversion
+`Container` the application already is.
 
-1. the import specifier `@minimaltech/ra-core-infra` -> `@venizia/ardor`
-2. the four renames above
-3. `declare module` blocks retargeted to `@venizia/ardor-react` / `@venizia/ardor-admin`
-4. the dependency entry in every `package.json`
-
-It warns about any remaining `DIContainer` reference and about an augmented interface it does not
-recognise. It writes nothing without `--apply`.
-
-## After the codemod
-
-1. Bump `@venizia/ignis-inversion` to `>=0.2.0-7` wherever the consumer pins it (a Bun catalog
-   entry, or each `package.json`).
-2. Install, then type-check. The type checker is what catches anything a text transform cannot see.
-3. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.3 requires
-   `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
+Then install and type-check per application. The type checker is what catches what a manual pass
+misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.3
+requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
 
 ## Retiring the old package
 
@@ -124,5 +124,5 @@ Once every consumer is on ARDOR, close the old package out so nobody installs it
 npm deprecate '@minimaltech/ra-core-infra' 'Moved to @venizia/ardor - see https://github.com/VENIZIA-AI/ardor/blob/develop/docs/migration/ra-core-infra.md'
 ```
 
-`scripts/migrate-ra-core-infra.ts` and this guide can be deleted in the same change - they exist
-only to carry consumers across, and nothing in ARDOR depends on them.
+This guide can be deleted once every consumer is across - it exists only to carry them, and
+nothing in ARDOR depends on it.

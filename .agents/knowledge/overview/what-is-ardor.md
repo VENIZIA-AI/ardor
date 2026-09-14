@@ -34,6 +34,6 @@ The split follows the dependency graph: the build order is the dependency order,
 
 ARDOR consumes IGNIS's inversion-of-control primitives and filter vocabulary rather than reimplementing them, mirroring the layering discipline IGNIS itself follows on the backend: the lowest layers stay free of the heavier runtime so they can be reused and tested in isolation.
 
-ARDOR is also the successor to `@minimaltech/ra-core-infra`, which is now frozen. ARDOR is that package split into the four packages above and rebranded; migrating is a codemod plus four symbol renames, not a redesign.
+ARDOR is also the successor to `@minimaltech/ra-core-infra`, which is now frozen. ARDOR is that package split into the four packages above and rebranded; migrating is four mechanical edits plus four symbol renames, not a redesign.
 
 For the reasoning behind these boundaries see [Design decisions](/overview/design-decisions.md); for getting a workspace running see [Onboarding](/overview/onboarding.md) and [Monorepo layout](/overview/monorepo-layout.md).

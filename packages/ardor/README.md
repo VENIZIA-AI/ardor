@@ -59,7 +59,7 @@ The full guide, including the root component and the typed hooks, is in the
 
 ARDOR is that package, split and rebranded. See
 [the migration guide](https://github.com/VENIZIA-AI/ardor/blob/develop/docs/migration/ra-core-infra.md) -
-the move is a codemod plus four symbol renames.
+the move is four mechanical edits plus four symbol renames.
 
 ## License
 

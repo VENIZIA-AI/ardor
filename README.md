@@ -198,8 +198,8 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, ...), branches `feature/*` / `fi
 ## Migrating from `@minimaltech/ra-core-infra`
 
 ARDOR is that package, split and rebranded. See the
-[migration guide](https://ardor.venizia.ai/guides/migration/from-ra-core-infra) - a codemod plus four
-symbol renames.
+[migration guide](https://ardor.venizia.ai/guides/migration/from-ra-core-infra) - four mechanical
+edits plus four symbol renames.
 
 ## Credits
 

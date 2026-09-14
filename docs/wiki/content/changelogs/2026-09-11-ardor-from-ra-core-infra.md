@@ -23,7 +23,7 @@ description: The frontend framework splits into four ARDOR packages behind an um
 
 ## Who is affected
 
-- **All consumers of `@minimaltech/ra-core-infra`.** Action required: run the migration codemod and update the dependency to `@venizia/ardor`. See `../guides/migration/from-ra-core-infra`.
+- **All consumers of `@minimaltech/ra-core-infra`.** Action required: migrate by hand following the guide, and update the dependency to `@venizia/ardor`. See `../guides/migration/from-ra-core-infra`.
 
 ## Breaking changes
 
@@ -77,7 +77,7 @@ declare module '@venizia/ardor-admin' {
 ## Details
 
 - `@minimaltech/ra-core-infra` is permanently frozen at `0.0.3-18`; all future development and fixes live in the ARDOR packages.
-- A codemod script is provided to automate import rewrites, symbol renames, module augmentation updates, and `package.json` updates.
+- The migration guide lists the four edits a consumer makes: the import specifier, the symbol renames, the `declare module` retargeting, and the `package.json` dependency.
 
 | Package | Role |
 |---------|------|

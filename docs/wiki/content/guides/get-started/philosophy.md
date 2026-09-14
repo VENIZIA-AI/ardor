@@ -91,7 +91,7 @@ Plain react-admin is a good fit for many apps. ARDOR changes the parts that get 
 
 - You are building a react-admin app that must scale with a team - more screens, more services, more people who need to find where something is bound.
 - Your backend already runs on IGNIS. The filter vocabulary and the container conventions are shared, so the two halves fit without an adapter you write yourself.
-- You are on `@minimaltech/ra-core-infra`. ARDOR is that package, split and rebranded; the move is a codemod plus four symbol renames. See [migrating from ra-core-infra](../migration/from-ra-core-infra).
+- You are on `@minimaltech/ra-core-infra`. ARDOR is that package, split and rebranded; the move is four mechanical edits plus four symbol renames. See [migrating from ra-core-infra](../migration/from-ra-core-infra).
 
 **No, if:**
 
@@ -122,4 +122,4 @@ ARDOR is early. The code has export and member parity with the legacy package, a
 - [Network](../../references/network) - fetchers and request constants.
 - [Types](../../references/types) - the shared type helpers.
 - [Module augmentation](../../best-practices/module-augmentation) - typing your own keys.
-- [Migrating from ra-core-infra](../migration/from-ra-core-infra) - the codemod and the four renames.
+- [Migrating from ra-core-infra](../migration/from-ra-core-infra) - the manual pass and the four renames.

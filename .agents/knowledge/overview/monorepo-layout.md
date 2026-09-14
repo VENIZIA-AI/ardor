@@ -37,7 +37,7 @@ Every runtime package is ESM only (`dist/index.js` + `dist/index.d.ts`), compile
 | `packages/` | The five packages above |
 | `docs/wiki/` | VitePress site `@venizia/ardor-docs` - `content/` pages, `site/` theme, `scripts/` gates (sidebar, snippet compile) |
 | `docs/migration/` | The ra-core-infra migration guide and the roadmap; deleted when the roadmap closes |
-| `scripts/` | Repository gates: `public-surface.ts`, `check-catalog.ts`, `purity/`, `layer-boundaries.ts`, `module-cycles.ts`, `split-report.ts`, `wiki-source-links.ts`, `refresh-catalog.ts`, the ra-core-infra codemod |
+| `scripts/` | Repository gates: `public-surface.ts`, `check-catalog.ts`, `purity/`, `layer-boundaries.ts`, `module-cycles.ts`, `split-report.ts`, `wiki-source-links.ts`, `refresh-catalog.ts` |
 | `.agents/` | `rules.md`, this knowledge bundle, `knowledge-tools/`, `plugin/` (agent setup, skills, session hook) |
 | `.github/workflows/` | `ci.yml` (gates, build, tests, lint), `package-release.yml` (dispatch per package), `deploy-docs.yml` |
 | `Makefile` | Every entry point; `make help` lists them |
