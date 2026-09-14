@@ -2,7 +2,7 @@
 type: Playbook
 title: Testing
 description: How to run, write and verify tests across ARDOR packages, including the stub-backend and positive-control patterns.
-resource: packages/kernel/src/base/services/network-request.test.ts
+resource: packages/kernel/src/__tests__/base/services/network-request.test.ts
 tags: [testing, ci, bun, playbook]
 ---
 

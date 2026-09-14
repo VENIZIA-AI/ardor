@@ -1,84 +1,113 @@
 ---
 type: Convention
 title: Binding key namespaces
-description: Every DI binding key in ARDOR is namespaced by artifact kind - services.X, providers.X, and so on.
-resource: packages/kernel/src/common/bindings.ts
+description: An ARDOR binding key is either a fixed CoreBindings constant or a `<scope>.<ClassName>` string built by injectable(); nothing validates the scope at runtime.
+resource: packages/kernel/src/common/keys.ts
 tags: [conventions, di, bindings]
 ---
 
-Every binding key registered in ARDOR's browser container is namespaced by the kind of artifact it
-names. `BindingNamespaces` in `packages/kernel/src/common/bindings.ts` defines the namespace
-constants as a [const class](/conventions/const-classes.md):
+An ARDOR application is an IGNIS `Container`, so everything it owns is reachable by a string key.
+Those keys come in exactly two shapes, and knowing which one you are looking at tells you who bound
+it and what breaks when it is wrong.
+
+## The two shapes
+
+**Fixed framework keys** live in `packages/kernel/src/common/keys.ts` as a
+[const class](/conventions/const-classes.md). They are paths under `@app/`, not namespaced by
+artifact kind:
 
 ```typescript
-export class BindingNamespaces {
-  static readonly COMPONENT = BindingNamespaces.createNamespace({ name: 'components' });
-  static readonly MODEL = BindingNamespaces.createNamespace({ name: 'models' });
-  static readonly SERVICE = BindingNamespaces.createNamespace({ name: 'services' });
-  static readonly MIDDLEWARE = BindingNamespaces.createNamespace({ name: 'middlewares' });
-  static readonly PROVIDER = BindingNamespaces.createNamespace({ name: 'providers' });
-  static readonly CONFIGURATION = BindingNamespaces.createNamespace({ name: 'configurations' });
+export class CoreBindings {
+  static readonly APPLICATION_INSTANCE = '@app/application/instance';
+  static readonly APPLICATION_INFO = '@app/application/info';
+
+  static readonly DEFAULT_AUTH_PROVIDER = '@app/application/auth/default';
+  static readonly DEFAULT_I18N_PROVIDER = '@app/application/i18n/default';
+  static readonly DEFAULT_REST_DATA_PROVIDER = '@app/application/data/rest/default';
+  // ... options and service keys in the same file
 }
 ```
 
-`createNamespace` throws on a name holding `.` or whitespace, and on an empty or missing one.
-`Binding` tags itself with the first dot-separated segment of its key, so `'acme.services'` would be
-tagged `acme` and no boot step would ever drain it - a failure that is otherwise silent. The check
-runs while the class initializes, so `NAME_PATTERN` is declared above the constants.
-
-The same rule (`BindingNamespaces.isValid`) guards **every artifact registration** through
-`assertArtifactNamespace`, called from `injectable` for a declared `binding` and from
-`registerArtifact` for a call-site one. Without it a raw string reached `binding.namespace` and
-skipped the check: `Binding` only tags when the key has more than one dot-separated part, so a
-namespace-less key binds untagged - `registerDynamicBindings` never drains it and
-`bootChecks.binding.doVerify` never resolves it.
-
-A binding key is namespace + `.` + class name: `services.AuthService`,
-`providers.RestDataProvider`, `components.HeaderComponent`, `configurations.AppConfiguration`. This
-is what the registration methods on the [application lifecycle](/architecture/application-lifecycle.md)
-derive when a class declares no `binding`, and what `@inject({ key })` targets when a dependency
-needs an explicit key rather than relying on auto-injection through
-[DI in the browser](/architecture/di-in-the-browser.md).
-
-**The resolved key is recorded on the class**, under `Symbol.for('ignis:binding-key')`, so
-`@inject({ target: SomeService })` can read it back. Two writers, later wins:
-
-- `@injectable` (and every stereotype through it) records the key it can derive at import time -
-  `binding` if declared, else `<ArtifactNamespaces.resolve(type)>.<Class>`. Marked *provisional*.
-- `registerArtifact` overwrites it with the key actually bound.
-
-The second write is not redundant. Only it sees a `TMixinOpts.binding` passed at the call site, and
-only it fires for a class registered by hand (`application.service(X)`), which carries no stereotype
-metadata to derive anything from. `ArtifactNamespaces` is the `ArtifactTypes → BindingNamespaces`
-map that the first writer needs, and lives in the same file.
-
-A second *registration* under a different key logs a warning naming both - the shape only arises when
-two applications in one process bind the same class differently, and a silent last-writer-wins there
-would redirect every `@inject({ target })` in the process. In ARDOR this matters most for services
-consumed by [hooks and context](/architecture/hooks-and-context.md), since a hook that resolves the
-wrong instance silently reads stale state.
-
-**Keys stay with their owner.** A component's binding-key const class lives in that component's own
-`common/` folder, an application's in its own `common/keys.ts`; there is no repo-wide key file to keep
-in sync. The repo-wide view is the generated catalog below.
-
-`CoreBindings` in the same file is the other binding class: fixed, non-namespaced keys for
-fundamental framework singletons (`@app/instance`, `@app/config`, and so on) rather than per-artifact
-bindings. These are the keys the [kernel package](/packages/kernel.md) exposes to the
-[react](/packages/react.md) and [admin](/packages/admin.md) packages that build ARDOR's
-[data provider pipeline](/architecture/data-provider-pipeline.md) on top of them.
-
-Errors raised during registration or resolution flow through `getError` /
-`ApplicationError` from `@venizia/ignis-inversion`, following the shared
-[error handling](/conventions/error-handling.md) convention and surfacing through
-[error flow](/architecture/error-flow.md).
-
-The full generated list of every key currently registered lives at
+The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is the
+application's to bind inside `bindContext()`. Which is which is listed per key in
 [binding keys](/reference/binding-keys.md).
+
+**Per-artifact keys** are built from a scope and a class name by `injectable()` in
+`packages/kernel/src/base/applications/abstract.ts`:
+
+```typescript
+injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>) {
+  this.bind({ key: `${scope}.${value.name}` })
+    .toClass(value)
+    .setScope(BindingScopes.SINGLETON)
+    .setTags(...(tags ?? []));
+}
+
+service<T>(value: TClass<T>) {
+  this.injectable('services', value);
+}
+```
+
+So `application.service(ProductApi)` binds `services.ProductApi`. `services` is the only scope the
+framework itself uses; an application passing its own scope to `injectable()` is inventing
+vocabulary, and should keep it to the artifact kind (`providers`, `configurations`) rather than a
+feature name.
+
+Both methods bind as `BindingScopes.SINGLETON`. That is a deliberate default: one instance per
+application is what every consumer set by hand before the default existed.
+
+## Nothing validates the scope
+
+ARDOR does **not** check the scope string. There is no `BindingNamespaces`, no `createNamespace`,
+no namespace assertion on registration - a typo in the scope binds the class under a key that
+simply nobody asks for. The failure surfaces later and elsewhere, as an unresolved binding inside
+`useInjectable`, never at the registration that caused it. Treat the scope as a literal you copy,
+not one you type from memory.
+
+## The minifier trap
+
+`injectable()` keys on `value.name`, and a production minifier rewrites class names. A bundle built
+with mangled names binds `t.ProductApi` -> `services.t` and resolves `services.ProductApi` to
+nothing, while the development build works perfectly. The build-proof form is `bindingList()`,
+which the application overrides with literal keys:
+
+```typescript
+override bindingList() {
+  return { 'services.ProductApi': ProductApi };
+}
+```
+
+`preConfigure()` binds every entry of that record as a singleton before `bindContext()` runs, so a
+binding declared there is available to anything `bindContext()` constructs. The literal keys are
+also what types the hook: `keyof ReturnType<Application['bindingList']>` is the union an
+application feeds into `IUseInjectableKeysOverrides`.
+
+## How a key becomes a type
+
+`packages/react/src/hooks/use-injectable.ts` builds the accepted key union from two halves:
+
+```typescript
+export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
+export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
+```
+
+The first half is every `CoreBindings` value, free. The second half is empty until an application
+augments `IUseInjectableKeysOverrides` - see [module augmentation](/architecture/module-augmentation.md)
+for the declaration and for the `any`-widening trap that silently turns the union back into
+`string`.
+
+## Storage keys are the same idea, different registry
+
+`LocalStorageKeys` in the same `keys.ts` names browser storage rather than container bindings:
+`@app/auth/token`, `@app/auth/identity`, `@app/auth/permission`. The prefix is load-bearing.
+`DefaultAuthService.cleanUp()` in `packages/kernel/src/base/services/auth.ts` clears only keys
+starting with `@app/auth/` or `@app/oauth2/`, so anything an application stores outside those two
+prefixes survives a logout - intentional for a UI preference, a leak for anything user-scoped.
 
 ## Related
 
 - [Const classes](/conventions/const-classes.md)
 - [DI in the browser](/architecture/di-in-the-browser.md)
 - [Application lifecycle](/architecture/application-lifecycle.md)
+- [Module augmentation](/architecture/module-augmentation.md)
 - [Binding keys reference](/reference/binding-keys.md)

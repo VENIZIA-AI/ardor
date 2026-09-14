@@ -10,8 +10,8 @@ For a fixed set of string values, ARDOR uses a class of `static readonly` fields
 `TConstValue` helper type, not a bare string-literal union (`'a' | 'b' | 'c'`).
 
 ```typescript
-// packages/kernel/src/common/types/const-value.ts
-export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number>;
+// packages/kernel/src/common/types.ts
+export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
 ```
 
 ## Why

@@ -2,7 +2,7 @@
 type: Convention
 title: Gotchas
 description: The recurring traps in ARDOR development that waste time if you don't know about them up front.
-resource: packages/react/src/augmentations.ts
+resource: packages/react/src/hooks/use-injectable.ts
 tags: [conventions, gotchas, pitfalls, testing, build]
 ---
 

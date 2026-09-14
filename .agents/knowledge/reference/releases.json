@@ -32,7 +32,7 @@
       "title": "One logger per scope, singleton services, and a kernel that owns its headers",
       "packages": [],
       "kind": "Enhancement",
-      "order": 9007199254740991
+      "order": 16
     },
     {
       "id": "changelog:2026-09-11-ardor-from-ra-core-infra",
@@ -46,7 +46,7 @@
         "react"
       ],
       "kind": "New Feature",
-      "order": 9007199254740991
+      "order": 16
     }
   ]
 }

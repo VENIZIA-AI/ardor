@@ -101,7 +101,7 @@ The Figma local-variables REST API is Enterprise-only, so the export is a manual
 2. Export the collections as DTCG JSON into `tokens/` with the same files and shape - via the Tokens Studio plugin (Export -> Design Tokens / W3C) or the Figma Dev Mode MCP (`get_variable_defs` or a `use_figma` read script).
 3. Run `bun run tokens:build` and commit both `tokens/*.json` and the regenerated CSS.
 
-The JSON is standard DTCG, so the small `scripts/build-tokens.mjs` can be replaced by Style Dictionary with `@tokens-studio/sd-transforms` without touching the source files.
+The JSON is standard DTCG, so the small `packages/ui-kit/scripts/build-tokens.mjs` can be replaced by Style Dictionary with `@tokens-studio/sd-transforms` without touching the source files.
 
 ## Dark mode and themes
 

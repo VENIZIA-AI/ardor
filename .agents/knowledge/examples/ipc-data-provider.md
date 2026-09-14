@@ -2,7 +2,7 @@
 type: Tutorial
 title: ipc-data-provider
 description: Walks through building a custom transport for ARDOR's data provider by overriding only send(), using an in-process IPC example.
-resource: examples/ipc-data-provider/index.ts
+resource: examples/ipc-data-provider/src/index.ts
 tags: [tutorial, data-provider, ipc, transport, examples]
 ---
 

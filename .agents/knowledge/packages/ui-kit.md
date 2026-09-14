@@ -56,7 +56,7 @@ Running `bun run tokens:build` regenerates `src/styles/tokens.generated.css` - t
 
 `src/styles/default.css` imports `tokens.generated.css` before `themes.css`, so the light/dark switch is a semantic-layer concern on top of immutable, single-mode primitives.
 
-Refreshing tokens from Figma is a manual, design-side step (the Figma local-variables REST API is Enterprise-only): a designer edits the Foundations variables in Figma, exports the collections as DTCG JSON via the Tokens Studio plugin or the Figma Dev Mode MCP, and a developer runs `bun run tokens:build` and commits both the updated `tokens/*.json` and the regenerated CSS. Because the format is DTCG-standard, the lightweight `scripts/build-tokens.mjs` build script could be swapped for Style Dictionary without changing the source token files.
+Refreshing tokens from Figma is a manual, design-side step (the Figma local-variables REST API is Enterprise-only): a designer edits the Foundations variables in Figma, exports the collections as DTCG JSON via the Tokens Studio plugin or the Figma Dev Mode MCP, and a developer runs `bun run tokens:build` and commits both the updated `tokens/*.json` and the regenerated CSS. Because the format is DTCG-standard, the lightweight `packages/ui-kit/scripts/build-tokens.mjs` build script could be swapped for Style Dictionary without changing the source token files.
 
 ## Barrel generation
 
