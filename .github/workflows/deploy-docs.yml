@@ -37,6 +37,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      # `make docs` compiles every ```ts fence against the BUILT packages, so a fresh checkout has
+      # to build them first or all 177 snippets fail with "Cannot find module '@venizia/ardor'".
+      - name: Build packages
+        run: make build-all
+
       - name: Build Docs
         run: make docs
 
