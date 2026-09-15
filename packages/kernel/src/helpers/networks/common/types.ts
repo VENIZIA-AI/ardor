@@ -1,10 +1,7 @@
-import { type AxiosInstance, type AxiosResponse } from 'axios';
+export type TFetcherVariant = 'node-fetch';
 
-export type TFetcherVariant = 'node-fetch' | 'axios';
-export type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch'
-  ? Response
-  : AxiosResponse;
+export type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch' ? Response : never;
 
-export type TFetcherWorker<T extends TFetcherVariant> = T extends 'axios'
-  ? AxiosInstance
-  : typeof fetch;
+export type TFetcherWorker<T extends TFetcherVariant> = T extends 'node-fetch'
+  ? typeof fetch
+  : never;

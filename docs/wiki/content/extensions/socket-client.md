@@ -39,7 +39,7 @@ interface ISocketIOClientOptions {
 `identifier` is only used for logging. `host` and `options` are passed straight to `io(host, options)`. Both `path` and `extraHeaders` are required by the type - pass an empty object for `extraHeaders` if you have no headers to add.
 
 ```ts
-import { SocketIOClientHelper, type ISocketIOClientOptions } from '@venizia/ardor';
+import { SocketIOClientHelper, type ISocketIOClientOptions } from '@venizia/ardor/socket-io';
 
 const opts: ISocketIOClientOptions = {
   identifier: 'notifications',
@@ -68,7 +68,7 @@ declare class SocketIOClientHelper {
 `connect()` calls `client.connect()`. `disconnect()` calls `client.disconnect()`. Both log and return early if the client does not exist, which cannot happen after the constructor has run.
 
 ```ts
-import { SocketIOClientHelper } from '@venizia/ardor';
+import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
@@ -102,7 +102,7 @@ The handler is not called with the raw event arguments alone. The helper prepend
 `unsubscribe` calls `client.off(eventName)` for every name that currently has listeners. `off` with only an event name removes all listeners for that event, including any you added through `getSocketClient()`.
 
 ```ts
-import { SocketIOClientHelper } from '@venizia/ardor';
+import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
@@ -141,7 +141,7 @@ declare class SocketIOClientHelper {
 - `doLog` defaults to `false`. When `true`, the helper logs the topic and message after emitting.
 
 ```ts
-import { SocketIOClientHelper } from '@venizia/ardor';
+import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
@@ -174,7 +174,7 @@ declare class SocketIOClientHelper {
 ```
 
 ```ts
-import { SocketIOClientHelper } from '@venizia/ardor';
+import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
@@ -196,7 +196,8 @@ The helper is a plain class with no container decorators. Create one instance wh
 
 ```tsx
 import { useEffect } from 'react';
-import { SocketIOClientHelper, useInjectable } from '@venizia/ardor';
+import { useInjectable } from '@venizia/ardor';
+import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 // The key you bound the helper under, made known to `useInjectable`.
 declare module '@venizia/ardor-react' {

@@ -17,7 +17,7 @@ The framework is four packages plus a design system. Each has one role.
 
 | Package | Role | Depends on React | Depends on react-admin |
 |---|---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetchers (axios and fetch), socket client, utilities | No | No |
+| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetcher (`fetch`), socket client, utilities | No | No |
 | `@venizia/ardor-react` | React bindings: the application context, `useInjectable`, typed Redux hook factories, the UI hooks | Yes | No |
 | `@venizia/ardor-admin` | react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, English and Vietnamese messages | Yes | Yes |
 | `@venizia/ardor` | Umbrella entry point that re-exports the three packages above, so an application needs one dependency | Via re-export | Via re-export |
@@ -66,7 +66,7 @@ The boundaries matter as much as the features.
 
 The split follows the dependency graph, not the feature list.
 
-- **`kernel` is isomorphic.** It runs in the browser and in Node. Network fetchers exist for both axios and `fetch`. Service bases, request constants and binding keys do not need a DOM. Keeping them React-free means they can be used in scripts, in tests and on a server.
+- **`kernel` is isomorphic.** It runs in the browser and in Node. The network layer is the platform `fetch` and nothing else - no HTTP client dependency to carry or keep current. Service bases, request constants and binding keys do not need a DOM. Keeping them React-free means they can be used in scripts, in tests and on a server.
 - **`react` has no `ra-core`.** The application context, `useInjectable` and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, `useSizer`, and others) are useful in any React app that owns an ARDOR container. They should not drag react-admin along.
 - **`admin` is the adapter.** This is where react-admin's contract meets the container: `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider`, the `ArdorApplication` root component and `useTranslate`. Everything react-admin-specific stays here.
 - **`ardor` is the umbrella.** One `import ... from '@venizia/ardor'` for an application that wants all three. The umbrella re-exports; it adds nothing of its own.

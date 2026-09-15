@@ -4,7 +4,6 @@ import isEmpty from 'lodash/isEmpty';
 import { type AnyObject } from '@/common/types';
 import { BaseHelper } from '../base-helper';
 import { type IFetchable, type IRequestOptions } from './fetchers';
-import { AxiosFetcher, type IAxiosRequestOptions } from './fetchers/axios';
 import { NodeFetcher } from './fetchers/node-fetch';
 import type { TFetcherResponse, TFetcherVariant } from './common/types';
 
@@ -18,10 +17,6 @@ export interface IFetcherRequestOptions<T extends TFetcherVariant> {
     [extra: symbol | string]: any;
   };
   fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
-}
-
-export interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'> {
-  variant: 'axios';
 }
 
 export interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'> {
@@ -83,30 +78,6 @@ export class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper {
 
   getWorker() {
     return this.fetcher.getWorker();
-  }
-}
-
-export class AxiosNetworkRequest extends BaseNetworkRequest<'axios'> {
-  constructor(opts: Omit<IAxiosNetworkOptions, 'fetcher' | 'variant'>) {
-    const { name, networkOptions } = opts;
-    const { headers = {}, baseUrl, timeout = 60 * 1000, withCredentials, ...rest } = networkOptions;
-
-    const defaultConfigs: Partial<IAxiosRequestOptions> = {
-      ...rest,
-      baseURL: baseUrl,
-      withCredentials: withCredentials ?? false, // Default to false to avoid CORS issues
-      headers: Object.assign({}, headers, {
-        ['content-type']: headers['content-type'] ?? 'application/json; charset=utf-8',
-      }),
-      validateStatus: (status: number) => status < 500,
-      timeout,
-    };
-
-    super({
-      ...opts,
-      variant: 'axios',
-      fetcher: new AxiosFetcher({ name, defaultConfigs }),
-    });
   }
 }
 

@@ -28,8 +28,7 @@ A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localS
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN`, where the stored token is read from |
 | `App` | class | `TIMEZONE` and `TIMEZONE_OFFSET` sent on every request |
 | `BaseNetworkRequest` | class | Base helper: `getRequestUrl`, `getNetworkService`, `getWorker` |
-| `NodeFetchNetworkRequest` / `NodeFetcher` | class | The default `fetch` based transport |
-| `AxiosNetworkRequest` / `AxiosFetcher` | class | The axios based transport, not used by the service |
+| `NodeFetchNetworkRequest` / `NodeFetcher` | class | The `fetch` based transport, and the only one |
 
 ## Constructing the service
 
@@ -364,7 +363,7 @@ const network = new DefaultNetworkRequestService({
 
 ## Fetchers
 
-`DefaultNetworkRequestService` always constructs a `NodeFetchNetworkRequest`; `AxiosNetworkRequest` exists for helpers you build yourself. Both extend `BaseNetworkRequest<T>` and expose `getNetworkService()` (the fetcher) and `getWorker()` (the underlying `fetch` or axios worker).
+`DefaultNetworkRequestService` constructs a `NodeFetchNetworkRequest`, which is the only transport ARDOR ships: the platform `fetch`, no HTTP client dependency. It extends `BaseNetworkRequest<T>` and exposes `getNetworkService()` (the fetcher) and `getWorker()` (the underlying `fetch`). `BaseNetworkRequest` stays generic over `TFetcherVariant` so a consumer can add a transport of its own without forking the base.
 
 **`NodeFetcher`** - `send(opts: INodeFetchRequestOptions)`:
 
@@ -373,8 +372,6 @@ const network = new DefaultNetworkRequestService({
 - `headers` from the call replace the default headers entirely; the default `content-type: application/json; charset=utf-8` only applies when no headers are passed.
 - `timeout` creates an `AbortController` and aborts after that many milliseconds; the timer is cleared in `finally`.
 - It returns the raw `Response` - non-2xx statuses do not throw here.
-
-**`AxiosNetworkRequest`** wraps `AxiosFetcher` with `baseURL`, a `60 * 1000` ms default timeout, `withCredentials: false`, a default `content-type: application/json; charset=utf-8`, and `validateStatus: status < 500`. Its `IAxiosNetworkOptions` extra keys are forwarded to axios.
 
 ## BaseNetworkRequest.getRequestUrl
 

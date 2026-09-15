@@ -89,26 +89,6 @@
       "signature": "class Authentication"
     },
     {
-      "name": "AxiosFetcher",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 15,
-      "signature": "class AxiosFetcher extends AbstractNetworkFetchableHelper<'axios', IAxiosRequestOptions, AxiosResponse<any, any>>"
-    },
-    {
-      "name": "AxiosNetworkRequest",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 89,
-      "signature": "class AxiosNetworkRequest extends BaseNetworkRequest<'axios'>"
-    },
-    {
       "name": "BaseApiService",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -155,7 +135,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 31,
+      "line": 26,
       "signature": "class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper"
     },
     {
@@ -359,26 +339,6 @@
       "signature": "interface IAuthRecoveryOptions"
     },
     {
-      "name": "IAxiosNetworkOptions",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 23,
-      "signature": "interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'>"
-    },
-    {
-      "name": "IAxiosRequestOptions",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 7,
-      "signature": "interface IAxiosRequestOptions extends AxiosRequestConfig, IRequestOptions"
-    },
-    {
       "name": "ICrudService",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -435,7 +395,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 11,
+      "line": 10,
       "signature": "interface IFetcherRequestOptions<T extends TFetcherVariant>"
     },
     {
@@ -515,7 +475,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 27,
+      "line": 22,
       "signature": "interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'>"
     },
     {
@@ -607,16 +567,6 @@
       "file": "packages/kernel/src/common/types.ts",
       "line": 141,
       "signature": "interface IService"
-    },
-    {
-      "name": "ISocketIOClientOptions",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/socket-io-client.ts",
-      "line": 12,
-      "signature": "interface ISocketIOClientOptions"
     },
     {
       "name": "IUseAutosaveParams",
@@ -735,7 +685,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 113,
+      "line": 84,
       "signature": "class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'>"
     },
     {
@@ -819,16 +769,6 @@
       "signature": "class RequestTypes"
     },
     {
-      "name": "SocketIOClientHelper",
-      "package": "@venizia/ardor",
-      "subpath": ".",
-      "specifier": "@venizia/ardor",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/socket-io-client.ts",
-      "line": 18,
-      "signature": "class SocketIOClientHelper extends BaseHelper"
-    },
-    {
       "name": "StringIdType",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -885,8 +825,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 4,
-      "signature": "type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch' ? Response : AxiosResponse"
+      "line": 3,
+      "signature": "type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch' ? Response : never"
     },
     {
       "name": "TFetcherVariant",
@@ -895,8 +835,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 3,
-      "signature": "type TFetcherVariant = 'node-fetch' | 'axios'"
+      "line": 1,
+      "signature": "type TFetcherVariant = 'node-fetch'"
     },
     {
       "name": "TFetcherWorker",
@@ -905,8 +845,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 8,
-      "signature": "type TFetcherWorker<T extends TFetcherVariant> = T extends 'axios' ? AxiosInstance : typeof fetch"
+      "line": 5,
+      "signature": "type TFetcherWorker<T extends TFetcherVariant> = T extends 'node-fetch' ? typeof fetch : never"
     },
     {
       "name": "TFullPaths",
@@ -1509,6 +1449,26 @@
       "signature": "vietnameseMessages: TranslationMessages"
     },
     {
+      "name": "ISocketIOClientOptions",
+      "package": "@venizia/ardor",
+      "subpath": "./socket-io",
+      "specifier": "@venizia/ardor/socket-io",
+      "kind": "interface",
+      "file": "packages/kernel/src/helpers/socket-io-client.ts",
+      "line": 12,
+      "signature": "interface ISocketIOClientOptions"
+    },
+    {
+      "name": "SocketIOClientHelper",
+      "package": "@venizia/ardor",
+      "subpath": "./socket-io",
+      "specifier": "@venizia/ardor/socket-io",
+      "kind": "class",
+      "file": "packages/kernel/src/helpers/socket-io-client.ts",
+      "line": 18,
+      "signature": "class SocketIOClientHelper extends BaseHelper"
+    },
+    {
       "name": "ArdorApplication",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
@@ -1799,26 +1759,6 @@
       "signature": "class Authentication"
     },
     {
-      "name": "AxiosFetcher",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 15,
-      "signature": "class AxiosFetcher extends AbstractNetworkFetchableHelper<'axios', IAxiosRequestOptions, AxiosResponse<any, any>>"
-    },
-    {
-      "name": "AxiosNetworkRequest",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 89,
-      "signature": "class AxiosNetworkRequest extends BaseNetworkRequest<'axios'>"
-    },
-    {
       "name": "BaseApiService",
       "package": "@venizia/ardor-kernel",
       "subpath": ".",
@@ -1855,7 +1795,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 31,
+      "line": 26,
       "signature": "class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper"
     },
     {
@@ -1999,26 +1939,6 @@
       "signature": "interface IAuthRecoveryOptions"
     },
     {
-      "name": "IAxiosNetworkOptions",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 23,
-      "signature": "interface IAxiosNetworkOptions extends IFetcherRequestOptions<'axios'>"
-    },
-    {
-      "name": "IAxiosRequestOptions",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/networks/fetchers/axios.ts",
-      "line": 7,
-      "signature": "interface IAxiosRequestOptions extends AxiosRequestConfig, IRequestOptions"
-    },
-    {
       "name": "ICrudService",
       "package": "@venizia/ardor-kernel",
       "subpath": ".",
@@ -2055,7 +1975,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 11,
+      "line": 10,
       "signature": "interface IFetcherRequestOptions<T extends TFetcherVariant>"
     },
     {
@@ -2125,7 +2045,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 27,
+      "line": 22,
       "signature": "interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'>"
     },
     {
@@ -2199,16 +2119,6 @@
       "signature": "interface IService"
     },
     {
-      "name": "ISocketIOClientOptions",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "interface",
-      "file": "packages/kernel/src/helpers/socket-io-client.ts",
-      "line": 12,
-      "signature": "interface ISocketIOClientOptions"
-    },
-    {
       "name": "IdType",
       "package": "@venizia/ardor-kernel",
       "subpath": ".",
@@ -2245,7 +2155,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/helpers/networks/base-request.ts",
-      "line": 113,
+      "line": 84,
       "signature": "class NodeFetchNetworkRequest extends BaseNetworkRequest<'node-fetch'>"
     },
     {
@@ -2329,16 +2239,6 @@
       "signature": "class RequestTypes"
     },
     {
-      "name": "SocketIOClientHelper",
-      "package": "@venizia/ardor-kernel",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-kernel",
-      "kind": "class",
-      "file": "packages/kernel/src/helpers/socket-io-client.ts",
-      "line": 18,
-      "signature": "class SocketIOClientHelper extends BaseHelper"
-    },
-    {
       "name": "StringIdType",
       "package": "@venizia/ardor-kernel",
       "subpath": ".",
@@ -2385,8 +2285,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 4,
-      "signature": "type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch' ? Response : AxiosResponse"
+      "line": 3,
+      "signature": "type TFetcherResponse<T extends TFetcherVariant> = T extends 'node-fetch' ? Response : never"
     },
     {
       "name": "TFetcherVariant",
@@ -2395,8 +2295,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 3,
-      "signature": "type TFetcherVariant = 'node-fetch' | 'axios'"
+      "line": 1,
+      "signature": "type TFetcherVariant = 'node-fetch'"
     },
     {
       "name": "TFetcherWorker",
@@ -2405,8 +2305,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/helpers/networks/common/types.ts",
-      "line": 8,
-      "signature": "type TFetcherWorker<T extends TFetcherVariant> = T extends 'axios' ? AxiosInstance : typeof fetch"
+      "line": 5,
+      "signature": "type TFetcherWorker<T extends TFetcherVariant> = T extends 'node-fetch' ? typeof fetch : never"
     },
     {
       "name": "TFullPaths",
@@ -2767,6 +2667,26 @@
       "file": "packages/kernel/src/utilities/parse.ts",
       "line": 100,
       "signature": "toStringDecimal: (input: any, digit?: number, options?: { localeFormat: boolean; }) => string | 0"
+    },
+    {
+      "name": "ISocketIOClientOptions",
+      "package": "@venizia/ardor-kernel",
+      "subpath": "./socket-io",
+      "specifier": "@venizia/ardor-kernel/socket-io",
+      "kind": "interface",
+      "file": "packages/kernel/src/helpers/socket-io-client.ts",
+      "line": 12,
+      "signature": "interface ISocketIOClientOptions"
+    },
+    {
+      "name": "SocketIOClientHelper",
+      "package": "@venizia/ardor-kernel",
+      "subpath": "./socket-io",
+      "specifier": "@venizia/ardor-kernel/socket-io",
+      "kind": "class",
+      "file": "packages/kernel/src/helpers/socket-io-client.ts",
+      "line": 18,
+      "signature": "class SocketIOClientHelper extends BaseHelper"
     },
     {
       "name": "ApplicationContext",

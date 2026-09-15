@@ -109,14 +109,18 @@ describe('PURITY_MANIFEST derivation', () => {
     },
   );
 
-  test('every runtime package claims its single ESM root entry', () => {
+  test('every published entry is claimed, root and optional sub-path alike', () => {
     const entries = PURITY_MANIFEST.map(row => row.entry).toSorted();
 
-    // ARDOR ships one ESM build per package; every runtime package is a browser library, so every
-    // root entry is claimed - a package added without a claim is a gate hole, not a default.
+    // Every runtime package is a browser library, so every entry it publishes is claimed - one
+    // added without a claim is a gate hole, not a default. The socket client sits on its own
+    // sub-path because its peer is optional: importing the package must never require
+    // `socket.io-client` to be installed.
     expect(entries).toEqual([
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
+      'packages/ardor/dist/socket-io.js',
+      'packages/kernel/dist/helpers/socket-io-client.js',
       'packages/kernel/dist/index.js',
       'packages/react/dist/index.js',
     ]);
@@ -137,7 +141,8 @@ describe('PURITY_MANIFEST derivation', () => {
   test('a single-build package yields exactly one row, deduping the default condition', () => {
     const labels = PURITY_MANIFEST.filter(row => row.package === 'kernel').map(row => row.label);
 
-    // `exports['.']` names import AND default; default repeats import's file, so one build and no suffix.
-    expect(labels).toEqual(['kernel']);
+    // Each condition set names import AND default; default repeats the import file, so every
+    // entry yields ONE row - the root without a suffix, each sub-path labelled by its own.
+    expect(labels).toEqual(['kernel', 'kernel/socket-io']);
   });
 });

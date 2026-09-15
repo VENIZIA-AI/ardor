@@ -19,7 +19,7 @@ Every package (see [kernel](/packages/kernel.md), [react](/packages/react.md), [
 - `clean` - removes `dist` and build artifacts.
 - `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one.
 - `test` - `bun test` with `NODE_ENV=test` and `.env.test`.
-- `size` - runs `size-limit` against the built bundle, with peer dependencies (like `axios`, `lodash`, `socket.io-client`) listed in `ignore` since they're externals, not bundled code.
+- `size` - runs `size-limit` against the built bundle, with peer dependencies (like `lodash`, `socket.io-client`) listed in `ignore` since they're externals, not bundled code.
 - `force-update` - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 
 ## tsconfig layering

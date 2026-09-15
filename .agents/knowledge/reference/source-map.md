@@ -20,16 +20,16 @@ tags: [reference, source-map, packages]
 | `services/` | 2 |
 | `components/` | 1 |
 
-## ardor  (1 source files)
+## ardor  (2 source files)
 
 _Flat `src/` - no subsystem directories._
 
-## kernel  (34 source files)
+## kernel  (33 source files)
 
 | Subsystem | Files |
 |---|---|
 | `base/` | 12 |
-| `helpers/` | 12 |
+| `helpers/` | 11 |
 | `utilities/` | 5 |
 | `common/` | 4 |
 

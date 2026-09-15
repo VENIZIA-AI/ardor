@@ -86,6 +86,17 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-09-16-fetch-only-network-layer",
+      "file": "2026-09-16-fetch-only-network-layer.md",
+      "date": "2026-09-16",
+      "title": "The network layer is fetch only, and axios is gone",
+      "packages": [
+        "kernel"
+      ],
+      "kind": "Breaking Change",
+      "order": 9007199254740991
+    },
+    {
       "id": "changelog:2026-09-11-kernel-hardening",
       "file": "2026-09-11-kernel-hardening.md",
       "date": "2026-09-11",

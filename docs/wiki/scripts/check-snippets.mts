@@ -138,10 +138,16 @@ const compilerOptions: ts.CompilerOptions = {
   experimentalDecorators: true,
   emitDecoratorMetadata: true,
   types: [],
-  // resolve the framework the way a consumer does: through the built packages
+  // resolve the framework the way a consumer does: through the built packages. Every published
+  // sub-path needs its own entry - `paths` does not read an `exports` map, so a page citing one
+  // would fail with TS2307 while the import resolves perfectly at runtime.
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
+    '@venizia/ardor/socket-io': [join(REPO, 'packages/ardor/dist/socket-io.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],
+    '@venizia/ardor-kernel/socket-io': [
+      join(REPO, 'packages/kernel/dist/helpers/socket-io-client.d.ts'),
+    ],
     '@venizia/ardor-react': [join(REPO, 'packages/react/dist/index.d.ts')],
     '@venizia/ardor-admin': [join(REPO, 'packages/admin/dist/index.d.ts')],
     '@venizia/ardor-ui-kit': [join(REPO, 'packages/ui-kit/dist/index.d.ts')],

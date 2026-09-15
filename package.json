@@ -55,7 +55,6 @@
       "@venizia/dev-configs": "^0.2.0-3",
       "@venizia/ignis-filter": "^0.2.0-7",
       "@venizia/ignis-inversion": "^0.2.0-7",
-      "axios": "^1.13.2",
       "eslint": "^9.36.0",
       "lodash": "^4.18.1",
       "prettier": "^3.8.4",

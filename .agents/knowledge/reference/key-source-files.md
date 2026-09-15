@@ -33,7 +33,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 
 ## Networking
 - `packages/kernel/src/helpers/networks/base-request.ts` - shared request logic.
-- `packages/kernel/src/helpers/networks/fetchers/abstract.ts`, `axios.ts`, `node-fetch.ts` - swappable fetcher implementations.
+- `packages/kernel/src/helpers/networks/fetchers/abstract.ts`, `node-fetch.ts` - the fetcher contract and the one implementation.
 - `packages/kernel/src/helpers/networks/common/types.ts` - shared network types, relevant to [Header protocol](/architecture/header-protocol.md).
 - `packages/kernel/src/helpers/socket-io-client.ts` - socket client helper.
 

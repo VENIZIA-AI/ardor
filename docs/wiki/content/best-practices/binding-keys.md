@@ -116,7 +116,7 @@ this.bind({ key: 'services.DraftBuffer' })
 // ...
 ```
 
-Do not opt out by habit. A transient service that holds an axios instance or a socket connection creates one per resolve.
+Do not opt out by habit. A transient service that holds a socket connection or a warmed cache creates one per resolve.
 
 ## Injecting the data provider into a service
 

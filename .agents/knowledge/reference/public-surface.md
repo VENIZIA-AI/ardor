@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (103)
+### `@venizia/ardor-kernel` (97)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -19,8 +19,6 @@ tags: [reference, exports, api]
 - `api` function
 - `App` class
 - `Authentication` class
-- `AxiosFetcher` class
-- `AxiosNetworkRequest` class
 - `BaseApiService` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
@@ -43,8 +41,6 @@ tags: [reference, exports, api]
 - `IArdorApplication` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
-- `IAxiosNetworkOptions` interface
-- `IAxiosRequestOptions` interface
 - `ICrudService` interface
 - `ICustomParams` interface
 - `IdType` type
@@ -72,7 +68,6 @@ tags: [reference, exports, api]
 - `isInt` const
 - `isNumber` const
 - `isObject` const
-- `ISocketIOClientOptions` interface
 - `isString` const
 - `isValidDate` const
 - `keysToCamel` const
@@ -88,7 +83,6 @@ tags: [reference, exports, api]
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
-- `SocketIOClientHelper` class
 - `StringIdType` type
 - `stringify` const
 - `TConstValue` type
@@ -115,6 +109,11 @@ tags: [reference, exports, api]
 - `ValueOptional` type
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
+
+### `@venizia/ardor-kernel/socket-io` (2)
+
+- `ISocketIOClientOptions` interface
+- `SocketIOClientHelper` class
 
 ## react
 
@@ -175,7 +174,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (150)
+### `@venizia/ardor` (144)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -186,8 +185,6 @@ tags: [reference, exports, api]
 - `ApplicationContext` const
 - `ArdorApplication` const
 - `Authentication` class
-- `AxiosFetcher` class
-- `AxiosNetworkRequest` class
 - `BaseApiService` class
 - `BaseArdorApplication` class
 - `BaseCrudService` class
@@ -220,8 +217,6 @@ tags: [reference, exports, api]
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
-- `IAxiosNetworkOptions` interface
-- `IAxiosRequestOptions` interface
 - `ICrudService` interface
 - `ICrudServiceOptions` interface
 - `ICustomParams` interface
@@ -254,7 +249,6 @@ tags: [reference, exports, api]
 - `isInt` const
 - `isNumber` const
 - `isObject` const
-- `ISocketIOClientOptions` interface
 - `isString` const
 - `isValidDate` const
 - `IUseAutosaveParams` interface
@@ -278,7 +272,6 @@ tags: [reference, exports, api]
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
-- `SocketIOClientHelper` class
 - `StringIdType` type
 - `stringify` const
 - `SyncFC` interface
@@ -327,6 +320,11 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 - `vietnameseMessages` const
+
+### `@venizia/ardor/socket-io` (2)
+
+- `ISocketIOClientOptions` interface
+- `SocketIOClientHelper` class
 
 ## ui-kit
 

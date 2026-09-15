@@ -18,7 +18,7 @@ The package root (`src/index.ts`) re-exports four areas, each with its own barre
 
 - **base** (`src/base/index.ts`) - `applications`, `decorators`, `providers`, `services`. This is where `AbstractArdorApplication` and `BaseArdorApplication` live: the IGNIS inversion `Container` wrapper with `injectable()` and `service()` helpers that back [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). It also holds `BaseService`, `BaseApiService`, `DefaultAuthService`, `DefaultNetworkRequestService`, `BaseProvider`, and the `api()` decorator that logs and rethrows a failing API method.
 - **common** (`src/common/index.ts`) - `constants`, `keys`, `types`. Binding keys (`CoreBindings`, `LocalStorageKeys`, see [Binding key namespaces](/conventions/binding-key-namespaces.md)), request/environment constants (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `HeaderConsts`, `Environments`, `App`), and shared types (`IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, `ICrudService`, and more).
-- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, `SocketIOClientHelper`, and the network layer: `AxiosNetworkRequest`, `NodeFetchNetworkRequest`, `AxiosFetcher`, `NodeFetcher`. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md).
+- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, `SocketIOClientHelper`, and the network layer: `NodeFetchNetworkRequest`, `NodeFetcher` - the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md).
 - **utilities** - a flat set of type guards and small helpers: `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse`.
 
 ## Layering rule
@@ -27,7 +27,7 @@ Kernel sits below every other package in the [monorepo layout](/overview/monorep
 
 ## Peer dependencies
 
-Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `reflect-metadata` as required peers, and `axios`, `socket.io-client` as optional peers (only needed if you use the Axios fetcher or the socket client helper). It has a single runtime dependency: `lodash`.
+Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has a single runtime dependency: `lodash`.
 
 ## Build, test, size
 

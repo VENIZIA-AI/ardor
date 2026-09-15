@@ -45,6 +45,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./socket-io": {
+      "types": "./dist/socket-io.d.ts",
+      "import": "./dist/socket-io.js",
+      "default": "./dist/socket-io.js"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,

@@ -86,6 +86,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-09-16',
+        collapsed: true,
+        items: [
+          {
+            text: 'The network layer is fetch only, and axios is gone',
+            link: '/changelogs/2026-09-16-fetch-only-network-layer',
+          },
+        ],
+      },
+      {
         text: '2026-09-11',
         collapsed: true,
         items: [

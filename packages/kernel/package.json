@@ -47,6 +47,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./socket-io": {
+      "types": "./dist/helpers/socket-io-client.d.ts",
+      "import": "./dist/helpers/socket-io-client.js",
+      "default": "./dist/helpers/socket-io-client.js"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
@@ -82,7 +87,6 @@
   "peerDependencies": {
     "@venizia/ignis-filter": ">=0.2.0-7",
     "@venizia/ignis-inversion": ">=0.2.0-7",
-    "axios": ">=1.13.2",
     "reflect-metadata": ">=0.2.2",
     "socket.io-client": ">=4.8.3"
   },
@@ -93,7 +97,6 @@
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
-    "axios": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "reflect-metadata": "catalog:",
@@ -103,9 +106,6 @@
     "typescript": "catalog:"
   },
   "peerDependenciesMeta": {
-    "axios": {
-      "optional": true
-    },
     "socket.io-client": {
       "optional": true
     }
@@ -117,7 +117,6 @@
       "ignore": [
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "axios",
         "lodash",
         "reflect-metadata",
         "socket.io-client"
