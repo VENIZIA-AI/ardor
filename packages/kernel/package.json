@@ -87,6 +87,7 @@
   "peerDependencies": {
     "@venizia/ignis-filter": ">=0.2.0-7",
     "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-kernel": ">=0.2.0-39",
     "reflect-metadata": ">=0.2.2",
     "socket.io-client": ">=4.8.3"
   },
@@ -97,6 +98,7 @@
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-kernel": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "reflect-metadata": "catalog:",

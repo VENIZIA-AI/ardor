@@ -15,16 +15,27 @@ export type TUseInjectableOptions =
   | { container?: Container; key: TUseInjectableKeys; target?: never }
   | { container?: Container; key?: never; target: TClass<AnyType> };
 
-export const useInjectable = <T>(opts: TUseInjectableOptions) => {
-  const requestContainer = opts?.container;
+/**
+ * The container an injectable hook resolves from: the one passed in, else the one the application
+ * context holds. Shared so that every hook built on `useInjectable` reads the SAME container it
+ * resolves from - a hook that re-derived it would be checking one container and resolving from
+ * another, and the check would pass by accident.
+ */
+export const useInjectableContainer = (opts?: { container?: Container }): Container => {
   const applicationContext = React.useContext(ApplicationContext);
+  const container = opts?.container ?? applicationContext.container;
 
-  const container = requestContainer ?? applicationContext.container;
   if (!container) {
     throw getError({
       message: '[useInjectable] Failed to determine injectable container!',
     });
   }
+
+  return container;
+};
+
+export const useInjectable = <T>(opts: TUseInjectableOptions) => {
+  const container = useInjectableContainer({ container: opts?.container });
 
   const { key, target } = opts;
 
@@ -41,7 +52,7 @@ export const useInjectable = <T>(opts: TUseInjectableOptions) => {
   const resolved = container.getMetadataRegistry().getBindingKey({ target });
   if (!resolved) {
     throw getError({
-      message: `[useInjectable] Failed to resolve binding key for target: ${target.name}! | Decorate it (@service, @component, ...) or register it on the application before injecting`,
+      message: `[useInjectable] No binding key is recorded on ${target.name}. Only a stereotype writes one - decorate the class with @service, @component, @configuration or @injectable. Registering it with this.service(X) or bindingList() binds it under a key but records nothing on the class, so resolve those by { key } instead.`,
     });
   }
 
