@@ -22,6 +22,7 @@ import {
   type TRequestType,
 } from '@/common';
 import { NodeFetchNetworkRequest } from '@/helpers';
+import { isDefined } from '@/utilities';
 import { BaseService } from './base';
 
 const parseFilenameFromContentDisposition = (header: string): string | undefined => {
@@ -95,8 +96,66 @@ const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string
 
 // `FileList` exists only in a DOM; the kernel also runs in Workers and on Bun, where the bare
 // identifier throws. A type guard keeps the narrowing `instanceof` gave the branch below.
-const isFileList = (value: File | File[] | FileList): value is FileList => {
+const isFileList = (value: unknown): value is FileList => {
   return typeof FileList !== 'undefined' && value instanceof FileList;
+};
+
+/**
+ * Encodes one value for a multipart text part.
+ *
+ * A multipart part is bytes, so everything that is not a `Blob` becomes a string - but `String()`
+ * alone is wrong for two shapes a caller reaches for constantly:
+ *
+ * - a plain object or array stringifies to `"[object Object]"` / `"a,b"`, which the server can only
+ *   reject, sent with no warning that anything was lost;
+ * - a `Date` stringifies to a locale- and timezone-dependent sentence, not something an API parses.
+ *
+ * JSON and ISO-8601 are the encodings that survive the trip. A primitive is left alone.
+ */
+const encodeFormValue = (opts: { key: string; value: unknown; bodyType: string }): string => {
+  const { key, value, bodyType } = opts;
+
+  // `application/x-www-form-urlencoded` carries text, never bytes. Encoding a file here produces
+  // `"{}"` or `"[object Blob]"` and the upload is gone with nothing said, so it is named instead:
+  // the caller wanted `form-data` and there is no encoding that would have made this work.
+  if (value instanceof Blob) {
+    throw getError({
+      message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
+    });
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+};
+
+/**
+ * Appends one form-data entry, whatever its type.
+ *
+ * `undefined` and `null` are skipped, and nothing else is: a falsy check drops `0`, `false` and
+ * `''`, which are values a caller meant to send and the server never sees. The three-argument
+ * `append` is for a `Blob` and its filename - passing a filename beside a string throws, which is
+ * why a form-data body used to accept files and nothing else.
+ */
+const appendFormDataValue = (opts: { formData: FormData; key: string; value: unknown }): void => {
+  const { formData, key, value } = opts;
+
+  if (!isDefined(value)) {
+    return;
+  }
+
+  if (value instanceof Blob) {
+    formData.append(key, value, (value as File).name);
+    return;
+  }
+
+  formData.append(key, encodeFormValue({ key, value, bodyType: RequestBodyTypes.FORM_DATA }));
 };
 
 export class DefaultNetworkRequestService extends BaseService {
@@ -333,10 +392,20 @@ export class DefaultNetworkRequestService extends BaseService {
         const encoded = new URLSearchParams();
 
         for (const key in body) {
-          if (!body[key]) {
+          // Skip only what was never provided. A falsy check drops `0`, `false` and `''`, which are
+          // values a caller meant to send - the same bug the form-data branch below carried.
+          if (!isDefined(body[key])) {
             continue;
           }
-          encoded.append(key, String(body[key]));
+
+          encoded.append(
+            key,
+            encodeFormValue({
+              key,
+              value: body[key],
+              bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+            }),
+          );
         }
 
         rs.body = encoded;
@@ -349,27 +418,16 @@ export class DefaultNetworkRequestService extends BaseService {
         const formData = new FormData();
 
         for (const key in body) {
-          const val = body[key] as File | File[] | FileList | undefined;
-          if (!val) {
-            continue;
-          }
+          const val = body[key];
 
-          if (isFileList(val)) {
-            Array.from(val).forEach((item) => {
-              formData.append(key, item, item.name);
+          if (Array.isArray(val) || isFileList(val)) {
+            Array.from(val as ArrayLike<unknown>).forEach((item) => {
+              appendFormDataValue({ formData, key, value: item });
             });
             continue;
           }
 
-          if (Array.isArray(val)) {
-            val.forEach((item) => {
-              formData.append(key, item, item.name);
-            });
-            continue;
-          }
-
-          formData.append(key, val, val.name);
-          continue;
+          appendFormDataValue({ formData, key, value: val });
         }
 
         rs.body = formData;

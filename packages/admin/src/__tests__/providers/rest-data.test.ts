@@ -183,6 +183,32 @@ describe('getList behavior', () => {
     expect(filter['order']).toEqual(['name DESC']);
   });
 
+  test('forwards an extra param whose value is falsy but meant', async () => {
+    const provider = createProvider({ baseUrl });
+    await provider.getList({
+      resource: 'posts',
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+        // Not pagination, sort, filter or meta - so these land in `rest` and are forwarded.
+        archived: false,
+        revision: 0,
+        note: '',
+        omitted: undefined,
+      } as never,
+    });
+
+    expect(recordedRequests.length).toBe(1);
+    const filter = parseFilterQuery({ raw: recordedRequests[0].query['filter'] });
+
+    // A falsy value is a value: dropping it sends a different query than the caller wrote.
+    expect(filter['archived']).toBe(false);
+    expect(filter['revision']).toBe(0);
+    expect(filter['note']).toBe('');
+    expect('omitted' in filter).toBe(false);
+  });
+
   test('wraps filter without where into where and lifts include and fields to filter root', async () => {
     const provider = createProvider({ baseUrl });
     await provider.getList({

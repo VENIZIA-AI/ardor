@@ -32,6 +32,7 @@ import {
   type IApplicationInfo,
   type ICustomParams,
   type IRestDataProviderOptions,
+  isDefined,
   type ISendParams,
   type ISendResponse,
   RequestCountData,
@@ -147,10 +148,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     for (const key in rest) {
-      if (!params[key]) {
+      // Read `rest`, the object being iterated, rather than `params` it was split from - they hold
+      // the same value here, and naming two sources for one read invites them to drift apart.
+      //
+      // Skip only undefined and null. A filter of `false` or `0` is a filter, and dropping it sends
+      // a narrower query than the caller wrote, with nothing to show they differ.
+      if (!isDefined(rest[key])) {
         continue;
       }
-      filter[key] = params[key];
+
+      filter[key] = rest[key];
     }
 
     const queryKey: Record<string, AnyType> = {};
@@ -311,10 +318,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     for (const key in rest) {
-      if (!params[key]) {
+      // Read `rest`, the object being iterated, rather than `params` it was split from - they hold
+      // the same value here, and naming two sources for one read invites them to drift apart.
+      //
+      // Skip only undefined and null. A filter of `false` or `0` is a filter, and dropping it sends
+      // a narrower query than the caller wrote, with nothing to show they differ.
+      if (!isDefined(rest[key])) {
         continue;
       }
-      filter[key] = params[key];
+
+      filter[key] = rest[key];
     }
 
     const queryKey: Record<string, AnyType> = {};

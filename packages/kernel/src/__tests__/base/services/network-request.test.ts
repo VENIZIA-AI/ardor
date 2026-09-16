@@ -455,7 +455,7 @@ describe('DefaultNetworkRequestService', () => {
       expect(props.body).toBe(testBody);
     });
 
-    test('builds FormData with File and File array entries while skipping empty values for form-data bodyType', () => {
+    test('builds FormData with File and File array entries, skipping undefined and null', () => {
       const service = createService({ useAuth: false });
       const singleFile = new File(['alpha'], 'single.txt', { type: 'text/plain' });
       const fileList = [
@@ -485,7 +485,136 @@ describe('DefaultNetworkRequestService', () => {
       }
     });
 
-    test('encodes the body as application/x-www-form-urlencoded and skips empty values for form-urlencoded bodyType', () => {
+    test('refuses a file in a form-urlencoded body instead of losing it', () => {
+      const service = createService({ useAuth: false });
+
+      // There is no encoding that would have made this work: url-encoded carries text. Silently
+      // sending "{}" or "[object Blob]" loses the upload and tells nobody.
+      expect(() =>
+        service.getRequestProps({
+          resource: 'upload',
+          bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+          body: { attachment: new File(['x'], 'note.txt', { type: 'text/plain' }) },
+          applicationInfo: createApplicationInfo(),
+          restDataProviderOptions: createRestDataProviderOptions(),
+        }),
+      ).toThrow(/attachment.*cannot carry.*form-data/s);
+    });
+
+    test('carries falsy values in a form-urlencoded body, and skips only undefined and null', () => {
+      const service = createService({ useAuth: false });
+
+      const props = service.getRequestProps({
+        resource: 'oauth',
+        bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+        body: {
+          scope: 'read',
+          remember: false,
+          page: 0,
+          note: '',
+          nullVal: null,
+          undefVal: undefined,
+        },
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+      });
+
+      expect(props.body instanceof URLSearchParams).toBe(true);
+      if (props.body instanceof URLSearchParams) {
+        expect(props.body.get('scope')).toBe('read');
+        expect(props.body.get('remember')).toBe('false');
+        expect(props.body.get('page')).toBe('0');
+        expect(props.body.get('note')).toBe('');
+        expect(props.body.has('nullVal')).toBe(false);
+        expect(props.body.has('undefVal')).toBe(false);
+      }
+    });
+
+    test('carries text fields in a form-data body, and skips only undefined and null', () => {
+      const service = createService({ useAuth: false });
+
+      const props = service.getRequestProps({
+        resource: 'upload',
+        bodyType: RequestBodyTypes.FORM_DATA,
+        body: {
+          name: 'alpha',
+          count: 0,
+          flag: false,
+          empty: '',
+          nullVal: null,
+          undefVal: undefined,
+        },
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+      });
+
+      expect(props.body instanceof FormData).toBe(true);
+      if (props.body instanceof FormData) {
+        expect(props.body.get('name')).toBe('alpha');
+
+        // A falsy value is a value. Skipping it silently drops `0`, `false` and `''` from the
+        // request, and the server sees a field the caller believes it sent.
+        expect(props.body.get('count')).toBe('0');
+        expect(props.body.get('flag')).toBe('false');
+        expect(props.body.get('empty')).toBe('');
+
+        expect(props.body.has('nullVal')).toBe(false);
+        expect(props.body.has('undefVal')).toBe(false);
+      }
+    });
+
+    test('serialises a structured value instead of stringifying it to [object Object]', () => {
+      const service = createService({ useAuth: false });
+
+      const props = service.getRequestProps({
+        resource: 'upload',
+        bodyType: RequestBodyTypes.FORM_DATA,
+        body: {
+          meta: { locale: 'vi', tags: ['a', 'b'] },
+          when: new Date('2026-09-16T07:30:00.000Z'),
+        },
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+      });
+
+      expect(props.body instanceof FormData).toBe(true);
+      if (props.body instanceof FormData) {
+        // `String({})` is "[object Object]" - a value the server can only reject, sent with no
+        // warning. JSON is the one encoding a multipart text part can carry losslessly.
+        expect(props.body.get('meta')).toBe('{"locale":"vi","tags":["a","b"]}');
+
+        // A Date stringifies to a locale- and timezone-dependent sentence. ISO is what an API reads.
+        expect(props.body.get('when')).toBe('2026-09-16T07:30:00.000Z');
+      }
+    });
+
+    test('mixes files and text in one form-data array', () => {
+      const service = createService({ useAuth: false });
+      const file = new File(['alpha'], 'note.txt', { type: 'text/plain' });
+
+      const props = service.getRequestProps({
+        resource: 'upload',
+        bodyType: RequestBodyTypes.FORM_DATA,
+        body: { items: [file, 'plain', 0] },
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+      });
+
+      expect(props.body instanceof FormData).toBe(true);
+      if (props.body instanceof FormData) {
+        const items = props.body.getAll('items');
+        expect(items.length).toBe(3);
+        expect(items[1]).toBe('plain');
+        expect(items[2]).toBe('0');
+      }
+    });
+
+    /**
+     * This test used to assert that `emptyField: ''` was dropped, which is the bug the branch
+     * carried rather than a decision anyone made: the same falsy check also dropped `0` and `false`.
+     * An omitted field is `undefined`, and that is still skipped - the case below covers it.
+     */
+    test('encodes the body as application/x-www-form-urlencoded, keeping an empty string', () => {
       const service = createService({ useAuth: false });
 
       const props = service.getRequestProps({
@@ -495,6 +624,7 @@ describe('DefaultNetworkRequestService', () => {
           ['client_id']: 'client-123',
           ['grant_type']: 'authorization_code',
           emptyField: '',
+          omittedField: undefined,
         },
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
@@ -506,8 +636,10 @@ describe('DefaultNetworkRequestService', () => {
       );
       expect(props.body instanceof URLSearchParams).toBe(true);
       if (props.body instanceof URLSearchParams) {
-        expect(props.body.toString()).toBe('client_id=client-123&grant_type=authorization_code');
-        expect(props.body.has('emptyField')).toBe(false);
+        expect(props.body.toString()).toBe(
+          'client_id=client-123&grant_type=authorization_code&emptyField=',
+        );
+        expect(props.body.has('omittedField')).toBe(false);
       }
     });
   });
