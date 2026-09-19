@@ -12,12 +12,14 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/kernel/src/base/applications/abstract.ts` - the abstract application base class, the core of [Application lifecycle](/architecture/application-lifecycle.md).
 - `packages/kernel/src/base/applications/index.ts` - application exports.
 - `packages/react/src/contexts/application.ts` and `packages/react/src/hooks/use-application-context.ts` - how React consumes the running application instance, see [Hooks and context](/architecture/hooks-and-context.md).
-- `packages/admin/src/components/application.tsx` - the react-admin `Application` component wiring the app into a rendered UI.
+- `packages/admin/src/components/application.tsx` - `ArdorApplication`, the `CoreAdmin` root that resolves the data, auth and i18n providers from the container and renders the UI.
 
 ## Dependency injection
-- `packages/kernel/src/base/decorators/api.ts` and `packages/kernel/src/base/decorators/index.ts` - the decorator API used for binding and injection, core to [DI in the browser](/architecture/di-in-the-browser.md).
+- `packages/kernel/src/base/metadata/index.ts` - the artifact stereotypes (`@service`, `@component`, `@injectable`, `inject`, `BindingNamespaces`, ...) re-exported export by export from `@venizia/ignis-kernel/metadata`; ARDOR defines none of its own. Core to [DI in the browser](/architecture/di-in-the-browser.md).
+- `packages/kernel/src/base/applications/abstract.ts` - `registerArtifacts()`, `bindingList()`, `injectable()` and `service()`, where the application binds classes, see [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - `packages/kernel/src/common/keys.ts` - the binding key constants, see [Binding keys](/reference/binding-keys.md) and [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - `packages/react/src/hooks/use-injectable.ts` - the hook that resolves bindings inside React components.
+- `packages/react/src/hooks/use-artifact.ts` - the per-stereotype resolution hooks `useService`, `useProvider`, `useComponent`, `useConfiguration`.
 
 ## Providers and data flow
 - `packages/kernel/src/base/providers/base.ts` and `packages/kernel/src/base/providers/index.ts` - base provider contracts.
@@ -28,16 +30,17 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 
 ## Services
 - `packages/kernel/src/base/services/base.ts`, `api.ts`, `auth.ts`, `network-request.ts` - the kernel service layer: base service class, API service, auth service, network request wrapper.
-- `packages/admin/src/services/crud.ts` and `packages/admin/src/services/index.ts` - CRUD service used by data providers.
+- `packages/admin/src/services/crud.ts` and `packages/admin/src/services/index.ts` - `BaseCrudService`, a CRUD service built on top of a data provider (every method goes through `dataProvider.send()`).
 - See [Hooks and services](/reference/hooks-and-services.md) for the full inventory.
 
 ## Networking
 - `packages/kernel/src/helpers/networks/base-request.ts` - shared request logic.
 - `packages/kernel/src/helpers/networks/fetchers/abstract.ts`, `node-fetch.ts` - the fetcher contract and the one implementation.
 - `packages/kernel/src/helpers/networks/common/types.ts` - shared network types, relevant to [Header protocol](/architecture/header-protocol.md).
-- `packages/kernel/src/helpers/socket-io-client.ts` - socket client helper.
+- `packages/kernel/src/helpers/socket-io-client.ts` - `SocketIOClientHelper`, outside the helpers barrel and published only as the kernel `./socket-io` sub-path; `packages/ardor/src/socket-io.ts` re-exports it as `@venizia/ardor/socket-io`.
 
 ## Error handling
+- `packages/kernel/src/base/decorators/api.ts` - the `@api()` method decorator that logs a failing `BaseApiService` call and rethrows it unchanged.
 - `packages/admin/src/hooks/use-notify-error.ts` - the hook surfacing errors to the UI, see [Error flow](/architecture/error-flow.md) and [Error handling](/conventions/error-handling.md).
 
 ## Auth-adjacent hooks
@@ -61,7 +64,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/ui-kit/src/generate-index.ts` - script generating the package's barrel export, relevant to [Public surface](/reference/public-surface.md).
 
 ## Package entry points
-- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts`, `packages/ui-kit/src/index.ts` - always check these first since they define what each package actually exports publicly. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), [ARDOR package](/packages/ardor.md), and [ui-kit package](/packages/ui-kit.md).
+- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts`, `packages/ui-kit/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./socket-io` in kernel and ARDOR, and `./styles/*` in ui-kit (raw CSS served from `src/styles`, not `dist`). Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), [ARDOR package](/packages/ardor.md), and [ui-kit package](/packages/ui-kit.md).
 
 ## Types and constants
 - `packages/kernel/src/common/types.ts`, `constants.ts` - shared kernel-wide types and constants.

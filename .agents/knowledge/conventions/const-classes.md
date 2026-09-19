@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Const classes over string unions
-description: Enumerable string values are a const class plus TConstValue, not a raw string-literal union.
+description: Enumerable string values are a const class plus a derived value type (TConstValue and its siblings), not a raw string-literal union.
 resource: packages/kernel/src/common/constants.ts
 tags: [conventions, type-safety]
 ---
@@ -23,17 +23,8 @@ so the two never drift apart.
 
 ## Real examples in source
 
-`RequestMethods` in `packages/kernel/src/common/constants.ts`:
-
-```typescript
-export class RequestMethods {
-  static readonly GET = 'GET';
-  static readonly POST = 'POST';
-  static readonly PUT = 'PUT';
-  static readonly DELETE = 'DELETE';
-}
-export type TRequestMethod = TConstValue<typeof RequestMethods>;
-```
+`RequestCountData` in `packages/kernel/src/common/constants.ts` is the plain form - two
+`static readonly` values, typed at the use site as `TConstValue<typeof RequestCountData>`.
 
 `RequestTypes` in the same file goes further: it derives a runtime `Set` from its own static
 fields so callers can validate an incoming string without a chain of `===` checks, which a
@@ -41,21 +32,38 @@ string-literal union could never do:
 
 ```typescript
 export class RequestTypes {
-  static readonly JSON = 'json';
-  static readonly FORM_DATA = 'form-data';
-  static readonly SCHEME_SET = new Set([this.JSON, this.FORM_DATA]);
-  static isValid(value: string) { return this.SCHEME_SET.has(value); }
+  static readonly SEND = 'SEND';
+
+  // react-admin
+  static readonly GET_LIST = 'GET_LIST';
+  static readonly GET_ONE = 'GET_ONE';
+  // ... GET_MANY, GET_MANY_REFERENCE, CREATE, UPDATE, UPDATE_MANY, DELETE, DELETE_MANY
+
+  static readonly SCHEME_SET = new Set([this.SEND, this.GET_ONE, this.GET_LIST /* ... */]);
+
+  static isValid(input: string): boolean {
+    return this.SCHEME_SET.has(input);
+  }
 }
-export type TRequestType = TConstValue<typeof RequestTypes> | (string & {});
+
+// packages/kernel/src/common/types.ts
+export type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>;
 ```
 
-`Environments` and `HeaderConsts` in the same file use the same pattern - a fixed set of
-`static readonly` values plus a `SCHEME_SET` and `isValid()` attached directly to the class, so
-the data provider pipeline and the [header protocol](/architecture/header-protocol.md) can check
-membership at runtime instead of relying on a type that disappears after compilation.
+The value type is a closed union - no `| (string & {})` escape - because ARDOR owns this vocabulary
+(see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` drops
+`SCHEME_SET` and `isValid` from the union by type; `TStatusFromClass` does the same by omitting
+`prototype`, `isValid`, `SCHEME_SET` and `TYPE_SET` by name.
+
+`RequestMethods`, `RequestBodyTypes` and `Environments` carry the same `SCHEME_SET` plus `isValid()`
+pair, typed as `TRequestMethod` and `TEnvironment` (via `TStatusFromClass`) and `TRequestBodyType`
+(via `Extract<ValueOf<...>, string>`). `HeaderConsts`, the names behind the
+[header protocol](/architecture/header-protocol.md), is plain `static readonly` constants with no
+`SCHEME_SET` and no `isValid()`.
 
 ## Related
 
 - [Binding key namespaces](/conventions/binding-key-namespaces.md)
 - [Coding style](/conventions/coding-style.md)
+- [Narrow only what the framework owns](/conventions/narrowing-authority.md)
 - [Options objects](/conventions/options-objects.md)

@@ -1,7 +1,7 @@
 ---
 type: Package
 title: react
-description: The react-agnostic-to-react-admin bridge package providing the application context, injection hooks, and UI hooks that make up ARDOR's React layer.
+description: The React bindings for ARDOR - ApplicationContext, useInjectable and the per-stereotype hooks, typed Redux factories and UI hooks, with no react-admin dependency.
 resource: packages/react/src/index.ts
 tags: [react, hooks, context, package, injection, module-augmentation]
 ---
@@ -16,9 +16,9 @@ Applications rarely install this package directly - most install [ardor](/packag
 
 The package barrel (`src/index.ts`) re-exports three groups:
 
-- **common** - shared types such as `SyncFC` and `TUseInjectableKeys`.
-- **contexts** - `ApplicationContext`, plus `useApplicationContext` and `useApplicationLogger` built on top of it.
-- **hooks** - `useInjectable` for DI resolution, and a family of UI hooks: `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer`, `useWindowDimensions`. There are also Redux factory helpers, `createAppDispatch` and `createAppSelectors`, for binding a typed `RootState`/`AppDispatch` pair.
+- **common** - `SyncFC`.
+- **contexts** - `ApplicationContext` only.
+- **hooks** - everything else: `useApplicationContext` and `useApplicationLogger`; the DI hooks `useInjectable`, `useInjectableContainer`, `useService`, `useProvider`, `useComponent` and `useConfiguration`, together with the `TUseInjectableKeys`/`IUseInjectableKeysOverrides` types; the UI hooks `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer` and `useWindowDimensions`; and the Redux factories `createAppDispatch` and `createAppSelectors`, for binding a typed `RootState`/`AppDispatch` pair.
 
 ## ApplicationContext
 
@@ -31,11 +31,35 @@ Defined in `src/contexts/application.ts`, this is a plain `React.createContext` 
 - `{ container?, key }` - resolve by binding key.
 - `{ container?, target }` - resolve by class, using the container's metadata registry to look up the binding key registered via decorators like `@service` or `@component`.
 
-If no `container` override is passed, it falls back to `applicationContext.container` read via `React.useContext`. If neither is available it throws. If a `target` is given but no binding key can be resolved for it, it throws with a message telling the caller to decorate the class or register it explicitly - this mirrors the narrowing/registration rules described in [narrowing authority](/conventions/narrowing-authority.md) and [binding key namespaces](/conventions/binding-key-namespaces.md).
+If no `container` override is passed, it falls back to `applicationContext.container` read via `React.useContext`. If neither is available it throws. If a `target` is given but no binding key can be resolved for it, it throws with a message telling the caller to decorate the class or register it explicitly - see [binding key namespaces](/conventions/binding-key-namespaces.md) and "Registration by stereotype" in [DI in the browser](/architecture/di-in-the-browser.md).
 
 ## IUseInjectableKeysOverrides
 
 This package owns the augmentation point for typed injection keys. `TUseInjectableKeys` is defined as `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides`, where the default comes from kernel's `CoreBindings`. Downstream packages or applications that want `useInjectable({ key: ... })` to autocomplete and typecheck their own binding keys must augment `IUseInjectableKeysOverrides` by declaring `module '@venizia/ardor-react'` directly - not through `@venizia/ardor` or any other re-exporting package, because TypeScript's declaration merging only applies to the module that actually declares the interface. This is the canonical example referenced in [module augmentation](/architecture/module-augmentation.md).
+
+## The per-stereotype hooks
+
+`useService`, `useProvider`, `useComponent` and `useConfiguration` live in `src/hooks/use-artifact.ts`.
+Each takes the same options union as `useInjectable` - `{ key }` or `{ target }`, never a positional
+class, per [options objects](/conventions/options-objects.md).
+
+They are not aliases. Each asserts the resolved binding sits under its own namespace, so
+`useService({ target: SomeProvider })` throws with both namespaces named rather than returning an
+object of the wrong kind. Only a `target` is checked: a `key` carries its namespace in the string and
+is the caller's to be wrong about.
+
+A `{ target }` with no recorded key - an undecorated class, or one bound only through `service()`,
+`injectable()` or `bindingList()` - skips the namespace check and throws from `useInjectable`.
+Return-type inference from the class and the stereotype requirement are in
+[Hooks and context](/architecture/hooks-and-context.md).
+
+No stereotype maps to `providers`, so `useProvider({ target })` passes only for a class that declares
+`binding: { namespace: BindingNamespaces.PROVIDER, key }`. ARDOR's default providers live under
+`CoreBindings` keys and are resolved with `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`
+or `useInjectable`.
+
+`useInjectableContainer` is exported for the same reason the check works - every hook built on
+`useInjectable` must read the SAME container it resolves from, or the assertion passes by accident.
 
 ## Test environment
 

@@ -17,7 +17,7 @@ Auth recovery is the retry-on-401 logic built into `DefaultNetworkRequestService
    - the path matches `authRecovery.refreshTokenPath` - the refresh-token endpoint itself must never trigger a recovery loop on its own failure.
 3. If recovery is allowed, the service calls `ensureRefreshed()`.
 4. `ensureRefreshed()` guards a single in-flight refresh with `this.refreshing`. Multiple concurrent 401s share the same promise (`this.refreshing ??= ...`) so the app never fires more than one refresh call at a time, no matter how many requests failed together. The refresh call is wrapped in `Promise.resolve().then(() => refreshToken())` deliberately: a `refreshToken` that throws synchronously is treated as a failed refresh (going through `onAuthFailure`) rather than escaping as an unrelated exception out of `doRequest`.
-5. On success, `ensureRefreshed()` resolves `true`. The service then retries the original request exactly once, using the freshly-set auth header.
+5. On success, `ensureRefreshed()` resolves `true`. The service then retries the original request exactly once, with the auth headers re-read (see below).
 6. On failure, it calls `authRecovery.onAuthFailure?.()` (swallowing any error from that callback itself, logging instead) and resolves `false`. The service then surfaces the original 401 - no infinite retry, no second refresh attempt.
 7. `this.refreshing` is cleared in a `.finally()` regardless of outcome, so the next 401 can start a fresh refresh cycle.
 
@@ -25,7 +25,15 @@ This whole scheme sits below the [data provider pipeline](/architecture/data-pro
 
 ## Headers and auth token
 
-`getRequestHeader` builds the header set per request. For non-no-auth paths it calls `getRequestAuthorizationHeader()`, which reads the current in-memory `authToken` or falls back to `localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)`, throwing a 401-tagged error if no token value is present. The resulting `Authorization` and `X-Auth-Provider` headers follow the shared [header protocol](/architecture/header-protocol.md). After a successful refresh, whatever code path updates the stored/in-memory token (via `setAuthToken` or a fresh login) is what makes the retried request carry the new header - the retry re-runs `getRequestHeader`, it does not reuse the old one.
+`getRequestHeader` builds the header set per request. For non-no-auth paths it calls `getRequestAuthorizationHeader()`, which reads the in-memory `authToken` or, only when there is none, the constructor's `authTokenResolver` (default `readAuthTokenFromStorage`, the stored token under `LocalStorageKeys.KEY_AUTH_TOKEN`), throwing a 401-tagged error if no token value is present. The resulting `Authorization` and `X-Auth-Provider` headers follow the shared [header protocol](/architecture/header-protocol.md).
+
+The retry does not re-run `getRequestHeader`: it reuses the original request's headers and overrides only `Authorization` and `X-Auth-Provider`, from a fresh `getRequestAuthorizationHeader()` call. Because an in-memory token set by `setAuthToken` wins over localStorage, a `refreshToken` that only writes localStorage (for example through `DefaultAuthService.saveAuth`) is invisible to the retry once `setAuthToken` has been called - update the in-memory token too, or never set it.
+
+Recovery only covers a 401 returned by the server. When no token exists at all (no in-memory `authToken` and nothing under `@app/auth/token`), `getRequestProps` throws a client-side 401 before `doRequest` runs, so no refresh is attempted and `onAuthFailure` is not called. The CRUD methods of `DefaultRestDataProvider` are not `async`, so from them that throw is synchronous.
+
+## Configuring it
+
+`authRecovery` comes from `IRestDataProviderOptions.authRecovery` (the `REST_DATA_PROVIDER_OPTIONS` binding) when `DefaultRestDataProvider` constructs its `DefaultNetworkRequestService`. It can be changed later with `dataProvider.getNetworkService().setAuthRecovery({ ... })`, which shallow-merges a partial into the current options (`getAuthRecovery()` reads them back). A `refreshToken` that needs a service bound at boot does not require it: `refreshToken` is only called when a 401 is recovered, so a closure in the options that resolves the service when called works too (see [vert-admin](/examples/vert-admin.md)).
 
 ## DefaultAuthProvider and DefaultAuthService
 

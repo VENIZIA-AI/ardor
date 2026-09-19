@@ -25,13 +25,17 @@ Both steps are awaited in sequence. `postConfigure()` never runs concurrently wi
 
 ## preConfigure()
 
-The default `preConfigure()` in `AbstractArdorApplication` does three things, in order:
+The default `preConfigure()` in `AbstractArdorApplication` does five things, in order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this` - the container can hand itself out as a value.
 2. Binds `CoreBindings.APPLICATION_INFO` to whatever `this.getAppInfo()` returns. This is bound as-is, not awaited, so `getAppInfo()` should return a plain object rather than a Promise if downstream consumers expect a resolved value.
-3. Returns `this.bindContext()` - an abstract method every concrete application must implement, where provider options, the three default providers, and application services get bound.
+3. Calls `this.registerArtifacts()`, which binds every class a stereotype (`@service()`, `@component()` and the rest) discovered, as a singleton under the key the stereotype recorded on the class. A discovered class with no recorded key is skipped.
+4. Binds every entry of `this.bindingList()` - a record of literal key to class, empty by default - with `toClass(...)` as a singleton.
+5. Returns `this.bindContext()` - an abstract method every concrete application must implement, where provider options, the three default providers, and application services get bound.
 
-Because `bindContext()` can be async and its return value is what `preConfigure()` returns, `start()`'s `await this.preConfigure()` also waits for `bindContext()` to finish. This ordering matters: any subclass overriding `preConfigure()` must call `super.preConfigure()` or the two core bindings and `bindContext()` never happen.
+Steps 3 to 5 run from least explicit to most explicit, and a later bind on the same key replaces the earlier one: stereotype, then `bindingList()`, then `bindContext()`. So a `bindingList()` entry overrides a stereotype on the same key, and a manual `this.bind(...)` in `bindContext()` overrides both. See [binding key namespaces](/conventions/binding-key-namespaces.md) for when to reach for each form.
+
+Because `bindContext()` can be async and its return value is what `preConfigure()` returns, `start()`'s `await this.preConfigure()` also waits for `bindContext()` to finish. This ordering matters: any subclass overriding `preConfigure()` must call `super.preConfigure()`, or none of the five steps happen - not the two core bindings, not the stereotype and `bindingList()` registrations, and not `bindContext()`.
 
 ## postConfigure()
 
@@ -55,6 +59,15 @@ Inside `ArdorApplication`, a memoized `adminProps` block resolves exactly three 
 - `CoreBindings.DEFAULT_AUTH_PROVIDER` for the auth provider
 - `CoreBindings.DEFAULT_I18N_PROVIDER` for the i18n provider
 
-These three resolved values, together with the rest of the props passed to `ArdorApplication`, become the props fed to react-admin's `CoreAdmin`. The container is also placed on `ApplicationContext` so hooks throughout the tree can call `container.get(...)` for anything else bound during `bindContext()`. See [hooks and context](/architecture/hooks-and-context.md) for how components reach back into the container, and [the providers reference](/reference/providers.md) for what each of the three default providers does.
+The remaining props are spread after these three resolved values, so an explicit `dataProvider`, `authProvider` or `i18nProvider` prop overrides the bound one. The result is fed to react-admin's `CoreAdmin`.
 
-Because `ArdorApplication` resolves these bindings unconditionally, an application's `bindContext()` must bind all three default provider keys before `start()` finishes, or the React tree fails to mount.
+The tree it mounts, outermost first:
+
+- `ApplicationContext.Provider`, whose value carries the container (as both `container` and `registry`) and a `Logger` scoped to `ArdorApplication`. `enableDebug` (default `false`) goes to `Logger.getInstance` on every render, and that switch covers the whole process, so leaving it off turns debug logging off for every scope - see [debugging](/process/debugging.md). Hooks throughout the tree call `container.get(...)` through it for anything else the application bound.
+- A react-redux `Provider` over `reduxStore` - a Redux store is always required.
+- `React.Suspense` with `suspense` as its fallback.
+- `CoreAdmin` with `adminProps`.
+
+See [hooks and context](/architecture/hooks-and-context.md) for how components reach back into the container, and [the providers reference](/reference/providers.md) for what each of the three default providers does.
+
+Because `ArdorApplication` resolves these bindings unconditionally, an application must bind all three default provider keys before `start()` finishes, or the React tree fails to mount - even when it passes its own provider props, since the three `container.get(...)` calls still run.

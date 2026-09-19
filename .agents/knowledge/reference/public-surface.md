@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (97)
+### `@venizia/ardor-kernel` (117)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -18,6 +18,8 @@ tags: [reference, exports, api]
 - `AnyType` type
 - `api` function
 - `App` class
+- `ArtifactNamespaces` class
+- `ArtifactTypes` class
 - `Authentication` class
 - `BaseApiService` class
 - `BaseArdorApplication` class
@@ -25,10 +27,15 @@ tags: [reference, exports, api]
 - `BaseNetworkRequest` class
 - `BaseProvider` class
 - `BaseService` class
+- `BindingKeys` class
+- `BindingNamespaces` class
 - `blobToBase64` const
 - `ClassProps` type
 - `ClassType` type
+- `component` const
+- `configuration` const
 - `CoreBindings` class
+- `datasource` const
 - `DefaultAuthService` class
 - `DefaultNetworkRequestService` class
 - `EntityRelationType` type
@@ -39,8 +46,11 @@ tags: [reference, exports, api]
 - `HeaderConsts` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
+- `IArtifactMetadata` interface
+- `IArtifactRegistrationOptions` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
+- `IAuthTokenRecord` interface
 - `ICrudService` interface
 - `ICustomParams` interface
 - `IdType` type
@@ -49,6 +59,8 @@ tags: [reference, exports, api]
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
 - `ILogger` interface
+- `inject` const
+- `injectable` const
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
@@ -73,18 +85,26 @@ tags: [reference, exports, api]
 - `keysToCamel` const
 - `LocalStorageKeys` class
 - `Logger` class
+- `model` const
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `parse` const
+- `provide` const
+- `readAuthTokenFromStorage` const
+- `repository` const
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `service` const
 - `StringIdType` type
 - `stringify` const
+- `TAuthTokenResolver` type
+- `TBindingNamespace` type
+- `TBindingScope` type
 - `TConstValue` type
 - `TDataCount` type
 - `TEnvironment` type
@@ -110,6 +130,18 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
+### `@venizia/ardor-kernel/repository` (9)
+
+- `HttpDataSource` class
+- `HttpRepository` class
+- `HttpResourceEntity` class
+- `IAuthToken` interface
+- `IHttpDataSourceSettings` interface
+- `IHttpReadResult` interface
+- `TAuthTokenResolver` type
+- `THttpHeaders` type
+- `THttpQuery` type
+
 ### `@venizia/ardor-kernel/socket-io` (2)
 
 - `ISocketIOClientOptions` interface
@@ -117,11 +149,13 @@ tags: [reference, exports, api]
 
 ## react
 
-### `@venizia/ardor-react` (24)
+### `@venizia/ardor-react` (31)
 
 - `ApplicationContext` const
 - `createAppDispatch` const
 - `createAppSelectors` const
+- `IUseArtifactByKey` interface
+- `IUseArtifactByTarget` interface
 - `IUseAutosaveParams` interface
 - `IUseBeforeUnloadParams` interface
 - `IUseConfirmReturn` interface
@@ -137,10 +171,15 @@ tags: [reference, exports, api]
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
+- `useComponent` const
+- `useConfiguration` const
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useInjectable` const
+- `useInjectableContainer` const
+- `useProvider` const
+- `useService` const
 - `useSizer` const
 - `useWindowDimensions` const
 
@@ -174,7 +213,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (144)
+### `@venizia/ardor` (171)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -184,6 +223,8 @@ tags: [reference, exports, api]
 - `App` class
 - `ApplicationContext` const
 - `ArdorApplication` const
+- `ArtifactNamespaces` class
+- `ArtifactTypes` class
 - `Authentication` class
 - `BaseApiService` class
 - `BaseArdorApplication` class
@@ -192,13 +233,18 @@ tags: [reference, exports, api]
 - `BaseNetworkRequest` class
 - `BaseProvider` class
 - `BaseService` class
+- `BindingKeys` class
+- `BindingNamespaces` class
 - `blobToBase64` const
 - `ClassProps` type
 - `ClassType` type
+- `component` const
+- `configuration` const
 - `CoreBindings` class
 - `CountRestDataProvider` class
 - `createAppDispatch` const
 - `createAppSelectors` const
+- `datasource` const
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
 - `DefaultI18nProvider` class
@@ -214,9 +260,12 @@ tags: [reference, exports, api]
 - `IApplication` interface
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
+- `IArtifactMetadata` interface
+- `IArtifactRegistrationOptions` interface
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
+- `IAuthTokenRecord` interface
 - `ICrudService` interface
 - `ICrudServiceOptions` interface
 - `ICustomParams` interface
@@ -228,6 +277,8 @@ tags: [reference, exports, api]
 - `IGetRequestPropsResult` interface
 - `II18nProviderOptions` interface
 - `ILogger` interface
+- `inject` const
+- `injectable` const
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
@@ -251,6 +302,8 @@ tags: [reference, exports, api]
 - `isObject` const
 - `isString` const
 - `isValidDate` const
+- `IUseArtifactByKey` interface
+- `IUseArtifactByTarget` interface
 - `IUseAutosaveParams` interface
 - `IUseBeforeUnloadParams` interface
 - `IUseConfirmReturn` interface
@@ -262,19 +315,27 @@ tags: [reference, exports, api]
 - `keysToCamel` const
 - `LocalStorageKeys` class
 - `Logger` class
+- `model` const
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `parse` const
+- `provide` const
+- `readAuthTokenFromStorage` const
+- `repository` const
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `service` const
 - `StringIdType` type
 - `stringify` const
 - `SyncFC` interface
+- `TAuthTokenResolver` type
+- `TBindingNamespace` type
+- `TBindingScope` type
 - `TConstValue` type
 - `TDataCount` type
 - `TEnvironment` type
@@ -305,13 +366,18 @@ tags: [reference, exports, api]
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
+- `useComponent` const
+- `useConfiguration` const
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useInjectable` const
+- `useInjectableContainer` const
 - `useNotifyError` const
+- `useProvider` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
+- `useService` const
 - `useSizer` const
 - `useTranslate` const
 - `useWindowDimensions` const
@@ -320,6 +386,18 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 - `vietnameseMessages` const
+
+### `@venizia/ardor/repository` (9)
+
+- `HttpDataSource` class
+- `HttpRepository` class
+- `HttpResourceEntity` class
+- `IAuthToken` interface
+- `IHttpDataSourceSettings` interface
+- `IHttpReadResult` interface
+- `TAuthTokenResolver` type
+- `THttpHeaders` type
+- `THttpQuery` type
 
 ### `@venizia/ardor/socket-io` (2)
 

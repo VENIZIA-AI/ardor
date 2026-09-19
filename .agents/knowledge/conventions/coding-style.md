@@ -18,11 +18,11 @@ A function name opens with the verb that says what it does: `generate` `build` `
 and leaves the branch to the caller; `assert*` throws and returns `void`, so the code after it needs
 no branch. Reach for `assert*` when every caller would throw on `false` anyway - otherwise one
 condition ends up with a different error message at each call site. The const classes in
-`packages/kernel/src/common/constants.ts` (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`) lean
-on `isValid` for exactly this reason: a provider checks `RequestMethods.isValid(method)` and decides
-what to do with `false`, rather than the const class deciding for it.
+`packages/kernel/src/common/constants.ts` (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`) expose
+`isValid` for exactly this reason: a caller can check `RequestMethods.isValid(method)` and decide what
+to do with `false`, rather than the const class deciding for it.
 
-`has*` is the ownership question: `hasSession`, never `hasSession` - the second is not English.
+`has*` is the ownership question: `hasSession`, never `isHaveSession` - the second is not English.
 
 This list covers UTILITY functions. Service and hook methods in a consuming application lean on a
 wider set - `fetch`, `create`, `update`, `delete`, `validate`, `load`, `count` - the same verbs a data
@@ -51,15 +51,18 @@ No single-statement `if` without `{ }` - it removes a whole class of dangling-el
 
 ## Early return over nesting
 
-Guard clauses at the top of a function, not a pyramid of nested `if`. An application's `stop` method
-in `packages/kernel/src/base/applications/abstract.ts` bails out before touching anything it never
-started:
+Guard clauses at the top of a function or loop body, not a pyramid of nested `if`.
+`AbstractArdorApplication.registerArtifacts()` in `packages/kernel/src/base/applications/abstract.ts`
+skips a discovered class that carries no binding key before it touches the container:
 
 ```typescript
-if (!this.isBooted) {
-  this.logger.for(this.stop.name).info('Application was not booted | Nothing to stop');
-  return;
+const key = registry.getBindingKey({ target });
+
+if (!key) {
+  continue;
 }
+
+this.bind({ key }).toClass(target as TClass<unknown>).setScope(BindingScopes.SINGLETON);
 ```
 
 ## switch + default over if-else chains

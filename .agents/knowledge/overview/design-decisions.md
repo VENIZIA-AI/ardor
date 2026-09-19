@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Design decisions
-description: The reasoning behind ARDOR's package split, ESM-only build, DI defaults, and doc-quality gates.
+description: The reasoning behind ARDOR's package split, ESM-only build, DI defaults, shared IGNIS stereotypes, fetch-only transport, and doc-quality gates.
 resource: docs/migration/ra-core-infra.md
 tags: [overview, design-decisions, architecture, rationale]
 ---
@@ -10,7 +10,7 @@ ARDOR's shape is not arbitrary. Each structural choice traces back to a specific
 
 ## The four-package split
 
-ARDOR is [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), and the umbrella [ardor](/packages/ardor.md) package, plus the separate [ui-kit](/packages/ui-kit.md). The split exists so that browser purity and framework-neutrality can be checked mechanically instead of by convention. Kernel is IGNIS's own dependency-injection and service layer, ported with no admin-specific code. React adds hooks and context on top of kernel but still has no react-admin dependency. Admin is the only package allowed to depend on `ra-core`. If everything lived in one package, "does this leak react-admin into the container layer" would be a code-review question forever; split into packages, it becomes a purity probe that either passes or fails.
+ARDOR is [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), and the umbrella [ardor](/packages/ardor.md) package, plus the separate [ui-kit](/packages/ui-kit.md). The split exists so that browser purity and framework-neutrality can be checked mechanically instead of by convention. Kernel is IGNIS's own dependency-injection and service layer, ported with no admin-specific code. React adds hooks and context on top of kernel but still has no react-admin dependency. Admin is the only package whose code imports `ra-core`; the umbrella only re-exports it. If everything lived in one package, "does this leak react-admin into the container layer" would be a code-review question forever; split into packages, it becomes a layer check that either passes or fails.
 
 ## ra-core confined to admin
 
@@ -24,13 +24,21 @@ ARDOR ships ESM only, no CommonJS interop layer. This matches the browser-only t
 
 ARDOR tracks the IGNIS packages it depends on (the DI container, filtering vocabulary) at their highest published line, not pinned to whatever version happened to be current when a package was first vendored. This keeps ARDOR's container semantics and query vocabulary from drifting silently out of sync with IGNIS as both evolve.
 
-## Singleton by default
+## Singleton through ARDOR's registration paths
 
-Services and injectables registered through the container default to singleton scope unless declared otherwise. This mirrors how most application-level services actually behave - one instance per running app - and means the common case needs no annotation. See [DI in the browser](/architecture/di-in-the-browser.md) for how binding and resolution work in practice.
+The IGNIS container binds transient by default: a bare `bind().toClass()` or `bind().toProvider()` resolves afresh on every `get()`. ARDOR's own registration paths - `injectable()`, `service()`, `bindingList()` and the stereotype discovery in `registerArtifacts()` - each set `BindingScopes.SINGLETON` explicitly, so a class registered through them is one instance per running application. This mirrors how application-level services actually behave and means the common case needs no annotation; a binding added by hand in `bindContext()` is a singleton only if it sets the scope itself. See [DI in the browser](/architecture/di-in-the-browser.md) for how binding and resolution work in practice.
 
 ## Logger per scope
 
-Logging is obtained per scope rather than through one global logger instance. Each service or module gets a logger tied to its own name, so log output is traceable to its source without manual prefixing, and scopes can be filtered or silenced independently in tests.
+Logging is obtained per scope rather than through one global logger instance. `Logger.getInstance({ scope })` returns one instance per scope name, so log output is traceable to its source without manual prefixing. The debug switch, however, is process-wide rather than per scope, so scopes cannot be silenced independently - see [Debugging](/process/debugging.md).
+
+## Stereotypes come from IGNIS
+
+ARDOR defines no stereotype decorators of its own. Its `metadata` barrel re-exports `@venizia/ignis-kernel/metadata`, so a class written for a worker and a class written for a browser register the same way - one mechanism for the whole VENIZIA family. The re-export is listed name by name rather than with `export *`: a name added upstream is published on purpose, and a collision with ARDOR's own surface is caught at that line instead of in a consumer. `CoreBindings` is the collision that already happened: IGNIS's and ARDOR's share a member with different values, so it is left out of the list and only ARDOR's is reachable - see [Binding key namespaces](/conventions/binding-key-namespaces.md).
+
+## Fetch only, socket client behind a sub-path
+
+The network layer is `fetch` only; there is no second HTTP transport. Kernel keeps its one optional peer, `socket.io-client`, out of the root barrel: the socket client ships behind its own sub-path (`./socket-io`, re-exported by `@venizia/ardor` as `./socket-io`), so importing `@venizia/ardor-kernel` never requires installing it. `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
 
 ## The augmentation seam
 
@@ -42,7 +50,7 @@ Wiki pages that contain fenced TypeScript or TSX code are only considered done o
 
 ## Purity and layer gates
 
-Kernel and react must never import a Node builtin or `ra-core`; admin must never import a Node builtin. These are enforced by a purity probe, not by review discipline, because the legacy package's line between "this belongs in the container" and "this belongs in the admin adapter" blurred over ten months without anyone noticing until the port forced the question. The same instinct drives the public-surface snapshot and catalog checks: structural properties of the codebase should be machine-checked, not remembered.
+No runtime entry of kernel, react, admin or ardor may reach a Node builtin or an unguarded Node global - the purity probe (`make purity`). Kernel must never import React, Redux or react-admin packages, and react must never import `ra-core`, `react-admin` or `ra-i18n-polyglot` - the layer check (`make layer-check`); see [Build, run, test](/overview/build-run-test.md). Both read the built output and are enforced by a script, not by review discipline, because the legacy package's line between "this belongs in the container" and "this belongs in the admin adapter" blurred over ten months without anyone noticing until the port forced the question. The same instinct drives the public-surface snapshot and catalog checks: structural properties of the codebase should be machine-checked, not remembered.
 
 ## Water palette, same design system
 

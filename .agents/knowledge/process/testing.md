@@ -14,11 +14,11 @@ ARDOR tests run on Bun's built-in test runner (`bun:test`), driven through Makef
 - One package: `make test-kernel`, `make test-react`, `make test-admin` (also `make test-scripts` for the gate scripts themselves). See [Build, run, test](/overview/build-run-test.md) and [Makefile targets](/reference/makefile-targets.md).
 - Everything: the `build-and-test` CI job chains build then all three package suites plus scripts, layer, surface and size checks.
 
-The make targets own the test flags (`BUN_TEST_FLAGS`, defaulting to `--parallel`, which implies `--isolate`), so there is exactly one source of truth for how tests execute - never override flags ad hoc in a way that diverges from CI.
+`BUN_TEST_FLAGS` is an optional pass-through with no default: `make test-<pkg>` runs the package's `bun run test` with no extra flags, which is the same command CI runs, so every test file of a package runs in one process against one global object. That matters for stereotypes: the discovery list is not per application (see "Registration by stereotype" in [DI in the browser](/architecture/di-in-the-browser.md)), and `MetadataRegistry.getInstance()` anchors it on `globalThis`, so a `@service()` class declared in one test file is bound into every application started afterwards in that run. Pass `BUN_TEST_FLAGS=--isolate` (or `--parallel`, which implies `--isolate`) when a test file needs a fresh registry - isolation gives each file a fresh global object, so tests inside one file still share it.
 
 ## Adding a test
 
-Follow [Testing conventions](/conventions/testing-conventions.md) for naming and structure. Co-locate the `*.test.ts` file next to the code it exercises. Use `describe`/`test` blocks from `bun:test`, and prefer small option-object helpers (`createService`, `createApplicationInfo`, `createRestDataProviderOptions` style factories) over duplicating construction logic across test cases - this mirrors the [Options objects](/conventions/options-objects.md) convention used in production code.
+Follow [Testing conventions](/conventions/testing-conventions.md) for naming and structure. Put the `*.test.ts` file under the package's `src/__tests__/`, mirroring the path of the module it exercises. Use `describe`/`test` blocks from `bun:test`, and prefer small option-object helpers (`createService`, `createApplicationInfo`, `createRestDataProviderOptions` style factories) over duplicating construction logic across test cases - this mirrors the [Options objects](/conventions/options-objects.md) convention used in production code.
 
 ## Positive control procedure
 
@@ -26,7 +26,7 @@ Before trusting a test that asserts a failure path or an error condition, tempor
 
 ## DOM setup
 
-Kernel and react tests that touch browser-only state (localStorage, headers) run in Bun's environment without a real DOM, so state must be reset explicitly. Use `afterEach` to clear `localStorage` and reset any module-level recording arrays between tests, otherwise state leaks across test cases and produces order-dependent failures. This is especially relevant for services keyed off `LocalStorageKeys` in the [DI in the browser](/architecture/di-in-the-browser.md) and [Header protocol](/architecture/header-protocol.md) paths.
+Kernel, react and admin each preload `src/__tests__/setup.ts` through their `bunfig.toml`. Kernel tests run without a DOM, against a `localStorage` stub that setup file installs. React and admin tests run under happy-dom, with Bun's native networking (`fetch`, `Request`, `Response` and friends) restored after registration - see [Testing conventions](/conventions/testing-conventions.md). No setup file resets state between tests, so do it explicitly: use `afterEach` to clear `localStorage` and reset any module-level recording arrays between tests, otherwise state leaks across test cases and produces order-dependent failures. This is especially relevant for services keyed off `LocalStorageKeys` in the [DI in the browser](/architecture/di-in-the-browser.md) and [Header protocol](/architecture/header-protocol.md) paths.
 
 ## Stub backend pattern
 
@@ -34,7 +34,7 @@ For anything that issues real HTTP requests - notably `DefaultNetworkRequestServ
 
 ## What CI runs
 
-CI (`process/testing.md` counterpart in `.github/workflows`) is manual-only (`workflow_dispatch`), by deliberate decision - see [Design decisions](/overview/design-decisions.md). It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing.
+CI (`.github/workflows/ci.yml`) is manual-only (`workflow_dispatch`), by deliberate decision - the rationale lives in that workflow's header comment. It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing.
 
 Two jobs:
 

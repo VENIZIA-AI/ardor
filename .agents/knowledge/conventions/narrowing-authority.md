@@ -19,11 +19,13 @@ Before narrowing any type that reaches an application:
 A yes to the first and a no to the second means the answer is an **extensible seam**, not a closed
 union: a default that is today's closed set, plus a way for an application to declare its own.
 
-The const classes in `packages/kernel/src/common/constants.ts` - `RequestMethods`, `RequestTypes`,
-`RequestBodyTypes`, `HeaderConsts`, `Environments` - each pair a fixed set of values with a
-`SCHEME_SET` and an `isValid` check. ARDOR owns these vocabularies outright: an HTTP method, a
-header name, an environment name are all closed by the protocols ARDOR talks to, not by ARDOR's own
-preference. That is what makes narrowing them legitimate.
+In `packages/kernel/src/common/constants.ts`, `RequestMethods`, `RequestTypes`, `RequestBodyTypes`
+and `Environments` each pair a fixed set of values with a `SCHEME_SET` and an `isValid` check, and
+their value types are closed unions. ARDOR owns these vocabularies outright: an HTTP method is
+closed by the protocol, and the request types, body encodings and environment names are the ones
+ARDOR itself defines and handles. That is what makes narrowing them legitimate. `HeaderConsts` is
+plain `static readonly` header names with neither, and no type narrows a header name - see
+[const classes](/conventions/const-classes.md).
 
 Contrast this with something ARDOR does not own, such as the shape of a consuming application's
 resource records passed through the [data provider pipeline](/architecture/data-provider-pipeline.md).
@@ -46,12 +48,13 @@ the caller to confront the boundary; a wrong-but-plausible type lets them walk p
 
 The const classes in kernel narrow request methods and body types to the values ARDOR's network
 layer and REST data provider actually understand. That narrowing answers question 1 correctly - a
-misspelled method or header name fails silently as a rejected or ignored request otherwise, with
+misspelled method or body type fails silently as a rejected or misencoded request otherwise, with
 nothing in any log pointing at the typo.
 
-It also answers question 2 correctly, which is why it can stay closed: HTTP methods and standard
-headers are not vocabulary ARDOR invented, and no consuming application has standing to add a new
-one. Contrast this with a field describing an application's own domain concepts flowing through
+It also answers question 2 correctly, which is why it can stay closed: HTTP methods are not
+vocabulary ARDOR invented, the body encodings are the ones its network layer implements, and no
+consuming application has standing to add a new one. Contrast this with a field describing an
+application's own domain concepts flowing through
 [hooks and context](/architecture/hooks-and-context.md) - there, ARDOR does not own the set, and the
 same style of narrowing would break the first application that defines its own value.
 

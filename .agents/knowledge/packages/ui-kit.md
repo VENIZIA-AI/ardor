@@ -15,7 +15,7 @@ tags: [ui-kit, tailwind, radix, shadcn, design-tokens, figma, package]
 Install as a normal dependency:
 
 ```bash
-npm install @venizia/ardor-ui-kit
+bun add @venizia/ardor-ui-kit
 ```
 
 Then wire it into the app's CSS entry point (e.g. `index.css`):
@@ -46,21 +46,31 @@ Token source files, all in DTCG (W3C Design Tokens) JSON format:
 - `primitives.json` - immutable raw color ramps (Tailwind ramps plus custom taupe/mauve/mist/olive), keyed `color.<ramp>.<step>`.
 - `semantic.light.json` / `semantic.dark.json` - semantic roles (`primary`, `background`, `success`, etc.) aliased to primitives, one file per mode.
 - `scales.json` - non-color scales: radius, space, border, breakpoint, text, font-weight, opacity, z, duration, ease, aspect, icon-size, grid.
+- `palette.json` - the Figma Palette collection: ten named accent themes (neutral, red, orange, yellow, green, teal, cyan, blue, purple, pink), each aliasing a primitive ramp step.
+- `component.json` - component-tier tokens (button, input, card, badge, alert) that alias semantic roles, giving variables like `--button-primary-bg`.
 
-Running `bun run tokens:build` regenerates `src/styles/tokens.generated.css` - this file must never be hand-edited. It contains:
+Running `bun run tokens:build` reads all six files and regenerates `src/styles/tokens.generated.css` - this file must never be hand-edited. It contains:
 
-- `:root` - primitive `--color-*` variables plus semantic light aliases (e.g. `--primary: var(--color-blue-600)`).
+- `:root` - primitive `--color-*` variables, semantic light aliases (e.g. `--primary: var(--color-blue-600)`), then the component tokens. Component tokens reference semantic variables, so they follow dark mode without a `.dark` copy.
 - `.dark` - semantic dark-mode overrides.
 - `@theme inline` - semantic-to-Tailwind utility mapping (`--color-primary: var(--primary)` produces `bg-primary`, etc.).
 - `@theme` - static scale values (`--radius-md`, `--text-base`, `--breakpoint-md`, ...).
+- `.theme-<name>` - one accent class per palette entry, overriding `--primary`, `--primary-hover`, `--primary-active`, `--primary-foreground`, `--ring`, `--sidebar-primary` and `--sidebar-primary-foreground`. Put the class on a wrapper, for example `<html class="theme-pink">`.
 
-`src/styles/default.css` imports `tokens.generated.css` before `themes.css`, so the light/dark switch is a semantic-layer concern on top of immutable, single-mode primitives.
+`src/styles/default.css` imports `tailwindcss`, `tw-animate-css` and `tokens.generated.css` only, so light/dark and accent switching are both semantic-layer concerns on top of immutable, single-mode primitives. The legacy `src/styles/themes.css` is still on disk and still reachable through `./styles/*`, but nothing imports it - accent theming lives entirely in the generated file.
 
-Refreshing tokens from Figma is a manual, design-side step (the Figma local-variables REST API is Enterprise-only): a designer edits the Foundations variables in Figma, exports the collections as DTCG JSON via the Tokens Studio plugin or the Figma Dev Mode MCP, and a developer runs `bun run tokens:build` and commits both the updated `tokens/*.json` and the regenerated CSS. Because the format is DTCG-standard, the lightweight `packages/ui-kit/scripts/build-tokens.mjs` build script could be swapped for Style Dictionary without changing the source token files.
+Refreshing tokens from Figma is a manual, design-side step (the Figma local-variables REST API is Enterprise-only). A designer edits the variables in Figma, the collections are exported as DTCG JSON into `tokens/`, and a developer runs `bun run tokens:build` and commits both the updated `tokens/*.json` and the regenerated CSS. There are two in-repo exporters, and both write the same six files:
+
+1. The Figma plugin at `packages/ui-kit/figma-plugin/` - import its `manifest.json` under Plugins > Development. It works on any Figma plan and needs no agent.
+2. `packages/ui-kit/scripts/figma-export.js` - not run with node or bun; an agent executes it through the Figma MCP `use_figma` tool (see `tokens/HOW-TO-UPDATE.md`).
+
+Both look Figma collections up by name, so renaming a collection in Figma breaks the export - the expected names are in `tokens/HOW-TO-UPDATE.md`. Shadows are Figma effect styles, not variables, and are not exported. Because the format is DTCG-standard, the lightweight `packages/ui-kit/scripts/build-tokens.mjs` build script could be swapped for Style Dictionary without changing the source token files.
 
 ## Barrel generation
 
-The package's public API surface is assembled by a generated index rather than a hand-maintained one: `bun run gen:index` runs `src/generate-index.ts` to produce the barrel file that `dist/index.js` is built from. This keeps component exports in sync with what actually exists in `src` as components are added or removed.
+The package's public API surface is assembled by a generated index rather than a hand-maintained one: `bun run gen:index` runs `src/generate-index.ts` to write `src/index.ts`, the barrel that `dist/index.js` is built from. It exports every `.ts`/`.tsx` file (tests, `.d.ts` and `index.ts` excluded) under `src/components`, `src/hooks` and `src/utilities` - see [public surface](/reference/public-surface.md) for the current symbols.
+
+Put a new component, hook or utility in one of those directories and re-run `gen:index`. Never hand-edit `src/index.ts`.
 
 ## Other scripts
 
@@ -68,4 +78,4 @@ Notable `package.json` scripts: `build` (full package build via `scripts/build.s
 
 ## Relationship to the framework
 
-Because ui-kit has no dependency on kernel, react, or admin, it can be version-bumped, built, and published independently - see [build, run, test](/overview/build-run-test.md) and [release and publish](/process/release-publish.md) for the general package release flow that also applies here. Framework packages that render UI (such as [admin](/packages/admin.md)) consume ui-kit the same way any other app would: as an installed dependency providing components and CSS, not as a peer in the DI/lifecycle graph described in [application lifecycle](/architecture/application-lifecycle.md) or [DI in the browser](/architecture/di-in-the-browser.md).
+Because ui-kit has no dependency on kernel, react, or admin, it can be version-bumped, built, and published independently - see [build, run, test](/overview/build-run-test.md) and [release and publish](/process/release-publish.md) for the general package release flow that also applies here. No framework package - [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) or [ardor](/packages/ardor.md) - depends on ui-kit. An application that wants the components installs it as a plain dependency, with or without the framework packages. It provides components and CSS and is not a peer in the DI/lifecycle graph described in [application lifecycle](/architecture/application-lifecycle.md) or [DI in the browser](/architecture/di-in-the-browser.md).

@@ -25,8 +25,11 @@ cp .env.example .env.development
 bun install && bun run migrate:dev && bun run server:dev
 ```
 
-Then start the console itself with `bun run dev` from `examples/vert-admin`; Vite proxies `/api` to the
-vert server on port 3000. Sign in with a user seeded by `bun run seed:authz` in vert. See
+Then start the console itself with `bun run dev` from `examples/vert-admin`. Vite proxies `/api`,
+unrewritten, to `127.0.0.1:3000` - but vert's `.env.example` sets `APP_ENV_SERVER_PORT=1190` and
+`APP_ENV_SERVER_BASE_PATH=/v1/api` (port 3000 is only vert's fallback when the variable is unset or blank). Set
+those to `3000` and `/api` in vert's env file, or point the proxy at vert's real port and base path,
+before the console can connect. Sign in with a user seeded by `bun run seed:authz` in vert. See
 [Build, run, test](/overview/build-run-test.md) for the general pattern this follows.
 
 ## VertPaths
@@ -41,9 +44,12 @@ reference the same strings instead of duplicating literals.
 
 The auth provider options bound in `bindContext()` set `paths.signIn` to `VertPaths.SIGN_IN` and
 `paths.checkAuth` to `VertPaths.WHO_AM_I`. This means react-admin's session check hits the who-am-i
-endpoint rather than trusting a cached flag; a 401 there routes the app back to sign-in. This is the
-same auth-provider contract described in [Application lifecycle](/architecture/application-lifecycle.md)
-and the header protocol used by the data provider is covered in [Header protocol](/architecture/header-protocol.md).
+endpoint rather than trusting a cached flag. `DefaultAuthProvider.checkAuth`
+(`packages/admin/src/providers/auth.ts`) rejects to login without a request when no token is stored;
+otherwise it GETs `paths.checkAuth`, a 401 there first goes through auth recovery (below), and an empty
+response rejects to login. The rest of `DefaultAuthProvider` is described in
+[Auth recovery](/architecture/auth-recovery.md), and the header protocol used by the data provider is
+covered in [Header protocol](/architecture/header-protocol.md).
 
 ## authRecovery via an injected service
 
@@ -52,8 +58,9 @@ The REST data provider options include an `authRecovery` block with `refreshToke
 directly - it resolves `IdentityApi` from the container (`this.get<IdentityApi>({ key: 'services.IdentityApi' })`)
 and calls its `refresh()` method. `IdentityApi` is a `BaseApiService` bound via `bindingList()`, so it is
 resolved through the same DI container as everything else - see [DI in the browser](/architecture/di-in-the-browser.md).
-The refresh endpoint itself is listed in `noAuthPaths` is not set for it (only sign-in is), so a failed
-refresh surfaces as a real error instead of looping - the general shape of this mechanism is documented in
+The refresh endpoint itself is not listed in `noAuthPaths` (only sign-in is), and
+`DefaultNetworkRequestService.canRecover()` excludes `authRecovery.refreshTokenPath`, so a failed refresh
+surfaces as a real error instead of looping - the general shape of this mechanism is documented in
 [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 
 `IdentityApi.whoAmI()` and `IdentityApi.refresh()` are both decorated with `@api()` and call

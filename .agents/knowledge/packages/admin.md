@@ -1,16 +1,16 @@
 ---
 type: Package
 title: admin
-description: The react-admin adapter package that confines all ra-core usage behind ARDOR's providers, hooks and BaseCrudService.
+description: The react-admin adapter package that confines the framework's ra-core usage behind ARDOR's providers, hooks and BaseCrudService.
 resource: packages/admin/src/index.ts
 tags: [package, admin, react-admin, ra-core, i18n, data-provider]
 ---
 
-`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and nowhere else in the codebase imports `ra-core` directly. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md).
+`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and no other framework package (kernel, react, ui-kit) imports `ra-core`. Applications still import it directly for their own pages - the 5-mins-qs and vert-admin examples do. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md).
 
 ## What it exports
 
-The package barrel (`src/index.ts`) re-exports four areas: `common`, `components`, `hooks`, `providers`, `services`.
+The package barrel (`src/index.ts`) re-exports five areas: `common`, `components`, `hooks`, `providers`, `services`.
 
 Providers (`src/providers/index.ts`):
 - `DefaultRestDataProvider` and `CountRestDataProvider` - implementations of react-admin's data provider contract, translated into ARDOR's REST/filter vocabulary. React-admin's pagination, sort and filter parameters are mapped onto the `{ where, order, limit, skip, fields, include }` shape used by `@venizia/ignis-filter`. This is the concrete edge of the [data provider pipeline](/architecture/data-provider-pipeline.md).
@@ -23,7 +23,9 @@ Hooks (`src/hooks/index.ts`):
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
 
-Also exported: `BaseCrudService`, a base class for building CRUD services on top of the data providers, and `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
+Also exported: `BaseCrudService<E>`, which implements kernel's `ICrudService` over `dataProvider.send()`. Its constructor takes `{ scope, dataProvider, serviceOptions: { basePath } }` and injects nothing, so a subclass supplies the data provider itself, for example through `@inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`. It assumes a fixed REST layout under `basePath` - the collection itself, `/:id`, `/find-one` and `/count` - where the reads send `filter` as a query parameter (`count` and `updateAll` send `where`), and every method resolves to the response's `data`.
+
+The package also exports `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
 
 Types worth knowing: `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`.
 

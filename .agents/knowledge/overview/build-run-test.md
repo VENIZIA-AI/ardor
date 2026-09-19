@@ -23,7 +23,7 @@ Each package's `make <pkg>` target runs `bun run --filter "<pkg>" rebuild`, whic
 ## Test, lint, typecheck targets
 
 - `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each via `bun run test` inside the package directory. There is no `test-ardor` or `test-ui-kit` target.
-- `make lint` (alias `make lint-packages`) lints everything under `packages/*`; per-package variants (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`, `lint-ui-kit`) exist for targeted runs. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
+- `make lint` runs `lint-packages` (everything under `packages/*`) and then `lint-examples` (everything under `examples/*`); per-package variants (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`, `lint-ui-kit`) exist for targeted runs. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.
 
@@ -32,13 +32,14 @@ Each package's `make <pkg>` target runs `bun run --filter "<pkg>" rebuild`, whic
 Beyond build/test/lint, the Makefile exposes gate scripts that must pass for a change to be considered done:
 
 - `make catalog-check` - guards dependency versions against the root catalog (the mechanism [Design decisions](/overview/design-decisions.md) explains for tracking the highest published IGNIS line).
-- `make purity` - probes kernel/react/admin `dist/` for Node builtins and `ra-core` leaks, enforcing that ARDOR ships browser-pure output. Run `make purity-test` to test the purity probe's own regression suite.
-- `make layer-check` - enforces package layering boundaries (kernel must not depend upward on react/admin, etc).
+- `make purity` - bundles every runtime entry in the `exports` maps of kernel, react, admin and ardor for the browser and fails on a Node builtin import or an unguarded Node global such as `process.`, enforcing that ARDOR ships browser-pure output. The row set is derived from `exports`, so a new sub-path is claimed pure automatically; for what may be exempted, see [Gotchas](/conventions/gotchas.md). Run `make purity-test` to test the purity probe's own regression suite.
+- `make layer-check` - enforces package layering boundaries on the built output: the kernel's `dist` may not import React, Redux or react-admin packages (`ra-core`, `ra-i18n-polyglot`), and react's `dist` may not import `ra-core`, `react-admin` or `ra-i18n-polyglot`. Only kernel and react are scanned. This, not `make purity`, is where an `ra-core` leak into kernel or react is caught.
 - `make cycles-check` - fails on an import cycle in any built `dist`; bun turns every member of a cycle into a lazy initializer, so a barrel `export *` over one can publish an undefined export.
 - `make surface-check` - compares the built public surface (read from `.d.ts` files) against the committed snapshot; run `make surface-gen` after `make build-all` to regenerate that snapshot when the surface intentionally changes. See [Public surface](/reference/public-surface.md).
 - `make size-check` - measures brotli-compressed bundle size against budgets for kernel, react, admin and ardor, run after a build.
 - `make okf-check` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of).
 - `make wiki-links-check` - validates wiki-to-source links.
+- `make symbols-check` and `make releases-check` - freshness gates for the atlas tables (`make symbols-gen` / `make releases-gen` regenerate them). `symbols-check` reads the built `.d.ts`, so it needs a build first; `releases-check` reads release commits from `git log`, so it needs full history - a shallow clone has none, hence `fetch-depth: 0` in CI. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (a pinned `@venizia/ignis-atlas` through `bunx`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
 
 These gates are what CI and reviewers hold a change to; running `make build-all` green does not by itself mean the change is mergeable.
 

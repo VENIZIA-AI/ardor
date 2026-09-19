@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Docs writing style
-description: Hyphen never em-dash, the brand is always ARDOR, and the bundle is gated on it.
+description: Hyphen never em-dash, the brand is always ARDOR, and make okf-check flags dashes and the title-cased brand in the bundle.
 resource: docs/wiki
 tags: [conventions, docs, style]
 ---
@@ -19,10 +19,12 @@ Rules for anything written in the wiki or in this knowledge bundle:
 
 ## Enforcement
 
-This is not just a style preference - `make okf-check` gates the knowledge bundle on it (along
-with frontmatter shape, link validity, and coverage against the source inventory). A file that
-violates the em-dash or brand-casing rule fails the gate before it can land. See
-[build system](/process/build-system.md) for how the gate runs.
+This is not just a style preference - `make okf-check` fails on an em-dash, en-dash or the
+title-cased `Ardor` in bundle prose (other wrong casings and a misused `IGNIS` are not caught; code
+spans and fences are stripped first, so the forbidden forms can be quoted in backticks), along with
+frontmatter, link, structural coverage and freshness problems. It runs in the manually dispatched
+CI workflow, not in the pre-commit hook, so run it yourself before landing a bundle change. See [testing](/process/testing.md) for how CI runs and
+[build system](/process/build-system.md) for the wider build.
 
 The wiki also runs a snippet gate that compiles every ```ts fence in the docs against the real
 packages (kernel, react, admin, ui-kit). A code sample that references a service, provider, hook,

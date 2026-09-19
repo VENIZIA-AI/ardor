@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Testing conventions
-description: ARDOR tests run only on bun test, mirror source modules under __tests__, and rely on a happy-dom setup that restores Bun's native networking.
+description: ARDOR tests run only on bun test, mirror source modules under __tests__, and preload a per-package setup - happy-dom with Bun's native networking restored for react and admin, a DOM-less localStorage stub for kernel.
 resource: packages/kernel/src/__tests__
 tags: [conventions, testing]
 ---
@@ -21,18 +21,20 @@ the module, just rooted differently.
 
 ## The happy-dom setup restores Bun's networking
 
-ARDOR components render through React, so tests need a DOM. The setup file registers happy-dom's
-`GlobalRegistrator` to provide `document`, `window`, and friends. But happy-dom also replaces
-Bun's native networking globals - `fetch`, `Request`, `Response`, `Headers`, `FormData`, `Blob`,
-`File`, `AbortController`, `URL`, `URLSearchParams` - with its own implementations, and
-`Bun.serve` rejects a happy-dom `Response`.
+React and admin components render through React, so their tests need a DOM: their setup files
+register happy-dom's `GlobalRegistrator` to provide `document`, `window`, and friends. Kernel tests
+run without a DOM; its setup installs only a `localStorage` stub and a `navigator` fallback.
 
-The setup works around this by snapshotting the native versions of those globals **before**
+happy-dom also replaces Bun's native networking globals - `fetch`, `Request`, `Response`,
+`Headers`, `FormData`, `Blob`, `File`, `AbortController`, `URL`, `URLSearchParams` - with its own
+implementations, and `Bun.serve` rejects a happy-dom `Response`.
+
+Those setup files work around this by snapshotting the native versions of those globals **before**
 registering happy-dom, then reassigning them back onto `globalThis` immediately after
 registration. The result: DOM APIs come from happy-dom, but anything that touches the network -
 including code that uses [the data provider pipeline](/architecture/data-provider-pipeline.md) or
 stubs a `Bun.serve` instance for a fake backend - still uses Bun's real primitives. Never remove
-this restoration step when touching the setup file; deleting it silently reintroduces failures
+this restoration step when touching either setup file; deleting it silently reintroduces failures
 in any test that stubs a server or issues a real fetch.
 
 ## Accessing protected members
@@ -49,12 +51,17 @@ This keeps the production type surface honest - see
 [narrowing authority](/conventions/narrowing-authority.md) - while still letting a test assert on
 internal state.
 
-## No `any`, no casts
+## No casts
 
-Test code follows the same typing discipline as production code. No `any`, no `as unknown as X`
-escape hatches to force a type through. If a test needs to construct something awkward - like a
-`Storage` stub that mirrors real `localStorage` behavior - it does so with a fully typed helper
-rather than casting past the type system.
+Test code follows rule C-10 in `.agents/rules.md`: no `any` and no explicit cast - `as X`,
+`as unknown as X` and `as never` included. Assertions never cast to force a type through, and an
+awkward stub gets a typed helper or `satisfies` instead. A `Storage` stub that mirrors real
+`localStorage` - stored keys as own enumerable properties, because `DefaultAuthService.cleanUp()`
+enumerates them - fits a class implementing `Storage`, its methods on the prototype.
+
+Three older casts remain: `store as unknown as Storage` in the kernel setup's `createStorage()`, and
+inline `as never` arguments in admin's `rest-data.test.ts` and react's `use-artifact.test.ts`. They
+are debt, removed when their line is next touched - never a pattern to copy.
 
 ## Positive controls
 

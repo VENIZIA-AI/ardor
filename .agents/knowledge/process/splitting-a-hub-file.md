@@ -34,11 +34,11 @@ and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class 
    expressions. Grep, do not trust a list:
    `grep -rnE "from '[./]*types'|import\('[./]*types'\)|<scope>/types" src`.
 5. Rebuild CLEAN with `make <package>`. An incremental build leaves the old `types.js` beside the new
-   `types/` folder and `tsc-alias` resolves the barrel to the stale file; `ls dist/esm/<scope>/common`
+   `types/` folder and `tsc-alias` resolves the barrel to the stale file; `ls dist/<scope>/common`
    must show `types/` and no `types.js`.
 6. Gates: the package suite and every downstream suite (kernel changes ripple into react and admin,
-   which load `dist/esm`), `make lint-<package>`,
-   `bun scripts/module-cycles.ts packages/<package>/dist/esm --max 0`, `make surface-check` (never
+   which load `dist`), `make lint-<package>`,
+   `bun scripts/module-cycles.ts packages/<package>/dist --max 0`, `make surface-check` (never
    `surface-gen` for a split - a changed snapshot means a leak or a loss), `make okf-gen && make okf-check`,
    `make wiki-links-check` (repoint every doc link at the topic file that declares the named symbol).
 7. Commit the move and the doc repoints separately: `refactor(<package>): <scope> types split by topic`

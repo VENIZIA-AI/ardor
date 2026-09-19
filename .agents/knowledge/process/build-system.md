@@ -12,14 +12,14 @@ ARDOR's build tooling lives at two levels: per-package `scripts` in each `packag
 
 ## Per-package scripts
 
-Every package (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), [ardor](/packages/ardor.md), [ui-kit](/packages/ui-kit.md)) exposes the same script surface, illustrated by `packages/kernel/package.json`:
+The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), [ardor](/packages/ardor.md), [ui-kit](/packages/ui-kit.md)) share a script surface, illustrated by `packages/kernel/package.json`. All five define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`, `eslint`, `prettier:cli`, `prettier:fix`). The rest vary: `ui-kit` has no `typecheck`, `test` or `size` script (so `typecheck-all` silently skips it and `size-check` does not cover it), and `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
 
 - `build` - runs `scripts/build.sh`, the actual compiler invocation.
-- `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
+- `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error. `ui-kit` is the exception: its `rebuild.sh` has no type-check step and runs `gen:index`, then `clean`, then `build`.
 - `clean` - removes `dist` and build artifacts.
-- `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one.
+- `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one. `ardor` has no `tsconfig.test.json`, so its `typecheck` (and its `rebuild.sh`) use `tsconfig.json` instead.
 - `test` - `bun test` with `NODE_ENV=test` and `.env.test`.
-- `size` - runs `size-limit` against the built bundle, with peer dependencies (like `lodash`, `socket.io-client`) listed in `ignore` since they're externals, not bundled code.
+- `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `socket.io-client`) and the runtime dependencies (like `lodash`) from the measurement, so the budget measures only the package's own code.
 - `force-update` - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 
 ## tsconfig layering

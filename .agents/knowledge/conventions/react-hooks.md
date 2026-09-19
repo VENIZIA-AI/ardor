@@ -10,11 +10,13 @@ Hooks in ARDOR follow a small set of consistent rules across the [react](/packag
 
 ## Naming
 
-Every hook is a function whose name starts with `use`, matching the file it lives in: `useAutosave` in `use-autosave.ts`, `useInjectable` in `use-injectable.ts`, `useRefreshToken` in `use-refresh-token.ts`. This is the standard React rule, enforced by lint, and it is what allows the rules-of-hooks linter and `renderHook` test helpers to recognize the function.
+Every hook name starts with `use`. This is the standard React rule, enforced by lint, and it is what allows the rules-of-hooks linter and `renderHook` test helpers to recognize the function.
+
+A file normally holds one hook named after it: `useAutosave` in `use-autosave.ts`, `useDebounce` in `use-debounce.ts`, `useRefreshToken` in `use-refresh-token.ts`. A file may also hold a companion hook next to its main one - `useInjectableContainer` sits beside `useInjectable` in `use-injectable.ts`, and `useApplicationLogger` sits beside `useApplicationContext` in `use-application-context.ts`. A family of thin variants over one implementation may share a file named for the family - `useService`, `useProvider`, `useComponent` and `useConfiguration` all live in `use-artifact.ts` (see [react](/packages/react.md)).
 
 ## Options object parameter
 
-Hooks that take more than a trivial single value accept one options object, following the same pattern as [Options objects](/conventions/options-objects.md). `useAutosave` takes an `IUseAutosaveParams<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `disabled`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
+A hook that takes any input accepts one options object, following rule C-02 and [Options objects](/conventions/options-objects.md) - a single value is not an exception: `useSizer` takes `{ containerId }` and `useInjectableContainer` takes `{ container }`. `useAutosave` takes an `IUseAutosaveParams<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `disabled`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
 
 Every field on the options interface carries a JSDoc comment describing what it does and, where relevant, its default (`@default 2000` on `interval`). Document each field this way; it is the primary API surface a consumer sees in their editor.
 

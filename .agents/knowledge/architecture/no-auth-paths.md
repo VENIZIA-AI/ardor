@@ -20,6 +20,12 @@ Three options passed into the constructor (`packages/kernel/src/base/services/ne
 
 Regex patterns are tested against two candidates: `resource` and `paths.join('/')` when a `paths` array is supplied. `lastIndex` is reset before each `test` call so global regexes do not silently skip matches on repeated use.
 
+## What the header decision actually matches
+
+When building headers, `getRequestHeader` calls `isNoAuthPath({ resource })` only - no `paths`. So `noAuthPaths` and `noAuthPathRegex` are matched against `resource` alone: the react-admin resource name, or the exact string passed to `send()`, never an id-suffixed path. The `paths` candidate is used only by the recovery check (`canRecover`), which passes the joined request paths.
+
+A request that is not no-auth and has no token throws a `401` from `getRequestAuthorizationHeader` before it is ever sent. Any endpoint called before a token exists must therefore be declared no-auth - above all the sign-in path, which `DefaultAuthProvider` sends as the resource `paths.signIn ?? '/auth/login'`. An entry in `noAuthPaths` must match that string exactly, leading slash included; the other way is an entry in `noAuthPathRegex` that matches it.
+
 ## isNoAuthPath
 
 ```ts

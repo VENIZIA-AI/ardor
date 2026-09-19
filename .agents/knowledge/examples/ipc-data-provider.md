@@ -1,24 +1,27 @@
 ---
 type: Tutorial
 title: ipc-data-provider
-description: Walks through building a custom transport for ARDOR's data provider by overriding only send(), using an in-process IPC example.
+description: Walks through moving ARDOR's data provider send() path onto a custom transport by overriding send(), using an in-process IPC example, and what still goes over HTTP.
 resource: examples/ipc-data-provider/src/index.ts
 tags: [tutorial, data-provider, ipc, transport, examples]
 ---
 
-## Why send() is the seam
+## What send() is the seam for
 
-Every data provider in ARDOR eventually funnels through one method: `send()`. It is the single
-point where a resource name and a set of params turn into a network call and come back as
-`{ data }`. Everything above that - the react-admin methods (`getList`, `getOne`, `create`, and so
-on), filter mapping, and the `value()` helper - is transport-agnostic and lives in the base class,
-`DefaultRestDataProvider`. That base class assumes HTTP by default, but nothing about its public
-shape (`IDataProvider`) requires HTTP. This is the extension point described in
-[Data provider pipeline](/architecture/data-provider-pipeline.md): swap `send()` and you swap the
-whole transport without touching a single hook or service that consumes the provider.
+`send()` is the point where a resource name and a set of params turn into a network call and come
+back as `{ data }`, for everything that calls it: `DefaultAuthProvider` (`login`, `checkAuth`),
+`BaseCrudService`, and any direct `dataProvider.send()` call. Swap `send()` and those callers move
+to the new transport without being touched. The base class, `DefaultRestDataProvider`, assumes HTTP
+by default, but nothing about its public shape (`IDataProvider`) requires HTTP.
 
-This example proves it by replacing HTTP with an in-memory command dispatch table - the same shape
-a desktop shell would use for Tauri's `invoke`, an Electron bridge, or a Worker port.
+`send()` is **not** the seam for the react-admin CRUD methods (`getList`, `create`, ...): they reach
+`networkService.doRequest` without going through `send()` (`getList` and `getManyReference` by way
+of the overridable `getListHelper`), so with only `send()` overridden they still issue HTTP against
+the bound `url` - see Step 3.
+
+This example shows the `send()` seam by replacing HTTP under it with an in-memory command dispatch
+table - the same shape a desktop shell would use for Tauri's `invoke`, an Electron bridge, or a
+Worker port.
 
 ## Step 1: model the transport
 
@@ -46,11 +49,13 @@ command name; `params` is passed straight through.
 
 ## Step 3: what still comes from the base class
 
-Everything else. `getList`, `getOne`, `create`, `update`, `delete`, filter-to-query mapping, and
-`value()` for pulling fields out of responses - all inherited unchanged. If your shell has no HTTP
-concept whatsoever, you can override those methods too, following the same pattern: keep the
-public shape, replace only what differs. This is the point of the base class existing as a
-concrete default rather than an abstract contract - see [Design decisions](/overview/design-decisions.md).
+Everything else - but inherited is not the same as transport-agnostic. The CRUD methods (`getList`,
+`getOne`, `create`, `update`, `delete`, ...) and their filter-to-query mapping are inherited
+unchanged, and they still go through `networkService.doRequest` over HTTP; here that means against
+`ipc://local`, which fails. A shell with no HTTP at all must override those methods too (or swap the
+network service), following the same pattern: keep the public shape, replace only what differs.
+`value()`, the positional adapter react-admin actually holds, is inherited too - see
+[Data provider pipeline](/architecture/data-provider-pipeline.md).
 
 ## Step 4: bind it
 
@@ -81,16 +86,17 @@ bun run start
 
 The script builds a minimal `BaseArdorApplication`, starts it (triggering the normal
 [Application lifecycle](/architecture/application-lifecycle.md)), then pulls the provider back out
-of the container with `application.get()` and calls `send()` through the standard react-admin-style
-API: a `products` list fetch, a single `products` fetch by id, and an `auth/login` POST. Each comes
+of the container with `application.get()` and calls `send({ resource, params })` - ARDOR's
+object-shaped escape hatch, not a positional react-admin method. It exercises `send()` alone: a
+`products` list fetch, a single `products` fetch by id, and an `auth/login` POST. Each comes
 back as ordinary ARDOR provider output - same shape as if it had gone over HTTP. A call to an
 unknown command rejects with a 404-shaped error, exercising the same error path a bad HTTP response
 would trigger.
 
 ## Takeaway
 
-To add a new transport to ARDOR: subclass the default provider, override `send()` (and only the
-other methods you actually need to differ), bind the subclass in `bindContext()`, and consume it
-through the same `IDataProvider` interface everywhere else. See
+To add a new transport to ARDOR: subclass the default provider, override `send()` - and, if the
+transport has no HTTP, the CRUD methods as well, since they bypass `send()` - bind the subclass in
+`bindContext()`, and consume it through the same `IDataProvider` interface everywhere else. See
 [Adding a provider](/process/adding-a-provider.md) for the general checklist and
 [Providers reference](/reference/providers.md) for what ships today.

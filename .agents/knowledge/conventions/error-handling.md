@@ -11,10 +11,12 @@ Never throw a raw `new Error(...)`. Use `getError(opts: TError)` from `@venizia/
 (defaults to `400`), a `normalized` message, and an optional `extra` payload.
 
 The error module lives in `@venizia/ignis-inversion`, the same DI package that underpins
-[DI in the browser](/architecture/di-in-the-browser.md). ARDOR is a browser application with no
-server process behind it, but it still shares this error shape with every layer that touches
-inversion - services, providers, hooks - so a failure raised deep in a data provider request looks
-identical to one raised while booting the application container.
+[DI in the browser](/architecture/di-in-the-browser.md). It is how ARDOR's services, providers and
+hooks raise their own failures, but not every rejection carries this shape: on a non-2xx response
+`DefaultNetworkRequestService.doRequest` rethrows the response body (`body.error ?? body`) as the
+backend sent it, with no `getError`, and `DefaultAuthProvider` rejects with plain objects. A failure
+deep in a data provider request therefore need not look like one raised while booting the
+application container - see [Error flow](/architecture/error-flow.md).
 
 ```typescript
 throw getError({
@@ -57,8 +59,9 @@ drift.
 ## Every ApplicationError carries `normalized`
 
 `normalized = { text, code, args }` is always built, every field always populated, and it is the
-ONLY home for the code and the interpolation args. `useNotifyError` renders any error with one
-lookup on `error.normalized.code`, letting [i18n](/architecture/i18n.md) resolve the message from
+ONLY home for the code and the interpolation args. `useNotifyError` renders an `ApplicationError`
+with one lookup on `error.normalized.code` (a raw HTTP failure body carries `normalized` only if
+the backend sent one), letting [i18n](/architecture/i18n.md) resolve the message from
 the translation table. Pass `transform` to build `normalized` yourself from a snapshot
 (`{ message: TErrorNormalized, statusCode, extra }`):
 
@@ -99,12 +102,15 @@ is a consumed key, so the failure would vanish - the compiler now rejects it. Wr
 
 ## Requests carry their own vocabulary, not their own error codes
 
-`RequestMethods`, `RequestTypes`, `RequestBodyTypes` and friends in
+`RequestMethods`, `RequestTypes` and `RequestBodyTypes` in
 `packages/kernel/src/common/constants.ts` describe the shape of a data provider request - the
 verb, the record type, the body encoding. They are const classes with a `SCHEME_SET` and
-`isValid`, not error catalogs. An invalid method or type surfaces through `getError` with a
-`RequestErrors`-style definition, keeping the vocabulary and the failure separate: the constant
-classes stay data, the catalog stays the single place a status and a code are paired.
+`isValid` (see [const classes](/conventions/const-classes.md)), not error catalogs. Only the tests
+call `isValid` today and no request error catalog exists: the closed value types
+(`TRequestMethod`, `TRequestType`, `TRequestBodyType`) are the only guard. A runtime check added
+at a boundary raises through `getError`, keeping the vocabulary and the failure separate - the
+constant classes stay data, and a status and a code are paired in the error, never on the
+vocabulary.
 
 ## Log an expected failure below `error`
 

@@ -21,6 +21,10 @@ Both hooks follow the same pattern: a default union derived from something real 
 
 Only the `keyof` of the override interface matters - property values are ignored, so the convention is to type them all as `true`. This gives applications compile-time protection against typo'd keys instead of accepting any string silently.
 
+## The per-stereotype hooks share the key union
+
+`useService`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form, so one augmentation of `IUseInjectableKeysOverrides` on the React package types all five DI hooks. The `{ target }` form of every one of them bypasses the union entirely: it resolves a stereotyped class through the binding key its stereotype decorator recorded on the class, so it needs no augmentation at all. A class registered only through `service()`, `injectable()` or `bindingList()` records no key on the class, so `{ target }` throws for it and it must be resolved by `{ key }` - which is where the augmentation matters. For a class that carries a stereotype, `{ target }` sidesteps the any-widening footgun below, because no key string is involved.
+
 ## The two override interfaces and their owning packages
 
 - `IUseInjectableKeysOverrides` is declared in the [React package](/packages/react.md).

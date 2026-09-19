@@ -20,14 +20,41 @@ namespaced by convention so that services, providers, and options do not collide
 [Binding key namespaces](/conventions/binding-key-namespaces.md) and
 [Binding keys reference](/reference/binding-keys.md).
 
+**CoreBindings** - the const class of fixed framework keys, paths under `@app/` (for example
+`'@app/application/instance'`) rather than `<scope>.<ClassName>` keys. It is ARDOR's own, not
+re-exported from IGNIS, whose own `CoreBindings` shares the member `APPLICATION_INSTANCE` with a
+different value (`'@app/instance'`). See [Binding key namespaces](/conventions/binding-key-namespaces.md).
+
+**Stereotype** - a class decorator from `@venizia/ignis-kernel/metadata`, re-exported by ARDOR
+(`service`, `component`, `configuration` and the rest). At import time it records the binding key
+on the class and appends the class to a process-global discovery list, which `registerArtifacts()`
+binds during `preConfigure()`. It binds first, so a `bindingList()` entry under the same key
+overrides it, and a `bindContext()` binding overrides both. See
+[Binding key namespaces](/conventions/binding-key-namespaces.md).
+
+**Binding list** - `bindingList()`, the application override that returns literal
+`{ 'services.ProductApi': ProductApi }` keys, bound as singletons after the stereotypes and before
+`bindContext()`. Literal keys survive a minifier that rewrites `Class.name`, and they are what types
+`useInjectable` through `IUseInjectableKeysOverrides`. See
+[Binding key namespaces](/conventions/binding-key-namespaces.md).
+
 **Provider** - something bound with `.toProvider(...)`, resolved lazily and typically producing a
 value used by react-admin (the REST data provider, the auth provider, the i18n provider). Contrast
 with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 
-**Service** - a unit registered with `this.service(SomeApi)` in `bindContext()`, resolved later
-through `useInjectable`. Services carry application logic (for example `ProductApi`), as opposed
-to the framework-level providers. See [Hooks and services reference](/reference/hooks-and-services.md).
+**Service** - a class of application logic (for example `ProductApi`), as opposed to the
+framework-level providers, bound under `services.<ClassName>`. Mark it `@service()` so the
+application binds it with no listing, or register it with `bindingList()` or `this.service(X)`.
+Resolve a `@service()` class with `useService({ target })`, which also asserts the class landed in
+the `services` namespace. `bindingList()` and `this.service(X)` record no binding key on the class,
+so a class registered that way is resolved by key: `useService({ key: 'services.ProductApi' })` or
+`useInjectable({ key })`. See [Hooks and services reference](/reference/hooks-and-services.md).
+
+**ApplicationContext** - the React context in `ardor-react` that holds the `container`, the
+`registry` and the `logger`. `ArdorApplication` provides it, and `useInjectable` and the stereotype
+hooks fall back to its container when none is passed. See
+[Hooks and context](/architecture/hooks-and-context.md).
 
 **Data provider** - the react-admin data provider produced by `DefaultRestDataProvider`. It speaks
 REST to the backend, understands `noAuthPaths` and `authRecovery`, and is the seam react-admin uses
@@ -51,10 +78,13 @@ to teach TypeScript an application's own binding keys or message keys (for examp
 `IUseInjectableKeysOverrides` or `IUseTranslateKeysOverrides`). See
 [Module augmentation](/architecture/module-augmentation.md).
 
-**Purity** - the requirement that `ardor-kernel` and `ardor-react` stay isomorphic: no React in the
-kernel, no react-admin, and no server-only or Node-only code leaking into either package. This is
-the same guarantee `ignis-kernel` carries in IGNIS, and it is why the kernel has no controllers,
-repositories, or datasource layer of its own - those concepts do not exist in ARDOR.
+**Purity** - the requirement that ARDOR's runtime packages stay browser-safe: kernel and react
+import neither a Node builtin nor `ra-core`, and admin imports no Node builtin. `make purity` probes
+the built `dist` of kernel, react, admin and the ardor umbrella; the layering half (no React in the
+kernel, no react-admin in kernel or react) is `make layer-check`. This is the same guarantee
+`ignis-kernel` carries in IGNIS, and it is why the kernel has no controllers, repositories, or
+datasource layer of its own - those concepts do not exist in ARDOR. See
+[Design decisions](/overview/design-decisions.md).
 
 **Layer boundary** - the dependency order between packages (kernel before react before admin
 before the ardor umbrella; ui-kit is independent). A package type-checks against the built `dist`
@@ -63,13 +93,20 @@ the next until that package is rebuilt too. See [Monorepo layout](/overview/mono
 [Build system](/process/build-system.md).
 
 **Surface snapshot** - a tracked record of a package's public exports, used to catch accidental
-additions or removals to what a package exposes. IGNIS generates this with `scripts/public-surface.ts`;
-it is the artifact [Public surface](/reference/public-surface.md) describes for ARDOR.
+additions or removals to what a package exposes. ARDOR generates it itself with its own
+`scripts/public-surface.ts` (`make surface-gen`, verified by `make surface-check`), reading the built
+`.d.ts` - the same pattern IGNIS follows for its own packages. The snapshot is
+[Public surface](/reference/public-surface.md).
 
 **Changelog entry** - a per-release file describing what changed, who is affected, and any breaking
 changes, following the IGNIS `content/changelogs/YYYY-MM-DD-<slug>.md` template. See
 [Release and publish](/process/release-publish.md).
 
-**Highest line** - the marker in a package's release history for the newest published version, used
-so the release chain and the package table can distinguish "latest" from "highest" when versions are
-not published in strict order. See [Release and publish](/process/release-publish.md).
+**Highest line** - the newest published version of a `@venizia/*` dependency, prerelease included,
+which ARDOR tracks instead of npm's `latest` tag because a feature shipped on the IGNIS prerelease
+line is what the framework builds on. The `@venizia/*` entries of the root `workspaces.catalog` (the
+IGNIS packages and `dev-configs`) follow the npm dist-tag `highest` through
+`bun scripts/refresh-catalog.ts highest`. ARDOR's own cross-package ranges sit outside the catalog
+and follow the semver-highest published version through each package's `force-update highest`.
+`make update` runs both. See [Build system](/process/build-system.md) and
+[Release and publish](/process/release-publish.md).

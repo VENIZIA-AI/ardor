@@ -18,10 +18,11 @@ All packages are scoped `@venizia/*` and installed together:
 - `@venizia/ardor-admin` - react-admin adapter, see [admin](/packages/admin.md)
 - `@venizia/ardor-ui-kit` - design system, see [ui-kit](/packages/ui-kit.md)
 
-A consuming application also depends directly on two IGNIS packages, since ARDOR is a consumer of IGNIS rather than a reimplementation of it:
+A consuming application also depends directly on three IGNIS packages, since ARDOR is a consumer of IGNIS rather than a reimplementation of it:
 
 - `@venizia/ignis-inversion` - the inversion-of-control primitives ARDOR's applications and DI are built on. See [DI in the browser](/architecture/di-in-the-browser.md).
 - `@venizia/ignis-filter` - the query vocabulary spoken by ARDOR's data provider. See [data provider pipeline](/architecture/data-provider-pipeline.md).
+- `@venizia/ignis-kernel` - the artifact stereotypes (`@service()`, `@component()` and the rest) that `@venizia/ardor-kernel` re-exports, and a required peer dependency of it. See [DI in the browser](/architecture/di-in-the-browser.md).
 
 `reflect-metadata` is also a required peer dependency, imported once before the application class is defined.
 
@@ -31,7 +32,7 @@ The published documentation for ARDOR lives at:
 
 **https://ardor.venizia.ai**
 
-This is the canonical place to check for user-facing guides, migration notes, and API reference that go beyond what's captured in this agent bundle. When this bundle's material is thin or ambiguous, treat the docs site as the higher-authority source for anything not covered in [What is ARDOR](/overview/what-is-ardor.md) or [Design decisions](/overview/design-decisions.md).
+This is the place to point people to for user-facing guides, migration notes, and API reference that go beyond what's captured in this agent bundle. The docs site is the human-facing rendering of `docs/wiki` and can lag the code. When this bundle is thin, read the source - for the what and the why, start from [What is ARDOR](/overview/what-is-ardor.md) and [Design decisions](/overview/design-decisions.md). When the bundle, the wiki and the code disagree, the code wins and the prose is a bug.
 
 ## IGNIS
 
@@ -40,6 +41,8 @@ IGNIS is the backend framework in the VENIZIA family; ARDOR is its frontend sibl
 **https://ignis.venizia.ai**
 
 Consult IGNIS docs for details on the inversion-of-control container semantics (`@venizia/ignis-inversion`) that ARDOR's binding model builds on, and on the filter/query vocabulary (`@venizia/ignis-filter`) used by ARDOR's REST data provider. ARDOR itself has no controllers, repositories, datasources, or server-side routing layer - those concerns, if relevant at all, belong to IGNIS, not to this frontend framework.
+
+The `ardor-atlas` MCP server registered in this repository is an IGNIS package too, `@venizia/ignis-atlas`; its package README links its upstream page at https://ignis.venizia.ai/extensions/atlas. How ARDOR pins and runs it is in [Atlas MCP server](/reference/atlas-mcp.md).
 
 ## react-admin docs
 

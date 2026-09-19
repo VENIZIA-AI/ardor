@@ -44,8 +44,8 @@ suites](/process/testing.md) for the per-package targets and what each one check
 ## Step 5: read the knowledge bundle, in this order
 
 The bundle is Open Knowledge Format - one concept per markdown file, YAML frontmatter, links as the
-graph edges - served both as files under `.agents/knowledge/` and over MCP by `ardor-atlas`. Read
-in this order:
+graph edges - served both as files under `.agents/knowledge/` and over MCP by `ardor-atlas` (see
+[Atlas MCP server](/reference/atlas-mcp.md) for its tools and what backs them). Read in this order:
 
 1. [What is ARDOR](/overview/what-is-ardor.md) - the frontend framework, its role next to IGNIS,
    and the IoC-container mental model.

@@ -36,10 +36,14 @@ type TUseInjectableOptions =
 Resolution rules:
 
 - `{ key }` calls `container.get({ key })` directly - `key` is typically a value from the const-class binding keys registry (see [Binding key namespaces](/conventions/binding-key-namespaces.md)).
-- `{ target }` looks the binding key up in the container's metadata registry first, then resolves it. The class must have been decorated or registered on the application - otherwise the hook throws.
-- If you pass an explicit `container`, that takes priority over the one in context. If there is neither an explicit container nor one in context, the hook throws.
+- `{ target }` reads the binding key recorded on the class from the container's metadata registry, then resolves it. Only a stereotype (`@service()`, `@component()`, ...) records that key. A class registered only through the application's `service(X)`, `injectable(scope, X)` or `bindingList()` carries no recorded key - those only call `bind().toClass()` - so the hook throws for it; resolve such a class by `{ key }`.
+- If you pass an explicit `container`, that takes priority over the one in context. The choice lives in `useInjectableContainer({ container? })`, which returns the explicit container, else `ApplicationContext.container`, and throws `[useInjectable] Failed to determine injectable container!` when there is neither.
 
 The type `TUseInjectableKeys` is the union of core binding key strings plus the keys of `IUseInjectableKeysOverrides`, an empty interface you augment for your own bindings. This is the same [module augmentation](/architecture/module-augmentation.md) pattern used elsewhere in ARDOR, and it keeps custom binding keys type-safe without ARDOR needing to know about them ahead of time. See also [Binding keys](/reference/binding-keys.md).
+
+## Per-stereotype hooks
+
+`useService`, `useProvider`, `useComponent` and `useConfiguration` (`packages/react/src/hooks/use-artifact.ts`) are built on `useInjectable` and need the same tree: a container on `ApplicationContext`, or an explicit `container` option. Each takes `{ target }` or `{ key }` in an options object, and `{ target }` carries the same stereotype requirement as above. With `{ target }` each hook infers the return type from the class and asserts that the class is bound under its own namespace; see the per-stereotype hooks section of [react](/packages/react.md) for the details.
 
 ## ra-core hooks
 

@@ -1,16 +1,16 @@
 ---
 type: Concept
 title: Error flow
-description: How ARDOR turns thrown errors into a normalized shape that flows from network calls through @api() logging, checkError auth mapping, and useNotifyError display.
+description: How thrown errors flow in ARDOR - getError-built ApplicationErrors and raw HTTP failure bodies from doRequest - through @api() logging, checkError auth mapping, and useNotifyError display.
 resource: packages/admin/src/hooks/use-notify-error.ts
 tags: [architecture, errors, error-handling, auth, notifications]
 ---
 
-ARDOR treats errors as data, not exceptions to pattern-match on. Every error that crosses a package boundary is created with `getError` from `@venizia/ignis-inversion`, which returns an `ApplicationError`. Nothing in the codebase does `new Error(...)` or `instanceof Error` checks across package boundaries - see [Error handling](/conventions/error-handling.md) for the rule and [Coding style](/conventions/coding-style.md) for why. This concept walks the actual path an error takes at runtime.
+ARDOR treats errors as data, not exceptions to pattern-match on. The data and auth layers raise their failures with `getError` from `@venizia/ignis-inversion`, which returns an `ApplicationError`. The main exception is an HTTP failure body, which `doRequest` rethrows as the backend sent it (step 1); `DefaultAuthProvider.getIdentity` also rejects with a plain `{ message }` object. Nothing in those layers does `new Error(...)` or `instanceof Error` checks - see [Error handling](/conventions/error-handling.md) for the rule and [Coding style](/conventions/coding-style.md) for why. This concept walks the actual path an error takes at runtime.
 
 **1. Where errors originate: doRequest**
 
-The network layer's `doRequest` is the single place raw HTTP failures get turned into `ApplicationError`s. When a request fails, ARDOR throws `getError` built from `body.error ?? body` - it prefers a server-supplied `error` field on the response body, falling back to the whole body if no `error` key exists. This means the shape of the error depends on what the backend sends, but the throwing code never has to guess: it always produces an `ApplicationError` with a `statusCode` and, where the server provides one, a normalized `code`/`args` pair. `getRequestAuthorizationHeader` in the auth flow follows the same pattern when it throws for a missing token, calling `getError({ message, statusCode: 401 })` directly rather than constructing a native `Error`.
+The network layer's `doRequest` (`DefaultNetworkRequestService`, `packages/kernel/src/base/services/network-request.ts`) is where raw HTTP failures enter the flow. On a non-2xx response it parses the JSON body and throws `body.error ?? body` as-is - it prefers a server-supplied `error` field, falling back to the whole body if no `error` key exists. The thrown value is whatever that JSON body holds, with a shape (including whether a `status` or `normalized` field is present) set by the backend, not a guaranteed `ApplicationError`. If the body is not JSON (empty, or an HTML proxy page), `rs.json()` itself rejects with a native `SyntaxError` that carries no status at all. The admin REST data provider returns the `doRequest` promise without a catch, so the value reaches react-admin unchanged. The failures ARDOR raises itself do use `getError`: `doRequest` throws `getError({ message })` when no `baseUrl` is set, and `getRequestAuthorizationHeader` throws `getError({ message, statusCode: 401 })` for a missing token rather than constructing a native `Error`.
 
 **2. Logging: the @api() decorator**
 
@@ -24,7 +24,7 @@ Service methods that make outbound calls are wrapped with the `@api()` decorator
 - `403` rejects with `{ redirectTo: '/unauthorized', logoutUser: false }` - the session is kept alive, only the route changes.
 - Anything else resolves, meaning react-admin treats it as not an auth-related failure.
 
-This is the bridge between raw `ApplicationError`s carrying HTTP status codes and the redirect behavior described in [Auth recovery](/architecture/auth-recovery.md). Note that `checkError` here works off `status`, matching whatever shape `doRequest`'s thrown error exposes to react-admin's data provider contract.
+This is the bridge between thrown HTTP failures and the redirect behavior described in [Auth recovery](/architecture/auth-recovery.md). Note that `checkError` reads `status`, not `statusCode`: an `ApplicationError` built by `getError` (including the missing-token 401 from step 1) never matches, and an HTTP failure only matches if the backend body (or its `error` field) carries a `status`.
 
 **4. Display: useNotifyError**
 
@@ -32,7 +32,7 @@ At the UI edge, `useNotifyError` (packages/admin/src/hooks/use-notify-error.ts) 
 
 **The non-obvious rules**
 
-- Never construct errors with `new Error(...)` and never branch with `instanceof` across package boundaries - always `getError` in, `ApplicationError` out. This keeps the shape consistent so `checkError` and `useNotifyError` can rely on `status` and `normalized` always being present in the right cases.
-- `@api()` only logs and rethrows - it is not a place to transform or downgrade errors. Transformation happens once, at the `doRequest` boundary.
+- Never construct errors with `new Error(...)` and never branch with `instanceof` across package boundaries - always `getError` in, `ApplicationError` out. The exception is an HTTP failure body: `doRequest` rethrows it as received, so its `status` and `normalized` fields are the backend's contract, not ARDOR's. An `ApplicationError` carries `statusCode`, not `status`, so `checkError` never sees a status on one.
+- `@api()` only logs and rethrows - it is not a place to transform or downgrade errors.
 - `checkError`'s 401 handling actively cleans up auth state before redirecting, so a 401 is both a navigation event and a side-effecting logout, not just a passive to the login page.
-- `useNotifyError` assumes `error.normalized` exists; if a thrown value skipped `getError` somewhere upstream, the notification will silently show `undefined` as the message key, which is the practical cost of breaking the "always use getError" rule.
+- `useNotifyError` assumes `error.normalized` exists; if a thrown value skipped `getError` somewhere upstream (or is a backend error body with no `normalized` field), the notification will silently show `undefined` as the message key, which is the practical cost of breaking the "always use getError" rule.

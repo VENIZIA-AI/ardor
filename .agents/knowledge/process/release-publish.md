@@ -2,32 +2,50 @@
 type: Playbook
 title: Release and publish
 description: How to run the manually-triggered NPM Release workflow for an ARDOR package and validate it against a consumer before publishing.
-resource: .github/workflows/npm-release.yml
+resource: .github/workflows/package-release.yml
 tags: [process, release, ci]
 ---
 
 ## What triggers it
 
-The "NPM Release" workflow is a `workflow_dispatch` only - it never runs on push, tag, or PR. A
-human triggers it from the Actions tab (or `gh workflow run`) and picks two required inputs:
+The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workflow_dispatch` only -
+it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
+`scripts/release.ts` (below), with two required inputs:
 
 - `package`: one of `kernel`, `react`, `admin`, `ardor`, `ui-kit`.
 - `build_mode`: the semver bump - `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, or
   `prerelease` (default `patch`).
 
-**The dispatch must name the ref.** GitHub validates `workflow_dispatch` inputs against the copy of
-the workflow on the ref being dispatched, and `gh workflow run` defaults to the repository's DEFAULT
-branch. That branch is `main`, which still carries the pre-ARDOR dropdown listing only `ui-kit`, so
-any other package comes back `HTTP 422: Provided value 'kernel' for input 'package' not in the list
-of allowed values`. `scripts/release.ts` passes `--ref develop`; a hand-run `gh workflow run` needs
-it too. The same staleness is why `ci.yml` is not dispatchable at all - it exists only on `develop`,
-and `gh` reports `workflow ci.yml not found on the default branch`. Both stop being true once ARDOR
-lands on `main`.
+**The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
+the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
+defaults to the DEFAULT branch, `main`, so an unpinned run builds `main` even though its bump commit
+lands on `develop`. `scripts/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
+too.
 
 There is no fan-out step that releases every package in one dispatch: each package is released with
 its own run. See [Monorepo layout](/overview/monorepo-layout.md) for how the packages map to
 folders, and [packages/kernel](/packages/kernel.md), [packages/react](/packages/react.md),
 [packages/admin](/packages/admin.md), [packages/ardor](/packages/ardor.md) for what each package is.
+
+## Driving a chain
+
+`bun scripts/release.ts [pkg...]` dispatches `package-release.yml` for one package at a time, in
+dependency order, and waits for each run to finish before the next - the workspace-wide
+force-update below cannot overlap. With no package names it releases every package that needs one.
+`--mode` defaults to `prerelease`. There is no prompt: without `--yes` the script prints the plan and
+dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushed tree. After the
+chain it runs `make releases-gen` and `make symbols-gen` and commits `reference/releases.json` and
+`reference/symbols.json`. `releases.json` is generated from the release commits, so it is stale by
+exactly the chain that just shipped; `symbols.json` is read from the local `dist` `.d.ts`, and
+nothing builds first. `--no-tables` opts out.
+
+`bun scripts/release-local.ts` publishes from the machine instead, without Actions minutes. It runs
+the workflow's force-update, build, lint, version bump and `bun publish`, but not
+`refresh-catalog.ts`, and it checks the files the `exports` map names rather than `dist/index.js`.
+It adds gates CI lacks - `make catalog-check`, no `catalog:`/`workspace:` left in the packed
+manifest, every internal dependency on the registry - and a `Continue? [y/N]` prompt that `--yes`
+skips. It is stricter than CI: it refuses a dirty tree or a HEAD that is not `origin/develop`, and
+it publishes before any git write, so a rejected publish leaves nothing to roll back.
 
 ## Release order
 
@@ -71,9 +89,11 @@ After install, the job uses the Makefile dependency chain (see
 5. Commit `package.json` on `develop` with message `chore(<package>): release v<version>
    [<build_mode>]`, push.
 6. Create and push an annotated tag `<package>-v<version>`.
-7. `npm publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
+7. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
    `patch|minor|major` and `next` for any pre-release mode. Scripts are skipped on publish because
-   the build already ran in an earlier step.
+   the build already ran in an earlier step. Never `npm publish`: npm packs `catalog:` and
+   `workspace:` specifiers verbatim and the package cannot be installed; only bun resolves them
+   while packing.
 
 If any step fails, a rollback step deletes the tag if it was created, and hard-resets and
 force-pushes `develop` if the commit was pushed - but a package already published to npm is not
