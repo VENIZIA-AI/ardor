@@ -143,9 +143,9 @@ const products = await dataProvider.getList('products', {
 | `getManyReference` | GET | `/{resource}` | Same as `getList`, plus `where[target] = id` |
 | `create` | POST | `/{resource}` | body = `params.data` |
 | `update` | PATCH | `/{resource}/{id}` | body = `params.data` |
-| `updateMany` | PATCH | `/{resource}` | `filter = { where: { id: { inq: ids } } }`; body = `params.data` |
+| `updateMany` | PATCH | `/{resource}` | body = `{ ...params.data, where: { id: { inq: ids } } }`; nothing in the query |
 | `delete` | DELETE | `/{resource}/{id}` | - |
-| `deleteMany` | DELETE | `/{resource}/{id}`, one request per id | - |
+| `deleteMany` | DELETE | `/{resource}`, one request | body = `{ where: { id: { inq: ids } } }`; nothing in the query |
 | `send` | `params.method` | `/{resource}` | `params.query` as-is; body from `params.body` / `bodyType` |
 | count (`CountRestDataProvider`, list calls only) | GET | `/{resource}/count` | `where = filter.where` + the same query keys |
 
@@ -259,9 +259,13 @@ await dataProvider.getMany('products', { ids: ['p-1', 'p-2'] });
 
 - `create`: `POST /{resource}` with `params.data` as body.
 - `update`: `PATCH /{resource}/{id}` with `params.data` as body. `previousData` is not sent.
-- `updateMany`: `PATCH /{resource}?filter={"where":{"id":{"inq":[...]}}}` with `params.data` as body. Throws `[updateMany] No IDs to execute update!` when `ids` is empty.
+- `updateMany`: `PATCH /{resource}` with `{ ...params.data, where: { id: { inq: [...] } } }` as body. The route reads `where` as the row selector and never writes it. Throws `[updateMany] No IDs to execute update!` when `ids` is empty, and refuses `params.data` that has its own `where` field - update those records with `update()`. The result is `{ data: [ids] }`, read from the rows the server reports as written - see below.
 - `delete`: `DELETE /{resource}/{id}`.
-- `deleteMany`: one `DELETE /{resource}/{id}` per id, run with `Promise.all`; the result is `{ data: [<each response's data>] }`. Throws `[deleteMany] No IDs to execute delete!` when `ids` is empty.
+- `deleteMany`: one `DELETE /{resource}` with `{ where: { id: { inq: [...] } } }` as body; the result is `{ data: [ids] }` read the same way. Throws `[deleteMany] No IDs to execute delete!` when `ids` is empty.
+
+The bulk selector travels in the body because an id list in the URL is capped by the request line: an IGNIS server answered `431` at 400 UUIDs, and a proxy with 8k header buffers refuses sooner. This needs a server whose bulk routes accept `where` in the body. A route that reads it only from the query answers `400` and writes nothing - treat that `400` as "this route does not support body selectors yet", never as a partial update.
+
+The ids in a bulk result are the ones the server reports touching - an IGNIS bulk route answers the affected rows - not the ids you asked for, so an id that no longer exists does not appear. When the body is not an array of rows, `data` is left out rather than filled with the requested ids.
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -403,7 +407,8 @@ const networkService = dataProvider.getNetworkService();
 - **`send()` always targets `/{resource}`.** `params.id` is forwarded to `getRequestProps` but is not appended to the path. Put sub-paths into the resource string, for example `'products/export'`.
 - **`send()` without `method` throws.** There is no default verb.
 - **`updateMany` and `deleteMany` throw on an empty `ids` array.** Guard bulk actions in the UI.
-- **`deleteMany` is N requests.** It fans out one `DELETE` per id and waits for all of them.
+- **Bulk writes need body selectors on the server.** `updateMany` and `deleteMany` send `where` in the body. A backend route that only reads `where` from the query - including a hand-written override of the bulk handler - answers `400` without writing.
+- **`getMany` still puts ids in the URL.** It is a `GET`, so a very long `ids` list can hit the request-line limit (`414`/`431`).
 - **Extra truthy keys on list `params` leak into the filter.** Anything on `params` other than `pagination`, `sort`, `filter`, `meta` (and `target`/`id` for references) is copied into the filter as-is.
 - **`DefaultRestDataProvider` has no `total` of its own.** If your backend does not send `content-range`, use `CountRestDataProvider` or expose a `/count` endpoint.
 - **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`. Only the latter is what react-admin and `useDataProvider` see.

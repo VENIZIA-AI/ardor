@@ -30,8 +30,8 @@ You have a `DefaultNetworkRequestService` (usually resolved from the container) 
 
 ```ts no-check
 getRequestAuthorizationHeader() {
-  const storedToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-  const authToken = this.authToken ?? JSON.parse(storedToken?.length ? storedToken : '{}');
+  // In-memory token first; the resolver (default: the stored token) only when there is none.
+  const authToken = this.authToken ?? this.authTokenResolver();
 
   if (!authToken?.value) {
     throw getError({ message: '[dataProvider][getAuthHeader] Invalid auth token to fetch!', statusCode: 401 });
@@ -190,13 +190,18 @@ You do not have to call `cleanUp` in `onAuthFailure` when the request came from 
 
 ## Where tokens live
 
-The request service reads the token from one place: `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`. The stored value is a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. An in-memory override set with `setAuthToken({ type, value })` takes precedence when present.
+The request service stores nothing itself. An in-memory token set with `setAuthToken({ type, value })` wins when present; otherwise it asks its `authTokenResolver`, which defaults to `readAuthTokenFromStorage` - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. The resolver returns `undefined` where there is no `localStorage` or the stored value does not parse.
+
+The same resolver authenticates an HTTP repository, so a screen reading through `@venizia/ardor/repository` sends the token the data provider sends:
 
 ```ts
-import { LocalStorageKeys } from '@venizia/ardor';
+import { readAuthTokenFromStorage } from '@venizia/ardor';
+import { HttpDataSource } from '@venizia/ardor/repository';
 
-const raw = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-const stored = raw?.length ? JSON.parse(raw) : {};
+const dataSource = new HttpDataSource({
+  baseUrl: 'https://api.example.com',
+  authTokenResolver: readAuthTokenFromStorage,
+});
 ```
 
 `DefaultAuthProvider` writes the token in exactly one place - `login`, via `authService.saveAuth` - and clears it in exactly one way - `authService.cleanUp`, called from `logout` and from `checkError` on a `401`. Nothing else in the provider touches storage. Keep it that way: do not write the key from components, and do not clear it from anywhere but `cleanUp`.

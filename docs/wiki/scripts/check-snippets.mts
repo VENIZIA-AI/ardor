@@ -143,8 +143,12 @@ const compilerOptions: ts.CompilerOptions = {
   // would fail with TS2307 while the import resolves perfectly at runtime.
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
+    '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository.d.ts')],
     '@venizia/ardor/socket-io': [join(REPO, 'packages/ardor/dist/socket-io.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],
+    '@venizia/ardor-kernel/repository': [
+      join(REPO, 'packages/kernel/dist/base/repositories/index.d.ts'),
+    ],
     '@venizia/ardor-kernel/socket-io': [
       join(REPO, 'packages/kernel/dist/helpers/socket-io-client.d.ts'),
     ],

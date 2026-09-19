@@ -9,7 +9,7 @@ description: DefaultNetworkRequestService - request headers, the authorization t
 
 ## Prerequisites
 
-A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localStorage` and `crypto.randomUUID` - a browser, or Node 18+ with a `localStorage` shim if you call the authenticated path.
+A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localStorage` and `crypto.getRandomValues` - a browser, or Node 18+ with a `localStorage` shim if you call the authenticated path. `crypto.randomUUID` is used when present but never required: it is secure-context-only, so a plain-http origin such as `http://<lan-ip>` does not have it, and the tracing id comes from `uuidV4()` in `@venizia/ignis-helpers/uuid` for exactly that reason.
 
 ## Quick Reference
 
@@ -64,17 +64,17 @@ const network = new DefaultNetworkRequestService({
 
 | Header | Value | Set by |
 |---|---|---|
-| `Timezone` | `App.TIMEZONE` - `Intl.DateTimeFormat().resolvedOptions().timeZone` | `getRequestHeader` |
-| `Timezone-Offset` | `App.TIMEZONE_OFFSET` as a string - hours east of UTC, so `7` or `-5` | `getRequestHeader` |
+| `timezone` | `App.TIMEZONE` - `Intl.DateTimeFormat().resolvedOptions().timeZone` | `getRequestHeader` |
+| `timezone-offset` | `App.TIMEZONE_OFFSET` as a string - hours east of UTC, so `7` or `-5` | `getRequestHeader` |
 | custom headers | constructor `headers` merged with `setHeaders` | `getRequestHeader` |
 | `authorization` | `<type> <value>` from the token source below | `getRequestHeader`, skipped on no-auth paths |
-| `x-auth-provider` | `provider` from the stored token object | `getRequestHeader`, skipped on no-auth paths |
+| `x-auth-provider` | `provider` from the token, omitted when the token names none | `getRequestHeader`, skipped on no-auth paths |
 | `x-request-channel` | `restDataProviderOptions.requestTracingChannel`, else `RequestChannel.WEB` (`'100_WEB'`) | `getRequestProps` |
 | `x-request-count` | `requestCountData`, default `RequestCountData.DATA_ONLY` (`'0'`) | `getRequestProps` |
-| `x-request-id` | `restDataProviderOptions.requestTracingId({ applicationInfo })` when it is a function, else `${applicationInfo.name}_${crypto.randomUUID()}` | `getRequestProps` |
+| `x-request-id` | `restDataProviderOptions.requestTracingId({ applicationInfo })` when it is a function, else `${applicationInfo.name}_<v4 uuid>` from `uuidV4()` (`@venizia/ignis-helpers/uuid`) | `getRequestProps` |
 | `content-type` | depends on the body type, see below | `getRequestProps` |
 
-Custom headers are spread after the two timezone headers, so a custom `Timezone` header wins.
+Header names are merged case-insensitively and a later source replaces an earlier one: custom headers override the timezone headers, and the per-request `x-request-channel`, `x-request-count` and `x-request-id` override a custom header of the same name. The record is keyed by lowercase name. A plain object spread would keep `X-Request-Count` beside `x-request-count`, and `fetch` would send the two joined as `"1, 0"`.
 
 ```ts
 import type { IGetRequestPropsParams, IGetRequestPropsResult } from '@venizia/ardor';
@@ -97,9 +97,9 @@ declare class DefaultNetworkRequestService {
 The token is resolved in this order:
 
 1. The in-memory token set with `setAuthToken({ type, value })`.
-2. Otherwise `localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)`, parsed as JSON. The stored object may carry `type`, `value` and `provider`.
+2. Otherwise the constructor's `authTokenResolver`. It defaults to `readAuthTokenFromStorage`, which parses `localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)` as JSON and returns `undefined` where there is no `localStorage` or the value does not parse. The token may carry `type`, `value` and `provider`.
 
-If neither has a `value`, the method throws an error with `statusCode: 401` and the request is never sent. `type` defaults to `Bearer`, so the header reads `Bearer <value>`. Note that `localStorage` is read first in every call, even when an in-memory token exists.
+If neither has a `value`, the method throws an error with `statusCode: 401` and the request is never sent. `type` defaults to `Bearer`, so the header reads `Bearer <value>`. The resolver is consulted only when there is no in-memory token, so a service given a token never touches `localStorage` - which is what lets it run where no DOM exists.
 
 ```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
@@ -113,7 +113,7 @@ network.setAuthToken({ value: 'eyJhbGciOi...' });
 network.getRequestAuthorizationHeader().token; // 'Bearer eyJhbGciOi...'
 ```
 
-`setAuthToken` has no `provider` field, so `x-auth-provider` is `undefined` for an in-memory token. Only the stored JSON object can supply it.
+`setAuthToken` has no `provider` field, so an in-memory token sends no `x-auth-provider` header at all. Only a resolved token can supply one.
 
 ## No-auth paths
 
@@ -174,7 +174,7 @@ const network = new DefaultNetworkRequestService({
 network.setHeaders({ 'x-locale': 'vi', 'x-tenant': 'acme' });
 network.removeHeaders(['x-tenant']);
 network.getRequestHeader({ resource: 'auth/login' });
-// { Timezone: ..., 'Timezone-Offset': ..., 'x-locale': 'vi' }
+// { timezone: ..., 'timezone-offset': ..., 'x-locale': 'vi' }
 ```
 
 ## Body types
@@ -398,7 +398,7 @@ request.getRequestUrl({ paths: ['users', '/1'] });
 
 ## Common pitfalls
 
-- **`Timezone-Offset` is in hours, not minutes.** `App.TIMEZONE_OFFSET` is `-(getTimezoneOffset() / 60)`, so UTC+7 sends `7`.
+- **`timezone-offset` is in hours, not minutes.** `App.TIMEZONE_OFFSET` is `-(getTimezoneOffset() / 60)`, so UTC+7 sends `7`.
 - **`doRequest` does not build headers.** Pass the result of `getRequestProps`, or at least `getRequestHeader` plus a `content-type`; otherwise a JSON body goes out without one.
 - **A response without `content-type` becomes a `Blob`**, even if the body is JSON. The textual check requires a non-empty matching header.
 - **`getRequestAuthorizationHeader` reads `localStorage` first, every time.** In a runtime without `localStorage` it throws before the in-memory token is considered.

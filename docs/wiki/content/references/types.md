@@ -502,8 +502,8 @@ export const toEnvironment = (opts: { raw: string }): TEnvironment =>
 | `AUTHORIZATION` | `authorization` |
 | `X_AUTH_PROVIDER` | `x-auth-provider` |
 | `X_LOCALE` | `x-locale` |
-| `TIMEZONE` | `Timezone` |
-| `TIMEZONE_OFFSET` | `Timezone-Offset` |
+| `TIMEZONE` | `timezone` |
+| `TIMEZONE_OFFSET` | `timezone-offset` |
 | `REQUEST_TRACING_ID` | `x-request-id` |
 | `REQUEST_DEVICE_INFO` | `x-device-info` |
 | `REQUEST_CHANNEL` | `x-request-channel` |
