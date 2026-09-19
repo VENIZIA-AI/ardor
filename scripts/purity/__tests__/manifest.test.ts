@@ -115,11 +115,14 @@ describe('PURITY_MANIFEST derivation', () => {
     // Every runtime package is a browser library, so every entry it publishes is claimed - one
     // added without a claim is a gate hole, not a default. The socket client sits on its own
     // sub-path because its peer is optional: importing the package must never require
-    // `socket.io-client` to be installed.
+    // `socket.io-client` to be installed. The repository sub-path is there for weight - it pulls
+    // the IGNIS repository runtime, which is larger than the whole kernel budget.
     expect(entries).toEqual([
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
+      'packages/ardor/dist/repository.js',
       'packages/ardor/dist/socket-io.js',
+      'packages/kernel/dist/base/repositories/index.js',
       'packages/kernel/dist/helpers/socket-io-client.js',
       'packages/kernel/dist/index.js',
       'packages/react/dist/index.js',
@@ -143,6 +146,6 @@ describe('PURITY_MANIFEST derivation', () => {
 
     // Each condition set names import AND default; default repeats the import file, so every
     // entry yields ONE row - the root without a suffix, each sub-path labelled by its own.
-    expect(labels).toEqual(['kernel', 'kernel/socket-io']);
+    expect(labels).toEqual(['kernel', 'kernel/repository', 'kernel/socket-io']);
   });
 });
