@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.1-2",
+        "date": "2026-09-19",
+        "sha": "dcfb0406",
+        "order": 54
+      },
+      {
         "version": "0.1.1-1",
         "date": "2026-09-14",
         "sha": "9ffa590f",
@@ -28,6 +34,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.1-3",
+        "date": "2026-09-19",
+        "sha": "56b5a046",
+        "order": 55
+      },
       {
         "version": "0.1.1-2",
         "date": "2026-09-15",
@@ -49,6 +61,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.1-3",
+        "date": "2026-09-19",
+        "sha": "f278ecdb",
+        "order": 52
+      },
+      {
         "version": "0.1.1-2",
         "date": "2026-09-15",
         "sha": "a0753120",
@@ -68,6 +86,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.1-2",
+        "date": "2026-09-19",
+        "sha": "99320d34",
+        "order": 53
+      },
       {
         "version": "0.1.1-1",
         "date": "2026-09-14",
@@ -97,6 +121,19 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-09-19-ignis-repository-and-bulk-writes",
+      "file": "2026-09-19-ignis-repository-and-bulk-writes.md",
+      "date": "2026-09-19",
+      "title": "IGNIS stereotypes and repositories, bulk writes in the body, safer headers",
+      "packages": [
+        "admin",
+        "kernel",
+        "react"
+      ],
+      "kind": "Breaking Change",
+      "order": 51
+    },
     {
       "id": "changelog:2026-09-16-fetch-only-network-layer",
       "file": "2026-09-16-fetch-only-network-layer.md",
