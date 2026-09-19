@@ -379,6 +379,30 @@ describe('DefaultNetworkRequestService', () => {
         'x-keep': 'remain',
       });
     });
+
+    /**
+     * Header names are case-insensitive, and the record is keyed by lowercase name so an override
+     * replaces instead of joining. Removal has to follow the same rule, or a header set as
+     * `X-Tenant` is stored as `x-tenant` and `removeHeaders(['X-Tenant'])` quietly removes nothing.
+     */
+    test('removes a header whatever case it was set or named in', () => {
+      const service = createService();
+
+      service.setHeaders({ 'X-Tenant': 'acme', 'x-locale': 'vi' });
+      service.removeHeaders(['X-Tenant']);
+      expect(service['headers']).toEqual({ 'x-locale': 'vi' });
+
+      service.removeHeaders(['X-LOCALE']);
+      expect(service['headers']).toEqual({});
+    });
+
+    test('a setHeaders override in another case replaces the stored value', () => {
+      const service = createService({ headers: { 'x-tenant': 'north' } });
+
+      service.setHeaders({ 'X-Tenant': 'south' });
+
+      expect(service['headers']).toEqual({ 'x-tenant': 'south' });
+    });
   });
 
   describe('getRequestProps', () => {
@@ -414,6 +438,40 @@ describe('DefaultNetworkRequestService', () => {
         if (tracingHeader && typeof tracingHeader[1] === 'string') {
           expect(tracingHeader[1].startsWith('ardor-core_')).toBe(true);
         }
+      }
+    });
+
+    /**
+     * Every request carries `x-request-id`, and it used to be built with `crypto.randomUUID`.
+     *
+     * That method is secure-context-only: on `http://<lan-ip>` - how a phone reaches a dev server -
+     * it is `undefined`, so building the header threw and NO request was sent. `getRandomValues` has
+     * no such restriction. The method is shadowed here rather than assumed absent, and the shadowing
+     * is asserted, so this cannot pass because the environment happened to be kind.
+     */
+    test('builds a request id off a secure context, where randomUUID does not exist', () => {
+      // `randomUUID` lives on `Crypto.prototype`, so deleting it off the instance does nothing - it
+      // is shadowed with an own `undefined` instead, and removing that own key restores the real one.
+      Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+      expect(crypto.randomUUID).toBeUndefined();
+
+      try {
+        const props = createService({ useAuth: false }).getRequestProps({
+          resource: 'items',
+          applicationInfo: createApplicationInfo({ name: 'ardor-core' }),
+          restDataProviderOptions: createRestDataProviderOptions(),
+        });
+
+        const tracingId = (props.headers as Record<string, string>)[
+          HeaderConsts.REQUEST_TRACING_ID
+        ];
+
+        expect(tracingId).toMatch(
+          /^ardor-core_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        );
+      } finally {
+        Reflect.deleteProperty(crypto, 'randomUUID');
+        expect(typeof crypto.randomUUID).toBe('function');
       }
     });
 

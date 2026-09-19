@@ -1,4 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
+import { uuidV4 } from '@venizia/ignis-helpers/uuid';
 import isEmpty from 'lodash/isEmpty';
 import merge from 'lodash/merge';
 
@@ -83,15 +84,40 @@ const normalizeNoAuthPathRegex = (input?: TNoAuthPathRegex): RegExp[] => {
   return rs;
 };
 
-/** `HeadersInit` admits a `Headers` instance and a tuple list; the service keeps a plain record. */
+/**
+ * `HeadersInit` admits a `Headers` instance and a tuple list; the service keeps a plain record.
+ *
+ * Keys are lowercased on the way in, and that is the whole point rather than tidiness. Header names
+ * are case-insensitive, but object keys are not: `{ 'X-Request-Count': '1' }` merged over
+ * `{ 'x-request-count': '0' }` keeps BOTH, and `new Headers()` then joins them into `"1, 0"` - a
+ * value neither side wrote and nothing parses. A caller overriding a header would silently corrupt
+ * it instead of replacing it. Measured against a stub before this existed.
+ */
 const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string> => {
   if (!headers) {
     return {};
   }
-  if (headers instanceof Headers) {
-    return Object.fromEntries(headers.entries());
+
+  const entries = (() => {
+    if (headers instanceof Headers) {
+      return [...headers.entries()];
+    }
+    return Array.isArray(headers) ? headers : Object.entries(headers);
+  })();
+
+  const rs: Record<string, string> = {};
+  for (const [key, value] of entries) {
+    rs[key.toLowerCase()] = value;
   }
-  return Array.isArray(headers) ? Object.fromEntries(headers) : headers;
+
+  return rs;
+};
+
+/** Merge header sources so a later source REPLACES an earlier one, whatever case either used. */
+const mergeHeaders = (...sources: Array<HeadersInit | undefined>): Record<string, string> => {
+  return sources.reduce<Record<string, string>>((acc, source) => {
+    return Object.assign(acc, toHeaderRecord(source));
+  }, {});
 };
 
 // `FileList` exists only in a DOM; the kernel also runs in Workers and on Bun, where the bare
@@ -158,8 +184,53 @@ const appendFormDataValue = (opts: { formData: FormData; key: string; value: unk
   formData.append(key, encodeFormValue({ key, value, bodyType: RequestBodyTypes.FORM_DATA }));
 };
 
+export interface IAuthTokenRecord {
+  type?: string;
+  value: string;
+  provider?: string;
+}
+
+/**
+ * Where a token comes from when none was set on the service.
+ *
+ * `localStorage` is the browser's answer, not the only one: the same transport pointed at another
+ * server has its token in memory or in the environment, and a server has no `localStorage` to read.
+ * Keeping the lookup behind a function is the whole difference between a transport that runs in one
+ * place and one that runs in both.
+ */
+export type TAuthTokenResolver = () => IAuthTokenRecord | undefined;
+
+/**
+ * The browser resolver: read the stored token, and say nothing where there is no browser.
+ *
+ * It is this service's default, and it is exported for the same job elsewhere: `HttpDataSource` from
+ * `@venizia/ignis-connectors/http` ships no browser lookup by design, so an ARDOR app hands it this -
+ * `authTokenResolver: readAuthTokenFromStorage` - and both transports read the one stored token.
+ *
+ * The guard is not defensive padding - this used to be an unguarded `localStorage.getItem` that ran
+ * before the in-memory token was even consulted, so a caller that had supplied a token explicitly
+ * still crashed with `ReferenceError` the moment the code left a DOM.
+ */
+export const readAuthTokenFromStorage: TAuthTokenResolver = () => {
+  if (typeof localStorage === 'undefined') {
+    return undefined;
+  }
+
+  const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+  if (!stored?.length) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return undefined;
+  }
+};
+
 export class DefaultNetworkRequestService extends BaseService {
-  protected authToken?: { type?: string; value: string };
+  protected authToken?: IAuthTokenRecord;
+  protected authTokenResolver: TAuthTokenResolver;
   protected useAuth: boolean;
   protected noAuthPaths?: string[];
   protected noAuthPathRegexes: RegExp[];
@@ -176,6 +247,7 @@ export class DefaultNetworkRequestService extends BaseService {
       baseUrl?: string;
       headers?: HeadersInit;
       authRecovery?: IAuthRecoveryOptions;
+      authTokenResolver?: TAuthTokenResolver;
     },
   ) {
     super({ scope: DefaultNetworkRequestService.name });
@@ -187,8 +259,10 @@ export class DefaultNetworkRequestService extends BaseService {
       noAuthPaths,
       noAuthPathRegex,
       authRecovery,
+      authTokenResolver = readAuthTokenFromStorage,
     } = opts;
 
+    this.authTokenResolver = authTokenResolver;
     this.headers = toHeaderRecord(headers);
     this.useAuth = useAuth;
     this.noAuthPaths = noAuthPaths;
@@ -291,8 +365,8 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   getRequestAuthorizationHeader() {
-    const storedToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-    const authToken = this.authToken ?? JSON.parse(storedToken?.length ? storedToken : '{}');
+    // The explicit token first; the resolver is only consulted when there is nothing in memory.
+    const authToken = this.authToken ?? this.authTokenResolver();
 
     if (!authToken?.value) {
       throw getError({
@@ -329,19 +403,22 @@ export class DefaultNetworkRequestService extends BaseService {
       return;
     }
 
+    // The record is keyed by lowercase name (see `toHeaderRecord`), so the name to remove is too.
     for (const key of keys) {
-      delete this.headers[key];
+      delete this.headers[key.toLowerCase()];
     }
   }
 
   getRequestHeader(opts: { resource: string }): Record<string, string> {
     const { resource } = opts;
 
-    const defaultHeaders = {
-      [HeaderConsts.TIMEZONE]: App.TIMEZONE,
-      [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
-      ...this.headers,
-    };
+    const defaultHeaders = mergeHeaders(
+      {
+        [HeaderConsts.TIMEZONE]: App.TIMEZONE,
+        [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+      },
+      this.headers,
+    );
 
     if (this.isNoAuthPath({ resource })) {
       return defaultHeaders;
@@ -351,7 +428,9 @@ export class DefaultNetworkRequestService extends BaseService {
 
     return {
       ...defaultHeaders,
-      [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider,
+      // A token need not name a provider. Setting the header anyway sent the literal string
+      // `undefined`, which a server reads as a provider named "undefined" rather than as none.
+      ...(authHeader.provider ? { [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider } : {}),
       [HeaderConsts.AUTHORIZATION]: authHeader.token,
     };
   }
@@ -370,15 +449,16 @@ export class DefaultNetworkRequestService extends BaseService {
       ? restDataProviderOptions.requestTracingChannel
       : RequestChannel.WEB;
 
-    const headers: Record<string, AnyType> = {
-      ...this.getRequestHeader({ resource }),
+    // Merged, not spread: these are per-request values and must REPLACE any static header carrying
+    // the same name in another case, rather than sit beside it and be concatenated on the wire.
+    const headers: Record<string, AnyType> = mergeHeaders(this.getRequestHeader({ resource }), {
       [HeaderConsts.REQUEST_CHANNEL]: channel,
       [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData,
       [HeaderConsts.REQUEST_TRACING_ID]:
         requestTracingId instanceof Function
           ? requestTracingId({ applicationInfo })
-          : `${applicationInfo.name}_${crypto.randomUUID()}`,
-    };
+          : `${applicationInfo.name}_${uuidV4()}`,
+    });
 
     const rs: IGetRequestPropsResult = { headers, body };
 
@@ -618,7 +698,7 @@ export class DefaultNetworkRequestService extends BaseService {
         const retryHeaders = {
           ...(headers as Record<string, AnyType>),
           [HeaderConsts.AUTHORIZATION]: authHeader.token,
-          [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider,
+          ...(authHeader.provider ? { [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider } : {}),
         };
 
         rs = await sendOnce(retryHeaders);
