@@ -86,6 +86,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-09-19',
+        collapsed: true,
+        items: [
+          {
+            text: 'IGNIS stereotypes and repositories, bulk writes in the body',
+            link: '/changelogs/2026-09-19-ignis-repository-and-bulk-writes',
+          },
+        ],
+      },
+      {
         text: '2026-09-16',
         collapsed: true,
         items: [
