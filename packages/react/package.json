@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-react",
-  "version": "0.1.1-1",
+  "version": "0.1.1-2",
   "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). No react-admin.",
   "keywords": [
     "ardor",
@@ -73,7 +73,7 @@
     "size": "size-limit"
   },
   "dependencies": {
-    "@venizia/ardor-kernel": "^0.1.1-1",
+    "@venizia/ardor-kernel": "^0.1.1-3",
     "lodash": "catalog:"
   },
   "peerDependencies": {
