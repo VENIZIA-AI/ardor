@@ -45,6 +45,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./repository": {
+      "types": "./dist/repository.d.ts",
+      "import": "./dist/repository.js",
+      "default": "./dist/repository.js"
+    },
     "./socket-io": {
       "types": "./dist/socket-io.d.ts",
       "import": "./dist/socket-io.js",
@@ -85,9 +90,9 @@
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-filter": ">=0.2.0-7",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
-    "@venizia/ignis-kernel": ">=0.2.0-39",
+    "@venizia/ignis-filter": ">=0.2.0-21",
+    "@venizia/ignis-inversion": ">=0.2.0-22",
+    "@venizia/ignis-kernel": ">=0.2.0-44",
     "ra-core": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
