@@ -54,6 +54,25 @@ const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string
   return Array.isArray(headers) ? Object.fromEntries(headers) : headers;
 };
 
+/**
+ * The ids a bulk write actually touched, which is what react-admin's `updateMany` and `deleteMany`
+ * results carry.
+ *
+ * Read from the rows the server reports - an IGNIS bulk route answers the affected rows as an array
+ * when asked for `x-request-count: 0` - not from the ids that were asked for: an id that no longer
+ * exists is asked for and never touched. A body that is not a row array leaves `data` out, which
+ * react-admin allows, rather than claiming every requested id was written.
+ */
+const toAffectedIds = (opts: { rows: unknown }): Array<Identifier> | undefined => {
+  const { rows } = opts;
+
+  if (!Array.isArray(rows)) {
+    return undefined;
+  }
+
+  return rows.map((row: { id: Identifier }) => row.id);
+};
+
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
 > {
@@ -404,24 +423,38 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[updateMany] No IDs to execute update!' });
     }
 
+    // The body's `where` is the bulk route's row selector and is never written as data, so a record
+    // with a real `where` field cannot say "set where" here - refused rather than silently dropped.
+    if (isDefined(data) && Object.prototype.hasOwnProperty.call(data, 'where')) {
+      throw getError({
+        message:
+          '[updateMany] data carries a "where" field, which the bulk route reads as the row selector and never writes. Update those records with update() instead.',
+      });
+    }
+
+    // The selector travels in the body, not the query. An id list in the URL is capped by the
+    // request line: IGNIS measured 431 at 400 UUIDs on Bun, and a proxy with 8k header buffers cuts
+    // near 170. The route reads `where` from the query or the body - never both - and answers 400,
+    // writing nothing, where a route does not accept it in the body.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
-      body: data,
+      body: { ...data, where: { id: { inq: ids } } },
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
 
-    const response = this.networkService.doRequest<RecordType['id'][]>({
-      requestCountData: RequestCountData.DATA_ONLY,
-      type: RequestTypes.UPDATE_MANY,
-      method: RequestMethods.PATCH,
-      paths: [resource],
-      query: { filter: { where: { id: { inq: ids } } } },
-      ...request,
-    });
-
-    return response;
+    return this.networkService
+      .doRequest<Array<RecordType>>({
+        requestCountData: RequestCountData.DATA_ONLY,
+        type: RequestTypes.UPDATE_MANY,
+        method: RequestMethods.PATCH,
+        paths: [resource],
+        ...request,
+      })
+      .then((rs) => {
+        return { data: toAffectedIds({ rows: rs.data }) };
+      });
   }
 
   create<
@@ -485,32 +518,29 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[deleteMany] No IDs to execute delete!' });
     }
 
+    // One request carrying the selector in the body, where this used to fire one DELETE per id. The
+    // fan-out was not atomic - a failure part-way surfaced as one error after the rest had already
+    // been deleted - and 2000 ids meant 2000 requests. A body keeps the id list off the request line,
+    // for the same limit `updateMany` documents.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
+      body: { where: { id: { inq: ids } } },
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
 
-    const rs = Promise.all(
-      ids
-        .map((id) => [resource, `${id}`])
-        .map((paths) => {
-          return this.networkService.doRequest<RecordType['id']>({
-            requestCountData: RequestCountData.DATA_ONLY,
-            type: RequestTypes.DELETE_MANY,
-            method: RequestMethods.DELETE,
-            paths,
-            ...request,
-          });
-        }),
-    ).then((responses) => {
-      return {
-        data: responses.map((response) => response.data),
-      };
-    });
-
-    return rs;
+    return this.networkService
+      .doRequest<Array<RecordType>>({
+        requestCountData: RequestCountData.DATA_ONLY,
+        type: RequestTypes.DELETE_MANY,
+        method: RequestMethods.DELETE,
+        paths: [resource],
+        ...request,
+      })
+      .then((rs) => {
+        return { data: toAffectedIds({ rows: rs.data }) };
+      });
   }
 
   send<ReturnType = AnyType>(opts: {

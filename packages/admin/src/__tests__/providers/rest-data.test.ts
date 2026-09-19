@@ -115,6 +115,19 @@ beforeAll(() => {
       });
       const isCollectionGet = req.method === 'GET' && segments.length === 1;
 
+      // A bulk write on the collection answers the rows it touched, as an IGNIS bulk route does with
+      // `x-request-count: 0`. One row, whatever was asked, so a result built from the requested ids
+      // rather than the reported rows is caught.
+      const isCollectionWrite =
+        (req.method === 'PATCH' || req.method === 'DELETE') && segments.length === 1;
+
+      if (isCollectionWrite) {
+        return new Response(JSON.stringify([{ id: 1, status: 'archived' }]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       if (isCollectionGet) {
         return new Response(JSON.stringify([{ id: 1 }]), {
           status: 200,
@@ -429,7 +442,7 @@ describe('mutation operations behavior', () => {
     expect(req.body).toEqual({ title: 'Patched Title' });
   });
 
-  test('updateMany executes single bulk patch request with id inq filter', async () => {
+  test('updateMany sends one bulk patch with the id selector in the body', async () => {
     const provider = createProvider({ baseUrl });
     await provider.updateMany({
       resource: 'posts',
@@ -443,12 +456,59 @@ describe('mutation operations behavior', () => {
     const req = recordedRequests[0];
     expect(req.method).toBe('PATCH');
     expect(req.pathname).toBe('/posts');
-    expect(req.body).toEqual({ status: 'archived' });
+    expect(req.body).toEqual({ status: 'archived', where: { id: { inq: [11, 22, 33] } } });
+    // Never both: the route answers 400 when `where` arrives in the query AND the body.
+    expect(req.query).toEqual({});
+  });
 
-    const filter = parseFilterQuery({ raw: req.query['filter'] });
-    expect(filter['where']).toEqual({
-      id: { inq: [11, 22, 33] },
-    });
+  /**
+   * The reason the selector moved. In the query, 400 UUIDs drew a 431 from an IGNIS server and a
+   * proxy with 8k buffers refuses near 170; in the body the request line stays the resource path.
+   */
+  test('updateMany keeps a 2000-id selector off the request line', async () => {
+    const provider = createProvider({ baseUrl });
+    const ids = Array.from({ length: 2000 }, () => crypto.randomUUID());
+
+    await provider.updateMany({ resource: 'posts', params: { ids, data: { status: 'archived' } } });
+
+    expect(recordedRequests.length).toBe(1);
+    expect(recordedRequests[0].query).toEqual({});
+    expect(recordedRequests[0].body).toMatchObject({ where: { id: { inq: ids } } });
+  });
+
+  /**
+   * react-admin's bulk results carry ids, and `data` may be absent. A body that is not a row array -
+   * a hand-written route answering `{ count }` - gives no ids to report, so none are claimed.
+   */
+  test('updateMany and deleteMany leave data out when the body is not a row array', async () => {
+    const counting = Bun.serve({ port: 0, fetch: () => Response.json({ count: 2 }) });
+
+    try {
+      const provider = createProvider({ baseUrl: `http://127.0.0.1:${counting.port}` });
+
+      const updated = await provider.updateMany({
+        resource: 'posts',
+        params: { ids: [1, 2], data: { status: 'archived' } },
+      });
+      const deleted = await provider.deleteMany({ resource: 'posts', params: { ids: [1, 2] } });
+
+      expect(updated).toEqual({ data: undefined });
+      expect(deleted).toEqual({ data: undefined });
+    } finally {
+      await counting.stop(true);
+    }
+  });
+
+  test('updateMany refuses data that carries its own where field', () => {
+    const provider = createProvider({ baseUrl });
+
+    expect(() => {
+      return provider.updateMany({
+        resource: 'posts',
+        params: { ids: [1], data: { where: 'north gate' } },
+      });
+    }).toThrow(/"where" field.*row selector/);
+    expect(recordedRequests.length).toBe(0);
   });
 
   test('updateMany throws error when ids array is empty', async () => {
@@ -479,7 +539,9 @@ describe('mutation operations behavior', () => {
     expect(req.pathname).toBe('/posts/555');
   });
 
-  test('deleteMany executes individual delete requests per id', async () => {
+  // One request, not one per id: the fan-out was not atomic, and a failure part-way reported one
+  // error after the other deletes had already landed.
+  test('deleteMany sends one bulk delete with the id selector in the body', async () => {
     const provider = createProvider({ baseUrl });
     await provider.deleteMany({
       resource: 'posts',
@@ -488,15 +550,12 @@ describe('mutation operations behavior', () => {
       },
     });
 
-    expect(recordedRequests.length).toBe(3);
-    const pathnames = recordedRequests.map((req) => {
-      return req.pathname;
-    });
-    expect(pathnames).toEqual(['/posts/201', '/posts/202', '/posts/203']);
-
-    for (const req of recordedRequests) {
-      expect(req.method).toBe('DELETE');
-    }
+    expect(recordedRequests.length).toBe(1);
+    const req = recordedRequests[0];
+    expect(req.method).toBe('DELETE');
+    expect(req.pathname).toBe('/posts');
+    expect(req.body).toEqual({ where: { id: { inq: [201, 202, 203] } } });
+    expect(req.query).toEqual({});
   });
 
   test('deleteMany throws error when ids array is empty', async () => {
@@ -606,13 +665,14 @@ describe('react-admin provider adapter behavior', () => {
       ids: [1, 2],
       data: { status: 'adapter-active' },
     });
-    expect<unknown>(updateManyResult.data).toEqual({ id: 1 });
+    // Asked for 1 and 2; the server reports touching 1. The result is what was written.
+    expect(updateManyResult.data).toEqual([1]);
 
     const deleteResult = await dataProvider.delete('posts', { id: 300 });
     expect(deleteResult.data).toEqual({ id: 1 });
 
     const deleteManyResult = await dataProvider.deleteMany('posts', { ids: [1, 2] });
-    expect(deleteManyResult.data).toEqual([{ id: 1 }, { id: 1 }]);
+    expect(deleteManyResult.data).toEqual([1]);
   });
 
   test('forwards send options object through provider adapter', async () => {
