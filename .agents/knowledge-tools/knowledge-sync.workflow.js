@@ -4,14 +4,14 @@
 // Invoke via: Workflow({ scriptPath: '.agents/knowledge-tools/knowledge-sync.workflow.js', args: {...} })
 //
 // args = {
-//   repo: '/abs/path/to/ignis',       // repo root - `git rev-parse --show-toplevel`
+//   repo: '/abs/path/to/ardor',       // repo root - `git rev-parse --show-toplevel`
 //   mode: 'delta' | 'full',
 //   since: 'YYYY-MM-DD',              // last sync date (display label only), read from log.md
 //   gitRange: '<hash>..HEAD',         // commit range since the last sync - what verifiers actually diff
 //   deltaTargets: [{
-//     key: 'core',                    // short label
-//     area: 'packages/core-server',          // git pathspec(s), space-separated
-//     concepts: ['packages/core-server.md'], // bundle-relative concept files to verify
+//     key: 'kernel',                  // short label
+//     area: 'packages/kernel/src/base',      // git pathspec(s), space-separated
+//     concepts: ['packages/kernel.md'],      // bundle-relative concept files to verify
 //     hint: 'what changed (from commit subjects) - verify, do not trust',
 //     model: 'opus' | 'sonnet',       // opus for heavy/critical areas, sonnet for small ones
 //   }],
@@ -56,7 +56,7 @@ const FINDINGS_SCHEMA = {
         properties: {
           concept: {
             type: 'string',
-            description: 'repo-relative path of the knowledge file, e.g. .agents/knowledge/packages/core-server.md',
+            description: 'repo-relative path of the knowledge file, e.g. .agents/knowledge/packages/kernel.md',
           },
           kind: { type: 'string', enum: ['wrong', 'stale', 'missing'] },
           claim: { type: 'string', description: 'the claim that is wrong/stale, or the fact that is missing' },
@@ -102,20 +102,20 @@ const APPLY_SCHEMA = {
 }
 
 const COMMON = `You are a knowledge-bundle verifier for the ARDOR framework monorepo at ${REPO} (branch develop).
-ARDOR is a TypeScript server framework: LoopBack 4's architecture (decorator DI, repository pattern, boot system, components) on Hono's speed.
+ARDOR is the frontend application framework of the VENIZIA family: IGNIS inversion of control running in the browser, a REST data layer, auth and i18n providers, and React bindings for react-admin. Five packages: kernel (the isomorphic core - no React, no react-admin), react (the React bindings), admin (the react-admin adapter), ardor (the umbrella import over the first three) and ui-kit (the design system).
 The knowledge bundle lives at ${KB} - markdown concepts with YAML frontmatter (OKF format).
 Your job: verify the ASSIGNED concept files against the ACTUAL CURRENT SOURCE CODE (ground truth is code, never other docs).
 Method: read each assigned concept file fully; for every load-bearing claim (class names, file paths, lifecycle order, binding keys, routes, hierarchies, enum values, flows, seams), open the real source and confirm it. Use Grep/Read/Bash freely.
 Rules:
 - Ground truth = source code on the current working tree. docs/wiki, AGENTS.md and any CLAUDE.md may themselves be stale - this bundle was created precisely because they were.
 - NEVER run a git command that changes state (no commit/stash/checkout/reset/add). Read-only git (log, diff, show) is fine.
-- Generated files are OUT OF SCOPE - \`okf gen\` owns them. Do not report findings on: ${KB}/reference/source-map.md, reference/components.md, reference/helpers.md, reference/binding-keys.md, reference/makefile-targets.md, and the \`<!-- okf:generated:packages-table -->\` region inside overview/monorepo-layout.md. (Exception: note it if you spot an extractor BUG.)
+- Generated files are OUT OF SCOPE - \`okf gen\`, \`make surface-gen\` and the atlas scripts own them. Do not report findings on: ${KB}/reference/source-map.md, reference/providers.md, reference/hooks-and-services.md, reference/binding-keys.md, reference/makefile-targets.md, reference/public-surface.md, any reference/*.json, and the \`<!-- okf:generated:packages-table -->\` region inside overview/monorepo-layout.md. (Exception: note it if you spot an extractor BUG.)
 - Report only ACTIONABLE findings: wrong (contradicts code), stale (was true, code moved on), missing (a durable, high-value fact an engineer/agent needs that the concept omits). Skip volatile implementation detail (dependency lists, exhaustive config keys, version numbers).
 - Each finding MUST cite evidence (source path:line or a command you ran + output).
 - Style the bundle follows: hyphen not em-dash, the brand is always written ARDOR, English prose, no version numbers.
 - Do NOT edit any files. Return findings via structured output only.`
 
-const DELTA = `\nFocus mode DELTA: first run \`git log ${gitRange} --no-merges --oneline -- <area>\` and \`git diff\` for the interesting commits to learn exactly what changed since the bundle's last sync (${since}), then check whether the assigned concepts reflect the NEW reality. Also verify a sample of older claims while you are in the code.`
+const DELTA = `\nFocus mode DELTA: first run \`git log ${gitRange} --no-merges --oneline -- <area>\` and \`git diff\` for the interesting commits to learn exactly what changed since the bundle's last sync (${since}). Uncommitted working-tree changes are code too: also run \`git diff HEAD --stat -- <area>\` and read the diff of everything it lists. Then check whether the assigned concepts reflect the NEW reality. Also verify a sample of older claims while you are in the code.`
 
 // Full-mode spot groups are directory-based so they stay valid as concepts are added.
 const spotGroups = [
@@ -154,7 +154,7 @@ if (mode === 'full') {
     ),
     () =>
       agent(
-        `${COMMON}\nRole: COMPLETENESS CRITIC. Do not verify individual claims. Instead ask: what does this repo contain that the bundle does NOT cover? Compare ${KB}/index.md + the file tree under ${KB}/ against reality: ls packages/ examples/, scan major changes since the last sync (\`git log ${gitRange} --oneline\`), new components under packages/core-server/src/components/, new helper modules under packages/helpers/src/modules/, new connectors under packages/core-server/src/connectors/. Report (a) findings = missing durable facts in EXISTING concepts, (b) gaps = whole missing concepts worth creating (title + rationale + suggestedPath under ${KB}). A gap must be durable, load-bearing knowledge - not volatile detail. Note: every packages/* and examples/* dir MUST have a concept or \`okf coverage\` fails at under 100% structural.`,
+        `${COMMON}\nRole: COMPLETENESS CRITIC. Do not verify individual claims. Instead ask: what does this repo contain that the bundle does NOT cover? Compare ${KB}/index.md + the file tree under ${KB}/ against reality: ls packages/ examples/, scan major changes since the last sync (\`git log ${gitRange} --oneline\`, plus uncommitted ones from \`git diff HEAD --stat\`), new hooks under packages/react/src/hooks/ and packages/admin/src/hooks/, new providers under packages/admin/src/providers/ and packages/kernel/src/base/providers/, new services and helpers under packages/kernel/src/base/services/ and packages/kernel/src/helpers/, new sub-paths in each package.json exports map, new components under packages/ui-kit/src/components/, new scripts under scripts/. Report (a) findings = missing durable facts in EXISTING concepts, (b) gaps = whole missing concepts worth creating (title + rationale + suggestedPath under ${KB}). A gap must be durable, load-bearing knowledge - not volatile detail. Note: every packages/* and examples/* dir MUST have a concept or \`okf coverage\` fails at under 100% structural.`,
         { label: 'critic:completeness', phase: 'Verify', model: 'opus', schema: GAPS_SCHEMA },
       ),
     () =>
@@ -172,7 +172,7 @@ const gaps = ok.flatMap((r) => r.gaps || [])
 const confirmedTotal = ok.reduce((sum, r) => sum + (r.confirmedCount || 0), 0)
 log(`Verify done (${mode}): ${allFindings.length} findings, ${gaps.length} gap proposals, ${confirmedTotal} claims confirmed`)
 
-const GENERATED = /reference\/(source-map|components|helpers|binding-keys|makefile-targets)\.md$/
+const GENERATED = /reference\/(source-map|providers|hooks-and-services|binding-keys|makefile-targets|public-surface)\.md$|reference\/[a-z-]+\.json$/
 
 const byFile = {}
 for (const finding of allFindings) {
@@ -196,7 +196,7 @@ Apply the verified findings below to this ONE file. Curation rules:
 - Fix 'wrong' and 'stale' faithfully to the cited evidence - re-check the evidence in source first if it looks off; if a finding does not hold up against the code, SKIP it and say why.
 - For 'missing', fold in only durable, high-value facts; keep the concept TIGHT - this is a curated concept, not a dump. Skip volatile detail.
 - Preserve the file's existing voice, structure, frontmatter (update the description only if now inaccurate), and links. Do not touch any '<!-- okf:generated:' regions.
-- Style: hyphen not em-dash, brand always written ARDOR, English, no version numbers. Never abbreviate identifiers (ProductRepository not ProductRepo).
+- Style: hyphen not em-dash, brand always written ARDOR, English, no version numbers. Never abbreviate identifiers (DefaultNetworkRequestService not NetworkService).
 - Do not edit any other file. NEVER run a state-changing git command.
 Findings (JSON):
 ${JSON.stringify(byFile[path], null, 2)}

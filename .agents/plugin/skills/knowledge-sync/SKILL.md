@@ -44,7 +44,11 @@ completeness + usability critics.
    ```bash
    LAST_SYNC=$(git log -1 --format=%H -- .agents/knowledge/log.md)
    ```
-   The scan range is `$LAST_SYNC..HEAD`. The log entry's date heading is only a display label.
+   The scan range is `$LAST_SYNC^..HEAD` - it starts AT the anchor, not after it. The anchor is often
+   not a sync at all but a code commit that wrote its own log line (P-03), and a range that excludes
+   it means no sync ever re-reads that commit's knowledge edits. Re-verifying an anchor that really
+   was a sync is cheap: it touched only `.agents/knowledge/`, which the scan ignores. The log entry's
+   date heading is only a display label.
 
    **If `LAST_SYNC` is empty** the bundle has never been committed (or `log.md` was renamed). Do not
    build a `..HEAD` range from it - that silently means "everything". Either anchor on the commit
@@ -55,12 +59,15 @@ completeness + usability critics.
    last sync get double-counted. A hash range has neither problem.
 3. Changed-area scan:
    ```bash
-   git log $LAST_SYNC..HEAD --no-merges --name-only --format= -- packages/ examples/ Makefile .github/ .githooks/ scripts/ \
+   git log $LAST_SYNC^..HEAD --no-merges --name-only --format= -- packages/ examples/ Makefile .github/ .githooks/ scripts/ \
      | sort -u | awk -F/ '{print $1"/"$2}' | sort | uniq -c | sort -rn
-   git log $LAST_SYNC..HEAD --no-merges --oneline
+   git log $LAST_SYNC^..HEAD --no-merges --oneline
+   git diff HEAD --stat -- packages/ examples/ Makefile .github/ .githooks/ scripts/ package.json
    ```
-   Commit subjects become verifier hints. Ignore commits touching only `.agents/knowledge/` or
-   `docs/` - that is knowledge maintenance, not code drift.
+   The last line is uncommitted code. `okf-gen` already regenerated from the working tree and the
+   verifiers read the working tree, so uncommitted changes count as changed areas too - say which
+   are uncommitted in the target hint. Commit subjects become verifier hints. Ignore commits touching
+   only `.agents/knowledge/` or `docs/` - that is knowledge maintenance, not code drift.
 4. **Early exit (delta mode):** if no code areas changed, report "bundle already in sync", run the
    gates (Step 3), stop. No workflow, no log entry - unless `gen` changed generated files, then a
    one-line entry.
@@ -72,23 +79,24 @@ as concepts are added.
 
 | Changed area | Concepts to verify (under `.agents/knowledge/`) |
 |---|---|
-| `packages/core-server/src/base/applications` | architecture/application-lifecycle, packages/core-server |
-| `packages/core-server/src/base/repositories`, `src/connectors` | architecture/repository-hierarchy, architecture/datasource-hierarchy, architecture/filter-system, architecture/transactions, architecture/search-typesense, packages/core-server |
-| `packages/core-server/src/components` | architecture/component-model, architecture/controller-system, architecture/authentication, architecture/authorization-casbin, process/adding-a-component |
-| `packages/core-server/src/common/bindings.ts` | conventions/binding-key-namespaces |
-| `packages/core-server` (broad/other) | packages/core-server, architecture/error-handling-flow, conventions/gotchas |
-| `packages/boot` | packages/boot, architecture/boot-lifecycle |
-| `packages/inversion` | packages/inversion, architecture/di-container, conventions/gotchas |
-| `packages/helpers` | packages/helpers, conventions/error-handling, process/adding-a-helper |
-| `packages/dev-configs` | packages/dev-configs, conventions/coding-style, conventions/testing-conventions |
+| `packages/kernel/src/base/applications`, `src/base/metadata`, `src/base/decorators` | architecture/application-lifecycle, architecture/di-in-the-browser, conventions/binding-key-namespaces, packages/kernel |
+| `packages/kernel/src/base/services`, `src/helpers/networks`, `src/helpers/socket-io-client.ts` | architecture/data-provider-pipeline, architecture/auth-recovery, architecture/no-auth-paths, architecture/header-protocol, reference/key-source-files, packages/kernel |
+| `packages/kernel/src/base/providers` | architecture/di-in-the-browser, process/adding-a-provider |
+| `packages/kernel/src/common` | conventions/const-classes, conventions/binding-key-namespaces, conventions/error-handling, architecture/header-protocol |
+| `packages/kernel` (broad/other) | packages/kernel, process/debugging, conventions/gotchas |
+| `packages/react/src/hooks`, `src/contexts` | packages/react, architecture/hooks-and-context, architecture/module-augmentation, conventions/react-hooks, process/adding-a-hook |
+| `packages/admin/src/providers` | architecture/data-provider-pipeline, architecture/auth-recovery, architecture/i18n, packages/admin |
+| `packages/admin` (hooks, broad/other) | packages/admin, architecture/error-flow, conventions/react-hooks |
+| `packages/ardor` | packages/ardor, overview/what-is-ardor |
+| `packages/ui-kit` | packages/ui-kit |
 | `examples/<x>` | examples/&lt;x&gt; |
-| `Makefile`, `scripts/`, `.githooks/`, root `package.json` | process/build-system, process/testing, process/git-workflow, overview/build-run-test, conventions/gotchas |
-| `.github/workflows/` | process/release-publish, process/updating-the-wiki |
+| `Makefile`, `scripts/`, `.githooks/`, root `package.json` | process/build-system, process/testing, process/git-workflow, process/release-publish, overview/build-run-test, conventions/gotchas |
+| `.github/workflows/` | process/release-publish, process/testing, process/updating-the-wiki |
 | `docs/wiki` | process/updating-the-wiki |
 
 Per-target fields: `key`, `area` (git pathspec), `concepts`, `hint` (summarize the commit subjects -
 the verifier is told to verify, not trust), `model` - `opus` for heavy or architecture-critical areas
-(core, inversion, big diffs), `sonnet` for small ones. Ignore noise-only areas (formatting,
+(kernel base, the data layer, big diffs), `sonnet` for small ones. Ignore noise-only areas (formatting,
 lockfiles, generated files). Merge tiny areas (<=3 files each) into one combined target.
 
 ## Step 2 - Run the workflow
@@ -102,7 +110,7 @@ Workflow({
     repo: '<git rev-parse --show-toplevel>',
     mode: '<delta|full>',
     since: '<YYYY-MM-DD>',              // display label for prompts/log
-    gitRange: '<LAST_SYNC hash>..HEAD', // what verifiers actually diff
+    gitRange: '<LAST_SYNC hash>^..HEAD', // what verifiers actually diff - includes the anchor
     deltaTargets: [...],
   },
 })
