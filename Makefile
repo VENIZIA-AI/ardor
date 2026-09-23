@@ -1,6 +1,7 @@
 .PHONY: all build build-all kernel react admin ardor ui-kit docs \
         agent-setup okf-check okf-gen okf-coverage okf-viz split-report surface-gen surface-check \
         wiki-links-check symbols-gen symbols-check releases-gen releases-check atlas-smoke catalog-check purity layer-check cycles-check size-check examples-check lint-examples purity-test test-scripts lint-scripts \
+        clean-install clean-install-kernel clean-install-react clean-install-admin clean-install-ardor clean-install-ui-kit \
         test test-all test-kernel test-react test-admin \
         help install clean setup-hooks \
         lint lint-packages \
@@ -87,6 +88,15 @@ catalog-check:
 purity:
 	@echo "🔍 Checking browser purity for all claimed entries..."
 	@bun scripts/purity/cli.ts
+
+# Packs every package and loads each published entry from an empty project (Bun, Node ESM, browser
+# build). Run after a build; one package at a time takes its siblings from the registry.
+clean-install:
+	@echo "🔍 Loading every published sub-path from a clean install..."
+	@bun scripts/clean-install/cli.ts
+
+clean-install-kernel clean-install-react clean-install-admin clean-install-ardor clean-install-ui-kit:
+	@bun scripts/clean-install/cli.ts $(@:clean-install-%=%)
 
 layer-check:
 	@bun scripts/layer-boundaries.ts
@@ -268,6 +278,7 @@ help:
 	@printf "  %-25s - %s\n" "agent-setup" 			"Link AGENTS.md, skills and the session hook for your agent."
 	@printf "  %-25s - %s\n" "surface-check" 		"Compare the built public surface against the snapshot."
 	@printf "  %-25s - %s\n" "purity" 					"Probe kernel/react/admin dist for Node builtins and ra-core leaks."
+	@printf "  %-25s - %s\n" "clean-install" 		"Load every published entry from an empty project, three ways."
 	@printf "  %-25s - %s\n" "catalog-check" 		"Guard dependency versions against the root catalog."
 	@printf "  %-25s - %s\n" "okf-check" 				"Validate the agent knowledge bundle."
 	@printf "  %-25s - %s\n" "setup-hooks" 			"Configure git to use .githooks directory."

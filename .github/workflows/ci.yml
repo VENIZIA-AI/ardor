@@ -71,6 +71,12 @@ jobs:
         id: install
         run: bun install
 
+      # The clean-install gate loads every entry under Node's ESM loader as well as Bun's.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Build
         id: build
         run: make build-all
@@ -112,3 +118,7 @@ jobs:
       - name: Browser purity
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make purity
+
+      - name: Clean install
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make clean-install

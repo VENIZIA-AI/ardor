@@ -53,7 +53,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.3.3'
+          bun-version: '1.4.2'
 
       - name: Setup Git
         run: |
@@ -119,6 +119,10 @@ jobs:
             echo "    ✓ $dir"
           done
 
+      # Siblings come from the registry here, as a consumer installs them next to this release.
+      - name: Clean-install gate
+        run: make clean-install-$PACKAGE
+
       # =========================================================================
       # VERSION & GIT
       # =========================================================================
@@ -136,7 +140,16 @@ jobs:
         run: |
           cd $PACKAGE_PATH
           git fetch origin && git checkout develop && git pull origin develop
-          git add package.json
+
+          # The bump moves this workspace's entry in bun.lock. Re-lock in a scratch copy of HEAD so the
+          # catalog refresh from "Force update workspace" never reaches the committed lockfile.
+          SCRATCH=$(mktemp -d)
+          git -C "$GITHUB_WORKSPACE" archive HEAD | tar -x -C "$SCRATCH"
+          cp package.json "$SCRATCH/$PACKAGE_PATH/package.json"
+          (cd "$SCRATCH" && bun install --lockfile-only)
+          cp "$SCRATCH/bun.lock" "$GITHUB_WORKSPACE/bun.lock"
+
+          git add package.json "$GITHUB_WORKSPACE/bun.lock"
           git commit -m "chore($PACKAGE): release v$NEW_VERSION [$BUILD_MODE]"
           git push origin develop
           echo "IS_PUSHED=true" >> $GITHUB_ENV
