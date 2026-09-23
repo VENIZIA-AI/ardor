@@ -2,8 +2,8 @@ import 'reflect-metadata';
 
 import {
   api,
-  BaseApiService,
   BaseArdorApplication,
+  BaseService,
   CoreBindings,
   DefaultAuthProvider,
   DefaultAuthService,
@@ -33,12 +33,12 @@ export interface IWhoAmI {
   roles: string[];
 }
 
-export class IdentityApi extends BaseApiService {
+export class IdentityService extends BaseService {
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
     protected dataProvider: IDataProvider,
   ) {
-    super({ scope: IdentityApi.name, resource: 'auth' });
+    super({ scope: IdentityService.name });
   }
 
   @api()
@@ -59,13 +59,6 @@ export class IdentityApi extends BaseApiService {
   }
 }
 
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides extends Record<
-    keyof ReturnType<Application['bindingList']>,
-    unknown
-  > {}
-}
-
 declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides {
     'vert.configurations': unknown;
@@ -79,12 +72,15 @@ export class Application extends BaseArdorApplication {
   }
 
   bindContext(): void {
+    // By hand, as in IGNIS: the key is recorded on the class, so pages resolve it by target.
+    const identity = this.service(IdentityService);
+
     const restOptions: IRestDataProviderOptions = {
       url: '/api',
       noAuthPaths: [VertPaths.SIGN_IN],
       authRecovery: {
         refreshTokenPath: VertPaths.REFRESH_TOKEN,
-        refreshToken: () => this.get<IdentityApi>({ key: 'services.IdentityApi' }).refresh(),
+        refreshToken: () => this.get<IdentityService>({ key: identity.key }).refresh(),
       },
     };
 
@@ -107,9 +103,5 @@ export class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-  }
-
-  override bindingList() {
-    return { 'services.IdentityApi': IdentityApi };
   }
 }

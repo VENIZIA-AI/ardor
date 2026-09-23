@@ -1,8 +1,6 @@
 import 'reflect-metadata';
 
 import {
-  api,
-  BaseApiService,
   BaseArdorApplication,
   CoreBindings,
   DefaultAuthProvider,
@@ -11,10 +9,9 @@ import {
   DefaultRestDataProvider,
   englishMessages,
   type IApplicationInfo,
-  type IDataProvider,
-  type ISendParams,
-  RequestMethods,
+  readAuthTokenFromStorage,
 } from '@venizia/ardor';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 import { inject } from '@venizia/ignis-inversion';
 
 export interface IProduct {
@@ -23,32 +20,29 @@ export interface IProduct {
   price: number;
 }
 
-// A service: one class per resource, bound under `services.ProductApi` by `this.service(...)`.
-export class ProductApi extends BaseApiService {
-  constructor(
-    @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-    protected dataProvider: IDataProvider,
-  ) {
-    super({ scope: ProductApi.name, resource: 'products' });
-  }
-
-  @api()
-  async findExpensive(opts: { minimumPrice: number }): Promise<IProduct[]> {
-    const params: ISendParams = { method: RequestMethods.GET, query: { filter: { limit: 100 } } };
-    const response = await this.dataProvider.send<IProduct[]>({ resource: this.resource, params });
-    return response.data.filter((product) => product.price >= opts.minimumPrice);
+// The HTTP datasource. `new URL` needs an absolute base; Vite proxies `/api` to the stub API.
+export class ApiDataSource extends HttpDataSource {
+  constructor() {
+    super({
+      baseUrl: new URL('/api', window.location.origin).href,
+      authTokenResolver: readAuthTokenFromStorage,
+    });
   }
 }
 
-// The keys this application binds, made known to `useInjectable` and `useTranslate`. The
-// injectable keys are derived from `bindingList()`, so the type follows the registration.
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides extends Record<
-    keyof ReturnType<Application['bindingList']>,
-    unknown
-  > {}
+// A repository: one class per resource, in the IGNIS filter vocabulary. The total comes from
+// `Content-Range`, so counting fetches one row.
+export class ProductRepository extends HttpRepository<IProduct> {
+  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'products' });
+  }
+
+  countExpensive(opts: { minimumPrice: number }) {
+    return this.count({ where: { price: { gte: opts.minimumPrice } } });
+  }
 }
 
+// The message keys this application adds, made known to `useTranslate`.
 declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides {
     'quickstart.title': unknown;
@@ -84,11 +78,10 @@ export class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-  }
 
-  // Literal keys survive a minifier; `this.service(ProductApi)` would key on `ProductApi.name`,
-  // which a production build rewrites.
-  override bindingList() {
-    return { 'services.ProductApi': ProductApi };
+    // By hand, as in IGNIS: each call records the key on the class, so `@inject({ target })` and
+    // `useRepository({ target })` resolve without a string key.
+    this.dataSource(ApiDataSource);
+    this.repository(ProductRepository);
   }
 }

@@ -1,7 +1,7 @@
 # 5-minute quickstart
 
-The smallest ARDOR application that does something real: one application class, one service
-bound by class, one resource page, sign-in through the auth provider, and a stub API to run it
+The smallest ARDOR application that does something real: one application class, one repository
+registered by hand, one resource page, sign-in through the auth provider, and a stub API to run it
 against.
 
 ```bash
@@ -12,12 +12,12 @@ bun run dev                # Vite on :5173, proxying /api
 ```
 
 Open <http://localhost:5173>, sign in, and the product list loads through `DefaultRestDataProvider`
-with the total read from `content-range`; the "expensive products" count comes from `ProductApi`,
-resolved with `useInjectable`.
+with the total read from `content-range`; the "expensive products" count comes from `ProductRepository`,
+resolved with `useRepository`.
 
 | File | What it shows |
 | --- | --- |
-| `src/application.ts` | The application, the three default providers, a `BaseApiService` subclass, the key augmentations |
-| `src/pages/product-list.tsx` | `useListContext` + `useInjectable` + `useTranslate` in one component |
+| `src/application.ts` | The application, the three default providers, an `HttpDataSource` and an `HttpRepository` registered by hand |
+| `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
 | `api/server.ts` | The list contract the data provider expects |

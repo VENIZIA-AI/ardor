@@ -1,26 +1,26 @@
-import { useInjectable, useTranslate } from '@venizia/ardor';
+import { useRepository, useTranslate } from '@venizia/ardor';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
-import { type IProduct, ProductApi } from '@/application';
+import { type IProduct, ProductRepository } from '@/application';
 
-// A resource list: react-admin's list context gives the rows the data provider fetched; the
-// service resolved from the container answers a question the list alone cannot.
+// react-admin's list context holds the page the data provider fetched; the repository answers a
+// question the page alone cannot.
 export const ProductList = () => {
   const { data, total, isPending } = useListContext<IProduct>();
   const translate = useTranslate();
   const logout = useLogout();
-  const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
-  const [expensive, setExpensive] = useState<IProduct[]>([]);
+  const products = useRepository({ target: ProductRepository });
+  const [expensive, setExpensive] = useState(0);
 
   useEffect(() => {
-    productApi
-      .findExpensive({ minimumPrice: 5000 })
-      .then(setExpensive)
+    products
+      .countExpensive({ minimumPrice: 5000 })
+      .then(({ count }) => setExpensive(count))
       .catch((error: unknown) => {
-        console.error('[ProductList] findExpensive failed | error: %s', error);
+        console.error('[ProductList] countExpensive failed | error: %s', error);
       });
-  }, [productApi]);
+  }, [products]);
 
   if (isPending) {
     return <p>Loading</p>;
@@ -42,7 +42,7 @@ export const ProductList = () => {
         ))}
       </ul>
       <h2>{translate('quickstart.expensive')}</h2>
-      <p data-testid="expensive">{expensive.length}</p>
+      <p data-testid="expensive">{expensive}</p>
     </main>
   );
 };

@@ -1,9 +1,9 @@
-import { useInjectable, useNotifyError, useTranslate } from '@venizia/ardor';
+import { useNotifyError, useService, useTranslate } from '@venizia/ardor';
 import { type ApplicationError } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
-import { IdentityApi, type IWhoAmI } from '@/application';
+import { IdentityService, type IWhoAmI } from '@/application';
 
 interface IConfiguration {
   id: number;
@@ -16,15 +16,15 @@ export const ConfigurationList = () => {
   const translate = useTranslate();
   const notifyError = useNotifyError();
   const logout = useLogout();
-  const identityApi = useInjectable<IdentityApi>({ key: 'services.IdentityApi' });
+  const identityService = useService({ target: IdentityService });
   const [identity, setIdentity] = useState<IWhoAmI | null>(null);
 
   useEffect(() => {
-    identityApi
+    identityService
       .whoAmI()
       .then(setIdentity)
       .catch((error: unknown) => notifyError(error as ApplicationError));
-  }, [identityApi, notifyError]);
+  }, [identityService, notifyError]);
 
   if (isPending) {
     return <p>Loading</p>;
