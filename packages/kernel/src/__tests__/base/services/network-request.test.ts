@@ -453,6 +453,7 @@ describe('DefaultNetworkRequestService', () => {
       // `randomUUID` lives on `Crypto.prototype`, so deleting it off the instance does nothing - it
       // is shadowed with an own `undefined` instead, and removing that own key restores the real one.
       Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+      // eslint-disable-next-line no-restricted-syntax -- reads the property to prove it is shadowed; never calls it
       expect(crypto.randomUUID).toBeUndefined();
 
       try {
@@ -471,6 +472,7 @@ describe('DefaultNetworkRequestService', () => {
         );
       } finally {
         Reflect.deleteProperty(crypto, 'randomUUID');
+        // eslint-disable-next-line no-restricted-syntax -- reads the property to prove the real one is restored
         expect(typeof crypto.randomUUID).toBe('function');
       }
     });

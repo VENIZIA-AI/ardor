@@ -1,7 +1,10 @@
 import { eslintConfigs } from '@venizia/dev-configs';
 
+import { secureContextRules } from '../../scripts/eslint/secure-context.mjs';
+
 const config = [
   ...eslintConfigs,
+  ...secureContextRules,
   {
     // Not part of the tsconfig project: vendored shadcn output, the Figma plugin bundle and the
     // token/export build scripts. The typed parser cannot resolve them.

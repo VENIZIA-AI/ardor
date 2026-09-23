@@ -1,3 +1,5 @@
 import { eslintConfigs } from '@venizia/dev-configs';
 
-export default [...eslintConfigs, { ignores: ['dist/'] }];
+import { secureContextRules } from '../../scripts/eslint/secure-context.mjs';
+
+export default [...eslintConfigs, ...secureContextRules, { ignores: ['dist/'] }];
