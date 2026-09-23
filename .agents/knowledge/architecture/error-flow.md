@@ -14,7 +14,7 @@ The network layer's `doRequest` (`DefaultNetworkRequestService`, `packages/kerne
 
 **2. Logging: the @api() decorator**
 
-Service methods that make outbound calls are wrapped with the `@api()` decorator (`packages/kernel/src/base/decorators/api.ts`). It wraps the original method in a try/catch: on success it returns the result untouched; on failure it logs `[methodName] resource: X | error: %o` through `this.logger.error` and then rethrows the same error object. It never swallows or replaces the error - its only job is to attach a consistent log line before the error keeps propagating up through the [Data provider pipeline](/architecture/data-provider-pipeline.md). Any `BaseApiService` method decorated with `@api()` gets this for free.
+Service methods that make outbound calls are wrapped with the `@api()` decorator (`packages/kernel/src/base/decorators/api.ts`). It wraps the original method in a try/catch: on success it returns the result untouched; on failure it logs `[methodName] resource: X | error: %o` through `this.logger.error` and then rethrows the same error object. It never swallows or replaces the error - its only job is to attach a consistent log line before the error keeps propagating up through the [Data provider pipeline](/architecture/data-provider-pipeline.md). Any `BaseService` method decorated with `@api()` gets this for free; the log line reads an optional `resource` field on the instance and prints `-` without one.
 
 **3. Auth-specific mapping: checkError**
 

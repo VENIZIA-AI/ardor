@@ -55,15 +55,15 @@ covered in [Header protocol](/architecture/header-protocol.md).
 
 The REST data provider options include an `authRecovery` block with `refreshTokenPath` set to
 `VertPaths.REFRESH_TOKEN` and a `refreshToken` callback. That callback does not call the data provider
-directly - it resolves `IdentityApi` from the container (`this.get<IdentityApi>({ key: 'services.IdentityApi' })`)
-and calls its `refresh()` method. `IdentityApi` is a `BaseApiService` bound via `bindingList()`, so it is
-resolved through the same DI container as everything else - see [DI in the browser](/architecture/di-in-the-browser.md).
+directly - it resolves `IdentityService` from the container (`this.get<IdentityService>({ key: identity.key })`,
+where `identity` is the `Binding` that `this.service(IdentityService)` returned) and calls its `refresh()`
+method. `IdentityService` is a `BaseService` with `@api()` methods, registered by hand, so it is resolved through the same DI container as everything else - see [DI in the browser](/architecture/di-in-the-browser.md).
 The refresh endpoint itself is not listed in `noAuthPaths` (only sign-in is), and
 `DefaultNetworkRequestService.canRecover()` excludes `authRecovery.refreshTokenPath`, so a failed refresh
 surfaces as a real error instead of looping - the general shape of this mechanism is documented in
 [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 
-`IdentityApi.whoAmI()` and `IdentityApi.refresh()` are both decorated with `@api()` and call
+`IdentityService.whoAmI()` and `IdentityService.refresh()` are both decorated with `@api()` and call
 `this.dataProvider.send(...)` with an explicit `RequestMethods`, following the pattern in
 [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
@@ -79,8 +79,8 @@ part of its normal response pipeline.
 
 ## Module augmentation and i18n
 
-The example augments `IUseInjectableKeysOverrides` from `@venizia/ardor-react` with the shape of
-`bindingList()`'s return type, and augments `IUseTranslateKeysOverrides` from `@venizia/ardor-admin` with
+The example resolves `IdentityService` by class (`useService({ target })`), so it needs no
+`IUseInjectableKeysOverrides` augmentation. It augments `IUseTranslateKeysOverrides` from `@venizia/ardor-admin` with
 its own `vert.configurations` and `vert.signedInAs` keys. This is the standard
 [Module augmentation](/architecture/module-augmentation.md) technique for getting type-safe autocomplete
 on bindings and translation keys without editing framework packages. The i18n provider options add these
@@ -89,8 +89,8 @@ keys to the English message bundle on top of `englishMessages`, following
 
 ## Where things live
 
-- `src/application.ts` - `VertPaths`, `IdentityApi`, and the `Application` class binding rest, auth, and
-  i18n provider options plus `bindingList()`.
+- `src/application.ts` - `VertPaths`, `IdentityService`, and the `Application` class binding rest, auth, and
+  i18n provider options and registering `IdentityService` by hand.
 - `src/pages/configurations.tsx` - the CRUD list page.
 
 This example builds on the same [`@venizia/ardor`](/packages/ardor.md) and

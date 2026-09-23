@@ -8,16 +8,16 @@ tags: [reference, hooks, services, catalog]
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [hooks and context](/architecture/hooks-and-context.md).
 
-**19 hooks across 2 directories.**
+**20 hooks across 2 directories.**
 
 | Directory | Hooks |
 |---|---|
-| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useInjectable` · `useInjectableContainer` · `useProvider` · `useService` · `useSizer` · `useWindowDimensions` |
+| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useInjectable` · `useInjectableContainer` · `useProvider` · `useRepository` · `useService` · `useSizer` · `useWindowDimensions` |
 | `packages/admin/src/hooks/` | `useNotifyError` · `useRefreshToken` · `useRequestHeaderLocale` · `useTranslate` |
 
 ## Services
 
 | Directory | Classes |
 |---|---|
-| `packages/kernel/src/base/services/` | `BaseApiService` · `BaseService` · `DefaultAuthService` · `DefaultNetworkRequestService` |
+| `packages/kernel/src/base/services/` | `BaseService` · `DefaultAuthService` · `DefaultNetworkRequestService` |
 | `packages/admin/src/services/` | `BaseCrudService` |

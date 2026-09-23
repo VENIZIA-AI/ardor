@@ -21,7 +21,6 @@ tags: [reference, exports, api]
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
-- `BaseApiService` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
 - `BaseNetworkRequest` class
@@ -47,6 +46,7 @@ tags: [reference, exports, api]
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactMetadata` interface
+- `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
@@ -149,7 +149,7 @@ tags: [reference, exports, api]
 
 ## react
 
-### `@venizia/ardor-react` (31)
+### `@venizia/ardor-react` (32)
 
 - `ApplicationContext` const
 - `createAppDispatch` const
@@ -179,6 +179,7 @@ tags: [reference, exports, api]
 - `useInjectable` const
 - `useInjectableContainer` const
 - `useProvider` const
+- `useRepository` const
 - `useService` const
 - `useSizer` const
 - `useWindowDimensions` const
@@ -213,7 +214,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (171)
+### `@venizia/ardor` (172)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -226,7 +227,6 @@ tags: [reference, exports, api]
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
-- `BaseApiService` class
 - `BaseArdorApplication` class
 - `BaseCrudService` class
 - `BaseHelper` class
@@ -261,6 +261,7 @@ tags: [reference, exports, api]
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactMetadata` interface
+- `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
@@ -376,6 +377,7 @@ tags: [reference, exports, api]
 - `useNotifyError` const
 - `useProvider` const
 - `useRefreshToken` const
+- `useRepository` const
 - `useRequestHeaderLocale` const
 - `useService` const
 - `useSizer` const

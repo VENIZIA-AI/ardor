@@ -8,7 +8,7 @@ tags: [reference, make, build]
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**58 targets.**
+**59 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -32,6 +32,7 @@ tags: [reference, make, build]
 | `make atlas-smoke` | - | - |
 | `make catalog-check` | - | - |
 | `make purity` | - | Checking browser purity for all claimed entries |
+| `make clean-install` | - | Loading every published sub-path from a clean install |
 | `make layer-check` | - | - |
 | `make cycles-check` | - | - |
 | `make size-check` | - | - |

@@ -40,7 +40,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/kernel/src/helpers/socket-io-client.ts` - `SocketIOClientHelper`, outside the helpers barrel and published only as the kernel `./socket-io` sub-path; `packages/ardor/src/socket-io.ts` re-exports it as `@venizia/ardor/socket-io`.
 
 ## Error handling
-- `packages/kernel/src/base/decorators/api.ts` - the `@api()` method decorator that logs a failing `BaseApiService` call and rethrows it unchanged.
+- `packages/kernel/src/base/decorators/api.ts` - the `@api()` method decorator that logs a failing service call and rethrows it unchanged.
 - `packages/admin/src/hooks/use-notify-error.ts` - the hook surfacing errors to the UI, see [Error flow](/architecture/error-flow.md) and [Error handling](/conventions/error-handling.md).
 
 ## Auth-adjacent hooks

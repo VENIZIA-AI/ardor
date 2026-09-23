@@ -15,7 +15,7 @@ before being handed to `ArdorApplication` as the `container` prop. See
 [Application lifecycle](/architecture/application-lifecycle.md).
 
 **Binding key** - the string identifier used to register and resolve something in the container,
-for example `CoreBindings.REST_DATA_PROVIDER_OPTIONS` or `'services.ProductApi'`. Binding keys are
+for example `CoreBindings.REST_DATA_PROVIDER_OPTIONS` or `'repositories.ProductRepository'`. Binding keys are
 namespaced by convention so that services, providers, and options do not collide. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md) and
 [Binding keys reference](/reference/binding-keys.md).
@@ -33,7 +33,7 @@ overrides it, and a `bindContext()` binding overrides both. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
 **Binding list** - `bindingList()`, the application override that returns literal
-`{ 'services.ProductApi': ProductApi }` keys, bound as singletons after the stereotypes and before
+`{ 'services.PricingService': PricingService }` keys, bound as singletons after the stereotypes and before
 `bindContext()`. Literal keys survive a minifier that rewrites `Class.name`, and they are what types
 `useInjectable` through `IUseInjectableKeysOverrides`. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
@@ -43,13 +43,12 @@ value used by react-admin (the REST data provider, the auth provider, the i18n p
 with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 
-**Service** - a class of application logic (for example `ProductApi`), as opposed to the
-framework-level providers, bound under `services.<ClassName>`. Mark it `@service()` so the
-application binds it with no listing, or register it with `bindingList()` or `this.service(X)`.
-Resolve a `@service()` class with `useService({ target })`, which also asserts the class landed in
-the `services` namespace. `bindingList()` and `this.service(X)` record no binding key on the class,
-so a class registered that way is resolved by key: `useService({ key: 'services.ProductApi' })` or
-`useInjectable({ key })`. See [Hooks and services reference](/reference/hooks-and-services.md).
+**Service** - a class of application logic (for example `PricingService`), as opposed to the
+framework-level providers, bound under `services.<ClassName>`. Two ways to register it, as in IGNIS:
+mark it `@service()` so the application discovers it, or call `this.service(X)` in `bindContext()`.
+Both record the key on the class, so `useService({ target })` resolves either and asserts the class
+landed in the `services` namespace. A repository is the same with `@repository` /
+`this.repository(X)` / `useRepository`. See [Hooks and services reference](/reference/hooks-and-services.md).
 
 **ApplicationContext** - the React context in `ardor-react` that holds the `container`, the
 `registry` and the `logger`. `ArdorApplication` provides it, and `useInjectable` and the stereotype

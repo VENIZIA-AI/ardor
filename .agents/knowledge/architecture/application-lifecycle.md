@@ -29,9 +29,9 @@ The default `preConfigure()` in `AbstractArdorApplication` does five things, in 
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this` - the container can hand itself out as a value.
 2. Binds `CoreBindings.APPLICATION_INFO` to whatever `this.getAppInfo()` returns. This is bound as-is, not awaited, so `getAppInfo()` should return a plain object rather than a Promise if downstream consumers expect a resolved value.
-3. Calls `this.registerArtifacts()`, which binds every class a stereotype (`@service()`, `@component()` and the rest) discovered, as a singleton under the key the stereotype recorded on the class. A discovered class with no recorded key is skipped.
-4. Binds every entry of `this.bindingList()` - a record of literal key to class, empty by default - with `toClass(...)` as a singleton.
-5. Returns `this.bindContext()` - an abstract method every concrete application must implement, where provider options, the three default providers, and application services get bound.
+3. Calls `this.registerArtifacts()`, which binds every class a stereotype (`@service()`, `@component()` and the rest) discovered, under the key the stereotype recorded on the class, in the scope it declares (singleton by default). A discovered class with no recorded key is skipped.
+4. Binds every entry of `this.bindingList()` - a record of literal key to class, empty by default - with `toClass(...)` as a singleton, recording each key on its class.
+5. Returns `this.bindContext()` - an abstract method every concrete application must implement, where provider options, the three default providers, and application artifacts get bound - by `this.bind(...)` or by hand with `this.service(X)`, `this.repository(X)`, `this.dataSource(X)`, `this.component(X)`.
 
 Steps 3 to 5 run from least explicit to most explicit, and a later bind on the same key replaces the earlier one: stereotype, then `bindingList()`, then `bindContext()`. So a `bindingList()` entry overrides a stereotype on the same key, and a manual `this.bind(...)` in `bindContext()` overrides both. See [binding key namespaces](/conventions/binding-key-namespaces.md) for when to reach for each form.
 

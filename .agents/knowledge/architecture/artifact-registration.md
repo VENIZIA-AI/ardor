@@ -74,9 +74,9 @@ by hand for this build; a `this.bind(...)` in `bindContext()` overrides both. An
 a decorator would be ignored with nothing to show it. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
 
 `registerArtifacts()` reads each discovered class's key, skips a class with none, and binds the rest
-`toClass()` as `BindingScopes.SINGLETON`. It is not IGNIS's boot sequence. From
-`IArtifactRegistrationOptions` it honours **only the key**. `scope` is ignored (always singleton), and
-so are `when`, `order`, `after` and `allowOverride`; a `@provide({ key })` method is never bound, even
+`toClass()` under the scope the stereotype declares, `BindingScopes.SINGLETON` by default. It is not
+IGNIS's boot sequence. From `IArtifactRegistrationOptions` it honours **the key and the scope**;
+`when`, `order`, `after` and `allowOverride` are ignored, and a `@provide({ key })` method is never bound, even
 though `provide` is re-exported. For a transient, a conditional binding or a provider, bind by hand
 in `bindContext()`.
 
@@ -86,19 +86,23 @@ it replaces every discovered binding, so the next resolve of each builds a secon
 overrides any `bindingList()` or `bindContext()` binding on the same key. Import the class before
 `start()`, or bind it by hand.
 
-The imperative paths bind a class but **record no key on it** - they only call `bind().toClass()`:
+Registration by hand is the second mode, as in IGNIS. Every path records the key on the class
+(`setBindingKey`), so `{ target }` resolves it like a stereotyped class:
+
+- `service(X)`, `repository(X)`, `dataSource(X)`, `component(X)` - bind under
+  `opts.binding` > the stereotype's `binding` > `<namespace>.<ClassName>`, with `scope` (default
+  singleton) and `allowOverride: false` to refuse an existing key. They return the `Binding`. Call
+  them inside `bindContext()`.
 
 - `bindingList()` - a record of literal key to class, bound as singletons. Literal keys survive a
   minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
   `IUseInjectableKeysOverrides`.
 - `injectable(scope, Class, tags?)` - binds `` `${scope}.${Class.name}` `` as a singleton with optional
-  tags; `service(Class)` is `injectable('services', Class)`. Usually called inside `bindContext()`.
+  tags. Prefer the per-kind methods.
 
-Singleton is the default on every path because one instance per application is what consumers
-already bound by hand. A class registered only imperatively cannot be resolved by `{ target }` -
-not by a hook, and not by `@inject({ target })` - so resolve it by `{ key }`. A stereotyped class
-also listed under a different key is bound twice, as two singletons, and `{ target }` reaches only
-the stereotype's. How keys are named, and the minifier and same-name traps of a derived key, are in
+Singleton is the default on every path, unlike IGNIS's server: a hook resolves on every render, and a
+transient repository would hand each render a new instance. A class registered twice under different
+keys is bound twice, as two singletons, and `{ target }` reaches the key recorded last. How keys are named, and the minifier and same-name traps of a derived key, are in
 [binding key namespaces](/conventions/binding-key-namespaces.md).
 
 ## Resolve
@@ -112,11 +116,11 @@ container comes from `useInjectableContainer`: the option, else `ApplicationCont
   `container.getMetadataRegistry().getBindingKey({ target })`, then resolves that key. It never
   guesses a key from the class name.
 
-`useService`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
 two shapes as an options object, never a positional class. With `{ target }` the return type is
 inferred from the class; with `{ key }` the caller supplies it. They are not aliases: for a `target`
-each asserts the recorded key starts with `services.`, `providers.`, `components.` or
-`configurations.` and otherwise throws naming both. A `key` is not checked - its namespace is in the
+each asserts the recorded key starts with `services.`, `repositories.`, `providers.`,
+`components.` or `configurations.` and otherwise throws naming both. A `key` is not checked - its namespace is in the
 string, the caller's to get wrong - and a `target` with no recorded key skips the check and throws
 from `useInjectable`. The check reads the container through `useInjectableContainer` with the same
 inputs as the resolve, so the two can never disagree.
@@ -129,13 +133,11 @@ Since no stereotype maps to `providers`, `useProvider({ target })` passes only f
 
 | Error says | Cause | Fix |
 |---|---|---|
-| `Failed to resolve binding key for target` | No key on the class: undecorated, a subclass, or registered only through `bindingList()`, `service()` or `injectable()` | Add a stereotype, or resolve by `{ key }` |
+| `Failed to resolve binding key for target` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
 | `is not bounded in context` | A key nobody bound: a typo, a module imported after `start()`, a `bindContext()` binding never made | Fix the key, import before `start()`, or bind it |
 | `is bound as "...", not under "..."` | The hook does not match the class's namespace | Use the hook for that namespace |
 | `Failed to determine injectable container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
 
-The target error's hint to "register it on the application" means IGNIS's registration, which records
-a key; ARDOR's imperative registration does not.
 
 ## Related
 

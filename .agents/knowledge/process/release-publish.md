@@ -84,12 +84,17 @@ After install, the job uses the Makefile dependency chain (see
 1. `make $PACKAGE` - build.
 2. `make lint-$PACKAGE` - lint.
 3. Validate that `dist/index.js` and `dist/index.d.ts` exist for the package.
-4. `npm version $BUILD_MODE --no-git-tag-version --workspaces-update=false` inside the package
+4. `make clean-install-$PACKAGE` - pack the package, install it into empty sandboxes (hoisted and
+   isolated) with its siblings from the registry, and import every entry with Bun, Node ESM and a
+   browser build. A consumer-side packaging bug fails here, before anything is published.
+5. `npm version $BUILD_MODE --no-git-tag-version --workspaces-update=false` inside the package
    folder - version bump without touching other workspace manifests.
-5. Commit `package.json` on `develop` with message `chore(<package>): release v<version>
-   [<build_mode>]`, push.
-6. Create and push an annotated tag `<package>-v<version>`.
-7. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
+6. Commit `package.json` AND `bun.lock` on `develop` with message `chore(<package>): release
+   v<version> [<build_mode>]`, push. The lockfile is re-synced in a scratch copy of HEAD
+   (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
+   force-updated ranges of the build leaking into the commit.
+7. Create and push an annotated tag `<package>-v<version>`.
+8. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
    `patch|minor|major` and `next` for any pre-release mode. Scripts are skipped on publish because
    the build already ran in an earlier step. Never `npm publish`: npm packs `catalog:` and
    `workspace:` specifiers verbatim and the package cannot be installed; only bun resolves them
