@@ -131,7 +131,7 @@
         "react"
       ],
       "kind": "Breaking Change",
-      "order": 9007199254740991
+      "order": 63
     },
     {
       "id": "changelog:2026-09-19-ignis-repository-and-bulk-writes",
