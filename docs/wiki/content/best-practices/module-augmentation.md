@@ -71,7 +71,7 @@ import type { TFullPaths } from '@venizia/ardor';
 
 declare module '@venizia/ardor-react' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': true;
+    'services.PricingService': true;
   }
 }
 
@@ -88,7 +88,7 @@ Do not augment the umbrella. This compiles, does nothing, and the hooks still re
 // Wrong - a re-export does not merge.
 declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': true;
+    'services.PricingService': true;
   }
 }
 ```
@@ -103,7 +103,7 @@ Keep the key map as a `const` object next to the application and derive the unio
 
 ```ts
 export const ApplicationBindings = {
-  PRODUCT_API: 'services.ProductApi',
+  PRICING_SERVICE: 'services.PricingService',
   PRODUCT_LIST: 'components.ProductList',
 } as const;
 
@@ -132,8 +132,7 @@ export class Application extends BaseArdorApplication {
 
   bindingList() {
     return {
-      'services.ProductApi': ProductApi,
-      'services.OrderApi': ProductApi,
+      'services.PricingService': PricingService,
     };
   }
 }
@@ -157,7 +156,7 @@ See [Binding keys](./binding-keys) for how to name and group the keys themselves
 
 Do not duplicate literals. Two lists drift, and the compile error you get later points at the wrong one.
 
-Note that `useInjectable({ target: ProductApi })` does not go through the key union at all. The hook resolves the key from the container's metadata registry for the class. Augmentation only affects the `key` form.
+Note that `useInjectable({ target: PricingService })` (and `useService`, `useRepository`) does not go through the key union at all. The hook reads the key recorded on the class when it was registered. Augmentation only affects the `key` form.
 
 ## Derive translate keys from the message object
 
@@ -197,7 +196,7 @@ import type { TFullPaths } from '@venizia/ardor';
 
 declare module '@venizia/ardor-react' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': true;
+    'services.PricingService': true;
   }
 }
 
@@ -225,7 +224,7 @@ import { useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardo
 
 declare module '@venizia/ardor-react' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': true;
+    'services.PricingService': true;
   }
 }
 
@@ -237,10 +236,10 @@ declare module '@venizia/ardor-admin' {
 
 export const VerifyKeys = () => {
   // Declared key - accepted.
-  const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
+  const pricing = useInjectable<PricingService>({ key: 'services.PricingService' });
 
   // @ts-expect-error - 'services.Missing' is not a declared injectable key
-  useInjectable<ProductApi>({ key: 'services.Missing' });
+  useInjectable<PricingService>({ key: 'services.Missing' });
 
   const translate: TUseTranslateFn = useTranslate();
   const title = translate('app.products.title');
@@ -248,7 +247,7 @@ export const VerifyKeys = () => {
   // @ts-expect-error - 'app.products.missing' is not a declared translation key
   translate('app.products.missing');
 
-  return <h1 title={String(productApi)}>{title}</h1>;
+  return <h1 title={String(pricing)}>{title}</h1>;
 };
 ```
 

@@ -58,10 +58,13 @@ There are exactly four renames. Every other exported symbol keeps its name.
 | `CoreRaApplication` | `ArdorApplication` |
 | `ICoreRaApplication` | `IArdorApplication` |
 
-Two removals and one requirement:
+Three removals and one requirement:
 
 - **`DIContainer` is gone.** It was a second, weaker container beside the IGNIS one. Use the
   inversion `Container` the application already is.
+- **`BaseApiService` is gone.** Extend `BaseService` and declare a `resource` field if the `@api()`
+  log line should name one; `@api()` works on any `BaseService`. For HTTP reads, prefer an
+  `HttpRepository` from `@venizia/ardor/repository`.
 - **Module augmentation moves to the declaring package.** A TypeScript interface merges only into
   the module that declares it, never through a re-export, so augmenting `@venizia/ardor` would
   silently do nothing. Augment the owner instead:
@@ -81,7 +84,7 @@ Two removals and one requirement:
   The hooks themselves are still imported from `@venizia/ardor`; only the `declare module` target
   changes.
 
-- **`@venizia/ignis-inversion` must be `>=0.2.0-7`.** ARDOR resolves a binding from a class through
+- **`@venizia/ignis-inversion` must be `>=0.2.0-23`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
 
 One bug fix worth knowing about, because it changes behavior:
@@ -96,7 +99,7 @@ gap. They are mechanical, but the last one is the reason this is a reviewed pass
 search-and-replace.
 
 1. **The dependency.** Swap `@minimaltech/ra-core-infra` for `@venizia/ardor` in every
-   `package.json`, and pin `@venizia/ignis-inversion` to `>=0.2.0-7` (a Bun catalog entry, or
+   `package.json`, and pin `@venizia/ignis-inversion` to `>=0.2.0-23` (a Bun catalog entry, or
    each manifest).
 2. **The import specifier.** `@minimaltech/ra-core-infra` -> `@venizia/ardor` in every `import`
    and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three

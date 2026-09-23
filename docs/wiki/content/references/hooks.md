@@ -16,6 +16,7 @@ An ARDOR application mounted with `ApplicationContext` (see [Application](../ref
 | Export | Needs in the tree | Returns |
 |---|---|---|
 | `useInjectable` | `ApplicationContext` with a `container`, or an explicit `container` option | The bound instance |
+| `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration` | Same as `useInjectable` | The bound instance, checked against its namespace |
 | `useApplicationContext` | `ApplicationContext` with a `container` | The `Container` |
 | `useApplicationLogger` | `ApplicationContext` with a `logger` | The `Logger` |
 | `useTranslate` | ra-core i18n context (optional - falls back to identity) | `(key, options?) => string` |
@@ -52,7 +53,7 @@ const useInjectable: <T>(opts: TUseInjectableOptions) => T;
 How it resolves:
 
 - `{ key }` - calls `container.get({ key })` directly.
-- `{ target }` - looks up the binding key in the container's metadata registry, then calls `container.get`. The class must be decorated (`@service`, `@component`, ...) or registered on the application. Otherwise the hook throws.
+- `{ target }` - looks up the binding key recorded on the class, then calls `container.get`. A stereotype records it (`@service`, `@component`, ...), and so does registration by hand (`service()`, `repository()`, `dataSource()`, `component()`, `bindingList()`). A class bound only with `bind()` has none, and the hook throws.
 - `{ container }` - overrides the context container. If neither an explicit container nor a context container exists, the hook throws.
 
 By key, using a core binding:
@@ -78,9 +79,9 @@ By target class:
 ```tsx
 import { useInjectable } from '@venizia/ardor';
 
-export function ProductApiName() {
-  const productApi = useInjectable<ProductApi>({ target: ProductApi });
-  return <pre>{productApi.constructor.name}</pre>;
+export function PricingServiceName() {
+  const pricing = useInjectable<PricingService>({ target: PricingService });
+  return <pre>{pricing.constructor.name}</pre>;
 }
 ```
 
@@ -89,9 +90,9 @@ With an explicit container, outside of `ApplicationContext`:
 ```tsx
 import { useInjectable } from '@venizia/ardor';
 
-export function ProductApiFromContainer() {
-  const productApi = useInjectable<ProductApi>({ container, target: ProductApi });
-  return <pre>{productApi.constructor.name}</pre>;
+export function PricingServiceFromContainer() {
+  const pricing = useInjectable<PricingService>({ container, target: PricingService });
+  return <pre>{pricing.constructor.name}</pre>;
 }
 ```
 
@@ -100,9 +101,26 @@ export function ProductApiFromContainer() {
 ```ts
 declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': true;
+    'services.PricingService': true;
   }
 }
+```
+
+## useService, useRepository and the other stereotype hooks
+
+One hook per namespace: `useService` (`services`), `useRepository` (`repositories`), `useProvider` (`providers`), `useComponent` (`components`), `useConfiguration` (`configurations`). Each takes `{ target }` or `{ key }` like `useInjectable`, and infers the type from `target`.
+
+```tsx no-check
+const useService: <T = AnyType>(opts: { container?: Container; target: TClass<T> } | { container?: Container; key: TUseInjectableKeys }) => T;
+// useRepository, useProvider, useComponent and useConfiguration have the same shape.
+```
+
+They are not aliases. With `{ target }`, each checks the class is bound under its own namespace and throws naming both otherwise, so `useService({ target: SomeRepository })` fails instead of returning a repository to code that expects a service. A `{ key }` is passed through unchecked.
+
+```tsx no-check
+// ...
+const pricing = useService({ target: PricingService }); // typed PricingService
+const products = useRepository({ target: ProductRepository }); // typed ProductRepository
 ```
 
 ## useApplicationContext

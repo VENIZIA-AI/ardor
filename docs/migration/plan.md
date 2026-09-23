@@ -137,7 +137,7 @@ Verification: `bun scripts/release.ts --dry-run` prints the ARDOR chain; CI gree
 | Example | What it shows | Backend |
 |---|---|---|
 | `examples/5-mins-qs` | The smallest ARDOR app: one resource, `ArdorApplication`, `useInjectable`, `useTranslate`; Vite | a `Bun.serve` stub in the example |
-| `examples/vert-admin` | The family reference: an admin console over IGNIS's `examples/vert` API - CRUD, auth with recovery, RBAC-driven UI, i18n, a custom `BaseApiService`, an `AuthProvider` subclass, module augmentation | IGNIS `vert` |
+| `examples/vert-admin` | The family reference: an admin console over IGNIS's `examples/vert` API - CRUD, auth with recovery, RBAC-driven UI, i18n, a custom `BaseService`, an `AuthProvider` subclass, module augmentation | IGNIS `vert` |
 | `examples/ipc-data-provider` | `DefaultRestDataProvider.send` overridden for a non-HTTP transport - the pattern BANA's Tauri app uses | none |
 
 Each gets a concept in `knowledge/examples/`, a README row, and `make lint-examples`.

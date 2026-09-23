@@ -1,11 +1,11 @@
 ---
-title: Writing services
-description: How to write ARDOR services on BaseService and BaseApiService - options objects, the @api() decorator, error handling, and how components reach a service through the container.
+title: Writing services and repositories
+description: How to write ARDOR services on BaseService and resource repositories on HttpRepository - options objects, the @api() decorator, error handling, and how components reach them through the container.
 ---
 
-# Writing services
+# Writing services and repositories
 
-A service is a plain class that owns one job and one logger. ARDOR gives you two bases: `BaseService` for logic that has no backend resource, and `BaseApiService` for logic that talks to one resource. This page shows how to write them so they stay small, testable, and free of react-admin types.
+A service is a plain class that owns one job and one logger: extend `BaseService`. Reading one backend resource is a repository's job: extend `HttpRepository` from `@venizia/ardor/repository`. This page shows how to write both so they stay small, testable, and free of react-admin types.
 
 ## Prerequisites
 
@@ -16,11 +16,11 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | Export | Kind | Use it for |
 | --- | --- | --- |
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
-| `BaseApiService` | class | A service bound to one backend resource. Takes `{ scope, resource }`. |
-| `api` | function | Method decorator. Logs a failure with method name and resource, then rethrows. |
+| `HttpRepository` | class | Reads one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
+| `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
 | `Logger` | class | One instance per scope. `getInstance({ scope })`. |
 | `ISendParams` / `ISendResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
-| `useInjectable` | const | How a component resolves a service from the container. |
+| `useService` / `useRepository` | const | How a component resolves a service or a repository from the container. |
 
 ## BaseService: scope + logger
 
@@ -52,46 +52,44 @@ export class ClockService extends BaseService {
 
 `Logger.getInstance` returns the same instance for the same scope. Two services with the same scope share one logger. Keep scopes unique.
 
-## BaseApiService: + resource
+## A resource: HttpRepository
 
-`BaseApiService` extends `BaseService` and adds a `resource` string. Use it when the service is about one backend collection, such as `products` or `orders`.
-
-```ts no-check
-class BaseApiService extends BaseService {
-  protected resource: string;
-  constructor(opts: { scope: string; resource: string });
-}
-```
-
-The `resource` is what `@api()` prints when a method fails. It is also what you build paths from.
+A class about one backend collection, such as `products` or `orders`, is a repository. `HttpRepository` reads it through an `HttpDataSource` with the IGNIS filter vocabulary, and reads totals from the `Content-Range` header.
 
 ```ts
-import { BaseApiService } from '@venizia/ardor';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
-export class ProductService extends BaseApiService {
-  constructor() {
-    super({ scope: ProductService.name, resource: 'products' });
+interface IProduct {
+  id: number;
+  price: number;
+}
+
+export class ProductRepository extends HttpRepository<IProduct> {
+  constructor(opts: { dataSource: HttpDataSource }) {
+    super({ dataSource: opts.dataSource, resource: 'products' });
   }
 
-  pathFor(opts: { id: number }): string {
-    return `/${this.resource}/${opts.id}`;
+  countAbove(opts: { price: number }) {
+    return this.count({ where: { price: { gte: opts.price } } });
   }
 }
 ```
+
+See the [repository reference](../references/repository) for the datasource settings and what `count` and `find` refuse to guess.
 
 ## Options objects on every method
 
-Both constructors take a single options object. Do the same on every public method you add. `getPrice({ id })`, never `getPrice(id)`. Callers can add a field later without breaking every call site, and the argument names show up at the call site.
+Every constructor here takes a single options object. Do the same on every public method you add. `getPrice({ id })`, never `getPrice(id)`. Callers can add a field later without breaking every call site, and the argument names show up at the call site.
 
 The one exception is the react-admin facing `IDataProvider` the container returns. Its methods are positional `(resource, params)` because react-admin calls them. That contract belongs to the provider, not to your service.
 
 ## @api() for logging failures
 
-`api()` is a method decorator for `BaseApiService` subclasses. It wraps the method, awaits it, and on failure logs one error line with the method name, the resource, and the error. Then it rethrows. It does not swallow the error and it does not change the result on success.
+`api()` is a method decorator for any `BaseService` subclass. It wraps the method, awaits it, and on failure logs one error line with the method name, the class's `resource` if it has one (`-` otherwise), and the error. Then it rethrows. It does not swallow the error and it does not change the result on success.
 
 ```ts no-check
 function api(): (
-  _target: BaseApiService,
+  _target: BaseService,
   propertyKey: string,
   descriptor: PropertyDescriptor,
 ) => PropertyDescriptor;
@@ -100,11 +98,13 @@ function api(): (
 The logged line looks like `[getPrice] resource: products | error: ...`. You get this for free on every method you decorate, so you do not write a `try/catch` just to log.
 
 ```ts
-import { api, BaseApiService } from '@venizia/ardor';
+import { api, BaseService } from '@venizia/ardor';
 
-export class ProductService extends BaseApiService {
+export class PricingService extends BaseService {
+  protected resource = 'products';
+
   constructor() {
-    super({ scope: ProductService.name, resource: 'products' });
+    super({ scope: PricingService.name });
   }
 
   @api()
@@ -118,16 +118,14 @@ export class ProductService extends BaseApiService {
 }
 ```
 
-Only put `@api()` on `BaseApiService` methods. The decorator reads `this.logger` and `this.resource`. A plain `BaseService` has no `resource`.
-
 ## Return `response.data`
 
 When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service.
 
 ```ts no-check
-import { api, BaseApiService, ISendParams, ISendResponse } from '@venizia/ardor';
+import { api, BaseService, ISendParams, ISendResponse } from '@venizia/ardor';
 
-export class ProductService extends BaseApiService {
+export class PricingService extends BaseService {
   ...
 
   @api()
@@ -165,22 +163,22 @@ So do not keep per-request state on the class. No `this.currentId`, no `this.las
 
 ## Where a service lives and how a component reaches it
 
-Register the service in the container when the application boots, under a binding key. Then a component does not import the class and `new` it. It asks the container for it with `useInjectable`.
+Register the class by stereotype or by hand (`this.service(PricingService)`, `this.repository(ProductRepository)`); either binds a singleton and records the key on the class. A component does not import the class and `new` it. It asks the container by class, and the hook checks the class is bound under `services.` or `repositories.`.
 
 ```tsx no-check
-import { useInjectable } from '@venizia/ardor';
+import { useRepository, useService } from '@venizia/ardor';
 
 export function ProductPrice(props: { id: number }) {
-  const products = useInjectable(...); // resolve ProductService by its binding key - see the hooks reference
+  const pricing = useService({ target: PricingService });
+  const products = useRepository({ target: ProductRepository });
   ...
 }
 ```
 
-The component never sees how the service was built. Swap the implementation in the container and the component does not change. See [binding keys](./binding-keys) for how to name keys and [hooks](../references/hooks) for the `useInjectable` signature.
+The component never sees how the class was built. Swap the implementation in the container and the component does not change. See [binding keys](./binding-keys) for how to name keys and [hooks](../references/hooks) for the hook signatures.
 
 ## Common pitfalls
 
-- **Decorating a `BaseService` method with `@api()`.** The decorator reads `this.resource`. Use `BaseApiService` or drop the decorator.
 - **Expecting `@api()` to swallow errors.** It logs and rethrows. The caller still gets the error.
 - **Decorating a sync method.** `@api()` replaces the method with an `async` function. The result is always a promise.
 - **Reusing a scope.** `Logger.getInstance` returns the same logger for the same scope. Two classes with one scope are indistinguishable in the log.
@@ -190,8 +188,8 @@ The component never sees how the service was built. Swap the implementation in t
 
 ## Related
 
-- [Binding keys](./binding-keys) - naming and registering services in the container
-- [Hooks](../references/hooks) - `useInjectable` and the other React hooks
+- [Binding keys](./binding-keys) - naming and registering services and repositories in the container
+- [Hooks](../references/hooks) - `useService`, `useRepository` and the other React hooks
 - [Network](../references/network) - the transport a service calls
 - [Data provider](../references/data-provider) - where react-admin types belong
 - [Types](../references/types) - `ISendParams`, `ISendResponse`, and other kernel types

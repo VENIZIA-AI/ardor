@@ -15,7 +15,7 @@ which re-exports this package.
 | Area | Exports |
 |---|---|
 | Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()` and `service()` helpers |
-| Services | `BaseService`, `BaseApiService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
+| Services | `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
 | Providers | `BaseProvider` |
 | Decorators | `api()` - logs and rethrows a failing API method |
 | Bindings | `CoreBindings`, `LocalStorageKeys` |

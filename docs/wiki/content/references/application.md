@@ -1,6 +1,6 @@
 ---
 title: Application
-description: The ARDOR application base - BaseArdorApplication, the start() lifecycle, injectable() and service() registration, getAppInfo, and how ArdorApplication hands the container to the React tree.
+description: The ARDOR application base - BaseArdorApplication, the start() lifecycle, registration by stereotype and by hand, getAppInfo, and how ArdorApplication hands the container to the React tree.
 ---
 
 # Application
@@ -36,8 +36,14 @@ abstract class AbstractArdorApplication extends Container implements IArdorAppli
   preConfigure(): ValueOrPromise<void>;
   postConfigure(): ValueOrPromise<void>;
 
+  registerArtifacts(): void;
+  bindingList(): Record<string, TClass<unknown>>;
+
+  service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
+  repository<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
+  dataSource<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
+  component<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  service<T>(value: TClass<T>): void;
 
   start(): Promise<void>;
 }
@@ -53,7 +59,7 @@ import {
   type IRestDataProviderOptions,
 } from '@venizia/ardor';
 
-class ProductService {
+class CatalogService {
   list() {
     return ['book', 'pen'];
   }
@@ -67,7 +73,7 @@ export class ShopApplication extends BaseArdorApplication {
   bindContext() {
     const options: IRestDataProviderOptions = { url: 'https://api.example.com' };
     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue(options);
-    this.service(ProductService);
+    this.service(CatalogService);
   }
 }
 
@@ -110,11 +116,15 @@ abstract class AbstractArdorApplication extends Container {
 
 ### preConfigure()
 
-The default implementation does three things, in this order:
+The default implementation does five things, in this order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
 2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
-3. Returns `this.bindContext()`.
+3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest).
+4. Binds each entry of `bindingList()` under its literal key, as a singleton.
+5. Returns `this.bindContext()`.
+
+Least explicit first, so for a shared key the later step wins.
 
 Because `start()` awaits the return value, an async `bindContext()` finishes before `postConfigure()` runs. If you override `preConfigure()`, call `super.preConfigure()` or the two core keys are never bound and `bindContext()` is never called.
 
@@ -145,47 +155,35 @@ export class ShopApplication extends BaseArdorApplication {
   }
 
   async postConfigure() {
-    const config = this.get<ConfigService>({ key: 'services.ConfigService' });
+    const key = this.getMetadataRegistry().getBindingKey({ target: ConfigService });
+    const config = this.get<ConfigService>({ key: String(key) });
     await config.load();
   }
 }
 ```
 
-## injectable() and service()
+## Registration by hand
 
-`injectable()` registers a class under a computed key. It is one of the few positional signatures in ARDOR.
+`service()`, `repository()`, `dataSource()` and `component()` register one class, as in IGNIS. Each returns the `Binding`.
 
 ```ts no-check
-abstract class AbstractArdorApplication extends Container {
-  ...
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
+interface IArtifactRegistration {
+  binding?: { namespace: string; key: string }; // instead of <namespace>.<ClassName>
+  scope?: TBindingScope; // default: singleton
+  allowOverride?: boolean; // false refuses to replace an existing binding
 }
 ```
 
-What it does:
-
-- Key is `` `${scope}.${value.name}` `` - for `injectable('services', ProductService)` the key is `services.ProductService`.
-- The binding is `toClass(value)`.
-- Scope is set to `BindingScopes.SINGLETON`. One instance per application, resolved lazily on first `get`.
-- Tags, if given, are applied with `setTags(...tags)`.
-
-`service()` is the shorthand for the `services` scope:
-
-```ts no-check
-abstract class AbstractArdorApplication extends Container {
-  ...
-  service<T>(value: TClass<T>): void {
-    this.injectable('services', value);
-  }
-}
-```
+- Key: `opts.binding`, else the class's stereotype binding, else `<namespace>.<ClassName>` (`services`, `repositories`, `datasources`, `components`).
+- Scope: `opts.scope`, else the stereotype's, else `BindingScopes.SINGLETON`. IGNIS's server defaults services and repositories to transient; a browser does not, because a hook resolves on every render.
+- The key is recorded on the class, so `@inject({ target })` and the `use*({ target })` hooks resolve it by class.
 
 ```ts
 import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
 
+class ApiClient {}
 class ProductRepository {}
 class EmailService {}
-class ProductService {}
 
 export class ShopApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
@@ -193,14 +191,14 @@ export class ShopApplication extends BaseArdorApplication {
   }
 
   bindContext() {
-    this.injectable('repositories', ProductRepository); // key: repositories.ProductRepository
-    this.injectable('services', EmailService, ['notifications']); // key: services.EmailService
-    this.service(ProductService); // key: services.ProductService
+    this.dataSource(ApiClient); // datasources.ApiClient
+    this.repository(ProductRepository); // repositories.ProductRepository
+    this.service(EmailService, { binding: { namespace: 'services', key: 'mail' } }); // services.mail
   }
 }
 ```
 
-Resolve a registered class with `get({ key })` on the application, or with `useInjectable` inside React (see [Hooks](../references/hooks)).
+`injectable(scope, value, tags?)` binds under `<scope>.<ClassName>` as a singleton with tags, and records the key too. Prefer the per-kind methods; see [Binding keys](../best-practices/binding-keys) for registration by stereotype.
 
 ## ArdorApplication - handing the container to React
 
@@ -250,7 +248,7 @@ Everything under `ArdorApplication` can reach the container with `useApplication
 - **Overriding `preConfigure()` without `super.preConfigure()`.** The override then skips binding `APPLICATION_INSTANCE` and `APPLICATION_INFO` and never runs `bindContext()`.
 - **Async `getAppInfo()`.** `preConfigure()` binds the return value without awaiting it. Return a plain object.
 - **Expecting `this.container`.** The application is the container. Use `this.bind(...)` and `this.get(...)`. Legacy ra-core-infra code that used `this.container.bind({ key, value })` becomes `this.bind({ key }).toValue(value)` - see the [migration guide](../guides/migration/from-ra-core-infra).
-- **Keys depend on the runtime class name.** `injectable()` builds the key from `value.name`. If a build step renames classes, `get({ key: 'services.ProductService' })` no longer matches. Use the stable keys in [Binding keys](../references/binding-keys) for the core bindings.
+- **Typing a derived key.** A derived key contains the class name, which a production build renames. Resolve such classes by `target`, not by a typed `'services.X'` string.
 - **Two instances of a service.** Registering the same class under two scopes gives two singletons, one per key.
 
 ## Related

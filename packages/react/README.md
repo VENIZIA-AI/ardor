@@ -28,7 +28,7 @@ into the module that declares it, never through a re-export:
 ```typescript
 declare module '@venizia/ardor-react' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': unknown;
+    'services.PricingService': unknown;
   }
 }
 ```

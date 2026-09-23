@@ -46,12 +46,12 @@ bindContext() {
     authRecovery: { refreshTokenPath: '/auth/refresh' },
   });
   this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
-  this.service(ProductApi);
+  this.repository(ProductRepository);
   ...
 }
 
-// Anywhere in the tree - resolve by key.
-const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
+// Anywhere in the tree - resolve by class.
+const products = useRepository({ target: ProductRepository });
 ```
 
 ## What ARDOR deliberately does not do

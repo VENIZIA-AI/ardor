@@ -38,6 +38,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'REST data provider', link: '/references/data-provider' },
       { text: 'Network layer', link: '/references/network' },
+      { text: 'Repositories', link: '/references/repository' },
       { text: 'Auth provider', link: '/references/auth-provider' },
       { text: 'Internationalization', link: '/references/i18n' },
     ],
@@ -66,8 +67,8 @@ const bestPracticesSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Module augmentation', link: '/best-practices/module-augmentation' },
-      { text: 'Binding keys and services', link: '/best-practices/binding-keys' },
-      { text: 'Writing services', link: '/best-practices/services' },
+      { text: 'Binding keys and registration', link: '/best-practices/binding-keys' },
+      { text: 'Writing services and repositories', link: '/best-practices/services' },
       { text: 'No-auth paths and recovery', link: '/best-practices/auth-recovery' },
     ],
   },
@@ -85,6 +86,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'History',
     collapsed: false,
     items: [
+      {
+        text: '2026-09-23',
+        collapsed: true,
+        items: [
+          {
+            text: 'Registration by hand, useRepository, clean-install gate',
+            link: '/changelogs/2026-09-23-registration-by-hand-and-clean-install',
+          },
+        ],
+      },
       {
         text: '2026-09-19',
         collapsed: true,

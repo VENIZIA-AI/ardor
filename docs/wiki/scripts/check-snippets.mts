@@ -31,7 +31,7 @@ const AMBIENT: Record<string, string> = {
     "import type { ReactNode as PreludeSpinnerNode } from 'react';\ndeclare const Spinner: () => PreludeSpinnerNode;",
   ProductList:
     "import type { ReactNode as PreludeListNode } from 'react';\ndeclare const ProductList: () => PreludeListNode;",
-  ProductApi: 'declare class ProductApi {\n  find(): Promise<unknown[]>;\n}',
+  PricingService: 'declare class PricingService {\n  quote(): Promise<number>;\n}',
   messages: 'declare const messages: { app: { products: { title: string; empty: string } } };',
   container:
     "import type { Container as PreludeContainer } from '@venizia/ignis-inversion';\ndeclare const container: PreludeContainer;",

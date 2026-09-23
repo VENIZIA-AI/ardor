@@ -30,7 +30,7 @@ through hooks; the data layer speaks the IGNIS filter vocabulary to your API.
 ## Install
 
 ```bash
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter reflect-metadata
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors reflect-metadata
 bun add ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
 bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 ```
@@ -46,26 +46,22 @@ bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 import 'reflect-metadata';
 
 import {
-  api, BaseApiService, BaseArdorApplication, CoreBindings,
-  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultRestDataProvider,
-  type IApplicationInfo, type IDataProvider, type ISendParams, RequestMethods,
+  BaseArdorApplication, CoreBindings, DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider,
+  DefaultRestDataProvider, readAuthTokenFromStorage, type IApplicationInfo,
 } from '@venizia/ardor';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 import { inject } from '@venizia/ignis-inversion';
 
-class ProductApi extends BaseApiService {
-  constructor(@inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) protected dataProvider: IDataProvider) {
-    super({ scope: ProductApi.name, resource: 'products' });
-  }
-
-  @api()
-  async findAll(): Promise<{ id: number; name: string }[]> {
-    const params: ISendParams = { method: RequestMethods.GET };
-    return (await this.dataProvider.send<{ id: number; name: string }[]>({ resource: this.resource, params })).data;
+class ApiDataSource extends HttpDataSource {
+  constructor() {
+    super({ baseUrl: new URL('/api', window.location.origin).href, authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides extends Record<keyof ReturnType<Application['bindingList']>, unknown> {}
+class ProductRepository extends HttpRepository<{ id: number; name: string }> {
+  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'products' });
+  }
 }
 
 class Application extends BaseArdorApplication {
@@ -82,20 +78,19 @@ class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-  }
 
-  // Literal keys survive a minifier and type `useInjectable` through the augmentation above.
-  override bindingList() {
-    return { 'services.ProductApi': ProductApi };
+    // By hand, as in IGNIS: a singleton, with the key recorded on the class.
+    this.dataSource(ApiDataSource);
+    this.repository(ProductRepository);
   }
 }
 ```
 
 ```tsx
-import { ArdorApplication, useInjectable, useTranslate } from '@venizia/ardor';
+import { ArdorApplication, useRepository, useTranslate } from '@venizia/ardor';
 
 const ProductList = () => {
-  const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
+  const products = useRepository({ target: ProductRepository });
   const translate = useTranslate();
   // ...
 };

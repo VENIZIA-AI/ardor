@@ -53,4 +53,5 @@ Through its core packages - `@venizia/ardor`, `ardor-kernel`, `ardor-react`, `ar
 | Internationalization | ardor-react | Translation providers, dictionary bindings, and locale switching |
 | Hooks | ardor-react | Hooks to resolve dependencies and consume container state |
 | Network Layer | @venizia/ardor | Transport layer, HTTP interceptors, and error mapping utilities |
+| Repositories | @venizia/ardor/repository | HTTP datasource and resource repositories, from IGNIS connectors |
 | Utilities & Types | ardor-ui-kit | Shared interfaces, design tokens, and helper functions |

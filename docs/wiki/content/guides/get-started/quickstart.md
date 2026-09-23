@@ -1,15 +1,15 @@
 ---
 title: 5-minute quickstart
-description: From a new Vite + React project to a running ARDOR admin - install, decorator flags, an Application class that binds the three default providers and one service, ArdorApplication at the root, and a list that resolves the service from the container.
+description: From a new Vite + React project to a running ARDOR admin - install, decorator flags, an Application class that binds the three default providers and one repository, ArdorApplication at the root, and a page that resolves the repository from the container.
 ---
 
 # 5-Minute Quickstart
 
-Build a working ARDOR admin: one application class, the three default providers, one service, and one resource page that resolves that service through a hook.
+Build a working ARDOR admin: one application class, the three default providers, one repository, and one resource page that resolves it through a hook.
 
 **Time to complete:** ~5 minutes
 
-> **Prerequisite:** Bun 1.3 or later, and a REST API to point the data provider at.
+> **Prerequisite:** Bun 1.4 or later, and a REST API to point the data provider at.
 
 ## 1. Create the project
 
@@ -19,10 +19,10 @@ Scaffold a Vite + React + TypeScript project and install ARDOR with its peers:
 bun create vite my-admin --template react-ts
 cd my-admin
 bun install
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
 ```
 
-`@venizia/ardor` is the umbrella package. It re-exports `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`, so the application needs one import path.
+`@venizia/ardor` is the umbrella package. It re-exports `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`, so the application needs one import path. `@venizia/ignis-connectors` is only for `@venizia/ardor/repository`, which this guide uses.
 
 ## 2. Configure TypeScript for decorators
 
@@ -45,7 +45,7 @@ ARDOR's container is `@venizia/ignis-inversion`, which relies on TypeScript's le
 
 ## 3. Write the application
 
-The application lives in one file, `src/main.tsx`. It holds the container side - a service and the application class - and the React side - a resource page and the bootstrap that mounts the root component.
+The application lives in one file, `src/main.tsx`. It holds the container side - a repository and the application class - and the React side - a resource page and the bootstrap that mounts the root component.
 
 Replace `src/main.tsx` with:
 
@@ -55,7 +55,6 @@ import 'reflect-metadata';
 import { configureStore } from '@reduxjs/toolkit';
 import {
   ArdorApplication,
-  BaseApiService,
   BaseArdorApplication,
   CoreBindings,
   DefaultAuthProvider,
@@ -63,33 +62,36 @@ import {
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
-  useInjectable,
+  readAuthTokenFromStorage,
+  useRepository,
   useTranslate,
   vietnameseMessages,
   type IApplicationInfo,
 } from '@venizia/ardor';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+import { inject } from '@venizia/ignis-inversion';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-// 1. A service. `this.service(ProductApi)` binds it under `services.ProductApi`.
-export class ProductApi extends BaseApiService {
+interface IProduct {
+  id: number;
+  name: string;
+}
+
+// 1. The datasource, and a repository that reads one resource through it.
+export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ scope: 'ProductApi', resource: 'products' });
-  }
-
-  getResource(): string {
-    return this.resource;
+    super({ baseUrl: 'http://localhost:3000/api', authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
-// 2. Teach `useInjectable` the key. Without this augmentation the string
-// 'services.ProductApi' is not an accepted key and the page does not compile.
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides {
-    'services.ProductApi': unknown;
+export class ProductRepository extends HttpRepository<IProduct> {
+  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'products' });
   }
 }
 
-// 3. The application: an IoC container that declares what it binds.
+// 2. The application: an IoC container that declares what it binds.
 export class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'my-admin', version: '1.0.0', description: 'My admin' };
@@ -120,24 +122,30 @@ export class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
 
-    this.service(ProductApi);
+    this.dataSource(ApiDataSource);
+    this.repository(ProductRepository);
   }
 }
 
-// 4. A resource page. The hooks resolve from the container that ArdorApplication provides.
+// 3. A resource page. The hooks resolve from the container that ArdorApplication provides.
 const ProductList = () => {
-  const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
+  const products = useRepository({ target: ProductRepository });
   const translate = useTranslate();
+  const [total, setTotal] = useState<number>();
+
+  useEffect(() => {
+    void products.count({ where: {} }).then(({ count }) => setTotal(count));
+  }, [products]);
 
   return (
     <section>
-      <h1>{productApi.getResource()}</h1>
+      <h1>products ({total ?? '...'})</h1>
       <button type="button">{translate('ra.action.refresh')}</button>
     </section>
   );
 };
 
-// 5. Start the container, then hand it to the root component.
+// 4. Start the container, then hand it to the root component.
 const store = configureStore({ reducer: (state = {}) => state });
 
 async function bootstrap() {
@@ -160,11 +168,12 @@ void bootstrap();
 What each part does:
 
 - `import 'reflect-metadata'` must be the first import of `main.tsx`. It has to run once, before the application class is defined. If you later move the container side into its own file, keep that import at the top of the file that defines the application class.
-- `ProductApi` extends `BaseApiService`, which takes `{ scope, resource }` and stores `resource` on the instance. `this.service(ProductApi)` binds the class under the key `services.ProductApi` (the `services` scope plus the class name) as a singleton: one instance per application.
-- The `declare module '@venizia/ardor-react'` block adds `services.ProductApi` to `IUseInjectableKeysOverrides`. `useInjectable` only accepts keys that the framework binds or that you declare this way. Declare it in the file that defines the service, next to the class.
+- `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `readAuthTokenFromStorage` gives it the token the auth provider stored.
+- `HttpDataSource` needs an absolute `baseUrl`. Behind a dev-server proxy, build one with `new URL('/api', window.location.origin).href`.
+- `this.dataSource(...)` and `this.repository(...)` register by hand, as in IGNIS. Each binds a singleton and records the key on the class, so `@inject({ target })` and `useRepository({ target })` resolve by class: no key string to type, and nothing a minifier can rename. Decorating the classes instead lets the application discover them - see [Binding keys](../../best-practices/binding-keys).
 - `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` declares every binding. Three option values feed the three default providers, and `DefaultAuthService` backs `DefaultAuthProvider`.
 - `application.start()` runs `preConfigure()`, which binds the application instance and its info, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
-- `ProductList` calls `useInjectable` with the key that `service()` produced, and `useTranslate` to resolve a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
+- `ProductList` resolves the repository with `useRepository`, which also checks the class is bound under `repositories.`, and `useTranslate` resolves a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
 - `ArdorApplication` reads the data provider, auth provider and i18n provider from the container by their `CoreBindings` keys, wraps the tree in the application context, the Redux provider and `React.Suspense`, and renders one react-admin `Resource` per entry in `resources`. Any other prop is passed to `CoreAdmin` as-is.
 
 Replace `url` with the address of your API. In a real project you would read it from an environment variable.
@@ -183,14 +192,14 @@ Open the URL Vite prints (`http://localhost:5173` by default). The admin resolve
 
 Two things confirm the container is doing the work:
 
-- The heading reads `products`. That string came from the `ProductApi` singleton, resolved by key from the container, not from props.
+- The heading shows the product total. It came from `ProductRepository`, resolved by key from the container, not from props.
 - The button label comes from `translate`, which resolves the key through the i18n provider bound in `bindContext()`.
 
-If `useInjectable` throws for `services.ProductApi`, check the key: it is built from the class name, so renaming `ProductApi` changes the key. If TypeScript rejects the key instead, the `IUseInjectableKeysOverrides` augmentation is missing or spells the key differently.
+If the count throws "carried no Content-Range", your list route does not send that header; pass `countPath` to the repository if the API has a count route.
 
 ## What you built
 
-A running ARDOR admin: one application class that binds REST, auth and i18n options, the three default providers, one service registered with `service()`, and one resource page that resolves that service through `useInjectable` - in one file.
+A running ARDOR admin: one application class that binds REST, auth and i18n options, the three default providers, one datasource and one repository registered by hand, and one resource page that resolves the repository by class - in one file.
 
 ## Next steps
 

@@ -46,7 +46,7 @@
           <!-- v-pre: skip Vue template compilation inside the code sample -->
           <pre v-pre><span class="ar-k">import</span> <span class="ar-s">'reflect-metadata'</span>
 <span class="ar-k">import</span> { <span class="ar-c">BaseArdorApplication</span>, <span class="ar-c">CoreBindings</span>, <span class="ar-c">DefaultRestDataProvider</span> } <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
-<span class="ar-k">import</span> { <span class="ar-d">useInjectable</span>, <span class="ar-d">useTranslate</span> } <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
+<span class="ar-k">import</span> { <span class="ar-d">useRepository</span>, <span class="ar-d">useTranslate</span> } <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
 
 <span class="ar-k">class</span> <span class="ar-c">Application</span> <span class="ar-k">extends</span> <span class="ar-c">BaseArdorApplication</span> {
   <span class="ar-d">bindContext</span>() {
@@ -54,12 +54,12 @@
       .<span class="ar-d">toValue</span>({ url: <span class="ar-s">'/api'</span>, noAuthPaths: [<span class="ar-s">'/auth/login'</span>] })
     <span class="ar-k">this</span>.<span class="ar-d">bind</span>({ key: <span class="ar-c">CoreBindings</span>.DEFAULT_REST_DATA_PROVIDER })
       .<span class="ar-d">toProvider</span>(<span class="ar-c">DefaultRestDataProvider</span>)
-    <span class="ar-k">this</span>.<span class="ar-d">service</span>(<span class="ar-c">ProductApi</span>)   <span class="ar-k">//</span> <span class="ar-k">-> services.ProductApi</span>
+    <span class="ar-k">this</span>.<span class="ar-d">repository</span>(<span class="ar-c">ProductRepository</span>)   <span class="ar-k">// -> repositories.ProductRepository</span>
   }
 }
 
 <span class="ar-k">const</span> <span class="ar-c">ProductList</span> = () => {
-  <span class="ar-k">const</span> productApi = <span class="ar-d">useInjectable</span>&lt;<span class="ar-c">ProductApi</span>&gt;({ key: <span class="ar-s">'services.ProductApi'</span> })
+  <span class="ar-k">const</span> products = <span class="ar-d">useRepository</span>({ target: <span class="ar-c">ProductRepository</span> })
   <span class="ar-k">const</span> translate = <span class="ar-d">useTranslate</span>()
   <span class="ar-k">return</span> &lt;<span class="ar-c">h1</span>&gt;{translate(<span class="ar-s">'resources.product.name'</span>)}&lt;/<span class="ar-c">h1</span>&gt;
 }</pre>
