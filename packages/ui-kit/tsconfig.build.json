@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "src/generate-index.ts"]
+  "exclude": ["node_modules", "dist", "src/generate-index.ts"],
+  // Node's ESM loader refuses `./base` and `./base/index` - it wants `./base/index.js`. tsc leaves
+  // specifiers as written and bundlers forgive the rest, so without this every package failed to load
+  // under plain Node (vitest, SSR, scripts) with ERR_UNSUPPORTED_DIR_IMPORT.
+  "tsc-alias": { "resolveFullPaths": true }
 }

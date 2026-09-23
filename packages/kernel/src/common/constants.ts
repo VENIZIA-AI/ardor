@@ -118,9 +118,7 @@ export class HeaderConsts {
   static readonly X_AUTH_PROVIDER = 'x-auth-provider';
   static readonly X_LOCALE = 'x-locale';
 
-  // Lowercase like every other name here. Header names are case-insensitive on the wire, so this
-  // changes nothing a server sees - but the service keys its header record by lowercased name, and
-  // a constant in another case would no longer find its own entry in that record.
+  // Lowercase: the service keys its header record by lowercased name.
   static readonly TIMEZONE = 'timezone';
   static readonly TIMEZONE_OFFSET = 'timezone-offset';
 

@@ -1,5 +1,5 @@
 import { Container, getError, inject } from '@venizia/ignis-inversion';
-import omit from 'lodash/omit';
+import omit from 'lodash/omit.js';
 import {
   type CreateParams,
   type CreateResult,
@@ -55,13 +55,8 @@ const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string
 };
 
 /**
- * The ids a bulk write actually touched, which is what react-admin's `updateMany` and `deleteMany`
- * results carry.
- *
- * Read from the rows the server reports - an IGNIS bulk route answers the affected rows as an array
- * when asked for `x-request-count: 0` - not from the ids that were asked for: an id that no longer
- * exists is asked for and never touched. A body that is not a row array leaves `data` out, which
- * react-admin allows, rather than claiming every requested id was written.
+ * The ids a bulk write touched, read from the affected rows the server answers (not the ids asked
+ * for). A body that is not a row array leaves `data` out.
  */
 const toAffectedIds = (opts: { rows: unknown }): Array<Identifier> | undefined => {
   const { rows } = opts;
@@ -167,11 +162,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     for (const key in rest) {
-      // Read `rest`, the object being iterated, rather than `params` it was split from - they hold
-      // the same value here, and naming two sources for one read invites them to drift apart.
-      //
-      // Skip only undefined and null. A filter of `false` or `0` is a filter, and dropping it sends
-      // a narrower query than the caller wrote, with nothing to show they differ.
+      // Skip only undefined and null: `false` and `0` are filters.
       if (!isDefined(rest[key])) {
         continue;
       }
@@ -337,11 +328,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     for (const key in rest) {
-      // Read `rest`, the object being iterated, rather than `params` it was split from - they hold
-      // the same value here, and naming two sources for one read invites them to drift apart.
-      //
-      // Skip only undefined and null. A filter of `false` or `0` is a filter, and dropping it sends
-      // a narrower query than the caller wrote, with nothing to show they differ.
+      // Skip only undefined and null: `false` and `0` are filters.
       if (!isDefined(rest[key])) {
         continue;
       }
@@ -423,8 +410,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[updateMany] No IDs to execute update!' });
     }
 
-    // The body's `where` is the bulk route's row selector and is never written as data, so a record
-    // with a real `where` field cannot say "set where" here - refused rather than silently dropped.
+    // The body's `where` is the row selector, so a `where` field in the data is refused.
     if (isDefined(data) && Object.prototype.hasOwnProperty.call(data, 'where')) {
       throw getError({
         message:
@@ -432,10 +418,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
     }
 
-    // The selector travels in the body, not the query. An id list in the URL is capped by the
-    // request line: IGNIS measured 431 at 400 UUIDs on Bun, and a proxy with 8k header buffers cuts
-    // near 170. The route reads `where` from the query or the body - never both - and answers 400,
-    // writing nothing, where a route does not accept it in the body.
+    // The selector goes in the body: an id list in the URL hits 431 at ~400 UUIDs.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
@@ -518,10 +501,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[deleteMany] No IDs to execute delete!' });
     }
 
-    // One request carrying the selector in the body, where this used to fire one DELETE per id. The
-    // fan-out was not atomic - a failure part-way surfaced as one error after the rest had already
-    // been deleted - and 2000 ids meant 2000 requests. A body keeps the id list off the request line,
-    // for the same limit `updateMany` documents.
+    // One atomic request with the selector in the body, as in `updateMany`.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,

@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import isEmpty from 'lodash/isEmpty';
+import isEmpty from 'lodash/isEmpty.js';
 
 import { type AnyObject } from '@/common/types';
 import { BaseHelper } from '../base-helper';

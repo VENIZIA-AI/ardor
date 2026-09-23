@@ -1,5 +1,5 @@
-import get from 'lodash/get';
-import round from 'lodash/round';
+import get from 'lodash/get.js';
+import round from 'lodash/round.js';
 
 export const INTL_0_DIGITS_FORMATER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,

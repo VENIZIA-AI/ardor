@@ -1,7 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
-import isEmpty from 'lodash/isEmpty';
-import merge from 'lodash/merge';
+import isEmpty from 'lodash/isEmpty.js';
+import merge from 'lodash/merge.js';
 
 import {
   type AnyType,
@@ -85,13 +85,8 @@ const normalizeNoAuthPathRegex = (input?: TNoAuthPathRegex): RegExp[] => {
 };
 
 /**
- * `HeadersInit` admits a `Headers` instance and a tuple list; the service keeps a plain record.
- *
- * Keys are lowercased on the way in, and that is the whole point rather than tidiness. Header names
- * are case-insensitive, but object keys are not: `{ 'X-Request-Count': '1' }` merged over
- * `{ 'x-request-count': '0' }` keeps BOTH, and `new Headers()` then joins them into `"1, 0"` - a
- * value neither side wrote and nothing parses. A caller overriding a header would silently corrupt
- * it instead of replacing it. Measured against a stub before this existed.
+ * `HeadersInit` as a plain record, keys lowercased: header names are case-insensitive but object keys
+ * are not, and two spellings of one name would reach the wire joined as `"1, 0"`.
  */
 const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string> => {
   if (!headers) {
@@ -120,30 +115,16 @@ const mergeHeaders = (...sources: Array<HeadersInit | undefined>): Record<string
   }, {});
 };
 
-// `FileList` exists only in a DOM; the kernel also runs in Workers and on Bun, where the bare
-// identifier throws. A type guard keeps the narrowing `instanceof` gave the branch below.
+// `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
 const isFileList = (value: unknown): value is FileList => {
   return typeof FileList !== 'undefined' && value instanceof FileList;
 };
 
-/**
- * Encodes one value for a multipart text part.
- *
- * A multipart part is bytes, so everything that is not a `Blob` becomes a string - but `String()`
- * alone is wrong for two shapes a caller reaches for constantly:
- *
- * - a plain object or array stringifies to `"[object Object]"` / `"a,b"`, which the server can only
- *   reject, sent with no warning that anything was lost;
- * - a `Date` stringifies to a locale- and timezone-dependent sentence, not something an API parses.
- *
- * JSON and ISO-8601 are the encodings that survive the trip. A primitive is left alone.
- */
+/** A multipart text value: JSON for objects and arrays, ISO-8601 for a `Date`, `String()` otherwise. */
 const encodeFormValue = (opts: { key: string; value: unknown; bodyType: string }): string => {
   const { key, value, bodyType } = opts;
 
-  // `application/x-www-form-urlencoded` carries text, never bytes. Encoding a file here produces
-  // `"{}"` or `"[object Blob]"` and the upload is gone with nothing said, so it is named instead:
-  // the caller wanted `form-data` and there is no encoding that would have made this work.
+  // A urlencoded body carries text only; a file here would be sent as `"{}"` with nothing said.
   if (value instanceof Blob) {
     throw getError({
       message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
@@ -161,14 +142,7 @@ const encodeFormValue = (opts: { key: string; value: unknown; bodyType: string }
   return String(value);
 };
 
-/**
- * Appends one form-data entry, whatever its type.
- *
- * `undefined` and `null` are skipped, and nothing else is: a falsy check drops `0`, `false` and
- * `''`, which are values a caller meant to send and the server never sees. The three-argument
- * `append` is for a `Blob` and its filename - passing a filename beside a string throws, which is
- * why a form-data body used to accept files and nothing else.
- */
+/** Skips only `undefined` and `null`: `0`, `false` and `''` are values the caller meant to send. */
 const appendFormDataValue = (opts: { formData: FormData; key: string; value: unknown }): void => {
   const { formData, key, value } = opts;
 
@@ -190,26 +164,12 @@ export interface IAuthTokenRecord {
   provider?: string;
 }
 
-/**
- * Where a token comes from when none was set on the service.
- *
- * `localStorage` is the browser's answer, not the only one: the same transport pointed at another
- * server has its token in memory or in the environment, and a server has no `localStorage` to read.
- * Keeping the lookup behind a function is the whole difference between a transport that runs in one
- * place and one that runs in both.
- */
+/** Where a token comes from when none was set on the service. */
 export type TAuthTokenResolver = () => IAuthTokenRecord | undefined;
 
 /**
- * The browser resolver: read the stored token, and say nothing where there is no browser.
- *
- * It is this service's default, and it is exported for the same job elsewhere: `HttpDataSource` from
- * `@venizia/ignis-connectors/http` ships no browser lookup by design, so an ARDOR app hands it this -
- * `authTokenResolver: readAuthTokenFromStorage` - and both transports read the one stored token.
- *
- * The guard is not defensive padding - this used to be an unguarded `localStorage.getItem` that ran
- * before the in-memory token was even consulted, so a caller that had supplied a token explicitly
- * still crashed with `ReferenceError` the moment the code left a DOM.
+ * Reads the stored token, and `undefined` outside a browser. Also the resolver to hand
+ * `HttpDataSource`, so both transports send the same token.
  */
 export const readAuthTokenFromStorage: TAuthTokenResolver = () => {
   if (typeof localStorage === 'undefined') {
@@ -325,8 +285,7 @@ export class DefaultNetworkRequestService extends BaseService {
       return Promise.resolve(false);
     }
 
-    // `Promise.resolve().then(...)` so a refreshToken that throws synchronously is a failed
-    // refresh (onAuthFailure, original 401) rather than an unrelated exception out of doRequest.
+    // A refreshToken that throws synchronously is still a failed refresh, not a stray exception.
     this.refreshing ??= Promise.resolve()
       .then(() => refreshToken())
       .then(() => true)
@@ -365,7 +324,6 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   getRequestAuthorizationHeader() {
-    // The explicit token first; the resolver is only consulted when there is nothing in memory.
     const authToken = this.authToken ?? this.authTokenResolver();
 
     if (!authToken?.value) {
@@ -403,7 +361,7 @@ export class DefaultNetworkRequestService extends BaseService {
       return;
     }
 
-    // The record is keyed by lowercase name (see `toHeaderRecord`), so the name to remove is too.
+    // The record is keyed by lowercase name.
     for (const key of keys) {
       delete this.headers[key.toLowerCase()];
     }
@@ -428,8 +386,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     return {
       ...defaultHeaders,
-      // A token need not name a provider. Setting the header anyway sent the literal string
-      // `undefined`, which a server reads as a provider named "undefined" rather than as none.
+      // A token need not name a provider; never send the string `undefined`.
       ...(authHeader.provider ? { [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider } : {}),
       [HeaderConsts.AUTHORIZATION]: authHeader.token,
     };
@@ -449,8 +406,7 @@ export class DefaultNetworkRequestService extends BaseService {
       ? restDataProviderOptions.requestTracingChannel
       : RequestChannel.WEB;
 
-    // Merged, not spread: these are per-request values and must REPLACE any static header carrying
-    // the same name in another case, rather than sit beside it and be concatenated on the wire.
+    // Merged, not spread, so a per-request value replaces a static header in any case.
     const headers: Record<string, AnyType> = mergeHeaders(this.getRequestHeader({ resource }), {
       [HeaderConsts.REQUEST_CHANNEL]: channel,
       [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData,
@@ -472,8 +428,7 @@ export class DefaultNetworkRequestService extends BaseService {
         const encoded = new URLSearchParams();
 
         for (const key in body) {
-          // Skip only what was never provided. A falsy check drops `0`, `false` and `''`, which are
-          // values a caller meant to send - the same bug the form-data branch below carried.
+          // Skip only what was never provided; `0`, `false` and `''` are values.
           if (!isDefined(body[key])) {
             continue;
           }
