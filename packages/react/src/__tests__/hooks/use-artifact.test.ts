@@ -7,14 +7,30 @@ import { renderHook } from '@testing-library/react';
 import { BindingScopes, Container } from '@venizia/ignis-inversion';
 // From ARDOR's own surface, not `@venizia/ignis-kernel/metadata` directly: this is the import a
 // consumer writes, so the test fails if the re-export ever stops carrying the stereotypes.
-import { component, service } from '@venizia/ardor-kernel';
+import { component, datasource, repository, service } from '@venizia/ardor-kernel';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor-kernel/repository';
 
 import { ApplicationContext } from '@/contexts/application';
-import { useComponent, useProvider, useService } from '@/hooks/use-artifact';
+import { useComponent, useProvider, useRepository, useService } from '@/hooks/use-artifact';
 
 @service()
 class AuditService {
   readonly label = 'AuditService';
+}
+
+@datasource()
+class TicketDataSource extends HttpDataSource {
+  constructor() {
+    super({ baseUrl: 'http://127.0.0.1:1' });
+  }
+}
+
+// `model` is unused over HTTP; switch to `type: RepositoryTypes.REMOTE` once IGNIS ships it.
+@repository({ model: { name: 'tickets' } as never, dataSource: TicketDataSource })
+class TicketRepository extends HttpRepository<{ id: string }> {
+  constructor(dataSource: TicketDataSource) {
+    super({ dataSource, resource: 'tickets' });
+  }
 }
 
 @component()
@@ -28,6 +44,14 @@ const createContainer = (): Container => {
   container
     .bind({ key: 'services.AuditService' })
     .toClass(AuditService)
+    .setScope(BindingScopes.SINGLETON);
+  container
+    .bind({ key: 'datasources.TicketDataSource' })
+    .toClass(TicketDataSource)
+    .setScope(BindingScopes.SINGLETON);
+  container
+    .bind({ key: 'repositories.TicketRepository' })
+    .toClass(TicketRepository)
     .setScope(BindingScopes.SINGLETON);
   container
     .bind({ key: 'components.MailComponent' })
@@ -115,5 +139,21 @@ describe('the per-stereotype hooks', () => {
     );
 
     expect(result.current).toBeInstanceOf(MailComponent);
+  });
+
+  test('useRepository resolves a @repository class by target', () => {
+    const wrapper = createWrapper({ container: createContainer() });
+    const { result } = renderHook(() => useRepository({ target: TicketRepository }), { wrapper });
+
+    expect(result.current).toBeInstanceOf(TicketRepository);
+    expect(result.current.dataSource).toBeInstanceOf(TicketDataSource);
+  });
+
+  test('useRepository refuses a @service class, naming both namespaces', () => {
+    const wrapper = createWrapper({ container: createContainer() });
+
+    expect(() => renderHook(() => useRepository({ target: AuditService }), { wrapper })).toThrow(
+      /services\.AuditService.*repositories/s,
+    );
   });
 });

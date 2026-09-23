@@ -162,7 +162,10 @@ export interface IArdorApplication {
   bindingList(): Record<string, TClass<unknown>>;
 
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  service<T>(value: TClass<T>): void;
+  service<T>(value: TClass<T>): unknown;
+  repository<T>(value: TClass<T>): unknown;
+  dataSource<T>(value: TClass<T>): unknown;
+  component<T>(value: TClass<T>): unknown;
 
   start(): ValueOrPromise<void>;
 }

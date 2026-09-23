@@ -467,7 +467,11 @@ describe('mutation operations behavior', () => {
    */
   test('updateMany keeps a 2000-id selector off the request line', async () => {
     const provider = createProvider({ baseUrl });
-    const ids = Array.from({ length: 2000 }, () => crypto.randomUUID());
+    // UUID-shaped and deterministic: the length is what loads the request line.
+    const ids = Array.from(
+      { length: 2000 },
+      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    );
 
     await provider.updateMany({ resource: 'posts', params: { ids, data: { status: 'archived' } } });
 

@@ -1,5 +1,13 @@
-import { MetadataRegistry } from '@venizia/ignis-kernel/metadata';
-import { BindingScopes, Container, type TClass } from '@venizia/ignis-inversion';
+import { BindingNamespaces, MetadataRegistry } from '@venizia/ignis-kernel/metadata';
+import {
+  type Binding,
+  BindingKeys,
+  BindingScopes,
+  Container,
+  getError,
+  type TBindingScope,
+  type TClass,
+} from '@venizia/ignis-inversion';
 
 import {
   CoreBindings,
@@ -8,6 +16,20 @@ import {
   type ValueOrPromise,
 } from '@/common';
 
+/** Per-registration choices for `service()`, `repository()`, `dataSource()` and `component()`. */
+export interface IArtifactRegistration {
+  /** Bind under this key instead of `<namespace>.<ClassName>`. */
+  binding?: { namespace: string; key: string };
+  scope?: TBindingScope;
+  /** `false` refuses to replace a binding already under the key. */
+  allowOverride?: boolean;
+}
+
+/**
+ * Two ways to register, as in IGNIS: stereotype discovery, or `service()`/`repository()`/
+ * `dataSource()`/`component()` by hand. Both record the key on the class. Every kind defaults to
+ * SINGLETON (IGNIS's server uses transient): a hook resolves on every render.
+ */
 export abstract class AbstractArdorApplication extends Container implements IArdorApplication {
   abstract bindContext(): ValueOrPromise<void>;
   abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
@@ -16,82 +38,115 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
 
-    // Least explicit first, so the more explicit one lands last and wins:
-    //
-    //   stereotype  ->  bindingList()  ->  bindContext()
-    //
-    // A stereotype is what a class declares about itself. `bindingList()` is what THIS application
-    // decided for this build, by hand. An override that loses to a decorator is an override that
-    // was ignored with nothing to show it.
+    // Least explicit first, so the most explicit wins: stereotype, bindingList(), bindContext().
     this.registerArtifacts();
 
     for (const [key, target] of Object.entries(this.bindingList())) {
+      this.getMetadataRegistry().setBindingKey({ target, key });
       this.bind({ key }).toClass(target).setScope(BindingScopes.SINGLETON);
     }
 
     return this.bindContext();
   }
 
-  /**
-   * Binds every class a stereotype marked - `@service()`, `@component()` and the rest from
-   * `@venizia/ignis-kernel/metadata`.
-   *
-   * The stereotype does two things at import time: it records the binding key ON THE CLASS through
-   * `reflect-metadata`, and it appends the class to a module-level discovery list. This reads that
-   * list and binds each entry under the key the class already carries, so nothing here derives a key
-   * and nothing a minifier renames is ever compared against a string a human typed.
-   *
-   * The list is global, not per application. Two applications in one process therefore bind the same
-   * classes - which is what a test suite wants, and what a browser never encounters, since a page
-   * runs one application.
-   */
+  /** Binds every stereotyped class under the key and scope it declares. */
   registerArtifacts(): void {
-    const registry = this.getMetadataRegistry();
+    const registry = MetadataRegistry.getInstance();
 
-    for (const target of MetadataRegistry.getInstance().getDiscoveredArtifacts()) {
-      const key = registry.getBindingKey({ target });
-
-      // A discovered class with no key is not an error to raise here: the stereotype that failed to
-      // record one is the bug, and it reports itself where it ran.
+    for (const target of registry.getDiscoveredArtifacts()) {
+      const key = this.getMetadataRegistry().getBindingKey({ target });
       if (!key) {
         continue;
       }
 
       this.bind({ key })
         .toClass(target as TClass<unknown>)
-        .setScope(BindingScopes.SINGLETON);
+        .setScope(registry.getArtifactMetadata({ target })?.scope ?? BindingScopes.SINGLETON);
     }
   }
 
-  /**
-   * Classes bound under an explicit key, before `bindContext()` runs. This is the production-safe
-   * registration: `service(Class)` keys on `Class.name`, which a minifier rewrites, so a bundle
-   * built with mangled class names resolves `services.ProductApi` to nothing. A literal key here
-   * survives any build, and `keyof ReturnType<Application['bindingList']>` types `useInjectable`.
-   */
+  /** Classes bound under literal keys before `bindContext()` runs. */
   bindingList(): Record<string, TClass<unknown>> {
     return {};
   }
 
   postConfigure(): ValueOrPromise<void> {}
 
-  // Singleton by default: a service or provider registered by class is one instance per
-  // application, which is what every consumer bound by hand before this default existed.
-  // Keys on `value.name` - see `bindingList()` for the build-proof form.
+  service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
+    return this.registerArtifact({
+      target,
+      namespace: BindingNamespaces.SERVICE,
+      caller: 'service',
+      opts,
+    });
+  }
+
+  repository<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
+    return this.registerArtifact({
+      target,
+      namespace: BindingNamespaces.REPOSITORY,
+      caller: 'repository',
+      opts,
+    });
+  }
+
+  dataSource<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
+    return this.registerArtifact({
+      target,
+      namespace: BindingNamespaces.DATASOURCE,
+      caller: 'dataSource',
+      opts,
+    });
+  }
+
+  component<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
+    return this.registerArtifact({
+      target,
+      namespace: BindingNamespaces.COMPONENT,
+      caller: 'component',
+      opts,
+    });
+  }
+
+  /** `<scope>.<ClassName>`, singleton, with tags. Prefer the per-kind methods above. */
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>) {
-    this.bind({ key: `${scope}.${value.name}` })
+    const key = `${scope}.${value.name}`;
+    this.getMetadataRegistry().setBindingKey({ target: value, key });
+    this.bind({ key })
       .toClass(value)
       .setScope(BindingScopes.SINGLETON)
       .setTags(...(tags ?? []));
   }
 
-  service<T>(value: TClass<T>) {
-    this.injectable('services', value);
-  }
-
   async start() {
     await this.preConfigure();
     await this.postConfigure();
+  }
+
+  /** Key: explicit `binding` > the class's stereotype > `<namespace>.<ClassName>`. Same for scope. */
+  private registerArtifact<T>(opts: {
+    target: TClass<T>;
+    namespace: string;
+    caller: string;
+    opts?: IArtifactRegistration;
+  }): Binding<T> {
+    const { target, namespace, caller } = opts;
+    const declared = MetadataRegistry.getInstance().getArtifactMetadata({ target });
+    const key = BindingKeys.build(
+      opts.opts?.binding ?? declared?.binding ?? { namespace, key: target.name },
+    );
+
+    const allowOverride = opts.opts?.allowOverride ?? declared?.allowOverride ?? true;
+    if (!allowOverride && this.isBound({ key })) {
+      throw getError({
+        message: `[${caller}] '${key}' is already bound and allowOverride is false | Pass a distinct binding key`,
+      });
+    }
+
+    this.getMetadataRegistry().setBindingKey({ target, key });
+    return this.bind<T>({ key })
+      .toClass(target)
+      .setScope(opts.opts?.scope ?? declared?.scope ?? BindingScopes.SINGLETON);
   }
 }
 

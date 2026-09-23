@@ -52,7 +52,7 @@ export const useInjectable = <T>(opts: TUseInjectableOptions) => {
   const resolved = container.getMetadataRegistry().getBindingKey({ target });
   if (!resolved) {
     throw getError({
-      message: `[useInjectable] No binding key is recorded on ${target.name}. Only a stereotype writes one - decorate the class with @service, @component, @configuration or @injectable. Registering it with this.service(X) or bindingList() binds it under a key but records nothing on the class, so resolve those by { key } instead.`,
+      message: `[useInjectable] No binding key is recorded on ${target.name} | Register it by stereotype (@service() and the rest) or by hand (service(), repository(), dataSource(), component(), bindingList()), or resolve it by { key }`,
     });
   }
 
