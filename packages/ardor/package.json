@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "engines": {
-    "bun": ">=1.3"
+    "bun": ">=1.4"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -90,15 +90,17 @@
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-filter": ">=0.2.0-21",
-    "@venizia/ignis-inversion": ">=0.2.0-22",
-    "@venizia/ignis-kernel": ">=0.2.0-44",
+    "@venizia/ignis-connectors": ">=0.2.0-44",
+    "@venizia/ignis-filter": ">=0.2.0-22",
+    "@venizia/ignis-inversion": ">=0.2.0-23",
+    "@venizia/ignis-kernel": ">=0.2.0-45",
     "ra-core": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
     "react-redux": ">=9.3.0",
     "react-router-dom": ">=7.9.4",
-    "reflect-metadata": ">=0.2.2"
+    "reflect-metadata": ">=0.2.2",
+    "socket.io-client": ">=4.8.3"
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -108,6 +110,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-connectors": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
     "@venizia/ignis-kernel": "catalog:",
@@ -120,6 +123,7 @@
     "react-router-dom": "catalog:",
     "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
+    "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
@@ -144,5 +148,13 @@
       ],
       "limit": "250 B"
     }
-  ]
+  ],
+  "peerDependenciesMeta": {
+    "@venizia/ignis-connectors": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
+  }
 }

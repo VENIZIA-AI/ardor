@@ -29,7 +29,7 @@
   },
   "license": "MIT",
   "engines": {
-    "bun": ">=1.3"
+    "bun": ">=1.4"
   },
   "scripts": {
     "force-update": "bun run --filter \"@venizia/*\" force-update",
@@ -52,12 +52,12 @@
       "@types/lodash": "^4.17.24",
       "@types/react": "^19",
       "@types/react-dom": "^19",
-      "@venizia/dev-configs": "^0.2.0-3",
-      "@venizia/ignis-connectors": "^0.2.0-43",
-      "@venizia/ignis-filter": "^0.2.0-21",
-      "@venizia/ignis-helpers": "^0.2.0-39",
-      "@venizia/ignis-inversion": "^0.2.0-22",
-      "@venizia/ignis-kernel": "^0.2.0-44",
+      "@venizia/dev-configs": "^0.2.0-15",
+      "@venizia/ignis-connectors": "^0.2.0-44",
+      "@venizia/ignis-filter": "^0.2.0-22",
+      "@venizia/ignis-helpers": "^0.2.0-40",
+      "@venizia/ignis-inversion": "^0.2.0-23",
+      "@venizia/ignis-kernel": "^0.2.0-45",
       "eslint": "^9.36.0",
       "lodash": "^4.18.1",
       "prettier": "^3.8.4",

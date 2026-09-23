@@ -5,7 +5,7 @@
   "description": "DefaultRestDataProvider.send overridden for a non-HTTP transport - the pattern a desktop (Tauri) shell uses - run as a Bun script with no server",
   "type": "module",
   "engines": {
-    "bun": ">=1.3"
+    "bun": ">=1.4"
   },
   "scripts": {
     "start": "bun run src/index.ts",
