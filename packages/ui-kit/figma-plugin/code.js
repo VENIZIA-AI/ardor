@@ -1,4 +1,4 @@
-// Ardor — Export Design Tokens (Figma plugin, main thread / Plugin API)
+// Ardor - Export Design Tokens (Figma plugin, main thread / Plugin API)
 // Reads every local Variable collection and produces the DTCG token files that
 // packages/ui-kit/tokens/ expects. Sends them to the UI, which downloads them.
 // No agent, no Enterprise API required.

@@ -1,4 +1,4 @@
-# Ardor UI Kit — Target Foundation Blueprint
+# Ardor UI Kit - Target Foundation Blueprint
 
 > **Purpose.** The agreed end-state design for the Figma **Foundations** (design tokens), rebuilt to best practice while **reusing the good content that already exists**. This is the blueprint to review **once**; implementation happens on the duplicated file (`QpLgleBypJZgSPU1zV5r50`) step-by-step against it.
 >
@@ -42,23 +42,23 @@ Net change vs today: Primitives loses its Light/Dark modes; `Sematic` is deleted
 
 ---
 
-## 3. Colour — Primitives (immutable)
+## 3. Colour - Primitives (immutable)
 
-**Rule:** one `Value` mode. Every ramp holds its true Tailwind value, unchanging. `Base/White = #ffffff`, `Base/Black = #000000` — always.
+**Rule:** one `Value` mode. Every ramp holds its true Tailwind value, unchanging. `Base/White = #ffffff`, `Base/Black = #000000` - always.
 
 - **Keep** all existing ramps: Slate, Gray, Zinc, Neutral, Stone, Red, Orange, Amber, Yellow, Lime, Green, Emerald, Teal, Cyan, Sky, Blue, Indigo, Violet, Purple, Fuchsia, Pink, Rose (50–950).
-- **Keep** the custom ramps **Taupe, Mauve, Mist, Olive** — but **de-invert** them (currently they flip L↔D). Pick each step's *light-mode* value as the single true value (e.g. `Taupe/50 = #fbfaf9`, `Taupe/950 = #0d0807`).
+- **Keep** the custom ramps **Taupe, Mauve, Mist, Olive** - but **de-invert** them (currently they flip L↔D). Pick each step's *light-mode* value as the single true value (e.g. `Taupe/50 = #fbfaf9`, `Taupe/950 = #0d0807`).
 - **Scope:** all colours scoped to fills/strokes only (not text-content).
 
 > **This single change fixes F1.** Because primitives stop moving, `Slate/900` finally means one fixed colour, and export tools get a stable `$value`.
 
 ---
 
-## 4. Colour — Semantic (the single role layer)
+## 4. Colour - Semantic (the single role layer)
 
 **One** collection, **Light / Dark** modes. Every role **aliases a primitive**, chosen per mode. Components only ever use these.
 
-### 4.1 Core roles — proposed values (all pairs meet WCAG AA)
+### 4.1 Core roles - proposed values (all pairs meet WCAG AA)
 
 | Role | Light → primitive | Dark → primitive | Notes |
 |---|---|---|---|
@@ -80,11 +80,11 @@ Net change vs today: Primitives loses its Light/Dark modes; `Sematic` is deleted
 | `outline` | Blue/600 | Blue/500 | |
 | `surface` | Slate/50 | Slate/900 | |
 
-### 4.2 Status roles — accessible by construction
+### 4.2 Status roles - accessible by construction
 
 Two consistent rules (pick one in §11 · **Option A recommended**):
 
-**Option A — dark, saturated fill + white text (600/700):**
+**Option A - dark, saturated fill + white text (600/700):**
 
 | Role | Fill (L/D) | Foreground | White-text contrast |
 |---|---|---|---|
@@ -93,7 +93,7 @@ Two consistent rules (pick one in §11 · **Option A recommended**):
 | `warning` | Amber/700 `#b45309` | White | **5.02:1** ✅ |
 | `info` | Cyan/700 `#0e7490` | White | **5.36:1** ✅ |
 
-**Option B — bright fill + dark text (keeps vivid 500 hues):**
+**Option B - bright fill + dark text (keeps vivid 500 hues):**
 
 | Role | Fill | Foreground | Contrast |
 |---|---|---|---|
@@ -111,12 +111,12 @@ Keep the `sidebar-*` and `chart-1..5` roles, migrated into this one collection w
 
 ---
 
-## 5. Colour — Palette (accent themes)
+## 5. Colour - Palette (accent themes)
 
-Keep the 10-mode accent Palette (Neutral, Red, Orange, Yellow, Green, Teal, Cyan, Blue, Purple, Pink) — it's a genuine "context" axis and a legitimate use of modes.
+Keep the 10-mode accent Palette (Neutral, Red, Orange, Yellow, Green, Teal, Cyan, Blue, Purple, Pink) - it's a genuine "context" axis and a legitimate use of modes.
 
 - **Fix:** bind `primary` in each theme to the **600** step (not 500) so `primary` + white text passes AA in every theme. Keep `primary-50…950` and `primary-opacity-*`.
-- This is the Figma source for the code's `.theme-*` classes; align the two sets (code currently has amber/rose/violet; Palette has Cyan/Neutral — reconcile in §11).
+- This is the Figma source for the code's `.theme-*` classes; align the two sets (code currently has amber/rose/violet; Palette has Cyan/Neutral - reconcile in §11).
 
 ---
 
@@ -140,9 +140,9 @@ Keep the 10-mode accent Palette (Neutral, Red, Orange, Yellow, Green, Teal, Cyan
 
 - **Scope:** `GAP` + `WIDTH_HEIGHT` (Figma "Gap" scope covers auto-layout **gap and padding**).
 - **Delete** the old `padding/*` and `gap/*` variables. "Padding" vs "gap" is *usage*, not a token.
-- Code needs no per-step tokens — Tailwind auto-generates `p-*`/`gap-*` from the single `--spacing: 4px` already in `default.css`.
+- Code needs no per-step tokens - Tailwind auto-generates `p-*`/`gap-*` from the single `--spacing: 4px` already in `default.css`.
 
-> **Fixes F6.** (Your original instinct was right; the fix is one enumerated scale — not modes, since a card uses padding *and* gap simultaneously and a node can hold only one mode.)
+> **Fixes F6.** (Your original instinct was right; the fix is one enumerated scale - not modes, since a card uses padding *and* gap simultaneously and a node can hold only one mode.)
 
 ---
 
@@ -151,14 +151,14 @@ Keep the 10-mode accent Palette (Neutral, Red, Orange, Yellow, Green, Teal, Cyan
 | Collection | Type | Tokens (proposed) |
 |---|---|---|
 | **Radius** | FLOAT (px), scope `CORNER_RADIUS` | `radius/none 0, xs 2, sm 4, md 6, lg 8, xl 12, 2xl 16, 3xl 24, full 9999` (renamed from `rounded/*`) |
-| **Elevation** | **Effect styles** (not variables — Figma can't variable-bind shadows) + string tokens for code | `shadow/xs, sm, md, lg, xl, 2xl` = Tailwind's default shadow values |
+| **Elevation** | **Effect styles** (not variables - Figma can't variable-bind shadows) + string tokens for code | `shadow/xs, sm, md, lg, xl, 2xl` = Tailwind's default shadow values |
 | **Border Width** | FLOAT (px), scope `STROKE_FLOAT` | `border/0 0, DEFAULT 1, 2, 4, 8` |
 | **Motion** | FLOAT (ms) + STRING | `duration/75…700`; `ease/linear, in, out, in-out` (cubic-bezier strings) |
 | **Z-Index** | FLOAT | `z/base 0, dropdown 1000, sticky 1100, overlay 1300, modal 1400, popover 1500, toast 1700, tooltip 1800` |
 | **Breakpoints** | FLOAT (px) | `sm 640, md 768, lg 1024, xl 1280, 2xl 1536` (code-facing; mirrors Tailwind) |
 | **Focus ring** | (semantic) | `ring` colour (§4) + `ring-width 2`, `ring-offset 2` (in Border Width / Spacing) |
 
-> Elevation is the one category Figma can't hold as plain variables — it lives as **effect styles** in Figma and as `--shadow-*` in Tailwind. Documented, not variable-bound.
+> Elevation is the one category Figma can't hold as plain variables - it lives as **effect styles** in Figma and as `--shadow-*` in Tailwind. Documented, not variable-bound.
 
 ---
 
@@ -211,7 +211,7 @@ Keep `op/*` but store as **`0–1`** (`op/0 = 0`, `op/50 = 0.5`, `op/100 = 1`) s
 
 1. **Status colour rule:** Option A (600/700 + white text) or Option B (500 + dark text, more vivid)? *(Recommend A for button-heavy UIs.)*
 2. **Primary already chosen:** Blue (`Blue/600` for AA). ✅ confirmed.
-3. **Accent theme set:** reconcile Figma Palette (has Cyan, Neutral) with code `.theme-*` (has amber, rose, violet) — keep which 10?
+3. **Accent theme set:** reconcile Figma Palette (has Cyan, Neutral) with code `.theme-*` (has amber, rose, violet) - keep which 10?
 4. **Typography:** add body/mono families? line-height + letter-spacing tokens? fluid `clamp()` vs Mobile mode steps?
 5. **Scope of build now:** do all 13 collections, or start with the P0 set (Primitives de-invert → Semantic → Spacing → Radius) and add the 5 new collections after?
 
@@ -255,7 +255,7 @@ The Figma file has laid-out documentation pages for **Grids, Aspect Ratio, and I
 | F9 `Radius` rename, `Opacity` 0–1, `gap/4xs 2` gone | ✅ done |
 | F7 New collections: Border Width, Z-Index, Breakpoints, Motion, Grid, Aspect Ratio, Icon | ✅ done |
 | F8 Mobile type scale de-collided | ✅ done |
-| Elevation | already existed (bespoke Bottom/Top/Action effect styles) — kept |
+| Elevation | already existed (bespoke Bottom/Top/Action effect styles) - kept |
 | Developer docs pages (Colors/Spacing/Radius/Border/Typography/Shadow/Layout/Motion/Icon), bound to local vars | ✅ built |
 | F5 Export pipeline (DTCG → `tokens.generated.css` → Tailwind) | ✅ built (`bun run tokens:build`) |
 
@@ -265,10 +265,10 @@ The Figma file has laid-out documentation pages for **Grids, Aspect Ratio, and I
 
 The system now has four tiers:
 
-1. **Primitive** — immutable raw values (`color.blue.600`, `space/6`, `radius/md`).
-2. **Semantic** — roles that switch by mode + accent palette (`primary`, `background`, `success`, …), **incl. interaction states**: `*-hover`, `*-active`, `disabled`, `disabled-foreground`, `input-hover`.
-3. **Palette** — 10 accent themes; `primary` follows the active palette (Figma mode / code `.theme-*`), with `primaryHover`/`primaryActive` steps.
-4. **Component** — component-scoped tokens aliasing semantic/state: `button/{primary,secondary,outline,ghost,destructive,disabled}/*`, `input/*`, `card/*`, `badge/*`, `alert/*`. In code these compile to `--button-primary-bg` etc. in `:root` (inheriting light/dark via the semantic vars they reference).
+1. **Primitive** - immutable raw values (`color.blue.600`, `space/6`, `radius/md`).
+2. **Semantic** - roles that switch by mode + accent palette (`primary`, `background`, `success`, …), **incl. interaction states**: `*-hover`, `*-active`, `disabled`, `disabled-foreground`, `input-hover`.
+3. **Palette** - 10 accent themes; `primary` follows the active palette (Figma mode / code `.theme-*`), with `primaryHover`/`primaryActive` steps.
+4. **Component** - component-scoped tokens aliasing semantic/state: `button/{primary,secondary,outline,ghost,destructive,disabled}/*`, `input/*`, `card/*`, `badge/*`, `alert/*`. In code these compile to `--button-primary-bg` etc. in `:root` (inheriting light/dark via the semantic vars they reference).
 
 Consumption order: components read **component** tokens (or the semantic ones directly via Tailwind utilities such as `bg-primary`, `hover:bg-primary-hover`, `disabled:bg-disabled`). Never read primitives directly.
 

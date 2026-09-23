@@ -8,7 +8,7 @@ tags: [conventions, docs, style]
 
 Rules for anything written in the wiki or in this knowledge bundle:
 
-- **Hyphen, never em-dash or en-dash.** Use `-`. Never `—` or `–`. Apply this even mid-sentence
+- **Hyphen, never em-dash or en-dash.** Use `-`. Never U+2014 or U+2013. Apply this even mid-sentence
   where an em-dash would be the natural English choice - rewrite the sentence instead.
 - **The brand is always "ARDOR"**, all caps, never `Ardor` or `IGNIS` when referring to the
   frontend framework itself. `IGNIS` is the correct name for the underlying DI container and is

@@ -12,9 +12,9 @@ You are updating the Ardor framework wiki at `packages/docs/wiki/`.
 ## Arguments
 
 `$ARGUMENTS` tells you what to document. Examples:
-- `/update-wiki add changelog for model authorize settings` — create a changelog
-- `/update-wiki update authorization reference docs` — update existing reference
-- `/update-wiki add guide for model authorization setup` — create a guide
+- `/update-wiki add changelog for model authorize settings` - create a changelog
+- `/update-wiki update authorization reference docs` - update existing reference
+- `/update-wiki add guide for model authorization setup` - create a guide
 
 If no arguments, ask what to document.
 
@@ -97,7 +97,7 @@ If the doc belongs to a category with an `index.md`, add a link to the new doc t
 
 - Use TypeScript for all code examples
 - Use Ardor import paths (`@venizia/ignis`, `@venizia/ignis-helpers`)
-- Match the technical depth of existing docs — direct, no hand-holding
+- Match the technical depth of existing docs - direct, no hand-holding
 - Use GitHub-flavored markdown alerts: `> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`
 - Tables for structured comparisons (files changed, API surfaces, config options)
 - Before/after code blocks for breaking changes

@@ -240,7 +240,7 @@ const collectSourceMap = (): SourceMapEntry[] => {
  */
 const sanitizeProse = (opts: { text: string }): string => {
   return opts.text
-    .replace(/\s*[—–]\s*/g, ' - ')
+    .replace(/\s*[\u2014\u2013]\s*/g, ' - ')
     .replace(/\bArdor\b/g, 'ARDOR')
     .replace(/\s+/g, ' ')
     .trim();
@@ -531,7 +531,7 @@ const REGIONS: { id: string; file: string; render: () => string }[] = [
  * concept defining these rules must - put it in a code span; `stripCode` removes those first.
  */
 const STYLE_RULES: { pattern: RegExp; message: string }[] = [
-  { pattern: /[—–]/, message: 'use a hyphen, not an em-dash or en-dash' },
+  { pattern: /[\u2014\u2013]/, message: 'use a hyphen, not an em-dash or en-dash' },
   { pattern: /\bArdor\b/, message: 'the brand is always written ARDOR' },
 ];
 

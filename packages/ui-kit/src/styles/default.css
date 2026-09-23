@@ -3,7 +3,7 @@
 
 @import './tokens.generated.css';
 /* Accent palette themes (.theme-*) are now generated into ./tokens.generated.css
-   from tokens/palette.json. The legacy ./themes.css is superseded — no longer imported. */
+   from tokens/palette.json. The legacy ./themes.css is superseded - no longer imported. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -21,7 +21,7 @@
  * That file provides:
  *   :root { primitives + semantic(light) }, .dark { semantic(dark) },
  *   @theme inline { semantic -> Tailwind color-* }, @theme { radius/text/breakpoint/... }.
- * Do not hand-edit color/radius/scale tokens here — edit Figma + rebuild.
+ * Do not hand-edit color/radius/scale tokens here - edit Figma + rebuild.
  */
 
 @theme {

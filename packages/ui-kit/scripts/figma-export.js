@@ -1,8 +1,8 @@
 /**
- * figma-export.js — REFERENCE script for re-exporting Figma Variables into tokens/*.json.
+ * figma-export.js - REFERENCE script for re-exporting Figma Variables into tokens/*.json.
  *
  * This is NOT run with node/bun. It is meant to be executed by an AI agent (Claude Code)
- * through the Figma Dev Mode MCP `use_figma` tool — the body below runs inside Figma's
+ * through the Figma Dev Mode MCP `use_figma` tool - the body below runs inside Figma's
  * Plugin API context (has `figma`, top-level await). It returns an object of file contents;
  * the agent then writes each string to packages/ui-kit/tokens/<name>.
  *

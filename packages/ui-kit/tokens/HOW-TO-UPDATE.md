@@ -19,7 +19,7 @@ That's it. Claude will:
 
 ## What gets read (so you know what "tokens" means here)
 
-**Variables only** — not pages/frames. Collections → files:
+**Variables only** - not pages/frames. Collections → files:
 
 | Figma collection | → file |
 |---|---|
@@ -28,7 +28,7 @@ That's it. Claude will:
 | Palette (10 themes) | `palette.json` |
 | Spacing, Radius, Border, Breakpoints, Opacity, Z-Index, Motion, Typography, Aspect, Grid, Icon | `scales.json` |
 | Component | `component.json` (aliases) |
-| Shadow effect styles | not variables — kept as effect styles / hand-authored CSS |
+| Shadow effect styles | not variables - kept as effect styles / hand-authored CSS |
 
 ## If you prefer no agent (designer self-serve)
 
@@ -43,4 +43,4 @@ bun run tokens:build      # tokens/*.json  ->  src/styles/tokens.generated.css
 bun run example:build     # optional: rebuild the live demo CSS
 ```
 
-Never hand-edit `tokens.generated.css` — it is generated.
+Never hand-edit `tokens.generated.css` - it is generated.

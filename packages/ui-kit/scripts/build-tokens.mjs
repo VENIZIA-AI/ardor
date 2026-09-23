@@ -85,7 +85,7 @@ const paletteBlocks = Object.entries(palette.palette || {}).map(([name, roles]) 
 });
 
 const out =
-  `/* ⚠️  AUTO-GENERATED from tokens/*.json (DTCG) — DO NOT EDIT BY HAND.\n` +
+  `/* ⚠️  AUTO-GENERATED from tokens/*.json (DTCG) - DO NOT EDIT BY HAND.\n` +
   ` *  Source of truth: Figma Variables -> tokens/*.json.  Regenerate: bun run tokens:build\n */\n\n` +
   [
     block(':root', rootLines),
@@ -99,5 +99,5 @@ const out =
 
 writeFileSync(join(root, 'src/styles/tokens.generated.css'), out);
 console.log(
-  `tokens.generated.css written — ${prim.length} primitives, ${light.length} semantic (x2 modes), ${scale.length} scale tokens`,
+  `tokens.generated.css written - ${prim.length} primitives, ${light.length} semantic (x2 modes), ${scale.length} scale tokens`,
 );
