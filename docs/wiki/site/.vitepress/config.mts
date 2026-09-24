@@ -91,6 +91,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'ARDOR 0.1.1, the first stable line',
+            link: '/changelogs/2026-09-24-ardor-0-1-1-stable',
+          },
+          {
             text: 'Repositories by discovery, a relative baseUrl',
             link: '/changelogs/2026-09-24-remote-repositories-and-relative-base-url',
           },
