@@ -7,7 +7,7 @@ import { renderHook } from '@testing-library/react';
 import { BindingScopes, Container } from '@venizia/ignis-inversion';
 // From ARDOR's own surface, not `@venizia/ignis-kernel/metadata` directly: this is the import a
 // consumer writes, so the test fails if the re-export ever stops carrying the stereotypes.
-import { component, datasource, repository, service } from '@venizia/ardor-kernel';
+import { component, datasource, repository, RepositoryTypes, service } from '@venizia/ardor-kernel';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor-kernel/repository';
 
 import { ApplicationContext } from '@/contexts/application';
@@ -25,8 +25,7 @@ class TicketDataSource extends HttpDataSource {
   }
 }
 
-// `model` is unused over HTTP; switch to `type: RepositoryTypes.REMOTE` once IGNIS ships it.
-@repository({ model: { name: 'tickets' } as never, dataSource: TicketDataSource })
+@repository({ type: RepositoryTypes.REMOTE, dataSource: TicketDataSource })
 class TicketRepository extends HttpRepository<{ id: string }> {
   constructor(dataSource: TicketDataSource) {
     super({ dataSource, resource: 'tickets' });

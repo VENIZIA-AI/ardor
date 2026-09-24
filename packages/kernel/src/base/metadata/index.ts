@@ -27,3 +27,7 @@ export type {
   TBindingNamespace,
   TBindingScope,
 } from '@venizia/ignis-kernel/metadata';
+
+// The `type` of `@repository`: `REMOTE` for an `HttpRepository`, which has no model.
+export { RepositoryTypes } from '@venizia/ignis-kernel/repository';
+export type { TRepositoryType } from '@venizia/ignis-kernel/repository';
