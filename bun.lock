@@ -293,7 +293,7 @@
     },
     "packages/ui-kit": {
       "name": "@venizia/ardor-ui-kit",
-      "version": "0.0.2-0",
+      "version": "0.0.2-1",
       "dependencies": {
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-alert-dialog": "^1.1.15",
