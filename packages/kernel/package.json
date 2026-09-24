@@ -90,11 +90,11 @@
     "lodash": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": ">=0.2.0-44",
-    "@venizia/ignis-filter": ">=0.2.0-22",
-    "@venizia/ignis-helpers": ">=0.2.0-40",
-    "@venizia/ignis-inversion": ">=0.2.0-23",
-    "@venizia/ignis-kernel": ">=0.2.0-45",
+    "@venizia/ignis-connectors": "^0.2.0",
+    "@venizia/ignis-filter": "^0.2.0",
+    "@venizia/ignis-helpers": "^0.2.0",
+    "@venizia/ignis-inversion": "^0.2.0",
+    "@venizia/ignis-kernel": "^0.2.0",
     "reflect-metadata": ">=0.2.2",
     "socket.io-client": ">=4.8.3"
   },
