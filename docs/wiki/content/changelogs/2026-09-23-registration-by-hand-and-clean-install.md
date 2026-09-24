@@ -112,7 +112,7 @@ export const useTickets = () => useRepository({ target: TicketRepository });
 
 - Every kind binds a singleton by default, discovery included. IGNIS's server defaults services and repositories to transient; a React hook resolves on every render, so a transient repository would give each render a new instance.
 - The key is `opts.binding`, else the stereotype's `binding`, else `<namespace>.<ClassName>`. `allowOverride: false` throws when the key is already bound.
-- Discovery of an `HttpRepository` waits on IGNIS: `@repository` requires a `model` today, and `RepositoryTypes.REMOTE` arrives in its next prerelease. Register repositories by hand until then.
+- Discovery of an `HttpRepository` arrived a day later, with IGNIS kernel 0.2.0-46: see [2026-09-24](./2026-09-24-remote-repositories-and-relative-base-url).
 - `make clean-install` packs every package, installs the tarballs into empty projects under the hoisted and the isolated linker, and imports every published entry with Bun, Node ESM and a browser build. CI runs it, and the release workflow runs it for the package before the version bump. It found the three fixes above.
 - A lint rule refuses `crypto.randomUUID` in package and example code: browsers define it only on a secure origin.
 - The release commit now carries `bun.lock` with `package.json`, so a local install after a release no longer leaves a stray lockfile diff.

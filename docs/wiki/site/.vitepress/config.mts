@@ -87,6 +87,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-09-24',
+        collapsed: true,
+        items: [
+          {
+            text: 'Repositories by discovery, a relative baseUrl',
+            link: '/changelogs/2026-09-24-remote-repositories-and-relative-base-url',
+          },
+        ],
+      },
+      {
         text: '2026-09-23',
         collapsed: true,
         items: [

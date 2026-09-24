@@ -46,20 +46,22 @@ bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 import 'reflect-metadata';
 
 import {
-  BaseArdorApplication, CoreBindings, DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider,
-  DefaultRestDataProvider, readAuthTokenFromStorage, type IApplicationInfo,
+  BaseArdorApplication, CoreBindings, datasource, DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider,
+  DefaultRestDataProvider, readAuthTokenFromStorage, repository, RepositoryTypes, type IApplicationInfo,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { inject } from '@venizia/ignis-inversion';
 
+// Declared, as in IGNIS: start() discovers both classes and binds each as a singleton.
+@datasource()
 class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: new URL('/api', window.location.origin).href, authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
 class ProductRepository extends HttpRepository<{ id: number; name: string }> {
-  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+  constructor(dataSource: ApiDataSource) {
     super({ dataSource, resource: 'products' });
   }
 }
@@ -78,10 +80,6 @@ class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-
-    // By hand, as in IGNIS: a singleton, with the key recorded on the class.
-    this.dataSource(ApiDataSource);
-    this.repository(ProductRepository);
   }
 }
 ```

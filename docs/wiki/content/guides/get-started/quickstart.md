@@ -57,19 +57,21 @@ import {
   ArdorApplication,
   BaseArdorApplication,
   CoreBindings,
+  datasource,
   DefaultAuthProvider,
   DefaultAuthService,
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
   readAuthTokenFromStorage,
+  repository,
+  RepositoryTypes,
   useRepository,
   useTranslate,
   vietnameseMessages,
   type IApplicationInfo,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { inject } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -78,15 +80,18 @@ interface IProduct {
   name: string;
 }
 
-// 1. The datasource, and a repository that reads one resource through it.
+// 1. The datasource, and a repository that reads one resource through it. Both are declared, and
+//    the application discovers them at start().
+@datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
     super({ baseUrl: 'http://localhost:3000/api', authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
 export class ProductRepository extends HttpRepository<IProduct> {
-  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+  constructor(dataSource: ApiDataSource) {
     super({ dataSource, resource: 'products' });
   }
 }
@@ -121,9 +126,6 @@ export class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-
-    this.dataSource(ApiDataSource);
-    this.repository(ProductRepository);
   }
 }
 
@@ -169,10 +171,10 @@ What each part does:
 
 - `import 'reflect-metadata'` must be the first import of `main.tsx`. It has to run once, before the application class is defined. If you later move the container side into its own file, keep that import at the top of the file that defines the application class.
 - `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `readAuthTokenFromStorage` gives it the token the auth provider stored.
-- `HttpDataSource` needs an absolute `baseUrl`. Behind a dev-server proxy, build one with `new URL('/api', window.location.origin).href`.
-- `this.dataSource(...)` and `this.repository(...)` register by hand, as in IGNIS. Each binds a singleton and records the key on the class, so `@inject({ target })` and `useRepository({ target })` resolve by class: no key string to type, and nothing a minifier can rename. Decorating the classes instead lets the application discover them - see [Binding keys](../../best-practices/binding-keys).
+- `baseUrl` may also be relative, such as `'/api'` behind a dev-server proxy: it resolves against the page when a request is sent.
+- `@datasource()` and `@repository(...)` declare the two classes, as IGNIS does. `start()` binds each as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type, and nothing a minifier can rename. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into its constructor. Registering by hand with `this.dataSource(...)` and `this.repository(...)` works too - see [Binding keys](../../best-practices/binding-keys).
 - `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` declares every binding. Three option values feed the three default providers, and `DefaultAuthService` backs `DefaultAuthProvider`.
-- `application.start()` runs `preConfigure()`, which binds the application instance and its info, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
+- `application.start()` runs `preConfigure()`, which binds the application instance, its info and every decorated class, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
 - `ProductList` resolves the repository with `useRepository`, which also checks the class is bound under `repositories.`, and `useTranslate` resolves a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
 - `ArdorApplication` reads the data provider, auth provider and i18n provider from the container by their `CoreBindings` keys, wraps the tree in the application context, the Redux provider and `React.Suspense`, and renders one react-admin `Resource` per entry in `resources`. Any other prop is passed to `CoreAdmin` as-is.
 
@@ -192,14 +194,14 @@ Open the URL Vite prints (`http://localhost:5173` by default). The admin resolve
 
 Two things confirm the container is doing the work:
 
-- The heading shows the product total. It came from `ProductRepository`, resolved by key from the container, not from props.
+- The heading shows the product total. It came from `ProductRepository`, resolved by class from the container, not from props.
 - The button label comes from `translate`, which resolves the key through the i18n provider bound in `bindContext()`.
 
 If the count throws "carried no Content-Range", your list route does not send that header; pass `countPath` to the repository if the API has a count route.
 
 ## What you built
 
-A running ARDOR admin: one application class that binds REST, auth and i18n options, the three default providers, one datasource and one repository registered by hand, and one resource page that resolves the repository by class - in one file.
+A running ARDOR admin: one application class that binds REST, auth and i18n options, the three default providers, one datasource and one repository the application discovered, and one resource page that resolves the repository by class - in one file.
 
 ## Next steps
 

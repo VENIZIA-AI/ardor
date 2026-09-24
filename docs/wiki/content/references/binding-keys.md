@@ -245,7 +245,7 @@ export const useAppInfoFrom = () => {
 - **Passing `'services.UserService'` as `key` without augmentation.** It is not in `TUseInjectableKeysDefault`, so TypeScript rejects it. Either augment `IUseInjectableKeysOverrides` or use `target`.
 - **Relying on `value.name` under minification.** `service()` builds the key from the class's runtime `name`. If your bundler renames classes, the key in production differs from the one you typed in an augmentation. Resolve by `target` or disable class name mangling.
 - **Augmenting `@venizia/ardor` instead of `@venizia/ardor-react`.** The interface lives in `@venizia/ardor-react`. Augmenting the umbrella package does not extend the union.
-- **`target` for a class that is only bound by hand elsewhere.** Step 3 above reads the metadata registry. If the lookup returns nothing, the hook throws. The error text lists the accepted ways to register.
+- **`target` for a class bound only with `bind().toClass()`.** `bind()` records no key on the class, and step 3 above reads the metadata registry. If the lookup returns nothing, the hook throws. The error text lists the accepted ways to register.
 - **Both `key` and `target` set.** The options type forbids it (`target?: never` / `key?: never`), and at runtime `key` wins.
 
 ## Related

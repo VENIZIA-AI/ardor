@@ -17,6 +17,7 @@ An application class that extends `BaseArdorApplication` (see [Application](../r
 | --- | --- | --- |
 | `service`, `repository`, `dataSource`, `component` | application methods | Register one class by hand under `<namespace>.<ClassName>` |
 | `@service()`, `@component()`, `@datasource()`, `@repository()` | decorators | Stereotypes the application discovers and binds at `start()` |
+| `RepositoryTypes` | class | `REMOTE` declares a repository with no model, such as an `HttpRepository` |
 | `bindingList()` | application method | Classes under literal keys, before `bindContext()` |
 | `Container.bind({ key })` | method (inherited from IGNIS) | Manual registration, any key, any scope |
 | `CoreBindings` | class | The framework's own keys - use these, never the raw strings |
@@ -61,7 +62,7 @@ export class App extends BaseArdorApplication {
 
 Registration runs least explicit first, so the most explicit wins a shared key: stereotypes, then `bindingList()`, then `bindContext()`. `allowOverride: false` on a by-hand call refuses to replace an existing binding instead.
 
-An `HttpRepository` is registered by hand for now: `@repository()` requires a model. IGNIS adds `@repository({ type: RepositoryTypes.REMOTE, dataSource })` for remote repositories in its next prerelease.
+An `HttpRepository` has no model, so it is declared `@repository({ type: RepositoryTypes.REMOTE, dataSource })`, and `@repository` injects the datasource into the first constructor parameter. The two ways mix: `@inject({ target })` on a datasource registered by hand works there too. See [Repositories](../references/repository#registering-a-repository).
 
 ## By-hand methods vs `bind().toClass()`
 

@@ -26,7 +26,7 @@ bun add @venizia/ignis-connectors
 
 ```ts no-check
 interface IHttpDataSourceSettings {
-  baseUrl: string; // absolute
+  baseUrl: string; // absolute, or relative to the page: '/api'
   headers?: Headers | Array<[string, string]> | Record<string, string>;
   authToken?: IAuthToken; // wins over the resolver
   authTokenResolver?: () => IAuthToken | undefined;
@@ -34,7 +34,7 @@ interface IHttpDataSourceSettings {
 }
 ```
 
-- `baseUrl` must be absolute. Behind a dev-server proxy, use `new URL('/api', window.location.origin).href`.
+- `baseUrl` may be relative (`'/api'`). It resolves against `location.href` when a request is sent, in a page or a Web Worker, so a dev-server proxy needs nothing more. Where there is no `location` (Bun, a test runner) a relative `baseUrl` throws on the first request; pass an absolute URL there.
 - `authTokenResolver: readAuthTokenFromStorage` (from `@venizia/ardor`) sends the token the auth provider stored, the same one the data provider sends.
 - `x-request-count` is owned by the datasource: configuring it in `headers` throws. Rows come back as an array and the total in `Content-Range`.
 - On a `401`, `onUnauthorized` runs once. Return `true` after refreshing the token to retry the request once.
@@ -89,17 +89,49 @@ These throw instead of answering something that looks right:
 
 An empty page is not an error: IGNIS sends `records */0`, and `count` answers `0`.
 
-## Binding and resolving
+## Registering a repository
 
-Register the datasource and the repository by hand, and resolve them by class:
+Two ways, as in IGNIS. Both bind a singleton and record the key on the class, so `useRepository({ target })` resolves either, and nothing depends on a class name a production build renames.
 
-```ts no-check
+**Discovery.** Declare the datasource with `@datasource()` and the repository with `@repository`. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into the first constructor parameter. The application binds both at `start()`, with nothing listed in `bindContext()`:
+
+```ts
+import {
+  datasource,
+  readAuthTokenFromStorage,
+  repository,
+  RepositoryTypes,
+  useRepository,
+} from '@venizia/ardor';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+
+interface ITicket {
+  id: string;
+  status: string;
+}
+
+@datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: 'https://api.example.com', authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
+export class TicketRepository extends HttpRepository<ITicket> {
+  constructor(dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'tickets' });
+  }
+}
+
+export const useTickets = () => useRepository({ target: TicketRepository });
+```
+
+A discovered class must be imported before `application.start()`. A class first imported by a lazy route chunk is never bound.
+
+**By hand.** Leave the classes undecorated, inject the datasource by class, and register both in `bindContext()`:
+
+```ts no-check
 export class TicketRepository extends HttpRepository<ITicket> {
   constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
     super({ dataSource, resource: 'tickets' });
@@ -110,13 +142,11 @@ export class TicketRepository extends HttpRepository<ITicket> {
 // ...
 this.dataSource(ApiDataSource);
 this.repository(TicketRepository);
-
-// In a component
-// ...
-const tickets = useRepository({ target: TicketRepository });
 ```
 
-Both calls bind a singleton and record the key on the class, so nothing depends on a class name a production build renames. Discovery with `@repository({ type: RepositoryTypes.REMOTE, dataSource })` arrives with IGNIS's next prerelease; see [Binding keys](../best-practices/binding-keys) for the two ways to register.
+The two ways mix. A `@repository` class may keep `@inject({ target })` on a datasource registered by hand, and a class registered by hand may take a discovered datasource.
+
+See [Binding keys](../best-practices/binding-keys) for how the two ways compare.
 
 ## Related
 
