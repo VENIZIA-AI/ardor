@@ -48,6 +48,8 @@ interface IPackageState {
   packageName: string;
   localVersion: string;
   publishedVersion: string | null;
+  /** Every version on the registry before dispatch; a new one is the proof of a publish. */
+  publishedVersions: string[];
   changedFiles: number;
 }
 
@@ -79,6 +81,20 @@ const resolvePublishedVersion = async (opts: { packageName: string }): Promise<s
   });
 
   return exitCode === 0 && stdout ? stdout : null;
+};
+
+/** Every published version, whatever its dist-tag. */
+const listPublishedVersions = async (opts: { packageName: string }): Promise<string[]> => {
+  const { stdout, exitCode } = await run({
+    command: ['npm', 'view', opts.packageName, 'versions', '--json'],
+    allowFailure: true,
+  });
+  if (exitCode !== 0 || !stdout) {
+    return [];
+  }
+
+  const parsed = JSON.parse(stdout) as string | string[];
+  return Array.isArray(parsed) ? parsed : [parsed];
 };
 
 /**
@@ -149,6 +165,7 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       packageName: manifest.name,
       localVersion: manifest.version,
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
+      publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
       changedFiles: await countChangedSinceRelease({ name }),
     });
   }
@@ -269,20 +286,21 @@ const waitForCompletion = async (opts: { runId: string }): Promise<string> => {
  * reverse - a green run whose publish silently did nothing - is exactly what this catches.
  */
 const assertPublished = async (opts: { state: IPackageState }): Promise<string> => {
-  // Four minutes, not one: the `next` dist-tag can lag the publish by minutes. A window shorter
-  // than the registry's own propagation turns a healthy release into a false alarm.
+  // A version absent before dispatch, not a dist-tag: a stable release goes to `latest` and leaves
+  // `next` where it was. Four minutes, because the registry can lag the publish.
   for (let attempt = 0; attempt < 48; attempt += 1) {
-    const published = await resolvePublishedVersion({ packageName: opts.state.packageName });
+    const versions = await listPublishedVersions({ packageName: opts.state.packageName });
+    const fresh = versions.find(version => !opts.state.publishedVersions.includes(version));
 
-    if (published && published !== opts.state.publishedVersion) {
-      return published;
+    if (fresh) {
+      return fresh;
     }
 
     await sleep(5_000);
   }
 
   throw new Error(
-    `${opts.state.packageName} still reads ${opts.state.publishedVersion ?? 'nothing'} on the registry after four minutes. Check \`npm view ${opts.state.packageName} versions\` before assuming it failed - the dist-tag may simply be lagging.`,
+    `${opts.state.packageName} shows no new version on the registry after four minutes. Check \`npm view ${opts.state.packageName} versions\` before assuming it failed - the registry may simply be lagging.`,
   );
 };
 
