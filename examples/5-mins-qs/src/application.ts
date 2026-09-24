@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import {
   BaseArdorApplication,
   CoreBindings,
+  datasource,
   DefaultAuthProvider,
   DefaultAuthService,
   DefaultI18nProvider,
@@ -10,9 +11,10 @@ import {
   englishMessages,
   type IApplicationInfo,
   readAuthTokenFromStorage,
+  repository,
+  RepositoryTypes,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { inject } from '@venizia/ignis-inversion';
 
 export interface IProduct {
   id: number;
@@ -20,20 +22,20 @@ export interface IProduct {
   price: number;
 }
 
-// The HTTP datasource. `new URL` needs an absolute base; Vite proxies `/api` to the stub API.
+// Declared, never listed: the application discovers both classes at start(). A relative baseUrl
+// resolves against the page, and Vite proxies `/api` to the stub API.
+@datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({
-      baseUrl: new URL('/api', window.location.origin).href,
-      authTokenResolver: readAuthTokenFromStorage,
-    });
+    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
   }
 }
 
-// A repository: one class per resource, in the IGNIS filter vocabulary. The total comes from
-// `Content-Range`, so counting fetches one row.
+// One class per resource, in the IGNIS filter vocabulary. `@repository` injects the datasource, and
+// `count` reads the total from `Content-Range`.
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
 export class ProductRepository extends HttpRepository<IProduct> {
-  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+  constructor(dataSource: ApiDataSource) {
     super({ dataSource, resource: 'products' });
   }
 
@@ -78,10 +80,5 @@ export class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
     this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-
-    // By hand, as in IGNIS: each call records the key on the class, so `@inject({ target })` and
-    // `useRepository({ target })` resolve without a string key.
-    this.dataSource(ApiDataSource);
-    this.repository(ProductRepository);
   }
 }

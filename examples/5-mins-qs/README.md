@@ -1,7 +1,7 @@
 # 5-minute quickstart
 
 The smallest ARDOR application that does something real: one application class, one repository
-registered by hand, one resource page, sign-in through the auth provider, and a stub API to run it
+declared with `@repository`, one resource page, sign-in through the auth provider, and a stub API to run it
 against.
 
 ```bash
@@ -17,7 +17,7 @@ resolved with `useRepository`.
 
 | File | What it shows |
 | --- | --- |
-| `src/application.ts` | The application, the three default providers, an `HttpDataSource` and an `HttpRepository` registered by hand |
+| `src/application.ts` | The application, the three default providers, an `HttpDataSource` and an `HttpRepository`, declared with `@datasource()` and `@repository` and discovered at start |
 | `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
 | `api/server.ts` | The list contract the data provider expects |
