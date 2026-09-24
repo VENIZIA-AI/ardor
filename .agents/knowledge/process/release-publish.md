@@ -33,7 +33,7 @@ folders, and [packages/kernel](/packages/kernel.md), [packages/react](/packages/
 dependency order, and waits for each run to finish before the next - the workspace-wide
 force-update below cannot overlap. With no package names it releases every package that needs one.
 `--mode` defaults to `prerelease`. There is no prompt: without `--yes` the script prints the plan and
-dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushed tree. A package counts as changed only when its `src` changed since its last release commit, so a manifest-only change (peers, exports) needs the package named explicitly. After each run the script waits for a version that was not on the registry before dispatch, so a stable release to `latest` verifies the same way as a prerelease to `next`. After the
+dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushed tree. A package counts as changed when its `src`, `package.json` or `tsconfig.build.json` changed since its last release commit (`scripts/release-scope.ts`), so a manifest-only change such as the umbrella's peers is released too. After each run the script waits for a version that was not on the registry before dispatch, so a stable release to `latest` verifies the same way as a prerelease to `next`. After the
 chain it runs `make releases-gen` and `make symbols-gen` and commits `reference/releases.json` and
 `reference/symbols.json`. `releases.json` is generated from the release commits, so it is stale by
 exactly the chain that just shipped; `symbols.json` is read from the local `dist` `.d.ts`, and

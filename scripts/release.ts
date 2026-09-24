@@ -22,6 +22,8 @@
  * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
  */
 
+import { countChangedSinceRelease } from './release-scope';
+
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
 
@@ -97,58 +99,6 @@ const listPublishedVersions = async (opts: { packageName: string }): Promise<str
   return Array.isArray(parsed) ? parsed : [parsed];
 };
 
-/**
- * Source files changed since this package's own last release commit - which is what decides whether
- * it needs releasing, not whether the working tree is dirty.
- */
-const countChangedSinceRelease = async (opts: { name: string }): Promise<number> => {
-  const { stdout } = await run({
-    command: ['git', 'log', '--format=%H %s', '--', `packages/${opts.name}/package.json`],
-  });
-
-  const releaseCommit = stdout
-    .split('\n')
-    .find(line => line.includes('release v'))
-    ?.split(' ')[0];
-
-  if (!releaseCommit) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  const { stdout: committed } = await run({
-    command: [
-      'git',
-      'diff',
-      '--name-only',
-      `${releaseCommit}..HEAD`,
-      '--',
-      `packages/${opts.name}/src`,
-    ],
-  });
-
-  // UNCOMMITTED work counts too. Without this the plan reads "nothing to release" while the tree
-  // holds a whole feature - technically true of the remote, and exactly the wrong thing to tell
-  // someone asking whether they are ready. The clean-tree gate still refuses to dispatch.
-  const { stdout: pending } = await run({
-    command: ['git', 'status', '--porcelain', '--', `packages/${opts.name}/src`],
-  });
-
-  const files = new Set<string>();
-  for (const line of committed.split('\n')) {
-    if (line) {
-      files.add(line);
-    }
-  }
-  for (const line of pending.split('\n')) {
-    const path = line.slice(3).trim();
-    if (path) {
-      files.add(path);
-    }
-  }
-
-  return files.size;
-};
-
 const collectState = async (opts: { names: readonly string[] }): Promise<IPackageState[]> => {
   const states: IPackageState[] = [];
 
@@ -166,7 +116,7 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       localVersion: manifest.version,
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
       publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
-      changedFiles: await countChangedSinceRelease({ name }),
+      changedFiles: countChangedSinceRelease({ name }),
     });
   }
 
@@ -402,7 +352,9 @@ const main = async (): Promise<void> => {
   const plan = requested.length > 0 ? states : states.filter(state => state.changedFiles > 0);
 
   if (plan.length === 0) {
-    console.log('Nothing to release - no package has source changes since its last release.');
+    console.log(
+      'Nothing to release - no package has changed its code, manifest or build config since its last release.',
+    );
     return;
   }
 
