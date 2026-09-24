@@ -26,7 +26,7 @@ ARDOR tracks the IGNIS packages it depends on (the DI container, filtering vocab
 
 ## Singleton through ARDOR's registration paths
 
-The IGNIS container binds transient by default: a bare `bind().toClass()` or `bind().toProvider()` resolves afresh on every `get()`. ARDOR's own registration paths - `injectable()`, `service()`, `bindingList()` and the stereotype discovery in `registerArtifacts()` - each set `BindingScopes.SINGLETON` explicitly, so a class registered through them is one instance per running application. This mirrors how application-level services actually behave and means the common case needs no annotation; a binding added by hand in `bindContext()` is a singleton only if it sets the scope itself. See [DI in the browser](/architecture/di-in-the-browser.md) for how binding and resolution work in practice.
+The IGNIS container binds transient by default: a bare `bind().toClass()` or `bind().toProvider()` resolves afresh on every `get()`. ARDOR's own registration paths - the stereotype discovery in `registerArtifacts()`, `service()`/`repository()`/`dataSource()`/`component()`, `bindingList()` and `injectable()` - default to `BindingScopes.SINGLETON`, so a class registered through them is one instance per running application unless a stereotype or a by-hand call declares another `scope`. This mirrors how application-level services actually behave and means the common case needs no annotation; a binding added with `bind()` in `bindContext()` is a singleton only if it sets the scope itself. See [DI in the browser](/architecture/di-in-the-browser.md) for how binding and resolution work in practice.
 
 ## Logger per scope
 

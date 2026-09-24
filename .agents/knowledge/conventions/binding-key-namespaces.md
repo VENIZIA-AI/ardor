@@ -92,8 +92,12 @@ export class PricingService extends BaseService {
 The constructor is not optional: the container passes nothing to an undecorated constructor, so a
 bare `class PricingService extends BaseService {}` registers fine and throws on first resolve.
 
-IGNIS's `@repository` requires a `model` today, which an `HttpRepository` does not have; IGNIS's
-next prerelease adds `RepositoryTypes.REMOTE` for it. Until then register repositories by hand.
+An `HttpRepository` has no model, so it is declared
+`@repository({ type: RepositoryTypes.REMOTE, dataSource })` (IGNIS kernel 0.2.0-46 and later;
+`RepositoryTypes` is re-exported by ARDOR). `@repository` injects the datasource into constructor
+parameter 0 under `datasources.<ClassName>`. The two modes mix: an `@inject({ target })` there on a
+datasource registered by hand is accepted from kernel 0.2.0-47, which judges a class with no key
+yet by its class instead of throwing at import.
 
 `CoreBindings` is **not** re-exported from IGNIS, and that is deliberate on both sides: IGNIS's and
 ARDOR's are different dictionaries that share the member `APPLICATION_INSTANCE` with different

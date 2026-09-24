@@ -41,13 +41,13 @@ Because `bindContext()` can be async and its return value is what `preConfigure(
 
 A no-op by default. It exists as a hook for work that depends on bindings made in `bindContext()` - for example resolving a service and calling an async initializer on it. Because it runs after `preConfigure()` fully resolves, everything bound in `bindContext()` is safe to `get()` here.
 
-## injectable() and service()
+## Registration by hand
 
-Both are registration helpers on the application, not part of the lifecycle steps themselves, but they are almost always called from inside `bindContext()`.
+Registration helpers on the application, not lifecycle steps, called from inside `bindContext()`.
 
-`injectable(scope, value, tags?)` binds a class under the key `` `${scope}.${value.name}` ``, using `toClass(value)`, and forces `BindingScopes.SINGLETON` - one instance per application, constructed lazily on first `get()`. Optional tags are applied with `setTags(...tags)`.
+`service(X)`, `repository(X)`, `dataSource(X)` and `component(X)` bind one class under `opts.binding`, else the class's stereotype `binding`, else `<namespace>.<ClassName>`. Each records that key on the class, so `{ target }` resolves it, and returns the `Binding`. The scope is `opts.scope`, else the stereotype's, else `BindingScopes.SINGLETON`: a hook resolves on every render, and a new instance per render would loop an effect keyed on it. `allowOverride: false` throws instead of replacing an existing binding.
 
-`service(value)` is shorthand for `injectable('services', value)`. This singleton-by-default behavior is deliberate: before it existed, every service or provider had to be registered by hand, one instance per app, and this default simply codifies that existing pattern rather than introducing new semantics. See [binding key namespaces](/conventions/binding-key-namespaces.md) for how scope prefixes like `services.` are used elsewhere.
+`injectable(scope, value, tags?)` is the older form: `` `${scope}.${value.name}` ``, singleton, optional tags, and it records the key too. See [binding key namespaces](/conventions/binding-key-namespaces.md).
 
 ## How ArdorApplication (React) consumes the container
 

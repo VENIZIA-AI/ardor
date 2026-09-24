@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (117)
+### `@venizia/ardor-kernel` (119)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -94,6 +94,7 @@ tags: [reference, exports, api]
 - `provide` const
 - `readAuthTokenFromStorage` const
 - `repository` const
+- `RepositoryTypes` class
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
@@ -120,6 +121,7 @@ tags: [reference, exports, api]
 - `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
+- `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
@@ -214,7 +216,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (172)
+### `@venizia/ardor` (174)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -325,6 +327,7 @@ tags: [reference, exports, api]
 - `provide` const
 - `readAuthTokenFromStorage` const
 - `repository` const
+- `RepositoryTypes` class
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
@@ -352,6 +355,7 @@ tags: [reference, exports, api]
 - `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
+- `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type

@@ -21,7 +21,9 @@ itself - what a binding is, scopes, `@inject` - is in [DI in the browser](/archi
 `model`, `repository`, `datasource` and the root `injectable({ type })` they all call; the `provide`
 method decorator and `inject`; the constants `BindingNamespaces`, `ArtifactNamespaces`,
 `ArtifactTypes`, `BindingKeys`; and the types `IArtifactMetadata`, `IArtifactRegistrationOptions`,
-`TBindingNamespace`, `TBindingScope`. ARDOR defines no stereotype of its own, so a class written for
+`TBindingNamespace`, `TBindingScope`. Beside them, `RepositoryTypes` (and `TRepositoryType`) comes from
+`@venizia/ignis-kernel/repository`: `@repository({ type: RepositoryTypes.REMOTE, dataSource })` declares
+a repository with no model, such as an `HttpRepository`. ARDOR defines no stereotype of its own, so a class written for
 a worker and one written for a browser register the same way. They are legacy TypeScript decorators
 (`@inject` decorates constructor parameters), so an application compiles with
 `experimentalDecorators`, as every example does.
@@ -42,6 +44,11 @@ At decoration time - which is import time - a stereotype:
    explicit `binding: { namespace, key }`, else the kind's namespace from `ArtifactNamespaces`
    (`services`, `components`, `configurations`, `models`, `repositories`, `datasources`) plus
    `Class.name`. No stereotype maps to `providers`.
+4. `@repository` only: registers the datasource injection at constructor parameter 0, under
+   `datasources.<ClassName>` of the declared datasource. An explicit `@inject` there is validated now:
+   a keyed inject must be under `datasources.`, and an `@inject({ target })` whose class has no key
+   yet (a datasource registered by hand in `bindContext()`) is judged by its class. The latter needs
+   IGNIS kernel 0.2.0-47; earlier kernels threw at import.
 
 The key is read as the class's own metadata, never inherited: an undecorated subclass of a
 stereotyped class carries no key and is not discovered.

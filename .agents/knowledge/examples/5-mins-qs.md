@@ -18,11 +18,11 @@ app needs together:
   under a `CoreBindings` key with its own options object, following
   [Options objects](/conventions/options-objects.md). See [Data provider pipeline](/architecture/data-provider-pipeline.md),
   [Auth recovery](/architecture/auth-recovery.md) and [I18n](/architecture/i18n.md).
-- **Registration by hand** - `ApiDataSource extends HttpDataSource` and
-  `ProductRepository extends HttpRepository<IProduct>` (from `@venizia/ardor/repository`), bound in
-  `bindContext()` with `this.dataSource(ApiDataSource)` and `this.repository(ProductRepository)`.
-  Both bind singletons and record the key on the class, so `@inject({ target: ApiDataSource })` and
-  `useRepository({ target })` resolve by class, which survives a minifier. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
+- **Discovery** - `ApiDataSource extends HttpDataSource`, declared `@datasource()` with the relative
+  `baseUrl: '/api'`, and `ProductRepository extends HttpRepository<IProduct>`, declared
+  `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`. `start()` binds both as
+  singletons, `@repository` injects the datasource, and `useRepository({ target })` resolves by
+  class, which survives a minifier: the production bundle renames both classes and still works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
   [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - **`useRepository` + `useTranslate` + `useListContext`** used together in one component
   (`ProductList`). `useListContext` comes from react-admin/ra-core and supplies rows and `total`
