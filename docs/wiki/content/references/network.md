@@ -19,6 +19,7 @@ A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localS
 | `INoAuthOptions` | interface | `useAuth`, `noAuthPaths`, `noAuthPathRegex` constructor options |
 | `TNoAuthPathRegex` | type | One `RegExp \| string` or an array of them |
 | `IAuthRecoveryOptions` | interface | `refreshToken`, `refreshTokenPath`, `onAuthFailure` |
+| `IDataSourceAuth` | interface | `authTokenResolver` + `onUnauthorized` for an `HttpDataSource`, from `getDataSourceAuth()` |
 | `IGetRequestPropsParams` / `IGetRequestPropsResult` | interface | Input and output of `getRequestProps` |
 | `HeaderConsts` | class | Header names and the content-type / attachment regexes |
 | `RequestBodyTypes` | class | `JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, `NONE`, `BINARY` |
@@ -90,6 +91,7 @@ declare class DefaultNetworkRequestService {
 ```ts no-check
 declare class DefaultNetworkRequestService {
   getRequestAuthorizationHeader(): { provider: string | undefined; token: string };
+  resolveAuthToken(): IAuthTokenRecord | undefined; // the token, without building a header
   setAuthToken(opts: { type?: string; value: string }): void;
 }
 ```
@@ -318,11 +320,12 @@ declare class DefaultNetworkRequestService {
 ## Auth recovery
 
 ```ts
-import type { IAuthRecoveryOptions } from '@venizia/ardor';
+import type { IAuthRecoveryOptions, IDataSourceAuth } from '@venizia/ardor';
 
 declare class DefaultNetworkRequestService {
   setAuthRecovery(authRecovery: Partial<IAuthRecoveryOptions>): void;   // shallow merge
   getAuthRecovery(): IAuthRecoveryOptions | undefined;
+  getDataSourceAuth(): IDataSourceAuth; // share both with an HttpDataSource
 }
 ```
 
@@ -339,6 +342,14 @@ Then:
 3. If `refreshToken` throws or rejects, `onAuthFailure` is awaited (its own errors are logged and swallowed), the refresh resolves to `false`, and the original 401 body is thrown.
 
 `refreshToken` must leave the new token where step 2 will find it - `setAuthToken` if you use in-memory tokens, otherwise `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`. An in-memory token always shadows the stored one.
+
+**One refresh for both transports.** `getDataSourceAuth()` returns `{ authTokenResolver, onUnauthorized }` for an `HttpDataSource`:
+- `authTokenResolver` reads `resolveAuthToken()`, so the repository sends this service's token.
+- `onUnauthorized` joins the same in-flight refresh as step 1, so a burst of `401`s across the data provider and any repository calls `refreshToken` once.
+- A failed refresh runs `onAuthFailure` once.
+- With no `refreshToken` configured, `onUnauthorized` answers `false` and the repository's `401` stands.
+
+The data provider binding must be a singleton for this to hold; see [auth recovery](../best-practices/auth-recovery#where-tokens-live).
 
 ```ts
 import { DefaultNetworkRequestService, LocalStorageKeys } from '@venizia/ardor';

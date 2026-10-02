@@ -16,7 +16,7 @@ import {
   type ISendParams,
   RequestMethods,
 } from '@venizia/ardor';
-import { inject } from '@venizia/ignis-inversion';
+import { BindingScopes, inject } from '@venizia/ignis-inversion';
 
 // IGNIS `examples/vert` mounts its authentication component at /auth and a CRUD controller at
 // /configurations (see examples/vert/src/components/platform.component.ts and
@@ -99,9 +99,17 @@ export class Application extends BaseArdorApplication {
       listLanguages: [{ locale: 'en', name: 'English' }],
     });
 
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
+    // One instance per application: react-admin, the auth provider and every hook share the data
+    // provider's network service - its token, headers and single 401 refresh.
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(DefaultRestDataProvider)
+      .setScope(BindingScopes.SINGLETON);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
+    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(DefaultAuthProvider)
+      .setScope(BindingScopes.SINGLETON);
+    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toProvider(DefaultI18nProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }

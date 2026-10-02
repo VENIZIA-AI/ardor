@@ -9,8 +9,8 @@ tags: [tutorial, data-provider, ipc, transport, examples]
 ## What send() is the seam for
 
 `send()` is the point where a resource name and a set of params turn into a network call and come
-back as `{ data }`, for everything that calls it: `DefaultAuthProvider` (`login`, `checkAuth`),
-`BaseCrudService`, and any direct `dataProvider.send()` call. Swap `send()` and those callers move
+back as `{ data }`, for everything that calls it: `DefaultAuthProvider` (`login`, `checkAuth`)
+and any direct `dataProvider.send()` call. Swap `send()` and those callers move
 to the new transport without being touched. The base class, `DefaultRestDataProvider`, assumes HTTP
 by default, but nothing about its public shape (`IDataProvider`) requires HTTP.
 
@@ -68,7 +68,9 @@ bindContext(): void {
     url: 'ipc://local',
     useAuth: false,
   });
-  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(IpcDataProvider);
+  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+    .toProvider(IpcDataProvider)
+    .setScope(BindingScopes.SINGLETON);
 }
 ```
 

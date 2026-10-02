@@ -30,7 +30,6 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 
 ## Services
 - `packages/kernel/src/base/services/base.ts`, `api.ts`, `auth.ts`, `network-request.ts` - the kernel service layer: base service class, API service, auth service, network request wrapper.
-- `packages/admin/src/services/crud.ts` and `packages/admin/src/services/index.ts` - `BaseCrudService`, a CRUD service built on top of a data provider (every method goes through `dataProvider.send()`).
 - See [Hooks and services](/reference/hooks-and-services.md) for the full inventory.
 
 ## Networking

@@ -50,6 +50,16 @@ When package size is checked against its budget, peer dependencies are treated a
 
 `make purity` bundles every runtime entry in the `exports` maps of kernel, react, admin and ardor for the browser (ui-kit carries no purity claim) and keeps ARDOR's own code and every `@venizia/*` dependency in the measured graph. The per-sub-path `external` list in `scripts/purity/manifest.ts` may exempt only a third-party package - a peer, or a dependency such as `ra-i18n-polyglot` - whose own packaging the probe cannot judge; listing an `@venizia/*` package there throws when the manifest loads, because an external would hide the exact leak the gate exists to catch. When purity fails on ARDOR code, fix the import - do not reach for `external`. See [build-run-test](/overview/build-run-test.md) ("Repository gates") and [design-decisions](/overview/design-decisions.md) ("Purity and layer gates").
 
+## A bare provider binding hands each consumer its own data provider
+
+`bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider)` is transient, so every `get()` builds a new data provider with a new network service. `<ArdorApplication>`, `DefaultAuthProvider`, every hook and every injected datasource each hold a different one. What one consumer sets, another never sees:
+- a header from `useRequestHeaderLocale`,
+- a token from `setAuthToken`,
+- the recovery options,
+- the single in-flight refresh.
+
+A started application with the old wiring showed it: react-admin's request carried `locale=null`, and a repository wired through `getDataSourceAuth()` sent no `authorization` at all. Bind the three default providers with `.setScope(BindingScopes.SINGLETON)`, as every example now does. ARDOR's own registration paths set singleton for you; a by-hand `bind()` does not. See [DI in the browser](/architecture/di-in-the-browser.md).
+
 ## Every constructor parameter the container fills needs `@inject`
 
 The container reads only `@inject` metadata, never parameter types, so it cannot supply an undecorated constructor parameter - which is why a service cannot take a raw `opts` argument alongside injected ones. An undecorated parameter placed before a decorated one throws at resolution time with `Constructor parameter <index> has no @inject | Every parameter of a container-instantiated class must be decorated`. A trailing undecorated parameter is not caught at all: it silently arrives as `undefined`. See [di-in-the-browser](/architecture/di-in-the-browser.md) and [options-objects](/conventions/options-objects.md).

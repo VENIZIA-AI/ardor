@@ -20,4 +20,3 @@ tags: [reference, hooks, services, catalog]
 | Directory | Classes |
 |---|---|
 | `packages/kernel/src/base/services/` | `BaseService` · `DefaultAuthService` · `DefaultNetworkRequestService` |
-| `packages/admin/src/services/` | `BaseCrudService` |

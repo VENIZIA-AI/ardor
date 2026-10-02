@@ -10,6 +10,7 @@ import {
   type ISendResponse,
   RequestMethods,
 } from '@venizia/ardor';
+import { BindingScopes } from '@venizia/ignis-inversion';
 
 // --- the transport: what a desktop shell exposes instead of fetch (Tauri's `invoke`, a Worker
 // port, an Electron bridge). One in-memory implementation is enough to show the seam.
@@ -64,7 +65,9 @@ class Application extends BaseArdorApplication {
       url: 'ipc://local',
       useAuth: false,
     });
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(IpcDataProvider);
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(IpcDataProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 

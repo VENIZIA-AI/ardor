@@ -26,9 +26,8 @@ method takes without opening it, and neither can a tool.
 
 ## Known exceptions
 
-Positional signatures still ship: `ICrudService` (`packages/kernel/src/common/types.ts`) and its
-`BaseCrudService` implementation (`findById(id, filter)`, `updateById(id, data)`), the
-`DefaultNetworkRequestService` setters (`setHeaders(headers)`), the `IFetchable` interface
+Positional signatures still ship: the `DefaultNetworkRequestService` setters
+(`setHeaders(headers)`), the `IFetchable` interface
 (`send(opts, logger?)`), the `Logger` methods (`debug(message, ...args)`) and kernel utilities such
 as `isNumber(value, exact?)` and `getNumberValue(input, method)`. None of them is a model for new
 code. Three shapes are positional on purpose:

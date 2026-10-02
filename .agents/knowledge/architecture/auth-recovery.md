@@ -23,6 +23,17 @@ Auth recovery is the retry-on-401 logic built into `DefaultNetworkRequestService
 
 This whole scheme sits below the [data provider pipeline](/architecture/data-provider-pipeline.md): the pipeline just sees a request that either succeeds after a transparent refresh, or fails with the original 401 for [error flow](/architecture/error-flow.md) to handle.
 
+## Sharing it with an HTTP repository
+
+`getDataSourceAuth()` returns an `IDataSourceAuth`, `{ authTokenResolver, onUnauthorized }`, for an `HttpDataSource`.
+- `authTokenResolver` is `resolveAuthToken()`: the in-memory token, else the resolver's.
+- `onUnauthorized` is `ensureRefreshed()` itself, so a 401 from a repository joins the same `this.refreshing` promise as the data provider's. One `refreshToken` call serves the whole burst, and a failed one runs `onAuthFailure` once.
+- `canRecover` is not consulted on that path. A repository has no no-auth paths, and the refresh request goes through the data provider, not the repository.
+
+Pinned by the two `getDataSourceAuth()` tests in `network-request.test.ts`. They were red under two mutations: an `onUnauthorized` that never joins the refresh, and a resolver that ignores `setAuthToken`.
+
+It only holds if every consumer resolves the same network service. `bind().toProvider(DefaultRestDataProvider)` is transient, so give the provider bindings `.setScope(BindingScopes.SINGLETON)`; see [DI in the browser](/architecture/di-in-the-browser.md).
+
 ## Headers and auth token
 
 `getRequestHeader` builds the header set per request. For non-no-auth paths it calls `getRequestAuthorizationHeader()`, which reads the in-memory `authToken` or, only when there is none, the constructor's `authTokenResolver` (default `readAuthTokenFromStorage`, the stored token under `LocalStorageKeys.KEY_AUTH_TOKEN`), throwing a 401-tagged error if no token value is present. The resulting `Authorization` and `X-Auth-Provider` headers follow the shared [header protocol](/architecture/header-protocol.md).

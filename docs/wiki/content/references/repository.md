@@ -1,26 +1,27 @@
 ---
 title: Repositories
-description: The @venizia/ardor/repository sub-path - HttpDataSource and HttpRepository from IGNIS, their settings, what they refuse to guess, and how to bind and resolve them.
+description: The @venizia/ardor/repository sub-path - HttpDataSource and HttpRepository from IGNIS, their reads and writes, what they refuse to guess, and how to bind and resolve them.
 ---
 
 # Repositories
 
-`@venizia/ardor/repository` (also `@venizia/ardor-kernel/repository`) re-exports the HTTP repository from `@venizia/ignis-connectors/http`. A repository reads one backend resource through a datasource, in the same filter vocabulary an IGNIS server repository uses with its database.
+`@venizia/ardor/repository` (also `@venizia/ardor-kernel/repository`) re-exports the HTTP repository from `@venizia/ignis-connectors/http`. A repository reads and writes one backend resource through a datasource, in the same filter vocabulary an IGNIS server repository uses with its database.
 
 It is a separate sub-path so the root import stays small. `@venizia/ignis-connectors` is an optional peer: install it only if you import this sub-path.
 
 ```bash
-bun add @venizia/ignis-connectors
+bun add @venizia/ignis-connectors@next
 ```
 
 ## Quick Reference
 
 | Export | Kind | What it is |
 | --- | --- | --- |
-| `HttpDataSource` | class | The HTTP transport: base URL, headers, auth token |
-| `HttpRepository<E>` | class | Read access to one resource: `find`, `findOne`, `findById`, `count`, `existsWith` |
+| `HttpDataSource` | class | The HTTP transport: base URL, headers, auth token, and `request()` for any other route |
+| `HttpRepository<E, P>` | class | One resource: reads (`find`, `findOne`, `findById`, `count`, `existsWith`) and writes (`create`, `updateById`, `updateBy`, `deleteById`, `deleteBy`). `P` is what a write sends, `Partial<E>` by default |
 | `IHttpDataSourceSettings` | interface | `HttpDataSource` constructor options |
-| `IAuthToken`, `TAuthTokenResolver` | types | The token a request carries, and where it comes from |
+| `IHttpReadResult`, `IHttpWriteResult` | interfaces | What `read()` and `write()` answer |
+| `IAuthToken`, `TAuthTokenResolver`, `THttpHeaders`, `THttpBody` | types | The token a request carries and where it comes from, headers, a request body |
 
 ## HttpDataSource
 
@@ -38,6 +39,8 @@ interface IHttpDataSourceSettings {
 - `authTokenResolver: readAuthTokenFromStorage` (from `@venizia/ardor`) sends the token the auth provider stored, the same one the data provider sends.
 - `x-request-count` is owned by the datasource: configuring it in `headers` throws. Rows come back as an array and the total in `Content-Range`.
 - On a `401`, `onUnauthorized` runs once. Return `true` after refreshing the token to retry the request once.
+- **Share the data provider's auth:** spread `dataProvider.getNetworkService().getDataSourceAuth()` into the settings. It supplies both `authTokenResolver` and `onUnauthorized`, so the repository sends the data provider's token, including one set with `setAuthToken`, and a `401` on either transport triggers one `refreshToken` call. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
+- `request({ paths, method, body, headers })` answers the raw `Response`, for a route the repository verbs do not cover, such as an export or a `PUT` to a hand-written route. A plain object or array goes out as JSON; a string, `Blob`, `FormData`, `URLSearchParams` or binary goes out as it is. A stream does not: the `401` retry resends the same body.
 
 ## HttpRepository
 
@@ -78,6 +81,37 @@ export const openCount = () => tickets.count({ where: { status: 'OPEN' } });
 
 Pass `countPath` to the constructor when the API has a count route (`GET /{resource}/{countPath}`) instead of a `Content-Range` total.
 
+### Writes
+
+```ts
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+
+const tickets = new HttpRepository<{ id: string; status: string }>({
+  dataSource: new HttpDataSource({ baseUrl: 'https://api.example.com' }),
+  resource: 'tickets',
+});
+
+export const closeStale = async () => {
+  const { data: created } = await tickets.create({ data: { status: 'OPEN' } });
+  await tickets.updateById({ id: created.id, data: { status: 'DONE' } });
+  await tickets.updateBy({ where: { status: 'OPEN' }, data: { status: 'STALE' } });
+  await tickets.deleteBy({ where: { id: { inq: ['1', '2'] } }, options: { shouldReturn: false } });
+};
+```
+
+| Call | Request |
+| --- | --- |
+| `create({ data })` | `POST /{resource}` |
+| `updateById({ id, data })` | `PATCH /{resource}/{id}` |
+| `updateBy({ where, data })` (also `updateAll`) | `PATCH /{resource}`, `where` in the body beside `data` |
+| `deleteById({ id })` | `DELETE /{resource}/{id}` |
+| `deleteBy({ where })` (also `deleteAll`) | `DELETE /{resource}`, `where` in the body |
+
+- Every write answers `{ count, data }`: `count` from the server's `x-response-count`, `data` the row or the rows it returned. `options: { shouldReturn: false }` answers `data: null`.
+- The id is URL-encoded, for reads too: `'a/b'` is sent as `a%2Fb`, not as another route.
+- There is no `createAll`: the IGNIS REST contract has no bulk-create route.
+- A bulk write needs a server that reads `where` from the body, as the IGNIS generated routes do. This is the same contract as the data provider's `updateMany` and `deleteMany`.
+
 ## What it refuses to guess
 
 These throw instead of answering something that looks right:
@@ -86,8 +120,14 @@ These throw instead of answering something that looks right:
 - **`Content-Range` with an unknown total (`records 0-24/*`).** The fix is the server's count query.
 - **A count route that answers no number.** Answering 0 reads as an empty table.
 - **A list body that is neither an array nor `{ count, data }`.** Counting it as one row would make `existsWith` true for an empty result.
+- **An empty `where` on `updateBy` or `deleteBy`.** The IGNIS bulk routes answer it with a `400`, and `force` cannot cross HTTP, so it throws before any request is sent.
 
 An empty page is not an error: IGNIS sends `records */0`, and `count` answers `0`.
+
+A failed request throws an error with the server's status. Its message ends with the URL and then the server's message, such as `[http][read] 404 | <url> | Ticket not found`, and its message code is the server's `normalized.code`. Match on the status or the code, not on the message text.
+
+> [!WARNING]
+> On `@venizia/ignis-connectors` `0.2.1-1` the error carries the server's `normalized.code` but not its `normalized.args`: they are always `{}`. `useNotifyError` passes those args to the translation, so a message with a placeholder, such as `%{name}`, shows the placeholder unfilled. Fixed in IGNIS (issue #86), not released yet.
 
 ## Registering a repository
 

@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (119)
+### `@venizia/ardor-kernel` (117)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -37,7 +37,6 @@ tags: [reference, exports, api]
 - `datasource` const
 - `DefaultAuthService` class
 - `DefaultNetworkRequestService` class
-- `EntityRelationType` type
 - `Environments` class
 - `float` const
 - `getNumberValue` const
@@ -51,8 +50,8 @@ tags: [reference, exports, api]
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
-- `ICrudService` interface
 - `ICustomParams` interface
+- `IDataSourceAuth` interface
 - `IdType` type
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -75,7 +74,6 @@ tags: [reference, exports, api]
 - `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` interface
-- `IService` interface
 - `isFloat` const
 - `isInt` const
 - `isNumber` const
@@ -132,7 +130,7 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
-### `@venizia/ardor-kernel/repository` (9)
+### `@venizia/ardor-kernel/repository` (11)
 
 - `HttpDataSource` class
 - `HttpRepository` class
@@ -140,7 +138,9 @@ tags: [reference, exports, api]
 - `IAuthToken` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
+- `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
+- `THttpBody` type
 - `THttpHeaders` type
 - `THttpQuery` type
 
@@ -188,10 +188,9 @@ tags: [reference, exports, api]
 
 ## admin
 
-### `@venizia/ardor-admin` (23)
+### `@venizia/ardor-admin` (21)
 
 - `ArdorApplication` const
-- `BaseCrudService` class
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
 - `DefaultI18nProvider` class
@@ -199,7 +198,6 @@ tags: [reference, exports, api]
 - `englishMessages` const
 - `IApplication` interface
 - `IAuthProvider` interface
-- `ICrudServiceOptions` interface
 - `IDataProvider` interface
 - `II18nProviderOptions` interface
 - `IReactAdminAuthProvider` interface
@@ -216,7 +214,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (174)
+### `@venizia/ardor` (170)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -230,7 +228,6 @@ tags: [reference, exports, api]
 - `ArtifactTypes` class
 - `Authentication` class
 - `BaseArdorApplication` class
-- `BaseCrudService` class
 - `BaseHelper` class
 - `BaseNetworkRequest` class
 - `BaseProvider` class
@@ -253,7 +250,6 @@ tags: [reference, exports, api]
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
 - `englishMessages` const
-- `EntityRelationType` type
 - `Environments` class
 - `float` const
 - `getNumberValue` const
@@ -269,10 +265,9 @@ tags: [reference, exports, api]
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
-- `ICrudService` interface
-- `ICrudServiceOptions` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
+- `IDataSourceAuth` interface
 - `IdType` type
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -298,7 +293,6 @@ tags: [reference, exports, api]
 - `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` interface
-- `IService` interface
 - `isFloat` const
 - `isInt` const
 - `isNumber` const
@@ -393,7 +387,7 @@ tags: [reference, exports, api]
 - `ValueOrPromise` type
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (9)
+### `@venizia/ardor/repository` (11)
 
 - `HttpDataSource` class
 - `HttpRepository` class
@@ -401,7 +395,9 @@ tags: [reference, exports, api]
 - `IAuthToken` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
+- `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
+- `THttpBody` type
 - `THttpHeaders` type
 - `THttpQuery` type
 

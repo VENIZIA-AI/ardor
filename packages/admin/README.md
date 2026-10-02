@@ -14,7 +14,7 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
-| Data | `DefaultRestDataProvider`, `CountRestDataProvider`, `BaseCrudService` |
+| Data | `DefaultRestDataProvider`, `CountRestDataProvider` |
 | Auth | `DefaultAuthProvider` |
 | i18n | `DefaultI18nProvider`, `englishMessages`, `vietnameseMessages` |
 | Component | `ArdorApplication` - the `CoreAdmin` root, wired from the container |

@@ -45,7 +45,9 @@ bindContext() {
     noAuthPaths: ['/auth/login'],
     authRecovery: { refreshTokenPath: '/auth/refresh' },
   });
-  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
+  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+    .toProvider(DefaultRestDataProvider)
+    .setScope(BindingScopes.SINGLETON);
   this.repository(ProductRepository);
   ...
 }

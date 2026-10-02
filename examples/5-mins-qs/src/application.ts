@@ -15,6 +15,7 @@ import {
   RepositoryTypes,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+import { BindingScopes } from '@venizia/ignis-inversion';
 
 export interface IProduct {
   id: number;
@@ -76,9 +77,18 @@ export class Application extends BaseArdorApplication {
       listLanguages: [{ locale: 'en', name: 'English' }],
     });
 
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
+    // One instance per application: react-admin, the auth provider and every hook share the data
+    // provider's network service - its token, headers and single 401 refresh. A bare bind() is
+    // transient and would hand each of them a separate copy.
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(DefaultRestDataProvider)
+      .setScope(BindingScopes.SINGLETON);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
+    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(DefaultAuthProvider)
+      .setScope(BindingScopes.SINGLETON);
+    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toProvider(DefaultI18nProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }

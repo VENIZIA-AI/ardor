@@ -23,7 +23,7 @@ which re-exports this package.
 | Network | `AxiosNetworkRequest`, `NodeFetchNetworkRequest`, `AxiosFetcher`, `NodeFetcher` |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
 | Utilities | `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse` |
-| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, `ICrudService`, ... |
+| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License
 

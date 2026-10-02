@@ -188,6 +188,15 @@ export const readAuthTokenFromStorage: TAuthTokenResolver = () => {
   }
 };
 
+/**
+ * The auth settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
+ * repository and the data provider send the same token and share one refresh per 401 burst.
+ */
+export interface IDataSourceAuth {
+  authTokenResolver: TAuthTokenResolver;
+  onUnauthorized: () => Promise<boolean>;
+}
+
 export class DefaultNetworkRequestService extends BaseService {
   protected authToken?: IAuthTokenRecord;
   protected authTokenResolver: TAuthTokenResolver;
@@ -323,8 +332,25 @@ export class DefaultNetworkRequestService extends BaseService {
     return true;
   }
 
+  /** The token this service sends: the one `setAuthToken` set, else the resolver's. */
+  resolveAuthToken(): IAuthTokenRecord | undefined {
+    return this.authToken ?? this.authTokenResolver();
+  }
+
+  /**
+   * Spread into an `HttpDataSource`'s settings. Its requests then carry this service's token, and
+   * its 401 joins this service's refresh: one `refreshToken` call for every 401 in flight on either
+   * transport, `onAuthFailure` on a failed one, and no retry when no `refreshToken` is configured.
+   */
+  getDataSourceAuth(): IDataSourceAuth {
+    return {
+      authTokenResolver: () => this.resolveAuthToken(),
+      onUnauthorized: () => this.ensureRefreshed(),
+    };
+  }
+
   getRequestAuthorizationHeader() {
-    const authToken = this.authToken ?? this.authTokenResolver();
+    const authToken = this.resolveAuthToken();
 
     if (!authToken?.value) {
       throw getError({

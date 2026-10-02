@@ -50,6 +50,7 @@ import {
   DefaultRestDataProvider, readAuthTokenFromStorage, repository, RepositoryTypes, type IApplicationInfo,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+import { BindingScopes } from '@venizia/ignis-inversion';
 
 // Declared, as in IGNIS: start() discovers both classes and binds each as a singleton.
 @datasource()
@@ -76,10 +77,11 @@ class Application extends BaseArdorApplication {
     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } });
     this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({});
 
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
+    // SINGLETON: react-admin, the auth provider and every hook share one data provider.
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider).setScope(BindingScopes.SINGLETON);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
+    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider).setScope(BindingScopes.SINGLETON);
+    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider).setScope(BindingScopes.SINGLETON);
   }
 }
 ```

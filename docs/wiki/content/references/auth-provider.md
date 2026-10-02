@@ -308,7 +308,10 @@ export class Application extends BaseArdorApplication {
     this.container.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).to(restDataProviderOptions);
     this.container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).to(authProviderOptions);
     this.container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(AppAuthProvider);
+    this.container
+      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(AppAuthProvider)
+      .setScope(BindingScopes.SINGLETON);
     ...
   }
 }

@@ -30,11 +30,10 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IAuthRecoveryOptions` | interface | Refresh token and failure hooks |
 | `IAuthProviderOptions` | interface | Auth provider endpoints and paths |
 | `II18nProviderOptions` | interface | i18n sources and language list |
-| `IService`, `ICrudService<E>` | interface | Service marker and CRUD contract |
 | `IReactAdminDataProvider`, `IDataProvider` | interface | react-admin data contract plus `send` and `getNetworkService` |
 | `IReactAdminAuthProvider`, `IAuthProvider` | interface | react-admin auth contract plus `getRoles` and `refreshToken` |
 | `IArdorApplication`, `IApplication` | interface | Application lifecycle and `<ArdorApplication>` props |
-| `TDataCount<T>`, `EntityRelationType` | type | Data with optional count; relation placeholder |
+| `TDataCount<T>` | type | Data with optional count |
 | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments` | class | Const classes with `SCHEME_SET` and `isValid` |
 | `RequestCountData`, `HeaderConsts`, `RequestChannel`, `Authentication`, `App` | class | Const classes without a scheme set |
 
@@ -346,45 +345,6 @@ export const authOptions: IAuthProviderOptions = {
 
 `II18nProviderOptions` (`i18nSources`, `listLanguages`) follows the same shape and is documented in [i18n](../references/i18n).
 
-## ICrudService
-
-The CRUD contract a service exposes for one entity. `E` must have an `id: IdType`. `IService` is the empty marker it extends. Filters and where clauses use `TFilter` and `TWhere` from `@venizia/ignis-filter`; they are not re-exported by `@venizia/ardor`.
-
-```ts no-check
-export interface ICrudService<
-  E extends { id: IdType; [extra: string | symbol]: any } = any,
-> extends IService {
-  find(filter: TFilter<E>): Promise<Array<E & EntityRelationType>>;
-  findById(id: IdType, filter: TFilter<E>): Promise<E & EntityRelationType>;
-  findOne(filter: TFilter<E>): Promise<(E & EntityRelationType) | null>;
-  count(where: TWhere<E>): Promise<{ count: number }>;
-
-  create(data: Omit<E, 'id'>): Promise<E>;
-  updateAll(data: Partial<E>, where: TWhere<E>): Promise<{ count: number }>;
-  updateById(id: IdType, data: Partial<E>): Promise<E>;
-  replaceById(id: IdType, data: E): Promise<E>;
-  deleteById(id: IdType): Promise<{ id: IdType }>;
-}
-```
-
-```ts no-check
-import type { ICrudService } from '@venizia/ardor';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-}
-
-export const rename = async (opts: { products: ICrudService<Product>; id: number; name: string }) => {
-  const { products, id, name } = opts;
-  const existing = await products.findById(id, { ... });
-  return products.updateById(existing.id, { name });
-};
-```
-
-`BaseCrudService` implements this interface; see [data provider](../references/data-provider).
-
 ## IDataProvider and IAuthProvider
 
 Both contracts are react-admin's interface plus ARDOR extensions.
@@ -531,7 +491,6 @@ export const timezoneHeaders = (): Record<string, string> => ({
 - `IDataProvider` is positional on purpose. Only `send` takes an options object, because it is an ARDOR extension and not part of the react-admin contract.
 - `INoAuthOptions.noAuthPaths` is an exact match. Use `noAuthPathRegex` for prefixes, and remember a string pattern is compiled with `new RegExp(...)`.
 - `AnyType` is `any`. It is fine as a generic default at a boundary; do not let it become the type of your domain records.
-- `TFilter` and `TWhere` used by `ICrudService` are not on the `@venizia/ardor` surface. Import them from `@venizia/ignis-filter`.
 - `IAuthProviderOptions` carries no defaults in its type. What happens when a path is missing is decided by the provider, see [auth provider](../references/auth-provider).
 - `TStatusFromClass` drops `SCHEME_SET`, `isValid`, `prototype` and `TYPE_SET`. Any other static you add to a const class becomes part of the union.
 

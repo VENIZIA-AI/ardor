@@ -36,7 +36,7 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `src/helpers/**` (logger, networks, fetchers, socket client) | `@venizia/ardor-kernel` |
 | `src/utilities/**` | `@venizia/ardor-kernel` |
 | `src/base/applications`, `src/base/services`, `src/base/decorators` | `@venizia/ardor-kernel` |
-| `src/base/services/base-crud.service.ts` | `@venizia/ardor-admin` - `BaseCrudService` is typed on the react-admin `IDataProvider` |
+| `src/base/services/base-crud.service.ts` | Removed - use an `HttpRepository` from `@venizia/ardor/repository` |
 | `src/base/providers/base.provider.ts` | `@venizia/ardor-kernel` |
 | `src/base/providers/{default-rest-data,count-rest-data,default-auth,default-i18n}` | `@venizia/ardor-admin` |
 | `src/ui/{context,hooks}` (framework-agnostic hooks) | `@venizia/ardor-react` |
@@ -63,8 +63,8 @@ Three removals and one requirement:
 - **`DIContainer` is gone.** It was a second, weaker container beside the IGNIS one. Use the
   inversion `Container` the application already is.
 - **`BaseApiService` is gone.** Extend `BaseService` and declare a `resource` field if the `@api()`
-  log line should name one; `@api()` works on any `BaseService`. For HTTP reads, prefer an
-  `HttpRepository` from `@venizia/ardor/repository`.
+  log line should name one; `@api()` works on any `BaseService`. For calls to one REST resource,
+  reads and writes, prefer an `HttpRepository` from `@venizia/ardor/repository`.
 - **Module augmentation moves to the declaring package.** A TypeScript interface merges only into
   the module that declares it, never through a re-export, so augmenting `@venizia/ardor` would
   silently do nothing. Augment the owner instead:

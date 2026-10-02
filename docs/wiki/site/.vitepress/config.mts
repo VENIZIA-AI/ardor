@@ -87,6 +87,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-02',
+        collapsed: true,
+        items: [
+          {
+            text: 'HttpRepository writes, shared auth',
+            link: '/changelogs/2026-10-02-repository-writes-and-ignis-0-2-1',
+          },
+        ],
+      },
+      {
         text: '2026-09-24',
         collapsed: true,
         items: [

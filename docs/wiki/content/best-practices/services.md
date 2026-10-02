@@ -5,7 +5,7 @@ description: How to write ARDOR services on BaseService and resource repositorie
 
 # Writing services and repositories
 
-A service is a plain class that owns one job and one logger: extend `BaseService`. Reading one backend resource is a repository's job: extend `HttpRepository` from `@venizia/ardor/repository`. This page shows how to write both so they stay small, testable, and free of react-admin types.
+A service is a plain class that owns one job and one logger: extend `BaseService`. Reading and writing one backend resource is a repository's job: extend `HttpRepository` from `@venizia/ardor/repository`. This page shows how to write both so they stay small, testable, and free of react-admin types.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | Export | Kind | Use it for |
 | --- | --- | --- |
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
-| `HttpRepository` | class | Reads one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
+| `HttpRepository` | class | Reads and writes one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
 | `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
 | `Logger` | class | One instance per scope. `getInstance({ scope })`. |
 | `ISendParams` / `ISendResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
@@ -54,7 +54,7 @@ export class ClockService extends BaseService {
 
 ## A resource: HttpRepository
 
-A class about one backend collection, such as `products` or `orders`, is a repository. `HttpRepository` reads it through an `HttpDataSource` with the IGNIS filter vocabulary, and reads totals from the `Content-Range` header.
+A class about one backend collection, such as `products` or `orders`, is a repository. `HttpRepository` reads and writes it through an `HttpDataSource` with the IGNIS filter vocabulary, and reads totals from the `Content-Range` header.
 
 ```ts
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
@@ -72,10 +72,14 @@ export class ProductRepository extends HttpRepository<IProduct> {
   countAbove(opts: { price: number }) {
     return this.count({ where: { price: { gte: opts.price } } });
   }
+
+  reprice(opts: { id: number; price: number }) {
+    return this.updateById({ id: opts.id, data: { price: opts.price } });
+  }
 }
 ```
 
-See the [repository reference](../references/repository) for the datasource settings and what `count` and `find` refuse to guess.
+See the [repository reference](../references/repository) for the datasource settings, the request each write sends, and what the repository refuses to guess.
 
 ## Options objects on every method
 

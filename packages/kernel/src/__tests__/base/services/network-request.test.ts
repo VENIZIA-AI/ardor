@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 
+import { HttpDataSource, HttpRepository } from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
@@ -1150,6 +1151,63 @@ describe('DefaultNetworkRequestService', () => {
       }
 
       expect(authFailureCallCount).toBe(1);
+    });
+
+    // A repository with its own refresh would race the data provider's: two refresh calls, and the
+    // loser's token invalidated by the winner's on a server that rotates refresh tokens.
+    test('an HttpDataSource given getDataSourceAuth() joins the same single refresh and retries with its token', async () => {
+      let refreshCallCount = 0;
+      const service = createService({ baseUrl: serverBaseUrl });
+      service.setAuthToken({ value: 'stale-token' });
+      service.setAuthRecovery({
+        refreshToken: async () => {
+          refreshCallCount++;
+          await delay({ milliseconds: 40 });
+          service.setAuthToken({ value: 'fresh-token' });
+        },
+      });
+
+      serverHandler = (opts: IServerHandlerOptions) => {
+        if (opts.req.headers.get('authorization') !== 'Bearer fresh-token') {
+          return Response.json({ error: 'expired' }, { status: 401 });
+        }
+        return Response.json([{ id: 'recovered' }]);
+      };
+
+      const tickets = new HttpRepository<{ id: string }>({
+        dataSource: new HttpDataSource({ baseUrl: serverBaseUrl, ...service.getDataSourceAuth() }),
+        resource: 'tickets',
+      });
+
+      const [viaProvider, viaRepository] = await Promise.all([
+        service.doRequest<Array<{ id: string }>>({
+          paths: ['orders'],
+          method: RequestMethods.GET,
+          type: RequestTypes.GET_ONE,
+          headers: service.getRequestHeader({ resource: 'orders' }),
+        }),
+        tickets.find({ filter: {} }),
+      ]);
+
+      expect(refreshCallCount).toBe(1);
+      expect(viaProvider.data).toEqual([{ id: 'recovered' }]);
+      expect(viaRepository).toEqual([{ id: 'recovered' }]);
+    });
+
+    test('an HttpDataSource given getDataSourceAuth() lets the 401 stand when no refreshToken is configured', async () => {
+      const service = createService({ baseUrl: serverBaseUrl });
+      service.setAuthToken({ value: 'stale-token' });
+
+      serverHandler = () => Response.json({ error: 'expired' }, { status: 401 });
+
+      const tickets = new HttpRepository<{ id: string }>({
+        dataSource: new HttpDataSource({ baseUrl: serverBaseUrl, ...service.getDataSourceAuth() }),
+        resource: 'tickets',
+      });
+
+      await expect(tickets.find({ filter: {} })).rejects.toMatchObject({ statusCode: 401 });
+      expect(recordedRequests).toHaveLength(1);
+      expect(recordedRequests[0].headers.authorization).toBe('Bearer stale-token');
     });
   });
 });

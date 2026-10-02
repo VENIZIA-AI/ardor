@@ -1,4 +1,3 @@
-import { type TFilter, type TWhere } from '@venizia/ignis-filter';
 import { type TClass } from '@venizia/ignis-inversion';
 
 import {
@@ -36,8 +35,6 @@ export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, nu
 export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
 
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
-
-export type EntityRelationType = {};
 
 export type TRequestMethod = TStatusFromClass<typeof RequestMethods>;
 export type TEnvironment = TStatusFromClass<typeof Environments>;
@@ -136,23 +133,6 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
   headers?: HeadersInit;
 
   authRecovery?: IAuthRecoveryOptions;
-}
-
-export interface IService {}
-
-export interface ICrudService<
-  E extends { id: IdType; [extra: string | symbol]: any } = any,
-> extends IService {
-  find(filter: TFilter<E>): Promise<Array<E & EntityRelationType>>;
-  findById(id: IdType, filter: TFilter<E>): Promise<E & EntityRelationType>;
-  findOne(filter: TFilter<E>): Promise<(E & EntityRelationType) | null>;
-  count(where: TWhere<E>): Promise<{ count: number }>;
-
-  create(data: Omit<E, 'id'>): Promise<E>;
-  updateAll(data: Partial<E>, where: TWhere<E>): Promise<{ count: number }>;
-  updateById(id: IdType, data: Partial<E>): Promise<E>;
-  replaceById(id: IdType, data: E): Promise<E>;
-  deleteById(id: IdType): Promise<{ id: IdType }>;
 }
 
 export interface IArdorApplication {

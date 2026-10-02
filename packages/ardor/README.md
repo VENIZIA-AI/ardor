@@ -27,6 +27,7 @@ import {
   DefaultRestDataProvider,
   type IApplicationInfo,
 } from '@venizia/ardor';
+import { BindingScopes } from '@venizia/ignis-inversion';
 
 export class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
@@ -44,10 +45,17 @@ export class Application extends BaseArdorApplication {
     });
     this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({});
 
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
+    // SINGLETON: react-admin, the auth provider and every hook share one data provider.
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(DefaultRestDataProvider)
+      .setScope(BindingScopes.SINGLETON);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
+    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(DefaultAuthProvider)
+      .setScope(BindingScopes.SINGLETON);
+    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toProvider(DefaultI18nProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 ```

@@ -192,17 +192,24 @@ You do not have to call `cleanUp` in `onAuthFailure` when the request came from 
 
 The request service stores nothing itself. An in-memory token set with `setAuthToken({ type, value })` wins when present; otherwise it asks its `authTokenResolver`, which defaults to `readAuthTokenFromStorage` - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. The resolver returns `undefined` where there is no `localStorage` or the stored value does not parse.
 
-The same resolver authenticates an HTTP repository, so a screen reading through `@venizia/ardor/repository` sends the token the data provider sends:
+An HTTP repository should share both the token and the refresh. `getDataSourceAuth()` hands an `HttpDataSource` the service's token resolver and an `onUnauthorized` that joins the service's refresh, so a screen reading through `@venizia/ardor/repository` sends the token the data provider sends, and a `401` on either side triggers one `refreshToken` call between them:
 
 ```ts
-import { readAuthTokenFromStorage } from '@venizia/ardor';
+import { CoreBindings, datasource, type IDataProvider } from '@venizia/ardor';
 import { HttpDataSource } from '@venizia/ardor/repository';
+import { inject } from '@venizia/ignis-inversion';
 
-const dataSource = new HttpDataSource({
-  baseUrl: 'https://api.example.com',
-  authTokenResolver: readAuthTokenFromStorage,
-});
+@datasource()
+export class ApiDataSource extends HttpDataSource {
+  constructor(
+    @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) dataProvider: IDataProvider,
+  ) {
+    super({ baseUrl: '/api', ...dataProvider.getNetworkService().getDataSourceAuth() });
+  }
+}
 ```
+
+The data provider must be bound with `.setScope(BindingScopes.SINGLETON)`: a bare `bind().toProvider()` is transient, so the datasource would receive its own data provider, with its own network service, token and refresh. Without a configured `refreshToken`, a `401` from the repository stands, as it does for the data provider.
 
 `DefaultAuthProvider` writes the token in exactly one place - `login`, via `authService.saveAuth` - and clears it in exactly one way - `authService.cleanUp`, called from `logout` and from `checkError` on a `401`. Nothing else in the provider touches storage. Keep it that way: do not write the key from components, and do not clear it from anywhere but `cleanUp`.
 

@@ -1,7 +1,7 @@
 ---
 type: Package
 title: admin
-description: The react-admin adapter package that confines the framework's ra-core usage behind ARDOR's providers, hooks and BaseCrudService.
+description: The react-admin adapter package that confines the framework's ra-core usage behind ARDOR's providers and hooks.
 resource: packages/admin/src/index.ts
 tags: [package, admin, react-admin, ra-core, i18n, data-provider]
 ---
@@ -10,7 +10,7 @@ tags: [package, admin, react-admin, ra-core, i18n, data-provider]
 
 ## What it exports
 
-The package barrel (`src/index.ts`) re-exports five areas: `common`, `components`, `hooks`, `providers`, `services`.
+The package barrel (`src/index.ts`) re-exports four areas: `common`, `components`, `hooks`, `providers`.
 
 Providers (`src/providers/index.ts`):
 - `DefaultRestDataProvider` and `CountRestDataProvider` - implementations of react-admin's data provider contract, translated into ARDOR's REST/filter vocabulary. React-admin's pagination, sort and filter parameters are mapped onto the `{ where, order, limit, skip, fields, include }` shape used by `@venizia/ignis-filter`. This is the concrete edge of the [data provider pipeline](/architecture/data-provider-pipeline.md).
@@ -23,7 +23,7 @@ Hooks (`src/hooks/index.ts`):
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
 
-Also exported: `BaseCrudService<E>`, which implements kernel's `ICrudService` over `dataProvider.send()`. Its constructor takes `{ scope, dataProvider, serviceOptions: { basePath } }` and injects nothing, so a subclass supplies the data provider itself, for example through `@inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`. It assumes a fixed REST layout under `basePath` - the collection itself, `/:id`, `/find-one` and `/count` - where the reads send `filter` as a query parameter (`count` and `updateAll` send `where`), and every method resolves to the response's `data`.
+There is no CRUD service: a class that calls one REST resource is an `HttpRepository` from the kernel's `./repository` sub-path (see [kernel](/packages/kernel.md)). `BaseCrudService` and `ICrudService` were removed on 2026-10-02.
 
 The package also exports `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
 
