@@ -13,7 +13,7 @@ description: HttpRepository writes on IGNIS 0.2.1, shares the data provider's to
 
 ## What changed
 
-- **Writes.** `HttpRepository` re-exports IGNIS connectors `0.2.1-2` unchanged, so it gains the writes:
+- **Writes.** `HttpRepository` re-exports IGNIS connectors `0.2.1-3` unchanged, so it gains the writes:
 
 | Call | Request |
 |---|---|
@@ -27,18 +27,20 @@ description: HttpRepository writes on IGNIS 0.2.1, shares the data provider's to
 - **What a write refuses.** An empty bulk `where` throws before a request is sent. There is no `createAll`.
 - **Ids in the URL.** The id is URL-encoded, for reads too.
 - **The second type parameter.** `HttpRepository<E, P = Partial<E>>`: `P` is what a write sends.
-- **Any other route.** `HttpDataSource.request()` takes a `body` and per-request `headers` on any method, `PUT` included, for routes the verbs do not cover.
+- **Any other route.** `HttpDataSource.request()` takes a `body` and per-request `headers` on any method, `PUT` included, for routes the verbs do not cover. `HttpDataSource.read()` takes `method` and `body` too, so a list route the server wrote by hand, such as a `POST .../list/find`, still gets `Content-Range` parsing.
 - **Peers.** The IGNIS peers move to the 0.2.1 line:
 
 | Package | Before | Now |
 |---|---|---|
-| `@venizia/ignis-connectors` | `^0.2.0` | `>=0.2.1-2 <0.3.0` |
-| `@venizia/ignis-kernel` | `^0.2.0` | `>=0.2.1-1 <0.3.0` |
+| `@venizia/ignis-connectors` | `^0.2.0` | `>=0.2.1-3 <0.3.0` |
+| `@venizia/ignis-kernel` | `^0.2.0` | `>=0.2.1-2 <0.3.0` |
 | `@venizia/ignis-filter`, `-helpers` | `^0.2.0` | `>=0.2.1-0 <0.3.0` |
 | `@venizia/ignis-inversion` | `^0.2.0` | unchanged |
 
-- **A long `getMany` reads through the body.** Once the encoded filter passes 6,000 characters, `getMany` sends `POST /{resource}/find` with `{ filter }` instead of a `GET`, which used to draw `414`/`431` at about 400 UUIDs. IGNIS controllers answer that route from `0.2.1-2`. Shorter lists stay on the `GET`. `HttpRepository` does the same for `find`, `findOne`, `count` and `existsWith`.
 - **Error arguments.** A repository error now carries the server's `normalized.args`, so `useNotifyError` fills a translated message's placeholders.
+
+> [!WARNING]
+> The `0.1.2-0` and `0.1.2-1` prereleases sent a `getMany` longer than 6,000 encoded characters to `POST /{resource}/find`. On IGNIS kernel `0.2.1-1` that route skipped a controller's overridden `find()`, so a tenant-scoped app could read every tenant's rows (IGNIS #92). Do not deploy either prerelease, and do not run a backend on kernel `0.2.1-1` or connectors `0.2.1-2`. `getMany` is a `GET` to the collection again, however long the list, and IGNIS `0.2.1-3` removes the route. A very long id list answers `414`/`431` again.
 
 `^0.2.0` does not admit a prerelease, so with the old peers a workspace kept a second, older copy of each IGNIS package beside the new one. The new ranges accept every 0.2.x stable from 0.2.1 on, and refuse 0.3.0.
 
@@ -54,8 +56,7 @@ description: HttpRepository writes on IGNIS 0.2.1, shares the data provider's to
 - **Code that imported `BaseCrudService` or `ICrudService`.** Extend `HttpRepository` instead. `find({ filter })`, `findById({ id })`, `count({ where })`, `create({ data })`, `updateById({ id, data })`, `updateBy({ where, data })` and `deleteById({ id })` cover what it did, with options objects. `replaceById` (PUT) has no verb: send it with `dataSource.request({ method: 'PUT', ... })`.
 - **Every application that binds the default providers with a bare `bind()` in `bindContext()`.** Move those bindings into a `@configuration()` class: one `@provide({ key })` method per framework key, imported before `application.start()`. `registerArtifacts()` binds each provided key, singleton. An override of a provided key can stay in `bindContext()`.
 - **Applications with an `HttpDataSource` and auth recovery.** Inject the data provider and spread `getNetworkService().getDataSourceAuth()` into the datasource settings. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
-- **Applications on IGNIS `0.2.0`.** Move `@venizia/ignis-connectors` to `0.2.1-2`, `kernel` to `0.2.1-1`, and `filter` and `helpers` to `0.2.1-0`, together with ARDOR. Until IGNIS 0.2.1 is stable they install from `next`.
-- **Servers older than IGNIS `0.2.1-2`, or not IGNIS.** A `getMany` or repository read long enough to leave the URL answers `404` there, because `POST /{resource}/find` does not exist. Add the route, or keep id lists short.
+- **Applications on IGNIS `0.2.0`.** Move `@venizia/ignis-connectors` to `0.2.1-3`, `kernel` to `0.2.1-2`, and `filter` and `helpers` to `0.2.1-0`, together with ARDOR. Pin these exact versions: until IGNIS 0.2.1 is stable they install from `next`, and the `next` tags of `inversion` and `boot` still point at old 0.2.0 prereleases.
 - **Code that matches a failed read by its message.** A failed request now throws with the server's message after the URL, `[http][read] 404 | <url> | Ticket not found`, and with the server's `normalized.code` and `normalized.args`. Match on the status or the code instead.
 - **A server-side order entry with more than two tokens, or an empty one,** is now a `400` on an IGNIS backend. ARDOR's data provider always sends two (`field ASC`), so nothing changes there.
 

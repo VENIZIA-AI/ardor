@@ -126,8 +126,6 @@ An empty page is not an error: IGNIS sends `records */0`, and `count` answers `0
 
 A failed request throws an error with the server's status. Its message ends with the URL and then the server's message, such as `[http][read] 404 | <url> | Ticket not found`. Its `normalized.code` and `normalized.args` are the server's, so `useNotifyError` fills a translated message's placeholders. Match on the status or the code, not on the message text.
 
-A `find`, `findOne`, `count` or `existsWith` whose URL would pass 6,000 characters moves to `POST /{resource}/find` (or `/count`) with the filter in the body. IGNIS controllers answer it from `0.2.1-2`; an older server answers that long read with `404`.
-
 ## Registering a repository
 
 Two ways, as in IGNIS. Both bind a singleton and record the key on the class, so `useRepository({ target })` resolves either, and nothing depends on a class name a production build renames.

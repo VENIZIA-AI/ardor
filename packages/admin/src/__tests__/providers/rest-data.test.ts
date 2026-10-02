@@ -373,29 +373,28 @@ describe('getMany behavior', () => {
     expect(filter['params']).toBeUndefined();
   });
 
-  // 400 UUIDs on the request line drew 431 from an IGNIS server; past the threshold the same filter
-  // goes in the body of POST /<resource>/find (IGNIS #88).
-  test('moves a long id list into the body of POST /<resource>/find, keeping params in the query', async () => {
+  // A body-filter POST /<resource>/find reached the kernel's shared read and skipped a controller's
+  // overridden find(), so a tenant-scoped app read every tenant's rows (IGNIS #92). However long the
+  // id list, getMany stays on the collection GET, the route the controller scopes.
+  // The stub server refuses a request line this long (the 431 a real server answers), so the test
+  // reads what getMany hands the transport.
+  test('keeps a long id list on the collection GET, never a POST read route', async () => {
     const provider = createProvider({ baseUrl });
+    const doRequest = spyOn(provider.getNetworkService(), 'doRequest').mockResolvedValue({
+      data: [],
+    });
     const ids = Array.from({ length: 400 }, (_, index) => {
       return `0190a1b2-c3d4-7e5f-8a9b-${String(index).padStart(12, '0')}`;
     });
 
-    await provider.getMany({
-      resource: 'posts',
-      params: {
-        ids,
-        meta: { filter: { where: { isPublished: true }, params: { scope: 'workspace' } } },
-      },
-    });
+    await provider.getMany({ resource: 'posts', params: { ids } });
 
-    expect(recordedRequests.length).toBe(1);
-    const req = recordedRequests[0];
-    expect(req.method).toBe('POST');
-    expect(req.pathname).toBe('/posts/find');
-    expect(req.query['filter']).toBeUndefined();
-    expect(req.query['scope']).toBe('workspace');
-    expect(req.body).toEqual({ filter: { where: { isPublished: true, id: { inq: ids } } } });
+    expect(doRequest).toHaveBeenCalledTimes(1);
+    const sent = doRequest.mock.calls[0][0];
+    expect(sent.method).toBe(RequestMethods.GET);
+    expect(sent.paths).toEqual(['posts']);
+    expect(sent.body).toBeUndefined();
+    expect(sent.query.filter.where).toEqual({ id: { inq: ids } });
   });
 });
 

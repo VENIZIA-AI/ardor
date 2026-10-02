@@ -54,9 +54,6 @@ const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string
   return Array.isArray(headers) ? Object.fromEntries(headers) : headers;
 };
 
-/** The encoded-filter length past which `getMany` reads through POST, the IGNIS connector's own threshold. */
-const GET_MANY_URL_LIMIT = 6_000;
-
 /**
  * The ids a bulk write touched, read from the affected rows the server answers (not the ids asked
  * for). A body that is not a row array leaves `data` out.
@@ -259,30 +256,27 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       }
     }
 
-    const idFilter = {
-      ...omit(filter, 'params'),
-      where: { ...filter?.where, id: { inq: params.ids } },
-    };
-
-    // An id list on the request line answers 414/431 (~400 UUIDs). Past the connector's threshold
-    // the filter goes in the body of POST /<resource>/find, which IGNIS answers like the GET
-    // (#88); shorter reads stay on the GET, so a server without that route is unaffected.
-    const isLong = encodeURIComponent(JSON.stringify(idFilter)).length > GET_MANY_URL_LIMIT;
-
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
-      ...(isLong ? { body: { filter: idFilter } } : {}),
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
 
+    // Always the GET, under the controller's own `find()`: a body-filter POST route bypassed a
+    // controller's tenant scoping and was removed from IGNIS (#92). A very long id list answers 414/431.
     return this.networkService.doRequest<RecordType[]>({
       requestCountData: RequestCountData.DATA_ONLY,
       type: RequestTypes.GET_MANY,
-      method: isLong ? RequestMethods.POST : RequestMethods.GET,
-      query: isLong ? queryKey : { ...queryKey, filter: idFilter },
-      paths: isLong ? [resource, 'find'] : [resource],
+      method: RequestMethods.GET,
+      query: {
+        ...queryKey,
+        filter: {
+          ...omit(filter, 'params'),
+          where: { ...filter?.where, id: { inq: params.ids } },
+        },
+      },
+      paths: [resource],
       ...request,
     });
   }
