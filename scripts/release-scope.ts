@@ -60,3 +60,25 @@ export const countChangedSinceRelease = (opts: { name: string; cwd?: string }): 
 
   return files.size;
 };
+
+/**
+ * The changed packages plus, transitively, every package depending on one. `states` must be in
+ * release order. A prerelease falls outside a dependent's caret range (`^0.1.1` does not admit
+ * `0.1.2-0`), so a dependent left unreleased installs a second copy of the old dependency.
+ */
+export const withDependents = <
+  T extends { packageName: string; changedFiles: number; internalDependencies: string[] },
+>(opts: {
+  states: T[];
+}): T[] => {
+  const released = new Set<string>();
+
+  return opts.states.filter(state => {
+    const isReleased =
+      state.changedFiles > 0 || state.internalDependencies.some(dep => released.has(dep));
+    if (isReleased) {
+      released.add(state.packageName);
+    }
+    return isReleased;
+  });
+};

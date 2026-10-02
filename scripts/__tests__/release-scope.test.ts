@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { countChangedSinceRelease } from '../release-scope';
+import { countChangedSinceRelease, withDependents } from '../release-scope';
 
 const roots: string[] = [];
 
@@ -90,5 +90,55 @@ describe('countChangedSinceRelease', () => {
     commit(root, 'packages/umbrella/README.md', '# umbrella, edited\n');
 
     expect(countChangedSinceRelease({ name: 'umbrella', cwd: root })).toBe(0);
+  });
+});
+
+// The 0.1.2-0 chain shipped kernel, admin and ardor but not react, whose `ardor-kernel: ^0.1.1`
+// excludes the prerelease: a consumer got a second ardor-kernel@0.1.1 under ardor-react.
+describe('withDependents', () => {
+  const state = (opts: { packageName: string; changedFiles: number; deps?: string[] }) => ({
+    packageName: opts.packageName,
+    changedFiles: opts.changedFiles,
+    internalDependencies: opts.deps ?? [],
+  });
+
+  test('releases an unchanged package whose dependency is released, transitively', () => {
+    const plan = withDependents({
+      states: [
+        state({ packageName: '@venizia/ardor-kernel', changedFiles: 6 }),
+        state({
+          packageName: '@venizia/ardor-react',
+          changedFiles: 0,
+          deps: ['@venizia/ardor-kernel'],
+        }),
+        state({
+          packageName: '@venizia/ardor-admin',
+          changedFiles: 0,
+          deps: ['@venizia/ardor-react'],
+        }),
+        state({ packageName: '@venizia/ardor-ui-kit', changedFiles: 0 }),
+      ],
+    });
+
+    expect(plan.map(s => s.packageName)).toEqual([
+      '@venizia/ardor-kernel',
+      '@venizia/ardor-react',
+      '@venizia/ardor-admin',
+    ]);
+  });
+
+  test('leaves a dependent alone when nothing it depends on is released', () => {
+    const plan = withDependents({
+      states: [
+        state({ packageName: '@venizia/ardor-kernel', changedFiles: 0 }),
+        state({
+          packageName: '@venizia/ardor-react',
+          changedFiles: 0,
+          deps: ['@venizia/ardor-kernel'],
+        }),
+      ],
+    });
+
+    expect(plan).toEqual([]);
   });
 });

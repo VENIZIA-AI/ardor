@@ -22,7 +22,7 @@
  * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
  */
 
-import { countChangedSinceRelease } from './release-scope';
+import { countChangedSinceRelease, withDependents } from './release-scope';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
@@ -53,6 +53,8 @@ interface IPackageState {
   /** Every version on the registry before dispatch; a new one is the proof of a publish. */
   publishedVersions: string[];
   changedFiles: number;
+  /** The `@venizia/*` workspace packages this one depends on, by package name. */
+  internalDependencies: string[];
 }
 
 const run = async (opts: {
@@ -117,6 +119,9 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
       publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
       changedFiles: countChangedSinceRelease({ name }),
+      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter(dep =>
+        dep.startsWith('@venizia/ardor'),
+      ),
     });
   }
 
@@ -348,8 +353,10 @@ const main = async (): Promise<void> => {
   await assertReleasable({ isDryRun });
 
   const states = await collectState({ names: candidates });
-  // An explicit request is honoured as given; a full sweep releases only what actually changed.
-  const plan = requested.length > 0 ? states : states.filter(state => state.changedFiles > 0);
+  // An explicit request is honoured as given; a full sweep releases what changed AND every package
+  // depending on one of those. A prerelease falls outside a dependent's caret range (`^0.1.1` does
+  // not admit `0.1.2-0`), so an unreleased dependent drags in a second copy of the old dependency.
+  const plan = requested.length > 0 ? states : withDependents({ states });
 
   if (plan.length === 0) {
     console.log(
