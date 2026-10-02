@@ -117,9 +117,9 @@
     },
     "packages/admin": {
       "name": "@venizia/ardor-admin",
-      "version": "0.1.1",
+      "version": "0.1.2-0",
       "dependencies": {
-        "@venizia/ardor-kernel": "^0.1.1",
+        "@venizia/ardor-kernel": "^0.1.2-0",
         "@venizia/ardor-react": "^0.1.1",
         "lodash": "catalog:",
         "ra-i18n-polyglot": "catalog:",
@@ -2307,9 +2307,9 @@
 
     "@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@5.0.1", "", {}, "sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA=="],
 
-    "@venizia/ardor/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
+    "@venizia/ardor/@venizia/ardor-admin": ["@venizia/ardor-admin@0.1.1", "", { "dependencies": { "@venizia/ardor-kernel": "^0.1.1", "@venizia/ardor-react": "^0.1.1", "lodash": "^4.18.1", "ra-i18n-polyglot": "^5.15.0" }, "peerDependencies": { "@reduxjs/toolkit": ">=2.12.0", "@tanstack/react-query": ">=5.101.2", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "ra-core": ">=5.15.0", "react": ">=18.0", "react-dom": ">=18.0", "react-redux": ">=9.3.0", "react-router-dom": ">=7.9.4" } }, "sha512-7R5/L5cXrldKcVGYkU6KE0LTy35h2N4PXOQS8STr8OjMIA9P6kjY0thIssZRc2kje7OE6N8BgP57cGPni+WdPg=="],
 
-    "@venizia/ardor-admin/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
+    "@venizia/ardor/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
 
     "@venizia/ardor-react/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
 
