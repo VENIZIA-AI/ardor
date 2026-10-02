@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-0",
+        "date": "2026-10-02",
+        "sha": "220761a4",
+        "order": 94
+      },
+      {
         "version": "0.1.1",
         "date": "2026-09-24",
         "sha": "b379ae41",
@@ -47,6 +53,12 @@
     ],
     "ardor": [
       {
+        "version": "0.1.2-0",
+        "date": "2026-10-02",
+        "sha": "bb5d03a8",
+        "order": 95
+      },
+      {
         "version": "0.1.1",
         "date": "2026-09-24",
         "sha": "f80e4a20",
@@ -84,6 +96,12 @@
       }
     ],
     "kernel": [
+      {
+        "version": "0.1.2-0",
+        "date": "2026-10-02",
+        "sha": "58018099",
+        "order": 93
+      },
       {
         "version": "0.1.1",
         "date": "2026-09-24",
@@ -181,6 +199,17 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-02-repository-writes-and-ignis-0-2-1",
+      "file": "2026-10-02-repository-writes-and-ignis-0-2-1.md",
+      "date": "2026-10-02",
+      "title": "HttpRepository writes and shares the data provider's auth; BaseCrudService is gone",
+      "packages": [
+        "ardor"
+      ],
+      "kind": "Breaking",
+      "order": 91
+    },
     {
       "id": "changelog:2026-09-24-remote-repositories-and-relative-base-url",
       "file": "2026-09-24-remote-repositories-and-relative-base-url.md",
