@@ -255,7 +255,7 @@
     },
     "packages/react": {
       "name": "@venizia/ardor-react",
-      "version": "0.1.2-0",
+      "version": "0.1.2-1",
       "dependencies": {
         "@venizia/ardor-kernel": "^0.1.2-0",
         "lodash": "catalog:",
