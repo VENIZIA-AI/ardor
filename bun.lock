@@ -217,7 +217,7 @@
     },
     "packages/kernel": {
       "name": "@venizia/ardor-kernel",
-      "version": "0.1.1",
+      "version": "0.1.2-0",
       "dependencies": {
         "lodash": "catalog:",
       },
@@ -2306,6 +2306,12 @@
     "@typescript-eslint/typescript-estree/minimatch": ["minimatch@10.2.6", "", { "dependencies": { "brace-expansion": "^5.0.8" } }, "sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A=="],
 
     "@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@5.0.1", "", {}, "sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA=="],
+
+    "@venizia/ardor/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
+
+    "@venizia/ardor-admin/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
+
+    "@venizia/ardor-react/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
 
     "@vitejs/plugin-vue/vite": ["vite@5.4.21", "", { "dependencies": { "esbuild": "^0.21.3", "postcss": "^8.4.43", "rollup": "^4.20.0" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^18.0.0 || >=20.0.0", "less": "*", "lightningcss": "^1.21.0", "sass": "*", "sass-embedded": "*", "stylus": "*", "sugarss": "*", "terser": "^5.4.0" }, "optionalPeers": ["@types/node", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser"], "bin": { "vite": "bin/vite.js" } }, "sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw=="],
 
