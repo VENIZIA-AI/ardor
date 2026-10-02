@@ -27,29 +27,48 @@ The framework is four packages plus a design system. Each has one role.
 
 react-admin already gives two things an admin app needs: a data contract (`getList`, `getOne`, `create`, and the rest) and a UI runtime that drives that contract. IGNIS already gives a third thing: an inversion-of-control container, published as `@venizia/ignis-inversion`, and a query vocabulary, published as `@venizia/ignis-filter`.
 
-ARDOR wires those together. An ARDOR application is an IoC container. You bind providers and services by key inside `bindContext()`, start the application, and the React tree resolves what it needs through hooks.
+ARDOR wires those together. An ARDOR application is an IoC container. You declare what it binds in a `@configuration` class, start the application, and the React tree resolves what it needs through hooks.
 
 The reason for that wiring is scale with a team, not scale of traffic. Three things become possible:
 
 - **Services by key.** An API service is a class, bound once, resolved anywhere in the tree with `useInjectable`. A second developer does not need to know where it was constructed.
-- **Providers as bindings.** The data provider, auth provider and i18n provider are bindings under `CoreBindings` keys. Swapping one is a change to `bindContext()`, not a search across the component tree.
+- **Providers as bindings.** The data provider, auth provider and i18n provider are bindings under `CoreBindings` keys. Swapping one is a change to the configuration class, not a search across the component tree.
 - **One place to configure auth.** The REST data provider options hold the API URL, the paths that are reached before a token exists (`noAuthPaths`, or a `noAuthPathRegex`), and the refresh path used for auth recovery. Nothing else in the app needs to repeat that.
 
 The whole idea fits in a few lines:
 
 ```tsx no-check
-// In the application class - declare what is bound.
-bindContext() {
-  this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
-    url: import.meta.env.VITE_API_URL,
-    noAuthPaths: ['/auth/login'],
-    authRecovery: { refreshTokenPath: '/auth/refresh' },
-  });
-  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-    .toProvider(DefaultRestDataProvider)
-    .setScope(BindingScopes.SINGLETON);
-  this.repository(ProductRepository);
-  ...
+// The configuration class - declare what is bound. start() binds each @provide
+// method under its key, SINGLETON, built on first use.
+@configuration()
+class AdminConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return {
+      url: import.meta.env.VITE_API_URL,
+      noAuthPaths: ['/auth/login'],
+      authRecovery: { refreshTokenPath: '/auth/refresh' },
+    };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  // ... the remaining @provide methods, as in the quickstart
+}
+
+class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
+  }
+
+  bindContext(): void {}
 }
 
 // Anywhere in the tree - resolve by class.

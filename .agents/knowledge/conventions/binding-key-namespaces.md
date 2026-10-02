@@ -28,8 +28,9 @@ export class CoreBindings {
 }
 ```
 
-The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is the
-application's to bind inside `bindContext()`. Which is which is listed per key in
+The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is
+declared with `@provide` in the application's `@configuration()` class and bound by
+`registerArtifacts()`. Which is which is listed per key in
 [binding keys](/reference/binding-keys.md).
 
 **Per-artifact keys** have the shape `<namespace>.<key>`, with the namespace from

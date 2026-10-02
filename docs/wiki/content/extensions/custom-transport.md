@@ -227,9 +227,10 @@ What still comes from the base:
 Two of the three injections are already bound by the application: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO`. You add a binding for `TRANSPORT_KEY` with your transport function, and register `TransportDataProvider` under the key the application uses for its data provider in place of `DefaultRestDataProvider`.
 
 ```ts no-check
-// In the application setup - see the binding keys reference for the exact calls.
+// In a @configuration() class - see the binding keys reference for the exact shape.
 // 1. bind TRANSPORT_KEY -> memoryTransport (or a Tauri / Worker bridge)
-// 2. bind the data provider key -> TransportDataProvider instead of DefaultRestDataProvider
+// 2. @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) returning
+//    application.instantiate(TransportDataProvider).value(application)
 // ...
 ```
 

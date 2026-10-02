@@ -372,6 +372,31 @@ describe('getMany behavior', () => {
     });
     expect(filter['params']).toBeUndefined();
   });
+
+  // 400 UUIDs on the request line drew 431 from an IGNIS server; past the threshold the same filter
+  // goes in the body of POST /<resource>/find (IGNIS #88).
+  test('moves a long id list into the body of POST /<resource>/find, keeping params in the query', async () => {
+    const provider = createProvider({ baseUrl });
+    const ids = Array.from({ length: 400 }, (_, index) => {
+      return `0190a1b2-c3d4-7e5f-8a9b-${String(index).padStart(12, '0')}`;
+    });
+
+    await provider.getMany({
+      resource: 'posts',
+      params: {
+        ids,
+        meta: { filter: { where: { isPublished: true }, params: { scope: 'workspace' } } },
+      },
+    });
+
+    expect(recordedRequests.length).toBe(1);
+    const req = recordedRequests[0];
+    expect(req.method).toBe('POST');
+    expect(req.pathname).toBe('/posts/find');
+    expect(req.query['filter']).toBeUndefined();
+    expect(req.query['scope']).toBe('workspace');
+    expect(req.body).toEqual({ filter: { where: { isPublished: true, id: { inq: ids } } } });
+  });
 });
 
 describe('getManyReference behavior', () => {

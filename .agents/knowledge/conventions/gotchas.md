@@ -52,13 +52,15 @@ When package size is checked against its budget, peer dependencies are treated a
 
 ## A bare provider binding hands each consumer its own data provider
 
-`bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider)` is transient, so every `get()` builds a new data provider with a new network service. `<ArdorApplication>`, `DefaultAuthProvider`, every hook and every injected datasource each hold a different one. What one consumer sets, another never sees:
+A bare `bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider)` is transient, so every `get()` builds a new data provider with a new network service. `<ArdorApplication>`, `DefaultAuthProvider`, every hook and every injected datasource each hold a different one. What one consumer sets, another never sees:
 - a header from `useRequestHeaderLocale`,
 - a token from `setAuthToken`,
 - the recovery options,
 - the single in-flight refresh.
 
-A started application with the old wiring showed it: react-admin's request carried `locale=null`, and a repository wired through `getDataSourceAuth()` sent no `authorization` at all. Bind the three default providers with `.setScope(BindingScopes.SINGLETON)`, as every example now does. ARDOR's own registration paths set singleton for you; a by-hand `bind()` does not. See [DI in the browser](/architecture/di-in-the-browser.md).
+A started application with the old wiring showed it: react-admin's request carried `locale=null`, and a repository wired through `getDataSourceAuth()` sent no `authorization` at all.
+
+The fix is to declare the binding with `@provide({ key })` in a `@configuration()` class: `registerArtifacts()` binds it as a lazy provider and SINGLETON by default, so one data provider serves every consumer. `.setScope(BindingScopes.SINGLETON)` on a bare `bind()` in `bindContext()` remains only as the override form. See [DI in the browser](/architecture/di-in-the-browser.md).
 
 ## Every constructor parameter the container fills needs `@inject`
 

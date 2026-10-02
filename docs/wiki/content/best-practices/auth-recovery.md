@@ -209,7 +209,7 @@ export class ApiDataSource extends HttpDataSource {
 }
 ```
 
-The data provider must be bound with `.setScope(BindingScopes.SINGLETON)`: a bare `bind().toProvider()` is transient, so the datasource would receive its own data provider, with its own network service, token and refresh. Without a configured `refreshToken`, a `401` from the repository stands, as it does for the data provider.
+The data provider must be a singleton. Declare it with `@provide` in a `@configuration()` class - `registerArtifacts()` binds it as a singleton. A bare `bind().toProvider()` in `bindContext()` is transient, so the datasource would receive its own data provider, with its own network service, token and refresh. Without a configured `refreshToken`, a `401` from the repository stands, as it does for the data provider.
 
 `DefaultAuthProvider` writes the token in exactly one place - `login`, via `authService.saveAuth` - and clears it in exactly one way - `authService.cleanUp`, called from `logout` and from `checkError` on a `401`. Nothing else in the provider touches storage. Keep it that way: do not write the key from components, and do not clear it from anywhere but `cleanUp`.
 

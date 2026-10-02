@@ -3,7 +3,14 @@ import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { BaseArdorApplication } from '@/base/applications/abstract';
-import { component, MetadataRegistry, service } from '@venizia/ignis-kernel/metadata';
+import {
+  component,
+  configuration,
+  MetadataRegistry,
+  provide,
+  service,
+} from '@venizia/ignis-kernel/metadata';
+import { BindingScopes } from '@venizia/ignis-inversion';
 import { type IApplicationInfo } from '@/common';
 
 class TestApplication extends BaseArdorApplication {
@@ -25,6 +32,22 @@ class DiscoveredService {
 class DiscoveredComponent {}
 
 class UndecoratedService {}
+
+let providedBuilds = 0;
+
+@configuration()
+class ProvidingConfiguration {
+  @provide({ key: 'test.provided.shared' })
+  shared() {
+    providedBuilds++;
+    return { build: providedBuilds };
+  }
+
+  @provide({ key: 'test.provided.fresh', scope: BindingScopes.TRANSIENT })
+  fresh() {
+    return { at: Symbol('fresh') };
+  }
+}
 
 describe('AbstractArdorApplication.registerArtifacts', () => {
   let application: TestApplication;
@@ -101,5 +124,36 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
     expect(discovered).toContain(DiscoveredService);
     expect(discovered).toContain(DiscoveredComponent);
     expect(discovered).not.toContain(UndecoratedService);
+  });
+
+  // A transient data provider hands react-admin, the auth provider and each hook their own network
+  // service, so a header or token set on one never reaches the others.
+  test('binds a @provide method under its key, built once and shared', () => {
+    const before = providedBuilds;
+    const first = application.get<{ build: number }>({ key: 'test.provided.shared' });
+
+    expect(application.get<{ build: number }>({ key: 'test.provided.shared' })).toBe(first);
+    expect(providedBuilds - before).toBe(1);
+  });
+
+  test('a @provide scope is the method author to choose', () => {
+    expect(MetadataRegistry.getInstance().getDiscoveredArtifacts()).toContain(
+      ProvidingConfiguration,
+    );
+    expect(application.get({ key: 'test.provided.fresh' })).not.toBe(
+      application.get({ key: 'test.provided.fresh' }),
+    );
+  });
+
+  test('bindContext overrides a provided key', async () => {
+    class OverridingApplication extends TestApplication {
+      override bindContext(): void {
+        this.bind({ key: 'test.provided.shared' }).toValue('from bindContext');
+      }
+    }
+    const overriding = new OverridingApplication();
+    await overriding.start();
+
+    expect(overriding.get<string>({ key: 'test.provided.shared' })).toBe('from bindContext');
   });
 });

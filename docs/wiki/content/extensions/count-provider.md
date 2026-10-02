@@ -100,17 +100,32 @@ const result = {
 
 ## Binding it
 
-Bind the class under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` in place of `DefaultRestDataProvider`. The constructor is inherited, so it still injects `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO` from the container - bind the class, not a hand-built instance.
+Provide the class under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` in a `@configuration()` class, in place of `DefaultRestDataProvider`. The constructor is inherited, so it still injects `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO` from the container - provide the class, not a hand-built instance.
 
-```ts no-check
-import { CoreBindings, CountRestDataProvider } from '@venizia/ardor';
+```ts
+import {
+  type BaseArdorApplication as TArdorApplication,
+  configuration,
+  CoreBindings,
+  CountRestDataProvider,
+  inject,
+  provide,
+} from '@venizia/ardor';
 
-// ...
-container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toClass(CountRestDataProvider);
-// ...
+@configuration()
+export class ShopConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(CountRestDataProvider).value(this.application);
+  }
+}
 ```
 
-See [Binding keys](../best-practices/binding-keys) for the exact binding call used by your application setup. The `IDataProvider` handed to react-admin by the container keeps its positional `(resource, params)` methods; nothing on the react-admin side changes.
+See [Binding keys best practices](../best-practices/binding-keys) for the exact `@provide` shape used by your application setup. The `IDataProvider` handed to react-admin by the container keeps its positional `(resource, params)` methods; nothing on the react-admin side changes.
 
 ## Extending it
 

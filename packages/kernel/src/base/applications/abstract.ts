@@ -49,7 +49,12 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     return this.bindContext();
   }
 
-  /** Binds every stereotyped class under the key and scope it declares. */
+  /**
+   * Binds every stereotyped class under the key and scope it declares, then each of its `@provide`
+   * methods under the method's key, as IGNIS's `bindProvidedKeys` does: a lazy provider that
+   * resolves the class and calls the method on first `get()`, SINGLETON unless `scope` says
+   * otherwise. One data provider then serves react-admin, the auth provider and every hook.
+   */
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
 
@@ -62,6 +67,15 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       this.bind({ key })
         .toClass(target as TClass<unknown>)
         .setScope(registry.getArtifactMetadata({ target })?.scope ?? BindingScopes.SINGLETON);
+
+      for (const entry of registry.getProvideMetadata({ target })) {
+        this.bind({ key: entry.key })
+          .toProvider((container) => {
+            const instance = container.get<Record<string | symbol, () => unknown>>({ key });
+            return instance[entry.methodName]();
+          })
+          .setScope(entry.scope ?? BindingScopes.SINGLETON);
+      }
     }
   }
 

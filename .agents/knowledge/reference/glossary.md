@@ -38,9 +38,11 @@ overrides it, and a `bindContext()` binding overrides both. See
 `useInjectable` through `IUseInjectableKeysOverrides`. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
-**Provider** - something bound with `.toProvider(...)`, resolved lazily and typically producing a
-value used by react-admin (the REST data provider, the auth provider, the i18n provider). Contrast
-with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
+**Provider** - something bound as a lazy resolver, typically producing a
+value used by react-admin (the REST data provider, the auth provider, the i18n provider). The
+framework keys are declared with `@provide({ key })` in a `@configuration()` class and bound by
+`registerArtifacts()`; a raw `.toProvider(...)` on a bare `bind()` is the transient, by-hand form.
+Contrast with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 
 **Service** - a class of application logic (for example `PricingService`), as opposed to the

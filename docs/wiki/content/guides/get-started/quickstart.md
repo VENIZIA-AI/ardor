@@ -55,7 +55,9 @@ import 'reflect-metadata';
 import { configureStore } from '@reduxjs/toolkit';
 import {
   ArdorApplication,
+  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
+  configuration,
   CoreBindings,
   datasource,
   DefaultAuthProvider,
@@ -63,6 +65,8 @@ import {
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
+  inject,
+  provide,
   readAuthTokenFromStorage,
   repository,
   RepositoryTypes,
@@ -72,7 +76,6 @@ import {
   type IApplicationInfo,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { BindingScopes } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -97,48 +100,76 @@ export class ProductRepository extends HttpRepository<IProduct> {
   }
 }
 
-// 2. The application: an IoC container that declares what it binds.
-export class Application extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return { name: 'my-admin', version: '1.0.0', description: 'My admin' };
-  }
+// 2. Every framework binding, declared in a configuration class: start() binds each @provide
+//    method under its key, SINGLETON, built on first use - react-admin, the auth provider and
+//    every hook share one data provider, with its token, headers and single 401 refresh.
+@configuration()
+export class AdminConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
 
-  bindContext(): void {
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return {
       url: 'http://localhost:3000/api',
       // Paths reached before a token exists. Anything not listed here (or matched by
       // `noAuthPathRegex`) is sent with an Authorization header and fails without one.
       noAuthPaths: ['/auth/login'],
       authRecovery: { refreshTokenPath: '/auth/refresh' },
-    });
-    this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
+    };
+  }
+
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions() {
+    return {
       paths: { signIn: '/auth/login' },
       endpoints: { afterLogin: '/products' },
-    });
-    this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({
+    };
+  }
+
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  i18nProviderOptions() {
+    return {
       i18nSources: { en: englishMessages, vi: vietnameseMessages },
       listLanguages: [
         { locale: 'en', name: 'English' },
         { locale: 'vi', name: 'Tiếng Việt' },
       ],
-    });
+    };
+  }
 
-    // SINGLETON: react-admin, the auth provider and every hook share one data provider - its
-    // token, headers and 401 refresh. A bare bind() is transient: each would get its own copy.
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-      .toProvider(DefaultRestDataProvider)
-      .setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .toProvider(DefaultAuthProvider)
-      .setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-      .toProvider(DefaultI18nProvider)
-      .setScope(BindingScopes.SINGLETON);
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+  authService() {
+    return this.application.instantiate(DefaultAuthService);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+  authProvider() {
+    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+  i18nProvider() {
+    return this.application.instantiate(DefaultI18nProvider).value(this.application);
   }
 }
 
-// 3. A resource page. The hooks resolve from the container that ArdorApplication provides.
+// 3. The application: an IoC container that declares what it binds.
+export class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'my-admin', version: '1.0.0', description: 'My admin' };
+  }
+
+  bindContext(): void {}
+}
+
+// 4. A resource page. The hooks resolve from the container that ArdorApplication provides.
 const ProductList = () => {
   const products = useRepository({ target: ProductRepository });
   const translate = useTranslate();
@@ -156,7 +187,7 @@ const ProductList = () => {
   );
 };
 
-// 4. Start the container, then hand it to the root component.
+// 5. Start the container, then hand it to the root component.
 const store = configureStore({ reducer: (state = {}) => state });
 
 async function bootstrap() {
@@ -182,8 +213,8 @@ What each part does:
 - `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `readAuthTokenFromStorage` gives it the token the auth provider stored.
 - `baseUrl` may also be relative, such as `'/api'` behind a dev-server proxy: it resolves against the page when a request is sent.
 - `@datasource()` and `@repository(...)` declare the two classes, as IGNIS does. `start()` binds each as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type, and nothing a minifier can rename. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into its constructor. Registering by hand with `this.dataSource(...)` and `this.repository(...)` works too - see [Binding keys](../../best-practices/binding-keys).
-- `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` declares every binding. Three option values feed the three default providers, and `DefaultAuthService` backs `DefaultAuthProvider`.
-- `application.start()` runs `preConfigure()`, which binds the application instance, its info and every decorated class, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
+- `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` is empty here, because the bindings live in `AdminConfiguration`. Three option values feed the three default providers, and `DefaultAuthService` backs `DefaultAuthProvider`.
+- `application.start()` runs `preConfigure()`, which binds the application instance, its info, every decorated class and every `@provide` method of `AdminConfiguration`, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
 - `ProductList` resolves the repository with `useRepository`, which also checks the class is bound under `repositories.`, and `useTranslate` resolves a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
 - `ArdorApplication` reads the data provider, auth provider and i18n provider from the container by their `CoreBindings` keys, wraps the tree in the application context, the Redux provider and `React.Suspense`, and renders one react-admin `Resource` per entry in `resources`. Any other prop is passed to `CoreAdmin` as-is.
 
@@ -204,7 +235,7 @@ Open the URL Vite prints (`http://localhost:5173` by default). The admin resolve
 Two things confirm the container is doing the work:
 
 - The heading shows the product total. It came from `ProductRepository`, resolved by class from the container, not from props.
-- The button label comes from `translate`, which resolves the key through the i18n provider bound in `bindContext()`.
+- The button label comes from `translate`, which resolves the key through the i18n provider provided in `AdminConfiguration`.
 
 If the count throws "carried no Content-Range", your list route does not send that header; pass `countPath` to the repository if the API has a count route.
 

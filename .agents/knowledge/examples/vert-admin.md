@@ -42,7 +42,7 @@ reference the same strings instead of duplicating literals.
 
 ## checkAuth against who-am-i
 
-The auth provider options bound in `bindContext()` set `paths.signIn` to `VertPaths.SIGN_IN` and
+The auth provider options, provided in the application's `@configuration` class, set `paths.signIn` to `VertPaths.SIGN_IN` and
 `paths.checkAuth` to `VertPaths.WHO_AM_I`. This means react-admin's session check hits the who-am-i
 endpoint rather than trusting a cached flag. `DefaultAuthProvider.checkAuth`
 (`packages/admin/src/providers/auth.ts`) rejects to login without a request when no token is stored;

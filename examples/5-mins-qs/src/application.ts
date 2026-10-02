@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 
 import {
+  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
+  configuration,
   CoreBindings,
   datasource,
   DefaultAuthProvider,
@@ -10,12 +12,13 @@ import {
   DefaultRestDataProvider,
   englishMessages,
   type IApplicationInfo,
+  inject,
+  provide,
   readAuthTokenFromStorage,
   repository,
   RepositoryTypes,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { BindingScopes } from '@venizia/ignis-inversion';
 
 export interface IProduct {
   id: number;
@@ -53,21 +56,29 @@ declare module '@venizia/ardor-admin' {
   }
 }
 
-export class Application extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return { name: 'quickstart', version: '0.0.0', description: 'ARDOR 5-minute quickstart' };
+// Every framework binding, declared. start() binds each @provide method under its key, SINGLETON,
+// built on first use: react-admin, the auth provider and every hook share one data provider - its
+// token, headers and single 401 refresh.
+@configuration()
+export class AdminConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
+    private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: '/api', noAuthPaths: ['/auth/login'] };
   }
 
-  bindContext(): void {
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
-      url: '/api',
-      noAuthPaths: ['/auth/login'],
-    });
-    this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
-      paths: { signIn: '/auth/login' },
-      endpoints: { afterLogin: '/products' },
-    });
-    this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions() {
+    return { paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } };
+  }
+
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  i18nProviderOptions() {
+    return {
       i18nSources: {
         en: {
           ...englishMessages,
@@ -75,20 +86,34 @@ export class Application extends BaseArdorApplication {
         },
       },
       listLanguages: [{ locale: 'en', name: 'English' }],
-    });
-
-    // One instance per application: react-admin, the auth provider and every hook share the data
-    // provider's network service - its token, headers and single 401 refresh. A bare bind() is
-    // transient and would hand each of them a separate copy.
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-      .toProvider(DefaultRestDataProvider)
-      .setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .toProvider(DefaultAuthProvider)
-      .setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-      .toProvider(DefaultI18nProvider)
-      .setScope(BindingScopes.SINGLETON);
+    };
   }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+  authService() {
+    return this.application.instantiate(DefaultAuthService);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+  authProvider() {
+    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+  i18nProvider() {
+    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  }
+}
+
+export class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'quickstart', version: '0.0.0', description: 'ARDOR 5-minute quickstart' };
+  }
+
+  bindContext(): void {}
 }

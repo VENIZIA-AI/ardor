@@ -53,15 +53,31 @@ abstract class BaseArdorApplication extends AbstractArdorApplication {}
 
 ```ts
 import {
+  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
+  configuration,
   CoreBindings,
   type IApplicationInfo,
-  type IRestDataProviderOptions,
+  inject,
+  provide,
 } from '@venizia/ardor';
 
 class CatalogService {
   list() {
     return ['book', 'pen'];
+  }
+}
+
+// The framework bindings, declared: start() binds each @provide method under its key, SINGLETON.
+@configuration()
+export class ShopConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: 'https://api.example.com' };
   }
 }
 
@@ -71,8 +87,6 @@ export class ShopApplication extends BaseArdorApplication {
   }
 
   bindContext() {
-    const options: IRestDataProviderOptions = { url: 'https://api.example.com' };
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue(options);
     this.service(CatalogService);
   }
 }
@@ -120,17 +134,23 @@ The default implementation does five things, in this order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
 2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
-3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest).
+3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`.
 4. Binds each entry of `bindingList()` under its literal key, as a singleton.
 5. Returns `this.bindContext()`.
 
-Least explicit first, so for a shared key the later step wins.
+Least explicit first, so for a shared key the later step wins: a stereotype or a `@provide` binding loses to `bindingList()`, and both lose to `bindContext()`.
 
 Because `start()` awaits the return value, an async `bindContext()` finishes before `postConfigure()` runs. If you override `preConfigure()`, call `super.preConfigure()` or the two core keys are never bound and `bindContext()` is never called.
 
 ### bindContext()
 
-Abstract. This is where you bind provider options, the default providers, and your own services. There is no base implementation, so do not call `super.bindContext()`.
+Abstract. The framework bindings - provider options and the default providers - are declared in a `@configuration()` class instead, as the `ShopConfiguration` example above shows, so this is usually empty.
+
+`registerArtifacts()` binds each `@provide` method under the key the decorator names. The value is resolved lazily, on the first `get()` for the key, and cached as a singleton unless `@provide({ key, scope })` says otherwise - so react-admin, `DefaultAuthProvider`, every hook and every datasource share one data provider. A configuration class works like any other discovered class: import it before `application.start()`, or it is never bound.
+
+Use `bindContext()` only for an override - a binding declared there replaces a provided one.
+
+There is no base implementation, so do not call `super.bindContext()`.
 
 ### postConfigure()
 

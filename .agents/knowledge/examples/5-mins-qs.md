@@ -63,8 +63,7 @@ answers an empty page with `records */N`.
 Before reading the source, skim [What is ARDOR](/overview/what-is-ardor.md) and
 [Onboarding](/overview/onboarding.md) for the shape of an application, then
 [Application lifecycle](/architecture/application-lifecycle.md) and
-[DI in the browser](/architecture/di-in-the-browser.md) to understand `bindContext` and
-the two registration modes. The four files worth opening in order are `src/application.ts` (application, three
-providers, the datasource and repository, the translate augmentation), `src/pages/product-list.tsx` (the three hooks used
+[DI in the browser](/architecture/di-in-the-browser.md) to understand `@configuration` + `@provide` and
+the registration modes. The four files worth opening in order are `src/application.ts` (application, the configuration class with the three providers, the datasource and repository, the translate augmentation), `src/pages/product-list.tsx` (the three hooks used
 together), `src/main.tsx` (`ArdorApplication` receiving the container), and `api/server.ts` (the
 list contract, especially `content-range`).

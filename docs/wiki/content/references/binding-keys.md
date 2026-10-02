@@ -33,13 +33,13 @@ All keys and their string values, exactly as defined in the kernel.
 |---|---|---|
 | `APPLICATION_INSTANCE` | `@app/application/instance` | Framework (`preConfigure`) |
 | `APPLICATION_INFO` | `@app/application/info` | Framework (`preConfigure`) |
-| `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | `bindContext()` |
-| `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | `bindContext()` |
-| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | `bindContext()` |
-| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | `bindContext()` |
-| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | `bindContext()` |
-| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | `bindContext()` |
-| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | `bindContext()` |
+| `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | Configuration (`@provide`) |
+| `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | Configuration (`@provide`) |
+| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Configuration (`@provide`) |
+| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Configuration (`@provide`) |
+| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Configuration (`@provide`) |
+| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Configuration (`@provide`) |
+| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Configuration (`@provide`) |
 
 The three `*_OPTIONS` keys hold the options objects read by the matching provider: `IAuthProviderOptions`, `IRestDataProviderOptions` and `II18nProviderOptions`. The provider keys hold the provider instances. See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n) for what each provider expects.
 
@@ -69,27 +69,41 @@ export abstract class AbstractArdorApplication {
 - `APPLICATION_INSTANCE` is the application object itself.
 - `APPLICATION_INFO` is whatever `getAppInfo()` returns, bound as a value. `getAppInfo()` is typed `ValueOrPromise<IApplicationInfo>`, so if you return a promise, the promise is what gets bound.
 
-`postConfigure()` is a no-op in the abstract class. Nothing else is bound by the kernel. Every other `CoreBindings` key is the job of `bindContext()` - either yours or the one in the subclass you extend. Check [Application](../references/application) for what `ArdorApplication` from `@venizia/ardor-admin` binds for you.
+`postConfigure()` is a no-op in the abstract class. Nothing else is bound by the kernel. Every other `CoreBindings` key is declared with `@provide` in a `@configuration()` class - either in yours or in the one of the subclass you extend. `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton. Check [Application](../references/application) for what `ArdorApplication` from `@venizia/ardor-admin` binds for you.
 
 ## What the application binds
 
-`bindContext()` is abstract. It runs after the two framework keys are in place, so it can read them. Bind options with `toValue`, and bind providers or services with `toClass` or `service()`.
+A `@configuration()` class declares the options objects and the providers. `registerArtifacts()` runs after the two framework keys are in place, so a provided value can read them.
 
-```ts no-check
-import { BaseArdorApplication, CoreBindings, type IRestDataProviderOptions } from '@venizia/ardor';
+```ts
+import {
+  type BaseArdorApplication as TArdorApplication,
+  configuration,
+  CoreBindings,
+  DefaultRestDataProvider,
+  inject,
+  provide,
+} from '@venizia/ardor';
 
-export class MyApplication extends BaseArdorApplication {
-  bindContext() {
-    const options: IRestDataProviderOptions = { ... };
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue(options);
-    ...
+@configuration()
+export class ShopConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: 'https://api.example.com' };
   }
 
-  getAppInfo() {
-    return { ... };
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
   }
 }
 ```
+
+`bindContext()` stays empty unless you override a provided key.
 
 ## The `services.*` namespace
 
@@ -240,7 +254,7 @@ export const useAppInfoFrom = () => {
 
 ## Common pitfalls
 
-- **Binding a provider key before `preConfigure()` has run.** `bindContext()` is the right place. It is called from `preConfigure()` after `APPLICATION_INSTANCE` and `APPLICATION_INFO` exist. Binding in the constructor happens before either of them.
+- **Binding a provider key before `preConfigure()` has run.** A `@configuration()` class is the right place: `registerArtifacts()` runs after `APPLICATION_INSTANCE` and `APPLICATION_INFO` exist. An override goes in `bindContext()`, which `preConfigure()` calls last. Binding in the application constructor happens before either of them.
 - **Returning a promise from `getAppInfo()` and expecting an object under `APPLICATION_INFO`.** The value is bound as-is with `toValue`, so consumers get the promise.
 - **Passing `'services.UserService'` as `key` without augmentation.** It is not in `TUseInjectableKeysDefault`, so TypeScript rejects it. Either augment `IUseInjectableKeysOverrides` or use `target`.
 - **Relying on `value.name` under minification.** `service()` builds the key from the class's runtime `name`. If your bundler renames classes, the key in production differs from the one you typed in an augmentation. Resolve by `target` or disable class name mangling.

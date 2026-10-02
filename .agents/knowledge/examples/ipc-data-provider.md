@@ -57,26 +57,36 @@ network service), following the same pattern: keep the public shape, replace onl
 `value()`, the positional adapter react-admin actually holds, is inherited too - see
 [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
-## Step 4: bind it
+## Step 4: provide it
 
 The kernel's DI container (see [DI in the browser](/architecture/di-in-the-browser.md)) still needs
-provider options bound, even though the URL is never dereferenced by `send()`:
+provider options, even though the URL is never dereferenced by `send()`:
 
 ```ts
-bindContext(): void {
-  this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
-    url: 'ipc://local',
-    useAuth: false,
-  });
-  this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-    .toProvider(IpcDataProvider)
-    .setScope(BindingScopes.SINGLETON);
+@configuration()
+class IpcConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return {
+      url: 'ipc://local',
+      useAuth: false,
+    };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(IpcDataProvider).value(this.application);
+  }
 }
 ```
 
-`toProvider` binds the class itself so the container can construct it with its dependencies
-resolved, following [Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for
-`CoreBindings`. `useAuth: false` opts out of the auth pipeline entirely -
+`registerArtifacts()` binds each `@provide` method under its key, lazy and singleton, following
+[Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for `CoreBindings`.
+`useAuth: false` opts out of the auth pipeline entirely -
 see [No-auth paths](/architecture/no-auth-paths.md) - since this example has no session concept.
 
 ## Step 5: run it

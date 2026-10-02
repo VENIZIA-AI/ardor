@@ -64,26 +64,52 @@ Registration runs least explicit first, so the most explicit wins a shared key: 
 
 An `HttpRepository` has no model, so it is declared `@repository({ type: RepositoryTypes.REMOTE, dataSource })`, and `@repository` injects the datasource into the first constructor parameter. The two ways mix: `@inject({ target })` on a datasource registered by hand works there too. See [Repositories](../references/repository#registering-a-repository).
 
-## By-hand methods vs `bind().toClass()`
+## Framework slots: `@configuration` + `@provide`
 
-The by-hand methods take `{ binding, scope, allowOverride }`, so a custom key or a non-singleton scope does not need `bind()`. Use `bind({ key }).toClass(value)` for a framework slot: the key is fixed by `CoreBindings`, and this is how a custom data provider, auth provider or auth service is installed. `bind()` records nothing on the class, so resolve those by key.
+The recommended way to bind a framework key - the provider options and the default providers under `CoreBindings` - is a `@configuration()` class: one `@provide({ key })` method per binding. `registerArtifacts()` binds each provided key as lazy and singleton, so react-admin, the auth provider, every hook and every datasource share one instance.
 
-```ts no-check
-import { BaseArdorApplication, CoreBindings } from '@venizia/ardor';
+```ts
+import {
+  type BaseArdorApplication as TArdorApplication,
+  BaseArdorApplication,
+  configuration,
+  CoreBindings,
+  DefaultRestDataProvider,
+  type IApplicationInfo,
+  inject,
+  provide,
+} from '@venizia/ardor';
+
+@configuration()
+export class ProviderConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+}
 
 export class App extends BaseArdorApplication {
-  bindContext() {
-    // Framework slot: the key is fixed by CoreBindings, so service() cannot be used.
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toClass(MyRestDataProvider);
-
-    // Ordinary classes: the by-hand method derives and records the key.
-    this.service(PricingService);
-    // ...
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
+
+  bindContext(): void {}
 }
 ```
 
-`bind().toClass()` returns a binding with `setScope` and `setTags`. Nothing is set for you on that path.
+A bare `bind({ key })` is different: it is transient unless you add `.setScope(BindingScopes.SINGLETON)`, and it records nothing on the class, so the key is the only handle. Reserve it for an override of a provided key in `bindContext()`.
+
+Ordinary classes do not need any of this: the by-hand method `service()` derives and records the key.
+
+```ts no-check
+// In bindContext() - ordinary classes, not framework slots.
+...
+this.service(PricingService); // services.PricingService
+```
 
 ## Singleton by default, and when to opt out
 

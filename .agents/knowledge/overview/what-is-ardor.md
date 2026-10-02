@@ -13,7 +13,7 @@ The first ingredient is react-admin's data contract: `getList`, `getOne`, `creat
 ## What it gives
 
 - Services bound once by key, resolved anywhere in the tree, so a second developer does not need to know where something was constructed.
-- Providers (data, auth, i18n) as bindings under `CoreBindings` keys, so swapping one is a change to `bindContext()` rather than a hunt through components.
+- Providers (data, auth, i18n) as bindings under `CoreBindings` keys, so swapping one is a change to the `@configuration` class rather than a hunt through components.
 - One place to configure auth: the REST data provider options hold the API URL, the paths reachable before a token exists (`noAuthPaths` / `noAuthPathRegex`), and the refresh path used for auth recovery. See [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 - A shared query vocabulary with the backend when the backend is IGNIS, via the [data provider pipeline](/architecture/data-provider-pipeline.md).
 

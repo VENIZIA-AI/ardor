@@ -32,7 +32,7 @@ This whole scheme sits below the [data provider pipeline](/architecture/data-pro
 
 Pinned by the two `getDataSourceAuth()` tests in `network-request.test.ts`. They were red under two mutations: an `onUnauthorized` that never joins the refresh, and a resolver that ignores `setAuthToken`.
 
-It only holds if every consumer resolves the same network service. `bind().toProvider(DefaultRestDataProvider)` is transient, so give the provider bindings `.setScope(BindingScopes.SINGLETON)`; see [DI in the browser](/architecture/di-in-the-browser.md).
+It only holds if every consumer resolves the same network service. Declare the data provider with `@provide` in a `@configuration()` class, so `registerArtifacts()` binds it as a singleton; a bare `bind().toProvider(DefaultRestDataProvider)` is transient. See [DI in the browser](/architecture/di-in-the-browser.md).
 
 ## Headers and auth token
 

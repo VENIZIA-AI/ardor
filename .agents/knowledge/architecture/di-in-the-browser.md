@@ -14,7 +14,7 @@ ARDOR has no server, no controllers, no request scope. Dependency injection stil
 
 `AbstractArdorApplication` (`packages/kernel/src/base/applications/abstract.ts`) extends `Container` directly. There is no separate DI object you construct and pass around - the application instance you write for your project *is* the container. Calling `this.bind(...)` inside your application class registers a binding in the same container that later resolves it.
 
-The lifecycle is `preConfigure()` then `postConfigure()`, both run from `start()`. `preConfigure()` binds `APPLICATION_INSTANCE` (the app itself) and `APPLICATION_INFO` (the result of `getAppInfo()`), registers stereotyped classes and `bindingList()` entries, then calls your abstract `bindContext()`, where you register everything else - options, providers, services. A later bind on the same key replaces an earlier one, so `bindContext()` wins. See [Application lifecycle](/architecture/application-lifecycle.md) for the full sequence.
+The lifecycle is `preConfigure()` then `postConfigure()`, both run from `start()`. `preConfigure()` binds `APPLICATION_INSTANCE` (the app itself) and `APPLICATION_INFO` (the result of `getAppInfo()`), runs `registerArtifacts()` - stereotyped classes, each `@provide` method of every `@configuration()` class, and `bindingList()` entries - then calls your abstract `bindContext()`, where an override of a provided key or a by-hand binding goes. A later bind on the same key replaces an earlier one, so `bindContext()` wins. See [Application lifecycle](/architecture/application-lifecycle.md) for the full sequence.
 
 ## Three ways to bind
 
@@ -24,7 +24,9 @@ The IGNIS `bind({ key })` call returns a builder with three terminal methods:
 - `.toClass(SomeClass)` - binds a class; the container constructs an instance when the key is resolved.
 - `.toProvider(SomeProvider)` - binds an IGNIS provider. A provider is a class extending `BaseProvider<T>` (`packages/kernel/src/base/providers/base.ts`) with a `value(container: Container): T` method that computes the bound value, typically by pulling other bindings out of the container it receives. A plain `(container) => value` function is accepted too.
 
-A binding is TRANSIENT unless told otherwise. A bare `bind()` re-runs its resolver on every `get()`: `toClass` constructs a new instance, and `toProvider` instantiates the provider and calls `value()` again. Only `.setScope(BindingScopes.SINGLETON)` caches the first result. The registration paths ARDOR owns (stereotypes, `service()`/`repository()`/`dataSource()`/`component()`, `bindingList()`, `injectable()`) set that scope for you; a provider you bind by hand in `bindContext()` gets it only if you add it.
+A binding is TRANSIENT unless told otherwise. A bare `bind()` re-runs its resolver on every `get()`: `toClass` constructs a new instance, and `toProvider` instantiates the provider and calls `value()` again. Only `.setScope(BindingScopes.SINGLETON)` caches the first result.
+
+The recommended way to bind a framework key - the provider options and the default providers under `CoreBindings` - is `@configuration` + `@provide`: one `@provide({ key })` method per binding in a `@configuration()` class. `registerArtifacts()` binds each provided key as a lazy provider, SINGLETON unless the decorator passes a `scope`, in the same way IGNIS's `bindProvidedKeys` does. One data provider then serves react-admin, `DefaultAuthProvider`, every hook and every datasource. The registration paths ARDOR owns (stereotypes, `service()`/`repository()`/`dataSource()`/`component()`, `bindingList()`, `injectable()`) set SINGLETON for you too. Only a bare `bind()` in `bindContext()` is transient - reserve it for an override.
 
 ## Constructor injection with `@inject`
 
@@ -60,9 +62,10 @@ classes - what a test suite wants, and what a page never encounters.
 
 `registerArtifacts()` is not IGNIS's boot sequence. From a stereotype's options it honours only the
 binding key - the default `<namespace>.<ClassName>`, or an explicit `binding: { namespace, key }`.
-`scope`, `when`, `order`, `after` and `allowOverride` are silently ignored, and a `@provide({ key })`
-method is never bound, even though `provide` is re-exported. For a non-singleton, a conditional
-binding or a provider, bind it by hand in `bindContext()`.
+`scope`, `when`, `order`, `after` and `allowOverride` are silently ignored. Each `@provide({ key })`
+method of a discovered class is bound under its key, lazy and singleton, in the same way IGNIS's
+`bindProvidedKeys` does - that is how the framework keys in a `@configuration()` class get bound.
+For anything else - a conditional binding, a scope the decorator cannot express - bind it by hand in `bindContext()`.
 
 The list is read once, during `preConfigure()`. A class whose module is first imported after
 `start()` - in a lazy route chunk, for example - is never bound. Import it before `start()`, or bind

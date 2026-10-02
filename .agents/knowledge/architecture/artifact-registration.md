@@ -83,9 +83,11 @@ a decorator would be ignored with nothing to show it. The full boot sequence is 
 `registerArtifacts()` reads each discovered class's key, skips a class with none, and binds the rest
 `toClass()` under the scope the stereotype declares, `BindingScopes.SINGLETON` by default. It is not
 IGNIS's boot sequence. From `IArtifactRegistrationOptions` it honours **the key and the scope**;
-`when`, `order`, `after` and `allowOverride` are ignored, and a `@provide({ key })` method is never bound, even
-though `provide` is re-exported. For a transient, a conditional binding or a provider, bind by hand
-in `bindContext()`.
+`when`, `order`, `after` and `allowOverride` are ignored. Each `@provide({ key })` method of a
+discovered class is also bound, under the key the decorator names, as a lazy provider with
+SINGLETON default and `scope` honoured - the same as IGNIS's `bindProvidedKeys`. That is how the
+framework keys in a `@configuration()` class get bound. For a transient, a conditional binding or
+anything else a decorator cannot express, bind by hand in `bindContext()`.
 
 The list is read once, inside `preConfigure()`. A class whose module is first imported after
 `start()` - a lazy route chunk - is never bound. Calling `registerArtifacts()` again is not the fix:

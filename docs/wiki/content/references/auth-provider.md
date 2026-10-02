@@ -277,43 +277,72 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 Three bindings are involved, plus one entry in the REST data provider options:
 
-- `CoreBindings.DEFAULT_AUTH_SERVICE` - bound `toClass` `DefaultAuthService`.
-- `CoreBindings.AUTH_PROVIDER_OPTIONS` - bound to your `IAuthProviderOptions` value.
-- `CoreBindings.DEFAULT_AUTH_PROVIDER` - bound `toProvider` your subclass (or `DefaultAuthProvider` itself).
+- `CoreBindings.DEFAULT_AUTH_SERVICE` - provided by `DefaultAuthService`.
+- `CoreBindings.AUTH_PROVIDER_OPTIONS` - provided as your `IAuthProviderOptions` value.
+- `CoreBindings.DEFAULT_AUTH_PROVIDER` - provided as your subclass (or `DefaultAuthProvider` itself).
 - `IRestDataProviderOptions.noAuthPaths` - must contain the sign-in path, so the login request goes out without an authorization header.
 
-```ts no-check
+Declare all of them in a `@configuration()` class:
+
+```ts
 import {
+  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
+  configuration,
   CoreBindings,
+  DefaultAuthProvider,
   DefaultAuthService,
-  type IAuthProviderOptions,
-  type IRestDataProviderOptions,
+  DefaultRestDataProvider,
+  type IApplicationInfo,
+  inject,
+  provide,
 } from '@venizia/ardor';
-import { AppAuthProvider } from './auth-provider';
 
-const authProviderOptions: IAuthProviderOptions = {
-  paths: { signIn: '/auth/login', checkAuth: '/auth/whoami' },
-  endpoints: { afterLogin: '/dashboard' },
-};
+@configuration()
+export class AuthConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
 
-const restDataProviderOptions: IRestDataProviderOptions = {
-  url: 'https://api.example.com',
-  noAuthPaths: ['/auth/login'],
-};
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return {
+      url: 'https://api.example.com',
+      noAuthPaths: ['/auth/login'],
+    };
+  }
+
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions() {
+    return {
+      paths: { signIn: '/auth/login', checkAuth: '/auth/whoami' },
+      endpoints: { afterLogin: '/dashboard' },
+    };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+  authService() {
+    return this.application.instantiate(DefaultAuthService);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+  authProvider() {
+    // AppAuthProvider (the subclass above) or DefaultAuthProvider itself.
+    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  }
+}
 
 export class Application extends BaseArdorApplication {
-  override bindContext() {
-    ...
-    this.container.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).to(restDataProviderOptions);
-    this.container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).to(authProviderOptions);
-    this.container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.container
-      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .toProvider(AppAuthProvider)
-      .setScope(BindingScopes.SINGLETON);
-    ...
+  getAppInfo(): IApplicationInfo {
+    return { name: 'app', version: '1.0.0', description: 'App with auth' };
   }
+
+  bindContext(): void {}
 }
 ```
 

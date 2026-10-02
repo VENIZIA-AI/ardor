@@ -46,11 +46,11 @@ bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 import 'reflect-metadata';
 
 import {
-  BaseArdorApplication, CoreBindings, datasource, DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider,
-  DefaultRestDataProvider, readAuthTokenFromStorage, repository, RepositoryTypes, type IApplicationInfo,
+  type BaseArdorApplication as TArdorApplication, BaseArdorApplication, configuration, CoreBindings, datasource,
+  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultRestDataProvider, readAuthTokenFromStorage,
+  repository, RepositoryTypes, type IApplicationInfo, inject, provide,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { BindingScopes } from '@venizia/ignis-inversion';
 
 // Declared, as in IGNIS: start() discovers both classes and binds each as a singleton.
 @datasource()
@@ -67,22 +67,56 @@ class ProductRepository extends HttpRepository<{ id: number; name: string }> {
   }
 }
 
+// Every framework binding, declared: start() binds each @provide method under its key, SINGLETON,
+// built on first use - react-admin, the auth provider and every hook share one data provider.
+@configuration()
+class AdminConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: '/api', noAuthPaths: ['/auth/login'] };
+  }
+
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions() {
+    return { paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } };
+  }
+
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  i18nProviderOptions() {
+    return {};
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+  authService() {
+    return this.application.instantiate(DefaultAuthService);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+  authProvider() {
+    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+  i18nProvider() {
+    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  }
+}
+
 class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext(): void {
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/login'] });
-    this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } });
-    this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({});
-
-    // SINGLETON: react-admin, the auth provider and every hook share one data provider.
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider).setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider).setScope(BindingScopes.SINGLETON);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider).setScope(BindingScopes.SINGLETON);
-  }
+  bindContext(): void {}
 }
 ```
 

@@ -84,7 +84,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 34,
       "signature": "class ArtifactNamespaces",
       "external": true
@@ -95,7 +95,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
       "line": 2,
       "signature": "class ArtifactTypes",
       "external": true
@@ -117,7 +117,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 153,
+      "line": 167,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -177,7 +177,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 5,
       "signature": "class BindingNamespaces",
       "external": true
@@ -269,7 +269,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/admin/src/providers/rest-data.ts",
-      "line": 71,
+      "line": 74,
       "signature": "class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<IDataProvider<TResource>>"
     },
     {
@@ -328,7 +328,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 25,
       "signature": "interface IArtifactMetadata<ApplicationType = unknown> extends IArtifactRegistrationOptions<ApplicationType>",
       "external": true
@@ -349,7 +349,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 12,
       "signature": "interface IArtifactRegistrationOptions<ApplicationType = unknown>",
       "external": true
@@ -780,7 +780,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 27,
       "signature": "class RepositoryTypes",
       "external": true
@@ -871,7 +871,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 3,
       "signature": "type TBindingNamespace = TConstValue<typeof BindingNamespaces>",
       "external": true
@@ -1013,7 +1013,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 34,
       "signature": "type TRepositoryType = TConstValue<typeof RepositoryTypes>",
       "external": true
@@ -1194,7 +1194,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 5,
       "signature": "component: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1205,7 +1205,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 6,
       "signature": "configuration: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1236,7 +1236,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 7,
       "signature": "datasource: (metadata?: IDataSourceMetadata) => ClassDecorator",
       "external": true
@@ -1287,7 +1287,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
       "line": 14,
       "signature": "inject: (opts: TInjectOptions) => (target: any, propertyName: string | symbol | undefined, parameterIndex?: number) => void",
       "external": true
@@ -1298,7 +1298,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 3,
       "signature": "injectable: <ApplicationType = unknown>(opts: IArtifactMetadata<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1419,7 +1419,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 5,
       "signature": "model: (metadata: IModelMetadata) => ClassDecorator",
       "external": true
@@ -1440,7 +1440,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 8,
       "signature": "provide: (opts: { key: string; scope?: TBindingScope; }) => MethodDecorator",
       "external": true
@@ -1461,7 +1461,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 8,
       "signature": "repository: <Model extends AbstractEntity = AbstractEntity, DataSource extends IDataSource = IDataSource>(metadata?: TRepositoryMetadata<Model, DataSource>) => ClassDecorator",
       "external": true
@@ -1472,7 +1472,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 4,
       "signature": "service: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1733,7 +1733,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
       "line": 5,
       "signature": "class HttpDataSource extends AbstractDataSource<IHttpDataSourceSettings>",
       "external": true
@@ -1744,7 +1744,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 17,
       "signature": "class HttpRepository<E extends object = AnyType, P extends object = Partial<E>> implements IReadableRepository<E, {}>, IUpdatableRepository<E, P, {}>, IDeletableRepository<E, {}>",
       "external": true
@@ -1755,7 +1755,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 7,
       "signature": "class HttpResourceEntity extends AbstractEntity",
       "external": true
@@ -1766,7 +1766,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 2,
       "signature": "interface IAuthToken",
       "external": true
@@ -1777,7 +1777,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 17,
       "signature": "interface IHttpDataSourceSettings",
       "external": true
@@ -1788,7 +1788,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 28,
       "signature": "interface IHttpReadResult<R>",
       "external": true
@@ -1799,7 +1799,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 38,
       "signature": "interface IHttpWriteResult<R>",
       "external": true
@@ -1810,7 +1810,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 8,
       "signature": "type TAuthTokenResolver = () => IAuthToken | undefined",
       "external": true
@@ -1821,7 +1821,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 16,
       "signature": "type THttpBody = string | object",
       "external": true
@@ -1832,7 +1832,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 10,
       "signature": "type THttpHeaders = Headers | Array<[string, string]> | Record<string, string>",
       "external": true
@@ -1843,7 +1843,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 42,
       "signature": "type THttpQuery<E extends object> = { filter?: TFilter<E>; }",
       "external": true
@@ -1915,7 +1915,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "class",
       "file": "packages/admin/src/providers/rest-data.ts",
-      "line": 71,
+      "line": 74,
       "signature": "class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<IDataProvider<TResource>>"
     },
     {
@@ -2134,7 +2134,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 34,
       "signature": "class ArtifactNamespaces",
       "external": true
@@ -2145,7 +2145,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
       "line": 2,
       "signature": "class ArtifactTypes",
       "external": true
@@ -2167,7 +2167,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 153,
+      "line": 167,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -2227,7 +2227,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 5,
       "signature": "class BindingNamespaces",
       "external": true
@@ -2328,7 +2328,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 25,
       "signature": "interface IArtifactMetadata<ApplicationType = unknown> extends IArtifactRegistrationOptions<ApplicationType>",
       "external": true
@@ -2349,7 +2349,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 12,
       "signature": "interface IArtifactRegistrationOptions<ApplicationType = unknown>",
       "external": true
@@ -2630,7 +2630,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 27,
       "signature": "class RepositoryTypes",
       "external": true
@@ -2711,7 +2711,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 3,
       "signature": "type TBindingNamespace = TConstValue<typeof BindingNamespaces>",
       "external": true
@@ -2853,7 +2853,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 34,
       "signature": "type TRepositoryType = TConstValue<typeof RepositoryTypes>",
       "external": true
@@ -2974,7 +2974,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 5,
       "signature": "component: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -2985,7 +2985,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 6,
       "signature": "configuration: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -2996,7 +2996,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 7,
       "signature": "datasource: (metadata?: IDataSourceMetadata) => ClassDecorator",
       "external": true
@@ -3037,7 +3037,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
       "line": 14,
       "signature": "inject: (opts: TInjectOptions) => (target: any, propertyName: string | symbol | undefined, parameterIndex?: number) => void",
       "external": true
@@ -3048,7 +3048,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 3,
       "signature": "injectable: <ApplicationType = unknown>(opts: IArtifactMetadata<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3169,7 +3169,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 5,
       "signature": "model: (metadata: IModelMetadata) => ClassDecorator",
       "external": true
@@ -3190,7 +3190,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 8,
       "signature": "provide: (opts: { key: string; scope?: TBindingScope; }) => MethodDecorator",
       "external": true
@@ -3211,7 +3211,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 8,
       "signature": "repository: <Model extends AbstractEntity = AbstractEntity, DataSource extends IDataSource = IDataSource>(metadata?: TRepositoryMetadata<Model, DataSource>) => ClassDecorator",
       "external": true
@@ -3222,7 +3222,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-0+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 4,
       "signature": "service: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3273,7 +3273,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
       "line": 5,
       "signature": "class HttpDataSource extends AbstractDataSource<IHttpDataSourceSettings>",
       "external": true
@@ -3284,7 +3284,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 17,
       "signature": "class HttpRepository<E extends object = AnyType, P extends object = Partial<E>> implements IReadableRepository<E, {}>, IUpdatableRepository<E, P, {}>, IDeletableRepository<E, {}>",
       "external": true
@@ -3295,7 +3295,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 7,
       "signature": "class HttpResourceEntity extends AbstractEntity",
       "external": true
@@ -3306,7 +3306,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 2,
       "signature": "interface IAuthToken",
       "external": true
@@ -3317,7 +3317,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 17,
       "signature": "interface IHttpDataSourceSettings",
       "external": true
@@ -3328,7 +3328,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 28,
       "signature": "interface IHttpReadResult<R>",
       "external": true
@@ -3339,7 +3339,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 38,
       "signature": "interface IHttpWriteResult<R>",
       "external": true
@@ -3350,7 +3350,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 8,
       "signature": "type TAuthTokenResolver = () => IAuthToken | undefined",
       "external": true
@@ -3361,7 +3361,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 16,
       "signature": "type THttpBody = string | object",
       "external": true
@@ -3372,7 +3372,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 10,
       "signature": "type THttpHeaders = Headers | Array<[string, string]> | Record<string, string>",
       "external": true
@@ -3383,7 +3383,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-1+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-2+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 42,
       "signature": "type THttpQuery<E extends object> = { filter?: TFilter<E>; }",
       "external": true
