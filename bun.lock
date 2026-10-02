@@ -164,11 +164,11 @@
     },
     "packages/ardor": {
       "name": "@venizia/ardor",
-      "version": "0.1.2-0",
+      "version": "0.1.2-1",
       "dependencies": {
-        "@venizia/ardor-admin": "^0.1.2-0",
+        "@venizia/ardor-admin": "^0.1.2-1",
         "@venizia/ardor-kernel": "^0.1.2-0",
-        "@venizia/ardor-react": "^0.1.1",
+        "@venizia/ardor-react": "^0.1.2-0",
       },
       "devDependencies": {
         "@reduxjs/toolkit": "catalog:",
@@ -2307,8 +2307,6 @@
 
     "@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@5.0.1", "", {}, "sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA=="],
 
-    "@venizia/ardor/@venizia/ardor-react": ["@venizia/ardor-react@0.1.1", "", { "dependencies": { "@venizia/ardor-kernel": "^0.1.1", "lodash": "^4.18.1" }, "peerDependencies": { "@reduxjs/toolkit": ">=2.12.0", "@venizia/ignis-inversion": "^0.2.0", "react": ">=18.0", "react-redux": ">=9.3.0" }, "optionalPeers": ["@reduxjs/toolkit"] }, "sha512-OlPmJPPIo0tg+KqRn8KXfIddoXUVpSDQ9v9LVrr9vyaSmp2JMMYsyP8xw0JOj+vSIzLDi8galayF015D9b0j0A=="],
-
     "@vitejs/plugin-vue/vite": ["vite@5.4.21", "", { "dependencies": { "esbuild": "^0.21.3", "postcss": "^8.4.43", "rollup": "^4.20.0" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^18.0.0 || >=20.0.0", "less": "*", "lightningcss": "^1.21.0", "sass": "*", "sass-embedded": "*", "stylus": "*", "sugarss": "*", "terser": "^5.4.0" }, "optionalPeers": ["@types/node", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser"], "bin": { "vite": "bin/vite.js" } }, "sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw=="],
 
     "@vue/compiler-core/@babel/parser": ["@babel/parser@7.29.8", "", { "dependencies": { "@babel/types": "^7.29.8" }, "bin": "./bin/babel-parser.js" }, "sha512-E8lTAYNB1KW+FH+VGJuZM1ioAx2E6oVlvQFRrf5P8ZZmsiJXYAD9vTFV7yyEURNzgh1dFqMZuO6tUwcARbqFCA=="],
@@ -2578,8 +2576,6 @@
     "@size-limit/esbuild/esbuild/@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
 
     "@typescript-eslint/typescript-estree/minimatch/brace-expansion": ["brace-expansion@5.0.9", "", { "dependencies": { "balanced-match": "^4.0.2" } }, "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="],
-
-    "@venizia/ardor/@venizia/ardor-react/@venizia/ardor-kernel": ["@venizia/ardor-kernel@0.1.1", "", { "dependencies": { "lodash": "^4.18.1" }, "peerDependencies": { "@venizia/ignis-connectors": "^0.2.0", "@venizia/ignis-filter": "^0.2.0", "@venizia/ignis-helpers": "^0.2.0", "@venizia/ignis-inversion": "^0.2.0", "@venizia/ignis-kernel": "^0.2.0", "reflect-metadata": ">=0.2.2", "socket.io-client": ">=4.8.3" }, "optionalPeers": ["@venizia/ignis-connectors", "socket.io-client"] }, "sha512-zRM9PFXktvpt3Lih1g0U2lvCuYNC72K7inGwmknLIzaUFq9xSRjLun63P1zUrHoz5Xj0Gg1yifWDhbAxvS/ZJQ=="],
 
     "@vitejs/plugin-vue/vite/esbuild": ["esbuild@0.21.5", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.21.5", "@esbuild/android-arm": "0.21.5", "@esbuild/android-arm64": "0.21.5", "@esbuild/android-x64": "0.21.5", "@esbuild/darwin-arm64": "0.21.5", "@esbuild/darwin-x64": "0.21.5", "@esbuild/freebsd-arm64": "0.21.5", "@esbuild/freebsd-x64": "0.21.5", "@esbuild/linux-arm": "0.21.5", "@esbuild/linux-arm64": "0.21.5", "@esbuild/linux-ia32": "0.21.5", "@esbuild/linux-loong64": "0.21.5", "@esbuild/linux-mips64el": "0.21.5", "@esbuild/linux-ppc64": "0.21.5", "@esbuild/linux-riscv64": "0.21.5", "@esbuild/linux-s390x": "0.21.5", "@esbuild/linux-x64": "0.21.5", "@esbuild/netbsd-x64": "0.21.5", "@esbuild/openbsd-x64": "0.21.5", "@esbuild/sunos-x64": "0.21.5", "@esbuild/win32-arm64": "0.21.5", "@esbuild/win32-ia32": "0.21.5", "@esbuild/win32-x64": "0.21.5" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-mg3OPMV4hXywwpoDxu3Qda5xCKQi+vCTZq8S9J/EpkhB2HzKXq4SNFZE3+NK93JYxc8VMSep+lOUSC/RVKaBqw=="],
 
