@@ -117,7 +117,7 @@
     },
     "packages/admin": {
       "name": "@venizia/ardor-admin",
-      "version": "0.1.2-3",
+      "version": "0.1.2-4",
       "dependencies": {
         "@venizia/ardor-kernel": "^0.1.2-2",
         "@venizia/ardor-react": "^0.1.2-2",
