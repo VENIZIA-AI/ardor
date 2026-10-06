@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-4",
+        "date": "2026-10-06",
+        "sha": "2d56c552",
+        "order": 118
+      },
+      {
         "version": "0.1.2-3",
         "date": "2026-10-06",
         "sha": "cccca125",
@@ -70,6 +76,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-4",
+        "date": "2026-10-06",
+        "sha": "559b11f1",
+        "order": 119
+      },
       {
         "version": "0.1.2-3",
         "date": "2026-10-06",
@@ -133,6 +145,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-3",
+        "date": "2026-10-06",
+        "sha": "844315dd",
+        "order": 116
+      },
+      {
         "version": "0.1.2-2",
         "date": "2026-10-06",
         "sha": "f1156ef0",
@@ -188,6 +206,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-3",
+        "date": "2026-10-06",
+        "sha": "dc41a25f",
+        "order": 117
+      },
       {
         "version": "0.1.2-2",
         "date": "2026-10-06",
@@ -265,6 +289,17 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-07-class-identity-and-container",
+      "file": "2026-10-07-class-identity-and-container.md",
+      "date": "2026-10-07",
+      "title": "Class identity survives a minifier, and the container fixes from IGNIS",
+      "packages": [
+        "ardor"
+      ],
+      "kind": "Behavior Change",
+      "order": 115
+    },
     {
       "id": "changelog:2026-10-06-repository-sends-the-session",
       "file": "2026-10-06-repository-sends-the-session.md",
