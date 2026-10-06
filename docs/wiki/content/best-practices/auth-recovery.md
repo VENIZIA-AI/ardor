@@ -192,7 +192,7 @@ You do not have to call `cleanUp` in `onAuthFailure` when the request came from 
 
 The request service stores nothing itself. An in-memory token set with `setAuthToken({ type, value })` wins when present; otherwise it asks its `authTokenResolver`, which defaults to `readAuthTokenFromStorage` - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. The resolver returns `undefined` where there is no `localStorage` or the stored value does not parse.
 
-An HTTP repository should share both the token and the refresh. `getDataSourceAuth()` hands an `HttpDataSource` the service's token resolver and an `onUnauthorized` that joins the service's refresh, so a screen reading through `@venizia/ardor/repository` sends the token the data provider sends, and a `401` on either side triggers one `refreshToken` call between them:
+An HTTP repository should share both the token and the refresh. The data provider's `getDataSourceAuth()` hands an `HttpDataSource` four settings, read on every send: the session headers and the timezone, the request channel and tracing id, the token on every path but a no-auth one, and an `onUnauthorized` that joins the service's refresh, except on a no-auth path. So a screen reading through `@venizia/ardor/repository` sends what the data provider sends, and a `401` on either side triggers one `refreshToken` call between them:
 
 ```ts
 import { CoreBindings, datasource, type IDataProvider } from '@venizia/ardor';
@@ -204,10 +204,12 @@ export class ApiDataSource extends HttpDataSource {
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) dataProvider: IDataProvider,
   ) {
-    super({ baseUrl: '/api', ...dataProvider.getNetworkService().getDataSourceAuth() });
+    super({ baseUrl: '/api', ...dataProvider.getDataSourceAuth() });
   }
 }
 ```
+
+`getDataSourceAuth()` also sets `errorRootKey: 'error'`, so a repository error keeps the server's `normalized.code`, as the data provider's does. The refresh is shared by every call in flight, so one call's abort never cancels it: the aborted call is just not retried once the refresh settles.
 
 The data provider must be a singleton. Declare it with `@provide` in a `@configuration()` class - `registerArtifacts()` binds it as a singleton. A bare `bind().toProvider()` in `bindContext()` is transient, so the datasource would receive its own data provider, with its own network service, token and refresh. Without a configured `refreshToken`, a `401` from the repository stands, as it does for the data provider.
 

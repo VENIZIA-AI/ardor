@@ -2,12 +2,14 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'b
 import { Container } from '@venizia/ignis-inversion';
 import {
   RequestBodyTypes,
+  RequestChannel,
   RequestCountData,
   RequestMethods,
   RequestTypes,
   type IApplicationInfo,
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor-kernel/repository';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -655,6 +657,23 @@ describe('send behavior', () => {
         params: {},
       });
     }).toThrow('[send] Invalid http method to send request!');
+  });
+});
+
+describe('getDataSourceAuth', () => {
+  // A repository built on it sends the provider's channel and a tracing id named after the app.
+  test('hands an HttpDataSource the request channel and tracing id of this provider', async () => {
+    const dataProvider = createProvider({ baseUrl }).value(new Container());
+
+    const posts = new HttpRepository<{ id: number }>({
+      dataSource: new HttpDataSource({ baseUrl, ...dataProvider.getDataSourceAuth() }),
+      resource: 'posts',
+    });
+    await posts.find({ filter: {} });
+
+    expect(recordedRequests.length).toBe(1);
+    expect(recordedRequests[0].headers.get('x-request-channel')).toBe(RequestChannel.WEB);
+    expect(recordedRequests[0].headers.get('x-request-id')).toStartWith('ardor-admin-test_');
   });
 });
 

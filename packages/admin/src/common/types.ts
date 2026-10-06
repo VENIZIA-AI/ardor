@@ -34,6 +34,7 @@ import {
   type AnyType,
   type DefaultNetworkRequestService,
   type ICustomParams,
+  type IDataSourceAuth,
   type ISendParams,
   type ISendResponse,
 } from '@venizia/ardor-kernel';
@@ -97,6 +98,9 @@ export interface IDataProvider<
   }) => Promise<ISendResponse<ReturnType>>;
 
   getNetworkService(): DefaultNetworkRequestService;
+
+  /** Spread into an `HttpDataSource`: the repository then sends what this provider sends. */
+  getDataSourceAuth(): IDataSourceAuth;
 }
 
 export interface IReactAdminAuthProvider {

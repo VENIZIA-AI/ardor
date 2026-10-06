@@ -49,6 +49,28 @@ class ArchiveRepository extends HttpRepository<{ id: string }> {
   }
 }
 
+// `Zv` stands for what a minifier renames a datasource to; its key stays pinned to the source name.
+@datasource({ binding: { namespace: 'datasources', key: 'PinnedDataSource' } })
+class Zv extends HttpDataSource {
+  constructor() {
+    super({ baseUrl: 'http://127.0.0.1:1' });
+  }
+}
+
+@repository({ type: RepositoryTypes.REMOTE, dataSource: Zv })
+class PinnedRepository extends HttpRepository<{ id: string }> {
+  constructor(dataSource: Zv) {
+    super({ dataSource, resource: 'pinned' });
+  }
+}
+
+@repository({ type: RepositoryTypes.REMOTE, dataSource: Zv })
+class PinnedByTargetRepository extends HttpRepository<{ id: string }> {
+  constructor(@inject({ target: Zv }) dataSource: Zv) {
+    super({ dataSource, resource: 'pinned-by-target' });
+  }
+}
+
 class RemoteApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'remote', version: '1.0.0', description: 'REMOTE repositories' };
@@ -99,4 +121,25 @@ describe('a REMOTE repository', () => {
 
     expect(archive.dataSource).toBeInstanceOf(ArchiveDataSource);
   });
+
+  test('resolves a datasource with a pinned key through @inject({ target }), whatever its class name', async () => {
+    const pinned = (await started()).get<PinnedByTargetRepository>({
+      key: 'repositories.PinnedByTargetRepository',
+    });
+
+    expect(pinned.dataSource).toBeInstanceOf(Zv);
+  });
+
+  // IGNIS kernel 0.2.1-2 builds the key from the class name, `datasources.Zv`, at decoration
+  // (`persistents.ts` registerDataSourceInjection). Turns green when IGNIS injects by target.
+  test.failing(
+    'resolves a datasource with a pinned key without @inject, whatever its class name',
+    async () => {
+      const pinned = (await started()).get<PinnedRepository>({
+        key: 'repositories.PinnedRepository',
+      });
+
+      expect(pinned.dataSource).toBeInstanceOf(Zv);
+    },
+  );
 });

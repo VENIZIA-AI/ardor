@@ -188,13 +188,24 @@ export const readAuthTokenFromStorage: TAuthTokenResolver = () => {
   }
 };
 
+/** The server wraps an error body under this key; both transports unwrap it. */
+const ERROR_ROOT_KEY = 'error';
+
+/** What an `HttpDataSource` hook reads from the request it is asked about. */
+export interface IDataSourceRequestContext {
+  paths: Array<string>;
+}
+
 /**
- * The auth settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
- * repository and the data provider send the same token and share one refresh per 401 burst.
+ * The settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
+ * repository sends what the data provider sends: the same headers, the same token on the same
+ * paths, and one shared refresh per 401 burst. The hooks run on every send, the retry included.
  */
 export interface IDataSourceAuth {
-  authTokenResolver: TAuthTokenResolver;
-  onUnauthorized: () => Promise<boolean>;
+  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
+  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
+  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
+  errorRootKey: string;
 }
 
 export class DefaultNetworkRequestService extends BaseService {
@@ -338,14 +349,29 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Spread into an `HttpDataSource`'s settings. Its requests then carry this service's token, and
-   * its 401 joins this service's refresh: one `refreshToken` call for every 401 in flight on either
-   * transport, `onAuthFailure` on a failed one, and no retry when no `refreshToken` is configured.
+   * Spread into an `HttpDataSource`'s settings. Each of its requests then carries, as read at send
+   * time, the session headers (`setHeaders`) and the timezone; with the data provider's options,
+   * the request channel and tracing id too. A no-auth path gets no token and no refresh, as on the
+   * data provider. Any other 401 joins this service's refresh: one `refreshToken` call for every
+   * 401 in flight on either transport, `onAuthFailure` on a failed one, and no retry when no
+   * `refreshToken` is configured. The refresh is shared, so one call's abort never cancels it.
    */
-  getDataSourceAuth(): IDataSourceAuth {
+  getDataSourceAuth(
+    opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
+  ): IDataSourceAuth {
     return {
-      authTokenResolver: () => this.resolveAuthToken(),
-      onUnauthorized: () => this.ensureRefreshed(),
+      authTokenResolver: ({ paths }) => {
+        return this.isNoAuthPath({ resource: paths[0], paths })
+          ? undefined
+          : this.resolveAuthToken();
+      },
+      headersResolver: () => {
+        return mergeHeaders(this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {});
+      },
+      onUnauthorized: ({ paths }) => {
+        return this.canRecover(paths) ? this.ensureRefreshed() : Promise.resolve(false);
+      },
+      errorRootKey: ERROR_ROOT_KEY,
     };
   }
 
@@ -393,16 +419,40 @@ export class DefaultNetworkRequestService extends BaseService {
     }
   }
 
-  getRequestHeader(opts: { resource: string }): Record<string, string> {
-    const { resource } = opts;
-
-    const defaultHeaders = mergeHeaders(
+  /** The timezone, then whatever `setHeaders` holds now. Both transports send these. */
+  protected getSessionHeaders(): Record<string, string> {
+    return mergeHeaders(
       {
         [HeaderConsts.TIMEZONE]: App.TIMEZONE,
         [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
       },
       this.headers,
     );
+  }
+
+  /** The request channel, `web` unless configured, and a fresh tracing id. */
+  protected getTracingHeaders(
+    opts: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
+  ): Record<string, string> {
+    const { restDataProviderOptions, applicationInfo } = opts;
+    const requestTracingId = restDataProviderOptions.requestTracingId;
+    const channel = restDataProviderOptions.requestTracingChannel?.length
+      ? restDataProviderOptions.requestTracingChannel
+      : RequestChannel.WEB;
+
+    return {
+      [HeaderConsts.REQUEST_CHANNEL]: channel,
+      [HeaderConsts.REQUEST_TRACING_ID]:
+        requestTracingId instanceof Function
+          ? requestTracingId({ applicationInfo })
+          : `${applicationInfo.name}_${uuidV4()}`,
+    };
+  }
+
+  getRequestHeader(opts: { resource: string }): Record<string, string> {
+    const { resource } = opts;
+
+    const defaultHeaders = this.getSessionHeaders();
 
     if (this.isNoAuthPath({ resource })) {
       return defaultHeaders;
@@ -427,20 +477,12 @@ export class DefaultNetworkRequestService extends BaseService {
       applicationInfo,
       requestCountData = RequestCountData.DATA_ONLY,
     } = params;
-    const requestTracingId = restDataProviderOptions.requestTracingId;
-    const channel = restDataProviderOptions.requestTracingChannel?.length
-      ? restDataProviderOptions.requestTracingChannel
-      : RequestChannel.WEB;
-
     // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers: Record<string, AnyType> = mergeHeaders(this.getRequestHeader({ resource }), {
-      [HeaderConsts.REQUEST_CHANNEL]: channel,
-      [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData,
-      [HeaderConsts.REQUEST_TRACING_ID]:
-        requestTracingId instanceof Function
-          ? requestTracingId({ applicationInfo })
-          : `${applicationInfo.name}_${uuidV4()}`,
-    });
+    const headers: Record<string, AnyType> = mergeHeaders(
+      this.getRequestHeader({ resource }),
+      this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
+      { [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData },
+    );
 
     const rs: IGetRequestPropsResult = { headers, body };
 
@@ -690,7 +732,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     if (status < 200 || status >= 300) {
       const jsonRs = await rs.json();
-      throw jsonRs?.error ?? jsonRs;
+      throw jsonRs?.[ERROR_ROOT_KEY] ?? jsonRs;
     }
 
     return this.parseResponse<ReturnType>({ response: rs, type, requestCountData });

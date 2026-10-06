@@ -1210,4 +1210,128 @@ describe('DefaultNetworkRequestService', () => {
       expect(recordedRequests[0].headers.authorization).toBe('Bearer stale-token');
     });
   });
+
+  // A repository and the data provider call one server for one session: what the provider sends on
+  // every call, a repository sends too, read when the request goes out rather than when the
+  // datasource was built.
+  describe('getDataSourceAuth', () => {
+    const createRepository = (opts: {
+      service: DefaultNetworkRequestService;
+      resource: string;
+      auth?: ReturnType<DefaultNetworkRequestService['getDataSourceAuth']>;
+    }) => {
+      const { service, resource, auth = service.getDataSourceAuth() } = opts;
+      return new HttpRepository<{ id: string }>({
+        dataSource: new HttpDataSource({ baseUrl: serverBaseUrl, ...auth }),
+        resource,
+      });
+    };
+
+    test('sends the session headers set after the datasource was built, and the timezone', async () => {
+      const service = createService({ baseUrl: serverBaseUrl });
+      service.setAuthToken({ value: 'session-token' });
+      serverHandler = () => Response.json([]);
+
+      const orders = createRepository({ service, resource: 'orders' });
+
+      service.setHeaders({ 'x-merchant-id': 'merchant-1', 'x-locale': 'vi' });
+      await orders.find({ filter: {} });
+
+      service.setHeaders({ 'x-merchant-id': 'merchant-2' });
+      await orders.find({ filter: {} });
+
+      expect(recordedRequests).toHaveLength(2);
+      expect(recordedRequests[0].headers['x-merchant-id']).toBe('merchant-1');
+      expect(recordedRequests[0].headers['x-locale']).toBe('vi');
+      expect(recordedRequests[0].headers[HeaderConsts.TIMEZONE]).toBe(App.TIMEZONE);
+      expect(recordedRequests[0].headers[HeaderConsts.TIMEZONE_OFFSET]).toBe(
+        `${App.TIMEZONE_OFFSET}`,
+      );
+      expect(recordedRequests[1].headers['x-merchant-id']).toBe('merchant-2');
+      expect(recordedRequests[0].headers.authorization).toBe('Bearer session-token');
+    });
+
+    test('sends the request channel and tracing id when given the data provider options', async () => {
+      const service = createService({ baseUrl: serverBaseUrl });
+      service.setAuthToken({ value: 'session-token' });
+      serverHandler = () => Response.json([]);
+
+      const orders = createRepository({
+        service,
+        resource: 'orders',
+        auth: service.getDataSourceAuth({
+          restDataProviderOptions: createRestDataProviderOptions({
+            requestTracingChannel: 'pos',
+            requestTracingId: ({ applicationInfo }) => `${applicationInfo.name}-trace`,
+          }),
+          applicationInfo: createApplicationInfo({ name: 'kiosk' }),
+        }),
+      });
+
+      await orders.find({ filter: {} });
+
+      expect(recordedRequests[0].headers[HeaderConsts.REQUEST_CHANNEL]).toBe('pos');
+      expect(recordedRequests[0].headers[HeaderConsts.REQUEST_TRACING_ID]).toBe('kiosk-trace');
+    });
+
+    test('sends no token to a no-auth route, and the token elsewhere', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
+      service.setAuthToken({ value: 'session-token' });
+      serverHandler = () => Response.json([]);
+
+      await createRepository({ service, resource: 'sign-in' }).find({ filter: {} });
+      await createRepository({ service, resource: 'orders' }).find({ filter: {} });
+
+      expect(recordedRequests[0].pathname).toBe('/sign-in');
+      expect(recordedRequests[0].headers.authorization).toBeUndefined();
+      expect(recordedRequests[1].headers.authorization).toBe('Bearer session-token');
+    });
+
+    test('sends no token anywhere when the service does not use auth', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      service.setAuthToken({ value: 'session-token' });
+      serverHandler = () => Response.json([]);
+
+      await createRepository({ service, resource: 'orders' }).find({ filter: {} });
+
+      expect(recordedRequests[0].headers.authorization).toBeUndefined();
+    });
+
+    test('does not refresh on a 401 from a no-auth route', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
+      service.setAuthToken({ value: 'session-token' });
+      const refreshToken = mock(async () => {});
+      service.setAuthRecovery({ refreshToken });
+      serverHandler = () => Response.json({ error: 'bad credentials' }, { status: 401 });
+
+      const signIn = createRepository({ service, resource: 'sign-in' });
+
+      await expect(signIn.find({ filter: {} })).rejects.toMatchObject({ statusCode: 401 });
+      expect(refreshToken).not.toHaveBeenCalled();
+      expect(recordedRequests).toHaveLength(1);
+    });
+
+    test('keeps the server error code from under the `error` root key', async () => {
+      const service = createService({ baseUrl: serverBaseUrl });
+      service.setAuthToken({ value: 'session-token' });
+      serverHandler = () =>
+        Response.json(
+          {
+            error: {
+              statusCode: 409,
+              message: 'Name already taken',
+              normalized: { code: 'user.name.taken', args: { name: 'an' } },
+            },
+          },
+          { status: 409 },
+        );
+
+      await expect(
+        createRepository({ service, resource: 'users' }).find({ filter: {} }),
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        normalized: { code: 'user.name.taken', args: { name: 'an' } },
+      });
+    });
+  });
 });

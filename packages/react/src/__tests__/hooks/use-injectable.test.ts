@@ -111,6 +111,23 @@ describe('useInjectable with key option', () => {
     expect(result.current).toBe(explicitApp);
     expect(result.current).not.toBe(contextApp);
   });
+
+  // A minified build binds `services.Zv` where the code asks for `services.PricingService`; the
+  // error has to name that cause, or it reads as a missing registration.
+  test('names the minifier cause when the key is not bound', () => {
+    const container = new Container();
+
+    expect(() => {
+      renderHook(
+        () => {
+          return useInjectable({ key: CoreBindings.APPLICATION_INSTANCE });
+        },
+        { wrapper: createWrapper({ container }) },
+      );
+    }).toThrow(
+      /Binding key: @app\/application\/instance is not bounded in context! \| .*resolve it by \{ target \}/,
+    );
+  });
 });
 
 describe('useInjectable with target option', () => {

@@ -25,12 +25,13 @@ This whole scheme sits below the [data provider pipeline](/architecture/data-pro
 
 ## Sharing it with an HTTP repository
 
-`getDataSourceAuth()` returns an `IDataSourceAuth`, `{ authTokenResolver, onUnauthorized }`, for an `HttpDataSource`.
-- `authTokenResolver` is `resolveAuthToken()`: the in-memory token, else the resolver's.
-- `onUnauthorized` is `ensureRefreshed()` itself, so a 401 from a repository joins the same `this.refreshing` promise as the data provider's. One `refreshToken` call serves the whole burst, and a failed one runs `onAuthFailure` once.
-- `canRecover` is not consulted on that path. A repository has no no-auth paths, and the refresh request goes through the data provider, not the repository.
+`getDataSourceAuth(opts?)` returns an `IDataSourceAuth` for an `HttpDataSource` (IGNIS connectors `>=0.2.1-4`), four settings whose hooks IGNIS calls on every send, the retry included, with the request's `{ paths }`:
+- `headersResolver` is `getSessionHeaders()` (the timezone, then what `setHeaders` holds now), plus `getTracingHeaders()` (channel and tracing id) when `opts` carries `restDataProviderOptions` and `applicationInfo`. The data provider's own `getDataSourceAuth()` passes both; `getNetworkService().getDataSourceAuth()` passes neither. `getRequestProps` builds its headers from the same two methods, so the two transports cannot drift.
+- `authTokenResolver` is `resolveAuthToken()`, except `undefined` where `isNoAuthPath({ resource: paths[0], paths })` holds, which is every path when `useAuth` is `false`.
+- `onUnauthorized` is `ensureRefreshed()` gated by `canRecover(paths)`, the data provider's own gate: no refresh on a no-auth path or on the refresh path. A 401 from a repository otherwise joins the same `this.refreshing` promise as the data provider's. The context's `signal` is deliberately unused: the refresh is shared, and IGNIS does not retry a call aborted meanwhile.
+- `errorRootKey` is `'error'`, the same `ERROR_ROOT_KEY` constant `doRequest` unwraps, so a repository error keeps the server's `normalized.code`.
 
-Pinned by the two `getDataSourceAuth()` tests in `network-request.test.ts`. They were red under two mutations: an `onUnauthorized` that never joins the refresh, and a resolver that ignores `setAuthToken`.
+Pinned by the `getDataSourceAuth` block in `network-request.test.ts` (six tests: session headers set after construction, channel and tracing id, no token on a no-auth path, none with `useAuth: false`, no refresh on a no-auth 401, the code under `error`) and one in admin `rest-data.test.ts`. All six went red under four mutations: the resolver ignoring the path, `onUnauthorized` ignoring `canRecover`, an empty `headersResolver`, no `errorRootKey`. The two older tests still pin the shared refresh and `setAuthToken`.
 
 It only holds if every consumer resolves the same network service. Declare the data provider with `@provide` in a `@configuration()` class, so `registerArtifacts()` binds it as a singleton; a bare `bind().toProvider(DefaultRestDataProvider)` is transient. See [DI in the browser](/architecture/di-in-the-browser.md).
 

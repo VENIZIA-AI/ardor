@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (117)
+### `@venizia/ardor-kernel` (118)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -52,6 +52,7 @@ tags: [reference, exports, api]
 - `IAuthTokenRecord` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
+- `IDataSourceRequestContext` interface
 - `IdType` type
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -130,19 +131,24 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
-### `@venizia/ardor-kernel/repository` (11)
+### `@venizia/ardor-kernel/repository` (16)
 
 - `HttpDataSource` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
+- `HttpResponseReader` class
 - `IAuthToken` interface
+- `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
+- `IHttpRequestContext` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
 - `THttpBody` type
 - `THttpHeaders` type
+- `THttpHeadersResolver` type
 - `THttpQuery` type
+- `THttpRepositoryOptions` type
 
 ### `@venizia/ardor-kernel/socket-io` (2)
 
@@ -214,7 +220,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (170)
+### `@venizia/ardor` (171)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -268,6 +274,7 @@ tags: [reference, exports, api]
 - `ICustomParams` interface
 - `IDataProvider` interface
 - `IDataSourceAuth` interface
+- `IDataSourceRequestContext` interface
 - `IdType` type
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -387,19 +394,24 @@ tags: [reference, exports, api]
 - `ValueOrPromise` type
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (11)
+### `@venizia/ardor/repository` (16)
 
 - `HttpDataSource` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
+- `HttpResponseReader` class
 - `IAuthToken` interface
+- `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
+- `IHttpRequestContext` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
 - `THttpBody` type
 - `THttpHeaders` type
+- `THttpHeadersResolver` type
 - `THttpQuery` type
+- `THttpRepositoryOptions` type
 
 ### `@venizia/ardor/socket-io` (2)
 
