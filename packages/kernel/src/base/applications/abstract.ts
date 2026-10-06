@@ -1,7 +1,11 @@
-import { BindingNamespaces, MetadataRegistry } from '@venizia/ignis-kernel/metadata';
+import {
+  ArtifactBindingKeys,
+  ArtifactNamespaces,
+  BindingNamespaces,
+  MetadataRegistry,
+} from '@venizia/ignis-kernel/metadata';
 import {
   type Binding,
-  BindingKeys,
   BindingScopes,
   Container,
   getError,
@@ -57,8 +61,24 @@ export abstract class AbstractArdorApplication extends Container implements IArd
    */
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
+    const targets = registry.getDiscoveredArtifacts();
 
-    for (const target of registry.getDiscoveredArtifacts()) {
+    // Two classes a minifier named alike derive one key, and the second would silently replace the
+    // first. Checked here, never at decoration, so a hot reload that re-decorates a class is no error.
+    ArtifactBindingKeys.assertNoDerivedCollision({
+      caller: 'registerArtifacts',
+      entries: targets.flatMap((target) => {
+        const metadata = registry.getArtifactMetadata({ target });
+        if (!metadata) {
+          return [];
+        }
+
+        const namespace = ArtifactNamespaces.resolve({ type: metadata.type });
+        return [{ target: target as TClass<unknown>, namespace, binding: metadata.binding }];
+      }),
+    });
+
+    for (const target of targets) {
       const key = this.getMetadataRegistry().getBindingKey({ target });
       if (!key) {
         continue;
@@ -124,7 +144,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
 
   /** `<scope>.<ClassName>`, singleton, with tags. Prefer the per-kind methods above. */
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>) {
-    const key = `${scope}.${value.name}`;
+    const { key } = ArtifactBindingKeys.resolve({ target: value, namespace: scope });
     this.getMetadataRegistry().setBindingKey({ target: value, key });
     this.bind({ key })
       .toClass(value)
@@ -146,9 +166,11 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }): Binding<T> {
     const { target, namespace, caller } = opts;
     const declared = MetadataRegistry.getInstance().getArtifactMetadata({ target });
-    const key = BindingKeys.build(
-      opts.opts?.binding ?? declared?.binding ?? { namespace, key: target.name },
-    );
+    const { key } = ArtifactBindingKeys.resolve({
+      target,
+      namespace,
+      binding: opts.opts?.binding ?? declared?.binding,
+    });
 
     const allowOverride = opts.opts?.allowOverride ?? declared?.allowOverride ?? true;
     if (!allowOverride && this.isBound({ key })) {

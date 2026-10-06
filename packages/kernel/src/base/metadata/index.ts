@@ -15,6 +15,7 @@ export {
 } from '@venizia/ignis-kernel/metadata';
 
 export {
+  ArtifactBindingKeys,
   ArtifactNamespaces,
   ArtifactTypes,
   BindingKeys,

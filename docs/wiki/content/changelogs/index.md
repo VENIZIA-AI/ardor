@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-07 | [Class identity survives a minifier, and the container fixes from IGNIS](./2026-10-07-class-identity-and-container) | Behavior Change |
 | 2026-10-06 | [A repository sends what the data provider sends](./2026-10-06-repository-sends-the-session) | Behavior Change |
 | 2026-10-02 | [HttpRepository writes, on the IGNIS 0.2.1 prerelease line](./2026-10-02-repository-writes-and-ignis-0-2-1) | Behavior Change |
 | 2026-09-24 | [ARDOR 0.1.1, the first stable line on IGNIS 0.2.0](./2026-09-24-ardor-0-1-1-stable) | Release |

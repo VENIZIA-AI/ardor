@@ -130,16 +130,13 @@ describe('a REMOTE repository', () => {
     expect(pinned.dataSource).toBeInstanceOf(Zv);
   });
 
-  // IGNIS kernel 0.2.1-2 builds the key from the class name, `datasources.Zv`, at decoration
-  // (`persistents.ts` registerDataSourceInjection). Turns green when IGNIS injects by target.
-  test.failing(
-    'resolves a datasource with a pinned key without @inject, whatever its class name',
-    async () => {
-      const pinned = (await started()).get<PinnedRepository>({
-        key: 'repositories.PinnedRepository',
-      });
+  // Kernel 0.2.1-2 asked for `datasources.Zv`, built from the class name at decoration. From
+  // 0.2.1-3 `@repository` records the datasource class too, and inversion reads its key first.
+  test('resolves a datasource with a pinned key without @inject, whatever its class name', async () => {
+    const pinned = (await started()).get<PinnedRepository>({
+      key: 'repositories.PinnedRepository',
+    });
 
-      expect(pinned.dataSource).toBeInstanceOf(Zv);
-    },
-  );
+    expect(pinned.dataSource).toBeInstanceOf(Zv);
+  });
 });

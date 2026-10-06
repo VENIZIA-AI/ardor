@@ -166,14 +166,10 @@ export const useTickets = () => useRepository({ target: TicketRepository });
 
 A discovered class must be imported before `application.start()`. A class first imported by a lazy route chunk is never bound.
 
-> [!WARNING]
-> Without an `@inject` on its first parameter, `@repository` asks for the datasource under `datasources.<ClassName>`, read from the class name when the class is decorated (IGNIS kernel `0.2.1-2`). That holds for an unpinned `@datasource()`: both sides read the same name, renamed or not. When the datasource pins its key with `binding: { namespace, key }`, a minified build renames the class and the repository asks for a key nothing is bound under: `Binding key: datasources.Zv is not bounded in context!`. Then inject it by class, which reads the key recorded on the class:
->
-> ```ts
-> constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
->   super({ dataSource, resource: 'tickets' });
-> }
-> ```
+Without an `@inject` on its first parameter, `@repository` injects the datasource by its class: the key recorded on the class wins, whether it came from `@datasource({ binding })`, `bindingList()` or `dataSource(X, { binding })`, so a pinned key holds after a minifier renames the class. A datasource bound with a raw `bind({ key }).toClass(X)` records nothing on the class; the repository then falls back to `datasources.<ClassName>`.
+
+> [!NOTE]
+> IGNIS kernel `0.2.1-2` read only `datasources.<ClassName>`, so a pinned datasource broke in a minified build. Kernel `0.2.1-3` with inversion `0.2.1-0` fixes it, and both are needed: an older inversion still reads the derived key first. An explicit `@inject({ target: ApiDataSource })` keeps working.
 
 **By hand.** Leave the classes undecorated, inject the datasource by class, and register both in `bindContext()`:
 
