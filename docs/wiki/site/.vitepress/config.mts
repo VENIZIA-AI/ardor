@@ -87,6 +87,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-06',
+        collapsed: true,
+        items: [
+          {
+            text: 'A repository sends the session',
+            link: '/changelogs/2026-10-06-repository-sends-the-session',
+          },
+        ],
+      },
+      {
         text: '2026-10-02',
         collapsed: true,
         items: [

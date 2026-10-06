@@ -39,7 +39,7 @@ interface IHttpDataSourceSettings {
 - `authTokenResolver: readAuthTokenFromStorage` (from `@venizia/ardor`) sends the token the auth provider stored, the same one the data provider sends.
 - `x-request-count` is owned by the datasource: configuring it in `headers` throws. Rows come back as an array and the total in `Content-Range`.
 - On a `401`, `onUnauthorized` runs once. Return `true` after refreshing the token to retry the request once.
-- **Share the data provider's auth:** spread `dataProvider.getNetworkService().getDataSourceAuth()` into the settings. It supplies both `authTokenResolver` and `onUnauthorized`, so the repository sends the data provider's token, including one set with `setAuthToken`, and a `401` on either transport triggers one `refreshToken` call. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
+- **Send what the data provider sends:** spread `dataProvider.getDataSourceAuth()` into the settings. It supplies `headersResolver`, `authTokenResolver`, `onUnauthorized` and `errorRootKey`, read on every send: the session headers set with `setHeaders()`, the timezone, the request channel and tracing id, the data provider's token (including one set with `setAuthToken`) except on a no-auth path, and the server's error code under `error`. A `401` on either transport triggers one `refreshToken` call. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
 - `request({ paths, method, body, headers })` answers the raw `Response`, for a route the repository verbs do not cover, such as an export or a `PUT` to a hand-written route. A plain object or array goes out as JSON; a string, `Blob`, `FormData`, `URLSearchParams` or binary goes out as it is. A stream does not: the `401` retry resends the same body.
 
 ## HttpRepository
@@ -128,7 +128,7 @@ A failed request throws an error with the server's status. Its message ends with
 
 ## Registering a repository
 
-Two ways, as in IGNIS. Both bind a singleton and record the key on the class, so `useRepository({ target })` resolves either, and nothing depends on a class name a production build renames.
+Two ways, as in IGNIS. Both bind a singleton and record the key on the class, so `useRepository({ target })` resolves either without reading a class name a production build renames.
 
 **Discovery.** Declare the datasource with `@datasource()` and the repository with `@repository`. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into the first constructor parameter. The application binds both at `start()`, with nothing listed in `bindContext()`:
 
@@ -165,6 +165,15 @@ export const useTickets = () => useRepository({ target: TicketRepository });
 ```
 
 A discovered class must be imported before `application.start()`. A class first imported by a lazy route chunk is never bound.
+
+> [!WARNING]
+> Without an `@inject` on its first parameter, `@repository` asks for the datasource under `datasources.<ClassName>`, read from the class name when the class is decorated (IGNIS kernel `0.2.1-2`). That holds for an unpinned `@datasource()`: both sides read the same name, renamed or not. When the datasource pins its key with `binding: { namespace, key }`, a minified build renames the class and the repository asks for a key nothing is bound under: `Binding key: datasources.Zv is not bounded in context!`. Then inject it by class, which reads the key recorded on the class:
+>
+> ```ts
+> constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
+>   super({ dataSource, resource: 'tickets' });
+> }
+> ```
 
 **By hand.** Leave the classes undecorated, inject the datasource by class, and register both in `bindContext()`:
 

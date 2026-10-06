@@ -40,6 +40,12 @@ export const useInjectable = <T>(opts: TUseInjectableOptions) => {
   const { key, target } = opts;
 
   if (key) {
+    if (!container.isBound({ key })) {
+      throw getError({
+        message: `Binding key: ${key} is not bounded in context! | A key derived from a class name (<namespace>.<ClassName>) changes when a minifier renames the class: resolve it by { target }, or pin it with binding: { namespace, key } on the class`,
+      });
+    }
+
     return container.get<T>({ key });
   }
 

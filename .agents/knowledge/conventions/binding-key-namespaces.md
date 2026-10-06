@@ -130,6 +130,17 @@ registered wins, and resolving the first by `target` returns the second. Two sam
 different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
 explicit `binding` avoids it.
 
+**`@repository` without `@inject` at parameter 0 is the one place that still derives a key from a
+name on IGNIS kernel `0.2.1-2`.** It asks for `datasources.<DataSource.name>`, built when the class
+is decorated, and never reads the key recorded on the datasource. An unpinned `@datasource()` agrees
+with itself, renamed or not; a pinned one does not, and a minified build throws
+`Binding key: datasources.Zv is not bounded in context!` while development works. Write
+`@inject({ target: DataSource })` there. The `test.failing` in `remote-repository.test.ts` pins the
+bug and turns green when IGNIS injects by target (its batch 2, agreed 2026-10-06, not released).
+
+A `useInjectable({ key })` miss names this cause in its error, after the container's own
+`Binding key: <key> is not bounded in context!`, which BANA matches with `/is not bounded/`.
+
 ## How a key becomes a type
 
 `packages/react/src/hooks/use-injectable.ts` builds the accepted key union from two halves:

@@ -64,7 +64,10 @@ Three removals and one requirement:
   inversion `Container` the application already is.
 - **`BaseApiService` is gone.** Extend `BaseService` and declare a `resource` field if the `@api()`
   log line should name one; `@api()` works on any `BaseService`. For calls to one REST resource,
-  reads and writes, prefer an `HttpRepository` from `@venizia/ardor/repository`.
+  reads and writes, prefer an `HttpRepository` from `@venizia/ardor/repository`. The old
+  `BaseCrudApiService.find()` merged `limit: 100` into every filter that had none;
+  `HttpRepository.find()` sends the filter as given, so a call site that relied on that default
+  gets the server's own page size. Pass `filter: { limit }` where it matters.
 - **Module augmentation moves to the declaring package.** A TypeScript interface merges only into
   the module that declares it, never through a re-export, so augmenting `@venizia/ardor` would
   silently do nothing. Augment the owner instead:

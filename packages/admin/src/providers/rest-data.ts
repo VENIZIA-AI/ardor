@@ -96,6 +96,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return this.networkService;
   }
 
+  /** `HttpDataSource` settings that send what this provider sends, channel and tracing id included. */
+  getDataSourceAuth() {
+    return this.networkService.getDataSourceAuth({
+      restDataProviderOptions: this.restDataProviderOptions,
+      applicationInfo: this.applicationInfo,
+    });
+  }
+
   getListHelper<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     type: TRequestType;
@@ -600,6 +608,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       },
       getNetworkService: () => {
         return this.getNetworkService();
+      },
+      getDataSourceAuth: () => {
+        return this.getDataSourceAuth();
       },
     };
   }
