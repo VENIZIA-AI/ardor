@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import {
@@ -155,5 +155,51 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
     await overriding.start();
 
     expect(overriding.get<string>({ key: 'test.provided.shared' })).toBe('from bindContext');
+  });
+});
+
+// A minified build gives classes in different chunks one short name: both derive `services.e`, and
+// the second silently replaced the first. The discovery list is process-wide, so each test puts it
+// back for the files that run after.
+describe('AbstractArdorApplication.registerArtifacts, derived key collisions', () => {
+  const registry = MetadataRegistry.getInstance();
+  let discovered: ReturnType<typeof registry.getDiscoveredArtifacts> = [];
+
+  beforeEach(() => {
+    discovered = registry.getDiscoveredArtifacts();
+  });
+
+  afterEach(() => {
+    registry.clearDiscoveredArtifacts();
+    for (const target of discovered) {
+      registry.addDiscoveredArtifact({ target });
+    }
+  });
+
+  // Two different classes named alike, as a minifier leaves them.
+  const declareMinified = (opts: { binding?: { namespace: string; key: string } }) => {
+    @service(opts.binding ? { binding: opts.binding } : {})
+    class Minified {}
+    return Minified;
+  };
+
+  test('throws when two different classes derive one key, naming the key and the fix', async () => {
+    declareMinified({});
+    declareMinified({});
+
+    await expect(new TestApplication().start()).rejects.toThrow(
+      /\[registerArtifacts\] Two classes derive the binding key 'services\.Minified'.*pin 'binding/,
+    );
+  });
+
+  test('accepts two classes named alike when each pins its key', async () => {
+    const first = declareMinified({ binding: { namespace: 'services', key: 'First' } });
+    const second = declareMinified({ binding: { namespace: 'services', key: 'Second' } });
+
+    const application = new TestApplication();
+    await application.start();
+
+    expect(application.get({ key: 'services.First' })).toBeInstanceOf(first);
+    expect(application.get({ key: 'services.Second' })).toBeInstanceOf(second);
   });
 });

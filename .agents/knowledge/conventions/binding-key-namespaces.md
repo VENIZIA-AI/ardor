@@ -130,13 +130,22 @@ registered wins, and resolving the first by `target` returns the second. Two sam
 different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
 explicit `binding` avoids it.
 
-**`@repository` without `@inject` at parameter 0 is the one place that still derives a key from a
-name on IGNIS kernel `0.2.1-2`.** It asks for `datasources.<DataSource.name>`, built when the class
-is decorated, and never reads the key recorded on the datasource. An unpinned `@datasource()` agrees
-with itself, renamed or not; a pinned one does not, and a minified build throws
-`Binding key: datasources.Zv is not bounded in context!` while development works. Write
-`@inject({ target: DataSource })` there. The `test.failing` in `remote-repository.test.ts` pins the
-bug and turns green when IGNIS injects by target (its batch 2, agreed 2026-10-06, not released).
+**`@repository` without `@inject` at parameter 0 resolves its datasource by class** from IGNIS
+kernel `0.2.1-3` with inversion `0.2.1-0`: it records `{ target, key: derived }`, and inversion
+reads the key recorded on the class first, the derived key only for a raw `bind().toClass()`. Kernel
+`0.2.1-2` read only `datasources.<DataSource.name>`, so a pinned datasource threw
+`Binding key: datasources.Zv is not bounded in context!` in a minified build. The pinned-`Zv` test
+in `remote-repository.test.ts`, a `test.failing` until 2026-10-07, now passes as a plain test. Both
+packages are needed: an older inversion reads the derived key first.
+
+**Two classes deriving one key throw at `start()`.** `registerArtifacts()` runs
+`ArtifactBindingKeys.assertNoDerivedCollision` over the discovered list before binding
+(`packages/kernel/src/base/applications/abstract.ts`), so a second class with the same derived key no
+longer silently replaces the first. A pinned `binding` is never counted, and a subclass discovered
+after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
+that re-evaluates a module is not an error. `service()`/`injectable()` derive through
+`ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
+BANA's `kits/admin` pins `binding` on all 122 of its decorated classes, so it cannot collide.
 
 A `useInjectable({ key })` miss names this cause in its error, after the container's own
 `Binding key: <key> is not bounded in context!`, which BANA matches with `/is not bounded/`.

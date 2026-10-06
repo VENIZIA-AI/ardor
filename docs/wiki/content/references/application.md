@@ -134,7 +134,7 @@ The default implementation does five things, in this order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
 2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
-3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`.
+3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`. It first throws when two different classes derive the same key from their name (`[registerArtifacts] Two classes derive the binding key 'services.e' ...`), as two classes a minifier named alike would; the second would otherwise silently replace the first. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check uses IGNIS's `ArtifactBindingKeys`, re-exported by ARDOR, and runs once per `start()`, so a hot reload that re-evaluates a module is not an error.
 4. Binds each entry of `bindingList()` under its literal key, as a singleton.
 5. Returns `this.bindContext()`.
 
@@ -149,6 +149,8 @@ Abstract. The framework bindings - provider options and the default providers - 
 `registerArtifacts()` binds each `@provide` method under the key the decorator names. The value is resolved lazily, on the first `get()` for the key, and cached as a singleton unless `@provide({ key, scope })` says otherwise - so react-admin, `DefaultAuthProvider`, every hook and every datasource share one data provider. A configuration class works like any other discovered class: import it before `application.start()`, or it is never bound.
 
 Use `bindContext()` only for an override - a binding declared there replaces a provided one.
+
+An async `@provide` method caches its promise as the singleton. If that promise rejects, the rejection stays cached until the container is cleared, and every later `get()` rejects again. Keep `@provide` methods synchronous, or catch inside the method.
 
 There is no base implementation, so do not call `super.bindContext()`.
 
@@ -269,6 +271,7 @@ Everything under `ArdorApplication` can reach the container with `useApplication
 - **Async `getAppInfo()`.** `preConfigure()` binds the return value without awaiting it. Return a plain object.
 - **Expecting `this.container`.** The application is the container. Use `this.bind(...)` and `this.get(...)`. Legacy ra-core-infra code that used `this.container.bind({ key, value })` becomes `this.bind({ key }).toValue(value)` - see the [migration guide](../guides/migration/from-ra-core-infra).
 - **Typing a derived key.** A derived key contains the class name, which a production build renames. Resolve such classes by `target`, not by a typed `'services.X'` string.
+- **`Two classes derive the binding key` at `start()`.** Two discovered classes share a name, usually two short names a minifier gave classes in different chunks. Pin `binding: { namespace, key }` on one of them, or build with class names kept (`keepNames`).
 - **Two instances of a service.** Registering the same class under two scopes gives two singletons, one per key.
 
 ## Related

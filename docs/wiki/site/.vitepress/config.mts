@@ -87,6 +87,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-07',
+        collapsed: true,
+        items: [
+          {
+            text: 'Class identity and the container',
+            link: '/changelogs/2026-10-07-class-identity-and-container',
+          },
+        ],
+      },
+      {
         text: '2026-10-06',
         collapsed: true,
         items: [

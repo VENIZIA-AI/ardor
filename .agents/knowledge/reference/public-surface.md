@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (118)
+### `@venizia/ardor-kernel` (119)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -18,6 +18,7 @@ tags: [reference, exports, api]
 - `AnyType` type
 - `api` function
 - `App` class
+- `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
@@ -220,7 +221,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (171)
+### `@venizia/ardor` (172)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -230,6 +231,7 @@ tags: [reference, exports, api]
 - `App` class
 - `ApplicationContext` const
 - `ArdorApplication` const
+- `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
