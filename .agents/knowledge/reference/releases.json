@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-3",
+        "date": "2026-10-06",
+        "sha": "cccca125",
+        "order": 112
+      },
+      {
         "version": "0.1.2-2",
         "date": "2026-10-02",
         "sha": "ba34c9dd",
@@ -64,6 +70,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-3",
+        "date": "2026-10-06",
+        "sha": "e4fdad1e",
+        "order": 113
+      },
       {
         "version": "0.1.2-2",
         "date": "2026-10-02",
@@ -121,6 +133,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-2",
+        "date": "2026-10-06",
+        "sha": "f1156ef0",
+        "order": 110
+      },
+      {
         "version": "0.1.2-1",
         "date": "2026-10-02",
         "sha": "5b0bbed3",
@@ -170,6 +188,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-2",
+        "date": "2026-10-06",
+        "sha": "b0f9a6f5",
+        "order": 111
+      },
       {
         "version": "0.1.2-1",
         "date": "2026-10-02",
@@ -241,6 +265,17 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-06-repository-sends-the-session",
+      "file": "2026-10-06-repository-sends-the-session.md",
+      "date": "2026-10-06",
+      "title": "A repository sends what the data provider sends",
+      "packages": [
+        "ardor"
+      ],
+      "kind": "Behavior Change",
+      "order": 109
+    },
     {
       "id": "changelog:2026-10-02-repository-writes-and-ignis-0-2-1",
       "file": "2026-10-02-repository-writes-and-ignis-0-2-1.md",
