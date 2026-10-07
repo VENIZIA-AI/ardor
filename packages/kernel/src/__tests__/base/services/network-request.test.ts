@@ -1,12 +1,7 @@
-import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 
-import {
-  HttpDataSource,
-  HttpExtraRequest,
-  HttpRepository,
-  HttpResponseReader,
-} from '@/base/repositories';
+import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
@@ -1414,32 +1409,6 @@ describe('DefaultNetworkRequestService', () => {
       expect(rs.data).toEqual([{ id: 'a' }]);
       expect(rs.count).toBe(1);
       expect(rs.extra).toEqual({ stats: { open: 3 } });
-    });
-
-    // Kernel 0.2.1-5's `readExtra` keeps `{ count, data }` itself; the count must not be wrapped twice.
-    test('takes a reader that already kept the count as it stands', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
-      serverHandler = () =>
-        Response.json(
-          { data: [{ id: 'a' }], count: 1, extra: { stats: { open: 3 } } },
-          { headers: { 'x-response-extra': 'stats', 'content-range': 'records 0-0/9' } },
-        );
-      const readExtra = spyOn(HttpResponseReader, 'readExtra').mockReturnValue({
-        body: { count: 1, data: [{ id: 'a' }] },
-        extra: { stats: { open: 3 } },
-      });
-
-      try {
-        const rs = await listRequest({
-          service,
-          requestCountData: RequestCountData.DATA_WITH_COUNT,
-        });
-
-        expect(rs.data).toEqual([{ id: 'a' }]);
-        expect(rs.count).toBe(1);
-      } finally {
-        readExtra.mockRestore();
-      }
     });
 
     test('never reads an unmarked body as extras', async () => {

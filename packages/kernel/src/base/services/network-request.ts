@@ -662,19 +662,16 @@ export class DefaultNetworkRequestService extends BaseService {
     const jsonRs = await rs.json();
 
     // A route with extras answers `{ data, extra }`, marked by `x-response-extra`; a route with a
-    // default extra answers it unasked. Kernel 0.2.1-4's `readExtra` keeps only `data` and drops a
-    // count-in-body `count`; 0.2.1-5 keeps `{ count, data }`. Put it back only when it is gone.
+    // default extra answers it unasked. `readExtra` strips only `extra`, so a count-in-body request
+    // still reads `{ count, data }` (IGNIS kernel 0.2.1-5 and later).
     const { body, extra } = HttpResponseReader.readExtra({ body: jsonRs, headers: rs.headers });
-    const isCountInBody = requestCountData === RequestCountData.DATA_WITH_COUNT;
-    const hasCount = HttpResponseReader.isPlainObject(body) && 'count' in body;
-    const data = extra && isCountInBody && !hasCount ? { data: body, count: jsonRs.count } : body;
 
     const converted = this.convertResponse<ReturnType>({
       type,
       requestCountData,
       response: {
         headers: rs.headers ?? {},
-        data: data as ReturnType,
+        data: body as ReturnType,
       },
     });
 
