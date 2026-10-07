@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { type Store } from '@reduxjs/toolkit';
-import { Container } from '@venizia/ignis-inversion';
+import type { Container } from '@venizia/ignis-inversion';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';

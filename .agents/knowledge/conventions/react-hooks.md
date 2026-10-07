@@ -10,7 +10,7 @@ Hooks in ARDOR follow a small set of consistent rules across the [react](/packag
 
 ## Naming
 
-Every hook name starts with `use`. This is the standard React rule, enforced by lint, and it is what allows the rules-of-hooks linter and `renderHook` test helpers to recognize the function.
+Every hook name starts with `use`. This is the standard React rule, and it is what lets the rules-of-hooks linter and `renderHook` test helpers recognize the function. Lint enforces it in `react`, `admin` and `ui-kit` (`scripts/eslint/react.mjs`): `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` are both errors, in `.ts` files too. A private helper that calls hooks is a hook and is named one (`useArtifactInNamespace` in `use-artifact.ts`). A test that drives a hook outside React passes the hook itself (`hook: useApplicationContext`), not a wrapper arrow, which the linter reads as a non-hook calling a hook.
 
 A file normally holds one hook named after it: `useAutosave` in `use-autosave.ts`, `useDebounce` in `use-debounce.ts`, `useRefreshToken` in `use-refresh-token.ts`. A file may also hold a companion hook next to its main one - `useInjectableContainer` sits beside `useInjectable` in `use-injectable.ts`, and `useApplicationLogger` sits beside `useApplicationContext` in `use-application-context.ts`. A family of thin variants over one implementation may share a file named for the family - `useService`, `useProvider`, `useComponent` and `useConfiguration` all live in `use-artifact.ts` (see [react](/packages/react.md)).
 

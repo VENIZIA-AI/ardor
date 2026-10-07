@@ -1,5 +1,5 @@
 import { type AnyType, BindingNamespaces } from '@venizia/ardor-kernel';
-import { Container, getError, type TClass } from '@venizia/ignis-inversion';
+import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
 import {
   useInjectable,
@@ -26,7 +26,7 @@ export interface IUseArtifactByKey {
  * `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration`. Unlike
  * `useInjectable`, a `{ target }` must be bound under the hook's namespace, or it throws.
  */
-const resolveInNamespace = <T>(opts: {
+const useArtifactInNamespace = <T>(opts: {
   options: TUseInjectableOptions;
   namespace: string;
   hook: string;
@@ -53,21 +53,21 @@ const resolveInNamespace = <T>(opts: {
 };
 
 export const useService = <T = AnyType>(opts: IUseArtifactByTarget<T> | IUseArtifactByKey): T =>
-  resolveInNamespace<T>({
+  useArtifactInNamespace<T>({
     options: opts,
     namespace: BindingNamespaces.SERVICE,
     hook: 'useService',
   });
 
 export const useProvider = <T = AnyType>(opts: IUseArtifactByTarget<T> | IUseArtifactByKey): T =>
-  resolveInNamespace<T>({
+  useArtifactInNamespace<T>({
     options: opts,
     namespace: BindingNamespaces.PROVIDER,
     hook: 'useProvider',
   });
 
 export const useComponent = <T = AnyType>(opts: IUseArtifactByTarget<T> | IUseArtifactByKey): T =>
-  resolveInNamespace<T>({
+  useArtifactInNamespace<T>({
     options: opts,
     namespace: BindingNamespaces.COMPONENT,
     hook: 'useComponent',
@@ -76,14 +76,14 @@ export const useComponent = <T = AnyType>(opts: IUseArtifactByTarget<T> | IUseAr
 export const useConfiguration = <T = AnyType>(
   opts: IUseArtifactByTarget<T> | IUseArtifactByKey,
 ): T =>
-  resolveInNamespace<T>({
+  useArtifactInNamespace<T>({
     options: opts,
     namespace: BindingNamespaces.CONFIGURATION,
     hook: 'useConfiguration',
   });
 
 export const useRepository = <T = AnyType>(opts: IUseArtifactByTarget<T> | IUseArtifactByKey): T =>
-  resolveInNamespace<T>({
+  useArtifactInNamespace<T>({
     options: opts,
     namespace: BindingNamespaces.REPOSITORY,
     hook: 'useRepository',

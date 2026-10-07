@@ -1,9 +1,9 @@
-import { eslintConfigs } from '@venizia/dev-configs';
+import { reactConfigs } from '../../scripts/eslint/react.mjs';
 
 import { secureContextRules } from '../../scripts/eslint/secure-context.mjs';
 
 const config = [
-  ...eslintConfigs,
+  ...reactConfigs,
   ...secureContextRules,
   {
     // react-admin reads its messages by wire key (`ra.action.add_filter`, `ra.page.not_found`, ...).
