@@ -13,7 +13,7 @@ const REPO = resolve(import.meta.dir, '..');
 const cli = process.env.ARDOR_ATLAS_CLI;
 const command = cli
   ? ['bun', cli, 'mcp', '--root', REPO]
-  : ['bunx', '@venizia/ignis-atlas@0.1.0-13', 'mcp', '--root', REPO];
+  : ['bunx', '@venizia/ignis-atlas@0.1.1-7', 'mcp', '--root', REPO];
 
 const server = Bun.spawn(command, { cwd: REPO, stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' });
 const decoder = new TextDecoder();
