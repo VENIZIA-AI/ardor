@@ -9,7 +9,7 @@ import {
   type IApplicationInfo,
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
-import { HttpDataSource, HttpRepository } from '@venizia/ardor-kernel/repository';
+import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -128,6 +128,21 @@ beforeAll(() => {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
+      }
+
+      // A route with list extras answers them beside the rows, marked by `x-response-extra`.
+      if (isCollectionGet && req.headers.has('x-request-extra')) {
+        return new Response(
+          JSON.stringify({ data: [{ id: 1 }], extra: { facets: { status: { open: 3 } } } }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+              'content-range': 'items 0-0/42',
+              'x-response-extra': 'facets',
+            },
+          },
+        );
       }
 
       if (isCollectionGet) {
@@ -657,6 +672,55 @@ describe('send behavior', () => {
         params: {},
       });
     }).toThrow('[send] Invalid http method to send request!');
+  });
+});
+
+describe('list extras', () => {
+  const listParams = (meta?: Record<string, unknown>) => ({
+    pagination: { page: 1, perPage: 10 },
+    sort: { field: 'id', order: 'ASC' as const },
+    filter: {},
+    ...(meta ? { meta } : {}),
+  });
+
+  test('asks for meta.extra in x-request-extra and answers it in meta.extra', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getList({
+      resource: 'posts',
+      params: listParams({ extra: { facets: ['status'] }, tenant: 't-1' }),
+    });
+
+    const req = recordedRequests[0];
+    expect(req.headers.get('x-request-extra')).toBe(
+      HttpExtraRequest.toHeader({ extra: { facets: ['status'] } }) ?? null,
+    );
+    expect(req.query['extra']).toBeUndefined();
+    expect(req.query['tenant']).toBe('t-1');
+    expect(result.data).toEqual([{ id: 1 }]);
+    expect(result.total).toBe(42);
+    expect(result.meta).toEqual({ extra: { facets: { status: { open: 3 } } } });
+  });
+
+  test('asks for nothing and answers no meta without meta.extra', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getList({ resource: 'posts', params: listParams() });
+
+    expect(recordedRequests[0].headers.has('x-request-extra')).toBe(false);
+    expect(result.meta).toBeUndefined();
+  });
+
+  test('getManyReference asks and answers the same way', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getManyReference({
+      resource: 'posts',
+      params: { ...listParams({ extra: { facets: ['status'] } }), target: 'authorId', id: 7 },
+    });
+
+    expect(recordedRequests[0].headers.has('x-request-extra')).toBe(true);
+    expect(result.meta).toEqual({ extra: { facets: { status: { open: 3 } } } });
   });
 });
 

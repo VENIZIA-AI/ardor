@@ -1,5 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
+import { HttpExtraRequest, HttpResponseReader } from '@venizia/ignis-kernel/repository';
 import isEmpty from 'lodash/isEmpty.js';
 import merge from 'lodash/merge.js';
 
@@ -476,12 +477,16 @@ export class DefaultNetworkRequestService extends BaseService {
       restDataProviderOptions,
       applicationInfo,
       requestCountData = RequestCountData.DATA_ONLY,
+      extra,
     } = params;
+    const extraHeader = HttpExtraRequest.toHeader({ extra });
+
     // Merged, not spread, so a per-request value replaces a static header in any case.
     const headers: Record<string, AnyType> = mergeHeaders(
       this.getRequestHeader({ resource }),
       this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
       { [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData },
+      extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
     );
 
     const rs: IGetRequestPropsResult = { headers, body };
@@ -629,6 +634,7 @@ export class DefaultNetworkRequestService extends BaseService {
     total?: number;
     filename?: string;
     contentDisposition?: string;
+    extra?: Record<string, unknown>;
   }> {
     const { response: rs, type, requestCountData } = opts;
 
@@ -655,14 +661,21 @@ export class DefaultNetworkRequestService extends BaseService {
 
     const jsonRs = await rs.json();
 
-    return this.convertResponse<ReturnType>({
+    // A route with extras answers `{ data, extra }`, marked by `x-response-extra`; a route with a
+    // default extra answers it unasked. `readExtra` strips only `extra`, so a count-in-body request
+    // still reads `{ count, data }` (IGNIS kernel 0.2.1-5 and later).
+    const { body, extra } = HttpResponseReader.readExtra({ body: jsonRs, headers: rs.headers });
+
+    const converted = this.convertResponse<ReturnType>({
       type,
       requestCountData,
       response: {
         headers: rs.headers ?? {},
-        data: jsonRs as ReturnType,
+        data: body as ReturnType,
       },
     });
+
+    return extra ? { ...converted, extra } : converted;
   }
 
   async doRequest<ReturnType = AnyType>(
@@ -680,6 +693,7 @@ export class DefaultNetworkRequestService extends BaseService {
     total?: number; // GET_LIST || GET_MANY_REFERENCE
     filename?: string;
     contentDisposition?: string;
+    extra?: Record<string, unknown>; // what a route with list extras answered
   }> {
     const {
       baseUrl = this.baseUrl,

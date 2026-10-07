@@ -122,7 +122,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       ...requestProps,
     });
 
-    return response;
+    // The list extras a route answered reach react-admin as the result's `meta.extra`.
+    return response.then(({ extra, ...rs }) => {
+      return extra ? { ...rs, meta: { extra } } : rs;
+    });
   }
 
   getList<RecordType extends RaRecord = AnyType>(opts: {
@@ -187,10 +190,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['params'] = undefined;
     }
 
-    if (meta) {
-      for (const key in meta) {
-        queryKey[key] = meta[key];
-      }
+    // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
+    const { extra, ...queryMeta } = meta ?? {};
+    for (const key in queryMeta) {
+      queryKey[key] = queryMeta[key];
     }
 
     const request = this.networkService.getRequestProps({
@@ -198,6 +201,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
+      extra,
     });
 
     const requestProps = {
@@ -354,10 +358,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['params'] = undefined;
     }
 
-    if (meta) {
-      for (const key in meta) {
-        queryKey[key] = meta[key];
-      }
+    // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
+    const { extra, ...queryMeta } = meta ?? {};
+    for (const key in queryMeta) {
+      queryKey[key] = queryMeta[key];
     }
 
     const request = this.networkService.getRequestProps({
@@ -365,6 +369,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
+      extra,
     });
 
     const requestProps = {

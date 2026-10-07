@@ -218,7 +218,7 @@ await dataProvider.getList('categories', {
 
 ### `filter.params` and `meta` as query keys
 
-Anything under `filter.params` and anything under `meta` is sent as a top-level query parameter next to `filter`, not inside it. `filter.params` is removed from the filter afterwards.
+Anything under `filter.params` and anything under `meta` except `meta.extra` is sent as a top-level query parameter next to `filter`, not inside it. `filter.params` is removed from the filter afterwards.
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -232,6 +232,30 @@ await dataProvider.getList('products', {
   meta: { view: 'compact' },
 });
 ```
+
+### List extras: `meta.extra`
+
+A route that declares list extras computes them beside the rows, such as facet counts for a filter sidebar. `getList` and `getManyReference` ask for them with `meta.extra`, a `TExtraRequest`: `true` asks for a plain extra, a list of keys asks a group for those keys, and `false` switches a default off. The request goes out in the `x-request-extra` header, never in the query. What the route answered comes back as the result's `meta.extra`:
+
+```ts
+import { type IDataProvider } from '@venizia/ardor';
+
+declare const dataProvider: IDataProvider;
+
+// GET /tickets?filter=... with x-request-extra: facets(status,tag)
+const { data, total, meta } = await dataProvider.getList('tickets', {
+  pagination: { page: 1, perPage: 20 },
+  sort: { field: 'id', order: 'ASC' },
+  filter: {},
+  meta: { extra: { facets: ['status', 'tag'] } },
+});
+// meta?.extra?.facets -> { status: { ... }, tag: { ... } }
+```
+
+Every entry may be absent: a route without extras, or an older server, answers none, and then the result has no `meta`. A route that declares a DEFAULT extra answers it to every request, asked or not; the data provider reads that too, marked by the `x-response-extra` header, so the rows and the total stay right. A body without that header is never read as extras, even when a row has its own `data` and `extra` columns.
+
+> [!NOTE]
+> A cross-origin server must allow `x-request-extra` and expose `x-response-extra` (IGNIS: `HTTP.CorsHeaders.ALLOW` and `EXPOSE`), or the browser drops them.
 
 ## `getOne` and `getMany`
 

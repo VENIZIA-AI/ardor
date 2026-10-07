@@ -39,6 +39,10 @@ These two headers carry count semantics:
 - `x-request-count` tells the backend whether to compute a total count alongside the data. Values come from `RequestCountData`: `DATA_ONLY` (`'0'`) returns just the list, `DATA_WITH_COUNT` (`'1'`) asks for both data and count.
 - `x-response-count` is read back only for non-list request types: when the call did not ask for `DATA_WITH_COUNT`, its value is parsed into the result's `count`. List totals never use it - they come from `content-range` (see below) - see [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
+## x-request-extra and x-response-extra
+
+`x-request-extra` asks a route for list extras, built by IGNIS's `HttpExtraRequest.toHeader` from a `TExtraRequest`: `name`, `name(key,key)` for a group, `-name` to switch a default off, `-*` first to switch every default off. The data provider sends it only when the call asks (`meta.extra`); `getRequestProps({ extra })` adds it. `x-response-extra` marks a body that is `{ data, extra }` and names what was computed; without it the body is read as before. A cross-origin server must allow the first and expose the second.
+
 ## x-request-id
 
 Every request is tagged with a tracing id under `x-request-id`. When `requestTracingId` is a function, the id is `requestTracingId({ applicationInfo })`; otherwise (unset or a boolean) it is `<applicationInfo.name>_<uuid>` - a fresh random v4-shaped id per request, prefixed with the application name, not derived from the request. Either way logs and traces can be correlated end to end between client and backend without the client owning a stateful counter.
