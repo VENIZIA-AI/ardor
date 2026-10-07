@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useLocaleState } from 'ra-core';
 
-import { DefaultRestDataProvider } from '@/providers/rest-data';
+import type { DefaultRestDataProvider } from '@/providers/rest-data';
 import { CoreBindings, HeaderConsts } from '@venizia/ardor-kernel';
 import { useInjectable } from '@venizia/ardor-react';
 

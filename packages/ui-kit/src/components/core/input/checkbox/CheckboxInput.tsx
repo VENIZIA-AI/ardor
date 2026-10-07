@@ -1,6 +1,6 @@
 import React from 'react';
 
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
+import type * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 
 import { Checkbox } from '@/components/shadcn/checkbox';
 import { Field, FieldError, FieldLabel } from '@/components/shadcn/field';

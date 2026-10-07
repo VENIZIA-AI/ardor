@@ -1,6 +1,6 @@
 import React from 'react';
 
-import * as SwitchPrimitive from '@radix-ui/react-switch';
+import type * as SwitchPrimitive from '@radix-ui/react-switch';
 
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/shadcn/field';
 import { Switch } from '@/components/shadcn/switch';

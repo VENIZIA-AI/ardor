@@ -33,6 +33,10 @@ Packages share config from `@venizia/dev-configs` and layer package-specific tsc
 
 Because `typecheck` runs against `tsconfig.test.json`, it validates both source and test code in one pass, while `build` only emits the non-test subset.
 
+## Lint presets
+
+`kernel` and `ardor` lint with the base `eslintConfigs` from `@venizia/dev-configs`. `react`, `admin` and `ui-kit` use `reactConfigs` from `scripts/eslint/react.mjs`: IGNIS's `ReactEslintConfigs` (dev-configs `0.2.1-0`), which adds the React, hooks and accessibility rules and `consistent-type-imports`, then puts back every base rule that preset relaxes for an application UI (`no-floating-promises`, `no-void`, `no-invalid-this`, `no-use-before-define`, `no-explicit-any`, `no-shadow`, `no-unused-vars`), read from the base preset rather than copied, and raises `exhaustive-deps` from warning to error. A framework drops no promise, and the package lint fails only on errors, so a warning would never block. The three plugins are root devDependencies, so the shared file resolves them. Every package also spreads `secureContextRules` from `scripts/eslint/secure-context.mjs`.
+
 ## Makefile dependency order
 
 The root `Makefile` build targets (`kernel`, `react`, `admin`, `ardor`, `ui-kit`) are chained as real Make prerequisites, not just run in sequence:
