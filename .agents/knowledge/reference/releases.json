@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-6",
+        "date": "2026-10-07",
+        "sha": "bf1a9e2d",
+        "order": 131
+      },
+      {
         "version": "0.1.2-5",
         "date": "2026-10-07",
         "sha": "3523e435",
@@ -82,6 +88,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-6",
+        "date": "2026-10-07",
+        "sha": "65ce879a",
+        "order": 132
+      },
       {
         "version": "0.1.2-5",
         "date": "2026-10-07",
@@ -157,6 +169,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-5",
+        "date": "2026-10-07",
+        "sha": "c0904165",
+        "order": 129
+      },
+      {
         "version": "0.1.2-4",
         "date": "2026-10-07",
         "sha": "68c05679",
@@ -224,6 +242,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-5",
+        "date": "2026-10-07",
+        "sha": "074ef715",
+        "order": 130
+      },
       {
         "version": "0.1.2-4",
         "date": "2026-10-07",
@@ -323,6 +347,15 @@
       ],
       "kind": "Feature",
       "order": 122
+    },
+    {
+      "id": "changelog:2026-10-07-feature-modules",
+      "file": "2026-10-07-feature-modules.md",
+      "date": "2026-10-07",
+      "title": "Feature modules and permissions",
+      "packages": [],
+      "kind": "Feature",
+      "order": 128
     },
     {
       "id": "changelog:2026-10-07-class-identity-and-container",
