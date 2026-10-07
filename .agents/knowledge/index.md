@@ -52,6 +52,7 @@ How the pieces fit.
 - [Hooks and context](/architecture/hooks-and-context.md) - what each hook needs in the tree
 - [Module augmentation](/architecture/module-augmentation.md) - typing injectable and translate keys, and the any-widening trap
 - [Error flow](/architecture/error-flow.md) - from `getError` to `useNotifyError`
+- [Feature modules](/architecture/feature-modules.md) - `features()`, mounting resources and routes, `canAccess` from a permission provider, feature messages
 
 ## Conventions
 

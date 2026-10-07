@@ -138,11 +138,33 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
   authRecovery?: IAuthRecoveryOptions;
 }
 
+/**
+ * A feature package an application mounts: what it registers in the container. The admin package
+ * extends it with resources, routes and messages (`IFeature`); the kernel knows no UI.
+ */
+export interface IFeatureBase {
+  /** Unique within an application. */
+  name: string;
+  /**
+   * The feature's `@configuration()` classes, by value. Referencing them keeps a bundler from
+   * dropping a module nothing else imports, and `start()` checks each was discovered.
+   */
+  configurations?: Array<TClass<unknown>>;
+  /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
+  permissions?: Array<string>;
+}
+
+/** Answers whether the current actor may act on a resource. Bound by the application under `CoreBindings.PERMISSION_PROVIDER`. */
+export interface IPermissionProvider {
+  canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
+}
+
 export interface IArdorApplication {
   preConfigure(): ValueOrPromise<void>;
   postConfigure(): ValueOrPromise<void>;
   bindContext(): ValueOrPromise<void>;
   bindingList(): Record<string, TClass<unknown>>;
+  features(): Array<IFeatureBase>;
 
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
   service<T>(value: TClass<T>): unknown;

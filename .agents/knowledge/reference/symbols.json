@@ -15,7 +15,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 37,
+      "line": 38,
       "signature": "class AbstractArdorApplication extends Container implements IArdorApplication"
     },
     {
@@ -75,7 +75,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/admin/src/components/application.tsx",
-      "line": 43,
+      "line": 94,
       "signature": "ArdorApplication: React.FC<IApplication>"
     },
     {
@@ -128,7 +128,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 189,
+      "line": 226,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -240,7 +240,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/admin/src/providers/auth.ts",
-      "line": 14,
+      "line": 15,
       "signature": "class DefaultAuthProvider<TResource extends string = string> extends BaseProvider<IAuthProvider>"
     },
     {
@@ -260,7 +260,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/admin/src/providers/i18n.ts",
-      "line": 11,
+      "line": 14,
       "signature": "class DefaultI18nProvider extends BaseProvider<I18nProvider>"
     },
     {
@@ -310,7 +310,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 125,
+      "line": 132,
       "signature": "interface IApplication extends Omit<CoreAdminProps, 'children'>"
     },
     {
@@ -320,7 +320,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 188,
+      "line": 210,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -330,7 +330,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 141,
+      "line": 162,
       "signature": "interface IArdorApplication"
     },
     {
@@ -351,7 +351,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 24,
+      "line": 25,
       "signature": "interface IArtifactRegistration"
     },
     {
@@ -372,7 +372,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 115,
+      "line": 122,
       "signature": "interface IAuthProvider extends IReactAdminAuthProvider"
     },
     {
@@ -446,6 +446,26 @@
       "signature": "interface IDataSourceRequestContext"
     },
     {
+      "name": "IFeature",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "type",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 15,
+      "signature": "type IFeature<TExtension extends object = {}> = IFeatureBase & TExtension & { resources?: Array<ResourceProps>; routes?: Array<RouteProps>; /** The application's own `i18nSources` override these. */ messages?: TFeatureMessages; }"
+    },
+    {
+      "name": "IFeatureBase",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "interface",
+      "file": "packages/kernel/src/common/types.ts",
+      "line": 145,
+      "signature": "interface IFeatureBase"
+    },
+    {
       "name": "IFetchable",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -492,7 +512,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 120,
+      "line": 127,
       "signature": "interface II18nProviderOptions"
     },
     {
@@ -554,6 +574,16 @@
       "file": "packages/kernel/src/helpers/networks/fetchers/node-fetch.ts",
       "line": 4,
       "signature": "interface INodeFetchRequestOptions extends RequestInit, IRequestOptions"
+    },
+    {
+      "name": "IPermissionProvider",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "interface",
+      "file": "packages/kernel/src/common/types.ts",
+      "line": 158,
+      "signature": "interface IPermissionProvider"
     },
     {
       "name": "IReactAdminAuthProvider",
@@ -742,7 +772,7 @@
       "specifier": "@venizia/ardor",
       "kind": "class",
       "file": "packages/kernel/src/common/keys.ts",
-      "line": 17,
+      "line": 22,
       "signature": "class LocalStorageKeys"
     },
     {
@@ -925,7 +955,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 196,
+      "line": 218,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -937,6 +967,16 @@
       "file": "packages/kernel/src/common/types.ts",
       "line": 41,
       "signature": "type TEnvironment = TStatusFromClass<typeof Environments>"
+    },
+    {
+      "name": "TFeatureMessages",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "type",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 8,
+      "signature": "type TFeatureMessages = Record<string, object | (() => Promise<object>)>"
     },
     {
       "name": "TFetcherResponse",
@@ -975,7 +1015,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 174,
+      "line": 196,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -1015,7 +1055,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 158,
+      "line": 180,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {
@@ -1261,6 +1301,16 @@
       "line": 7,
       "signature": "datasource: (metadata?: IDataSourceMetadata) => ClassDecorator",
       "external": true
+    },
+    {
+      "name": "defineFeature",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "const",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 24,
+      "signature": "defineFeature: <TExtension extends object = {}>(feature: IFeature<TExtension>) => IFeature<TExtension>"
     },
     {
       "name": "englishMessages",
@@ -1629,6 +1679,16 @@
       "signature": "useDebounce: <TValue>(params: IUseDebounceParams<TValue>) => IUseDebounceReturn<TValue>"
     },
     {
+      "name": "useFeatures",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-features.ts",
+      "line": 6,
+      "signature": "useFeatures: <TFeature extends IFeature = IFeature>() => Array<TFeature>"
+    },
+    {
       "name": "useInjectable",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -1984,7 +2044,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "const",
       "file": "packages/admin/src/components/application.tsx",
-      "line": 43,
+      "line": 94,
       "signature": "ArdorApplication: React.FC<IApplication>"
     },
     {
@@ -2004,7 +2064,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "class",
       "file": "packages/admin/src/providers/auth.ts",
-      "line": 14,
+      "line": 15,
       "signature": "class DefaultAuthProvider<TResource extends string = string> extends BaseProvider<IAuthProvider>"
     },
     {
@@ -2014,7 +2074,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "class",
       "file": "packages/admin/src/providers/i18n.ts",
-      "line": 11,
+      "line": 14,
       "signature": "class DefaultI18nProvider extends BaseProvider<I18nProvider>"
     },
     {
@@ -2034,7 +2094,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 125,
+      "line": 132,
       "signature": "interface IApplication extends Omit<CoreAdminProps, 'children'>"
     },
     {
@@ -2044,7 +2104,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 115,
+      "line": 122,
       "signature": "interface IAuthProvider extends IReactAdminAuthProvider"
     },
     {
@@ -2058,13 +2118,23 @@
       "signature": "interface IDataProvider<TResource extends string = string> extends IReactAdminDataProvider<TResource>"
     },
     {
+      "name": "IFeature",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "type",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 15,
+      "signature": "type IFeature<TExtension extends object = {}> = IFeatureBase & TExtension & { resources?: Array<ResourceProps>; routes?: Array<RouteProps>; /** The application's own `i18nSources` override these. */ messages?: TFeatureMessages; }"
+    },
+    {
       "name": "II18nProviderOptions",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
       "specifier": "@venizia/ardor-admin",
       "kind": "interface",
       "file": "packages/admin/src/common/types.ts",
-      "line": 120,
+      "line": 127,
       "signature": "interface II18nProviderOptions"
     },
     {
@@ -2098,6 +2168,16 @@
       "signature": "interface IUseTranslateKeysOverrides"
     },
     {
+      "name": "TFeatureMessages",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "type",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 8,
+      "signature": "type TFeatureMessages = Record<string, object | (() => Promise<object>)>"
+    },
+    {
       "name": "TUseTranslateFn",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
@@ -2128,6 +2208,16 @@
       "signature": "type TUseTranslateKeysDefault = TFullPaths<typeof englishMessages>"
     },
     {
+      "name": "defineFeature",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "const",
+      "file": "packages/admin/src/features/feature.ts",
+      "line": 24,
+      "signature": "defineFeature: <TExtension extends object = {}>(feature: IFeature<TExtension>) => IFeature<TExtension>"
+    },
+    {
       "name": "englishMessages",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
@@ -2136,6 +2226,16 @@
       "file": "packages/admin/src/common/locales/en.ts",
       "line": 1,
       "signature": "englishMessages: { ra: { action: { add_filter: string; add: string; back: string; bulk_actions: string; cancel: string; clear_array_input: string; clear_input_value: string; clone: string; confirm: string; create: string; create_item: string; delete: string; edit: string; export: string; list: strin"
+    },
+    {
+      "name": "useFeatures",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-features.ts",
+      "line": 6,
+      "signature": "useFeatures: <TFeature extends IFeature = IFeature>() => Array<TFeature>"
     },
     {
       "name": "useNotifyError",
@@ -2194,7 +2294,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 37,
+      "line": 38,
       "signature": "class AbstractArdorApplication extends Container implements IArdorApplication"
     },
     {
@@ -2287,7 +2387,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 189,
+      "line": 226,
       "signature": "class BaseArdorApplication extends AbstractArdorApplication"
     },
     {
@@ -2429,7 +2529,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 188,
+      "line": 210,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -2439,7 +2539,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 141,
+      "line": 162,
       "signature": "interface IArdorApplication"
     },
     {
@@ -2460,7 +2560,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/base/applications/abstract.ts",
-      "line": 24,
+      "line": 25,
       "signature": "interface IArtifactRegistration"
     },
     {
@@ -2533,6 +2633,16 @@
       "file": "packages/kernel/src/base/services/network-request.ts",
       "line": 196,
       "signature": "interface IDataSourceRequestContext"
+    },
+    {
+      "name": "IFeatureBase",
+      "package": "@venizia/ardor-kernel",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-kernel",
+      "kind": "interface",
+      "file": "packages/kernel/src/common/types.ts",
+      "line": 145,
+      "signature": "interface IFeatureBase"
     },
     {
       "name": "IFetchable",
@@ -2635,6 +2745,16 @@
       "signature": "interface INodeFetchRequestOptions extends RequestInit, IRequestOptions"
     },
     {
+      "name": "IPermissionProvider",
+      "package": "@venizia/ardor-kernel",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-kernel",
+      "kind": "interface",
+      "file": "packages/kernel/src/common/types.ts",
+      "line": 158,
+      "signature": "interface IPermissionProvider"
+    },
+    {
       "name": "IRequestOptions",
       "package": "@venizia/ardor-kernel",
       "subpath": ".",
@@ -2701,7 +2821,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
       "file": "packages/kernel/src/common/keys.ts",
-      "line": 17,
+      "line": 22,
       "signature": "class LocalStorageKeys"
     },
     {
@@ -2874,7 +2994,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 196,
+      "line": 218,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -2924,7 +3044,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 174,
+      "line": 196,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -2964,7 +3084,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 158,
+      "line": 180,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {

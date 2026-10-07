@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-07 | [Feature modules and permissions](./2026-10-07-feature-modules) | Feature |
 | 2026-10-07 | [List extras on the data provider and the repository](./2026-10-07-list-extras) | Feature |
 | 2026-10-07 | [Class identity survives a minifier, and the container fixes from IGNIS](./2026-10-07-class-identity-and-container) | Behavior Change |
 | 2026-10-06 | [A repository sends what the data provider sends](./2026-10-06-repository-sends-the-session) | Behavior Change |

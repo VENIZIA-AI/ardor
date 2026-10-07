@@ -17,6 +17,7 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IArdorApplication,
+  type IFeatureBase,
   type ValueOrPromise,
 } from '@/common';
 
@@ -42,8 +43,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
 
-    // Least explicit first, so the most explicit wins: stereotype, bindingList(), bindContext().
+    // Least explicit first, so the most explicit wins: stereotype, features, bindingList(), bindContext().
     this.registerArtifacts();
+    this.registerFeatures({ features: this.features() });
 
     for (const [key, target] of Object.entries(this.bindingList())) {
       this.getMetadataRegistry().setBindingKey({ target, key });
@@ -102,6 +104,41 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   /** Classes bound under literal keys before `bindContext()` runs. */
   bindingList(): Record<string, TClass<unknown>> {
     return {};
+  }
+
+  /** The feature packages this application mounts, bound under `CoreBindings.FEATURES`. */
+  features(): Array<IFeatureBase> {
+    return [];
+  }
+
+  /**
+   * Binds the features after the stereotypes, so `bindingList()` and `bindContext()` still override
+   * what a feature provides. A name is unique, and every configuration a feature lists must have
+   * been discovered: one that was not means the feature's bindings were silently never made.
+   */
+  private registerFeatures(opts: { features: Array<IFeatureBase> }): void {
+    const { features } = opts;
+    const discovered = new Set(MetadataRegistry.getInstance().getDiscoveredArtifacts());
+    const names = new Set<string>();
+
+    for (const feature of features) {
+      if (names.has(feature.name)) {
+        throw getError({
+          message: `[features] Two features are named '${feature.name}' | A feature name is unique within an application`,
+        });
+      }
+      names.add(feature.name);
+
+      for (const target of feature.configurations ?? []) {
+        if (!discovered.has(target)) {
+          throw getError({
+            message: `[features] '${feature.name}' lists ${target.name}, which was never discovered | Decorate it with @configuration() and import its module before start()`,
+          });
+        }
+      }
+    }
+
+    this.bind({ key: CoreBindings.FEATURES }).toValue(features);
   }
 
   postConfigure(): ValueOrPromise<void> {}

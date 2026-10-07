@@ -8,7 +8,7 @@ tags: [reference, bindings, di]
 
 > Generated from source - do not edit; run `make okf-gen`. Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).
 
-**12 keys across 2 binding classes.**
+**14 keys across 2 binding classes.**
 
 ## CoreBindings
 
@@ -23,6 +23,8 @@ tags: [reference, bindings, di]
 | `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` |
 | `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` |
 | `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` |
+| `FEATURES` | `@app/application/features` |
+| `PERMISSION_PROVIDER` | `@app/application/permission/provider` |
 
 ## LocalStorageKeys
 

@@ -40,6 +40,8 @@ All keys and their string values, exactly as defined in the kernel.
 | `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Configuration (`@provide`) |
 | `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Configuration (`@provide`) |
 | `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Configuration (`@provide`) |
+| `FEATURES` | `@app/application/features` | `preConfigure()`, from `features()` |
+| `PERMISSION_PROVIDER` | `@app/application/permission/provider` | The application (optional) |
 
 The three `*_OPTIONS` keys hold the options objects read by the matching provider: `IAuthProviderOptions`, `IRestDataProviderOptions` and `II18nProviderOptions`. The provider keys hold the provider instances. See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n) for what each provider expects.
 

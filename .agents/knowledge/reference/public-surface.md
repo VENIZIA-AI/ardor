@@ -10,7 +10,7 @@ tags: [reference, exports, api]
 
 ## kernel
 
-### `@venizia/ardor-kernel` (119)
+### `@venizia/ardor-kernel` (121)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -55,6 +55,7 @@ tags: [reference, exports, api]
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
 - `IdType` type
+- `IFeatureBase` interface
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
 - `IGetRequestPropsParams` interface
@@ -68,6 +69,7 @@ tags: [reference, exports, api]
 - `int` const
 - `INTL_0_DIGITS_FORMATER` const
 - `INTL_2_DIGITS_FORMATER` const
+- `IPermissionProvider` interface
 - `IRequestOptions` interface
 - `IRequestProps` interface
 - `IRestDataProviderOptions` interface
@@ -198,24 +200,28 @@ tags: [reference, exports, api]
 
 ## admin
 
-### `@venizia/ardor-admin` (21)
+### `@venizia/ardor-admin` (25)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
 - `DefaultI18nProvider` class
 - `DefaultRestDataProvider` class
+- `defineFeature` const
 - `englishMessages` const
 - `IApplication` interface
 - `IAuthProvider` interface
 - `IDataProvider` interface
+- `IFeature` type
 - `II18nProviderOptions` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
 - `IUseTranslateKeysOverrides` interface
+- `TFeatureMessages` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
+- `useFeatures` const
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
@@ -224,7 +230,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (172)
+### `@venizia/ardor` (178)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -260,6 +266,7 @@ tags: [reference, exports, api]
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
+- `defineFeature` const
 - `englishMessages` const
 - `Environments` class
 - `float` const
@@ -281,6 +288,8 @@ tags: [reference, exports, api]
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
 - `IdType` type
+- `IFeature` type
+- `IFeatureBase` interface
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
 - `IGetRequestPropsParams` interface
@@ -295,6 +304,7 @@ tags: [reference, exports, api]
 - `int` const
 - `INTL_0_DIGITS_FORMATER` const
 - `INTL_2_DIGITS_FORMATER` const
+- `IPermissionProvider` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
 - `IRequestOptions` interface
@@ -349,6 +359,7 @@ tags: [reference, exports, api]
 - `TConstValue` type
 - `TDataCount` type
 - `TEnvironment` type
+- `TFeatureMessages` type
 - `TFetcherResponse` type
 - `TFetcherVariant` type
 - `TFetcherWorker` type
@@ -382,6 +393,7 @@ tags: [reference, exports, api]
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
+- `useFeatures` const
 - `useInjectable` const
 - `useInjectableContainer` const
 - `useNotifyError` const
