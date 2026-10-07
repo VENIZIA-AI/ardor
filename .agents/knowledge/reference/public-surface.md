@@ -132,9 +132,10 @@ tags: [reference, exports, api]
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
-### `@venizia/ardor-kernel/repository` (16)
+### `@venizia/ardor-kernel/repository` (19)
 
 - `HttpDataSource` class
+- `HttpExtraRequest` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
 - `HttpResponseReader` class
@@ -145,6 +146,8 @@ tags: [reference, exports, api]
 - `IHttpRequestContext` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
+- `TExtraRequest` type
+- `TExtraResult` type
 - `THttpBody` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
@@ -396,9 +399,10 @@ tags: [reference, exports, api]
 - `ValueOrPromise` type
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (16)
+### `@venizia/ardor/repository` (19)
 
 - `HttpDataSource` class
+- `HttpExtraRequest` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
 - `HttpResponseReader` class
@@ -409,6 +413,8 @@ tags: [reference, exports, api]
 - `IHttpRequestContext` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
+- `TExtraRequest` type
+- `TExtraResult` type
 - `THttpBody` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type

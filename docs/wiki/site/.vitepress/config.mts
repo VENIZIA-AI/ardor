@@ -91,6 +91,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'List extras',
+            link: '/changelogs/2026-10-07-list-extras',
+          },
+          {
             text: 'Class identity and the container',
             link: '/changelogs/2026-10-07-class-identity-and-container',
           },

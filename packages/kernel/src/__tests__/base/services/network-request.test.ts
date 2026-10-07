@@ -1,7 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 
-import { HttpDataSource, HttpRepository } from '@/base/repositories';
+import {
+  HttpDataSource,
+  HttpExtraRequest,
+  HttpRepository,
+  HttpResponseReader,
+} from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
@@ -1332,6 +1337,122 @@ describe('DefaultNetworkRequestService', () => {
         statusCode: 409,
         normalized: { code: 'user.name.taken', args: { name: 'an' } },
       });
+    });
+  });
+
+  // A route with extras answers `{ data, extra }`, marked by `x-response-extra`. One that declares a
+  // DEFAULT extra answers it to every client, so the data provider must read it even unasked.
+  describe('list extras', () => {
+    const listRequest = (opts: {
+      service: DefaultNetworkRequestService;
+      requestCountData?: string;
+    }) => {
+      const { service, requestCountData } = opts;
+      return service.doRequest<Array<Record<string, string>>>({
+        paths: ['tickets'],
+        method: RequestMethods.GET,
+        type: RequestTypes.GET_LIST,
+        headers: service.getRequestHeader({ resource: 'tickets' }),
+        requestCountData: requestCountData as never,
+      });
+    };
+
+    test('asks for extras in x-request-extra', () => {
+      const service = createService({ useAuth: false });
+
+      const props = service.getRequestProps({
+        resource: 'tickets',
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+        extra: { facets: ['status', 'tag'], stats: true },
+      });
+
+      expect(props.headers).toHaveProperty(
+        HttpExtraRequest.HEADER,
+        HttpExtraRequest.toHeader({ extra: { facets: ['status', 'tag'], stats: true } }),
+      );
+    });
+
+    test('sends no x-request-extra when none is asked for', () => {
+      const props = createService({ useAuth: false }).getRequestProps({
+        resource: 'tickets',
+        applicationInfo: createApplicationInfo(),
+        restDataProviderOptions: createRestDataProviderOptions(),
+      });
+
+      expect(props.headers).not.toHaveProperty(HttpExtraRequest.HEADER);
+    });
+
+    test('unwraps a marked { data, extra } list, keeping the rows and the total', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      serverHandler = () =>
+        Response.json(
+          { data: [{ id: 'a' }], extra: { stats: { open: 3 } } },
+          { headers: { 'x-response-extra': 'stats', 'content-range': 'records 0-0/9' } },
+        );
+
+      const rs = await listRequest({ service });
+
+      expect(rs.data).toEqual([{ id: 'a' }]);
+      expect(rs.total).toBe(9);
+      expect(rs.extra).toEqual({ stats: { open: 3 } });
+    });
+
+    test('keeps the count beside the rows when the count rides in the body', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      serverHandler = () =>
+        Response.json(
+          { data: [{ id: 'a' }], count: 1, extra: { stats: { open: 3 } } },
+          { headers: { 'x-response-extra': 'stats', 'content-range': 'records 0-0/9' } },
+        );
+
+      const rs = await listRequest({
+        service,
+        requestCountData: RequestCountData.DATA_WITH_COUNT,
+      });
+
+      expect(rs.data).toEqual([{ id: 'a' }]);
+      expect(rs.count).toBe(1);
+      expect(rs.extra).toEqual({ stats: { open: 3 } });
+    });
+
+    // Kernel 0.2.1-5's `readExtra` keeps `{ count, data }` itself; the count must not be wrapped twice.
+    test('takes a reader that already kept the count as it stands', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      serverHandler = () =>
+        Response.json(
+          { data: [{ id: 'a' }], count: 1, extra: { stats: { open: 3 } } },
+          { headers: { 'x-response-extra': 'stats', 'content-range': 'records 0-0/9' } },
+        );
+      const readExtra = spyOn(HttpResponseReader, 'readExtra').mockReturnValue({
+        body: { count: 1, data: [{ id: 'a' }] },
+        extra: { stats: { open: 3 } },
+      });
+
+      try {
+        const rs = await listRequest({
+          service,
+          requestCountData: RequestCountData.DATA_WITH_COUNT,
+        });
+
+        expect(rs.data).toEqual([{ id: 'a' }]);
+        expect(rs.count).toBe(1);
+      } finally {
+        readExtra.mockRestore();
+      }
+    });
+
+    test('never reads an unmarked body as extras', async () => {
+      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      serverHandler = () =>
+        Response.json([{ id: 'a', data: 'own column', extra: 'own column' }], {
+          headers: { 'content-range': 'records 0-0/1' },
+        });
+
+      const rs = await listRequest({ service });
+
+      expect(rs.data).toEqual([{ id: 'a', data: 'own column', extra: 'own column' }]);
+      expect(rs.extra).toBeUndefined();
     });
   });
 });

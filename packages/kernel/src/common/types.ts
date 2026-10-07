@@ -1,4 +1,5 @@
 import { type TClass } from '@venizia/ignis-inversion';
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
   Environments,
@@ -73,6 +74,8 @@ export interface IGetRequestPropsParams {
   bodyType?: TRequestBodyType;
   restDataProviderOptions: IRestDataProviderOptions;
   applicationInfo: IApplicationInfo;
+  /** The list extras to ask the route for, sent in `x-request-extra`. */
+  extra?: TExtraRequest;
 }
 
 export interface IGetRequestPropsResult {

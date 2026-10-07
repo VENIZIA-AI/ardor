@@ -81,6 +81,21 @@ export const openCount = () => tickets.count({ where: { status: 'OPEN' } });
 
 Pass `countPath` to the constructor when the API has a count route (`GET /{resource}/{countPath}`) instead of a `Content-Range` total.
 
+### List extras
+
+A route that declares list extras answers them beside the rows. Ask with `options.extra`, a `TExtraRequest`; `find` then returns `{ data, extra }`, or `{ data, range, extra }` with `shouldQueryRange`, and `extra` is `{}` when the route answered none. `count`, `existsWith` and `findOne` always switch every default off.
+
+```ts
+import { type HttpRepository, type TExtraRequest } from '@venizia/ardor/repository';
+
+declare const tickets: HttpRepository<{ id: string; status: string }>;
+
+const extra = { facets: ['status', 'tag'] } satisfies TExtraRequest;
+const { data, extra: answered } = await tickets.find({ filter: { limit: 20 }, options: { extra } });
+```
+
+`HttpExtraRequest.toHeader({ extra })` builds the `x-request-extra` value for a call made by hand, and `TExtraResult<typeof extra>` types what came back. The data provider asks the same way, through `meta.extra`; see [the data provider](./data-provider#list-extras-meta-extra).
+
 ### Writes
 
 ```ts
