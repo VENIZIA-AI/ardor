@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-5",
+        "date": "2026-10-07",
+        "sha": "3523e435",
+        "order": 125
+      },
+      {
         "version": "0.1.2-4",
         "date": "2026-10-06",
         "sha": "2d56c552",
@@ -76,6 +82,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-5",
+        "date": "2026-10-07",
+        "sha": "73672bbe",
+        "order": 126
+      },
       {
         "version": "0.1.2-4",
         "date": "2026-10-06",
@@ -145,6 +157,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-4",
+        "date": "2026-10-07",
+        "sha": "68c05679",
+        "order": 123
+      },
+      {
         "version": "0.1.2-3",
         "date": "2026-10-06",
         "sha": "844315dd",
@@ -206,6 +224,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-4",
+        "date": "2026-10-07",
+        "sha": "c2be9395",
+        "order": 124
+      },
       {
         "version": "0.1.2-3",
         "date": "2026-10-06",
@@ -289,6 +313,17 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-07-list-extras",
+      "file": "2026-10-07-list-extras.md",
+      "date": "2026-10-07",
+      "title": "List extras on the data provider and the repository",
+      "packages": [
+        "ardor"
+      ],
+      "kind": "Feature",
+      "order": 122
+    },
     {
       "id": "changelog:2026-10-07-class-identity-and-container",
       "file": "2026-10-07-class-identity-and-container.md",
