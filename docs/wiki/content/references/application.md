@@ -130,15 +130,16 @@ abstract class AbstractArdorApplication extends Container {
 
 ### preConfigure()
 
-The default implementation does five things, in this order:
+The default implementation does six things, in this order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
 2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
 3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`. It first throws when two different classes derive the same key from their name (`[registerArtifacts] Two classes derive the binding key 'services.e' ...`), as two classes a minifier named alike would; the second would otherwise silently replace the first. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check uses IGNIS's `ArtifactBindingKeys`, re-exported by ARDOR, and runs once per `start()`, so a hot reload that re-evaluates a module is not an error.
-4. Binds each entry of `bindingList()` under its literal key, as a singleton.
-5. Returns `this.bindContext()`.
+4. Binds `features()` under `CoreBindings.FEATURES`, after checking that no two share a `name` and that every configuration class a feature lists was discovered - see [Features and permissions](./features).
+5. Binds each entry of `bindingList()` under its literal key, as a singleton.
+6. Returns `this.bindContext()`.
 
-Least explicit first, so for a shared key the later step wins: a stereotype or a `@provide` binding loses to `bindingList()`, and both lose to `bindContext()`.
+Least explicit first, so for a shared key the later step wins: a stereotype, a `@provide` binding or a feature's binding loses to `bindingList()`, and all of them lose to `bindContext()`.
 
 Because `start()` awaits the return value, an async `bindContext()` finishes before `postConfigure()` runs. If you override `preConfigure()`, call `super.preConfigure()` or the two core keys are never bound and `bindContext()` is never called.
 

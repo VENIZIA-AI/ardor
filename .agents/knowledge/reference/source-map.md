@@ -8,15 +8,16 @@ tags: [reference, source-map, packages]
 
 > Generated from source - do not edit; run `make okf-gen`. Layout: [monorepo layout](/overview/monorepo-layout.md).
 
-**77 source files across 5 packages.**
+**81 source files across 5 packages.**
 
-## admin  (17 source files)
+## admin  (21 source files)
 
 | Subsystem | Files |
 |---|---|
+| `hooks/` | 6 |
 | `common/` | 5 |
-| `hooks/` | 5 |
 | `providers/` | 5 |
+| `features/` | 3 |
 | `components/` | 1 |
 
 ## ardor  (3 source files)

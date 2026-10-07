@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { Container } from '@venizia/ignis-inversion';
 
 import { type IAuthProvider } from '@/common';
 import { DefaultAuthProvider } from '@/providers/auth';
@@ -8,6 +9,7 @@ import {
   CoreBindings,
   DefaultAuthService,
   type IApplicationInfo,
+  type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
 
@@ -397,5 +399,50 @@ describe('getPermissions and refreshToken', () => {
 
   test('resolves refreshToken to undefined', async () => {
     await expect(authProvider.refreshToken()).resolves.toBeUndefined();
+  });
+});
+
+// The app binds an IPermissionProvider and DefaultAuthProvider answers react-admin's canAccess from
+// it. Unbound, there is no canAccess at all, so ra-core keeps allowing everything, as before.
+describe('canAccess', () => {
+  const resolveAuthProvider = (opts: { permissionProvider?: IPermissionProvider }) => {
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue({});
+    if (opts.permissionProvider) {
+      container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
+    }
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+    return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  };
+
+  test('is absent when the application binds no permission provider', () => {
+    expect(resolveAuthProvider({}).canAccess).toBeUndefined();
+  });
+
+  test("asks the application's permission provider, with the resource, action and record", async () => {
+    const asked: Array<unknown> = [];
+    const provider = resolveAuthProvider({
+      permissionProvider: {
+        canAccess: (params) => {
+          asked.push(params);
+          return Promise.resolve(params.action === 'list');
+        },
+      },
+    });
+
+    const signal = new AbortController().signal;
+    await expect(
+      provider.canAccess?.({ resource: 'stocks', action: 'list', record: { id: 1 }, signal }),
+    ).resolves.toBe(true);
+    await expect(provider.canAccess?.({ resource: 'stocks', action: 'delete' })).resolves.toBe(
+      false,
+    );
+    expect(asked).toEqual([
+      { resource: 'stocks', action: 'list', record: { id: 1 } },
+      { resource: 'stocks', action: 'delete', record: undefined },
+    ]);
   });
 });

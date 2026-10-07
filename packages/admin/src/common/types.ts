@@ -110,6 +110,13 @@ export interface IReactAdminAuthProvider {
   checkError: (error: AnyType) => Promise<void>;
   getIdentity?: (params?: QueryFunctionContext) => Promise<UserIdentity>;
   getPermissions: (params: AnyType & QueryFunctionContext) => Promise<AnyType>;
+  /** Present only when the application binds `CoreBindings.PERMISSION_PROVIDER`. */
+  canAccess?: (params: {
+    resource: string;
+    action: string;
+    record?: unknown;
+    signal?: AbortSignal;
+  }) => Promise<boolean>;
 }
 
 export interface IAuthProvider extends IReactAdminAuthProvider {
@@ -129,7 +136,8 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   reduxStore: Store;
   suspense: ReactNode;
 
-  resources: Array<ResourceProps>;
+  /** The application's own resources; each feature's are mounted after them. */
+  resources?: Array<ResourceProps>;
   customRoutes?: {
     routes: Array<RouteProps>;
   };

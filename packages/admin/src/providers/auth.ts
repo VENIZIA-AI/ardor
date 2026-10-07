@@ -7,6 +7,7 @@ import {
   CoreBindings,
   DefaultAuthService,
   type IAuthProviderOptions,
+  type IPermissionProvider,
   RequestMethods,
 } from '@venizia/ardor-kernel';
 import { type IAuthProvider, type IDataProvider } from '@/common';
@@ -21,6 +22,8 @@ export class DefaultAuthProvider<
     protected authProviderOptions: IAuthProviderOptions,
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
     protected authService: DefaultAuthService,
+    @inject({ key: CoreBindings.PERMISSION_PROVIDER, isOptional: true })
+    protected permissionProvider?: IPermissionProvider,
   ) {
     super({ scope: DefaultAuthProvider.name });
   }
@@ -119,6 +122,8 @@ export class DefaultAuthProvider<
   }
 
   override value(_container: Container): IAuthProvider {
+    const { permissionProvider } = this;
+
     return {
       login: (params: AnyType) => this.login(params),
       logout: (params: AnyType) => this.logout(params),
@@ -128,6 +133,15 @@ export class DefaultAuthProvider<
       getPermissions: (params: AnyType) => this.getPermissions(params),
       getRoles: (params: AnyType) => this.getRoles(params),
       refreshToken: () => this.refreshToken(),
+      // Absent without a permission provider, so react-admin keeps allowing everything.
+      ...(permissionProvider
+        ? {
+            canAccess: (params: { resource: string; action: string; record?: unknown }) => {
+              const { resource, action, record } = params;
+              return permissionProvider.canAccess({ resource, action, record });
+            },
+          }
+        : {}),
     };
   }
 }

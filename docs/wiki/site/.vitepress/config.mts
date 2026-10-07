@@ -28,6 +28,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Application', link: '/references/application' },
+      { text: 'Features and permissions', link: '/references/features' },
       { text: 'Binding keys', link: '/references/binding-keys' },
       { text: 'Types and constants', link: '/references/types' },
     ],
@@ -90,6 +91,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         text: '2026-10-07',
         collapsed: true,
         items: [
+          {
+            text: 'Feature modules and permissions',
+            link: '/changelogs/2026-10-07-feature-modules',
+          },
           {
             text: 'List extras',
             link: '/changelogs/2026-10-07-list-extras',
