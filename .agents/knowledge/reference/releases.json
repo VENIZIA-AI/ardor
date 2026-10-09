@@ -9,6 +9,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-7",
+        "date": "2026-10-09",
+        "sha": "ef6b0e52",
+        "order": 139
+      },
+      {
         "version": "0.1.2-6",
         "date": "2026-10-07",
         "sha": "bf1a9e2d",
@@ -88,6 +94,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-7",
+        "date": "2026-10-09",
+        "sha": "28918e1d",
+        "order": 140
+      },
       {
         "version": "0.1.2-6",
         "date": "2026-10-07",
@@ -169,6 +181,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-6",
+        "date": "2026-10-09",
+        "sha": "529ee43f",
+        "order": 137
+      },
+      {
         "version": "0.1.2-5",
         "date": "2026-10-07",
         "sha": "c0904165",
@@ -242,6 +260,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-6",
+        "date": "2026-10-09",
+        "sha": "00e9d71b",
+        "order": 138
+      },
       {
         "version": "0.1.2-5",
         "date": "2026-10-07",
@@ -337,6 +361,28 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-09-document-title-and-html-lang-hooks",
+      "file": "2026-10-09-document-title-and-html-lang-hooks.md",
+      "date": "2026-10-09",
+      "title": "useDocumentTitle and useHtmlLang",
+      "packages": [
+        "admin"
+      ],
+      "kind": "New Feature",
+      "order": 135
+    },
+    {
+      "id": "changelog:2026-10-09-const-value-types-keep-literals",
+      "file": "2026-10-09-const-value-types-keep-literals.md",
+      "date": "2026-10-09",
+      "title": "Const-value types keep their literals when copied",
+      "packages": [
+        "kernel"
+      ],
+      "kind": "Behavior Change",
+      "order": 135
+    },
     {
       "id": "changelog:2026-10-07-list-extras",
       "file": "2026-10-07-list-extras.md",
