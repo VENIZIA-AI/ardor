@@ -87,6 +87,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-10',
+        collapsed: true,
+        items: [
+          {
+            text: 'Data provider errors and Content-Range',
+            link: '/changelogs/2026-10-10-data-provider-errors-through-response-reader',
+          },
+        ],
+      },
+      {
         text: '2026-10-09',
         collapsed: true,
         items: [

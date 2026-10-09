@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
-import { getError } from '@venizia/ignis-inversion';
+import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
@@ -16,6 +16,7 @@ import {
   RequestMethods,
   RequestTypes,
   type TNoAuthPathRegex,
+  type TRequestMethod,
 } from '@/common';
 
 interface IRecordedRequest {
@@ -739,6 +740,24 @@ describe('DefaultNetworkRequestService', () => {
       expect(res.data).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
     });
 
+    test('reads the total of an unsatisfied range and falls back to the row count on a malformed header', () => {
+      const service = createService();
+      const totalFor = (header: string) =>
+        service.convertResponse<{ id: number }[]>({
+          type: RequestTypes.GET_LIST,
+          response: {
+            data: [{ id: 1 }, { id: 2 }, { id: 3 }],
+            headers: new Headers({ [HeaderConsts.CONTENT_RANGE]: header }),
+          },
+        }).total;
+
+      expect(totalFor('records */137')).toBe(137);
+      expect(totalFor('records */0')).toBe(0);
+      expect(totalFor('records 0-24/*')).toBe(3);
+      expect(totalFor('137')).toBe(3);
+      expect(totalFor('')).toBe(3);
+    });
+
     test('requires data and count properties for DATA_WITH_COUNT and throws otherwise', () => {
       const service = createService();
 
@@ -855,49 +874,105 @@ describe('DefaultNetworkRequestService', () => {
       expect(res.data instanceof Blob).toBe(true);
     });
 
-    test('throws body.error when present on non-2xx response', async () => {
-      serverHandler = () => {
-        return new Response(JSON.stringify({ error: { message: 'Entity missing', code: 404 } }), {
-          status: 404,
-          headers: { 'content-type': 'application/json' },
-        });
-      };
+    const captureRequestError = async (opts: { paths: string[]; method?: TRequestMethod }) => {
       const service = createService({ baseUrl: serverBaseUrl });
-
       try {
         await service.doRequest({
-          paths: ['missing-entity'],
-          method: RequestMethods.GET,
+          paths: opts.paths,
+          method: opts.method ?? RequestMethods.GET,
           type: RequestTypes.GET_ONE,
         });
-        expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[expected non-2xx body.error]', err);
-        expect(err).toEqual({ message: 'Entity missing', code: 404 });
+        if (isApplicationError(err)) {
+          return err;
+        }
+        throw err;
       }
+      throw new Error('expected doRequest to throw');
+    };
+
+    test('throws an ApplicationError from the server envelope under the error root key', async () => {
+      serverHandler = () => {
+        return new Response(
+          JSON.stringify({
+            error: {
+              statusCode: 409,
+              message: 'Order already paid',
+              normalized: {
+                text: 'Order already paid',
+                code: 'server.order.paid',
+                args: { id: 7 },
+              },
+              requestId: 'req-1',
+              extra: { transaction: 'tx-9' },
+              details: { cause: [{ path: ['id'], message: 'paid' }] },
+              type: 'ConflictError',
+            },
+          }),
+          { status: 409, headers: { 'content-type': 'application/json' } },
+        );
+      };
+
+      const err = await captureRequestError({ paths: ['orders', '7'] });
+
+      expect(err).toBeInstanceOf(Error);
+      expect(err.statusCode).toBe(409);
+      expect(err.message).toBe('Order already paid');
+      expect(err.normalized).toEqual({
+        text: 'Order already paid',
+        code: 'server.order.paid',
+        args: { id: 7 },
+      });
+      expect(err.extra).toEqual({ transaction: 'tx-9', requestId: 'req-1' });
+      expect(err.cause).toEqual([{ path: ['id'], message: 'paid' }]);
     });
 
-    test('throws the full body when body.error is absent on non-2xx response', async () => {
+    test('reads a body without the error root key, keeping only the envelope fields', async () => {
       serverHandler = () => {
         return new Response(JSON.stringify({ message: 'Validation failed', field: 'email' }), {
           status: 422,
           headers: { 'content-type': 'application/json' },
         });
       };
-      const service = createService({ baseUrl: serverBaseUrl });
 
-      try {
-        await service.doRequest({
-          paths: ['validate'],
-          method: RequestMethods.POST,
-          type: RequestTypes.CREATE,
-          body: { email: 'bad' },
+      const err = await captureRequestError({ paths: ['validate'], method: RequestMethods.POST });
+
+      expect(err.statusCode).toBe(422);
+      expect(err.message).toBe('Validation failed');
+      expect(err.normalized.text).toBe('Validation failed');
+      expect(err.extra).toBeUndefined();
+    });
+
+    test('answers HTTP <status> with the default code when the body is not JSON', async () => {
+      serverHandler = () => {
+        return new Response('<html>Bad Gateway</html>', {
+          status: 502,
+          headers: { 'content-type': 'text/html' },
         });
-        expect(true).toBe(false);
-      } catch (err: unknown) {
-        console.info('[expected non-2xx full body error]', err);
-        expect(err).toEqual({ message: 'Validation failed', field: 'email' });
-      }
+      };
+
+      const err = await captureRequestError({ paths: ['gateway'] });
+
+      expect(err.statusCode).toBe(502);
+      expect(err.message).toBe('HTTP 502');
+      expect(err.normalized.code).toBe('core.system_error');
+    });
+
+    test('answers HTTP <status> for an empty body or a string error key', async () => {
+      serverHandler = () => new Response(null, { status: 503 });
+      const empty = await captureRequestError({ paths: ['empty'] });
+      expect(empty.statusCode).toBe(503);
+      expect(empty.message).toBe('HTTP 503');
+
+      serverHandler = () => {
+        return new Response(JSON.stringify({ error: 'Bad Gateway' }), {
+          status: 502,
+          headers: { 'content-type': 'application/json' },
+        });
+      };
+      const stringKey = await captureRequestError({ paths: ['string-error'] });
+      expect(stringKey.statusCode).toBe(502);
+      expect(stringKey.message).toBe('HTTP 502');
     });
 
     test('never sends a body on GET requests', async () => {
@@ -1031,7 +1106,12 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[expected refreshTokenPath 401]', err);
-        expect(err).toBe('refresh_failed_unauthorized');
+        expect(
+          isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
+        ).toEqual({
+          statusCode: 401,
+          message: 'HTTP 401',
+        });
       }
 
       expect(refreshCalled).toBe(false);
@@ -1067,7 +1147,12 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[expected no-auth 401 error]', err);
-        expect(err).toBe('public_endpoint_401');
+        expect(
+          isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
+        ).toEqual({
+          statusCode: 401,
+          message: 'HTTP 401',
+        });
       }
 
       expect(refreshCalled).toBe(false);
@@ -1107,7 +1192,12 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[expected rejected refresh error]', err);
-        expect(err).toEqual({ code: 'INVALID_SESSION', reason: 'Expired permanently' });
+        expect(
+          isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
+        ).toEqual({
+          statusCode: 401,
+          message: 'HTTP 401',
+        });
       }
 
       expect(authFailureCallCount).toBe(1);
@@ -1147,7 +1237,12 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[expected rejected refresh error]', err);
-        expect(err).toEqual({ code: 'INVALID_SESSION', reason: 'Expired permanently' });
+        expect(
+          isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
+        ).toEqual({
+          statusCode: 401,
+          message: 'HTTP 401',
+        });
       }
 
       expect(authFailureCallCount).toBe(1);

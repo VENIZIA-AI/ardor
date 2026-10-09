@@ -44,7 +44,7 @@ Then `NodeFetcher.send` passes a `FormData` or `URLSearchParams` straight to `fe
 
 ## What comes back
 
-After the retry and the non-2xx throw, `parseResponse` decodes a 2xx response:
+After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `parseResponse` decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
 - A `content-disposition` starting with `attachment` (`HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConsts.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.

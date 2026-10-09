@@ -361,6 +361,17 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-10-10-data-provider-errors-through-response-reader",
+      "file": "2026-10-10-data-provider-errors-through-response-reader.md",
+      "date": "2026-10-10",
+      "title": "The data provider throws an ApplicationError, and reads Content-Range like IGNIS",
+      "packages": [
+        "kernel"
+      ],
+      "kind": "Behavior Change",
+      "order": 9007199254740991
+    },
+    {
       "id": "changelog:2026-10-09-document-title-and-html-lang-hooks",
       "file": "2026-10-09-document-title-and-html-lang-hooks.md",
       "date": "2026-10-09",
