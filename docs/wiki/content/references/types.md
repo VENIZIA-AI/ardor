@@ -133,16 +133,32 @@ ARDOR keeps its enums as classes with `static readonly` literal members. These t
 - `TStatusFromClass<T>` takes `ValueOf` over the class and drops `prototype`, `isValid`, `SCHEME_SET` and `TYPE_SET`, so only the constants remain.
 - `TConstValue<T>` keeps the string and number values only. `TStringConstValue` and `TNumberConstValue` keep one of the two.
 
+All four end with `& {}`. A `static readonly X = '12h'` member has a widening literal type, so a value copied into an object literal (`rows.map(row => ({ value: row.value }))`) or a `let` used to widen to `string` or `number` and no longer fit the union. `& {}` makes the literals regular: the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives `string`, and the result is still assignable to `string` or `number`.
+
 ```ts no-check
 export type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<
   Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>
->;
-export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>;
-export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>;
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
+> & {};
+export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {};
+export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {};
+export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
 ```
 
-The prebuilt unions are `TRequestMethod` (from `RequestMethods`), `TEnvironment` (from `Environments`), `TRequestType` (from `RequestTypes`) and `TRequestBodyType` (from `RequestBodyTypes`).
+```ts
+import { type TConstValue } from '@venizia/ardor';
+
+class TimeModes {
+  static readonly HALF_DAY = '12h';
+  static readonly FULL_DAY = '24h';
+}
+
+const modes: TConstValue<typeof TimeModes>[] = [TimeModes.HALF_DAY, TimeModes.FULL_DAY];
+
+export const options = modes.map(value => ({ value, label: String(value) }));
+// { value: '12h' | '24h'; label: string }[]
+```
+
+The prebuilt unions are `TRequestMethod` (from `RequestMethods`), `TEnvironment` (from `Environments`), `TRequestType` (from `RequestTypes`) and `TRequestBodyType` (from `RequestBodyTypes`). `TRequestMethod` and `TEnvironment` are built on `TStatusFromClass`; `TRequestType` and `TRequestBodyType` are `TStringConstValue` of their class. All four keep their literals.
 
 ```ts
 import { RequestCountData, RequestMethods, type TConstValue, type TStatusFromClass } from '@venizia/ardor';

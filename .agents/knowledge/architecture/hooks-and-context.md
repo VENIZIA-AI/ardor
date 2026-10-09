@@ -53,12 +53,15 @@ ARDOR wraps several ra-core hooks to add typing and safe fallbacks. These need r
 - `useNotifyError` - turns an `ApplicationError` into a react-admin notification, reading `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. Needs the ra-core notification context. See [Error flow](/architecture/error-flow.md).
 - `useRefreshToken` - needs the ra-core auth provider context and a TanStack `QueryClientProvider`. See [Auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - needs ra-core locale state plus `DEFAULT_REST_DATA_PROVIDER` bound in the container, so it can push the current locale onto outgoing request headers. See [Header protocol](/architecture/header-protocol.md) and [Data provider pipeline](/architecture/data-provider-pipeline.md).
+- `useHtmlLang` - needs ra-core locale state; it writes the locale to `document.documentElement.lang` on every change. Like `useRequestHeaderLocale`, nothing in ARDOR calls it - mount it once in a component that stays mounted.
 
 Each of these hooks will throw or degrade differently if its required provider is missing, so when adding a new hook of this kind, document its tree requirements explicitly - see [Adding a hook](/process/adding-a-hook.md).
 
 ## UI and browser-only hooks
 
 A second group of hooks needs nothing from React context at all - they only use browser APIs: `useDebounce`, `useAutosave`, `useConfirm`, `useCopyToClipboard`, `useBeforeUnload`, `useSizer`, and `useWindowDimensions`. These are safe to use anywhere, including outside an ARDOR application, and are documented alongside the rest of the hook surface in [Hooks and services](/reference/hooks-and-services.md).
+
+`useDocumentTitle` (in `packages/admin`, no provider needed) also belongs here. `useDocumentTitle({ title, appTitle, separator = ' · ', enabled = true })` sets the tab title to the non-empty `title` segments then `appTitle`, joined by `separator`, and restores the title it replaced when the title changes or the component unmounts, so no reset-on-navigation hook is needed. Limit: one titled component per screen - React runs child effects before parent effects, so a parent's call wins over a child's.
 
 ## Redux factories
 

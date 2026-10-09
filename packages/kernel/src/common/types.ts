@@ -27,13 +27,15 @@ export type ClassProps<T> = ValueOf<T>;
 
 export type ClassType<T> = Function & { prototype: T };
 
+// `& {}` turns the widening literals of `static readonly` members into regular ones, so a value
+// copied into an object literal or a `let` keeps its union instead of widening to string/number.
 export type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<
   Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>
->;
+> & {};
 
-export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>;
-export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>;
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
+export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {};
+export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {};
+export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
 
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 
@@ -64,8 +66,8 @@ export interface ISendResponse<T = AnyType> {
   [key: string]: any;
 }
 
-export type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>;
-export type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>;
+export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
+export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
 export interface IGetRequestPropsParams {
   resource: string;

@@ -320,7 +320,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 210,
+      "line": 212,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -330,7 +330,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 162,
+      "line": 164,
       "signature": "interface IArdorApplication"
     },
     {
@@ -382,7 +382,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 91,
+      "line": 93,
       "signature": "interface IAuthProviderOptions"
     },
     {
@@ -392,7 +392,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 102,
+      "line": 104,
       "signature": "interface IAuthRecoveryOptions"
     },
     {
@@ -412,7 +412,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 86,
+      "line": 88,
       "signature": "interface ICustomParams"
     },
     {
@@ -462,7 +462,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 145,
+      "line": 147,
       "signature": "interface IFeatureBase"
     },
     {
@@ -492,7 +492,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 70,
+      "line": 72,
       "signature": "interface IGetRequestPropsParams"
     },
     {
@@ -502,7 +502,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 81,
+      "line": 83,
       "signature": "interface IGetRequestPropsResult"
     },
     {
@@ -552,7 +552,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 110,
+      "line": 112,
       "signature": "interface INoAuthOptions"
     },
     {
@@ -582,7 +582,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 158,
+      "line": 160,
       "signature": "interface IPermissionProvider"
     },
     {
@@ -622,7 +622,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 43,
+      "line": 45,
       "signature": "interface IRequestProps"
     },
     {
@@ -632,7 +632,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 131,
+      "line": 133,
       "signature": "interface IRestDataProviderOptions extends INoAuthOptions"
     },
     {
@@ -642,7 +642,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 49,
+      "line": 51,
       "signature": "interface ISendParams"
     },
     {
@@ -652,7 +652,7 @@
       "specifier": "@venizia/ardor",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 62,
+      "line": 64,
       "signature": "interface ISendResponse<T = AnyType>"
     },
     {
@@ -734,6 +734,16 @@
       "file": "packages/react/src/hooks/use-debounce.ts",
       "line": 11,
       "signature": "interface IUseDebounceReturn<TValue>"
+    },
+    {
+      "name": "IUseDocumentTitleOptions",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "interface",
+      "file": "packages/admin/src/hooks/use-document-title.ts",
+      "line": 5,
+      "signature": "interface IUseDocumentTitleOptions"
     },
     {
       "name": "IUseInjectableKeysOverrides",
@@ -945,8 +955,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 36,
-      "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>"
+      "line": 38,
+      "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {}"
     },
     {
       "name": "TDataCount",
@@ -955,7 +965,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 218,
+      "line": 220,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -965,7 +975,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 41,
+      "line": 43,
       "signature": "type TEnvironment = TStatusFromClass<typeof Environments>"
     },
     {
@@ -1015,7 +1025,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 196,
+      "line": 198,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -1035,7 +1045,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 108,
+      "line": 110,
       "signature": "type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>"
     },
     {
@@ -1045,8 +1055,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 35,
-      "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>"
+      "line": 37,
+      "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {}"
     },
     {
       "name": "TPaths",
@@ -1055,7 +1065,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 180,
+      "line": 182,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {
@@ -1065,7 +1075,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 38,
+      "line": 40,
       "signature": "type TPrettify<T> = { [K in keyof T]: T[K]; } & {}"
     },
     {
@@ -1086,8 +1096,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 67,
-      "signature": "type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>"
+      "line": 69,
+      "signature": "type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>"
     },
     {
       "name": "TRequestMethod",
@@ -1096,7 +1106,7 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 40,
+      "line": 42,
       "signature": "type TRequestMethod = TStatusFromClass<typeof RequestMethods>"
     },
     {
@@ -1106,8 +1116,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 68,
-      "signature": "type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>"
+      "line": 70,
+      "signature": "type TRequestType = TStringConstValue<typeof RequestTypes>"
     },
     {
       "name": "TStatusFromClass",
@@ -1116,8 +1126,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 30,
-      "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>>"
+      "line": 32,
+      "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>> & {}"
     },
     {
       "name": "TStringConstValue",
@@ -1126,8 +1136,8 @@
       "specifier": "@venizia/ardor",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 34,
-      "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>"
+      "line": 36,
+      "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {}"
     },
     {
       "name": "TUseInjectableKeys",
@@ -1679,6 +1689,16 @@
       "signature": "useDebounce: <TValue>(params: IUseDebounceParams<TValue>) => IUseDebounceReturn<TValue>"
     },
     {
+      "name": "useDocumentTitle",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-document-title.ts",
+      "line": 16,
+      "signature": "useDocumentTitle: (opts: IUseDocumentTitleOptions) => void"
+    },
+    {
       "name": "useFeatures",
       "package": "@venizia/ardor",
       "subpath": ".",
@@ -1687,6 +1707,16 @@
       "file": "packages/admin/src/hooks/use-features.ts",
       "line": 6,
       "signature": "useFeatures: <TFeature extends IFeature = IFeature>() => Array<TFeature>"
+    },
+    {
+      "name": "useHtmlLang",
+      "package": "@venizia/ardor",
+      "subpath": ".",
+      "specifier": "@venizia/ardor",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-html-lang.ts",
+      "line": 6,
+      "signature": "useHtmlLang: () => void"
     },
     {
       "name": "useInjectable",
@@ -2158,6 +2188,16 @@
       "signature": "interface IReactAdminDataProvider<TResource extends string = string>"
     },
     {
+      "name": "IUseDocumentTitleOptions",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "interface",
+      "file": "packages/admin/src/hooks/use-document-title.ts",
+      "line": 5,
+      "signature": "interface IUseDocumentTitleOptions"
+    },
+    {
       "name": "IUseTranslateKeysOverrides",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
@@ -2228,6 +2268,16 @@
       "signature": "englishMessages: { ra: { action: { add_filter: string; add: string; back: string; bulk_actions: string; cancel: string; clear_array_input: string; clear_input_value: string; clone: string; confirm: string; create: string; create_item: string; delete: string; edit: string; export: string; list: strin"
     },
     {
+      "name": "useDocumentTitle",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-document-title.ts",
+      "line": 16,
+      "signature": "useDocumentTitle: (opts: IUseDocumentTitleOptions) => void"
+    },
+    {
       "name": "useFeatures",
       "package": "@venizia/ardor-admin",
       "subpath": ".",
@@ -2236,6 +2286,16 @@
       "file": "packages/admin/src/hooks/use-features.ts",
       "line": 6,
       "signature": "useFeatures: <TFeature extends IFeature = IFeature>() => Array<TFeature>"
+    },
+    {
+      "name": "useHtmlLang",
+      "package": "@venizia/ardor-admin",
+      "subpath": ".",
+      "specifier": "@venizia/ardor-admin",
+      "kind": "const",
+      "file": "packages/admin/src/hooks/use-html-lang.ts",
+      "line": 6,
+      "signature": "useHtmlLang: () => void"
     },
     {
       "name": "useNotifyError",
@@ -2529,7 +2589,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 210,
+      "line": 212,
       "signature": "interface IApplicationInfo"
     },
     {
@@ -2539,7 +2599,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 162,
+      "line": 164,
       "signature": "interface IArdorApplication"
     },
     {
@@ -2581,7 +2641,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 91,
+      "line": 93,
       "signature": "interface IAuthProviderOptions"
     },
     {
@@ -2591,7 +2651,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 102,
+      "line": 104,
       "signature": "interface IAuthRecoveryOptions"
     },
     {
@@ -2611,7 +2671,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 86,
+      "line": 88,
       "signature": "interface ICustomParams"
     },
     {
@@ -2641,7 +2701,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 145,
+      "line": 147,
       "signature": "interface IFeatureBase"
     },
     {
@@ -2671,7 +2731,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 70,
+      "line": 72,
       "signature": "interface IGetRequestPropsParams"
     },
     {
@@ -2681,7 +2741,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 81,
+      "line": 83,
       "signature": "interface IGetRequestPropsResult"
     },
     {
@@ -2721,7 +2781,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 110,
+      "line": 112,
       "signature": "interface INoAuthOptions"
     },
     {
@@ -2751,7 +2811,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 158,
+      "line": 160,
       "signature": "interface IPermissionProvider"
     },
     {
@@ -2771,7 +2831,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 43,
+      "line": 45,
       "signature": "interface IRequestProps"
     },
     {
@@ -2781,7 +2841,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 131,
+      "line": 133,
       "signature": "interface IRestDataProviderOptions extends INoAuthOptions"
     },
     {
@@ -2791,7 +2851,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 49,
+      "line": 51,
       "signature": "interface ISendParams"
     },
     {
@@ -2801,7 +2861,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 62,
+      "line": 64,
       "signature": "interface ISendResponse<T = AnyType>"
     },
     {
@@ -2984,8 +3044,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 36,
-      "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>"
+      "line": 38,
+      "signature": "type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {}"
     },
     {
       "name": "TDataCount",
@@ -2994,7 +3054,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 218,
+      "line": 220,
       "signature": "type TDataCount<T> = { data: T; count?: number; }"
     },
     {
@@ -3004,7 +3064,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 41,
+      "line": 43,
       "signature": "type TEnvironment = TStatusFromClass<typeof Environments>"
     },
     {
@@ -3044,7 +3104,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 196,
+      "line": 198,
       "signature": "type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never ? never : T extends Array<infer U> ? TFullPaths<U> : T extends object ? { [K in keyof T]-?: K extends string | number ? T[K] extends Array<any> | object ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}` : `${K}` : never; }["
     },
     {
@@ -3064,7 +3124,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 108,
+      "line": 110,
       "signature": "type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>"
     },
     {
@@ -3074,8 +3134,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 35,
-      "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>"
+      "line": 37,
+      "signature": "type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {}"
     },
     {
       "name": "TPaths",
@@ -3084,7 +3144,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 180,
+      "line": 182,
       "signature": "type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0 ? never : T extends Array<AnyType> ? never : T extends object ? { [K in keyof T]-?: K extends string | number ? NonNullable<T[K]> extends Array<AnyType> ? `${K}` : NonNullable<T[K]> extends object ? `${K}` | `${K}.${TPaths<NonNullab"
     },
     {
@@ -3094,7 +3154,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 38,
+      "line": 40,
       "signature": "type TPrettify<T> = { [K in keyof T]: T[K]; } & {}"
     },
     {
@@ -3115,8 +3175,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 67,
-      "signature": "type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>"
+      "line": 69,
+      "signature": "type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>"
     },
     {
       "name": "TRequestMethod",
@@ -3125,7 +3185,7 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 40,
+      "line": 42,
       "signature": "type TRequestMethod = TStatusFromClass<typeof RequestMethods>"
     },
     {
@@ -3135,8 +3195,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 68,
-      "signature": "type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>"
+      "line": 70,
+      "signature": "type TRequestType = TStringConstValue<typeof RequestTypes>"
     },
     {
       "name": "TStatusFromClass",
@@ -3145,8 +3205,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 30,
-      "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>>"
+      "line": 32,
+      "signature": "type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>> & {}"
     },
     {
       "name": "TStringConstValue",
@@ -3155,8 +3215,8 @@
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
       "file": "packages/kernel/src/common/types.ts",
-      "line": 34,
-      "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>"
+      "line": 36,
+      "signature": "type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {}"
     },
     {
       "name": "ValueOf",
