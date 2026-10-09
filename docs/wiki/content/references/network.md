@@ -279,19 +279,47 @@ For a 2xx response:
 
 ## Error shape on non-2xx
 
-When the final status is outside `200..299`, `doRequest` reads the body as JSON and throws:
+When the final status is outside `200..299`, `doRequest` throws an `ApplicationError` (from `@venizia/ignis-inversion`, an `Error`). It reads the body with IGNIS `HttpResponseReader.readError`, under the `error` root key, and maps it the way IGNIS `HttpDataSource` does. So the data providers and a repository throw the same shape, and `useNotifyError` gets the `ApplicationError` it is typed for.
+
+| Field | Value |
+|---|---|
+| `statusCode` | The HTTP status of the response. A `statusCode` in the body is ignored. |
+| `message`, `normalized.text` | The server's `normalized.text`, else its `message`, else `HTTP <status>`. An empty string counts as absent. |
+| `normalized.code` | The server's code, lower-cased; `core.system_error` when the server sent none. |
+| `normalized.args` | The server's `args`, else `{}`. |
+| `extra` | The server's `extra` plus `requestId`; `undefined` when both are empty. |
+| `cause` | The server's `details.cause`, such as the per-field issues of a `422`. |
+
+`message` is the server's text, not a log line as on `HttpDataSource`, because react-admin shows `error.message` to the user.
+
+Every other key of the body is dropped: `type`, `path`, `url`, the rest of `details`, and any ad hoc field such as `field`. The body's top-level `requestId` moves into `extra.requestId`. When the server also sent its own `extra.requestId` (a server that relays a call it made upstream), that older id moves to `extra.upstreamRequestIds`, nearest first.
 
 ```ts
-// What `doRequest` throws for a non-2xx response, given the parsed JSON body:
-const toThrownError = (body: Record<string, unknown> | null): unknown => {
-  return body?.error ?? body;
-};
+import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
 
-toThrownError({ error: { message: 'Not found', statusCode: 404 } }); // -> the inner `error`
-toThrownError({ message: 'Validation failed' }); // -> the whole body
+declare const network: DefaultNetworkRequestService;
+
+// The server answered 409 with:
+// { error: { message: 'Order already paid', normalized: { code: 'server.order.paid', args: { id: 7 } }, requestId: 'req-1' } }
+try {
+  await network.doRequest({
+    type: RequestTypes.UPDATE,
+    method: RequestMethods.PATCH,
+    paths: ['orders', '7'],
+    headers: network.getRequestHeader({ resource: 'orders' }),
+  });
+} catch (error) {
+  if (error instanceof Error) {
+    // error.statusCode                -> 409
+    // error.message                   -> 'Order already paid'
+    // error.normalized.code           -> 'server.order.paid'
+    // error.normalized.args           -> { id: 7 }
+    // error.extra                     -> { requestId: 'req-1' }
+  }
+}
 ```
 
-So a server body `{ error: { message, statusCode } }` throws the inner `error` object, and any other JSON body is thrown as-is. The `Response` object is not attached. The body is read with `response.json()`, so a non-JSON error body turns into a parse error instead.
+A body with no `error` key is read as it stands, so `{ message: 'Validation failed' }` gives that message. A body that is not JSON, is empty, is an array, or holds a string under `error` (a proxy's `{ error: 'Bad Gateway' }`) has no known fields: the error is `HTTP <status>` with the default code. It no longer leaks a `SyntaxError` or a bare string. The `Response` object is not attached.
 
 ## requestCountData modes
 
@@ -312,10 +340,10 @@ declare class DefaultNetworkRequestService {
 
 | `type` | `DATA_ONLY` (`'0'`, default) | `DATA_WITH_COUNT` (`'1'`) |
 |---|---|---|
-| `GET_LIST`, `GET_MANY_REFERENCE` | body wrapped in an array if it is not one; `total` = last segment of `content-range`, else the array length | body must be `{ data, count }` or an error is thrown; `data` wrapped in an array if needed; `count` = body `count` else array length; `total` from `content-range` as on the left |
+| `GET_LIST`, `GET_MANY_REFERENCE` | body wrapped in an array if it is not one; `total` from `content-range`, else the array length | body must be `{ data, count }` or an error is thrown; `data` wrapped in an array if needed; `count` = body `count` else array length; `total` from `content-range` as on the left |
 | every other type | `data` = body; `count` = `parseInt(x-response-count)` - `NaN` when the header is absent | body returned as-is, no validation |
 
-`content-range` follows `<unit> <start>-<end>/<total>`; only the `<total>` after the last `/` is parsed. `response.headers` must expose `.get()`, which the `fetch` `Headers` object does.
+`content-range` is read with IGNIS `HttpResponseReader.parseContentRange`: `<unit> <start>-<end>/<total>` and the empty page `<unit> */<total>` both give `<total>`. An absent header gives the page's row count, and so does a malformed one: an unknown total (`records 0-24/*`), a bare number such as `137`, or an empty string. `response.headers` must expose `.get()`, which the `fetch` `Headers` object does.
 
 ## Auth recovery
 
@@ -338,8 +366,8 @@ When the first send returns `401`, `doRequest` recovers only if all of these hol
 Then:
 
 1. `ensureRefreshed` runs `refreshToken()` inside `Promise.resolve().then(...)`. The promise is stored on the instance, so every 401 that arrives while a refresh is in flight awaits the same one. It is cleared in `finally`.
-2. If `refreshToken` resolves, the service calls `getRequestAuthorizationHeader()` again, replaces `authorization` and `x-auth-provider` on the original headers, and sends exactly once more. A second 401 is thrown like any other non-2xx.
-3. If `refreshToken` throws or rejects, `onAuthFailure` is awaited (its own errors are logged and swallowed), the refresh resolves to `false`, and the original 401 body is thrown.
+2. If `refreshToken` resolves, the service calls `getRequestAuthorizationHeader()` again, replaces `authorization` and `x-auth-provider` on the original headers, and sends exactly once more. A second 401 is thrown like any other non-2xx, as an `ApplicationError`.
+3. If `refreshToken` throws or rejects, `onAuthFailure` is awaited (its own errors are logged and swallowed), the refresh resolves to `false`, and the original 401 is thrown as the `ApplicationError` described under Error shape on non-2xx.
 
 `refreshToken` must leave the new token where step 2 will find it - `setAuthToken` if you use in-memory tokens, otherwise `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`. An in-memory token always shadows the stored one.
 
@@ -417,7 +445,8 @@ request.getRequestUrl({ paths: ['users', '/1'] });
 - **Refreshing must update the token where it is read.** If `setAuthToken` was used, write the refreshed value with `setAuthToken` again - a new `localStorage` entry is shadowed by the in-memory one.
 - **`refreshTokenPath` is a substring check** on `paths.join('/')`, and `refreshToken` is never retried more than once per burst.
 - **`count` is `NaN` for non-list `DATA_ONLY` responses** that do not set `x-response-count`.
-- **Non-JSON error bodies** cause a parse error from `response.json()` instead of the server's message.
+- **A non-JSON error body has no server message.** The error is `HTTP <status>` with `core.system_error`; read `statusCode`, not the text. A 2xx body that is not JSON still rejects with a parse error.
+- **Read the request id from `error.extra.requestId`.** The top-level `requestId` of the body is not a property of the error, and nor is any other body key (`type`, `path`, `url`, `field`).
 - **`FORM_URL_ENCODED` drops falsy values** - `0`, `''` and `false` are not sent.
 
 ## Related

@@ -312,7 +312,7 @@ await dataProvider.deleteMany('products', { ids: ['p-1', 'p-2'] });
 
 ## Totals
 
-`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConsts.CONTENT_RANGE`) in the form `unit start-end/total`; parsing is described in [Network](../references/network).
+`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConsts.CONTENT_RANGE`) in the form `unit start-end/total` (or `unit */total` for an empty page); without it, or with a malformed one such as `records 0-24/*`, `total` is the number of rows in the page. Parsing is described in [Network](../references/network).
 
 `CountRestDataProvider` overrides `getListHelper` so that `getList` and `getManyReference` issue two requests in parallel:
 
@@ -435,6 +435,7 @@ const networkService = dataProvider.getNetworkService();
 - **`getMany` keeps its ids in the URL.** It is always a `GET` to the collection, the route a controller scopes, so a very long `ids` list can hit the request-line limit (`414`/`431`, about 400 UUIDs). IGNIS removed its body-filter `POST /{resource}/find` (#92): it bypassed a controller's overridden `find()`, a cross-tenant read.
 - **Extra truthy keys on list `params` leak into the filter.** Anything on `params` other than `pagination`, `sort`, `filter`, `meta` (and `target`/`id` for references) is copied into the filter as-is.
 - **`DefaultRestDataProvider` has no `total` of its own.** If your backend does not send `content-range`, use `CountRestDataProvider` or expose a `/count` endpoint.
+- **A failed request throws an `ApplicationError`.** Every method, `send()` and `CountRestDataProvider` included, rejects with the error described in [Network](../references/network#error-shape-on-non-2xx): `statusCode` is the HTTP status, `message` the server's text, `normalized.code` and `normalized.args` the server's, and the request id is in `error.extra.requestId`.
 - **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`. Only the latter is what react-admin and `useDataProvider` see.
 
 ## Related

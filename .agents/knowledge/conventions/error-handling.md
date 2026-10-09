@@ -12,11 +12,11 @@ Never throw a raw `new Error(...)`. Use `getError(opts: TError)` from `@venizia/
 
 The error module lives in `@venizia/ignis-inversion`, the same DI package that underpins
 [DI in the browser](/architecture/di-in-the-browser.md). It is how ARDOR's services, providers and
-hooks raise their own failures, but not every rejection carries this shape: on a non-2xx response
-`DefaultNetworkRequestService.doRequest` rethrows the response body (`body.error ?? body`) as the
-backend sent it, with no `getError`, and `DefaultAuthProvider` rejects with plain objects. A failure
-deep in a data provider request therefore need not look like one raised while booting the
-application container - see [Error flow](/architecture/error-flow.md).
+hooks raise their own failures, but not every rejection carries this shape: `DefaultAuthProvider`
+rejects with plain objects. On a non-2xx response `DefaultNetworkRequestService.doRequest` does
+build one, through `getError` from the server's error envelope (read by IGNIS
+`HttpResponseReader.readError`), so a data provider failure has the same fields as one raised while
+booting the application container - see [Error flow](/architecture/error-flow.md).
 
 ```typescript
 throw getError({
@@ -60,8 +60,8 @@ drift.
 
 `normalized = { text, code, args }` is always built, every field always populated, and it is the
 ONLY home for the code and the interpolation args. `useNotifyError` renders an `ApplicationError`
-with one lookup on `error.normalized.code` (a raw HTTP failure body carries `normalized` only if
-the backend sent one), letting [i18n](/architecture/i18n.md) resolve the message from
+with one lookup on `error.normalized.code` (a `doRequest` failure carries the server's code and
+args, `core.system_error` when it sent none), letting [i18n](/architecture/i18n.md) resolve the message from
 the translation table. Pass `transform` to build `normalized` yourself from a snapshot
 (`{ message: TErrorNormalized, statusCode, extra }`):
 

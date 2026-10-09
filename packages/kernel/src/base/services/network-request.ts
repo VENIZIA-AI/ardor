@@ -555,6 +555,44 @@ export class DefaultNetworkRequestService extends BaseService {
     return rs;
   }
 
+  /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
+  private resolveTotal(opts: { headers: Record<string, AnyType>; rowCount: number }): number {
+    const range = HttpResponseReader.parseContentRange({
+      header: opts.headers?.get(HeaderConsts.CONTENT_RANGE),
+    });
+    return range?.total ?? opts.rowCount;
+  }
+
+  /**
+   * A failed response as an `ApplicationError`, mapped like IGNIS `HttpDataSource`: the HTTP status,
+   * the server's code and args, its `extra` with the `requestId` added, and `details.cause`.
+   * `message` is the server's text, not a log line, because react-admin shows it to the user.
+   */
+  private async toResponseError(opts: { response: Response }) {
+    const { response } = opts;
+    const server = await HttpResponseReader.readError({ response, rootKey: ERROR_ROOT_KEY });
+
+    // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
+    const extra: Record<string, unknown> = { ...server.extra };
+    if (server.requestId) {
+      const upstreamRequestId = extra.requestId;
+      extra.requestId = server.requestId;
+      if (upstreamRequestId !== undefined && upstreamRequestId !== server.requestId) {
+        const known = Array.isArray(extra.upstreamRequestIds) ? extra.upstreamRequestIds : [];
+        extra.upstreamRequestIds = [upstreamRequestId, ...known];
+      }
+    }
+
+    return getError({
+      statusCode: response.status,
+      message: server.normalized?.text ?? server.message ?? `HTTP ${response.status}`,
+      messageCode: server.normalized?.code,
+      messageArgs: server.normalized?.args,
+      extra: Object.keys(extra).length > 0 ? extra : undefined,
+      cause: server.details?.cause,
+    });
+  }
+
   convertResponse<TData = AnyType>(opts: {
     response: {
       data: TData | { data: TData; count?: number };
@@ -589,9 +627,7 @@ export class DefaultNetworkRequestService extends BaseService {
             ? [dataFormatted.data]
             : dataFormatted.data;
 
-          const contentRange =
-            headers?.get(HeaderConsts.CONTENT_RANGE) ?? `${normalizedData.length}`;
-          const total = parseInt(contentRange?.split('/').pop(), 10);
+          const total = this.resolveTotal({ headers, rowCount: normalizedData.length });
 
           return {
             data: normalizedData as TData,
@@ -602,8 +638,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
         const normalizedData = !Array.isArray(data) ? [data] : data;
 
-        const contentRange = headers?.get(HeaderConsts.CONTENT_RANGE) ?? `${normalizedData.length}`;
-        const total = parseInt(contentRange?.split('/').pop(), 10);
+        const total = this.resolveTotal({ headers, rowCount: normalizedData.length });
 
         return {
           data: normalizedData as TData,
@@ -745,8 +780,7 @@ export class DefaultNetworkRequestService extends BaseService {
     const status = rs.status;
 
     if (status < 200 || status >= 300) {
-      const jsonRs = await rs.json();
-      throw jsonRs?.[ERROR_ROOT_KEY] ?? jsonRs;
+      throw await this.toResponseError({ response: rs });
     }
 
     return this.parseResponse<ReturnType>({ response: rs, type, requestCountData });

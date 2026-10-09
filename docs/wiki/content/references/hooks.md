@@ -188,7 +188,7 @@ Add your own message keys by augmenting `IUseTranslateKeysOverrides` - see [i18n
 
 ## useNotifyError
 
-Turns an `ApplicationError` into a react-admin notification. It reads `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. The default type is `'error'`; any `options` you pass are spread last and win.
+Turns an `ApplicationError` into a react-admin notification. It reads `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. The default type is `'error'`; any `options` you pass are spread last and win. A failed request through the REST data providers rejects with an `ApplicationError` built from the server's envelope, so it can be passed in as it is (see [Network](../references/network#error-shape-on-non-2xx)).
 
 ```ts no-check
 const useNotifyError: () => (
@@ -566,7 +566,7 @@ export function useRefreshAll() {
 - `useInjectable({ target })` throws when the class has no binding key in the metadata registry. Decorate the class or register it on the application first.
 - `useApplicationContext` and `useApplicationLogger` throw outside of a filled `ApplicationContext`. `useInjectable` throws too, unless you pass `container` explicitly.
 - `useTranslate` returns an identity function without an i18n provider. Missing translations will not error - they render the key.
-- `useNotifyError` reads `error.normalized.code`. An error without a `normalized` field notifies with an `undefined` message.
+- `useNotifyError` reads `error.normalized.code`. An error without a `normalized` field notifies with an `undefined` message. The data providers' errors always carry one; a plain object rejected elsewhere (the auth provider's `getIdentity`, for example) does not.
 - `useConfirm`: `handleClose` clears the dialog but leaves the pending promise unresolved. Use `handleAbort` for a cancel button. Calling `confirm` again before the first promise settles replaces the resolver, so the first promise never resolves.
 - `useAutosave` swallows `onSave` rejections after logging them. Handle failures inside `onSave` if the UI must react.
 - `useSizer` re-subscribes when its argument object changes identity. Keep the `{ containerId }` object stable.

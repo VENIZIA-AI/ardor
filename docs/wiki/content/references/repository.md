@@ -139,7 +139,7 @@ These throw instead of answering something that looks right:
 
 An empty page is not an error: IGNIS sends `records */0`, and `count` answers `0`.
 
-A failed request throws an error with the server's status. Its message ends with the URL and then the server's message, such as `[http][read] 404 | <url> | Ticket not found`. Its `normalized.code` and `normalized.args` are the server's, so `useNotifyError` fills a translated message's placeholders. Match on the status or the code, not on the message text.
+A failed request throws an error with the server's status. Its message ends with the URL and then the server's message, such as `[http][read] 404 | <url> | Ticket not found`. Its `normalized.code` and `normalized.args` are the server's, so `useNotifyError` fills a translated message's placeholders. Match on the status or the code, not on the message text. The REST data providers throw the same fields (`statusCode`, `normalized.code`, `normalized.args`, `extra.requestId`); only `message` differs there - it is the server's text alone, with no log prefix. See [Network](../references/network#error-shape-on-non-2xx).
 
 ## Registering a repository
 
