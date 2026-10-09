@@ -8,6 +8,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-9",
+        "date": "2026-10-09",
+        "sha": "355f2bcd",
+        "order": 151
+      },
+      {
         "version": "0.1.2-8",
         "date": "2026-10-09",
         "sha": "e0b9c273",
@@ -99,6 +105,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-9",
+        "date": "2026-10-09",
+        "sha": "0b3afed8",
+        "order": 152
+      },
       {
         "version": "0.1.2-8",
         "date": "2026-10-09",
@@ -404,7 +416,7 @@
         "admin"
       ],
       "kind": "Bug Fix",
-      "order": 9007199254740991
+      "order": 150
     },
     {
       "id": "changelog:2026-10-09-document-title-and-html-lang-hooks",
