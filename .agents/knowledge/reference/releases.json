@@ -8,6 +8,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-8",
+        "date": "2026-10-09",
+        "sha": "e0b9c273",
+        "order": 147
+      },
+      {
         "version": "0.1.2-7",
         "date": "2026-10-09",
         "sha": "ef6b0e52",
@@ -93,6 +99,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-8",
+        "date": "2026-10-09",
+        "sha": "6a488648",
+        "order": 148
+      },
       {
         "version": "0.1.2-7",
         "date": "2026-10-09",
@@ -180,6 +192,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.2-7",
+        "date": "2026-10-09",
+        "sha": "6485981d",
+        "order": 145
+      },
+      {
         "version": "0.1.2-6",
         "date": "2026-10-09",
         "sha": "529ee43f",
@@ -259,6 +277,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.2-7",
+        "date": "2026-10-09",
+        "sha": "a2cf61c0",
+        "order": 146
+      },
       {
         "version": "0.1.2-6",
         "date": "2026-10-09",
@@ -369,7 +393,7 @@
         "kernel"
       ],
       "kind": "Behavior Change",
-      "order": 9007199254740991
+      "order": 144
     },
     {
       "id": "changelog:2026-10-09-document-title-and-html-lang-hooks",
