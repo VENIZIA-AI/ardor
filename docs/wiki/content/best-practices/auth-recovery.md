@@ -186,7 +186,7 @@ requests.setAuthRecovery({
 });
 ```
 
-You do not have to call `cleanUp` in `onAuthFailure` when the request came from react-admin. When the original `401` surfaces, react-admin calls `authProvider.checkError({ status: 401 })`, and `DefaultAuthProvider.checkError` already calls `authService.cleanUp()` and redirects to `login`. Use `onAuthFailure` for work that must happen even outside react-admin's request path.
+You do not have to call `cleanUp` in `onAuthFailure` when the request came from react-admin. When the original `401` surfaces, react-admin calls `authProvider.checkError(error)` with the `ApplicationError` the data provider threw (`statusCode: 401`), and `DefaultAuthProvider.checkError` already calls `authService.cleanUp()` and redirects to `login`. Use `onAuthFailure` for work that must happen even outside react-admin's request path.
 
 ## Where tokens live
 

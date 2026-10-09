@@ -82,7 +82,8 @@ export class DefaultAuthProvider<
   }
 
   checkError(params: AnyType) {
-    const { status } = params;
+    // react-admin's own HttpError carries `status`; an ApplicationError from the data provider carries `statusCode`.
+    const status = params?.status ?? params?.statusCode;
 
     if (status === 401) {
       this.authService.cleanUp();
