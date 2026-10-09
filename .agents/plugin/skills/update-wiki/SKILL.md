@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash, Agent
 
 # Update Wiki Documentation
 
-You are updating the Ardor framework wiki at `packages/docs/wiki/`.
+You are updating the ARDOR framework wiki. Its pages live in `docs/wiki/content/`; the playbook with the full rules is `.agents/knowledge/process/updating-the-wiki.md`.
 
 ## Arguments
 
@@ -21,17 +21,13 @@ If no arguments, ask what to document.
 ## Wiki Structure
 
 ```
-packages/docs/wiki/
-├── changelogs/          # Date-prefixed: YYYY-MM-DD-slug.md
+docs/wiki/content/
+├── changelogs/          # Date-prefixed: YYYY-MM-DD-slug.md, plus template.md and index.md
 ├── guides/
 │   ├── get-started/
-│   ├── core-concepts/
-│   └── tutorials/
-├── references/          # API docs organized by package/module
-│   ├── base/
-│   ├── components/
-│   ├── helpers/
-│   └── utilities/
+│   └── migration/
+├── references/          # One page per topic: application, data-provider, hooks, types, ...
+├── extensions/
 └── best-practices/
 ```
 
@@ -48,14 +44,14 @@ packages/docs/wiki/
 | Type | When | Naming |
 |------|------|--------|
 | **Changelog** | New feature, breaking change, significant refactor | `changelogs/YYYY-MM-DD-slug.md` |
-| **Reference** | New/updated API surface | `references/<category>/file.md` |
+| **Reference** | New/updated API surface | `references/<topic>.md` |
 | **Guide** | How-to, tutorial, concept explanation | `guides/<category>/file.md` |
 
 ### 3. Write the documentation
 
 #### For changelogs
 
-Follow the template at `packages/docs/wiki/changelogs/template.md`. Key sections:
+Follow the template at `docs/wiki/content/changelogs/template.md`, and add a row to `docs/wiki/content/changelogs/index.md`. Key sections:
 - Frontmatter with title and description
 - Overview bullet points
 - Breaking Changes (with before/after code)
@@ -85,7 +81,7 @@ Only include sections that apply. Remove empty template sections.
 
 If you created a new doc file, update the VitePress sidebar config:
 
-**File:** `packages/docs/site/.vitepress/config.mts`
+**File:** `docs/wiki/site/.vitepress/config.mts`
 
 Add the new page to the appropriate sidebar section.
 
@@ -93,10 +89,14 @@ Add the new page to the appropriate sidebar section.
 
 If the doc belongs to a category with an `index.md`, add a link to the new doc there.
 
+### 6. Run the gates
+
+From `docs/wiki`: `bun scripts/check-sidebar.mts` and `bun scripts/check-snippets.mts` (snippets compile against the built `dist`, so build first). From the repo root: `make wiki-links-check`.
+
 ## Style Rules
 
 - Use TypeScript for all code examples
-- Use Ardor import paths (`@venizia/ignis`, `@venizia/ignis-helpers`)
+- Import from `@venizia/ardor` in examples, or from a sub-package path when the page is about one (`@venizia/ardor-kernel/repository`)
 - Match the technical depth of existing docs - direct, no hand-holding
 - Use GitHub-flavored markdown alerts: `> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`
 - Tables for structured comparisons (files changed, API surfaces, config options)

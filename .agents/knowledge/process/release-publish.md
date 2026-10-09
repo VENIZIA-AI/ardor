@@ -91,7 +91,9 @@ After install, the job uses the Makefile dependency chain (see
    v<version> [<build_mode>]`, push. The lockfile is re-synced in a scratch copy of HEAD
    (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
    force-updated ranges of the build leaking into the commit.
-7. Create and push an annotated tag `<package>-v<version>`.
+7. Create and push an annotated tag `<package>-v<version>`. The push is tried up to three times, 10 s
+   and 20 s apart: GitHub has rejected a tag push with a bare `(failed)` and no reason, and without the
+   retry that one error rolls back a release commit already on `develop`.
 8. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
    `patch|minor|major` and `next` for any pre-release mode. Scripts are skipped on publish because
    the build already ran in an earlier step. Never `npm publish`: npm packs `catalog:` and
