@@ -177,7 +177,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-0/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-1/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
       "line": 13,
       "signature": "class BindingKeys",
       "external": true
@@ -933,7 +933,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-0/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-1/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
       "line": 6,
       "signature": "type TBindingScope = TConstValue<typeof BindingScopes>",
       "external": true
@@ -2436,7 +2436,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-0/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-1/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
       "line": 13,
       "signature": "class BindingKeys",
       "external": true
@@ -2972,7 +2972,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-0/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-inversion@0.2.1-1/node_modules/@venizia/ignis-inversion/dist/cjs/modules/binding/common/constants.d.ts",
       "line": 6,
       "signature": "type TBindingScope = TConstValue<typeof BindingScopes>",
       "external": true
