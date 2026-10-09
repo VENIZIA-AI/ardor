@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.1.2-8",
+  "version": "0.1.2-9",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -83,7 +83,7 @@
     "size": "size-limit"
   },
   "dependencies": {
-    "@venizia/ardor-admin": "^0.1.2-8",
+    "@venizia/ardor-admin": "^0.1.2-9",
     "@venizia/ardor-kernel": "^0.1.2-7",
     "@venizia/ardor-react": "^0.1.2-7"
   },
