@@ -12,6 +12,8 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-09 | [Const-value types keep their literals when copied](./2026-10-09-const-value-types-keep-literals) | Behavior Change |
+| 2026-10-09 | [useDocumentTitle and useHtmlLang](./2026-10-09-document-title-and-html-lang-hooks) | Feature |
 | 2026-10-07 | [Feature modules and permissions](./2026-10-07-feature-modules) | Feature |
 | 2026-10-07 | [List extras on the data provider and the repository](./2026-10-07-list-extras) | Feature |
 | 2026-10-07 | [Class identity survives a minifier, and the container fixes from IGNIS](./2026-10-07-class-identity-and-container) | Behavior Change |
