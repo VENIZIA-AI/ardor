@@ -156,8 +156,16 @@ jobs:
       - name: Create tag
         run: |
           git tag -a "$TAG_NAME" -m "$PACKAGE_NAME v$NEW_VERSION"
-          git push origin "$TAG_NAME"
           echo "IS_TAG_CREATED=true" >> $GITHUB_ENV
+
+          # GitHub can reject a tag push with a bare "(failed)" and no reason. Retry before failing,
+          # because a failure here rolls back the release commit already pushed to develop.
+          for attempt in 1 2 3; do
+            git push origin "$TAG_NAME" && exit 0
+            echo ">>> Tag push attempt $attempt failed"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       # =========================================================================
       # PUBLISH
