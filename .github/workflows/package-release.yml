@@ -12,7 +12,6 @@ on:
           - react
           - admin
           - ardor
-          - ui-kit
         required: true
       build_mode:
         type: choice

@@ -6,7 +6,7 @@ title: API References
 
 Welcome to the ARDOR API reference documentation. ARDOR is the frontend framework of the VENIZIA ecosystem, providing a structured architecture for admin-driven web applications. It implements a react-admin interface layered on top of an IGNIS inversion-of-control container.
 
-Through its core packages - `@venizia/ardor`, `ardor-kernel`, `ardor-react`, `ardor-admin`, and `ardor-ui-kit` - the framework separates enterprise lifecycle management, dependency resolution, UI composition, and data transport into maintainable components. The reference sections catalog every class, interface, binding key, and hook available across these layers.
+Through its core packages - `@venizia/ardor`, `ardor-kernel`, `ardor-react`, and `ardor-admin` - the framework separates enterprise lifecycle management, dependency resolution, UI composition, and data transport into maintainable components. The reference sections catalog every class, interface, binding key, and hook available across these layers.
 
 <div class="guide-cards">
 
@@ -54,4 +54,4 @@ Through its core packages - `@venizia/ardor`, `ardor-kernel`, `ardor-react`, `ar
 | Hooks | ardor-react | Hooks to resolve dependencies and consume container state |
 | Network Layer | @venizia/ardor | Transport layer, HTTP interceptors, and error mapping utilities |
 | Repositories | @venizia/ardor/repository | HTTP datasource and resource repositories, from IGNIS connectors |
-| Utilities & Types | ardor-ui-kit | Shared interfaces, design tokens, and helper functions |
+| Utilities & Types | ardor-kernel | Shared interfaces, constants, and helper functions |

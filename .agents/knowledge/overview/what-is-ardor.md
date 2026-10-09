@@ -19,14 +19,14 @@ The first ingredient is react-admin's data contract: `getList`, `getOne`, `creat
 
 ## What it is not
 
-ARDOR ships no UI components in its core layers - buttons, dialogs and design tokens live only in the separate `@venizia/ardor-ui-kit` package. It does not invent a second query language: filtering, sorting and pagination speak the `@venizia/ignis-filter` vocabulary rather than an ARDOR-specific syntax. And it keeps react-admin out of the lower layers entirely - only one of the four packages touches it.
+ARDOR ships no UI components and no design tokens - buttons, dialogs and styling belong to the application. It does not invent a second query language: filtering, sorting and pagination speak the `@venizia/ignis-filter` vocabulary rather than an ARDOR-specific syntax. And it keeps react-admin out of the lower layers entirely - only one of the four packages touches it.
 
 ## The four packages
 
 - [`@venizia/ardor-kernel`](/packages/kernel.md) - isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetchers, socket client. No React, no react-admin.
 - [`@venizia/ardor-react`](/packages/react.md) - React bindings: the application context, `useInjectable`, typed Redux hook factories, and UI hooks such as `useDebounce`, `useAutosave`, `useConfirm`, `useSizer`. No react-admin.
 - [`@venizia/ardor-admin`](/packages/admin.md) - the react-admin adapter: `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider`, the `ArdorApplication` root component, `useTranslate`, and the English/Vietnamese message bundles. This is the only package that imports react-admin.
-- [`@venizia/ardor`](/packages/ardor.md) - the umbrella entry point. It re-exports kernel, react and admin so an application needs one dependency, and adds nothing of its own. UI components are not part of this re-export; they come separately from [`@venizia/ardor-ui-kit`](/packages/ui-kit.md).
+- [`@venizia/ardor`](/packages/ardor.md) - the umbrella entry point. It re-exports kernel, react and admin so an application needs one dependency, and adds nothing of its own.
 
 The split follows the dependency graph: the build order is the dependency order, and each package type-checks against the `dist` of its dependency, never its `src`. A kernel change is invisible to `admin` until the kernel is rebuilt - see [Build, run, test](/overview/build-run-test.md).
 

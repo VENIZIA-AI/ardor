@@ -22,7 +22,6 @@ control and `@venizia/ignis-filter` for the query vocabulary the data layer spea
 | `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React |
 | `@venizia/ardor-admin` | The react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles. | kernel, react, `ra-core` |
 | `@venizia/ardor` | Umbrella. Re-exports all three, so an application needs one dependency and one import specifier. | the three above |
-| `@venizia/ardor-ui-kit` | The design system (Tailwind + Radix components, design tokens). Unchanged by this migration. | React, Tailwind |
 
 Install `@venizia/ardor` unless a package genuinely needs only one layer.
 

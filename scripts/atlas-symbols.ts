@@ -15,7 +15,7 @@ const REPO = resolve(import.meta.dir, '..');
 export const SYMBOLS_OUTPUT = resolve(REPO, '.agents/knowledge/reference/symbols.json');
 
 // Dependency order, the same list `public-surface.ts` walks - the two tables describe one surface.
-const PACKAGES = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'];
+const PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
 
 const SIGNATURE_MAX_CHARS = 300;
 

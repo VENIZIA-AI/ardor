@@ -6,7 +6,7 @@ resource: packages/admin/src/index.ts
 tags: [package, admin, react-admin, ra-core, i18n, data-provider]
 ---
 
-`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and no other framework package (kernel, react, ui-kit) imports `ra-core`. Applications still import it directly for their own pages - the 5-mins-qs and vert-admin examples do. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md).
+`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and no other framework package (kernel, react, ardor) imports `ra-core`. Applications still import it directly for their own pages - the 5-mins-qs and vert-admin examples do. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md).
 
 ## What it exports
 

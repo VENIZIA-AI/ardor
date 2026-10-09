@@ -10,7 +10,7 @@ ARDOR's shape is not arbitrary. Each structural choice traces back to a specific
 
 ## The four-package split
 
-ARDOR is [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), and the umbrella [ardor](/packages/ardor.md) package, plus the separate [ui-kit](/packages/ui-kit.md). The split exists so that browser purity and framework-neutrality can be checked mechanically instead of by convention. Kernel is IGNIS's own dependency-injection and service layer, ported with no admin-specific code. React adds hooks and context on top of kernel but still has no react-admin dependency. Admin is the only package whose code imports `ra-core`; the umbrella only re-exports it. If everything lived in one package, "does this leak react-admin into the container layer" would be a code-review question forever; split into packages, it becomes a layer check that either passes or fails.
+ARDOR is [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), and the umbrella [ardor](/packages/ardor.md) package. The split exists so that browser purity and framework-neutrality can be checked mechanically instead of by convention. Kernel is IGNIS's own dependency-injection and service layer, ported with no admin-specific code. React adds hooks and context on top of kernel but still has no react-admin dependency. Admin is the only package whose code imports `ra-core`; the umbrella only re-exports it. If everything lived in one package, "does this leak react-admin into the container layer" would be a code-review question forever; split into packages, it becomes a layer check that either passes or fails.
 
 ## ra-core confined to admin
 
@@ -54,7 +54,7 @@ No runtime entry of kernel, react, admin or ardor may reach a Node builtin or an
 
 ## Water palette, same design system
 
-ARDOR's visual identity uses a water-themed palette rather than IGNIS's fire theme, but it is built on the same design system and design tokens as IGNIS - same structure, different color story. This keeps ARDOR visually distinct as a frontend framework while staying a sibling of IGNIS rather than an unrelated project.
+ARDOR's visual identity - the docs site, described in `docs/wiki/DESIGN-SYSTEM.md` - uses a water-themed palette rather than IGNIS's fire theme, but it is built on the same design-system structure as IGNIS (one brand, one light accent for links, two decorators, a display gradient, a glow) - same structure, different color story. This keeps ARDOR visually distinct as a frontend framework while staying a sibling of IGNIS rather than an unrelated project.
 
 ## Where to go next
 

@@ -10,7 +10,7 @@ tags: [react, hooks, context, package, injection, module-augmentation]
 
 ## Role
 
-Applications rarely install this package directly - most install [ardor](/packages/ardor.md), which re-exports it. But `react` is where the actual context and hooks are implemented. It sits between the kernel (which defines binding keys, `Logger`, and core types) and any UI package built on top, including [ui-kit](/packages/ui-kit.md) and admin.
+Applications rarely install this package directly - most install [ardor](/packages/ardor.md), which re-exports it. But `react` is where the actual context and hooks are implemented. It sits between the kernel (which defines binding keys, `Logger`, and core types) and any UI package built on top, including admin.
 
 ## Exports
 

@@ -16,7 +16,6 @@ All packages are scoped `@venizia/*` and installed together:
 - `@venizia/ardor-kernel` - isomorphic core, see [kernel](/packages/kernel.md)
 - `@venizia/ardor-react` - React bindings, see [react](/packages/react.md)
 - `@venizia/ardor-admin` - react-admin adapter, see [admin](/packages/admin.md)
-- `@venizia/ardor-ui-kit` - design system, see [ui-kit](/packages/ui-kit.md)
 
 A consuming application also depends directly on three IGNIS packages, since ARDOR is a consumer of IGNIS rather than a reimplementation of it:
 

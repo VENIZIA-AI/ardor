@@ -4,8 +4,7 @@
     "kernel",
     "react",
     "admin",
-    "ardor",
-    "ui-kit"
+    "ardor"
   ],
   "symbols": [
     {
@@ -84,7 +83,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/artifact-keys.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/artifact-keys.d.ts",
       "line": 5,
       "signature": "class ArtifactBindingKeys",
       "external": true
@@ -95,7 +94,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 34,
       "signature": "class ArtifactNamespaces",
       "external": true
@@ -106,7 +105,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
       "line": 2,
       "signature": "class ArtifactTypes",
       "external": true
@@ -188,7 +187,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 5,
       "signature": "class BindingNamespaces",
       "external": true
@@ -339,7 +338,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 25,
       "signature": "interface IArtifactMetadata<ApplicationType = unknown> extends IArtifactRegistrationOptions<ApplicationType>",
       "external": true
@@ -360,7 +359,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 12,
       "signature": "interface IArtifactRegistrationOptions<ApplicationType = unknown>",
       "external": true
@@ -841,7 +840,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 27,
       "signature": "class RepositoryTypes",
       "external": true
@@ -932,7 +931,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 3,
       "signature": "type TBindingNamespace = TConstValue<typeof BindingNamespaces>",
       "external": true
@@ -1084,7 +1083,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 34,
       "signature": "type TRepositoryType = TConstValue<typeof RepositoryTypes>",
       "external": true
@@ -1265,7 +1264,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 5,
       "signature": "component: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1276,7 +1275,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 6,
       "signature": "configuration: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1307,7 +1306,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 7,
       "signature": "datasource: (metadata?: IDataSourceMetadata) => ClassDecorator",
       "external": true
@@ -1368,7 +1367,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
       "line": 14,
       "signature": "inject: (opts: TInjectOptions) => (target: any, propertyName: string | symbol | undefined, parameterIndex?: number) => void",
       "external": true
@@ -1379,7 +1378,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 3,
       "signature": "injectable: <ApplicationType = unknown>(opts: IArtifactMetadata<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1500,7 +1499,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 5,
       "signature": "model: (metadata: IModelMetadata) => ClassDecorator",
       "external": true
@@ -1521,7 +1520,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 8,
       "signature": "provide: (opts: { key: string; scope?: TBindingScope; }) => MethodDecorator",
       "external": true
@@ -1542,7 +1541,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 8,
       "signature": "repository: <Model extends AbstractEntity = AbstractEntity, DataSource extends IDataSource = IDataSource>(metadata?: TRepositoryMetadata<Model, DataSource>) => ClassDecorator",
       "external": true
@@ -1553,7 +1552,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 4,
       "signature": "service: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -1844,7 +1843,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
       "line": 5,
       "signature": "class HttpDataSource extends AbstractDataSource<IHttpDataSourceSettings>",
       "external": true
@@ -1855,7 +1854,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 14,
       "signature": "class HttpExtraRequest",
       "external": true
@@ -1866,7 +1865,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 22,
       "signature": "class HttpRepository<E extends object = AnyType, P extends object = Partial<E>> implements IReadableRepository<E, THttpRepositoryOptions>, IUpdatableRepository<E, P, THttpRepositoryOptions>, IDeletableRepository<E, THttpRepositoryOptions>",
       "external": true
@@ -1877,7 +1876,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 12,
       "signature": "class HttpResourceEntity extends AbstractEntity",
       "external": true
@@ -1888,7 +1887,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/response-reader.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/response-reader.d.ts",
       "line": 6,
       "signature": "class HttpResponseReader",
       "external": true
@@ -1899,7 +1898,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 2,
       "signature": "interface IAuthToken",
       "external": true
@@ -1910,7 +1909,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 30,
       "signature": "interface IHttpCallOptions",
       "external": true
@@ -1921,7 +1920,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 34,
       "signature": "interface IHttpDataSourceSettings",
       "external": true
@@ -1932,7 +1931,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 55,
       "signature": "interface IHttpReadResult<R>",
       "external": true
@@ -1943,7 +1942,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 8,
       "signature": "interface IHttpRequestContext",
       "external": true
@@ -1954,7 +1953,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 67,
       "signature": "interface IHttpWriteResult<R>",
       "external": true
@@ -1965,7 +1964,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 16,
       "signature": "type TAuthTokenResolver = (context: IHttpRequestContext) => IAuthToken | undefined",
       "external": true
@@ -1976,7 +1975,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 5,
       "signature": "type TExtraRequest = Record<string, boolean | ReadonlyArray<string>>",
       "external": true
@@ -1987,7 +1986,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 10,
       "signature": "type TExtraResult<Extra extends TExtraRequest> = { [K in keyof Extra as Extra[K] extends false ? never : K]?: Extra[K] extends ReadonlyArray<infer Key extends string> ? Record<Key, unknown> : unknown; } & Record<string, unknown>",
       "external": true
@@ -1998,7 +1997,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 26,
       "signature": "type THttpBody = string | object",
       "external": true
@@ -2009,7 +2008,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 20,
       "signature": "type THttpHeaders = Headers | Array<[string, string]> | Record<string, string>",
       "external": true
@@ -2020,7 +2019,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 18,
       "signature": "type THttpHeadersResolver = (context: IHttpRequestContext) => THttpHeaders | undefined",
       "external": true
@@ -2031,7 +2030,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 73,
       "signature": "type THttpQuery<E extends object> = { filter?: TFilter<E>; }",
       "external": true
@@ -2042,7 +2041,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 10,
       "signature": "type THttpRepositoryOptions = NonNullable<Parameters<IReadableRepository['existsWith']>[0]['options']> & IHttpCallOptions",
       "external": true
@@ -2403,7 +2402,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/artifact-keys.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/artifact-keys.d.ts",
       "line": 5,
       "signature": "class ArtifactBindingKeys",
       "external": true
@@ -2414,7 +2413,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 34,
       "signature": "class ArtifactNamespaces",
       "external": true
@@ -2425,7 +2424,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/constants.d.ts",
       "line": 2,
       "signature": "class ArtifactTypes",
       "external": true
@@ -2507,7 +2506,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 5,
       "signature": "class BindingNamespaces",
       "external": true
@@ -2608,7 +2607,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 25,
       "signature": "interface IArtifactMetadata<ApplicationType = unknown> extends IArtifactRegistrationOptions<ApplicationType>",
       "external": true
@@ -2629,7 +2628,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/helpers/inversion/common/types/artifact.d.ts",
       "line": 12,
       "signature": "interface IArtifactRegistrationOptions<ApplicationType = unknown>",
       "external": true
@@ -2940,7 +2939,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 27,
       "signature": "class RepositoryTypes",
       "external": true
@@ -3021,7 +3020,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/common/bindings.d.ts",
       "line": 3,
       "signature": "type TBindingNamespace = TConstValue<typeof BindingNamespaces>",
       "external": true
@@ -3163,7 +3162,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/constants.d.ts",
       "line": 34,
       "signature": "type TRepositoryType = TConstValue<typeof RepositoryTypes>",
       "external": true
@@ -3284,7 +3283,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 5,
       "signature": "component: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3295,7 +3294,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 6,
       "signature": "configuration: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3306,7 +3305,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 7,
       "signature": "datasource: (metadata?: IDataSourceMetadata) => ClassDecorator",
       "external": true
@@ -3347,7 +3346,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectors.d.ts",
       "line": 14,
       "signature": "inject: (opts: TInjectOptions) => (target: any, propertyName: string | symbol | undefined, parameterIndex?: number) => void",
       "external": true
@@ -3358,7 +3357,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 3,
       "signature": "injectable: <ApplicationType = unknown>(opts: IArtifactMetadata<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3479,7 +3478,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 5,
       "signature": "model: (metadata: IModelMetadata) => ClassDecorator",
       "external": true
@@ -3500,7 +3499,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 8,
       "signature": "provide: (opts: { key: string; scope?: TBindingScope; }) => MethodDecorator",
       "external": true
@@ -3521,7 +3520,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/persistents.d.ts",
       "line": 8,
       "signature": "repository: <Model extends AbstractEntity = AbstractEntity, DataSource extends IDataSource = IDataSource>(metadata?: TRepositoryMetadata<Model, DataSource>) => ClassDecorator",
       "external": true
@@ -3532,7 +3531,7 @@
       "subpath": ".",
       "specifier": "@venizia/ardor-kernel",
       "kind": "const",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/metadata/injectable.d.ts",
       "line": 4,
       "signature": "service: <ApplicationType = unknown>(opts?: IArtifactRegistrationOptions<ApplicationType>) => ClassDecorator",
       "external": true
@@ -3583,7 +3582,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/datasource.d.ts",
       "line": 5,
       "signature": "class HttpDataSource extends AbstractDataSource<IHttpDataSourceSettings>",
       "external": true
@@ -3594,7 +3593,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 14,
       "signature": "class HttpExtraRequest",
       "external": true
@@ -3605,7 +3604,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 22,
       "signature": "class HttpRepository<E extends object = AnyType, P extends object = Partial<E>> implements IReadableRepository<E, THttpRepositoryOptions>, IUpdatableRepository<E, P, THttpRepositoryOptions>, IDeletableRepository<E, THttpRepositoryOptions>",
       "external": true
@@ -3616,7 +3615,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 12,
       "signature": "class HttpResourceEntity extends AbstractEntity",
       "external": true
@@ -3627,7 +3626,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "class",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/response-reader.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/response-reader.d.ts",
       "line": 6,
       "signature": "class HttpResponseReader",
       "external": true
@@ -3638,7 +3637,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 2,
       "signature": "interface IAuthToken",
       "external": true
@@ -3649,7 +3648,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 30,
       "signature": "interface IHttpCallOptions",
       "external": true
@@ -3660,7 +3659,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 34,
       "signature": "interface IHttpDataSourceSettings",
       "external": true
@@ -3671,7 +3670,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 55,
       "signature": "interface IHttpReadResult<R>",
       "external": true
@@ -3682,7 +3681,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 8,
       "signature": "interface IHttpRequestContext",
       "external": true
@@ -3693,7 +3692,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "interface",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 67,
       "signature": "interface IHttpWriteResult<R>",
       "external": true
@@ -3704,7 +3703,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 16,
       "signature": "type TAuthTokenResolver = (context: IHttpRequestContext) => IAuthToken | undefined",
       "external": true
@@ -3715,7 +3714,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 5,
       "signature": "type TExtraRequest = Record<string, boolean | ReadonlyArray<string>>",
       "external": true
@@ -3726,7 +3725,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-kernel@0.2.1-5+b16cb32c92716174/node_modules/@venizia/ignis-kernel/dist/cjs/base/repositories/common/extra-request.d.ts",
       "line": 10,
       "signature": "type TExtraResult<Extra extends TExtraRequest> = { [K in keyof Extra as Extra[K] extends false ? never : K]?: Extra[K] extends ReadonlyArray<infer Key extends string> ? Record<Key, unknown> : unknown; } & Record<string, unknown>",
       "external": true
@@ -3737,7 +3736,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 26,
       "signature": "type THttpBody = string | object",
       "external": true
@@ -3748,7 +3747,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 20,
       "signature": "type THttpHeaders = Headers | Array<[string, string]> | Record<string, string>",
       "external": true
@@ -3759,7 +3758,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 18,
       "signature": "type THttpHeadersResolver = (context: IHttpRequestContext) => THttpHeaders | undefined",
       "external": true
@@ -3770,7 +3769,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/common/types.d.ts",
       "line": 73,
       "signature": "type THttpQuery<E extends object> = { filter?: TFilter<E>; }",
       "external": true
@@ -3781,7 +3780,7 @@
       "subpath": "./repository",
       "specifier": "@venizia/ardor-kernel/repository",
       "kind": "type",
-      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+7dd4ff3a29bb10aa/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
+      "file": "node_modules/.bun/@venizia+ignis-connectors@0.2.1-7+b16cb32c92716174/node_modules/@venizia/ignis-connectors/dist/cjs/http/repository.d.ts",
       "line": 10,
       "signature": "type THttpRepositoryOptions = NonNullable<Parameters<IReadableRepository['existsWith']>[0]['options']> & IHttpCallOptions",
       "external": true
@@ -4125,2386 +4124,6 @@
       "file": "packages/react/src/hooks/use-window-dimensions.ts",
       "line": 3,
       "signature": "useWindowDimensions: () => { width: number; height: number; }"
-    },
-    {
-      "name": "Accordion",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/accordion.tsx",
-      "line": 10,
-      "signature": "function Accordion({ ...props }: React.ComponentProps<typeof AccordionPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AccordionContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/accordion.tsx",
-      "line": 48,
-      "signature": "function AccordionContent({ className, children, ...props }: React.ComponentProps<typeof AccordionPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AccordionItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/accordion.tsx",
-      "line": 14,
-      "signature": "function AccordionItem({ className, ...props }: React.ComponentProps<typeof AccordionPrimitive.Item>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AccordionTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/accordion.tsx",
-      "line": 27,
-      "signature": "function AccordionTrigger({ className, children, ...props }: React.ComponentProps<typeof AccordionPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialog",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 38,
-      "signature": "AdaptiveDialog: ({ defaultOpen, children, open: openProp, onOpenChange: setOpenProp, ...props }: React.ComponentProps<typeof Dialog>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptiveDialogClose",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 114,
-      "signature": "AdaptiveDialogClose: (props: React.ComponentProps<typeof DialogClose>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialogContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 86,
-      "signature": "AdaptiveDialogContent: (props: React.ComponentProps<typeof DialogContent>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialogDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 109,
-      "signature": "AdaptiveDialogDescription: (props: React.ComponentProps<typeof DialogDescription>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialogHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 98,
-      "signature": "AdaptiveDialogHeader: (props: React.ComponentProps<typeof DialogHeader>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialogTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 103,
-      "signature": "AdaptiveDialogTitle: (props: React.ComponentProps<typeof DialogTitle>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptiveDialogTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-dialog.tsx",
-      "line": 81,
-      "signature": "AdaptiveDialogTrigger: (props: React.ComponentProps<typeof DialogTrigger>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptivePopover",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 30,
-      "signature": "AdaptivePopover: ({ defaultOpen, children, open: openProp, onOpenChange: setOpenProp, ...props }: React.ComponentProps<typeof Popover>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptivePopoverClose",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 105,
-      "signature": "AdaptivePopoverClose: (props: React.ComponentProps<typeof DrawerClose>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptivePopoverContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 78,
-      "signature": "AdaptivePopoverContent: (props: React.ComponentProps<typeof PopoverContent>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AdaptivePopoverDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 100,
-      "signature": "AdaptivePopoverDescription: (props: React.ComponentProps<typeof DrawerDescription>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptivePopoverHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 90,
-      "signature": "AdaptivePopoverHeader: (props: React.ComponentProps<typeof DrawerHeader>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptivePopoverTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 95,
-      "signature": "AdaptivePopoverTitle: (props: React.ComponentProps<typeof DrawerTitle>) => import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "AdaptivePopoverTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/adaptive/adaptive-popover.tsx",
-      "line": 73,
-      "signature": "AdaptivePopoverTrigger: (props: React.ComponentProps<typeof PopoverTrigger>) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Alert",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert.tsx",
-      "line": 23,
-      "signature": "function Alert({ className, variant, ...props }: React.ComponentProps<'div'> & VariantProps<typeof alertVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert.tsx",
-      "line": 48,
-      "signature": "function AlertDescription({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialog",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 8,
-      "signature": "function AlertDialog({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogAction",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 103,
-      "signature": "function AlertDialogAction({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Action>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogCancel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 110,
-      "signature": "function AlertDialogCancel({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 38,
-      "signature": "function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 90,
-      "signature": "function AlertDialogDescription({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Description>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 67,
-      "signature": "function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 57,
-      "signature": "function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogOverlay",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 22,
-      "signature": "function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogPortal",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 18,
-      "signature": "function AlertDialogPortal({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 77,
-      "signature": "function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertDialogTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert-dialog.tsx",
-      "line": 12,
-      "signature": "function AlertDialogTrigger({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AlertTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/alert.tsx",
-      "line": 38,
-      "signature": "function AlertTitle({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Avatar",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/avatar.tsx",
-      "line": 7,
-      "signature": "function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AvatarFallback",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/avatar.tsx",
-      "line": 27,
-      "signature": "function AvatarFallback({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Fallback>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "AvatarImage",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/avatar.tsx",
-      "line": 17,
-      "signature": "function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Backdrop",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/backdrop/Backdrop.tsx",
-      "line": 8,
-      "signature": "Backdrop: { (props: IBackdropProps): import(\"react/jsx-runtime\").JSX.Element | null; Loading: import(\"react\").FC<import(\"react\").SVGProps<SVGSVGElement>>; }"
-    },
-    {
-      "name": "Badge",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/badge.tsx",
-      "line": 52,
-      "signature": "function Badge({ className, variant, asChild, ...props }: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BadgeCompVariantsType",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "type",
-      "file": "packages/ui-kit/src/components/shadcn/badge.tsx",
-      "line": 67,
-      "signature": "type BadgeCompVariantsType = Extract<VariantProps<typeof badgeVariants>['variant'], string>"
-    },
-    {
-      "name": "Breadcrumb",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 8,
-      "signature": "function Breadcrumb({ className, ...props }: React.ComponentProps<'nav'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbEllipsis",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 83,
-      "signature": "function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<'span'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 29,
-      "signature": "function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbLink",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 39,
-      "signature": "function BreadcrumbLink({ asChild, className, ...props }: React.ComponentProps<'a'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbList",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 19,
-      "signature": "function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbPage",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 57,
-      "signature": "function BreadcrumbPage({ className, ...props }: React.ComponentProps<'p'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "BreadcrumbSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/breadcrumb.tsx",
-      "line": 70,
-      "signature": "function BreadcrumbSeparator({ children, className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Button",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/button.tsx",
-      "line": 46,
-      "signature": "function Button({ className, variant, size, asChild, ...props }: React.ComponentProps<'button'> & VariantProps<typeof buttonVariants> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ButtonGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/button-group.tsx",
-      "line": 24,
-      "signature": "function ButtonGroup({ className, orientation, ...props }: React.ComponentProps<'div'> & VariantProps<typeof buttonGroupVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ButtonGroupSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/button-group.tsx",
-      "line": 60,
-      "signature": "function ButtonGroupSeparator({ className, orientation, ...props }: React.ComponentProps<typeof Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ButtonGroupText",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/button-group.tsx",
-      "line": 40,
-      "signature": "function ButtonGroupText({ className, asChild, ...props }: React.ComponentProps<'div'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Calendar",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/calendar.tsx",
-      "line": 9,
-      "signature": "function Calendar({ className, classNames, showOutsideDays, captionLayout, buttonVariant, formatters, components, ...props }: React.ComponentProps<typeof DayPicker> & { buttonVariant?: React.ComponentProps<typeof Button>['variant']; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CalendarDayButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/calendar.tsx",
-      "line": 141,
-      "signature": "function CalendarDayButton({ className, day, modifiers, ...props }: React.ComponentProps<typeof DayButton>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Card",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 5,
-      "signature": "function Card({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardAction",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 51,
-      "signature": "function CardAction({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 61,
-      "signature": "function CardContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 41,
-      "signature": "function CardDescription({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 65,
-      "signature": "function CardFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 18,
-      "signature": "function CardHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CardTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/card.tsx",
-      "line": 31,
-      "signature": "function CardTitle({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CheckBoxFillIcon",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/icons/akar-icons-check-box-fill.tsx",
-      "line": 3,
-      "signature": "CheckBoxFillIcon: ({ size, color, strokeWidth, className, ...props }: React.SVGProps<SVGSVGElement> & { size?: number; color?: string; strokeWidth?: number; }) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Checkbox",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/checkbox.tsx",
-      "line": 8,
-      "signature": "function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CheckboxInput",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/input/checkbox/CheckboxInput.tsx",
-      "line": 17,
-      "signature": "CheckboxInput: React.FC<ICheckboxInputProps>"
-    },
-    {
-      "name": "CircleCheckFillIcon",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/icons/akar-icons-circle-check-fill.tsx",
-      "line": 3,
-      "signature": "CircleCheckFillIcon: ({ size, color, strokeWidth, className, ...props }: React.SVGProps<SVGSVGElement> & { size?: number; color?: string; strokeWidth?: number; }) => import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Collapsible",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/collapsible.tsx",
-      "line": 3,
-      "signature": "function Collapsible({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CollapsibleContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/collapsible.tsx",
-      "line": 13,
-      "signature": "function CollapsibleContent({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CollapsibleTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/collapsible.tsx",
-      "line": 7,
-      "signature": "function CollapsibleTrigger({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ComingSoon",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/common/ComingSoon.tsx",
-      "line": 7,
-      "signature": "ComingSoon: { (props: IComingSoonProps): import(\"react/jsx-runtime\").JSX.Element; Title: import(\"react\").FC<import(\"react\").DetailedHTMLProps<import(\"react\").HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>>; Description: import(\"react\").FC<import(\"react\").DetailedHTMLProps<import(\"react\").HT"
-    },
-    {
-      "name": "Command",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 17,
-      "signature": "function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandDialog",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 30,
-      "signature": "function CommandDialog({ title, description, children, className, showCloseButton, ...props }: React.ComponentProps<typeof Dialog> & { title?: string; description?: string; className?: string; showCloseButton?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandEmpty",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 89,
-      "signature": "function CommandEmpty({ ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 99,
-      "signature": "function CommandGroup({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Group>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandInput",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 60,
-      "signature": "function CommandInput({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Input>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 128,
-      "signature": "function CommandItem({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Item>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandList",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 79,
-      "signature": "function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 115,
-      "signature": "function CommandSeparator({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "CommandShortcut",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/command.tsx",
-      "line": 141,
-      "signature": "function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenu",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 10,
-      "signature": "function ContextMenu({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuCheckboxItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 118,
-      "signature": "function ContextMenuCheckboxItem({ className, children, checked, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.CheckboxItem>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 77,
-      "signature": "function ContextMenuContent({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 20,
-      "signature": "function ContextMenuGroup({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Group>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 95,
-      "signature": "function ContextMenuItem({ className, inset, variant, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Item> & { inset?: boolean; variant?: 'default' | 'destructive'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuLabel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 168,
-      "signature": "function ContextMenuLabel({ className, inset, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Label> & { inset?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuPortal",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 24,
-      "signature": "function ContextMenuPortal({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Portal>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuRadioGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 32,
-      "signature": "function ContextMenuRadioGroup({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.RadioGroup>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuRadioItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 144,
-      "signature": "function ContextMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.RadioItem>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 185,
-      "signature": "function ContextMenuSeparator({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuShortcut",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 198,
-      "signature": "function ContextMenuShortcut({ className, ...props }: React.ComponentProps<'span'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuSub",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 28,
-      "signature": "function ContextMenuSub({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Sub>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuSubContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 61,
-      "signature": "function ContextMenuSubContent({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuSubTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 38,
-      "signature": "function ContextMenuSubTrigger({ className, inset, children, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.SubTrigger> & { inset?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ContextMenuTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/context-menu.tsx",
-      "line": 14,
-      "signature": "function ContextMenuTrigger({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DatePicker",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/input/date-picker/DatePicker.tsx",
-      "line": 30,
-      "signature": "DatePicker: React.FC<IDatePickerProps>"
-    },
-    {
-      "name": "Dialog",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 8,
-      "signature": "function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogClose",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 20,
-      "signature": "function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 40,
-      "signature": "function DialogContent({ className, children, showCloseButton, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 102,
-      "signature": "function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 82,
-      "signature": "function DialogFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 72,
-      "signature": "function DialogHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogOverlay",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 24,
-      "signature": "function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogPortal",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 16,
-      "signature": "function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 92,
-      "signature": "function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DialogTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dialog.tsx",
-      "line": 12,
-      "signature": "function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Drawer",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 7,
-      "signature": "function Drawer({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerClose",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 19,
-      "signature": "function DrawerClose({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Close>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 39,
-      "signature": "function DrawerContent({ className, children, ...props }: React.ComponentProps<typeof DrawerPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 98,
-      "signature": "function DrawerDescription({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 78,
-      "signature": "function DrawerFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 65,
-      "signature": "function DrawerHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerOverlay",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 23,
-      "signature": "function DrawerOverlay({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Overlay>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerPortal",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 15,
-      "signature": "function DrawerPortal({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Portal>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 88,
-      "signature": "function DrawerTitle({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Title>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DrawerTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/drawer.tsx",
-      "line": 11,
-      "signature": "function DrawerTrigger({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenu",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 10,
-      "signature": "function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuCheckboxItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 73,
-      "signature": "function DropdownMenuCheckboxItem({ className, children, checked, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 26,
-      "signature": "function DropdownMenuContent({ className, sideOffset, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 46,
-      "signature": "function DropdownMenuGroup({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Group>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 50,
-      "signature": "function DropdownMenuItem({ className, inset, variant, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & { inset?: boolean; variant?: 'default' | 'destructive'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuLabel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 129,
-      "signature": "function DropdownMenuLabel({ className, inset, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & { inset?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuPortal",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 14,
-      "signature": "function DropdownMenuPortal({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuRadioGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 99,
-      "signature": "function DropdownMenuRadioGroup({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuRadioItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 105,
-      "signature": "function DropdownMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 146,
-      "signature": "function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuShortcut",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 159,
-      "signature": "function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'span'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuSub",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 169,
-      "signature": "function DropdownMenuSub({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuSubContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 196,
-      "signature": "function DropdownMenuSubContent({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuSubTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 173,
-      "signature": "function DropdownMenuSubTrigger({ className, inset, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "DropdownMenuTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/dropdown-menu.tsx",
-      "line": 20,
-      "signature": "function DropdownMenuTrigger({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Empty",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 5,
-      "signature": "function Empty({ className, ...props }: React.ComponentProps<\"div\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "EmptyContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 84,
-      "signature": "function EmptyContent({ className, ...props }: React.ComponentProps<\"div\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "EmptyDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 71,
-      "signature": "function EmptyDescription({ className, ...props }: React.ComponentProps<\"p\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "EmptyHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 18,
-      "signature": "function EmptyHeader({ className, ...props }: React.ComponentProps<\"div\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "EmptyMedia",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 46,
-      "signature": "function EmptyMedia({ className, variant, ...props }: React.ComponentProps<\"div\"> & VariantProps<typeof emptyMediaVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "EmptyTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/empty.tsx",
-      "line": 61,
-      "signature": "function EmptyTitle({ className, ...props }: React.ComponentProps<\"div\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Field",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 77,
-      "signature": "function Field({ className, orientation, ...props }: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 93,
-      "signature": "function FieldContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 131,
-      "signature": "function FieldDescription({ className, ...props }: React.ComponentProps<'p'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldError",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 174,
-      "signature": "function FieldError({ className, children, errors, ...props }: React.ComponentProps<'div'> & { errors?: Array<{ message?: string; } | undefined>; }): import(\"react/jsx-runtime\").JSX.Element | null"
-    },
-    {
-      "name": "FieldGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 43,
-      "signature": "function FieldGroup({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldLabel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 103,
-      "signature": "function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldLegend",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 23,
-      "signature": "function FieldLegend({ className, variant, ...props }: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 146,
-      "signature": "function FieldSeparator({ children, className, ...props }: React.ComponentProps<'div'> & { children?: React.ReactNode; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldSet",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 9,
-      "signature": "function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "FieldTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/field.tsx",
-      "line": 118,
-      "signature": "function FieldTitle({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "IBackdropProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "interface",
-      "file": "packages/ui-kit/src/components/core/backdrop/Backdrop.tsx",
-      "line": 4,
-      "signature": "interface IBackdropProps extends React.ComponentProps<'div'>"
-    },
-    {
-      "name": "ICheckboxInputProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "interface",
-      "file": "packages/ui-kit/src/components/core/input/checkbox/CheckboxInput.tsx",
-      "line": 9,
-      "signature": "interface ICheckboxInputProps extends React.ComponentProps<typeof CheckboxPrimitive.Root>"
-    },
-    {
-      "name": "IComingSoonProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "interface",
-      "file": "packages/ui-kit/src/components/core/common/ComingSoon.tsx",
-      "line": 5,
-      "signature": "interface IComingSoonProps extends React.ComponentProps<'div'>"
-    },
-    {
-      "name": "IDatePickerProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "interface",
-      "file": "packages/ui-kit/src/components/core/input/date-picker/DatePicker.tsx",
-      "line": 11,
-      "signature": "interface IDatePickerProps"
-    },
-    {
-      "name": "Input",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input.tsx",
-      "line": 5,
-      "signature": "function Input({ className, type, ...props }: React.ComponentProps<'input'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 10,
-      "signature": "function InputGroup({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroupAddon",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 57,
-      "signature": "function InputGroupAddon({ className, align, ...props }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroupButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 93,
-      "signature": "function InputGroupButton({ className, type, variant, size, ...props }: Omit<React.ComponentProps<typeof Button>, 'size'> & VariantProps<typeof inputGroupButtonVariants>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroupInput",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 124,
-      "signature": "function InputGroupInput({ className, ...props }: React.ComponentProps<'input'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroupText",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 112,
-      "signature": "function InputGroupText({ className, ...props }: React.ComponentProps<'span'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "InputGroupTextarea",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/input-group.tsx",
-      "line": 137,
-      "signature": "function InputGroupTextarea({ className, ...props }: React.ComponentProps<'textarea'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Kbd",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/kbd.tsx",
-      "line": 3,
-      "signature": "function Kbd({ className, ...props }: React.ComponentProps<\"kbd\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "KbdGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/kbd.tsx",
-      "line": 18,
-      "signature": "function KbdGroup({ className, ...props }: React.ComponentProps<\"div\">): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Label",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/label.tsx",
-      "line": 7,
-      "signature": "function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Popover",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/popover.tsx",
-      "line": 7,
-      "signature": "function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "PopoverAnchor",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/popover.tsx",
-      "line": 37,
-      "signature": "function PopoverAnchor({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Anchor>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "PopoverContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/popover.tsx",
-      "line": 15,
-      "signature": "function PopoverContent({ className, align, sideOffset, ...props }: React.ComponentProps<typeof PopoverPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "PopoverTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/popover.tsx",
-      "line": 11,
-      "signature": "function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "RadioGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/radio-group.tsx",
-      "line": 9,
-      "signature": "function RadioGroup({ className, ...props }: React.ComponentProps<typeof RadioGroupPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "RadioGroupItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/radio-group.tsx",
-      "line": 22,
-      "signature": "function RadioGroupItem({ className, ...props }: React.ComponentProps<typeof RadioGroupPrimitive.Item>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ScrollArea",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/scroll-area.tsx",
-      "line": 7,
-      "signature": "function ScrollArea({ className, children, ...props }: React.ComponentProps<typeof ScrollAreaPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "ScrollBar",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/scroll-area.tsx",
-      "line": 28,
-      "signature": "function ScrollBar({ className, orientation, ...props }: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Select",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 9,
-      "signature": "function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 46,
-      "signature": "function SelectContent({ className, children, position, align, ...props }: React.ComponentProps<typeof SelectPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 13,
-      "signature": "function SelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 91,
-      "signature": "function SelectItem({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Item>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectLabel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 81,
-      "signature": "function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectScrollDownButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 142,
-      "signature": "function SelectScrollDownButton({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectScrollUpButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 128,
-      "signature": "function SelectScrollUpButton({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 115,
-      "signature": "function SelectSeparator({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 21,
-      "signature": "function SelectTrigger({ className, size, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Trigger> & { size?: 'sm' | 'default'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SelectValue",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/select.tsx",
-      "line": 17,
-      "signature": "function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Separator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/separator.tsx",
-      "line": 7,
-      "signature": "function Separator({ className, orientation, decorative, ...props }: React.ComponentProps<typeof SeparatorPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Sheet",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 10,
-      "signature": "function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetClose",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 18,
-      "signature": "function SheetClose({ ...props }: React.ComponentProps<typeof SheetPrimitive.Close>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 42,
-      "signature": "function SheetContent({ className, children, side, ...props }: React.ComponentProps<typeof SheetPrimitive.Content> & { side?: 'top' | 'right' | 'bottom' | 'left'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetDescription",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 108,
-      "signature": "function SheetDescription({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Description>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 88,
-      "signature": "function SheetFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 78,
-      "signature": "function SheetHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetTitle",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 98,
-      "signature": "function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Title>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SheetTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sheet.tsx",
-      "line": 14,
-      "signature": "function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Sidebar",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 154,
-      "signature": "function Sidebar({ side, variant, collapsible, className, children, ...props }: React.ComponentProps<'div'> & { side?: 'left' | 'right'; variant?: 'sidebar' | 'floating' | 'inset'; collapsible?: 'offcanvas' | 'icon' | 'none'; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 354,
-      "signature": "function SidebarContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 332,
-      "signature": "function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarGroup",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 368,
-      "signature": "function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarGroupAction",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 400,
-      "signature": "function SidebarGroupAction({ className, asChild, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarGroupContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 423,
-      "signature": "function SidebarGroupContent({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarGroupLabel",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 379,
-      "signature": "function SidebarGroupLabel({ className, asChild, ...props }: React.ComponentProps<'div'> & { asChild?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarHandleRef",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "interface",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 55,
-      "signature": "interface SidebarHandleRef"
-    },
-    {
-      "name": "SidebarHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 321,
-      "signature": "function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarInput",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 310,
-      "signature": "function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarInset",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 296,
-      "signature": "function SidebarInset({ className, ...props }: React.ComponentProps<'main'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenu",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 434,
-      "signature": "function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuAction",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 528,
-      "signature": "function SidebarMenuAction({ className, asChild, showOnHover, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; showOnHover?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuBadge",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 560,
-      "signature": "function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 478,
-      "signature": "function SidebarMenuButton({ asChild, isActive, variant, size, tooltip, className, ...props }: React.ComponentProps<'button'> & { asChild?: boolean; isActive?: boolean; tooltip?: string | React.ComponentProps<typeof TooltipContent>; } & VariantProps<typeof sidebarMenuButtonVariants>): import(\"react/"
-    },
-    {
-      "name": "SidebarMenuItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 445,
-      "signature": "function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuSkeleton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 579,
-      "signature": "function SidebarMenuSkeleton({ className, showIcon, ...props }: React.ComponentProps<'div'> & { showIcon?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuSub",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 610,
-      "signature": "function SidebarMenuSub({ className, ...props }: React.ComponentProps<'ul'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuSubButton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 636,
-      "signature": "function SidebarMenuSubButton({ asChild, size, isActive, className, ...props }: React.ComponentProps<'a'> & { asChild?: boolean; size?: 'sm' | 'md'; isActive?: boolean; }): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarMenuSubItem",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 625,
-      "signature": "function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<'li'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarProvider",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 59,
-      "signature": "function SidebarProvider({ defaultOpen, open: openProp, onOpenChange: setOpenProp, className, style, children, defaultWidth, keyboardShortcuts, sidebarHandleRef, ...props }: React.ComponentProps<'div'> & { defaultOpen?: boolean; open?: boolean; onOpenChange?: (open: boolean) => void; defaultWidth?: "
-    },
-    {
-      "name": "SidebarRail",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 271,
-      "signature": "function SidebarRail({ className, ...props }: React.ComponentProps<'button'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarSeparator",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 343,
-      "signature": "function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof Separator>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SidebarTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 250,
-      "signature": "function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Skeleton",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/skeleton.tsx",
-      "line": 3,
-      "signature": "function Skeleton({ className, ...props }: React.ComponentProps<'div'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Spinner",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/spinner.tsx",
-      "line": 5,
-      "signature": "function Spinner({ className, ...props }: React.ComponentProps<'svg'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Switch",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/switch.tsx",
-      "line": 7,
-      "signature": "function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "SwitchInput",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/input/switch/SwitchInput.tsx",
-      "line": 19,
-      "signature": "SwitchInput: React.FC<TSwitchInputProps>"
-    },
-    {
-      "name": "TSwitchInputProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "type",
-      "file": "packages/ui-kit/src/components/core/input/switch/SwitchInput.tsx",
-      "line": 9,
-      "signature": "type TSwitchInputProps = React.ComponentProps<typeof SwitchPrimitive.Root> & { label?: React.ReactNode; orientation?: 'vertical' | 'horizontal' | 'horizontal-reverse'; helperText?: React.ReactNode; error?: boolean; errorText?: Array<{ message?: string; } | undefined>; }"
-    },
-    {
-      "name": "TTextFieldProps",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "type",
-      "file": "packages/ui-kit/src/components/core/input/text-field/TextField.tsx",
-      "line": 13,
-      "signature": "type TTextFieldProps = React.ComponentProps<'textarea'> & React.ComponentProps<'input'> & { label?: React.ReactNode; startIcon?: React.ReactNode; startBlockIcon?: React.ReactNode; endIcon?: React.ReactNode; endBlockIcon?: React.ReactNode; helperText?: React.ReactNode; error?: boolean; errorText?: Ar"
-    },
-    {
-      "name": "Table",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 5,
-      "signature": "function Table({ className, ...props }: React.ComponentProps<'table'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableBody",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 34,
-      "signature": "function TableBody({ className, ...props }: React.ComponentProps<'tbody'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableCaption",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 83,
-      "signature": "function TableCaption({ className, ...props }: React.ComponentProps<'caption'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableCell",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 71,
-      "signature": "function TableCell({ className, ...props }: React.ComponentProps<'td'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableFooter",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 44,
-      "signature": "function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableHead",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 58,
-      "signature": "function TableHead({ className, ...props }: React.ComponentProps<'th'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableHeader",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 22,
-      "signature": "function TableHeader({ className, ...props }: React.ComponentProps<'thead'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TableRow",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/table.tsx",
-      "line": 54,
-      "signature": "function TableRow({ className, ...props }: React.ComponentProps<'tr'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Tabs",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tabs.tsx",
-      "line": 7,
-      "signature": "function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TabsContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tabs.tsx",
-      "line": 43,
-      "signature": "function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TabsList",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tabs.tsx",
-      "line": 17,
-      "signature": "function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TabsTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tabs.tsx",
-      "line": 30,
-      "signature": "function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TextField",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/core/input/text-field/TextField.tsx",
-      "line": 33,
-      "signature": "TextField: React.FC<TTextFieldProps>"
-    },
-    {
-      "name": "Textarea",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/textarea.tsx",
-      "line": 5,
-      "signature": "function Textarea({ className, ...props }: React.ComponentProps<'textarea'>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "Toaster",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/shadcn/sonner.tsx",
-      "line": 8,
-      "signature": "Toaster: ({ ...props }: ToasterProps) => import(\"react\").ReactPortal | null"
-    },
-    {
-      "name": "Tooltip",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tooltip.tsx",
-      "line": 20,
-      "signature": "function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TooltipContent",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tooltip.tsx",
-      "line": 32,
-      "signature": "function TooltipContent({ className, sideOffset, children, ...props }: React.ComponentProps<typeof TooltipPrimitive.Content>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TooltipProvider",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tooltip.tsx",
-      "line": 7,
-      "signature": "function TooltipProvider({ delayDuration, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "TooltipTrigger",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/tooltip.tsx",
-      "line": 28,
-      "signature": "function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>): import(\"react/jsx-runtime\").JSX.Element"
-    },
-    {
-      "name": "badgeVariants",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/shadcn/badge.tsx",
-      "line": 8,
-      "signature": "badgeVariants: (props?: ({ variant?: \"default\" | \"destructive\" | \"outline\" | \"secondary\" | \"red\" | \"orange\" | \"amber\" | \"yellow\" | \"lime\" | \"green\" | \"emerald\" | \"teal\" | \"cyan\" | \"sky\" | \"blue\" | \"indigo\" | \"violet\" | \"purple\" | \"fuchsia\" | \"pink\" | \"rose\" | null | undefined; } & import(\"class-vari"
-    },
-    {
-      "name": "buttonGroupVariants",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/shadcn/button-group.tsx",
-      "line": 7,
-      "signature": "buttonGroupVariants: (props?: ({ orientation?: \"horizontal\" | \"vertical\" | null | undefined; } & import(\"class-variance-authority/types\").ClassProp) | undefined) => string"
-    },
-    {
-      "name": "buttonVariants",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/components/shadcn/button.tsx",
-      "line": 8,
-      "signature": "buttonVariants: (props?: ({ variant?: \"link\" | \"default-active\" | \"destructive-active\" | \"glassmorphism\" | \"default\" | \"destructive\" | \"outline\" | \"secondary\" | \"ghost\" | null | undefined; size?: \"default\" | \"lg\" | \"sm\" | \"xs\" | \"icon\" | \"icon-sm\" | \"icon-lg\" | \"icon-xs\" | \"icon-xxs\" | null | undefi"
-    },
-    {
-      "name": "cn",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "const",
-      "file": "packages/ui-kit/src/utilities/tw.utility.ts",
-      "line": 4,
-      "signature": "cn: (...inputs: ClassValue[]) => string"
-    },
-    {
-      "name": "useIsMobile",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/hooks/use-mobile.ts",
-      "line": 5,
-      "signature": "function useIsMobile(): boolean"
-    },
-    {
-      "name": "useSidebar",
-      "package": "@venizia/ardor-ui-kit",
-      "subpath": ".",
-      "specifier": "@venizia/ardor-ui-kit",
-      "kind": "function",
-      "file": "packages/ui-kit/src/components/shadcn/sidebar.tsx",
-      "line": 46,
-      "signature": "function useSidebar(): SidebarContextProps"
     }
   ]
 }

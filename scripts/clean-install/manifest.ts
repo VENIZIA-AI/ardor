@@ -28,7 +28,6 @@ export const INSTALL_CLAIMS: IInstallClaim[] = [
       './socket-io': ['socket.io-client'],
     },
   },
-  { package: 'ui-kit' },
 ];
 
 export interface IPackageManifest {

@@ -13,7 +13,7 @@ None - this page is about the shape of the framework, not about running it. See 
 
 ## Quick Reference
 
-The framework is four packages plus a design system. Each has one role.
+The framework is four packages. Each has one role.
 
 | Package | Role | Depends on React | Depends on react-admin |
 |---|---|---|---|
@@ -21,7 +21,6 @@ The framework is four packages plus a design system. Each has one role.
 | `@venizia/ardor-react` | React bindings: the application context, `useInjectable`, typed Redux hook factories, the UI hooks | Yes | No |
 | `@venizia/ardor-admin` | react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, English and Vietnamese messages | Yes | Yes |
 | `@venizia/ardor` | Umbrella entry point that re-exports the three packages above, so an application needs one dependency | Via re-export | Via re-export |
-| `@venizia/ardor-ui-kit` | Design system: Tailwind + Radix components and design tokens, generated from Figma | Yes | No |
 
 ## Why ARDOR exists
 
@@ -79,7 +78,7 @@ const products = useRepository({ target: ProductRepository });
 
 The boundaries matter as much as the features.
 
-- **No UI components in the core.** `kernel`, `react` and `admin` ship no visual components. Buttons, dialogs, accordions and the design tokens live in `@venizia/ardor-ui-kit`, which is a separate package with a separate dependency (Tailwind + Radix). You can use the framework without the kit, or the kit without the framework.
+- **No UI components.** `kernel`, `react` and `admin` ship no visual components, and neither does the umbrella. Buttons, dialogs and styling belong to your application, so the framework never dictates a component library or a design system.
 - **No second query language.** The data layer speaks the query vocabulary of `@venizia/ignis-filter`. ARDOR does not invent its own filter, sort or pagination syntax, and it does not translate between two of them. If the backend is IGNIS, the vocabulary is already shared.
 - **No react-admin in `kernel` or `react`.** `@venizia/ardor-kernel` has no React and no react-admin. `@venizia/ardor-react` has React but no `ra-core`. Only `@venizia/ardor-admin` imports react-admin. That is the same guarantee `ignis-kernel` carries on the backend side: the lowest layers stay pure so they can be reused, tested and reasoned about without the runtime on top.
 
@@ -126,7 +125,7 @@ ARDOR is early. The code has export and member parity with the legacy package, a
 ## Common pitfalls
 
 - **Forgetting `reflect-metadata`.** It must be imported once, before the application class is defined. Without it the container cannot read the decorator metadata it relies on.
-- **Expecting UI components from `@venizia/ardor`.** The umbrella re-exports `kernel`, `react` and `admin` only. Components come from `@venizia/ardor-ui-kit`.
+- **Expecting UI components from `@venizia/ardor`.** The umbrella re-exports `kernel`, `react` and `admin` only. ARDOR ships no UI components; bring your own.
 - **Augmenting the umbrella instead of the declaring package.** `declare module '@venizia/ardor'` does not extend `IUseInjectableKeysOverrides`. Augment `@venizia/ardor-react` and `@venizia/ardor-admin`.
 - **Rebuilding one package and testing another.** `admin` compiles against the kernel's `dist`. After a kernel change, rebuild the kernel (or `make build`) before expecting `admin` to see it.
 - **Listing too few `noAuthPaths`.** Any path not listed and not matched by `noAuthPathRegex` is sent with an Authorization header and fails without one. Login and register paths belong in the list.

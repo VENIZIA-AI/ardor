@@ -27,7 +27,7 @@ CI workflow, not in the pre-commit hook, so run it yourself before landing a bun
 [build system](/process/build-system.md) for the wider build.
 
 The wiki also runs a snippet gate that compiles every ```ts fence in the docs against the real
-packages (kernel, react, admin, ui-kit). A code sample that references a service, provider, hook,
+packages (kernel, react, admin, ardor). A code sample that references a service, provider, hook,
 or constant that does not exist - or that uses the wrong import path - fails the gate the same way
 a bad link does. Keep examples honest: reference real binding keys like `services.<ClassName>`,
 real constants like `RequestMethods` and `RequestTypes` from

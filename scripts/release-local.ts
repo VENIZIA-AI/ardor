@@ -27,7 +27,7 @@ import { join } from 'node:path';
 const BRANCH = 'develop';
 
 /** Dependency order, mirrored from `scripts/release.ts` - a package publishes after everything it depends on. */
-const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'] as const;
+const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 type TPackageName = (typeof RELEASE_ORDER)[number];
 

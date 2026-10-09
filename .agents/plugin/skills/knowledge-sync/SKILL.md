@@ -88,7 +88,6 @@ as concepts are added.
 | `packages/admin/src/providers` | architecture/data-provider-pipeline, architecture/auth-recovery, architecture/i18n, packages/admin |
 | `packages/admin` (hooks, broad/other) | packages/admin, architecture/error-flow, conventions/react-hooks |
 | `packages/ardor` | packages/ardor, overview/what-is-ardor |
-| `packages/ui-kit` | packages/ui-kit |
 | `examples/<x>` | examples/&lt;x&gt; |
 | `Makefile`, `scripts/`, `.githooks/`, root `package.json` | process/build-system, process/testing, process/git-workflow, process/release-publish, overview/build-run-test, conventions/gotchas |
 | `.github/workflows/` | process/release-publish, process/testing, process/updating-the-wiki |

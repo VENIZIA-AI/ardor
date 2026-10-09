@@ -35,8 +35,8 @@ and are applied live in the VitePress theme (`site/.vitepress/theme/style.css`).
 ## Color - WCAG-verified
 
 ARDOR is water where IGNIS is fire: the same design system - one brand, one light accent for
-links, two decorators, a display gradient, a glow - in a cool palette. Every value is a primitive
-`packages/ui-kit/tokens/primitives.json` ships (slate / sky / teal / cyan ramps). Brand anchor is
+links, two decorators, a display gradient, a glow - in a cool palette. Every value is drawn from
+the slate / sky / teal / cyan ramps. Brand anchor is
 **`#0369a1`** (sky.700, deep water). Contrast measured with the WCAG 2.1 formula against the dark
 background `#020617` (slate.950).
 

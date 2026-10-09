@@ -12,7 +12,7 @@ The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workf
 it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
 `scripts/release.ts` (below), with two required inputs:
 
-- `package`: one of `kernel`, `react`, `admin`, `ardor`, `ui-kit`.
+- `package`: one of `kernel`, `react`, `admin`, or `ardor`.
 - `build_mode`: the semver bump - `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, or
   `prerelease` (default `patch`).
 
@@ -50,9 +50,7 @@ it publishes before any git write, so a rejected publish leaves nothing to roll 
 ## Release order
 
 Because `admin` depends on `react`, `react` depends on `kernel`, and `ardor` bundles all three, a
-release chain runs in dependency order: **kernel, then react, then admin, then ardor**, with
-**ui-kit** closing it - ui-kit depends on none of the four, so its place is convention, not a
-constraint. Releasing
+release chain runs in dependency order: **kernel, then react, then admin, then ardor**. Releasing
 out of order means a downstream package builds against a stale floor for its own dependency, and the
 force-update step below cannot invent a published version that does not exist yet.
 

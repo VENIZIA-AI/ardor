@@ -134,14 +134,15 @@
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
-              <!-- book-open / OpenAPI -->
+              <!-- radio / socket client -->
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                <circle cx="12" cy="12" r="2"/>
+                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
               </svg>
             </div>
-            <h3>Tailwind + Radix UI</h3>
-            <p>Accessible, production-ready admin layouts and primitives via ardor-ui-kit, styled with Tailwind CSS and Radix UI.</p>
+            <h3>Socket.IO Client</h3>
+            <p>A thin <code>SocketIOClientHelper</code> wrapper with scoped logging, subscribe by event map and guarded emit, ready to bind as a service.</p>
           </div>
         </div>
       </section>
@@ -173,10 +174,6 @@
           <div class="ar-bar-row">
             <div class="ar-bar-row__name">ardor-admin</div>
             <div class="ar-track"><div class="ar-fill ar-fill--muted" style="width:50%">ra-core Adapters</div></div>
-          </div>
-          <div class="ar-bar-row">
-            <div class="ar-bar-row__name">ardor-ui-kit</div>
-            <div class="ar-track"><div class="ar-fill ar-fill--muted" style="width:35%">Tailwind + Radix</div></div>
           </div>
         </div>
       </div>
@@ -226,7 +223,6 @@
           <div class="ar-chip"><b>IGNIS</b> · IoC Container</div>
           <div class="ar-chip"><b>React</b> · UI Runtime</div>
           <div class="ar-chip"><b>TypeScript</b></div>
-          <div class="ar-chip"><b>Radix</b> + Tailwind</div>
         </div>
         <p class="ar-powered__footnote">Bringing IGNIS inversion of control and react-admin data contracts to modern frontend applications.</p>
       </section>

@@ -31,7 +31,7 @@ The package root (`src/index.ts`) re-exports four areas - base, common, helpers,
 
 ## Layering rule
 
-Kernel sits below the other framework packages in the [monorepo layout](/overview/monorepo-layout.md): [react](/packages/react.md), [admin](/packages/admin.md), and [ardor](/packages/ardor.md) depend on it, never the other way around; [ui-kit](/packages/ui-kit.md) is independent of every framework package, kernel included. Anything that touches React hooks, context, or JSX belongs upstream in `react` or `admin`, not here - see [Hooks and context](/architecture/hooks-and-context.md) and [React hooks conventions](/conventions/react-hooks.md) for where that logic actually lives. If a change to kernel needs a Node builtin or a React import, it does not belong in kernel.
+Kernel sits below the other framework packages in the [monorepo layout](/overview/monorepo-layout.md): [react](/packages/react.md), [admin](/packages/admin.md), and [ardor](/packages/ardor.md) depend on it, never the other way around. Anything that touches React hooks, context, or JSX belongs upstream in `react` or `admin`, not here - see [Hooks and context](/architecture/hooks-and-context.md) and [React hooks conventions](/conventions/react-hooks.md) for where that logic actually lives. If a change to kernel needs a Node builtin or a React import, it does not belong in kernel.
 
 ## Peer dependencies
 

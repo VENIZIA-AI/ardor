@@ -13,7 +13,7 @@ import type TypeScript from 'typescript';
 const REPO = resolve(import.meta.dir, '..');
 const OUTPUT = resolve(REPO, '.agents/knowledge/reference/public-surface.md');
 // Dependency order, so a diff reads bottom-up the way a release does.
-const PACKAGES = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'];
+const PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
 // The tooling keeps no dependency of its own; the compiler comes from a package that already has
 // it.
 const ts: typeof TypeScript = createRequire(resolve(REPO, 'packages/kernel/package.json'))(

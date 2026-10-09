@@ -3,8 +3,7 @@
     "admin",
     "ardor",
     "kernel",
-    "react",
-    "ui-kit"
+    "react"
   ],
   "releases": {
     "admin": [

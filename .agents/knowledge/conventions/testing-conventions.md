@@ -9,7 +9,7 @@ tags: [conventions, testing]
 ARDOR tests run exclusively on the **bun test** runner. No Jest, Vitest, or Mocha, and no config
 for another runner. This keeps [build, run, test](/overview/build-run-test.md) uniform across
 [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md),
-[ardor](/packages/ardor.md), and [ui-kit](/packages/ui-kit.md).
+and [ardor](/packages/ardor.md).
 
 ## Layout
 
