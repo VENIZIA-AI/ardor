@@ -11,8 +11,16 @@ For a fixed set of string values, ARDOR uses a class of `static readonly` fields
 
 ```typescript
 // packages/kernel/src/common/types.ts
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
+export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
 ```
+
+The trailing `& {}` is on `TStatusFromClass`, `TStringConstValue`, `TNumberConstValue` and `TConstValue`. A
+`static readonly X = '12h'` member has a widening literal type; without `& {}`, a value copied into an object
+literal (`rows.map(r => ({ value: r.value }))`) or a `let` widened to `string` or `number` and no longer fit
+the union. With it the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives
+`string`, and the result stays assignable to `string` or `number`. A template literal was rejected because it
+turns numbers into strings. The narrow break: an inferred variable later assigned a non-member string no longer
+compiles. Type tests: `packages/kernel/src/__tests__/common/types.test.ts`.
 
 ## Why
 
@@ -47,11 +55,14 @@ export class RequestTypes {
 }
 
 // packages/kernel/src/common/types.ts
-export type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>;
+export type TRequestType = TStringConstValue<typeof RequestTypes>;
 ```
 
+`TRequestType` and `TRequestBodyType` are `TStringConstValue` of their class; `TRequestMethod` and
+`TEnvironment` are built on `TStatusFromClass`. All four inherit the `& {}`.
+
 The value type is a closed union - no `| (string & {})` escape - because ARDOR owns this vocabulary
-(see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` drops
+(see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` inside `TStringConstValue` drops
 `SCHEME_SET` and `isValid` from the union by type; `TStatusFromClass` does the same by omitting
 `prototype`, `isValid`, `SCHEME_SET` and `TYPE_SET` by name.
 

@@ -1,4 +1,6 @@
+export * from './use-document-title';
 export * from './use-features';
+export * from './use-html-lang';
 export * from './use-notify-error';
 export * from './use-refresh-token';
 export * from './use-request-header-locale';

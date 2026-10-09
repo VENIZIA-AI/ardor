@@ -88,6 +88,20 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-09',
+        collapsed: true,
+        items: [
+          {
+            text: 'Const-value types keep their literals',
+            link: '/changelogs/2026-10-09-const-value-types-keep-literals',
+          },
+          {
+            text: 'useDocumentTitle and useHtmlLang',
+            link: '/changelogs/2026-10-09-document-title-and-html-lang-hooks',
+          },
+        ],
+      },
+      {
         text: '2026-10-07',
         collapsed: true,
         items: [

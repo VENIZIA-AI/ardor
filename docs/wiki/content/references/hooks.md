@@ -23,6 +23,8 @@ An ARDOR application mounted with `ApplicationContext` (see [Application](../ref
 | `useNotifyError` | ra-core notification context | `(error, options?) => void` |
 | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | `() => Promise<any>` |
 | `useRequestHeaderLocale` | ra-core locale state, `ApplicationContext` with `DEFAULT_REST_DATA_PROVIDER` bound | `void` |
+| `useDocumentTitle` | Nothing (browser only) | `void` |
+| `useHtmlLang` | ra-core locale state | `void` |
 | `useDebounce` | Nothing (browser only) | `{ debouncedValue }` |
 | `useAutosave` | Nothing (browser only) | `void` |
 | `useConfirm` | Nothing | `{ message, confirm, handleClose, handleConfirm, handleAbort }` |
@@ -249,6 +251,57 @@ import { useRequestHeaderLocale } from '@venizia/ardor';
 
 export function LocaleHeaderSync() {
   useRequestHeaderLocale({ key: 'accept-language' });
+  return null;
+}
+```
+
+## useDocumentTitle
+
+Sets the browser tab title to the screen title followed by `appTitle`, joined by `separator`. Empty segments (`false`, `null`, `undefined`, `''`) are skipped. When the title changes or the component unmounts, it puts back the title it replaced, so no reset on navigation is needed.
+
+```ts no-check
+interface IUseDocumentTitleOptions {
+  title: string | false | null | undefined | Array<string | false | null | undefined>;
+  appTitle: string;
+  separator?: string; // default ' · '
+  enabled?: boolean; // default true
+}
+
+const useDocumentTitle: (opts: IUseDocumentTitleOptions) => void;
+```
+
+It lives in `@venizia/ardor-admin` and needs nothing from the tree. With `enabled: false` it leaves the title alone.
+
+```tsx
+import { useDocumentTitle } from '@venizia/ardor';
+
+export function OrderPage(props: { orderNumber?: string }) {
+  useDocumentTitle({
+    title: [props.orderNumber && `Order #${props.orderNumber}`, 'Orders'],
+    appTitle: 'Back Office',
+  });
+  return null;
+}
+// Order #12 · Orders · Back Office
+```
+
+Call it from one component per screen. React runs child effects before parent effects, so a call in a parent would overwrite the title a child set.
+
+## useHtmlLang
+
+Keeps `document.documentElement.lang` equal to the ra-core locale, so screen readers pick the right voice. It updates on every locale change.
+
+```ts no-check
+const useHtmlLang: () => void;
+```
+
+Needs the ra-core locale state. Mount it once, high in the admin tree, like `useRequestHeaderLocale`.
+
+```tsx
+import { useHtmlLang } from '@venizia/ardor';
+
+export function HtmlLangSync() {
+  useHtmlLang();
   return null;
 }
 ```
@@ -520,7 +573,7 @@ export function useRefreshAll() {
 - `useWindowDimensions` and `useSizer` touch `window` and `document`. They are not for server rendering. `useDebounce` and `useAutosave` do nothing outside a browser.
 - `useRequestHeaderLocale` requires `CoreBindings.DEFAULT_REST_DATA_PROVIDER` to be bound. See [Binding keys](../references/binding-keys).
 - The redux factories rely on `useDispatch.withTypes` and `useSelector.withTypes`, so react-redux must be a version that provides them.
-- There is no `useDocumentTitle` export in ARDOR. If you migrate from ra-core-infra, replace it - see [Migration from ra-core-infra](../guides/migration/from-ra-core-infra).
+- `useDocumentTitle` belongs in one component per screen. React runs child effects before parent effects, so a call in a parent wins over a call in a child.
 
 ## Related
 

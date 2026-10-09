@@ -8,12 +8,12 @@ tags: [reference, hooks, services, catalog]
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [hooks and context](/architecture/hooks-and-context.md).
 
-**21 hooks across 2 directories.**
+**23 hooks across 2 directories.**
 
 | Directory | Hooks |
 |---|---|
 | `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useInjectable` · `useInjectableContainer` · `useProvider` · `useRepository` · `useService` · `useSizer` · `useWindowDimensions` |
-| `packages/admin/src/hooks/` | `useFeatures` · `useNotifyError` · `useRefreshToken` · `useRequestHeaderLocale` · `useTranslate` |
+| `packages/admin/src/hooks/` | `useDocumentTitle` · `useFeatures` · `useHtmlLang` · `useNotifyError` · `useRefreshToken` · `useRequestHeaderLocale` · `useTranslate` |
 
 ## Services
 

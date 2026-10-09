@@ -200,7 +200,7 @@ tags: [reference, exports, api]
 
 ## admin
 
-### `@venizia/ardor-admin` (25)
+### `@venizia/ardor-admin` (28)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -216,12 +216,15 @@ tags: [reference, exports, api]
 - `II18nProviderOptions` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
+- `IUseDocumentTitleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
+- `useDocumentTitle` const
 - `useFeatures` const
+- `useHtmlLang` const
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
@@ -230,7 +233,7 @@ tags: [reference, exports, api]
 
 ## ardor
 
-### `@venizia/ardor` (178)
+### `@venizia/ardor` (181)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -329,6 +332,7 @@ tags: [reference, exports, api]
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceParams` interface
 - `IUseDebounceReturn` interface
+- `IUseDocumentTitleOptions` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseTranslateKeysOverrides` interface
 - `keysToCamel` const
@@ -393,7 +397,9 @@ tags: [reference, exports, api]
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
+- `useDocumentTitle` const
 - `useFeatures` const
+- `useHtmlLang` const
 - `useInjectable` const
 - `useInjectableContainer` const
 - `useNotifyError` const
