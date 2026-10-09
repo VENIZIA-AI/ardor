@@ -257,7 +257,7 @@ export function LocaleHeaderSync() {
 
 ## useDocumentTitle
 
-Sets the browser tab title to the screen title followed by `appTitle`, joined by `separator`. Empty segments (`false`, `null`, `undefined`, `''`) are skipped. When the title changes or the component unmounts, it puts back the title it replaced, so no reset on navigation is needed.
+Sets the browser tab title to the screen title followed by `appTitle`, joined by `separator`. Empty segments (`false`, `null`, `undefined`, `''`) are skipped. When the title changes or the component unmounts, it puts back the title it replaced, so no reset on navigation is needed. It does so only while the tab still shows its own title: a title written after it - a layout re-mounted for a new locale, or a twin call with the same title - is left in place.
 
 ```ts no-check
 interface IUseDocumentTitleOptions {

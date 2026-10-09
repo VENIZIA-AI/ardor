@@ -397,6 +397,17 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-10-10-document-title-cleanup-guard",
+      "file": "2026-10-10-document-title-cleanup-guard.md",
+      "date": "2026-10-10",
+      "title": "useDocumentTitle no longer overwrites a newer title on unmount",
+      "packages": [
+        "admin"
+      ],
+      "kind": "Bug Fix",
+      "order": 9007199254740991
+    },
+    {
       "id": "changelog:2026-10-10-data-provider-errors-through-response-reader",
       "file": "2026-10-10-data-provider-errors-through-response-reader.md",
       "date": "2026-10-10",

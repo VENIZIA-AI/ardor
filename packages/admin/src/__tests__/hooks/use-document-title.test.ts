@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { cleanup, renderHook } from '@testing-library/react';
+import React from 'react';
+import { cleanup, render, renderHook } from '@testing-library/react';
 
 import { type IUseDocumentTitleOptions, useDocumentTitle } from '@/hooks/use-document-title';
 
@@ -76,5 +77,38 @@ describe('useDocumentTitle', () => {
     rerender({ title: 'Order', appTitle: 'Back Office' });
 
     expect(document.title).toBe('Order · Back Office');
+  });
+
+  test('leaves a title someone else wrote after it in place on unmount', () => {
+    const { unmount } = renderHook(() => {
+      useDocumentTitle({ title: 'Orders', appTitle: 'Manager' });
+    });
+
+    // A layout re-mounted for a new locale writes its own default before this hook is cleaned up.
+    document.title = 'Quản lý';
+    unmount();
+
+    expect(document.title).toBe('Quản lý');
+  });
+
+  test('puts back the original title when two calls with the same title unmount together', () => {
+    const Titled = () => {
+      useDocumentTitle({ title: 'Orders', appTitle: 'Manager' });
+      return null;
+    };
+    const Screen = () =>
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(Titled),
+        React.createElement(Titled),
+      );
+
+    const { unmount } = render(React.createElement(Screen));
+    expect(document.title).toBe('Orders · Manager');
+
+    unmount();
+
+    expect(document.title).toBe(ORIGINAL_TITLE);
   });
 });

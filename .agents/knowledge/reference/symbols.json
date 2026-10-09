@@ -1694,7 +1694,7 @@
       "specifier": "@venizia/ardor",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-document-title.ts",
-      "line": 16,
+      "line": 17,
       "signature": "useDocumentTitle: (opts: IUseDocumentTitleOptions) => void"
     },
     {
@@ -2273,7 +2273,7 @@
       "specifier": "@venizia/ardor-admin",
       "kind": "const",
       "file": "packages/admin/src/hooks/use-document-title.ts",
-      "line": 16,
+      "line": 17,
       "signature": "useDocumentTitle: (opts: IUseDocumentTitleOptions) => void"
     },
     {

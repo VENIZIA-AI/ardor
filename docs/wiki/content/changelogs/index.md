@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-10 | [useDocumentTitle no longer overwrites a newer title on unmount](./2026-10-10-document-title-cleanup-guard) | Bug Fix |
 | 2026-10-10 | [checkError redirects on a 401 or 403 from the data provider](./2026-10-10-check-error-reads-status-code) | Bug Fix |
 | 2026-10-10 | [The data provider throws an ApplicationError, and reads Content-Range like IGNIS](./2026-10-10-data-provider-errors-through-response-reader) | Behavior Change |
 | 2026-10-09 | [Const-value types keep their literals when copied](./2026-10-09-const-value-types-keep-literals) | Behavior Change |

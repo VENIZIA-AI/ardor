@@ -61,7 +61,7 @@ Each of these hooks will throw or degrade differently if its required provider i
 
 A second group of hooks needs nothing from React context at all - they only use browser APIs: `useDebounce`, `useAutosave`, `useConfirm`, `useCopyToClipboard`, `useBeforeUnload`, `useSizer`, and `useWindowDimensions`. These are safe to use anywhere, including outside an ARDOR application, and are documented alongside the rest of the hook surface in [Hooks and services](/reference/hooks-and-services.md).
 
-`useDocumentTitle` (in `packages/admin`, no provider needed) also belongs here. `useDocumentTitle({ title, appTitle, separator = ' · ', enabled = true })` sets the tab title to the non-empty `title` segments then `appTitle`, joined by `separator`, and restores the title it replaced when the title changes or the component unmounts, so no reset-on-navigation hook is needed. Limit: one titled component per screen - React runs child effects before parent effects, so a parent's call wins over a child's.
+`useDocumentTitle` (in `packages/admin`, no provider needed) also belongs here. `useDocumentTitle({ title, appTitle, separator = ' · ', enabled = true })` sets the tab title to the non-empty `title` segments then `appTitle`, joined by `separator`, and restores the title it replaced when the title changes or the component unmounts, so no reset-on-navigation hook is needed. The restore runs only while `document.title` is still the hook's own title, so a later writer (a layout re-mounted by a locale change, a twin call React cleans up first) keeps its title. Limit: one titled component per screen - React runs child effects before parent effects, so a parent's call wins over a child's.
 
 ## Redux factories
 
