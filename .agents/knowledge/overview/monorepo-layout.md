@@ -15,7 +15,7 @@ release tooling, `.agents/` holds what an agent reads.
 ## Packages
 
 Built in dependency order - a downstream package type-checks against the `dist` of its dependency,
-never its `src` (rule B-05): `kernel -> react -> admin -> ardor`, with `ui-kit` independent.
+never its `src` (rule B-05): `kernel -> react -> admin -> ardor`.
 
 <!-- okf:generated:packages-table start -->
 | Package | npm name | Description |
@@ -24,7 +24,6 @@ never its `src` (rule B-05): `kernel -> react -> admin -> ardor`, with `ui-kit` 
 | [`ardor`](/packages/ardor.md) | `@venizia/ardor` | ARDOR - frontend application framework for the VENIZIA family. |
 | [`kernel`](/packages/kernel.md) | `@venizia/ardor-kernel` | ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and CRUD bases, request/auth constants, binding keys, logger, network fetchers and socket client. |
 | [`react`](/packages/react.md) | `@venizia/ardor-react` | ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). |
-| [`ui-kit`](/packages/ui-kit.md) | `@venizia/ardor-ui-kit` | ARDOR - UI Kit |
 <!-- okf:generated:packages-table end -->
 
 Every runtime package is ESM only (`dist/index.js` + `dist/index.d.ts`), compiled with

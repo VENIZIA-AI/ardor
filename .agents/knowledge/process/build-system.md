@@ -12,10 +12,10 @@ ARDOR's build tooling lives at two levels: per-package `scripts` in each `packag
 
 ## Per-package scripts
 
-The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md), [ardor](/packages/ardor.md), [ui-kit](/packages/ui-kit.md)) share a script surface, illustrated by `packages/kernel/package.json`. All five define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`, `eslint`, `prettier:cli`, `prettier:fix`). The rest vary: `ui-kit` has no `typecheck`, `test` or `size` script (so `typecheck-all` silently skips it and `size-check` does not cover it), and `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
+The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) and [ardor](/packages/ardor.md)) share a script surface, illustrated by `packages/kernel/package.json`. All four define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`, `eslint`, `prettier:cli`, `prettier:fix`). The rest vary: `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
 
 - `build` - runs `scripts/build.sh`, the actual compiler invocation.
-- `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error. `ui-kit` is the exception: its `rebuild.sh` has no type-check step and runs `gen:index`, then `clean`, then `build`.
+- `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
 - `clean` - removes `dist` and build artifacts.
 - `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one. `ardor` has no `tsconfig.test.json`, so its `typecheck` (and its `rebuild.sh`) use `tsconfig.json` instead.
 - `test` - `bun test` with `NODE_ENV=test` and `.env.test`.
@@ -35,22 +35,21 @@ Because `typecheck` runs against `tsconfig.test.json`, it validates both source 
 
 ## Lint presets
 
-`kernel` and `ardor` lint with the base `eslintConfigs` from `@venizia/dev-configs`. `react`, `admin` and `ui-kit` use `reactConfigs` from `scripts/eslint/react.mjs`: IGNIS's `ReactEslintConfigs` (dev-configs `0.2.1-0`), which adds the React, hooks and accessibility rules and `consistent-type-imports`, then puts back every base rule that preset relaxes for an application UI (`no-floating-promises`, `no-void`, `no-invalid-this`, `no-use-before-define`, `no-explicit-any`, `no-shadow`, `no-unused-vars`), read from the base preset rather than copied, and raises `exhaustive-deps` from warning to error. A framework drops no promise, and the package lint fails only on errors, so a warning would never block. The three plugins are root devDependencies, so the shared file resolves them. Every package also spreads `secureContextRules` from `scripts/eslint/secure-context.mjs`.
+`kernel` and `ardor` lint with the base `eslintConfigs` from `@venizia/dev-configs`. `react` and `admin` use `reactConfigs` from `scripts/eslint/react.mjs`: IGNIS's `ReactEslintConfigs` (dev-configs `0.2.1-0`), which adds the React, hooks and accessibility rules and `consistent-type-imports`, then puts back every base rule that preset relaxes for an application UI (`no-floating-promises`, `no-void`, `no-invalid-this`, `no-use-before-define`, `no-explicit-any`, `no-shadow`, `no-unused-vars`), read from the base preset rather than copied, and raises `exhaustive-deps` from warning to error. A framework drops no promise, and the package lint fails only on errors, so a warning would never block. The three plugins are root devDependencies, so the shared file resolves them. Every package also spreads `secureContextRules` from `scripts/eslint/secure-context.mjs`.
 
 ## Makefile dependency order
 
-The root `Makefile` build targets (`kernel`, `react`, `admin`, `ardor`, `ui-kit`) are chained as real Make prerequisites, not just run in sequence:
+The root `Makefile` build targets (`kernel`, `react`, `admin`, `ardor`) are chained as real Make prerequisites, not just run in sequence:
 
 ```
-build-all: kernel react admin ardor ui-kit
+build-all: kernel react admin ardor
 kernel:
 react: kernel
 admin: react
 ardor: admin
-ui-kit:
 ```
 
-This order is mandatory and must never be parallelised: a downstream package type-checks against the **dist** of its dependency, never its `src`. If `react` were built before `kernel`'s `dist` existed (or before it was refreshed), `react`'s typecheck would resolve against a stale or missing `dist`. `ui-kit` has no dependency on the others and can build independently. `make build` is an alias for `make build-all`.
+This order is mandatory and must never be parallelised: a downstream package type-checks against the **dist** of its dependency, never its `src`. If `react` were built before `kernel`'s `dist` existed (or before it was refreshed), `react`'s typecheck would resolve against a stale or missing `dist`. `make build` is an alias for `make build-all`.
 
 Related repository-wide gates - `typecheck-all`, `test-all`, `size-check`, `surface-check`, `purity`, `layer-check`, `cycles-check` - are separate Makefile targets, not folded into `build-all`; see [Makefile targets](/reference/makefile-targets.md) for the full list.
 

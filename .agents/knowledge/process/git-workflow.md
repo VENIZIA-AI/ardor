@@ -25,7 +25,7 @@ tags: [process, git, contributing]
    `.git/hooks/`.
 6. `.githooks/pre-commit` then runs on every commit: it `cd`s to the repo root and runs `make
    lint` (`lint-packages` then `lint-examples` - `packages/kernel`, `packages/react`,
-   `packages/admin`, `packages/ardor`, `packages/ui-kit`, and examples) under `set -e` - any lint
+   `packages/admin`, `packages/ardor`, and examples) under `set -e` - any lint
    failure aborts the commit before it is created. That is the hook's only check - no test step and
    no other gate. The tests and the remaining gates (purity, size-check and the rest) run only in
    the manually dispatched CI workflow (see [Testing](/process/testing.md)) or when you run them

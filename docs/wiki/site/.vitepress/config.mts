@@ -53,7 +53,6 @@ const extensionsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'Packages and patterns',
     collapsed: false,
     items: [
-      { text: 'UI kit', link: '/extensions/ui-kit' },
       { text: 'Socket.IO client', link: '/extensions/socket-client' },
       { text: 'CountRestDataProvider', link: '/extensions/count-provider' },
       { text: 'Non-HTTP transport', link: '/extensions/custom-transport' },

@@ -36,11 +36,8 @@ const TABLE_PATHS = [
 /**
  * Dependency order, not alphabetical. A package must publish after everything it depends on, or the
  * release's own registry-existence gate fails on a version that is not out yet.
- *
- * `ui-kit` depends on nothing in the chain, but still runs sequentially, because the workspace-wide
- * `force-update` is what cannot overlap.
  */
-const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'] as const;
+const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 type TReleaseMode =
   'patch' | 'minor' | 'major' | 'prepatch' | 'preminor' | 'premajor' | 'prerelease';
@@ -271,7 +268,7 @@ const releasePackage = async (opts: {
 
   // `--ref` is not optional: without it `gh` dispatches against the DEFAULT branch, and GitHub
   // validates the inputs against that branch's copy of the workflow. `main` still carries the
-  // pre-ARDOR dropdown, so every package but `ui-kit` comes back HTTP 422.
+  // pre-ARDOR dropdown, so the dispatch comes back HTTP 422.
   await run({
     command: [
       'gh',

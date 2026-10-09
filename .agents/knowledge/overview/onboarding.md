@@ -29,10 +29,10 @@ instead. Re-run this target after any pull that touched `.agents/plugin/`.
 ## Step 3: build, in dependency order
 
 `make build` rebuilds every package in dependency order: kernel, then react and admin, then the
-ardor umbrella, then ui-kit as needed. This order is not cosmetic - a package type-checks against
+ardor umbrella. This order is not cosmetic - a package type-checks against
 the `dist` of its dependency, never its `src`. A change to the kernel is invisible to `admin` until
 the kernel is rebuilt. You can rebuild one package at a time with `make kernel`, `make react`, `make
-admin`, `make ardor`, `make ui-kit`. See [Build order and package
+admin`, `make ardor`. See [Build order and package
 targets](/process/build-system.md) and the full command list in [Makefile
 targets](/reference/makefile-targets.md).
 
@@ -56,7 +56,7 @@ graph edges - served both as files under `.agents/knowledge/` and over MCP by `a
 4. [Design decisions](/overview/design-decisions.md) - why the framework is shaped the way it is.
 5. The package concepts, in dependency order: [`ardor-kernel`](/packages/kernel.md),
    [`ardor-react`](/packages/react.md), [`ardor-admin`](/packages/admin.md),
-   [`ardor`](/packages/ardor.md) (the umbrella), [`ardor-ui-kit`](/packages/ui-kit.md).
+   [`ardor`](/packages/ardor.md) (the umbrella).
 6. Architecture: [application lifecycle](/architecture/application-lifecycle.md), [DI in the
    browser](/architecture/di-in-the-browser.md), [data provider
    pipeline](/architecture/data-provider-pipeline.md), [auth recovery](/architecture/auth-recovery.md),

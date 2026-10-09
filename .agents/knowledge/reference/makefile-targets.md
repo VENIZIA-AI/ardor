@@ -8,7 +8,7 @@ tags: [reference, make, build]
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**59 targets.**
+**56 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -40,12 +40,11 @@ tags: [reference, make, build]
 | `make test-scripts` | - | Running the repository gate scripts' regression tests |
 | `make lint-scripts` | - | Linting scripts/ |
 | `make build` | `build-all` | - |
-| `make build-all` | `kernel react admin ardor ui-kit` | All packages rebuilt successfully. |
+| `make build-all` | `kernel react admin ardor` | All packages rebuilt successfully. |
 | `make kernel` | - | Rebuilding @venizia/ardor-kernel |
 | `make react` | `kernel` | Rebuilding @venizia/ardor-react |
 | `make admin` | `react` | Rebuilding @venizia/ardor-admin |
 | `make ardor` | `admin` | Rebuilding @venizia/ardor |
-| `make ui-kit` | - | Rebuilding @venizia/ardor-ui-kit |
 | `make docs` | - | Rebuilding wiki (VitePress) |
 | `make test` | `test-all` | - |
 | `make test-all` | `test-kernel test-react test-admin` | - |
@@ -60,7 +59,6 @@ tags: [reference, make, build]
 | `make update-react` | - | Force updating @venizia/ardor-react |
 | `make update-admin` | - | Force updating @venizia/ardor-admin |
 | `make update-ardor` | - | Force updating @venizia/ardor |
-| `make update-ui-kit` | - | Force updating @venizia/ardor-ui-kit |
 | `make lint` | `lint-packages lint-examples` | Linting completed. |
 | `make lint-packages` | - | Linting all packages |
 | `make lint-examples` | - | Linting examples/ |
@@ -69,5 +67,4 @@ tags: [reference, make, build]
 | `make lint-react` | - | Linting @venizia/ardor-react |
 | `make lint-admin` | - | Linting @venizia/ardor-admin |
 | `make lint-ardor` | - | Linting @venizia/ardor |
-| `make lint-ui-kit` | - | Linting @venizia/ardor-ui-kit |
 | `make help` | - | Makefile for the ARDOR Monorepo |

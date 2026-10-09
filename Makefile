@@ -1,13 +1,13 @@
-.PHONY: all build build-all kernel react admin ardor ui-kit docs \
+.PHONY: all build build-all kernel react admin ardor docs \
         agent-setup okf-check okf-gen okf-coverage okf-viz split-report surface-gen surface-check \
         wiki-links-check symbols-gen symbols-check releases-gen releases-check atlas-smoke catalog-check purity layer-check cycles-check size-check examples-check lint-examples purity-test test-scripts lint-scripts \
-        clean-install clean-install-kernel clean-install-react clean-install-admin clean-install-ardor clean-install-ui-kit \
+        clean-install clean-install-kernel clean-install-react clean-install-admin clean-install-ardor \
         test test-all test-kernel test-react test-admin \
         help install clean setup-hooks \
         lint lint-packages \
-        lint-kernel lint-react lint-admin lint-ardor lint-ui-kit \
+        lint-kernel lint-react lint-admin lint-ardor \
         typecheck typecheck-all \
-        update update-all update-kernel update-react update-admin update-ardor update-ui-kit
+        update update-all update-kernel update-react update-admin update-ardor
 
 DEFAULT_GOAL := help
 
@@ -95,7 +95,7 @@ clean-install:
 	@echo "🔍 Loading every published sub-path from a clean install..."
 	@bun scripts/clean-install/cli.ts
 
-clean-install-kernel clean-install-react clean-install-admin clean-install-ardor clean-install-ui-kit:
+clean-install-kernel clean-install-react clean-install-admin clean-install-ardor:
 	@bun scripts/clean-install/cli.ts $(@:clean-install-%=%)
 
 layer-check:
@@ -103,7 +103,7 @@ layer-check:
 
 # `--max 0` is what makes this a gate; without it the script only reports. Run after a build.
 cycles-check:
-	@for package in kernel react admin ardor ui-kit; do \
+	@for package in kernel react admin ardor; do \
 		bun scripts/module-cycles.ts packages/$$package/dist --max 0 || exit 1; \
 	done
 
@@ -134,7 +134,7 @@ lint-scripts:
 # ============================================================================
 build: build-all
 
-build-all: kernel react admin ardor ui-kit
+build-all: kernel react admin ardor
 	@echo "🚀 All packages rebuilt successfully."
 
 kernel:
@@ -152,10 +152,6 @@ admin: react
 ardor: admin
 	@echo "📦 Rebuilding @venizia/ardor..."
 	@bun run --filter "@venizia/ardor" rebuild
-
-ui-kit:
-	@echo "📦 Rebuilding @venizia/ardor-ui-kit..."
-	@bun run --filter "@venizia/ardor-ui-kit" rebuild
 
 docs:
 	@echo "📦 Rebuilding wiki (VitePress)..."
@@ -216,10 +212,6 @@ update-ardor:
 	@echo "🔄 Force updating @venizia/ardor..."
 	@bun run --filter "@venizia/ardor" force-update highest
 
-update-ui-kit:
-	@echo "🔄 Force updating @venizia/ardor-ui-kit..."
-	@bun run --filter "@venizia/ardor-ui-kit" force-update highest
-
 # ============================================================================
 # LINT TARGETS
 # ============================================================================
@@ -254,10 +246,6 @@ lint-ardor:
 	@echo "🔍 Linting @venizia/ardor..."
 	@bun run --filter "@venizia/ardor" lint
 
-lint-ui-kit:
-	@echo "🔍 Linting @venizia/ardor-ui-kit..."
-	@bun run --filter "@venizia/ardor-ui-kit" lint
-
 # ============================================================================
 # HELP
 # ============================================================================
@@ -289,14 +277,12 @@ help:
 	@printf "  %-25s - %s\n" "update-react" 		"Force update @venizia/ardor-react dependencies."
 	@printf "  %-25s - %s\n" "update-admin" 		"Force update @venizia/ardor-admin dependencies."
 	@printf "  %-25s - %s\n" "update-ardor" 		"Force update @venizia/ardor dependencies."
-	@printf "  %-25s - %s\n" "update-ui-kit" 		"Force update @venizia/ardor-ui-kit dependencies."
 	@echo ""
 	@echo "Individual Package Builds:"
 	@printf "  %-25s - %s\n" "kernel" 					"Rebuilds @venizia/ardor-kernel (isomorphic core)."
 	@printf "  %-25s - %s\n" "react" 						"Rebuilds @venizia/ardor-react (React bindings)."
 	@printf "  %-25s - %s\n" "admin" 						"Rebuilds @venizia/ardor-admin (react-admin adapter)."
 	@printf "  %-25s - %s\n" "ardor" 						"Rebuilds @venizia/ardor (umbrella entry point)."
-	@printf "  %-25s - %s\n" "ui-kit" 					"Rebuilds @venizia/ardor-ui-kit (design system)."
 	@echo ""
 	@echo "Linting:"
 	@printf "  %-25s - %s\n" "lint" 						"Lint all packages (alias for lint-packages)."
@@ -305,7 +291,6 @@ help:
 	@printf "  %-25s - %s\n" "lint-react" 			"Lint @venizia/ardor-react."
 	@printf "  %-25s - %s\n" "lint-admin" 			"Lint @venizia/ardor-admin."
 	@printf "  %-25s - %s\n" "lint-ardor" 			"Lint @venizia/ardor."
-	@printf "  %-25s - %s\n" "lint-ui-kit" 			"Lint @venizia/ardor-ui-kit."
 	@echo ""
 	@echo "Other:"
 	@printf "  %-25s - %s\n" "help" 						"Show this help message."

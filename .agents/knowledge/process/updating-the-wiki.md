@@ -16,7 +16,7 @@ tags: [process, docs, wiki]
    editing one does not update the other.
 2. All prose lives under `docs/wiki/content/`: `guides/` (get started and migration walkthroughs,
    in subfolders), `references/` (one page per API area - application, providers, binding keys,
-   hooks, network, types), `extensions/` (one flat page per optional add-on such as the ui-kit or
+   hooks, network, types), `extensions/` (one flat page per optional add-on such as the
    socket client), `best-practices/` (architectural conventions), `changelogs/` (feature
    announcements - indexed by `ardor-atlas` as their own `changelog` corpus). A new dated changelog
    page is searchable at once, but the atlas release table behind `changes` only lists it once

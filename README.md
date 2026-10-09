@@ -150,7 +150,6 @@ then the [references](https://ardor.venizia.ai/references/).
 | **i18n with typed keys** | English and Vietnamese bundles, `useTranslate` keys typed through module augmentation |
 | **Hooks** | `useDebounce`, `useAutosave`, `useConfirm`, `useNotifyError`, `useRefreshToken`, typed Redux hook factories |
 | **Browser-pure core** | `ardor-kernel` imports no Node builtin and no React; every package is gated for purity, layering, bundle size and a public-surface snapshot |
-| **A design system** | `ardor-ui-kit`: Tailwind + Radix components and Figma-derived tokens |
 
 [References](https://ardor.venizia.ai/references/) &#8226;
 [Extensions](https://ardor.venizia.ai/extensions/) &#8226;
@@ -166,7 +165,6 @@ In release order - each builds on the ones above it.
 | [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-react/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-react) |
 | [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-admin/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-admin) |
 | [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor) |
-| [`@venizia/ardor-ui-kit`](packages/ui-kit/) | Design system: Tailwind + Radix components, design tokens | [![npm](https://img.shields.io/npm/v/@venizia/ardor-ui-kit.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-ui-kit) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-ui-kit/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-ui-kit) |
 
 **Latest** is the stable line. **Highest** is the newest published version, prerelease included, and
 it is the tag this repository releases to today. ARDOR tracks the **highest** published IGNIS line
@@ -213,7 +211,7 @@ bun run dev          # Vite on :5173
 ```bash
 git clone https://github.com/VENIZIA-AI/ardor.git && cd ardor
 bun install
-make build           # kernel -> react -> admin -> ardor -> ui-kit
+make build           # kernel -> react -> admin -> ardor
 make test            # bun test, every package
 make lint
 make docs            # the wiki, with the sidebar and snippet gates

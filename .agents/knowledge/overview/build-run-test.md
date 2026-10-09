@@ -10,9 +10,9 @@ ARDOR is built and verified entirely through `make` targets backed by Bun. Never
 
 ## Build order is dependency order, not parallel
 
-`make build` (alias `make build-all`) runs targets in a fixed sequence: **kernel -> react -> admin -> ardor -> ui-kit**. This mirrors the package dependency graph - [Kernel](/packages/kernel.md) has no ARDOR dependency, [React](/packages/react.md) depends on kernel, [Admin](/packages/admin.md) depends on react (and transitively kernel), [ARDOR](/packages/ardor.md) (the umbrella entry point) depends on all three, and [UI Kit](/packages/ui-kit.md) builds standalone.
+`make build` (alias `make build-all`) runs targets in a fixed sequence: **kernel -> react -> admin -> ardor**. This mirrors the package dependency graph - [Kernel](/packages/kernel.md) has no ARDOR dependency, [React](/packages/react.md) depends on kernel, [Admin](/packages/admin.md) depends on react (and transitively kernel), [ARDOR](/packages/ardor.md) (the umbrella entry point) depends on all three.
 
-The critical rule: **a downstream package type-checks and resolves its siblings against `dist/`, never `src/`**. There is no source-to-source project reference wiring the packages together at build time. This means the sequence above must never be parallelised - if you build `admin` before `react` has emitted a fresh `dist/`, admin type-checks against stale or missing output. Individual targets exist too (`make kernel`, `make react`, `make admin`, `make ardor`, `make ui-kit`), and `react`, `admin`, `ardor` each declare their upstream target as a prerequisite in the Makefile, so running `make admin` alone still rebuilds `react` and `kernel` first.
+The critical rule: **a downstream package type-checks and resolves its siblings against `dist/`, never `src/`**. There is no source-to-source project reference wiring the packages together at build time. This means the sequence above must never be parallelised - if you build `admin` before `react` has emitted a fresh `dist/`, admin type-checks against stale or missing output. Individual targets exist too (`make kernel`, `make react`, `make admin`, `make ardor`), and `react`, `admin`, `ardor` each declare their upstream target as a prerequisite in the Makefile, so running `make admin` alone still rebuilds `react` and `kernel` first.
 
 The same dist-not-src rule applies to tests: `bun test` for react/admin resolves `@venizia/ardor-kernel` (and react, for admin) through the package's `import` export condition, landing on `dist/index.js`. A test run against stale dist silently tests old behavior. Always rebuild upstream packages before trusting a downstream test run.
 
@@ -22,8 +22,8 @@ Each package's `make <pkg>` target runs `bun run --filter "<pkg>" rebuild`, whic
 
 ## Test, lint, typecheck targets
 
-- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each via `bun run test` inside the package directory. There is no `test-ardor` or `test-ui-kit` target.
-- `make lint` runs `lint-packages` (everything under `packages/*`) and then `lint-examples` (everything under `examples/*`); per-package variants (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`, `lint-ui-kit`) exist for targeted runs. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
+- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each via `bun run test` inside the package directory. There is no `test-ardor` target.
+- `make lint` runs `lint-packages` (everything under `packages/*`) and then `lint-examples` (everything under `examples/*`); per-package variants (`lint-kernel`, `lint-react`, `lint-admin`, and `lint-ardor`) exist for targeted runs. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.
 

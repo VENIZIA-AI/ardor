@@ -28,7 +28,7 @@ Served over MCP by `ardor-atlas`, registered in `.mcp.json`: `search` with
 
 ## Packages
 
-The framework ships five packages, built in dependency order.
+The framework ships four packages, built in dependency order.
 
 | Package | Role |
 |---|---|
@@ -36,7 +36,6 @@ The framework ships five packages, built in dependency order.
 | [react](/packages/react.md) | The React bindings: application context, `useInjectable`, the UI hooks, typed Redux factories |
 | [admin](/packages/admin.md) | The react-admin adapter: REST data provider, auth and i18n providers, the ra-core hooks, message bundles |
 | [ardor](/packages/ardor.md) | The umbrella `@venizia/ardor` - one import over the three above |
-| [ui-kit](/packages/ui-kit.md) | The design system: Tailwind + Radix components and Figma-derived tokens |
 
 ## Architecture
 

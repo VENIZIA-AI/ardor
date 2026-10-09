@@ -88,7 +88,7 @@ datasource layer of its own - those concepts do not exist in ARDOR. See
 [Design decisions](/overview/design-decisions.md).
 
 **Layer boundary** - the dependency order between packages (kernel before react before admin
-before the ardor umbrella; ui-kit is independent). A package type-checks against the built `dist`
+before the ardor umbrella). A package type-checks against the built `dist`
 of its dependency, never its `src`, so rebuilding one package does not automatically propagate to
 the next until that package is rebuilt too. See [Monorepo layout](/overview/monorepo-layout.md) and
 [Build system](/process/build-system.md).

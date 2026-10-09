@@ -57,13 +57,8 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/kernel/src/utilities/boolean.ts`, `file.ts`, `parse.ts`, `url.ts` - small pure helpers used throughout the kernel.
 - `packages/kernel/src/helpers/base-helper.ts` and `logger.ts` - shared helper base and logging.
 
-## UI kit
-- `packages/ui-kit/src/components/shadcn/` - the full set of shadcn-based primitives (button, dialog, sidebar, table, etc), the visual building blocks referenced by [ui-kit package](/packages/ui-kit.md).
-- `packages/ui-kit/src/components/core/` - adaptive dialog/popover, backdrop, inputs (checkbox, date-picker, switch, text-field).
-- `packages/ui-kit/src/generate-index.ts` - script generating the package's barrel export, relevant to [Public surface](/reference/public-surface.md).
-
 ## Package entry points
-- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts`, `packages/ui-kit/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./socket-io` in kernel and ARDOR, and `./styles/*` in ui-kit (raw CSS served from `src/styles`, not `dist`). Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), [ARDOR package](/packages/ardor.md), and [ui-kit package](/packages/ui-kit.md).
+- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./socket-io` in kernel and ARDOR. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), and [ARDOR package](/packages/ardor.md).
 
 ## Types and constants
 - `packages/kernel/src/common/types.ts`, `constants.ts` - shared kernel-wide types and constants.

@@ -26,7 +26,7 @@ that exists there today.
 
 | Pillar | ARDOR today | Gap |
 |---|---|---|
-| P1 Code | 4 framework packages + ui-kit; build green; lint green; export + member parity with the legacy package proven | No surface snapshot, no cycle check, no catalog check, no purity probe (kernel and react MUST be browser-pure and `ra-core`-free - the same guarantee `ignis-kernel` carries), no size budgets |
+| P1 Code | 4 framework packages; build green; lint green; export + member parity with the legacy package proven | No surface snapshot, no cycle check, no catalog check, no purity probe (kernel and react MUST be browser-pure and `ra-core`-free - the same guarantee `ignis-kernel` carries), no size budgets |
 | P2 Tests | 0 test files. Two throwaway smoke runs existed and were deleted | Everything. The legacy package shipped 10 months of data-layer behavior with no test |
 | P3 Wiki | `docs/migration/ra-core-infra.md`; a dangling `deploy-docs.yml` expecting `packages/docs/site` + `make docs`. Legacy has a 130-file AI-written VitePress site that is stale (teaches removed APIs, misses ~8 months of features) | The whole site, on the IGNIS layout, written against the code, plus the gate scripts |
 | P4 Changelogs | none | The convention, the template, the first entry (the migration itself) |
@@ -45,7 +45,7 @@ byte-for-byte with the brand swapped; "adapt" means the shape is kept and the co
 
 | Deliverable | From IGNIS | Note |
 |---|---|---|
-| `.agents/rules.md` | `.agents/rules.md` | Adapt. W-06 keeps BANA read-only. C-18 hard stack becomes: React, react-admin (`ra-core`) as the admin adapter only, Tailwind + Radix in ui-kit, `@venizia/ignis-filter` as the only query vocabulary, `@venizia/ignis-inversion` as the only container. B-05 (`dist`, not `src`) unchanged - it already bit once in this migration (`BaseCrudService`) |
+| `.agents/rules.md` | `.agents/rules.md` | Adapt. W-06 keeps BANA read-only. C-18 hard stack becomes: React, react-admin (`ra-core`) as the admin adapter only, `@venizia/ignis-filter` as the only query vocabulary, `@venizia/ignis-inversion` as the only container. B-05 (`dist`, not `src`) unchanged - it already bit once in this migration (`BaseCrudService`) |
 | `AGENTS.md` | `AGENTS.md` | Copy, brand swapped |
 | `.agents/plugin/{setup.ts,PLUGIN.md,claude/*,skills/*}` | same paths | Copy. `session-start.ts` reads rules by id, so it works unchanged once rules exist |
 | `make agent-setup` | Makefile target | Copy |
@@ -86,7 +86,7 @@ Verification: `make purity-test`, `make surface-check`, `make catalog-check` gre
 | `docs/wiki` package `@venizia/ardor-docs`: `site/` (config, theme), `content/`, `scripts/{docs-build.sh,docs-clean.sh,check-sidebar.mts,force-update.sh}`, `DESIGN-SYSTEM.md` + design tokens | `docs/wiki/*` | Copy the package shape and the design system; ARDOR content. D6 moves the dangling workflow to this path |
 | `content/guides`: get-started (install, 5-minute quickstart, philosophy - "react-admin's data contract, IGNIS's container"), tutorials (build an admin over an IGNIS API) | `content/guides` | Adapt structure |
 | `content/references`: application, binding keys, data provider (filter mapping, header protocol, count modes, blob responses), auth provider + recovery + no-auth paths, i18n, React context and hooks, Redux factories, network layer, utilities, types, module augmentation | legacy `api-reference/*` **audited page by page against the code** | Every fenced `ts`/`tsx` block is compiled by a docs typecheck script; a page is done when it compiles |
-| `content/extensions`: ui-kit, socket client, CountRestDataProvider, Tauri/IPC data provider pattern (from BANA's real use) | `content/extensions` | Adapt |
+| `content/extensions`: socket client, CountRestDataProvider, Tauri/IPC data provider pattern (from BANA's real use) | `content/extensions` | Adapt |
 | `content/best-practices`: from legacy `guides/*/best-practices.md`, verified | legacy | Audit, rewrite |
 | `content/changelogs/{template.md,index.md}` + the first entry `2026-09-11-ardor-from-ra-core-infra.md` | `content/changelogs` | Copy template; write the entry from `docs/migration/ra-core-infra.md` |
 | `scripts/wiki-source-links.ts` + `make wiki-links-check` | same | Copy |
@@ -101,7 +101,7 @@ Verification: `make docs` builds with the sidebar gate; the docs typecheck passe
 | `.agents/knowledge-tools/` | same | Copy `okf.ts`, `lib.ts`, `viz.ts`, `vendor/`; write `config.ts` for ARDOR (paths: `packages`, `examples`, `docs/wiki`, `kernel/src/common/keys.ts` as the bindings source, hooks dirs as the catalog sources) |
 | `.agents/knowledge/index.md`, `log.md` | same | Adapt |
 | `overview/`: what-is-ardor, onboarding, monorepo-layout, build-run-test, design-decisions (the 4-package split, the augmentation seam, why react-admin is confined to `admin`) | `overview/*` | Adapt |
-| `packages/`: kernel, react, admin, ardor, ui-kit, docs | `packages/*` | Adapt |
+| `packages/`: kernel, react, admin, ardor, docs | `packages/*` | Adapt |
 | `architecture/`: application-lifecycle, di-in-the-browser, data-provider-pipeline, auth-recovery, no-auth-paths, header-protocol, i18n, hooks-and-context, module-augmentation, error-flow (from `getError` to `useNotifyError`) | `architecture/*` | ARDOR content |
 | `conventions/`: copy options-objects, coding-style, error-handling, const-classes, binding-key-namespaces, docs-writing-style, gotchas; add react-hooks (options object, `use*`, no floating promises) | `conventions/*` | Copy + one ARDOR file |
 | `process/`: build-system, testing, release-publish (the ARDOR chain and the BANA measurement), adding-a-provider, adding-a-hook, updating-the-wiki | `process/*` | Adapt |
@@ -226,6 +226,6 @@ Remaining, in order - each is a git write or a registry write, which an agent ne
 
 1. Commit this working tree on a `feature/*` branch and open the PR to `develop`.
 2. In IGNIS: commit `packages/atlas` (family checkouts) with its changelog and release `atlas`; until then `.mcp.local.example.json` shows how to run atlas from the IGNIS checkout.
-3. `bun scripts/release.ts --dry-run`, then release the chain `kernel -> react -> admin -> ardor -> ui-kit` (prerelease first).
+3. `bun scripts/release.ts --dry-run`, then release the chain `kernel -> react -> admin -> ardor` (prerelease first).
 4. Measure BANA against the fresh build the way `process/release-publish.md` describes, migrate its 9 apps by hand the way `ra-core-infra.md` describes, bump `@venizia/ignis-inversion` there to the highest line, `tsc` per app.
 5. `npm deprecate @minimaltech/ra-core-infra`, then delete `docs/migration/` and this file.

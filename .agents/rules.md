@@ -126,7 +126,7 @@ Chặn: <what blocks, or "không có">
 | **C-15** | **One method with a mode option, not several specialized methods.** Payload variants are zod-per-variant with `z.infer`, discriminated. |
 | **C-16** | **One concept, one implementation.** When the same question is answered in several places, the bug lives at the seam and no tool catches it. Consolidate to one home before building on top. |
 | **C-17** | **A file is named by its role, never by repeating its folder:** `winston/logger.ts`, not `winston/winston-logger.ts`. |
-| **C-18** | **The hard stack, and derived types over duplicates.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Tailwind + Radix in `ui-kit` (never MUI); Zod only. Prefer compile-time types derived from definitions (`TFullPaths<typeof englishMessages>`) over hand-maintained copies. |
+| **C-18** | **The hard stack, and derived types over duplicates.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Prefer compile-time types derived from definitions (`TFullPaths<typeof englishMessages>`) over hand-maintained copies. |
 
 ---
 

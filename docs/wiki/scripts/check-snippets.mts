@@ -154,7 +154,6 @@ const compilerOptions: ts.CompilerOptions = {
     ],
     '@venizia/ardor-react': [join(REPO, 'packages/react/dist/index.d.ts')],
     '@venizia/ardor-admin': [join(REPO, 'packages/admin/dist/index.d.ts')],
-    '@venizia/ardor-ui-kit': [join(REPO, 'packages/ui-kit/dist/index.d.ts')],
   },
   typeRoots: [join(REPO, 'packages/admin/node_modules/@types')],
 };

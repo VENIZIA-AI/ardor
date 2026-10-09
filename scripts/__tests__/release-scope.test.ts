@@ -116,7 +116,7 @@ describe('withDependents', () => {
           changedFiles: 0,
           deps: ['@venizia/ardor-react'],
         }),
-        state({ packageName: '@venizia/ardor-ui-kit', changedFiles: 0 }),
+        state({ packageName: '@venizia/ardor-standalone', changedFiles: 0 }),
       ],
     });
 
