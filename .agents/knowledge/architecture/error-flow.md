@@ -18,13 +18,13 @@ Service methods that make outbound calls are wrapped with the `@api()` decorator
 
 **3. Auth-specific mapping: checkError**
 
-`DefaultAuthProvider.checkError` (part of the auth provider consumed by react-admin) inspects the `status` on the thrown error and maps it to react-admin's expected reject shape:
+`DefaultAuthProvider.checkError` (part of the auth provider consumed by react-admin) inspects the status on the thrown error - `status` (react-admin's own `HttpError`), else `statusCode` (an `ApplicationError`) - and maps it to react-admin's expected reject shape:
 
 - `401` triggers `authService.cleanUp()` and rejects with `{ redirectTo: 'login' }`.
 - `403` rejects with `{ redirectTo: '/unauthorized', logoutUser: false }` - the session is kept alive, only the route changes.
 - Anything else resolves, meaning react-admin treats it as not an auth-related failure.
 
-This is the bridge between thrown HTTP failures and the redirect behavior described in [Auth recovery](/architecture/auth-recovery.md). Note that `checkError` reads `status`, not `statusCode`: an `ApplicationError` built by `getError` never matches, and that now includes every `doRequest` failure and the missing-token 401 (`getRequestAuthorizationHeader`). Before 2026-10-10 an HTTP failure matched when the backend body carried a `status` key; the envelope drops it.
+This is the bridge between thrown HTTP failures and the redirect behavior described in [Auth recovery](/architecture/auth-recovery.md). Since 2026-10-10 it falls back to `statusCode`, so every `doRequest` failure and the missing-token 401 (`getRequestAuthorizationHeader`) reach these branches; before, it read only `status`, which an `ApplicationError` never has, and a 401 or 403 from the data provider never redirected.
 
 **4. Display: useNotifyError**
 

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import { Container } from '@venizia/ignis-inversion';
+import { Container, getError } from '@venizia/ignis-inversion';
 
 import { type IAuthProvider } from '@/common';
 import { DefaultAuthProvider } from '@/providers/auth';
@@ -324,6 +324,31 @@ describe('checkError', () => {
     await expect(authProvider.checkError({ status: 400 })).resolves.toBeUndefined();
     await expect(authProvider.checkError({ status: 404 })).resolves.toBeUndefined();
     await expect(authProvider.checkError({ status: 500 })).resolves.toBeUndefined();
+  });
+
+  test('reads statusCode from an ApplicationError thrown by the data provider', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+
+    await expect(
+      authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
+    ).rejects.toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
+
+    await expect(
+      authProvider.checkError(getError({ statusCode: 500, message: 'HTTP 500' })),
+    ).resolves.toBeUndefined();
+
+    await expect(
+      authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
+    ).rejects.toEqual({ redirectTo: 'login' });
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
+  });
+
+  test('resolves when react-admin passes no error', async () => {
+    await expect(authProvider.checkError(undefined)).resolves.toBeUndefined();
   });
 });
 

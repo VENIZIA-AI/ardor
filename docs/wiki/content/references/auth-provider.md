@@ -147,7 +147,7 @@ import { type AnyType } from '@venizia/ardor';
 declare function checkError(params: AnyType): Promise<void>;
 ```
 
-Only `params.status` is read. An error thrown by `doRequest` is an `ApplicationError` whose status is `statusCode` (see [Network](../references/network#error-shape-on-non-2xx)) and which has no `status`, so these branches match it only if your application maps one onto the other.
+The status is `params.status` - react-admin's own `HttpError` - or, when that is absent, `params.statusCode`: an error thrown by `doRequest` is an `ApplicationError` that carries only `statusCode` (see [Network](../references/network#error-shape-on-non-2xx)). An override that reads only `status` never sees a data provider failure.
 
 | Status | Effect | Result |
 |---|---|---|

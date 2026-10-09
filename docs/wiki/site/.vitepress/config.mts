@@ -91,6 +91,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'checkError reads statusCode',
+            link: '/changelogs/2026-10-10-check-error-reads-status-code',
+          },
+          {
             text: 'Data provider errors and Content-Range',
             link: '/changelogs/2026-10-10-data-provider-errors-through-response-reader',
           },
