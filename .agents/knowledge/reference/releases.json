@@ -8,6 +8,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.2-10",
+        "date": "2026-10-10",
+        "sha": "1fef2a30",
+        "order": 155
+      },
+      {
         "version": "0.1.2-9",
         "date": "2026-10-09",
         "sha": "355f2bcd",
@@ -105,6 +111,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.2-10",
+        "date": "2026-10-10",
+        "sha": "de9066f1",
+        "order": 156
+      },
       {
         "version": "0.1.2-9",
         "date": "2026-10-09",
@@ -405,7 +417,7 @@
         "admin"
       ],
       "kind": "Bug Fix",
-      "order": 9007199254740991
+      "order": 154
     },
     {
       "id": "changelog:2026-10-10-data-provider-errors-through-response-reader",
