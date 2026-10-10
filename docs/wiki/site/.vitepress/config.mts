@@ -91,6 +91,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'useDocumentTitle cleanup guard',
+            link: '/changelogs/2026-10-10-document-title-cleanup-guard',
+          },
+          {
             text: 'checkError reads statusCode',
             link: '/changelogs/2026-10-10-check-error-reads-status-code',
           },

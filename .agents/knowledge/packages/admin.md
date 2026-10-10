@@ -22,7 +22,7 @@ Hooks (`src/hooks/index.ts`):
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
-- `useDocumentTitle` - sets the tab title to the screen title plus `appTitle` and restores the title it replaced on change or unmount.
+- `useDocumentTitle` - sets the tab title to the screen title plus `appTitle` and restores the title it replaced on change or unmount, unless a newer title was written since.
 - `useHtmlLang` - keeps `document.documentElement.lang` on the ra-core locale, for screen readers.
 
 There is no CRUD service: a class that calls one REST resource is an `HttpRepository` from the kernel's `./repository` sub-path (see [kernel](/packages/kernel.md)). `BaseCrudService` and `ICrudService` were removed on 2026-10-02.
