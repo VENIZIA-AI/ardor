@@ -492,6 +492,20 @@
       "order": 164
     },
     {
+      "id": "changelog:2026-10-12-ardor-0-1-2-stable",
+      "file": "2026-10-12-ardor-0-1-2-stable.md",
+      "date": "2026-10-12",
+      "title": "ARDOR 0.1.2, stable on IGNIS 0.2.1",
+      "packages": [
+        "admin",
+        "ardor",
+        "kernel",
+        "react"
+      ],
+      "kind": "Enhancement",
+      "order": 175
+    },
+    {
       "id": "changelog:2026-10-10-document-title-cleanup-guard",
       "file": "2026-10-10-document-title-cleanup-guard.md",
       "date": "2026-10-10",
