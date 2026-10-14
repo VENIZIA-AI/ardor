@@ -8,6 +8,12 @@
   "releases": {
     "admin": [
       {
+        "version": "0.1.3-0",
+        "date": "2026-10-14",
+        "sha": "fa5c76bd",
+        "order": 167
+      },
+      {
         "version": "0.1.2",
         "date": "2026-10-12",
         "sha": "8eb2b503",
@@ -117,6 +123,12 @@
       }
     ],
     "ardor": [
+      {
+        "version": "0.1.3-0",
+        "date": "2026-10-14",
+        "sha": "d6b0a127",
+        "order": 168
+      },
       {
         "version": "0.1.2",
         "date": "2026-10-12",
@@ -228,6 +240,12 @@
     ],
     "kernel": [
       {
+        "version": "0.1.3-0",
+        "date": "2026-10-14",
+        "sha": "3a927217",
+        "order": 165
+      },
+      {
         "version": "0.1.2",
         "date": "2026-10-12",
         "sha": "ceb50a6d",
@@ -319,6 +337,12 @@
       }
     ],
     "react": [
+      {
+        "version": "0.1.3-0",
+        "date": "2026-10-14",
+        "sha": "d3c4df19",
+        "order": 166
+      },
       {
         "version": "0.1.2",
         "date": "2026-10-12",
@@ -432,6 +456,17 @@
     ]
   },
   "changelogs": [
+    {
+      "id": "changelog:2026-10-14-permission-provider-from-the-container",
+      "file": "2026-10-14-permission-provider-from-the-container.md",
+      "date": "2026-10-14",
+      "title": "canAccess reaches an AuthProvider subclass without a fourth super argument",
+      "packages": [
+        "admin"
+      ],
+      "kind": "Bug Fix",
+      "order": 164
+    },
     {
       "id": "changelog:2026-10-10-document-title-cleanup-guard",
       "file": "2026-10-10-document-title-cleanup-guard.md",
