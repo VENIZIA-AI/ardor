@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import { Container, getError } from '@venizia/ignis-inversion';
+import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
-import { type IAuthProvider } from '@/common';
+import { type IAuthProvider, type IDataProvider } from '@/common';
 import { DefaultAuthProvider } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 import {
@@ -9,6 +9,7 @@ import {
   CoreBindings,
   DefaultAuthService,
   type IApplicationInfo,
+  type IAuthProviderOptions,
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
@@ -430,18 +431,80 @@ describe('getPermissions and refreshToken', () => {
 // The app binds an IPermissionProvider and DefaultAuthProvider answers react-admin's canAccess from
 // it. Unbound, there is no canAccess at all, so ra-core keeps allowing everything, as before.
 describe('canAccess', () => {
-  const resolveAuthProvider = (opts: { permissionProvider?: IPermissionProvider }) => {
+  const resolveAuthProvider = (opts: {
+    permissionProvider?: IPermissionProvider;
+    providerClass?: TClass<DefaultAuthProvider>;
+  }) => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
     container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue({});
+    container.bind({ key: 'services.Extra' }).toValue({});
     if (opts.permissionProvider) {
       container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
     }
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+    container
+      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(opts.providerClass ?? DefaultAuthProvider);
 
     return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
   };
+
+  // The shape every BANA auth provider has: its own constructor, three arguments to `super`, and
+  // another injection at the index the base uses for the permission provider.
+  class ThreeArgumentAuthProvider extends DefaultAuthProvider {
+    constructor(
+      @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      restDataProvider: IDataProvider,
+      @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+      authProviderOptions: IAuthProviderOptions,
+      @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+      authService: DefaultAuthService,
+      @inject({ key: 'services.Extra' })
+      protected extra: object,
+    ) {
+      super(restDataProvider, authProviderOptions, authService);
+    }
+  }
+
+  test('reaches a subclass that passes only three arguments to super', async () => {
+    const provider = resolveAuthProvider({
+      providerClass: ThreeArgumentAuthProvider,
+      permissionProvider: { canAccess: () => Promise.resolve(false) },
+    });
+
+    await expect(provider.canAccess?.({ resource: 'stocks', action: 'list' })).resolves.toBe(false);
+  });
+
+  test('stays absent for that subclass when the application binds no permission provider', () => {
+    expect(
+      resolveAuthProvider({ providerClass: ThreeArgumentAuthProvider }).canAccess,
+    ).toBeUndefined();
+  });
+
+  test('prefers a permission provider passed to super over the bound one', async () => {
+    class ExplicitAuthProvider extends DefaultAuthProvider {
+      constructor(
+        @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+        restDataProvider: IDataProvider,
+        @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+        authProviderOptions: IAuthProviderOptions,
+        @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+        authService: DefaultAuthService,
+      ) {
+        super(restDataProvider, authProviderOptions, authService, {
+          canAccess: () => Promise.resolve(true),
+        });
+      }
+    }
+
+    const provider = resolveAuthProvider({
+      providerClass: ExplicitAuthProvider,
+      permissionProvider: { canAccess: () => Promise.resolve(false) },
+    });
+
+    await expect(provider.canAccess?.({ resource: 'stocks', action: 'list' })).resolves.toBe(true);
+  });
 
   test('is absent when the application binds no permission provider', () => {
     expect(resolveAuthProvider({}).canAccess).toBeUndefined();

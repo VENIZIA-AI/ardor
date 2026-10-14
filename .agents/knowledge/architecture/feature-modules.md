@@ -45,9 +45,10 @@ both owners: react-admin keeps one and drops the other silently. `readFeatures`,
 Unbound, `canAccess` is absent and ra-core 5.15's `useCanAccess` returns `canAccess: true` without
 calling anything (`useCanAccess.js`, `emptyQueryObserverResult`) - no behaviour change for an app that
 binds nothing. ra-core caches answers under `['auth', 'canAccess', ...]`; the application invalidates
-`['auth']` on a workspace switch. A subclass with its own constructor (BANA's `AuthProvider` in
-`kits/admin`, which adds a socket) must inject the provider and pass it to `super` as the fourth
-argument. No `useCan` alias: BANA calls `useCanAccess` directly.
+`['auth']` on a workspace switch. `value(container)` takes the provider passed to the constructor, else reads
+`PERMISSION_PROVIDER` from the container (optional), so a subclass with its own constructor that
+passes three arguments to `super` (every BANA `AuthProvider`; `kits/admin` adds a socket at index 3)
+still gets `canAccess`. A provider passed to `super` wins over the bound one. No `useCan` alias: BANA calls `useCanAccess` directly.
 
 ## Messages
 
