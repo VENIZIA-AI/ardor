@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, test, expect } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
+import { getError } from '@venizia/ignis-inversion';
 import { NotificationContextProvider, useNotificationContext } from 'ra-core';
 import { useNotifyError } from '@/hooks/use-notify-error';
 
@@ -12,6 +13,12 @@ interface IWrapperProps {
 
 const Wrapper = ({ children }: IWrapperProps) => {
   return React.createElement(NotificationContextProvider, null, children);
+};
+
+const buildError = () => {
+  return getError({
+    message: { code: 'auth.invalid', text: 'Invalid authentication', args: { name: 'x' } },
+  });
 };
 
 const setupTest = () => {
@@ -29,16 +36,7 @@ const setupTest = () => {
 describe('useNotifyError', () => {
   test('calls notify with normalized code, error type, and message arguments', () => {
     const { result } = setupTest();
-    const error: TNotifyError = {
-      name: 'ApplicationError',
-      message: 'Invalid authentication',
-      statusCode: 400,
-      normalized: {
-        code: 'auth.invalid',
-        text: 'Invalid authentication',
-        args: { name: 'x' },
-      },
-    };
+    const error: TNotifyError = buildError();
 
     act(() => {
       result.current.notifyError(error);
@@ -55,16 +53,7 @@ describe('useNotifyError', () => {
 
   test('allows extra options to override notification type', () => {
     const { result } = setupTest();
-    const error: TNotifyError = {
-      name: 'ApplicationError',
-      message: 'Invalid authentication',
-      statusCode: 400,
-      normalized: {
-        code: 'auth.invalid',
-        text: 'Invalid authentication',
-        args: { name: 'x' },
-      },
-    };
+    const error: TNotifyError = buildError();
 
     act(() => {
       result.current.notifyError(error, { type: 'warning' });
@@ -81,16 +70,7 @@ describe('useNotifyError', () => {
 
   test('allows extra options to override message arguments and add custom notification options', () => {
     const { result } = setupTest();
-    const error: TNotifyError = {
-      name: 'ApplicationError',
-      message: 'Invalid authentication',
-      statusCode: 400,
-      normalized: {
-        code: 'auth.invalid',
-        text: 'Invalid authentication',
-        args: { name: 'x' },
-      },
-    };
+    const error: TNotifyError = buildError();
 
     act(() => {
       result.current.notifyError(error, {
