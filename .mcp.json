@@ -3,7 +3,7 @@
     "ardor-atlas": {
       "command": "bunx",
       "args": [
-        "@venizia/ignis-atlas@0.1.1-7",
+        "@venizia/ignis-atlas@0.1.2-1",
         "mcp",
         "--root",
         "."
