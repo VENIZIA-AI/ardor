@@ -179,7 +179,7 @@ declare function getRoles(_params: AnyType): Promise<Set<string>>;
 declare function getPermissions(_params: AnyType): Promise<void>;
 ```
 
-For react-admin's `canAccess` - the method behind `useCanAccess` and `<CanAccess>` - bind an `IPermissionProvider` under `CoreBindings.PERMISSION_PROVIDER`: `DefaultAuthProvider` then exposes `canAccess({ resource, action, record })` and answers from it. Without one there is no `canAccess`, and react-admin allows everything. A subclass that declares its own constructor must inject the provider and pass it to `super` as the fourth argument. See [Features and permissions](./features#permissions).
+For react-admin's `canAccess` - the method behind `useCanAccess` and `<CanAccess>` - bind an `IPermissionProvider` under `CoreBindings.PERMISSION_PROVIDER`: `DefaultAuthProvider` then exposes `canAccess({ resource, action, record })` and answers from it. Without one there is no `canAccess`, and react-admin allows everything. A subclass that declares its own constructor needs no change: the provider is read from the container too, and one passed to `super` as the fourth argument wins. See [Features and permissions](./features#permissions).
 
 `getRoles` resolves with `authService.getRoles()`, which parses `@app/auth/permission` (`LocalStorageKeys.KEY_AUTH_PERMISSION`) as a JSON array and returns it as a `Set<string>`. An empty or missing value gives an empty set. Because the base class never writes that key, the set stays empty unless your application stores it.
 

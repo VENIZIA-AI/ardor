@@ -143,31 +143,7 @@ The vocabulary - `'<resource>.<action>'`, a `'*'` wildcard, where the set comes 
 
 - **No provider bound:** `DefaultAuthProvider` has no `canAccess`, and react-admin allows everything, as before.
 - **Context switch:** react-admin caches answers under `['auth', 'canAccess', ...]`. When the workspace changes, invalidate the `['auth']` queries.
-- **A subclass with its own constructor** must inject the provider and pass it on, or `canAccess` stays absent:
-
-```ts
-import {
-  CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  type IAuthProviderOptions,
-  type IDataProvider,
-  inject,
-  type IPermissionProvider,
-} from '@venizia/ardor';
-
-export class AuthProvider extends DefaultAuthProvider {
-  constructor(
-    @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) restDataProvider: IDataProvider,
-    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) authProviderOptions: IAuthProviderOptions,
-    @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) authService: DefaultAuthService,
-    @inject({ key: CoreBindings.PERMISSION_PROVIDER, isOptional: true })
-    permissionProvider?: IPermissionProvider,
-  ) {
-    super(restDataProvider, authProviderOptions, authService, permissionProvider);
-  }
-}
-```
+- **A subclass with its own constructor** needs no change: `DefaultAuthProvider` reads the bound provider from the container, whatever the subclass passes to `super`. To use a different provider for one subclass, pass it to `super` as the fourth argument; it wins over the bound one.
 
 ## Messages
 
@@ -179,7 +155,7 @@ export class AuthProvider extends DefaultAuthProvider {
 ## Common pitfalls
 
 - **A configuration not in `configurations`.** It may be tree-shaken away in a production build, and nothing tells you. List every `@configuration()` class the feature relies on.
-- **Calling `useCanAccess` and seeing everything allowed.** No `IPermissionProvider` is bound, or an `AuthProvider` subclass did not pass it to `super`.
+- **Calling `useCanAccess` and seeing everything allowed.** No `IPermissionProvider` is bound.
 - **A stale answer after switching workspace.** Invalidate `['auth']`.
 
 ## Related

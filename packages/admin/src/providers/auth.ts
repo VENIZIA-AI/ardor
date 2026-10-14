@@ -122,8 +122,14 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  override value(_container: Container): IAuthProvider {
-    const { permissionProvider } = this;
+  override value(container: Container): IAuthProvider {
+    // A subclass with its own constructor rarely forwards the optional 4th argument to `super`.
+    const permissionProvider =
+      this.permissionProvider ??
+      container.get<IPermissionProvider>({
+        key: CoreBindings.PERMISSION_PROVIDER,
+        isOptional: true,
+      });
 
     return {
       login: (params: AnyType) => this.login(params),
