@@ -87,6 +87,26 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-15',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR 0.1.3, stable on the IGNIS 0.2.2 line',
+            link: '/changelogs/2026-10-15-ardor-0-1-3-stable',
+          },
+        ],
+      },
+      {
+        text: '2026-10-14',
+        collapsed: true,
+        items: [
+          {
+            text: 'canAccess from the container',
+            link: '/changelogs/2026-10-14-permission-provider-from-the-container',
+          },
+        ],
+      },
+      {
         text: '2026-10-12',
         collapsed: true,
         items: [

@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-15 | [ARDOR 0.1.3, stable on the IGNIS 0.2.2 line](./2026-10-15-ardor-0-1-3-stable) | Release |
 | 2026-10-14 | [canAccess reaches an AuthProvider subclass without a fourth super argument](./2026-10-14-permission-provider-from-the-container) | Bug Fix |
 | 2026-10-12 | [ARDOR 0.1.2, stable on IGNIS 0.2.1](./2026-10-12-ardor-0-1-2-stable) | Release |
 | 2026-10-10 | [useDocumentTitle no longer overwrites a newer title on unmount](./2026-10-10-document-title-cleanup-guard) | Bug Fix |

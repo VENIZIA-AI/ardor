@@ -481,6 +481,20 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-10-15-ardor-0-1-3-stable",
+      "file": "2026-10-15-ardor-0-1-3-stable.md",
+      "date": "2026-10-15",
+      "title": "ARDOR 0.1.3, stable on the IGNIS 0.2.2 line",
+      "packages": [
+        "admin",
+        "ardor",
+        "kernel",
+        "react"
+      ],
+      "kind": "Enhancement",
+      "order": 176
+    },
+    {
       "id": "changelog:2026-10-14-permission-provider-from-the-container",
       "file": "2026-10-14-permission-provider-from-the-container.md",
       "date": "2026-10-14",
