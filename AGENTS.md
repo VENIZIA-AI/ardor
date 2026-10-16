@@ -47,6 +47,11 @@ wiki, the changelogs and this bundle:
 |---|---|
 | `search` | Find a chunk by keyword - pass `corpus: "knowledge"` to search this bundle only |
 | `get` | Read one chunk in full, by the id a search hit returned |
+| `symbol` | An exported symbol's package, signature and source `file:line` |
+| `version` | The `@venizia/*` versions a project declares and has installed, next to the newest release |
+| `changes` | The changelog entries between two versions of one package, or between two dates |
+
+The full contract, and what goes stale, is in [Atlas MCP server](.agents/knowledge/reference/atlas-mcp.md).
 
 Maintaining it is rule P-03: change a fact in the code, update the concept and `log.md` in the same
 change. Generated content comes from `make okf-gen`; `make okf-check` validates and is not a commit
