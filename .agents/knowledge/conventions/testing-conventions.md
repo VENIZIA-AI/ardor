@@ -63,6 +63,19 @@ Three older casts remain: `store as unknown as Storage` in the kernel setup's `c
 inline `as never` arguments in admin's `rest-data.test.ts` and react's `use-artifact.test.ts`. They
 are debt, removed when their line is next touched - never a pattern to copy.
 
+## Awaiting a rejection or a resolution
+
+Bun types the `rejects` and `resolves` matchers as `void`, so the type-aware
+`typescript/await-thenable` rule refuses `await expect(task).rejects.toThrow(...)` - and an
+un-awaited one never asserts. The package root `tsconfig.json` carries the Bun types, so the rule
+sees them. Await the task instead, with no cast:
+
+- a resolution: `expect(await task).toBe(...)`;
+- a rejection: `expect(await rejectionOf(task)).toEqual(...)`, with `rejectionOf` from
+  `src/__tests__/rejection.ts` (kernel and admin), which returns what the task rejected with and fails
+  the test when it resolves. For a message, `toMatchObject({ message: expect.stringMatching(/.../) })`
+  replaces `toThrow(/.../)`.
+
 ## Positive controls
 
 Every test that guards a piece of logic should have a positive control: run the test against a

@@ -16,14 +16,14 @@ The critical rule: **a downstream package type-checks and resolves its siblings 
 
 The same dist-not-src rule applies to tests: `bun test` for react/admin resolves `@venizia/ardor-kernel` (and react, for admin) through the package's `import` export condition, landing on `dist/index.js`. A test run against stale dist silently tests old behavior. Always rebuild upstream packages before trusting a downstream test run.
 
-## rebuild.sh type-checks before it cleans
+## `make <pkg>` type-checks before it cleans
 
-Each package's `make <pkg>` target runs `bun run --filter "<pkg>" rebuild`, which invokes `rebuild.sh`. That script **type-checks first**, and only after type-checking succeeds does it clean `dist/` and run `build.sh` to re-emit output. This ordering means a type error stops the process before the old `dist/` is destroyed - you are never left with an empty `dist/` after a failed build. Confirm success by checking for the `DONE` line in the output. Running `sh ./scripts/build.sh` directly, bypassing `rebuild.sh`, fails with `tsc-alias: not found` - always go through `bun run build` or `make`.
+Each package's `make <pkg>` target runs `make -C packages/<pkg> rebuild` (`make/project.mk`). That target **type-checks first**, and only after type-checking succeeds does it clean `dist/` and run `build` to re-emit output. This ordering means a type error stops the process before the old `dist/` is destroyed - you are never left with an empty `dist/` after a failed build. Confirm success by checking for the `DONE` line in the output. Always build through make: the recipe runs `tsc-alias` after `tsc`, and a bare `tsc` leaves every `@/` import unrewritten in `dist`.
 
 ## Test, lint, typecheck targets
 
-- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each via `bun run test` inside the package directory. There is no `test-ardor` target.
-- `make lint` runs `lint-packages` (everything under `packages/*`) and then `lint-examples` (everything under `examples/*`); per-package variants (`lint-kernel`, `lint-react`, `lint-admin`, and `lint-ardor`) exist for targeted runs. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
+- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each running `bun test` with `.env.test` and the setup preload inside the package directory. `make test-ardor` says there is no suite and passes.
+- `make lint` runs `lint-packages` (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`); `make lint-all` adds `lint-wiki` and `lint-scripts`, and `make fmt-<pkg>` applies the fixes. The examples run through `bun scripts/examples.ts check` (lint and typecheck) and `build`. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.
 
@@ -48,7 +48,7 @@ These gates are what CI and reviewers hold a change to; running `make build-all`
 1. Make the source edit.
 2. `make <affected-pkg>` (and its downstream packages, in order) to rebuild through `dist/`.
 3. `make test` (or the specific `test-<pkg>` targets) - remember these test `dist/`, so step 2 must have succeeded first.
-4. `make lint` for the touched packages.
+4. `make lint-all`, and `bun scripts/examples.ts check` when an example or a public API changed.
 5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `cycles-check`, `surface-check`, `size-check`, `okf-check`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check`.
 
 For the wider workflow this build cycle sits inside, see [Onboarding](/overview/onboarding.md) and [Monorepo layout](/overview/monorepo-layout.md).

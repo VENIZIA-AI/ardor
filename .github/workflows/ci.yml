@@ -81,8 +81,8 @@ jobs:
         id: build
         run: make build-all
 
-      # The make targets own the test flags (BUN_TEST_FLAGS, default --parallel, implies --isolate),
-      # so CI and a developer's `make test-<pkg>` run the very same command.
+      # The make targets own the test command (make/test.mk: .env.test, the setup preload and the
+      # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.
       - name: Test - kernel
         run: make test-kernel
 
@@ -107,12 +107,17 @@ jobs:
       - name: Bundle budgets
         run: make size-check
 
+      # The examples are not driven by make: they carry their own package.json scripts.
       - name: Examples build
-        run: make examples-check
+        run: bun scripts/examples.ts build
 
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: make lint
+        run: make lint-all
+
+      - name: Lint - examples
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: bun scripts/examples.ts lint
 
       # One loop over the whole manifest, so this gate and a release read the same rows.
       - name: Browser purity

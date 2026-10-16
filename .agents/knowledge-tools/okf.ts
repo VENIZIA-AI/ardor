@@ -69,7 +69,9 @@ const listDirs = (opts: { dir: string }): string[] => {
 };
 
 const sourceFiles = (opts: { dir: string }): string[] => {
-  return walkFiles({ dir: opts.dir }).filter((file) => file.endsWith('.ts') && !file.endsWith('.d.ts'));
+  return walkFiles({ dir: opts.dir }).filter(
+    (file) => file.endsWith('.ts') && !file.endsWith('.d.ts'),
+  );
 };
 
 const repoRelative = (opts: { path: string }): string => {
@@ -129,7 +131,9 @@ const collectHooks = (): HookEntry[] => {
     .map((dir) => {
       const names = new Set<string>();
       for (const file of sourceFiles({ dir })) {
-        for (const match of readFileSync(file, 'utf8').matchAll(/export\s+(?:const|function)\s+(use[A-Z]\w*)/g)) {
+        for (const match of readFileSync(file, 'utf8').matchAll(
+          /export\s+(?:const|function)\s+(use[A-Z]\w*)/g,
+        )) {
           names.add(match[1]);
         }
       }
@@ -165,42 +169,56 @@ const collectBindingKeys = (): BindingClass[] => {
 
 type MakeTarget = { name: string; deps: string; description: string };
 
+/**
+ * Every root make target, read from make's own database (`make -pRrq`), so the targets generated
+ * from `PACKAGES` are listed too. The description comes from the target's `make help` row
+ * (make/help.mk): an exact name, a name in an `a / b` row, or a `<pkg>` row matching one package.
+ */
 const collectMakefileTargets = (): MakeTarget[] => {
   if (!existsSync(PATHS.makefile)) {
     return [];
   }
 
-  const lines = readFileSync(PATHS.makefile, 'utf8').split('\n');
-  const out: MakeTarget[] = [];
+  const db = Bun.spawnSync(['make', '--no-print-directory', '-pRrq', ':'], {
+    cwd: REPO,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  }).stdout.toString();
+  const lines = db.split('\n');
 
+  const packagesLine = lines.find((line) => line.startsWith('PACKAGES := ')) ?? '';
+  const packages = packagesLine.slice('PACKAGES := '.length).split(' ').filter(Boolean);
+  const pkgPattern = `(${packages.join('|')})`;
+
+  const help: { pattern: RegExp; description: string }[] = [];
+  const helpFile = join(REPO, 'make/help.mk');
+  const helpText = existsSync(helpFile) ? readFileSync(helpFile, 'utf8') : '';
+  for (const row of helpText.matchAll(/HELP_ROW\) "((?:[^"\\]|\\.)+)" "((?:[^"\\]|\\.)*)"/g)) {
+    const description = row[2].replace(/\\"/g, '"');
+    for (const name of row[1].split(' / ')) {
+      const bare = name.replace(/ ARGS=.*$/, '').trim();
+      const escaped = bare.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('<pkg>', pkgPattern);
+      help.push({ pattern: new RegExp(`^${escaped}$`), description });
+    }
+  }
+
+  const out: MakeTarget[] = [];
   for (let index = 0; index < lines.length; index++) {
-    const match = lines[index].match(/^([a-zA-Z][\w-]*):\s*(.*)$/);
+    if (lines[index] === '# Not a target:') {
+      index++;
+      continue;
+    }
+
+    const match = lines[index].match(/^([a-z][\w-]*):(?![:=])\s*(.*)$/);
     if (!match) {
       continue;
     }
 
-    // Description: the first `@echo "…"` of the recipe, stripped of emoji and trailing dots.
-    let description = '';
-    for (let cursor = index + 1; cursor < lines.length; cursor++) {
-      const line = lines[cursor];
-      if (!line.startsWith('\t') && line.trim() !== '') {
-        break;
-      }
-
-      const echo = line.match(/@echo\s+"([^"]*)"/);
-      if (echo) {
-        description = echo[1]
-          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
-          .replace(/\.{3}$/, '')
-          .trim();
-        break;
-      }
-    }
-
+    const description = help.find((entry) => entry.pattern.test(match[1]))?.description ?? '';
     out.push({ name: match[1], deps: match[2].trim(), description });
   }
 
-  return out;
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 };
 
 type SourceMapEntry = { pkg: string; total: number; subsystems: { name: string; files: number }[] };
@@ -262,7 +280,10 @@ const collectPackageManifests = (): { dir: string; name: string; description: st
       continue;
     }
 
-    const parsed = JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string; description?: string };
+    const parsed = JSON.parse(readFileSync(manifest, 'utf8')) as {
+      name?: string;
+      description?: string;
+    };
     // Deliberately no `version` - it churns the bundle on every release.
     out.push({
       dir,
@@ -284,7 +305,10 @@ const markers = (opts: { id: string }): { start: string; end: string } => {
 };
 
 /** Locate a managed region, rejecting malformed or duplicated markers rather than corrupting the file. */
-const locateRegion = (opts: { text: string; id: string }): { start: string; end: string; startAt: number; endAt: number } => {
+const locateRegion = (opts: {
+  text: string;
+  id: string;
+}): { start: string; end: string; startAt: number; endAt: number } => {
   const { text, id } = opts;
 
   const { start, end } = markers({ id });
@@ -341,7 +365,12 @@ type GeneratedFile = { path: string; content: string };
  * No `timestamp:` - it is optional in OKF, and a hardcoded one is a lie that also
  * makes every regeneration look like a change.
  */
-const refHeader = (opts: { title: string; description: string; resource: string; tags: string }): string => {
+const refHeader = (opts: {
+  title: string;
+  description: string;
+  resource: string;
+  tags: string;
+}): string => {
   const { title, description, resource, tags } = opts;
 
   return [
@@ -385,7 +414,8 @@ const renderSourceMap = (): GeneratedFile => {
     content:
       refHeader({
         title: 'Source map',
-        description: 'Every package subsystem under packages/*/src with its source-file count (generated).',
+        description:
+          'Every package subsystem under packages/*/src with its source-file count (generated).',
         resource: 'packages',
         tags: 'reference, source-map, packages',
       }) +
@@ -413,7 +443,9 @@ const renderProviders = (): GeneratedFile => {
         resource: 'packages/admin/src/providers',
         tags: 'reference, providers, catalog',
       }) +
-      generatedNote({ seeAlso: 'Model: [data provider pipeline](/architecture/data-provider-pipeline.md).' }) +
+      generatedNote({
+        seeAlso: 'Model: [data provider pipeline](/architecture/data-provider-pipeline.md).',
+      }) +
       `**${total} provider classes across ${entries.length} directories.**\n\n` +
       ['| Directory | Classes |', '|---|---|', ...rows].join('\n') +
       '\n',
@@ -438,11 +470,14 @@ const renderHooks = (): GeneratedFile => {
     content:
       refHeader({
         title: 'Hooks and services catalog',
-        description: 'Every exported React hook and every service class, by package directory (generated).',
+        description:
+          'Every exported React hook and every service class, by package directory (generated).',
         resource: 'packages/react/src/hooks',
         tags: 'reference, hooks, services, catalog',
       }) +
-      generatedNote({ seeAlso: 'Model: [hooks and context](/architecture/hooks-and-context.md).' }) +
+      generatedNote({
+        seeAlso: 'Model: [hooks and context](/architecture/hooks-and-context.md).',
+      }) +
       `**${total} hooks across ${entries.length} directories.**\n\n` +
       ['| Directory | Hooks |', '|---|---|', ...rows].join('\n') +
       '\n\n## Services\n\n' +
@@ -472,7 +507,9 @@ const renderBindingKeys = (): GeneratedFile => {
         resource: 'packages/kernel/src/common/bindings.ts',
         tags: 'reference, bindings, di',
       }) +
-      generatedNote({ seeAlso: 'Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).' }) +
+      generatedNote({
+        seeAlso: 'Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).',
+      }) +
       `**${total} keys across ${classes.length} binding classes.**\n\n` +
       (body || '_(none found)_') +
       '\n',
@@ -521,7 +558,11 @@ const renderPackagesTable = (): string => {
 
 /** Managed regions inside hand-authored files. */
 const REGIONS: { id: string; file: string; render: () => string }[] = [
-  { id: 'packages-table', file: join(BUNDLE, 'overview/monorepo-layout.md'), render: renderPackagesTable },
+  {
+    id: 'packages-table',
+    file: join(BUNDLE, 'overview/monorepo-layout.md'),
+    render: renderPackagesTable,
+  },
 ];
 
 // --- docs style ---
@@ -554,7 +595,9 @@ const sameContent = (opts: { left: string; right: string }): boolean => {
 const gen = (): void => {
   for (const region of REGIONS) {
     if (!existsSync(region.file)) {
-      console.warn(`gen: skipped region '${region.id}' - ${repoRelative({ path: region.file })} does not exist yet`);
+      console.warn(
+        `gen: skipped region '${region.id}' - ${repoRelative({ path: region.file })} does not exist yet`,
+      );
       continue;
     }
 
@@ -647,7 +690,9 @@ const check = (): void => {
   // 5. freshness - generated content matches source
   for (const region of REGIONS) {
     if (!existsSync(region.file)) {
-      problems.push(`freshness: region '${region.id}' host file missing (${repoRelative({ path: region.file })})`);
+      problems.push(
+        `freshness: region '${region.id}' host file missing (${repoRelative({ path: region.file })})`,
+      );
       continue;
     }
 
@@ -667,7 +712,10 @@ const check = (): void => {
   }
 
   if (problems.length) {
-    console.error(`check: ${problems.length} problem(s):\n` + problems.map((problem) => '  - ' + problem).join('\n'));
+    console.error(
+      `check: ${problems.length} problem(s):\n` +
+        problems.map((problem) => '  - ' + problem).join('\n'),
+    );
     process.exit(1);
   }
 
@@ -696,7 +744,11 @@ const coverage = (): void => {
   let structCovered = 0;
   let structTotal = 0;
 
-  const struct = (opts: { name: string; items: string[]; covered: (item: string) => boolean }): void => {
+  const struct = (opts: {
+    name: string;
+    items: string[];
+    covered: (item: string) => boolean;
+  }): void => {
     const { name, items, covered } = opts;
 
     const missing = items.filter((item) => !covered(item));
@@ -708,13 +760,23 @@ const coverage = (): void => {
     lines.push(
       `  ${pad({ value: name, width: 15 })} ${pad({ value: `${value}/${items.length}`, width: 8 })} ` +
         `${pad({ value: percent({ value, total: items.length }) + '%', width: 5 })}` +
-        (missing.length ? `  missing: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? ' …' : ''}` : ''),
+        (missing.length
+          ? `  missing: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? ' …' : ''}`
+          : ''),
     );
   };
 
   lines.push('STRUCTURAL  (target 100% - one curated concept each)');
-  struct({ name: 'packages', items: packageDirs(), covered: (name) => hasId({ id: '/packages/' + name }) });
-  struct({ name: 'examples', items: exampleDirs(), covered: (name) => hasId({ id: '/examples/' + name }) });
+  struct({
+    name: 'packages',
+    items: packageDirs(),
+    covered: (name) => hasId({ id: '/packages/' + name }),
+  });
+  struct({
+    name: 'examples',
+    items: exampleDirs(),
+    covered: (name) => hasId({ id: '/examples/' + name }),
+  });
 
   // Reference axes - advisory; exhaustive coverage comes from generation.
   lines.push('', 'REFERENCE  (advisory - generated)');
@@ -744,7 +806,11 @@ const coverage = (): void => {
     count: bindingClasses.reduce((sum, entry) => sum + entry.keys.length, 0),
     generated: hasId({ id: '/reference/binding-keys' }),
   });
-  ref({ name: 'make targets', count: collectMakefileTargets().length, generated: hasId({ id: '/reference/makefile-targets' }) });
+  ref({
+    name: 'make targets',
+    count: collectMakefileTargets().length,
+    generated: hasId({ id: '/reference/makefile-targets' }),
+  });
   ref({
     name: 'source files',
     count: collectSourceMap().reduce((sum, entry) => sum + entry.total, 0),
@@ -771,12 +837,18 @@ const coverage = (): void => {
     `  how-to (Playbook) ${types['Playbook'] || 0}  (target >= ${playbookTarget})` +
       `${(types['Playbook'] || 0) < playbookTarget ? '  <- gap' : ''}`,
   );
-  lines.push(`  tutorial ${types['Tutorial'] || 0}  (target 1)${!types['Tutorial'] ? '  <- gap' : ''}`);
-  lines.push(`  glossary ${types['Glossary'] || 0}  (target 1)${!types['Glossary'] ? '  <- gap' : ''}`);
+  lines.push(
+    `  tutorial ${types['Tutorial'] || 0}  (target 1)${!types['Tutorial'] ? '  <- gap' : ''}`,
+  );
+  lines.push(
+    `  glossary ${types['Glossary'] || 0}  (target 1)${!types['Glossary'] ? '  <- gap' : ''}`,
+  );
 
   console.log(`\nCOVERAGE - ${concepts.length} curated concepts\n`);
   console.log(lines.join('\n'));
-  console.log(`\nstructural: ${structCovered}/${structTotal}  ${percent({ value: structCovered, total: structTotal })}%`);
+  console.log(
+    `\nstructural: ${structCovered}/${structTotal}  ${percent({ value: structCovered, total: structTotal })}%`,
+  );
 
   const minIndex = process.argv.indexOf('--min');
   if (minIndex === -1) {
@@ -788,7 +860,9 @@ const coverage = (): void => {
   const min = Number(raw);
 
   if (raw === undefined || !Number.isFinite(min)) {
-    console.error(`\ncoverage: --min needs a number, got ${raw === undefined ? '(nothing)' : `"${raw}"`}`);
+    console.error(
+      `\ncoverage: --min needs a number, got ${raw === undefined ? '(nothing)' : `"${raw}"`}`,
+    );
     process.exit(2);
   }
 

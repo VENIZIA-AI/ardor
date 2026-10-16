@@ -213,7 +213,7 @@ git clone https://github.com/VENIZIA-AI/ardor.git && cd ardor
 bun install
 make build           # kernel -> react -> admin -> ardor
 make test            # bun test, every package
-make lint
+make lint-all
 make docs            # the wiki, with the sidebar and snippet gates
 ```
 

@@ -14,9 +14,9 @@ A running list of things that look fine, compile fine, and still burn an hour. R
 
 Downstream consumers and tests exercise the built `dist` output, not `src`. If you edit a package's source and the change doesn't show up where you expect, you probably need a rebuild first. This is the same discipline the [build-run-test](/overview/build-run-test.md) flow enforces: the package pipeline builds before anything downstream can see the change.
 
-## rebuild.sh cleans after type-check, not before
+## rebuild cleans after type-check, not before
 
-The rebuild script runs type-checking against the existing build artifacts, then cleans and rebuilds. If you expect a clean-first cycle, you'll misread stale errors as fresh ones, or fresh errors as stale. Know the order before you trust the output. See [build-system](/process/build-system.md).
+The `rebuild` target (`make/project.mk`) runs type-checking against the existing build artifacts, then cleans and rebuilds. If you expect a clean-first cycle, you'll misread stale errors as fresh ones, or fresh errors as stale. Know the order before you trust the output. See [build-system](/process/build-system.md).
 
 ## happy-dom replaces the networking globals
 

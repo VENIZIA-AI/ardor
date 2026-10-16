@@ -13,6 +13,7 @@ import {
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
+import { rejectionOf } from '@/__tests__/rejection';
 
 interface IRecordedRequest {
   readonly method: string;
@@ -242,7 +243,7 @@ describe('login', () => {
 
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
-    await expect(authProvider.checkAuth({})).rejects.toEqual({
+    expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
       redirectTo: 'login',
     });
     expect(recordedRequests).toHaveLength(0);
@@ -256,7 +257,7 @@ describe('checkAuth', () => {
     recordedRequests.length = 0;
     whoamiReturnsData = true;
 
-    await expect(authProvider.checkAuth({})).resolves.toBeUndefined();
+    expect(await authProvider.checkAuth({})).toBeUndefined();
 
     expect(recordedRequests).toHaveLength(1);
     const whoamiRequest = recordedRequests[0];
@@ -272,7 +273,7 @@ describe('checkAuth', () => {
     recordedRequests.length = 0;
     whoamiReturnsData = false;
 
-    await expect(authProvider.checkAuth({})).rejects.toEqual({
+    expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
       redirectTo: 'login',
     });
 
@@ -294,7 +295,7 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    await expect(authProvider.checkError({ status: 401 })).rejects.toEqual({
+    expect(await rejectionOf(authProvider.checkError({ status: 401 }))).toEqual({
       redirectTo: 'login',
     });
 
@@ -312,7 +313,7 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    await expect(authProvider.checkError({ status: 403 })).rejects.toEqual({
+    expect(await rejectionOf(authProvider.checkError({ status: 403 }))).toEqual({
       redirectTo: '/unauthorized',
       logoutUser: false,
     });
@@ -322,9 +323,9 @@ describe('checkError', () => {
   });
 
   test('resolves successfully for other error statuses', async () => {
-    await expect(authProvider.checkError({ status: 400 })).resolves.toBeUndefined();
-    await expect(authProvider.checkError({ status: 404 })).resolves.toBeUndefined();
-    await expect(authProvider.checkError({ status: 500 })).resolves.toBeUndefined();
+    expect(await authProvider.checkError({ status: 400 })).toBeUndefined();
+    expect(await authProvider.checkError({ status: 404 })).toBeUndefined();
+    expect(await authProvider.checkError({ status: 500 })).toBeUndefined();
   });
 
   test('reads statusCode from an ApplicationError thrown by the data provider', async () => {
@@ -333,23 +334,27 @@ describe('checkError', () => {
       JSON.stringify({ value: 'jwt', type: 'Bearer' }),
     );
 
-    await expect(
-      authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
-    ).rejects.toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(
+      await rejectionOf(
+        authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
+      ),
+    ).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
 
-    await expect(
-      authProvider.checkError(getError({ statusCode: 500, message: 'HTTP 500' })),
-    ).resolves.toBeUndefined();
+    expect(
+      await authProvider.checkError(getError({ statusCode: 500, message: 'HTTP 500' })),
+    ).toBeUndefined();
 
-    await expect(
-      authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
-    ).rejects.toEqual({ redirectTo: 'login' });
+    expect(
+      await rejectionOf(
+        authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
+      ),
+    ).toEqual({ redirectTo: 'login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
   });
 
   test('resolves when react-admin passes no error', async () => {
-    await expect(authProvider.checkError(undefined)).resolves.toBeUndefined();
+    expect(await authProvider.checkError(undefined)).toBeUndefined();
   });
 });
 
@@ -365,7 +370,7 @@ describe('logout', () => {
     );
     localStorage.setItem('other-app-config', 'persisted-data');
 
-    await expect(authProvider.logout({})).resolves.toBeUndefined();
+    expect(await authProvider.logout({})).toBeUndefined();
 
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
@@ -377,7 +382,7 @@ describe('getIdentity', () => {
   test('rejects when no userId is stored in identity', async () => {
     expect(authProvider.getIdentity).toBeDefined();
     if (authProvider.getIdentity !== undefined) {
-      await expect(authProvider.getIdentity({})).rejects.toEqual({
+      expect(await rejectionOf(authProvider.getIdentity({}))).toEqual({
         message: '[getIdentity] No userId to get user identity!',
       });
     }
@@ -396,14 +401,14 @@ describe('getIdentity', () => {
 
       // `getIdentity` returns what `saveAuth` stored, which carries `userId` rather than react-admin's
       // `id`; the type says UserIdentity, the wire object says userId - a seam this test records.
-      await expect(authProvider.getIdentity({})).resolves.toMatchObject(identityPayload);
+      expect(await authProvider.getIdentity({})).toMatchObject(identityPayload);
     }
   });
 });
 
 describe('getRoles', () => {
   test('resolves with an empty set when no roles are stored', async () => {
-    await expect(authProvider.getRoles({})).resolves.toEqual(new Set<string>());
+    expect(await authProvider.getRoles({})).toEqual(new Set<string>());
   });
 
   test('resolves with a set of stored role strings', async () => {
@@ -412,19 +417,17 @@ describe('getRoles', () => {
       JSON.stringify(['admin', 'editor', 'viewer']),
     );
 
-    await expect(authProvider.getRoles({})).resolves.toEqual(
-      new Set<string>(['admin', 'editor', 'viewer']),
-    );
+    expect(await authProvider.getRoles({})).toEqual(new Set<string>(['admin', 'editor', 'viewer']));
   });
 });
 
 describe('getPermissions and refreshToken', () => {
   test('resolves permissions to undefined', async () => {
-    await expect(authProvider.getPermissions({})).resolves.toBeUndefined();
+    expect(await authProvider.getPermissions({})).toBeUndefined();
   });
 
   test('resolves refreshToken to undefined', async () => {
-    await expect(authProvider.refreshToken()).resolves.toBeUndefined();
+    expect(await authProvider.refreshToken()).toBeUndefined();
   });
 });
 
@@ -473,7 +476,7 @@ describe('canAccess', () => {
       permissionProvider: { canAccess: () => Promise.resolve(false) },
     });
 
-    await expect(provider.canAccess?.({ resource: 'stocks', action: 'list' })).resolves.toBe(false);
+    expect(await provider.canAccess?.({ resource: 'stocks', action: 'list' })).toBe(false);
   });
 
   test('stays absent for that subclass when the application binds no permission provider', () => {
@@ -503,7 +506,7 @@ describe('canAccess', () => {
       permissionProvider: { canAccess: () => Promise.resolve(false) },
     });
 
-    await expect(provider.canAccess?.({ resource: 'stocks', action: 'list' })).resolves.toBe(true);
+    expect(await provider.canAccess?.({ resource: 'stocks', action: 'list' })).toBe(true);
   });
 
   test('is absent when the application binds no permission provider', () => {
@@ -522,12 +525,10 @@ describe('canAccess', () => {
     });
 
     const signal = new AbortController().signal;
-    await expect(
-      provider.canAccess?.({ resource: 'stocks', action: 'list', record: { id: 1 }, signal }),
-    ).resolves.toBe(true);
-    await expect(provider.canAccess?.({ resource: 'stocks', action: 'delete' })).resolves.toBe(
-      false,
-    );
+    expect(
+      await provider.canAccess?.({ resource: 'stocks', action: 'list', record: { id: 1 }, signal }),
+    ).toBe(true);
+    expect(await provider.canAccess?.({ resource: 'stocks', action: 'delete' })).toBe(false);
     expect(asked).toEqual([
       { resource: 'stocks', action: 'list', record: { id: 1 } },
       { resource: 'stocks', action: 'delete', record: undefined },

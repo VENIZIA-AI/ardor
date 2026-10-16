@@ -96,12 +96,12 @@ Chặn: <what blocks, or "không có">
 
 | ID | Rule |
 |---|---|
-| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `bun run build` inside the package or `make <pkg>`; lint with `make lint-<pkg>` or `make lint-all`. |
+| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `make <pkg>` (or `make -C packages/<pkg> build`); lint with `make lint-<pkg>` or `make lint-all`, fix with `make fmt-<pkg>`. |
 | **B-02** | **Zero lint errors and zero warnings, build green, after every change.** Non-negotiable; nothing is complete until it passes. |
 | **B-03** | **Verify before claiming.** Run the command, read the output, then say it passes. Evidence before assertions. A step that failed or was skipped is reported as such. |
-| **B-04** | **Know the build trap.** `make <pkg>` runs `rebuild.sh`, which type-checks first and then cleans `dist/` before `build.sh` emits it; a downstream package (`react` -> `kernel`, `admin` -> `react` + `kernel`, `ardor` -> all three) resolves its siblings through `dist`, so build in dependency order and confirm the `DONE` line. Running `sh ./scripts/build.sh` directly dies at `tsc-alias: not found` - always `bun run build` or `make`. |
+| **B-04** | **Know the build trap.** `make <pkg>` runs the package's `rebuild` target (`make/project.mk`), which type-checks first and then cleans `dist/` before `build` emits it; a downstream package (`react` -> `kernel`, `admin` -> `react` + `kernel`, `ardor` -> all three) resolves its siblings through `dist`, so build in dependency order and confirm the `DONE` line. A bare `tsc` skips `tsc-alias` and leaves every `@/` import unrewritten in `dist` - always build through `make`. |
 | **B-05** | **A downstream suite tests `dist`, not `src`.** `bun test` resolves `@venizia/ardor-kernel` and `@venizia/ardor-react` through the `import` export condition to `dist/index.js`. A source change in one package is invisible to another package's tests until the changed package is rebuilt. Before trusting "I changed X and Y's suite is still green", rebuild X and prove what Y loads - `import.meta.resolve` from Y's directory, or a grep on `dist/esm`. |
-| **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `tsconfig.build.json` excludes them for exactly this reason. |
+| **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `.configs/tsconfig.build.json` excludes them for exactly this reason. |
 | **B-07** | **Agent scripting uses `bun`** (`bun -e '…'`, `bun file.ts`, `Bun.file()`), never Python. |
 | **B-08** | **Test-only concerns go through the committed `.env.test`,** never through a framework default or a source change made for a test's convenience. Tests run on the Bun test runner only - never Jest, Vitest or Mocha. |
 
@@ -136,7 +136,7 @@ Most of these rules hold because agents read this file. Only these have tooling 
 
 | Rule | Enforced by | Actually blocks? |
 |---|---|---|
-| B-02 | `make lint-all`, `bun run build`, run by hand | No automatic gate |
+| B-02 | `make lint-all`, `make build-all`, run by hand | No automatic gate |
 | P-03 | `make okf-check` when the bundle is touched; the `knowledge-sync` skill periodically | No, by decision - a per-commit check cannot tell whether prose is still true |
 | W group, P-09, P-10, B-03, B-05, P-05, P-15, W-02 | `.agents/plugin/claude/hooks/session-start.ts` prints them into every Claude session, extracted from this file at run time | Reminds, never blocks |
 | everything else | this file | No |

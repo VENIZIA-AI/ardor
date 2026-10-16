@@ -5,6 +5,7 @@ import { describe, expect, test } from 'bun:test';
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { configuration, provide } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
+import { rejectionOf } from '@/__tests__/rejection';
 
 @configuration()
 class InventoryConfiguration {
@@ -70,9 +71,9 @@ describe('AbstractArdorApplication.features', () => {
   test('throws on two features with one name', async () => {
     const application = createApplication({ features: [inventory, { name: 'inventory' }] });
 
-    await expect(application.start()).rejects.toThrow(
-      /\[features\] Two features are named 'inventory'/,
-    );
+    expect(await rejectionOf(application.start())).toMatchObject({
+      message: expect.stringMatching(/\[features\] Two features are named 'inventory'/),
+    });
   });
 
   test('throws when a feature lists a configuration that was never discovered', async () => {
@@ -80,9 +81,11 @@ describe('AbstractArdorApplication.features', () => {
       features: [{ name: 'billing', configurations: [ForgottenConfiguration] }],
     });
 
-    await expect(application.start()).rejects.toThrow(
-      /\[features\] 'billing' lists ForgottenConfiguration, which was never discovered/,
-    );
+    expect(await rejectionOf(application.start())).toMatchObject({
+      message: expect.stringMatching(
+        /\[features\] 'billing' lists ForgottenConfiguration, which was never discovered/,
+      ),
+    });
   });
 
   test('bindContext still overrides what a feature provides', async () => {

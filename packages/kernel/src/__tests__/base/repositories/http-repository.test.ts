@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
 import { readAuthTokenFromStorage } from '@/base/services/network-request';
 import { LocalStorageKeys } from '@/common';
+import { rejectionOf } from '@/__tests__/rejection';
 
 /**
  * ARDOR's contract with the HTTP repository it re-exports from `@venizia/ignis-connectors/http`.
@@ -140,7 +141,9 @@ describe('the re-exported HTTP repository', () => {
     try {
       const repository = repositoryFor({ server: bare });
 
-      await expect(repository.count({ where: {} })).rejects.toThrow(/no Content-Range/);
+      expect(await rejectionOf(repository.count({ where: {} }))).toMatchObject({
+        message: expect.stringMatching(/no Content-Range/),
+      });
       expect(await repository.existsWith({ where: {} })).toBe(true);
     } finally {
       await bare.stop(true);
@@ -273,9 +276,11 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ total: 42 }) });
 
       try {
-        await expect(
-          repositoryFor({ server: odd, countPath: 'count' }).count({ where: {} }),
-        ).rejects.toThrow(/no numeric count/);
+        expect(
+          await rejectionOf(
+            repositoryFor({ server: odd, countPath: 'count' }).count({ where: {} }),
+          ),
+        ).toMatchObject({ message: expect.stringMatching(/no numeric count/) });
       } finally {
         await odd.stop(true);
       }
@@ -311,9 +316,9 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ data: [{ id: 'a' }], page: 1 }) });
 
       try {
-        await expect(repositoryFor({ server: odd }).find({ filter: {} })).rejects.toThrow(
-          /neither an array nor/,
-        );
+        expect(
+          await rejectionOf(repositoryFor({ server: odd }).find({ filter: {} })),
+        ).toMatchObject({ message: expect.stringMatching(/neither an array nor/) });
       } finally {
         await odd.stop(true);
       }

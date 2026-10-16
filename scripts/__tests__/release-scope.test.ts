@@ -28,7 +28,8 @@ const released = (): string => {
   git(root, 'config', 'user.name', 'test');
   write(root, 'packages/umbrella/src/index.ts', 'export {};\n');
   write(root, 'packages/umbrella/README.md', '# umbrella\n');
-  write(root, 'packages/umbrella/tsconfig.build.json', '{}\n');
+  write(root, 'packages/umbrella/tsconfig.json', '{}\n');
+  write(root, 'packages/umbrella/.configs/tsconfig.build.json', '{}\n');
   write(root, 'packages/umbrella/package.json', '{ "version": "1.0.0" }\n');
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'chore(umbrella): release v1.0.0 [patch]');
@@ -72,7 +73,14 @@ describe('countChangedSinceRelease', () => {
 
   test('a build config change counts', () => {
     const root = released();
-    commit(root, 'packages/umbrella/tsconfig.build.json', '{ "compilerOptions": {} }\n');
+    commit(root, 'packages/umbrella/.configs/tsconfig.build.json', '{ "compilerOptions": {} }\n');
+
+    expect(countChangedSinceRelease({ name: 'umbrella', cwd: root })).toBe(1);
+  });
+
+  test('a change to the root tsconfig the build extends counts', () => {
+    const root = released();
+    commit(root, 'packages/umbrella/tsconfig.json', '{ "compilerOptions": {} }\n');
 
     expect(countChangedSinceRelease({ name: 'umbrella', cwd: root })).toBe(1);
   });

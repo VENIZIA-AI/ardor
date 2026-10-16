@@ -3,11 +3,15 @@
  * import, so the rule can be tested against a real git history.
  */
 
-/** What a consumer installs: the code, the manifest (peers, exports, engines) and the build config. */
+/**
+ * What a consumer installs: the code, the manifest (peers, exports, engines) and the build config -
+ * the emit program and the root tsconfig it extends.
+ */
 export const releaseScopePaths = (opts: { name: string }): string[] => [
   `packages/${opts.name}/src`,
   `packages/${opts.name}/package.json`,
-  `packages/${opts.name}/tsconfig.build.json`,
+  `packages/${opts.name}/tsconfig.json`,
+  `packages/${opts.name}/.configs/tsconfig.build.json`,
 ];
 
 const git = (opts: { cwd: string; args: string[] }): string => {

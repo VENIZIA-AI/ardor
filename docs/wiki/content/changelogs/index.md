@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-16 | [Every package builds, lints and formats through make](./2026-10-16-make-per-package) | Enhancement |
 | 2026-10-16 | [ARDOR lints with oxlint and formats with oxfmt](./2026-10-16-oxlint-oxfmt) | Enhancement |
 | 2026-10-15 | [ARDOR 0.1.3, stable on the IGNIS 0.2.2 line](./2026-10-15-ardor-0-1-3-stable) | Release |
 | 2026-10-14 | [canAccess reaches an AuthProvider subclass without a fourth super argument](./2026-10-14-permission-provider-from-the-container) | Bug Fix |
