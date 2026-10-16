@@ -72,16 +72,7 @@
   },
   "scripts": {
     "force-update": "sh ./scripts/force-update.sh",
-    "build": "sh ./scripts/build.sh",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "clean": "sh ./scripts/clean.sh",
-    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mjs . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts,tsx}\"",
-    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mjs . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts,tsx}\"",
-    "rebuild": "sh ./scripts/rebuild.sh",
-    "prepublishOnly": "bun run rebuild",
-    "test": "bun test --env-file=.env.test --preload ./src/__tests__/setup.ts",
-    "test:watch": "bun test --watch --env-file=.env.test --preload ./src/__tests__/setup.ts",
-    "size": "size-limit"
+    "prepublishOnly": "make rebuild"
   },
   "dependencies": {
     "lodash": "catalog:"

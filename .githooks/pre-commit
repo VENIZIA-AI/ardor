@@ -2,7 +2,8 @@
 
 # =============================================================================
 # Pre-commit Hook
-# Lints all packages before allowing commit
+# Lints the packages, the wiki and scripts/, then the examples (which make does not drive).
+# The examples resolve the packages through dist, so run `make build-all` after a pull.
 # =============================================================================
 
 set -e
@@ -14,9 +15,9 @@ echo ""
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
-# Run lint on all packages
-echo "📦 Linting all packages..."
-make lint
+echo "📦 Linting all packages and examples..."
+make lint-all
+bun scripts/examples.ts check
 
 echo ""
 echo "✅ Pre-commit checks passed!"

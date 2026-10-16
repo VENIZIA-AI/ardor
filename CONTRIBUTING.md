@@ -140,8 +140,8 @@ git commit -m "chore: upgrade Hono to v4.0"
 ### Step 4: Validate
 
 ```bash
-# Lint and format
-bun run lint:fix
+# Lint fixes and format
+make fmt
 
 # Build packages
 make build
@@ -160,14 +160,17 @@ make build
 
 ### Code Style
 
-We use ESLint and Prettier via `@venizia/dev-configs`:
+We use oxlint, ESLint (naming only) and oxfmt, all configured from `@venizia/dev-configs`:
 
 ```bash
-# Check code style
-bun run lint
+# Check code style: packages, wiki and scripts/
+make lint-all
 
 # Auto-fix issues
-bun run lint:fix
+make fmt
+
+# The examples carry their own scripts
+bun scripts/examples.ts check
 ```
 
 For detailed standards, see [Code Style Standards](packages/docs/wiki/get-started/best-practices/code-style-standards.md).

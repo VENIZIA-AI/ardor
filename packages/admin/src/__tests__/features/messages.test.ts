@@ -4,6 +4,7 @@ import { Container } from '@venizia/ignis-inversion';
 import { defineFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
+import { rejectionOf } from '@/__tests__/rejection';
 
 const inventory = defineFeature({
   name: 'inventory',
@@ -36,9 +37,11 @@ describe('FeatureMessages', () => {
     });
     const messages = new FeatureMessages({ features: [inventory, shadow] });
 
-    await expect(messages.read({ locale: 'en' })).rejects.toThrow(
-      "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
-    );
+    expect(await rejectionOf(messages.read({ locale: 'en' }))).toMatchObject({
+      message: expect.stringContaining(
+        "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
+      ),
+    });
     expect(() => messages.readNow({ locale: 'en' })).toThrow(
       "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
     );

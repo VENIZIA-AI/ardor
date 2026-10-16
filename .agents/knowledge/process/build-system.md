@@ -8,31 +8,33 @@ tags: [build, makefile, typescript, catalog, tsconfig, monorepo]
 
 # Build system
 
-ARDOR's build tooling lives at two levels: per-package `scripts` in each `package.json`, and a root `Makefile` that sequences them across the workspace. Everything runs on Bun.
+ARDOR's build tooling follows the IGNIS layout and lives at two levels: each package has a one-line `Makefile` that includes `make/project.mk` (its build, lint and format targets), and the root `Makefile` includes `make/{build,knowledge,release,lint,test,help}.mk`, which sequence them across the workspace from one `PACKAGES` list. Every per-package root target (`<pkg>`, `update-<pkg>`, `lint-<pkg>`, `fmt-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`) is generated from that list. Everything runs on Bun; a bare `make` prints `make help`.
 
-## Per-package scripts
+## Per-package targets (`make/project.mk`)
 
-The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) and [ardor](/packages/ardor.md)) share a script surface, illustrated by `packages/kernel/package.json`. All four define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`). The rest vary: `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
+The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) and [ardor](/packages/ardor.md)) share one target surface: `make -C packages/<pkg> <target>`, or the root targets that call it. A package's `package.json` keeps only `force-update` and `prepublishOnly` (`make rebuild`). Every tool runs from the package's `node_modules/.bin` by absolute path, so no recipe depends on `PATH`.
 
-- `build` - runs `scripts/build.sh`, the actual compiler invocation.
-- `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
-- `clean` - removes `dist` and build artifacts.
-- `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one. `ardor` has no `tsconfig.test.json`, so its `typecheck` (and its `rebuild.sh`) use `tsconfig.json` instead.
-- `test` - `bun test` with `--env-file=.env.test` and `--preload ./src/__tests__/setup.ts`. The preload lives in the script, not in a `bunfig.toml`, so a bare `bun test` inside a package skips the setup and fails.
+- `build` - `tsc -p .configs/tsconfig.build.json`, then `tsc-alias -p tsconfig.json --resolve-full-paths`. tsc-alias reads the root tsconfig: pointed at the `.configs/` one it resolves `paths` against `.configs/` and rewrites nothing. `--resolve-full-paths` turns `./base` into `./base/index.js`, which Node's ESM loader requires.
+- `rebuild` - `typecheck`, then `clean`, then `build`. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
+- `clean` - removes `dist` and every `.tsbuildinfo`, `.configs/*.tsbuildinfo` included: a stale one makes tsc believe it is up to date and emit nothing behind a `DONE` line.
+- `typecheck` - `tsc --noEmit` over `tsconfig.json` (src and tests), then over the build program, which drops the Bun types, so a Bun global in `src` fails there and not in a consumer.
+- `lint` / `fmt` - see [Lint presets](#lint-presets).
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `socket.io-client`) and the runtime dependencies (like `lodash`) from the measurement, so the budget measures only the package's own code.
-- `force-update` - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
+- `force-update` (a `package.json` script) - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
+
+Tests are a root target: `make test-<pkg>` (`make/test.mk`) runs `bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package. There is no `bunfig.toml` and no package `test` script, so a bare `bun test` inside a package skips the setup and fails. `ardor` has no suite.
 
 ## tsconfig layering
 
 Packages share config from `@venizia/dev-configs` and layer package-specific tsconfigs on top:
 
 - `kernel` and `ardor` extend `@venizia/dev-configs/tsconfig.browser.json` (bundler resolution, ESNext modules, the DOM lib, `types: []`); `react` and `admin` extend `tsconfig.react.json`, which adds `jsx: react-jsx`. Each package overrides `target` and `lib` to ESNext, since the presets stop at ES2025.
-- The build tsconfig extends the base and excludes test files (`__tests__`, `*.test.ts`) - production `dist` output never contains test code.
-- `tsconfig.test.json` extends the build config but adds Bun's ambient types (`@types/bun`) so test files can use `bun:test` APIs without the production build seeing those globals.
+- The package's root `tsconfig.json` is the typecheck program: it covers `src` and the tests and adds Bun's ambient types (`types: ["bun"]`; not in `ardor`, which has no tests). Bun, `oxlint-tsgolint` and editors read it.
+- `.configs/tsconfig.build.json` is the emit program: it extends `../tsconfig.json`, sets `types: []` again and excludes `__tests__`, so `dist` never contains test code or Bun types.
 - Each package tsconfig restates `experimentalDecorators`, `emitDecoratorMetadata` and `useDefineForClassFields: false` although the base sets them: Bun (1.4.2) ignores an `extends` that names a package (`@venizia/dev-configs/...`), even one level deep, so `bun test` and `bun run` see none of the preset. `tsc` follows the chain, so typecheck and build stay green either way. Without the decorator lines `bun test` compiles TC39 decorators and every `@provide` and `@inject` test fails; without `useDefineForClassFields` the tests define class fields while `dist` assigns them.
 - The browser presets set `types: []` to avoid leaking Node or Bun ambient types into the public `.d.ts` surface consumers see - this keeps a browser package's type declarations free of server-only globals.
 
-Because `typecheck` runs against `tsconfig.test.json`, it validates both source and test code in one pass, while `build` only emits the non-test subset.
+Because `typecheck` runs both programs, it validates source and test code, while `build` only emits the non-test subset.
 
 ## Lint presets
 
@@ -42,18 +44,19 @@ Lint runs three tools, each with its config in the project's `.configs/` folder 
 - **ESLint** runs `@typescript-eslint/naming-convention` only, which oxlint has no port of: `namingConventionConfigs`, or `reactNamingConventionConfigs` (PascalCase components) in `react` and `admin`. `admin` turns it off for `src/common/locales/**`, whose keys are react-admin wire keys. Its config is plain JavaScript (`.mjs`) on purpose: ESLint 10 loads a TypeScript config only through `jiti`, and a `.mjs` one needs no extra dependency.
 - **oxfmt** formats with `browserOxfmtConfigs`: `oxfmtConfigs` plus `arrowParens: 'always'` and `bracketSameLine: true`, the style ARDOR asked IGNIS to ship (IGNIS #163). `scripts/` has only this config; `make lint-scripts` runs it.
 
-The `lint` script runs oxlint with `--deny-warnings`, so a warning fails it as an error would (B-02: zero errors and zero warnings). An ignore pattern written inside `.configs/` resolves against `.configs/` and matches nothing; `dist` and `node_modules` are skipped through `.gitignore`.
+`make lint-<pkg>` runs oxlint with `--deny-warnings`, so a warning fails it as an error would (B-02: zero errors and zero warnings); `make fmt-<pkg>` applies the fixes. `make lint-all` covers the packages, `docs/wiki` (`lint-wiki`) and `scripts/` (`lint-scripts`). The examples are not driven by make: they keep their own `lint` and `typecheck` scripts, and `bun scripts/examples.ts check` runs them (pre-commit), `lint` and `build` in CI. An ignore pattern written inside `.configs/` resolves against `.configs/` and matches nothing; `dist` and `node_modules` are skipped through `.gitignore`.
 
 ## Makefile dependency order
 
-The root `Makefile` build targets (`kernel`, `react`, `admin`, `ardor`) are chained as real Make prerequisites, not just run in sequence:
+The build targets in `make/build.mk` (`kernel`, `react`, `admin`, `ardor`) are chained as real Make prerequisites, not just run in sequence, and each one runs the package's own `rebuild`:
 
 ```
-build-all: kernel react admin ardor
-kernel:
+PACKAGES := kernel react admin ardor
+build-all: $(PACKAGES)
 react: kernel
 admin: react
 ardor: admin
+$(PACKAGES):          # make -C packages/<pkg> rebuild
 ```
 
 This order is mandatory and must never be parallelised: a downstream package type-checks against the **dist** of its dependency, never its `src`. If `react` were built before `kernel`'s `dist` existed (or before it was refreshed), `react`'s typecheck would resolve against a stale or missing `dist`. `make build` is an alias for `make build-all`.

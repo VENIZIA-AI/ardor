@@ -540,6 +540,17 @@
       "order": 189
     },
     {
+      "id": "changelog:2026-10-16-make-per-package",
+      "file": "2026-10-16-make-per-package.md",
+      "date": "2026-10-16",
+      "title": "Every package builds, lints and formats through make",
+      "packages": [
+        "kernel"
+      ],
+      "kind": "Enhancement",
+      "order": 193
+    },
+    {
       "id": "changelog:2026-10-15-ardor-0-1-3-stable",
       "file": "2026-10-15-ardor-0-1-3-stable.md",
       "date": "2026-10-15",

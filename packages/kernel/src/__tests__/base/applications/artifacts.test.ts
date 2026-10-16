@@ -12,6 +12,7 @@ import {
 } from '@venizia/ignis-kernel/metadata';
 import { BindingScopes } from '@venizia/ignis-inversion';
 import { type IApplicationInfo } from '@/common';
+import { rejectionOf } from '@/__tests__/rejection';
 
 class TestApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
@@ -187,9 +188,11 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
     declareMinified({});
     declareMinified({});
 
-    await expect(new TestApplication().start()).rejects.toThrow(
-      /\[registerArtifacts\] Two classes derive the binding key 'services\.Minified'.*pin 'binding/,
-    );
+    expect(await rejectionOf(new TestApplication().start())).toMatchObject({
+      message: expect.stringMatching(
+        /\[registerArtifacts\] Two classes derive the binding key 'services\.Minified'.*pin 'binding/,
+      ),
+    });
   });
 
   test('accepts two classes named alike when each pins its key', async () => {

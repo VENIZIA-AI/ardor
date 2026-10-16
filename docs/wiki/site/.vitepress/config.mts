@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Every package builds, lints and formats through make',
+            link: '/changelogs/2026-10-16-make-per-package',
+          },
+          {
             text: 'ARDOR lints with oxlint and formats with oxfmt',
             link: '/changelogs/2026-10-16-oxlint-oxfmt',
           },

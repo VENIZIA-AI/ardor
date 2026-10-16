@@ -41,9 +41,9 @@ Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/i
 
 Scripts follow the standard package layout described in [Build/run/test](/overview/build-run-test.md) and [the build system](/process/build-system.md):
 
-- `bun run build` - `sh ./scripts/build.sh`
-- `bun run typecheck` - `tsc --noEmit -p tsconfig.test.json`
-- `bun run test` (`bun test` with `.env.test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
-- `bun run size` - runs `size-limit`
+- `make kernel` - typecheck, clean, then `tsc -p .configs/tsconfig.build.json` and `tsc-alias`
+- `make -C packages/kernel typecheck` - `tsconfig.json` (src and tests), then the build program
+- `make test-kernel` (`bun test` with `.env.test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
+- `make -C packages/kernel size` - runs `size-limit`
 
 The package enforces a size budget via `size-limit`: `dist/index.js` (importing everything, with all peer/runtime deps ignored from the measurement) must stay under **7.7 KB**. This budget is a hard constraint on kernel growth - anything bulky belongs in a higher package, not in the isomorphic core.
