@@ -18,7 +18,7 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 - `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
 - `clean` - removes `dist` and build artifacts.
 - `typecheck` - `tsc --noEmit -p tsconfig.test.json`, checked against the test tsconfig, not the build one. `ardor` has no `tsconfig.test.json`, so its `typecheck` (and its `rebuild.sh`) use `tsconfig.json` instead.
-- `test` - `bun test` with `NODE_ENV=test` and `.env.test`.
+- `test` - `bun test` with `--env-file=.env.test` and `--preload ./src/__tests__/setup.ts`. The preload lives in the script, not in a `bunfig.toml`, so a bare `bun test` inside a package skips the setup and fails.
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `socket.io-client`) and the runtime dependencies (like `lodash`) from the measurement, so the budget measures only the package's own code.
 - `force-update` - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 
@@ -29,6 +29,7 @@ Packages share config from `@venizia/dev-configs` and layer package-specific tsc
 - A common base tsconfig supplies shared compiler options across all packages.
 - The build tsconfig extends the base and excludes test files (`__tests__`, `*.test.ts`) - production `dist` output never contains test code.
 - `tsconfig.test.json` extends the build config but adds Bun's ambient types (`@types/bun`) so test files can use `bun:test` APIs without the production build seeing those globals.
+- Each package tsconfig restates `experimentalDecorators`, `emitDecoratorMetadata` and `useDefineForClassFields: false` although the base sets them: Bun (1.4.2) ignores an `extends` that names a package (`@venizia/dev-configs/...`), even one level deep, so `bun test` and `bun run` see none of the preset. `tsc` follows the chain, so typecheck and build stay green either way. Without the decorator lines `bun test` compiles TC39 decorators and every `@provide` and `@inject` test fails; without `useDefineForClassFields` the tests define class fields while `dist` assigns them.
 - Browser-facing libraries set `types: []` in their tsconfig to avoid leaking Node or Bun ambient types into the public `.d.ts` surface consumers see - this keeps a browser package's type declarations free of server-only globals.
 
 Because `typecheck` runs against `tsconfig.test.json`, it validates both source and test code in one pass, while `build` only emits the non-test subset.

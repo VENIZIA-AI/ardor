@@ -9,10 +9,13 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "verbatimModuleSyntax": false,
 
+    // Restated, not inherited: the base sets them, but Bun (1.4.2) ignores an `extends` that names a
+    // package, so `bun test` sees none of it. Without these lines it compiles TC39 decorators (every
+    // @provide/@inject breaks) and defines class fields unlike the `dist` that tsc emits.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
 
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": [],
