@@ -1,14 +1,12 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig",
-  "extends": "@venizia/dev-configs/tsconfig.common.json",
+  "extends": "@venizia/dev-configs/tsconfig.browser.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
     "declarationDir": "dist",
 
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
 
     // Restated, not inherited: the base sets them, but Bun (1.4.2) ignores an `extends` that names a
     // package, so `bun test` sees none of it. Without these lines it compiles TC39 decorators (every
@@ -18,7 +16,6 @@
     "useDefineForClassFields": false,
 
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": [],
     "paths": {
       "@/*": ["./src/*"]
     }
