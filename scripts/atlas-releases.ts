@@ -112,14 +112,14 @@ const directoryOfValue = (opts: { value: string; known: string[] }): string | un
 
 const resolveAll = (opts: { values: string[]; known: string[] }): string[] => {
   const resolved = opts.values
-    .map(value => directoryOfValue({ value, known: opts.known }))
+    .map((value) => directoryOfValue({ value, known: opts.known }))
     .filter((name): name is string => name !== undefined);
   return [...new Set(resolved)].sort(byText);
 };
 
 const cellsOf = (line: string): string[] => {
   const matched = line.match(TABLE_ROW_PATTERN);
-  return matched ? matched[1].split('|').map(cell => cell.trim()) : [];
+  return matched ? matched[1].split('|').map((cell) => cell.trim()) : [];
 };
 
 /**
@@ -143,7 +143,7 @@ const packageColumnValuesOf = (opts: { body: string }): string[] => {
       continue;
     }
 
-    const headerIndex = cells.findIndex(cell => cell.toLowerCase() === 'package');
+    const headerIndex = cells.findIndex((cell) => cell.toLowerCase() === 'package');
     if (columnIndex === -1 || headerIndex !== -1) {
       columnIndex = headerIndex;
       columnCount = cells.length;
@@ -160,13 +160,13 @@ const packageColumnValuesOf = (opts: { body: string }): string[] => {
 
 /** Every `@venizia/ardor...` mention anywhere in the body, mapped back to directory names. */
 const bodyMentionsOf = (opts: { body: string }): string[] =>
-  [...opts.body.matchAll(SCOPED_NAME_PATTERN)].map(match => directoryOfSuffix(match[1]));
+  [...opts.body.matchAll(SCOPED_NAME_PATTERN)].map((match) => directoryOfSuffix(match[1]));
 
 /** `packages/<dir>`, the heading convention every changelog before 2026-09 used to name its package. */
 const PACKAGE_PATH_PATTERN = /packages\/([a-z0-9-]+)/g;
 
 const bodyPathsOf = (opts: { body: string }): string[] =>
-  [...opts.body.matchAll(PACKAGE_PATH_PATTERN)].map(match => match[1]);
+  [...opts.body.matchAll(PACKAGE_PATH_PATTERN)].map((match) => match[1]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -197,7 +197,7 @@ export class AtlasReleases {
   static livePackagesOf(opts: { repoRoot: string }): string[] {
     const directory = resolve(opts.repoRoot, 'packages');
     return readdirSync(directory)
-      .filter(name => existsSync(resolve(directory, name, 'package.json')))
+      .filter((name) => existsSync(resolve(directory, name, 'package.json')))
       .sort();
   }
 
@@ -273,7 +273,7 @@ export class AtlasReleases {
     }
 
     const byPackage = new Map<string, IReleaseRecord[]>();
-    const lines = (log.stdout ?? '').split('\n').filter(line => line.length > 0);
+    const lines = (log.stdout ?? '').split('\n').filter((line) => line.length > 0);
     const order = AtlasReleases.commitOrderOf({ repoRoot: opts.repoRoot });
 
     for (const line of lines) {
@@ -312,7 +312,7 @@ export class AtlasReleases {
     }
 
     const order = new Map<string, number>();
-    const hashes = (log.stdout ?? '').split('\n').filter(line => line.length > 0);
+    const hashes = (log.stdout ?? '').split('\n').filter((line) => line.length > 0);
     hashes.forEach((hash, index) => order.set(hash, index));
     return order;
   }
@@ -361,7 +361,7 @@ export class AtlasReleases {
   private static changelogsOf(opts: { repoRoot: string }): IChangelogRecord[] {
     const directory = resolve(opts.repoRoot, CHANGELOG_DIRECTORY);
     const files = readdirSync(directory)
-      .filter(file => file.endsWith('.md') && file !== 'index.md')
+      .filter((file) => file.endsWith('.md') && file !== 'index.md')
       .sort(byText)
       .reverse();
 
@@ -395,7 +395,7 @@ const run = (): number => {
       const rendered = AtlasReleases.render();
       writeFileSync(RELEASES_OUTPUT, rendered);
       const table: IReleaseTable = JSON.parse(rendered);
-      const unresolved = table.changelogs.filter(entry => entry.packages.length === 0).length;
+      const unresolved = table.changelogs.filter((entry) => entry.packages.length === 0).length;
       console.log(`wrote ${RELEASES_OUTPUT}`);
       console.log(
         `${table.changelogs.length} changelog entries, ${unresolved} resolving to no package`,

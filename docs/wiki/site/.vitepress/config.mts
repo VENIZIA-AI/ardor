@@ -17,7 +17,9 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
   {
     text: 'Migration',
     collapsed: false,
-    items: [{ text: 'From @minimaltech/ra-core-infra', link: '/guides/migration/from-ra-core-infra' }],
+    items: [
+      { text: 'From @minimaltech/ra-core-infra', link: '/guides/migration/from-ra-core-infra' },
+    ],
   },
 ];
 
@@ -86,6 +88,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'History',
     collapsed: false,
     items: [
+      {
+        text: '2026-10-16',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR lints with oxlint and formats with oxfmt',
+            link: '/changelogs/2026-10-16-oxlint-oxfmt',
+          },
+        ],
+      },
       {
         text: '2026-10-15',
         collapsed: true,
@@ -261,7 +273,8 @@ const config = defineConfig({
   outDir: './.vitepress/dist',
   srcExclude: ['**/template/**'],
   title: 'ARDOR',
-  description: "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
+  description:
+    "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
   head: [
     // Favicon + PWA
     ['link', { rel: 'icon', href: '/logo.svg' }],
@@ -279,7 +292,10 @@ const config = defineConfig({
     ],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" }],
+    [
+      'meta',
+      { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" },
+    ],
     [
       'meta',
       {
@@ -291,7 +307,13 @@ const config = defineConfig({
     ['meta', { property: 'og:url', content: 'https://ardor.venizia.ai/' }],
     // Twitter / X card
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: "ARDOR - react-admin's data contract on IGNIS's container" }],
+    [
+      'meta',
+      {
+        name: 'twitter:title',
+        content: "ARDOR - react-admin's data contract on IGNIS's container",
+      },
+    ],
     [
       'meta',
       {

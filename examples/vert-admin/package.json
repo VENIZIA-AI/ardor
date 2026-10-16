@@ -13,11 +13,8 @@
     "preview": "vite preview --port 4173 --strictPort",
     "clean": "rm -rf dist *.tsbuildinfo",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "eslint": "eslint --report-unused-disable-directives .",
-    "lint": "bun run eslint && bun run prettier:cli",
-    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
-    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
-    "prettier:fix": "bun run prettier:cli --write"
+    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mts . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts,tsx}\"",
+    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mts . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts,tsx}\""
   },
   "dependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -41,7 +38,10 @@
     "@venizia/dev-configs": "catalog:",
     "@vitejs/plugin-react": "^5.0.0",
     "eslint": "catalog:",
-    "prettier": "catalog:",
+    "jiti": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vite": "^7.1.10"
   }

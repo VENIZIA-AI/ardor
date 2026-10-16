@@ -12,11 +12,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "bun run typecheck",
     "clean": "rm -rf *.tsbuildinfo",
-    "eslint": "eslint --report-unused-disable-directives .",
-    "lint": "bun run eslint && bun run prettier:cli",
-    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
-    "prettier:cli": "prettier \"**/*.{js,ts}\" -l",
-    "prettier:fix": "bun run prettier:cli --write"
+    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mts . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts}\"",
+    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mts . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts}\""
   },
   "dependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -39,7 +36,10 @@
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
+    "jiti": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:"
   }
 }

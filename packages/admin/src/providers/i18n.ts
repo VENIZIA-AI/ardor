@@ -1,4 +1,4 @@
-import { Container, inject } from '@venizia/ignis-inversion';
+import { type Container, inject } from '@venizia/ignis-inversion';
 import merge from 'lodash/merge.js';
 import { type I18nProvider } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';

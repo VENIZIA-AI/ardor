@@ -1,11 +1,11 @@
-import { Container, inject } from '@venizia/ignis-inversion';
+import { type Container, inject } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
   type AnyType,
   BaseProvider,
   CoreBindings,
-  DefaultAuthService,
+  type DefaultAuthService,
   type IAuthProviderOptions,
   type IPermissionProvider,
   RequestMethods,

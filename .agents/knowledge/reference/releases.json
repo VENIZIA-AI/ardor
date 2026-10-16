@@ -529,6 +529,17 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-10-16-oxlint-oxfmt",
+      "file": "2026-10-16-oxlint-oxfmt.md",
+      "date": "2026-10-16",
+      "title": "ARDOR lints with oxlint and formats with oxfmt",
+      "packages": [
+        "admin"
+      ],
+      "kind": "Enhancement",
+      "order": 189
+    },
+    {
       "id": "changelog:2026-10-15-ardor-0-1-3-stable",
       "file": "2026-10-15-ardor-0-1-3-stable.md",
       "date": "2026-10-15",

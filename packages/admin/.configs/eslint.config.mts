@@ -1,10 +1,8 @@
-import { reactConfigs } from '../../scripts/eslint/react.mjs';
+import { reactNamingConventionConfigs } from '@venizia/dev-configs/linters';
 
-import { secureContextRules } from '../../scripts/eslint/secure-context.mjs';
-
-const config = [
-  ...reactConfigs,
-  ...secureContextRules,
+// oxlint runs every other rule; ESLint keeps the one oxlint has no port of yet.
+export default [
+  ...reactNamingConventionConfigs,
   {
     // react-admin reads its messages by wire key (`ra.action.add_filter`, `ra.page.not_found`, ...).
     // These bundles are the mapper boundary to that vocabulary, not ARDOR identifiers, so they must
@@ -13,5 +11,3 @@ const config = [
     rules: { '@typescript-eslint/naming-convention': 'off' },
   },
 ];
-
-export default config;
