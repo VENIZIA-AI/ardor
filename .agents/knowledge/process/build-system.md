@@ -26,11 +26,11 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 
 Packages share config from `@venizia/dev-configs` and layer package-specific tsconfigs on top:
 
-- A common base tsconfig supplies shared compiler options across all packages.
+- `kernel` and `ardor` extend `@venizia/dev-configs/tsconfig.browser.json` (bundler resolution, ESNext modules, the DOM lib, `types: []`); `react` and `admin` extend `tsconfig.react.json`, which adds `jsx: react-jsx`. Each package overrides `target` and `lib` to ESNext, since the presets stop at ES2025.
 - The build tsconfig extends the base and excludes test files (`__tests__`, `*.test.ts`) - production `dist` output never contains test code.
 - `tsconfig.test.json` extends the build config but adds Bun's ambient types (`@types/bun`) so test files can use `bun:test` APIs without the production build seeing those globals.
 - Each package tsconfig restates `experimentalDecorators`, `emitDecoratorMetadata` and `useDefineForClassFields: false` although the base sets them: Bun (1.4.2) ignores an `extends` that names a package (`@venizia/dev-configs/...`), even one level deep, so `bun test` and `bun run` see none of the preset. `tsc` follows the chain, so typecheck and build stay green either way. Without the decorator lines `bun test` compiles TC39 decorators and every `@provide` and `@inject` test fails; without `useDefineForClassFields` the tests define class fields while `dist` assigns them.
-- Browser-facing libraries set `types: []` in their tsconfig to avoid leaking Node or Bun ambient types into the public `.d.ts` surface consumers see - this keeps a browser package's type declarations free of server-only globals.
+- The browser presets set `types: []` to avoid leaking Node or Bun ambient types into the public `.d.ts` surface consumers see - this keeps a browser package's type declarations free of server-only globals.
 
 Because `typecheck` runs against `tsconfig.test.json`, it validates both source and test code in one pass, while `build` only emits the non-test subset.
 
@@ -38,9 +38,9 @@ Because `typecheck` runs against `tsconfig.test.json`, it validates both source 
 
 Lint runs three tools, each with its config in the project's `.configs/` folder and passed explicitly with `-c` (no tool finds that folder on its own): `oxlint.config.mts`, `oxfmt.config.mts` and `eslint.config.mjs`. Every preset comes from `@venizia/dev-configs/linters` and `/formatters`; ARDOR keeps no lint rule of its own.
 
-- **oxlint** runs every rule but one. `react` and `admin` use `ReactOxlintConfigs.create()`: the base preset plus the React, hooks and accessibility rules, `consistent-type-imports` and the secure-context ban on `crypto.randomUUID`. It is strict - no rule is relaxed for a UI, `no-floating-promises` holds and `exhaustive-deps` is an error. `kernel`, `ardor` and the examples use the base `oxlintConfigs` plus `NoRestrictedPropertiesRule.build()` for the same secure-context ban. Type-aware rules run through `oxlint-tsgolint`, which reads the project-root `tsconfig.json`.
+- **oxlint** runs every rule but one. `react` and `admin` use `ReactOxlintConfigs.create()`: the base preset plus the React, hooks and accessibility rules, `consistent-type-imports` and the secure-context ban on `crypto.randomUUID`. It is strict - no rule is relaxed for a UI, `no-floating-promises` holds and `exhaustive-deps` is an error. `kernel`, `ardor` and the examples use `BrowserOxlintConfigs.create()`: the base `oxlintConfigs` plus the same secure-context ban. `ReactOxlintConfigs` builds on it. Type-aware rules run through `oxlint-tsgolint`, which reads the project-root `tsconfig.json`.
 - **ESLint** runs `@typescript-eslint/naming-convention` only, which oxlint has no port of: `namingConventionConfigs`, or `reactNamingConventionConfigs` (PascalCase components) in `react` and `admin`. `admin` turns it off for `src/common/locales/**`, whose keys are react-admin wire keys. Its config is plain JavaScript (`.mjs`) on purpose: ESLint 10 loads a TypeScript config only through `jiti`, and a `.mjs` one needs no extra dependency.
-- **oxfmt** formats with `oxfmtConfigs` and two ARDOR overrides: `arrowParens: 'always'` and `bracketSameLine: true`. `scripts/` has only this config; `make lint-scripts` runs it.
+- **oxfmt** formats with `browserOxfmtConfigs`: `oxfmtConfigs` plus `arrowParens: 'always'` and `bracketSameLine: true`, the style ARDOR asked IGNIS to ship (IGNIS #163). `scripts/` has only this config; `make lint-scripts` runs it.
 
 The `lint` script runs oxlint with `--deny-warnings`, so a warning fails it as an error would (B-02: zero errors and zero warnings). An ignore pattern written inside `.configs/` resolves against `.configs/` and matches nothing; `dist` and `node_modules` are skipped through `.gitignore`.
 
