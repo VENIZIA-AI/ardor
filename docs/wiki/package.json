@@ -57,14 +57,13 @@
     "docs:dev": "vitepress dev site",
     "docs:preview": "vitepress preview site",
     "force-update": "sh ./scripts/force-update.sh",
-    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mts . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts}\"",
-    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mts . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts}\""
+    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mjs . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts}\"",
+    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mjs . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts}\""
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "eslint": "catalog:",
-    "jiti": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",

@@ -24,14 +24,14 @@ export default defineConfig(ReactOxlintConfigs.create());
 - **oxlint replaces ESLint for linting.** `react` and `admin` use `ReactOxlintConfigs`; `kernel`, `ardor` and the examples use `oxlintConfigs` plus the secure-context rule. Type-aware rules such as `no-floating-promises` run through `oxlint-tsgolint`.
 - **ESLint stays for one rule.** `@typescript-eslint/naming-convention` has no oxlint port, so ESLint runs it alone.
 - **oxfmt replaces Prettier.** The output keeps ARDOR's style: parentheses on every arrow parameter, and the closing `>` of a JSX tag on its last attribute line.
-- **Every project owns a `.configs/` folder** with `oxlint.config.mts`, `eslint.config.mts` and `oxfmt.config.mts`. `tsconfig.json` stays at the project root.
+- **Every project owns a `.configs/` folder** with `oxlint.config.mts`, `oxfmt.config.mts` and `eslint.config.mjs`. The ESLint config is plain JavaScript, so ESLint loads it without `jiti`. `tsconfig.json` stays at the project root.
 - **ARDOR keeps no lint rule of its own.** `scripts/eslint/react.mjs` and `scripts/eslint/secure-context.mjs` are gone: the React preset in `@venizia/dev-configs` is now as strict as ARDOR's was, and the `crypto.randomUUID` ban lives there as `NoRestrictedPropertiesRule`.
 - **A warning fails lint.** oxlint runs with `--deny-warnings`.
 
 ## Who is affected
 
 - **Applications that use ARDOR.** No action needed. The published packages and their API are unchanged.
-- **Contributors to the ARDOR repository.** `make lint`, `make lint-<pkg>` and `bun run lint:fix` work as before, on the new tools. The `.prettierrc.mjs`, `.prettierignore` and `eslint.config.mjs` files are gone. Every tool call passes `-c .configs/<tool>.config.mts`.
+- **Contributors to the ARDOR repository.** `make lint`, `make lint-<pkg>` and `bun run lint:fix` work as before, on the new tools. The `.prettierrc.mjs`, `.prettierignore` and `eslint.config.mjs` files are gone. Every tool call passes `-c` with its `.configs/` file.
 
 ## Details
 
@@ -41,6 +41,6 @@ export default defineConfig(ReactOxlintConfigs.create());
 
 | File | Package |
 |------|---------|
-| `.configs/*.config.mts` | every package, example and `docs/wiki` |
+| `.configs/*.config.{mts,mjs}` | every package, example and `docs/wiki` |
 | `src/providers/auth.ts`, `i18n.ts`, `rest-data.ts` | admin |
 | `Makefile` (`lint-scripts`) | repository |
