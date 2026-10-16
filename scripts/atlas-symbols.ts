@@ -107,7 +107,7 @@ const decodeMappings = (mappings: string): IMappingSegment[][] => {
   let sourceLine = 0;
   let sourceColumn = 0;
 
-  return mappings.split(';').map(line => {
+  return mappings.split(';').map((line) => {
     const segments: IMappingSegment[] = [];
     let generatedColumn = 0;
 
@@ -155,7 +155,7 @@ export class AtlasSymbols {
   static render(opts: { repoRoot?: string; packages?: string[] } = {}): string {
     const repoRoot = opts.repoRoot ?? REPO;
     const packages = opts.packages ?? PACKAGES;
-    const symbols = packages.flatMap(name => AtlasSymbols.symbolsOf({ repoRoot, name }));
+    const symbols = packages.flatMap((name) => AtlasSymbols.symbolsOf({ repoRoot, name }));
     const table: ISymbolTable = {
       generatedFrom: 'dist',
       packages,
@@ -225,9 +225,9 @@ export class AtlasSymbols {
         subpath,
         types: typeof target === 'string' ? target : (target.types ?? ''),
       }))
-      .filter(entry => entry.types.endsWith('.d.ts'));
+      .filter((entry) => entry.types.endsWith('.d.ts'));
 
-    return entries.flatMap(entry =>
+    return entries.flatMap((entry) =>
       AtlasSymbols.entrySymbolsOf({
         repoRoot: opts.repoRoot,
         packageName: manifest.name,
@@ -262,7 +262,7 @@ export class AtlasSymbols {
     const specifier = subpath === '.' ? packageName : `${packageName}${subpath.slice(1)}`;
     const exported = checker.getExportsOfModule(moduleSymbol);
 
-    return exported.map(symbol => {
+    return exported.map((symbol) => {
       const resolved =
         symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
       const declaration = resolved.getDeclarations()?.[0];
@@ -333,7 +333,7 @@ export class AtlasSymbols {
     }
 
     // The last segment starting at or before the name's column; a name inside a segment shares it.
-    const covering = segments.filter(segment => segment.generatedColumn <= opts.character);
+    const covering = segments.filter((segment) => segment.generatedColumn <= opts.character);
     const segment = covering[covering.length - 1] ?? segments[0];
     const sourceName = map.sources[segment.sourceIndex];
     if (sourceName === undefined) {

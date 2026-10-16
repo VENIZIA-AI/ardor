@@ -12,7 +12,7 @@ ARDOR's build tooling lives at two levels: per-package `scripts` in each `packag
 
 ## Per-package scripts
 
-The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) and [ardor](/packages/ardor.md)) share a script surface, illustrated by `packages/kernel/package.json`. All four define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`, `eslint`, `prettier:cli`, `prettier:fix`). The rest vary: `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
+The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [admin](/packages/admin.md) and [ardor](/packages/ardor.md)) share a script surface, illustrated by `packages/kernel/package.json`. All four define `build`, `rebuild`, `clean`, `force-update`, `prepublishOnly` (which runs `rebuild`) and the lint scripts (`lint`, `lint:fix`). The rest vary: `ardor` has no `test` script - `test-all` runs kernel, react and admin only.
 
 - `build` - runs `scripts/build.sh`, the actual compiler invocation.
 - `rebuild` - runs `scripts/rebuild.sh`, which type-checks first, then cleans `dist`, then builds. The order matters: type-checking happens *before* `clean` removes the old `dist`, because if a type error surfaced after cleaning, every downstream consumer would see cascading import failures against an empty `dist` instead of one clear type error.
@@ -35,7 +35,13 @@ Because `typecheck` runs against `tsconfig.test.json`, it validates both source 
 
 ## Lint presets
 
-`kernel` and `ardor` lint with the base `eslintConfigs` from `@venizia/dev-configs`. `react` and `admin` use `reactConfigs` from `scripts/eslint/react.mjs`: IGNIS's `ReactEslintConfigs` (dev-configs `0.2.1`), which adds the React, hooks and accessibility rules and `consistent-type-imports`, then puts back every base rule that preset relaxes for an application UI (`no-floating-promises`, `no-void`, `no-invalid-this`, `no-use-before-define`, `no-explicit-any`, `no-shadow`, `no-unused-vars`), read from the base preset rather than copied, and raises `exhaustive-deps` from warning to error. A framework drops no promise, and the package lint fails only on errors, so a warning would never block. The three plugins are root devDependencies, so the shared file resolves them. Every package also spreads `secureContextRules` from `scripts/eslint/secure-context.mjs`.
+Lint runs three tools, each with its config in the project's `.configs/` folder and passed explicitly with `-c .configs/<tool>.config.mts` (no tool finds that folder on its own). Every preset comes from `@venizia/dev-configs/linters` and `/formatters`; ARDOR keeps no lint rule of its own.
+
+- **oxlint** runs every rule but one. `react` and `admin` use `ReactOxlintConfigs.create()`: the base preset plus the React, hooks and accessibility rules, `consistent-type-imports` and the secure-context ban on `crypto.randomUUID`. It is strict - no rule is relaxed for a UI, `no-floating-promises` holds and `exhaustive-deps` is an error. `kernel`, `ardor` and the examples use the base `oxlintConfigs` plus `NoRestrictedPropertiesRule.build()` for the same secure-context ban. Type-aware rules run through `oxlint-tsgolint`, which reads the project-root `tsconfig.json`.
+- **ESLint** runs `@typescript-eslint/naming-convention` only, which oxlint has no port of: `namingConventionConfigs`, or `reactNamingConventionConfigs` (PascalCase components) in `react` and `admin`. `admin` turns it off for `src/common/locales/**`, whose keys are react-admin wire keys. ESLint 10 loads a `.mts` config only through `jiti`, so every project declares `jiti` as a devDependency.
+- **oxfmt** formats with `oxfmtConfigs` and two ARDOR overrides: `arrowParens: 'always'` and `bracketSameLine: true`. `scripts/` has only this config; `make lint-scripts` runs it.
+
+The `lint` script runs oxlint with `--deny-warnings`, so a warning fails it as an error would (B-02: zero errors and zero warnings). An ignore pattern written inside `.configs/` resolves against `.configs/` and matches nothing; `dist` and `node_modules` are skipped through `.gitignore`.
 
 ## Makefile dependency order
 

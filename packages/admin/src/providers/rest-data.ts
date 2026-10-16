@@ -1,4 +1,4 @@
-import { Container, getError, inject } from '@venizia/ignis-inversion';
+import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import omit from 'lodash/omit.js';
 import {
   type CreateParams,

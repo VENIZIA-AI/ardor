@@ -120,7 +120,7 @@ describe('withDependents', () => {
       ],
     });
 
-    expect(plan.map(s => s.packageName)).toEqual([
+    expect(plan.map((s) => s.packageName)).toEqual([
       '@venizia/ardor-kernel',
       '@venizia/ardor-react',
       '@venizia/ardor-admin',

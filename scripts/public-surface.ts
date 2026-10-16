@@ -29,7 +29,7 @@ export class PublicSurface {
   static render(opts: { repoRoot?: string; packages?: string[] } = {}): string {
     const repoRoot = opts.repoRoot ?? REPO;
     const packages = opts.packages ?? PACKAGES;
-    const sections = packages.map(name => PublicSurface.renderPackage({ repoRoot, name }));
+    const sections = packages.map((name) => PublicSurface.renderPackage({ repoRoot, name }));
     return [
       '---',
       'type: Reference',
@@ -74,15 +74,15 @@ export class PublicSurface {
           Boolean(item.types) && item.types!.endsWith('.d.ts'),
       );
 
-    const surfaces = entries.map(item =>
+    const surfaces = entries.map((item) =>
       PublicSurface.surfaceOf({ entry: item.entry, file: resolve(dir, item.types) }),
     );
-    const lines = surfaces.flatMap(surface => {
+    const lines = surfaces.flatMap((surface) => {
       const suffix = surface.entry === '.' ? '' : surface.entry.slice(1);
       return [
         `### \`${manifest.name}${suffix}\` (${surface.symbols.length})`,
         '',
-        ...surface.symbols.map(symbol => `- \`${symbol.name}\` ${symbol.kind}`),
+        ...surface.symbols.map((symbol) => `- \`${symbol.name}\` ${symbol.kind}`),
         '',
       ];
     });
@@ -107,7 +107,10 @@ export class PublicSurface {
 
     const symbols = checker
       .getExportsOfModule(moduleSymbol)
-      .map(symbol => ({ name: symbol.getName(), kind: PublicSurface.kindOf({ checker, symbol }) }))
+      .map((symbol) => ({
+        name: symbol.getName(),
+        kind: PublicSurface.kindOf({ checker, symbol }),
+      }))
       .sort((left, right) => left.name.localeCompare(right.name));
 
     return { entry: opts.entry, symbols };
@@ -147,7 +150,7 @@ export class PublicSurface {
   private static normalize(text: string): string {
     return text
       .split('\n')
-      .map(line => line.replace(/\s+$/, ''))
+      .map((line) => line.replace(/\s+$/, ''))
       .join('\n')
       .trim();
   }

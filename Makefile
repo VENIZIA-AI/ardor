@@ -124,7 +124,7 @@ test-scripts:
 
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
-	@bunx prettier --config scripts/.prettierrc.mjs -l 'scripts/**/*.ts'
+	@cd scripts && ../node_modules/.bin/oxfmt -c .configs/oxfmt.config.mts --check "**/*.{ts,mts}"
 	@bunx tsc -p scripts/tsconfig.json
 
 # ============================================================================
