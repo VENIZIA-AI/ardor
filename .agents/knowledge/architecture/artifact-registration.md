@@ -76,7 +76,7 @@ the indexes `ignis-artifacts generate` (`@venizia/ignis-boot`) emits, typed `IAr
 index. The index adds no binding; discovery still binds every stereotyped class.
 `registerArtifacts()` first throws `[artifacts] '<kind>' lists <Class>, which was never
 discovered` for a listed class with no stereotype, a stale index or a decorator lost upstream - the
-same check `features()` runs on its configurations. ARDOR does not reuse IGNIS's `IArtifactIndex`:
+same check `features()` runs on its configurations. The check reads the six kinds by name, never every key. An IGNIS artifact group (`isArtifactGroup === true`, `@venizia/ignis-boot/auto`) is not an index: its kind fields are getters that throw on read, so the check reads only the flat index a bundler plugin inlined as `content` and skips a group without one (its classes are resolved on IGNIS's side, and discovery binds the decorated ones as usual). ARDOR does not reuse IGNIS's `IArtifactIndex`:
 it lives in the server entry of `@venizia/ignis-kernel`, which a browser bundle never imports. The
 generator matches stereotypes by the module they are imported from, so a browser project passes
 `--source-module @venizia/ardor` (and `@venizia/ardor-kernel`); without it the index is empty.

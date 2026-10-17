@@ -34,6 +34,7 @@ class Application extends BaseArdorApplication {
 
 - **`artifacts()` on the application.** It returns `Array<IArtifactIndex>` and defaults to `[]`. An index holds each stereotyped class by value, so a bundler keeps the module instead of dropping a side-effect import.
 - **`start()` checks the index.** It throws `[artifacts] '<kind>' lists <Class>, which was never discovered` when a listed class has no stereotype or the index is stale.
+- **An IGNIS artifact group is accepted.** `start()` checks the flat index a group carries as `content` and skips a group without one, instead of reading its kind fields.
 - **`IArtifactIndex` is exported** from `@venizia/ardor` and `@venizia/ardor-kernel`. It has the six fields the generator emits, `configurations` to `controllers`.
 
 ## Who is affected

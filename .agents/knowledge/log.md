@@ -1,7 +1,5 @@
-# Knowledge log
-
-One line per change to a fact in this bundle, newest first. A code change that moves a fact lands
-with its line here in the same change (rule P-03).
+#undefinedKnowundundefinedfinededge logundefinedundefinedOne line peundefinedndefined change to a fact in this bundle, newest firstundefined A code change that moves a fact lands
+with its line here in the same change (rule undefinedundefinedundefinedundefinedundefined.
 
 - 2026-10-17 - VULCAN 0.2.0-3 (issue #45; Phat via ignis-1). `@venizia/vulcan` pinned 0.2.0-3 from npm (content identical, file by file, to the gated tarballs; Bun's manifest cache still listed 0.2.0-2 for okf and atlas, so the install needed `bun install --no-cache`). atlas `search` takes `source` (`ardor` or `ignis`; checked live: each filter returned only its own hits) and an unknown symbol answers `matches: []` with `closest` instead of an error. Concept: atlas-mcp. Wiki: changelog `2026-10-17-vulcan-0-2-0-3`.
 - 2026-10-17 - Type checking runs on `bun check` (issue #43; Phat via ignis-1, after IGNIS #205/#206). `make/project.mk` `typecheck` runs `bun check --no-pretty -p` over `tsconfig.json` and the build program (`TYPECHECK`), `make lint-scripts` over `scripts/tsconfig.json`; tsc only emits. Root `engines.bun` `>=1.4.3`, and `package-release.yml` runs Bun 1.4.3 (it pinned 1.4.2, which has no `bun check`, so the release `make rebuild` would have failed). Controls on kernel: a test-file TS2322, a Bun global in src (TS2868 in the build program) and three preset-only errors (strictNullChecks, noUnusedLocals TS6133, noImplicitOverride TS4114) fail `bun check` with the same code and position as tsc - so `bun check` follows the package `extends` that `bun test` ignores; `make typecheck` exits 2 and `make kernel` stops before `clean`. kernel `tsconfig.json`: ~0.15 s against ~1.3 s. Concept: build-system. CONTRIBUTING Bun >= 1.4.3. Wiki: changelog `2026-10-17-bun-check`.
