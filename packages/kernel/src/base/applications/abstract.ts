@@ -22,6 +22,16 @@ import {
   type ValueOrPromise,
 } from '@/common';
 
+/** The six kinds of an artifact index, as `ignis-artifacts generate` emits them. */
+const ArtifactIndexKinds = [
+  'configurations',
+  'dataSources',
+  'components',
+  'repositories',
+  'services',
+  'controllers',
+] as const satisfies ReadonlyArray<keyof IArtifactIndex>;
+
 /** Per-registration choices for `service()`, `repository()`, `dataSource()` and `component()`. */
 export interface IArtifactRegistration {
   /** Bind under this key instead of `<namespace>.<ClassName>`. */
@@ -124,13 +134,23 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   /**
    * Every class an index lists must have been discovered: one that was not lost its decorator, or
    * the index is stale, and its binding was silently never made.
+   *
+   * An IGNIS artifact group (`isArtifactGroup`) is not an index: its kind fields are getters that
+   * throw when read. Only the `content` a bundler plugin inlined is a flat index, so that is what
+   * gets checked; a group without content is resolved by IGNIS and has nothing to check here.
    */
   private assertIndexed(opts: { indexes: Array<IArtifactIndex>; discovered: Set<unknown> }): void {
     const { indexes, discovered } = opts;
 
-    for (const index of indexes) {
-      for (const [kind, targets] of Object.entries(index)) {
-        for (const target of targets ?? []) {
+    for (const entry of indexes) {
+      const group = entry as { isArtifactGroup?: boolean; content?: IArtifactIndex };
+      const index = group.isArtifactGroup === true ? group.content : entry;
+      if (!index) {
+        continue;
+      }
+
+      for (const kind of ArtifactIndexKinds) {
+        for (const target of index[kind] ?? []) {
           if (!discovered.has(target)) {
             throw getError({
               message: `[artifacts] '${kind}' lists ${target.name}, which was never discovered | Decorate it with its stereotype and regenerate the index`,

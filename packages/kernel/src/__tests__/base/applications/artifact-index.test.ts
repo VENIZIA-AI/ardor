@@ -46,6 +46,21 @@ const createApplication = (opts: { artifacts: Array<IArtifactIndex> }) => {
   return new IndexedApplication();
 };
 
+// What IGNIS's `ArtifactGroup` looks like to a reader: a brand, the folder and module it came from,
+// and a flat index as `content` when a bundler plugin inlined it. Its kind fields are getters that
+// throw, so a check that reads `group.services` fails the boot.
+class FakeArtifactGroup {
+  readonly isArtifactGroup = true as const;
+  readonly folder: string | undefined = undefined;
+  readonly site: string | undefined = undefined;
+
+  constructor(readonly content: IArtifactIndex | undefined) {}
+
+  get services(): never {
+    throw new Error('a group has no services until it is resolved');
+  }
+}
+
 describe('AbstractArdorApplication.artifacts', () => {
   test('starts with a generated index whose every class was discovered, and binds them', async () => {
     const application = createApplication({ artifacts: [generated] });
@@ -82,6 +97,37 @@ describe('AbstractArdorApplication.artifacts', () => {
       message: expect.stringMatching(
         /\[artifacts\] 'configurations' lists ForgottenConfiguration, which was never discovered/,
       ),
+    });
+  });
+
+  describe('with an IGNIS artifact group', () => {
+    test('starts, checking the inlined content', async () => {
+      const application = createApplication({
+        artifacts: [new FakeArtifactGroup({ services: [IndexedService] }) as IArtifactIndex],
+      });
+      await application.start();
+
+      expect(application.get({ key: 'services.IndexedService' })).toBeInstanceOf(IndexedService);
+    });
+
+    test('starts when the group carries no content, there is nothing to check', async () => {
+      const application = createApplication({
+        artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+      });
+
+      expect(await application.start()).toBeUndefined();
+    });
+
+    test('throws when the inlined content lists a class that was never discovered', async () => {
+      const application = createApplication({
+        artifacts: [new FakeArtifactGroup({ services: [ForgottenService] }) as IArtifactIndex],
+      });
+
+      expect(await rejectionOf(application.start())).toMatchObject({
+        message: expect.stringMatching(
+          /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
+        ),
+      });
     });
   });
 });
