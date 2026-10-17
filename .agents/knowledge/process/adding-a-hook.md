@@ -19,7 +19,7 @@ Check what the hook actually touches before picking a home - if it only needs th
 
 ## Shape the options object
 
-A hook that takes any input accepts an options object, even for a single value (rule C-02, [Options objects](/conventions/options-objects.md)). `useInjectable` shows the pattern well: it is a discriminated union `TUseInjectableOptions` that requires either `key` or `target` but never both, plus an optional `container` override. Keep option keys readonly-shaped and typed against exported unions rather than raw strings so consumers get autocomplete and type safety.
+A hook that takes any input accepts an options object, even for a single value (rule V-C-02, [Options objects](/conventions/options-objects.md)). `useInjectable` shows the pattern well: it is a discriminated union `TUseInjectableOptions` that requires either `key` or `target` but never both, plus an optional `container` override. Keep option keys readonly-shaped and typed against exported unions rather than raw strings so consumers get autocomplete and type safety.
 
 If the hook exposes an extensible key space (like `TUseInjectableKeys`), declare an empty interface (`IUseInjectableKeysOverrides`) that consumers can augment via [Module augmentation](/architecture/module-augmentation.md), then union it with the default type derived from `CoreBindings`.
 

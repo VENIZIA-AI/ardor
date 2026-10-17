@@ -16,7 +16,7 @@ A file normally holds one hook named after it: `useAutosave` in `use-autosave.ts
 
 ## Options object parameter
 
-A hook that takes any input accepts one options object, following rule C-02 and [Options objects](/conventions/options-objects.md) - a single value is not an exception: `useSizer` takes `{ containerId }` and `useInjectableContainer` takes `{ container }`. `useAutosave` takes an `IUseAutosaveParams<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `disabled`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
+A hook that takes any input accepts one options object, following rule V-C-02 and [Options objects](/conventions/options-objects.md) - a single value is not an exception: `useSizer` takes `{ containerId }` and `useInjectableContainer` takes `{ container }`. `useAutosave` takes an `IUseAutosaveParams<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `disabled`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
 
 Every field on the options interface carries a JSDoc comment describing what it does and, where relevant, its default (`@default 2000` on `interval`). Document each field this way; it is the primary API surface a consumer sees in their editor.
 

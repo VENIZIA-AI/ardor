@@ -43,6 +43,11 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make catalog-check
 
+      # A fresh checkout has no adapters; sync writes them, so doctor checks the project, not the runner.
+      - name: VULCAN doctor
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make vulcan-sync vulcan-doctor
+
       - name: Knowledge bundle
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make okf-check

@@ -222,7 +222,7 @@ make docs            # the wiki, with the sidebar and snippet gates
 Conventional Commits (`feat:`, `fix:`, `docs:`, ...), branches `feature/*` / `fix/*`, and **PRs target
 `develop`**. Bun only - never npm, yarn, or pnpm. See [CONTRIBUTING.md](CONTRIBUTING.md),
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md). Agents read
-[AGENTS.md](AGENTS.md); `make agent-setup` links the rules and the knowledge bundle into your tool.
+[AGENTS.md](AGENTS.md); `make vulcan-sync` sets up your agent through VULCAN (`@venizia/vulcan`).
 
 ## Migrating from `@minimaltech/ra-core-infra`
 

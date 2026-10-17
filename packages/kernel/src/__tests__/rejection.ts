@@ -3,7 +3,7 @@
  *
  * Bun types the `rejects` matchers as `void`, so `await expect(task).rejects.toThrow()` is refused by
  * `typescript/await-thenable`, and an un-awaited one never asserts. Awaiting the task here keeps the
- * assertion synchronous and typed, with no cast (rule C-10).
+ * assertion synchronous and typed, with no cast (rule V-C-10).
  */
 export const rejectionOf = async (task: Promise<unknown> | undefined): Promise<unknown> => {
   try {

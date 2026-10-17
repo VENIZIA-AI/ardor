@@ -30,7 +30,7 @@ reassemble.
 ## Naming
 
 Name the piece after its **role or stage**, never after the folder it sits in and never by number
-(C-17): `services/response-reader.ts`, not `services/network-request-response-reader.ts`.
+(V-C-17): `services/response-reader.ts`, not `services/network-request-response-reader.ts`.
 
 ## The signal that a split went too far
 

@@ -7,7 +7,7 @@ tags: [conventions, api-design]
 ---
 
 ARDOR functions and constructors take one options object, never a positional argument list.
-Write `fn(opts: { key: string })`, not `fn(key: string)`. It is rule C-02, and new code follows it
+Write `fn(opts: { key: string })`, not `fn(key: string)`. It is rule V-C-02, and new code follows it
 across the kernel, react, and admin packages: services, providers, hooks, and internal utilities
 alike. The positional shapes that still ship are listed under known exceptions below.
 
@@ -39,7 +39,7 @@ code. Three shapes are positional on purpose:
   implements react-admin's own positional interface (`getList(resource, params)`). ARDOR does not
   own that contract, so `value()` only forwards to the options-object methods - see
   [data provider pipeline](/architecture/data-provider-pipeline.md).
-- **Const-class validation.** Rule C-08 fixes `static isValid(value: string): boolean` on every
+- **Const-class validation.** Rule V-C-08 fixes `static isValid(value: string): boolean` on every
   const class - see [const classes](/conventions/const-classes.md).
 
 ## Why
