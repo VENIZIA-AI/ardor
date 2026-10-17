@@ -237,7 +237,7 @@ An IGNIS artifact group (`isArtifactGroup: true`) is also accepted by `artifacts
 
 ### Without a generated file: ignis-boot auto
 
-`@venizia/ignis-boot` 0.2.1-5 can also hand the application its own decorated classes, found by the scanner, as `AutoArtifacts`. The scan follows ARDOR's re-exports of the decorators, so it needs no flag.
+`@venizia/ignis-boot` 0.2.1-6 can also hand the application its own decorated classes, found by the scanner, as `AutoArtifacts`. The scan follows ARDOR's re-exports of the decorators, so it needs no flag.
 
 ```ts no-check
 import AutoArtifacts from '@venizia/ignis-boot/auto';
@@ -256,10 +256,13 @@ class Application extends BaseArdorApplication {
 | How you run it | Result |
 | --- | --- |
 | `bun run` from source | `start()` awaits `AutoArtifacts.resolve()`, which scans the application from its entry file (`Bun.main`), whatever the working directory, and imports the modules. |
-| `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]` | The bundle carries the class list, with no scanner: `AutoArtifacts` resolves from the bundle's own imports, and `start()` checks the index it returns like a generated index. A build for the browser works too (no `node:fs` in the bundle). |
+| `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]`, server target | The bundle carries the class list, with no scanner. `AutoArtifacts` has a `resolve()` over the bundle's own imports, and `start()` checks the index it returns like a generated index. |
+| The same plugin with `target: 'browser'` | The list is imported eagerly and sits in `AutoArtifacts` as `content`, which `start()` checks as it is. Eager imports keep the bundle tree-shakeable; a lazy index doubled a measured browser bundle. No `node:fs` in the bundle. |
 | A Vite build | Not measured. Use `artifacts()` with a generated index. |
 
-Auto registers what is decorated: a class that loses its decorator is simply not registered, in both modes. A generated index fails the boot instead, so prefer it when you want that guarantee.
+Auto registers what is decorated: a class that loses its decorator is simply not registered, in every mode. A generated index fails the boot instead, so prefer it when you want that guarantee.
+
+In a browser build, import `@venizia/ignis-boot/auto` from the application's own module, never from a shared kit. The eager import evaluates the application's classes when the auto module loads, and a kit that imports it would evaluate them inside its own half-loaded module graph.
 
 A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
 
