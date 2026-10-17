@@ -50,6 +50,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   abstract bindContext(): ValueOrPromise<void>;
   abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
 
+  /** What `start()` resolved from `artifacts()`; unset when `preConfigure()` runs without it. */
+  private resolvedIndexes: Array<IArtifactIndex> | undefined;
+
   preConfigure(): ValueOrPromise<void> {
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
@@ -75,7 +78,10 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
     const targets = registry.getDiscoveredArtifacts();
-    this.assertIndexed({ indexes: this.artifacts(), discovered: new Set(targets) });
+    this.assertIndexed({
+      indexes: this.resolvedIndexes ?? this.artifacts(),
+      discovered: new Set(targets),
+    });
 
     // Two classes a minifier named alike derive one key, and the second would silently replace the
     // first. Checked here, never at decoration, so a hot reload that re-decorates a class is no error.
@@ -129,6 +135,32 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   /** The feature packages this application mounts, bound under `CoreBindings.FEATURES`. */
   features(): Array<IFeatureBase> {
     return [];
+  }
+
+  /**
+   * `artifacts()` with each group that carries no `content` replaced by the flat index its
+   * `resolve()` returns. Resolving imports the group's modules, which decorates their classes, so it
+   * must finish before `registerArtifacts()` reads the discovery list. A group with `content` was
+   * inlined by a bundler plugin and is left alone, like a plain index.
+   */
+  private async resolveArtifactIndexes(): Promise<Array<IArtifactIndex>> {
+    const resolved: Array<IArtifactIndex> = [];
+
+    for (const entry of this.artifacts()) {
+      const group = entry as {
+        isArtifactGroup?: boolean;
+        content?: IArtifactIndex;
+        resolve?: () => Promise<IArtifactIndex>;
+      };
+      const needsResolving =
+        group.isArtifactGroup === true &&
+        group.content === undefined &&
+        typeof group.resolve === 'function';
+
+      resolved.push(needsResolving ? await group.resolve!() : entry);
+    }
+
+    return resolved;
   }
 
   /**
@@ -240,6 +272,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   async start() {
+    this.resolvedIndexes = await this.resolveArtifactIndexes();
     await this.preConfigure();
     await this.postConfigure();
   }

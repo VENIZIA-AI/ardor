@@ -130,4 +130,72 @@ describe('AbstractArdorApplication.artifacts', () => {
       });
     });
   });
+
+  describe('with a group that has no content', () => {
+    // Resolving a real group imports the application's modules, which decorates them; the fake one
+    // decorates inside `resolve()` so the class is discoverable only after start() called it.
+    class ResolvingGroup {
+      readonly isArtifactGroup = true as const;
+      readonly folder: string | undefined = undefined;
+      readonly site: string | undefined = undefined;
+      readonly content: IArtifactIndex | undefined = undefined;
+      resolveCalls = 0;
+
+      constructor(private readonly resolver: () => Promise<IArtifactIndex>) {}
+
+      async resolve(): Promise<IArtifactIndex> {
+        this.resolveCalls++;
+        return this.resolver();
+      }
+
+      get services(): never {
+        throw new Error('a group has no services until it is resolved');
+      }
+    }
+
+    test('resolves it before registering, so a class nothing imported is bound', async () => {
+      const group = new ResolvingGroup(async () => {
+        @service()
+        class LateService {}
+
+        return { services: [LateService] };
+      });
+      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      await application.start();
+
+      expect(group.resolveCalls).toBe(1);
+      expect(application.get<object>({ key: 'services.LateService' }).constructor.name).toBe(
+        'LateService',
+      );
+    });
+
+    test('checks the index it resolved', async () => {
+      const group = new ResolvingGroup(async () => ({ services: [ForgottenService] }));
+      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+
+      expect(await rejectionOf(application.start())).toMatchObject({
+        message: expect.stringMatching(
+          /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
+        ),
+      });
+    });
+
+    test('does not resolve a group that carries content', async () => {
+      const group = new ResolvingGroup(async () => ({ services: [ForgottenService] }));
+      Object.assign(group, { content: { services: [IndexedService] } });
+      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+      await application.start();
+
+      expect(group.resolveCalls).toBe(0);
+    });
+
+    test('lets a failing resolve stop the boot', async () => {
+      const group = new ResolvingGroup(async () => {
+        throw new Error('scan failed');
+      });
+      const application = createApplication({ artifacts: [group as IArtifactIndex] });
+
+      expect(await rejectionOf(application.start())).toMatchObject({ message: 'scan failed' });
+    });
+  });
 });
