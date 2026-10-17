@@ -1,6 +1,7 @@
 ---
 title: canAccess reaches an AuthProvider subclass without a fourth super argument
 description: DefaultAuthProvider reads the bound permission provider from the container itself, so a subclass with its own constructor gets canAccess without forwarding it.
+packages: ['@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-14

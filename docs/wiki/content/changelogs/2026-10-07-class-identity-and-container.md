@@ -1,6 +1,7 @@
 ---
 title: Class identity survives a minifier, and the container fixes from IGNIS
 description: ARDOR adopts IGNIS kernel 0.2.1-3 and inversion 0.2.1-0 - a pinned datasource resolves minified, start() refuses two classes deriving one key.
+packages: ['@venizia/ardor']
 ---
 
 # Changelog - 2026-10-07

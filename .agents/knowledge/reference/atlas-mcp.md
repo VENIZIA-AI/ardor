@@ -1,15 +1,27 @@
 ---
 type: Reference
 title: Atlas MCP server
-description: What the ardor-atlas MCP server is - VULCAN's atlas run against this checkout - its tools and corpora, and the two generated tables behind symbol, version and changes, with why they go stale.
+description: What the ardor-atlas MCP server is - VULCAN's atlas run against this checkout, and against IGNIS beside it - its tools and corpora, where symbol, version and changes get their answers, and when those answers go stale.
 resource: .mcp.json
 tags: [reference, atlas, mcp, tooling]
 ---
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [How it runs](#how-it-runs)
+- [Corpora](#corpora)
+- [Tools](#tools)
+- [Symbols and releases](#symbols-and-releases)
+- [When an answer is stale](#when-an-answer-is-stale)
+- [Related](#related)
+<!-- okf:generated:contents end -->
+
 `ardor-atlas` is the MCP server agents query for this bundle, the wiki and the changelogs (rule
 P-01). ARDOR ships no atlas package of its own: the server is VULCAN's atlas (`@venizia/vulcan-atlas`,
-pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live; the two JSON tables behind `symbol`,
-`version` and `changes` are generated, committed, and go stale.
+pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live.
+Nothing behind `symbol`, `version` and `changes` is committed any more: atlas reads symbols from the
+`.d.ts` and computes releases from git tags when it is asked.
 
 ## How it runs
 
@@ -19,10 +31,20 @@ pinned through `@venizia/vulcan`), run against this checkout. The markdown it se
   `package.json`; `scripts/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
   fetching the unrelated unscoped `vulcan` package before `bun install` ran.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
-- **`--root .` makes it ARDOR's.** A root is a family checkout when `docs/wiki/content`,
-  `docs/wiki/content/changelogs` and `.agents/knowledge` exist and the root `package.json` is named
-  `@venizia/<family>-workspace` - here `@venizia/ardor-workspace`, so the server names itself
-  `ardor-atlas`.
+- **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
+  nothing else of the project: it never imports `.configs/vulcan.config.ts`. `make vulcan-sync`
+  writes the manifest from that config, so a changed `packages` list, `knowledge` path or
+  `atlas.sources` entry reaches atlas only after a sync, and the manifest is committed so another
+  project's `atlas.sources` can read ARDOR.
+- **IGNIS is served beside ARDOR.** `atlas.sources` in `.configs/vulcan.config.ts` lists IGNIS
+  (`VENIZIA-AI/ignis` at `develop`), so one server answers over both projects and every hit names
+  its `source`. atlas fetches a source with git into `$XDG_CACHE_HOME/vulcan/atlas/v1/` and asks the
+  remote for the ref's commit and tags on each start. An unreachable source is reported
+  `UNAVAILABLE` in the `initialize` reply and the server still serves the rest; with the remote
+  down but a cache present it serves the last commit and says `OFFLINE`.
+- **The server's name depends on the sources.** It names itself `ardor-atlas` serving this
+  checkout alone, and `vulcan-atlas` once a source is served beside it - so the name varies with the
+  network.
 - **Changing the server itself.** `.mcp.local.example.json` runs the atlas CLI of a VULCAN checkout
   beside this one; copy it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally.
   `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
@@ -39,75 +61,85 @@ Only `.md` files are indexed, split into H2 and H3 chunks. Before every call the
 the markdown (file count, newest modification time, total bytes) and rebuilds the index when it
 moved, so an edited concept or wiki page is searchable on the next call - no restart, no generation
 step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page, and
-`log.md` lower still.
+`log.md` lower still. IGNIS's index is built once per commit, so `get` takes a `source` only when two
+sources hold the same id.
 
 ## Tools
 
 | Tool | Answers | Backed by |
 |---|---|---|
-| `search` | Chunks matching a keyword query; `corpus` narrows it to one corpus. Page with `nextOffset`, not `offset + limit` - a reply-size budget can trim a page | The live index; a one-word query that exactly names an exported symbol also carries a `symbol` brief from `symbols.json` |
+| `search` | Chunks matching a keyword query; `corpus` narrows it to one corpus. Page with `nextOffset`, not `offset + limit` - a reply-size budget can trim a page | The live index; a one-word query that exactly names an exported symbol also carries a `symbol` brief |
 | `get` | One chunk by a search hit's id, or a whole document with the anchor dropped; a long body pages by `cursor` | The live index |
-| `symbol` | An exported symbol's package, specifier, kind, signature and source `file` and `line`, plus up to five doc chunk ids; an unknown name answers with the closest names | `reference/symbols.json` |
-| `version` | The `@venizia/*` versions a project declares and has installed, next to the newest release of each live package | `reference/releases.json` |
-| `changes` | The changelog entries between two versions of one package, or between two dates | `reference/releases.json` |
+| `symbol` | An exported symbol's package, specifier, kind, signature and source `file` and `line`, plus up to five doc chunk ids; an unknown name answers with the closest names | The built `.d.ts` of the `packages` list |
+| `version` | The `@venizia/*` versions a project declares and has installed, next to the newest release of each live package | The git tags |
+| `changes` | The changelog entries between two versions of one package, or between two dates | The git tags and the changelogs' `packages:` |
 
-Package names are not interchangeable between the tools:
+A package is named the same way in every tool. A value resolves by npm name, then that name without
+its scope, then directory, then alias, case-blind, and every answer carries the npm name:
 
-- `symbol`'s `package` filter takes the npm name `@venizia/ardor-react`, never a bare `react`.
-- `changes` takes the directory name (`kernel`); `@venizia/ardor-kernel` is an unknown package.
-- `version` never fills `behind` for an ARDOR package, however old the installed version - compare
-  `installed` against `snapshot` yourself.
+- `symbol`'s `package` filter and `changes`' `package` both take `@venizia/ardor-react`, `ardor-react`
+  or `react`.
+- A directory that two served projects share is ambiguous. `kernel` is both ARDOR's and IGNIS's, so
+  `changes` with `package: kernel` fails and lists the npm names; ask for `@venizia/ardor-kernel`.
+  `symbol` does not fail on it: it answers with the matches from every source, each naming its own.
+- `version` fills `behind` for an ARDOR package like any other: a package whose installed exact
+  version orders below its newest tag. A version it cannot resolve to one exact value (a range,
+  `workspace:`) is skipped, never guessed. It reads the `package.json` and `node_modules` of its
+  `cwd`, and ARDOR's own root declares no ARDOR package, so asked there it reports VULCAN and
+  `@venizia/dev-configs` while `snapshot` lists every package of both projects.
 
-## The generated tables
+## Symbols and releases
 
-Both live in `reference/`, come from a script, and are never hand-edited. The server reads them once
-at startup, so a regenerated table reaches an MCP client only after the server restarts. A missing or
-unreadable table leaves the server up and the tool answering that the build has no such table.
+Neither has a file in `reference/`. Both are derived from the repository when atlas needs them, and
+`make atlas-symbols` and `make atlas-releases` print exactly what atlas reads.
 
-**`symbols.json`** - VULCAN's atlas (`make symbols-gen`), over the `atlas.packages` of
-`.configs/vulcan.config.ts`. Every exported symbol of every `.d.ts` entry in the `exports` maps of
-those packages, with the kind the [public surface](/reference/public-surface.md) records, a
-one-line signature capped at 300 characters, and the `src/` file and line recovered through the
-`.d.ts.map` declaration maps. A symbol re-exported from a third-party declaration carries
-`external: true`, its `file` inside `node_modules`. It reads `dist`, so it throws until the packages
-are built.
+**Symbols** come from the `.d.ts` of the live `packages` in `.configs/vulcan.config.ts`: every
+exported symbol of every `.d.ts` entry in their `exports` maps, with the kind the
+[public surface](/reference/public-surface.md) records, a one-line signature capped at 300
+characters, and the `src/` file and line recovered through the `.d.ts.map` declaration maps. A symbol
+re-exported from a third-party declaration carries `external: true`, its `file` inside
+`node_modules`. It reads `dist`, so `symbol` answers that the packages are not built until
+`make build-all` ran. IGNIS's symbols come from its packages installed in this checkout's
+`node_modules`, else from the newest npm release a pull cached.
 
-**`releases.json`** - `scripts/atlas-releases.ts`, `make releases-gen` (through `scripts/vulcan-bridge.ts`
-until VULCAN's release table reads the project config). No build needed:
+**Releases** are computed from the git tags `<dir>-v<version>` (the manifest's `tagPattern`; the
+default, and what the release workflow creates). A tag outside HEAD's history releases nothing, and
+a retired package (`ui-kit`) keeps its old tags as history. Changelogs join the table by their
+frontmatter:
 
-- `releases` - every `chore(<package>): release v<version> [<mode>]` commit, per package: version,
-  date, short sha, and first-parent position, which is what separates two releases of one day.
-- `changelogs` - every dated `YYYY-MM-DD-*.md` page under `docs/wiki/content/changelogs`: id, title,
-  the first `<Badge>` text as its kind, the position of the commit that added it, and the packages
-  it names - a `packages:` frontmatter list, else a `Package` table column, else `@venizia/ardor...`
-  mentions, else `packages/<dir>` paths. A page none of these answer names no package and never
-  appears in a package's `changes` window; `gen` prints how many there are.
-- `livePackages` - the directories under `packages/` that carry a manifest.
+- `packages:` lists the npm names an entry is about. An explicit `packages: []` says the entry is
+  about no package, such as repository tooling; an entry that declares none appears in no package's
+  `changes` window, and `make okf-check-strict` reports it. `make changelogs-migrate` writes the
+  list into entries that lack one, once, for review.
+- An entry falls after the releases that existed before the commit that added it. An uncommitted
+  entry counts as newer than every release, and a `release: '<npm name>@<version>'` line places it
+  by hand.
 
-## Why they go stale
+## When an answer is stale
 
-- **Every release.** `releases.json` is generated from release commits, so it lacks exactly the chain
-  that just shipped: `version`'s `snapshot` lags the registry and `changes` answers "unknown version".
-  `scripts/release.ts` regenerates both tables after the whole chain - never per package, since every
-  release commit has to exist first - then commits `chore(atlas): refresh the generated tables for
-  the release` and pushes it when they moved. `--no-tables` skips that. `scripts/release-local.ts`
-  and a hand-dispatched workflow run refresh nothing.
-- **A changelog page** moves `releases.json` when it is added, and again when it is committed - an
+- **The tags move.** The release table is built when the server starts, so a tag pushed or fetched
+  afterwards is invisible to this repository's `version` and `changes` until the MCP client
+  restarts the server. A shallow clone has no history: the tools answer that no release was found,
+  hence `fetch-depth: 0` in CI. A release chain leaves nothing to refresh - `scripts/release.ts`
+  and the workflow push the tags and that is all.
+- **A rebuild after the first symbol question.** Symbols are read on the first question that needs
+  them. While nothing is built, each question retries, so a build after the server started is
+  picked up; once symbols are loaded, a later public-surface change needs a restart, and a stale
+  local `dist` answers with stale symbols.
+- **A changelog page** moves `changes` when it is added, and again when it is committed - an
   uncommitted page has no commit position yet.
-- **A public-surface change** moves `symbols.json` once the packages are rebuilt. The refresh in
-  `release.ts` builds nothing first, so a stale local `dist` writes a stale table.
+- **A manifest edit** reaches atlas only after `make vulcan-sync`.
+- **A source** is as old as the commit the cache holds, or the last one served while offline.
 
-`make symbols-check` and `make releases-check` compare each committed table with a fresh render, and
-`make test-scripts` runs the release check again (skipped when the table is absent) - in the
-manually dispatched CI, after `make build-all`. Release commits only exist in full history, so both CI jobs
-check out with `fetch-depth: 0`. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
-server against this repository and checks that it names itself `ardor-atlas`, lists the five tools,
-finds `no-auth-paths` in the knowledge corpus and the data provider page in the wiki, and resolves
-`useInjectable` to `@venizia/ardor-react`.
+None of these is a CI gate any more: the old `symbols-check` and `releases-check` are gone, because
+nothing is committed to compare. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
+server against this repository and checks that it names itself `ardor-atlas` or `vulcan-atlas`,
+lists the five tools, finds `no-auth-paths` in the knowledge corpus and the data provider page in
+the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.
 
 ## Related
 
 - [Build, run, test](/overview/build-run-test.md) - the repository gates, the atlas ones among them
-- [Release and publish](/process/release-publish.md) - the release chain that ends in the refresh
+- [Release and publish](/process/release-publish.md) - the release chain whose tags atlas reads
 - [Updating the wiki](/process/updating-the-wiki.md) - the pages the `wiki` and `changelog` corpora index
-- [Public surface](/reference/public-surface.md) - the name-and-kind snapshot the symbol table extends
+- [Public surface](/reference/public-surface.md) - the name-and-kind snapshot the symbol answers extend

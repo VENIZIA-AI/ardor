@@ -4,6 +4,8 @@ title: Providers catalog
 description: Every provider class the framework ships, by package directory (generated).
 resource: packages/admin/src/providers
 tags: [reference, providers, catalog]
+generated:
+  by: process:okf-gen
 ---
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [data provider pipeline](/architecture/data-provider-pipeline.md).

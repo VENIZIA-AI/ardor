@@ -1,6 +1,7 @@
 ---
 title: Repositories by discovery, a relative baseUrl, and IGNIS 0.2.0 stable
 description: "Declare an HttpRepository with @repository({ type: RepositoryTypes.REMOTE }), point a datasource at '/api', and raise the IGNIS peers together."
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-09-24

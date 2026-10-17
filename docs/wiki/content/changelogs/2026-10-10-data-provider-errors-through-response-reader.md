@@ -1,6 +1,7 @@
 ---
 title: The data provider throws an ApplicationError, and reads Content-Range like IGNIS
 description: A failed request through the REST data providers now rejects with an ApplicationError instead of the raw response body, and a malformed Content-Range falls back to the row count.
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-10

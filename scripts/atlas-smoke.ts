@@ -71,9 +71,22 @@ const initialized = await call({
     clientInfo: { name: 'atlas-smoke', version: '0' },
   },
 });
-const serverInfo = (initialized.result as { serverInfo?: { name?: string } } | undefined)
-  ?.serverInfo;
-check('server names itself after this repository', serverInfo?.name === 'ardor-atlas', serverInfo);
+const initializedResult = initialized.result as
+  | { serverInfo?: { name?: string }; instructions?: string }
+  | undefined;
+const serverInfo = initializedResult?.serverInfo;
+// `ardor-atlas` when it serves this checkout alone, `vulcan-atlas` once an `atlas.sources` entry is
+// served beside it; an unreachable source is skipped, so the name depends on the network.
+check(
+  'server is the atlas of this repository',
+  serverInfo?.name === 'ardor-atlas' || serverInfo?.name === 'vulcan-atlas',
+  serverInfo,
+);
+for (const line of (initializedResult?.instructions ?? '').split('\n')) {
+  if (line.startsWith('- ignis:')) {
+    console.log(`info | ${line.slice(0, 160)}`);
+  }
+}
 server.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
 
 const tools = await call({ method: 'tools/list' });
@@ -125,6 +138,6 @@ if (failures.length > 0) {
   console.error(`atlas smoke FAILED:\n  ${failures.join('\n  ')}`);
   process.exit(1);
 }
-console.log('atlas smoke OK - ardor-atlas serves this checkout');
+console.log(`atlas smoke OK - ${serverInfo?.name} serves this checkout`);
 
 export {};

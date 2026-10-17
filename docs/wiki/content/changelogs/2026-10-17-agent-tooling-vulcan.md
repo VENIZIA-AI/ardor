@@ -1,6 +1,7 @@
 ---
 title: ARDOR's agent tooling is VULCAN
 description: The ARDOR repository sets up coding agents through VULCAN (@venizia/vulcan) - the shared rules, hooks and skills of every VENIZIA project - instead of its own setup script. Nothing changes for an application that uses ARDOR.
+packages: []
 ---
 
 # Changelog - 2026-10-17

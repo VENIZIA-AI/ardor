@@ -6,6 +6,18 @@ resource: packages/kernel/src/common/keys.ts
 tags: [conventions, di, bindings]
 ---
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [The two shapes](#the-two-shapes)
+- [Only the stereotype and the hooks check the namespace](#only-the-stereotype-and-the-hooks-check-the-namespace)
+- [Discovery: declare with a stereotype](#discovery-declare-with-a-stereotype)
+- [The minifier trap](#the-minifier-trap)
+- [How a key becomes a type](#how-a-key-becomes-a-type)
+- [Storage keys are the same idea, different registry](#storage-keys-are-the-same-idea-different-registry)
+- [Related](#related)
+<!-- okf:generated:contents end -->
+
 An ARDOR application is an IGNIS `Container`, so everything it owns is reachable by a string key.
 Those keys come in exactly two shapes, and knowing which one you are looking at tells you who bound
 it and what breaks when it is wrong.

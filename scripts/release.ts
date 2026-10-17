@@ -11,27 +11,14 @@
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
- *   bun scripts/release.ts kernel --no-tables   # release without refreshing the atlas tables
  *
- * Every chain ends by regenerating the symbol and release tables atlas serves. They are generated
- * FROM release commits, so the chain that just shipped is exactly what makes them stale: skip the
- * refresh and `version` reports a consumer as current while it is ahead of the table, and `changes`
- * answers "unknown version" for what just shipped. `--no-tables` opts out for a one-package fix.
- *
- * ARDOR ships no atlas package - the MCP server is VULCAN's atlas run against this checkout
- * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
+ * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
  */
 
 import { countChangedSinceRelease, withDependents } from './release-scope';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
-
-/** What `refreshGeneratedTables` regenerates and commits, relative to the repository root. */
-const TABLE_PATHS = [
-  '.agents/knowledge/reference/releases.json',
-  '.agents/knowledge/reference/symbols.json',
-];
 
 /**
  * Dependency order, not alphabetical. A package must publish after everything it depends on, or the
@@ -308,37 +295,10 @@ const releasePackage = async (opts: {
   await run({ command: ['git', 'pull', '--ff-only', '--quiet', 'origin', BRANCH] });
 };
 
-/**
- * Regenerates the tables atlas serves and commits them when they moved. Runs after the chain, never
- * as a member of it: the tables are generated FROM release commits, so they are always stale by
- * exactly the chain that just shipped.
- */
-const refreshGeneratedTables = async (): Promise<void> => {
-  console.log('\n▶ refreshing the tables atlas ships');
-  await run({ command: ['make', 'releases-gen'] });
-  await run({ command: ['make', 'symbols-gen'] });
-
-  const { stdout: dirty } = await run({
-    command: ['git', 'status', '--porcelain', '--', TABLE_PATHS[0], TABLE_PATHS[1]],
-  });
-  if (dirty.trim().length === 0) {
-    console.log('  tables already current');
-    return;
-  }
-
-  await run({ command: ['git', 'add', ...TABLE_PATHS] });
-  await run({
-    command: ['git', 'commit', '-m', 'chore(atlas): refresh the generated tables for the release'],
-  });
-  await run({ command: ['git', 'push', 'origin', BRANCH] });
-  console.log('  tables committed and pushed');
-};
-
 const main = async (): Promise<void> => {
   const args = Bun.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
-  const skipTables = args.includes('--no-tables');
   const modeIndex = args.indexOf('--mode');
   const mode = (modeIndex >= 0 ? args[modeIndex + 1] : 'prerelease') as TReleaseMode;
 
@@ -391,12 +351,6 @@ const main = async (): Promise<void> => {
 
   for (const state of plan) {
     await releasePackage({ state, mode });
-  }
-
-  // After the loop, not inside it: every release commit in this chain has to exist before the
-  // tables are generated from them. Hanging this off a tail entry is how it silently never ran.
-  if (!skipTables) {
-    await refreshGeneratedTables();
   }
 
   console.log(`\n✓ Released ${plan.length} package(s).`);

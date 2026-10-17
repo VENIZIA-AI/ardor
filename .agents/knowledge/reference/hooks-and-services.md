@@ -4,6 +4,8 @@ title: Hooks and services catalog
 description: Every exported React hook and every service class, by package directory (generated).
 resource: packages/react/src/hooks
 tags: [reference, hooks, services, catalog]
+generated:
+  by: process:okf-gen
 ---
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [hooks and context](/architecture/hooks-and-context.md).

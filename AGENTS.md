@@ -28,7 +28,7 @@ All three are mandatory, for every agent, on every task. The two rules that cost
 
 Nothing lives in two places. Every piece of project information has exactly one home:
 
-- **`.agents/`** - what agents read: ARDOR's rules, the knowledge bundle, the project skills and hooks.
+- **`.agents/`** - what agents read: ARDOR's rules, the knowledge bundle, the project skills and okf renderers.
 - **`docs/wiki/`** - the human-facing VitePress site: guides, references, changelogs.
 
 Source code is the ground truth for both. When prose and code disagree, the code wins and the prose
@@ -57,7 +57,7 @@ wiki, the changelogs and this bundle:
 The full contract, and what goes stale, is in [Atlas MCP server](.agents/knowledge/reference/atlas-mcp.md).
 
 Maintaining it is rule P-03: change a fact in the code, update the concept and `log.md` in the same
-change. Generated content comes from `make okf-gen`; `make okf-check` validates and is not a commit
+change. Generated content comes from `make okf-gen`; `make okf-check-strict` validates and is not a commit
 gate. The `knowledge-sync` skill (shipped by VULCAN) re-verifies the bundle against the code
 periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-areas.md).
 
@@ -67,14 +67,14 @@ periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-a
 .agents/
 ├── rules.md          # ARDOR's rules - W · S · P · B · C, cited by ID, on top of the VULCAN base
 ├── knowledge/        # THE knowledge bundle
-├── knowledge-tools/  # ARDOR's okf gen · check · coverage · viz (until VULCAN's okf reads the config)
+├── okf/              # ARDOR's okf renderers (providers, hooks-and-services) - named in .configs/vulcan.config.ts
 ├── skills/           # ARDOR's own skills (update-wiki) - linked into .claude/skills/ by vulcan-sync
-├── hooks/            # ARDOR's own hooks (minimap.ts) - registered in .configs/vulcan.config.ts
+├── vulcan.manifest.json # written by vulcan-sync; another project's atlas reads ARDOR through it
 └── plans/            # gitignored - saved specs and plans, local to each developer
 ```
 
 VULCAN ships the shared skills (`knowledge-sync`, `docs-writing`) and hooks (the rules digest,
-`guard-writes`); a project adds its own and never redefines a shipped one. A skill is a procedure
+which also prints the minimap block of `rules.md`, and `guard-writes`); a project adds its own and never redefines a shipped one. A skill is a procedure
 you follow; a concept is material you consult. Neither is duplicated in the other. Before adding a
 skill, check the task is not already covered by one here, by VULCAN or by Claude Code.
 
@@ -83,5 +83,5 @@ skill, check the task is not already covered by one here, by VULCAN or by Claude
 This `AGENTS.md` is the single source. `make vulcan-sync` writes `CLAUDE.md` as one line,
 `@AGENTS.md`, never a copy. `.claude/` is gitignored, so what everyone shares is declared in
 `.configs/vulcan.config.ts` and merged into your `.claude/settings.json` by the same sync, over your
-personal keys: VULCAN's rules digest, ARDOR's minimap hook, and `guard-writes`, which asks before
+personal keys: VULCAN's rules digest (with the minimap shape) and `guard-writes`, which asks before
 a database write, a deploy or a mutating HTTP call. Nothing else blocks a command.

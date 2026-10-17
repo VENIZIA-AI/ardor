@@ -1,6 +1,7 @@
 ---
 title: Feature modules and permissions
 description: An application mounts feature packages - resources, routes, bindings, messages - from features(), and answers react-admin's canAccess from its own provider.
+packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-07

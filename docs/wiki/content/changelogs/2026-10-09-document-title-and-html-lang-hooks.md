@@ -1,6 +1,7 @@
 ---
 title: useDocumentTitle and useHtmlLang
 description: Two admin hooks - one sets the browser tab title per screen and restores it on unmount, the other keeps the html lang attribute on the UI locale.
+packages: ['@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-09

@@ -6,6 +6,19 @@ resource: packages/kernel/src/common/constants.ts
 tags: [conventions, errors]
 ---
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [Catalogue a domain failure, raise the rest free-form](#catalogue-a-domain-failure-raise-the-rest-free-form)
+- [Every ApplicationError carries `normalized`](#every-applicationerror-carries-normalized)
+- [Unknown keys ride into `extra`](#unknown-keys-ride-into-extra)
+- [Requests carry their own vocabulary, not their own error codes](#requests-carry-their-own-vocabulary-not-their-own-error-codes)
+- [Log an expected failure below `error`](#log-an-expected-failure-below-error)
+- [instanceof across packages is unreliable](#instanceof-across-packages-is-unreliable)
+- [Never leak internals in a user-facing notification](#never-leak-internals-in-a-user-facing-notification)
+- [Related](#related)
+<!-- okf:generated:contents end -->
+
 Never throw a raw `new Error(...)`. Use `getError(opts: TError)` from `@venizia/ignis-inversion`
 (or `ApplicationError.getError`). It builds an `ApplicationError`: a `message`, a `statusCode`
 (defaults to `400`), a `normalized` message, and an optional `extra` payload.

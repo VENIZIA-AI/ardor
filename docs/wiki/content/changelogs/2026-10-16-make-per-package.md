@@ -1,6 +1,7 @@
 ---
 title: Every package builds, lints and formats through make
 description: The ARDOR repository adopts the IGNIS make layout - a one-line Makefile per package over make/project.mk, a root Makefile split into make/*.mk, and the build tsconfig in .configs/. Nothing changes for an application that uses ARDOR.
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-16

@@ -1,6 +1,7 @@
 ---
 title: IGNIS stereotypes and repositories, bulk writes in the body, safer headers
 description: Classes register by stereotype, HTTP repositories come from IGNIS, bulk writes send their selector in the body, and requests work on plain-http origins.
+packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel', '@venizia/ardor-react']
 ---
 
 # Changelog - 2026-09-19

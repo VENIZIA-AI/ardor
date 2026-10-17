@@ -1,6 +1,7 @@
 ---
 title: ARDOR lints with oxlint and formats with oxfmt
 description: The ARDOR repository moves from ESLint and Prettier to oxlint and oxfmt, with every preset taken from @venizia/dev-configs. Nothing changes for an application that uses ARDOR.
+packages: ['@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-16

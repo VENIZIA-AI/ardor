@@ -1,6 +1,7 @@
 ---
 title: Registration by hand, useRepository, and a clean-install gate
 description: Register artifacts by stereotype or by hand as in IGNIS, resolve repositories by class, BaseApiService removed, packages proven installable.
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-react']
 ---
 
 # Changelog - 2026-09-23

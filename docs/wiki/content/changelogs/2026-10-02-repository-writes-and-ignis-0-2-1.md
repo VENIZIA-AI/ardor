@@ -1,6 +1,7 @@
 ---
 title: HttpRepository writes and shares the data provider's auth; BaseCrudService is gone
 description: HttpRepository writes on IGNIS 0.2.1, shares the data provider's token and one 401 refresh, and replaces BaseCrudService. Providers bind as singletons.
+packages: ['@venizia/ardor']
 ---
 
 # Changelog - 2026-10-02

@@ -1,6 +1,7 @@
 ---
 title: The network layer is fetch only, and axios is gone
 description: ARDOR drops its axios transport and moves the socket client behind a sub-path, so importing the framework pulls no HTTP client and no optional peer.
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-09-16
