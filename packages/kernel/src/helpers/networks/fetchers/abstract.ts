@@ -1,3 +1,4 @@
+import { RequestMethods } from '@/common/constants';
 import type { TFetcherResponse, TFetcherVariant, TFetcherWorker } from '../common/types';
 
 const HTTP = 'http';
@@ -53,26 +54,26 @@ export abstract class AbstractNetworkFetchableHelper<
 
   get(opts: RQ, logger?: any) {
     const { ...rest } = opts;
-    return this.send({ ...rest, method: 'get' }, logger);
+    return this.send({ ...rest, method: RequestMethods.GET }, logger);
   }
 
   post(opts: RQ, logger?: any) {
     const { ...rest } = opts;
-    return this.send({ ...rest, method: 'post' }, logger);
+    return this.send({ ...rest, method: RequestMethods.POST }, logger);
   }
 
   put(opts: RQ, logger?: any) {
     const { ...rest } = opts;
-    return this.send({ ...rest, method: 'put' }, logger);
+    return this.send({ ...rest, method: RequestMethods.PUT }, logger);
   }
 
   patch(opts: RQ, logger?: any) {
     const { ...rest } = opts;
-    return this.send({ ...rest, method: 'patch' }, logger);
+    return this.send({ ...rest, method: RequestMethods.PATCH }, logger);
   }
 
   delete(opts: RQ, logger?: any) {
     const { ...rest } = opts;
-    return this.send({ ...rest, method: 'delete' }, logger);
+    return this.send({ ...rest, method: RequestMethods.DELETE }, logger);
   }
 }

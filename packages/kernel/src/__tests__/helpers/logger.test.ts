@@ -1,14 +1,22 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { Logger } from '@/helpers/logger';
 
+const consoleDebugSpy = spyOn(console, 'debug').mockImplementation(() => {});
 const consoleInfoSpy = spyOn(console, 'info').mockImplementation(() => {});
+const consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+const consoleSpies = [consoleDebugSpy, consoleInfoSpy, consoleWarnSpy, consoleErrorSpy];
 
 afterEach(() => {
-  consoleInfoSpy.mockClear();
+  for (const spy of consoleSpies) {
+    spy.mockClear();
+  }
 });
 
 afterAll(() => {
-  consoleInfoSpy.mockRestore();
+  for (const spy of consoleSpies) {
+    spy.mockRestore();
+  }
 });
 
 describe('generateLog', () => {
@@ -47,18 +55,19 @@ describe('log level gating', () => {
     const logger = new Logger({ scope: 'render-pipeline', enableDebug: false });
     logger.debug('frame dropped', { frame: 12 });
 
-    expect(consoleInfoSpy).not.toHaveBeenCalled();
+    expect(consoleDebugSpy).not.toHaveBeenCalled();
   });
 
-  test('prints to console.info when debug is called with debug logging enabled', () => {
+  test('prints to console.debug when debug is called with debug logging enabled', () => {
     const logger = new Logger({ scope: 'render-pipeline', enableDebug: true });
     logger.debug('frame rendered', 16.6);
 
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
-    expect(consoleInfoSpy.mock.calls[0]?.[0]).toMatch(
+    expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
+    expect(consoleDebugSpy.mock.calls[0]?.[0]).toMatch(
       /\[debug\]\t\[render-pipeline\]frame rendered$/,
     );
-    expect(consoleInfoSpy.mock.calls[0]?.[1]).toBe(16.6);
+    expect(consoleDebugSpy.mock.calls[0]?.[1]).toBe(16.6);
+    expect(consoleInfoSpy).not.toHaveBeenCalled();
   });
 
   test('prints to console.info when info is called regardless of debug state', () => {
@@ -72,26 +81,28 @@ describe('log level gating', () => {
     expect(consoleInfoSpy.mock.calls[0]?.[1]).toBe('user-001');
   });
 
-  test('prints to console.info when warn is called regardless of debug state', () => {
+  test('prints to console.warn when warn is called regardless of debug state', () => {
     const logger = new Logger({ scope: 'cache-manager', enableDebug: false });
     logger.warn('cache miss limit reached', 100);
 
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
-    expect(consoleInfoSpy.mock.calls[0]?.[0]).toMatch(
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    expect(consoleWarnSpy.mock.calls[0]?.[0]).toMatch(
       /\[warn\]\t\[cache-manager\]cache miss limit reached$/,
     );
-    expect(consoleInfoSpy.mock.calls[0]?.[1]).toBe(100);
+    expect(consoleWarnSpy.mock.calls[0]?.[1]).toBe(100);
+    expect(consoleInfoSpy).not.toHaveBeenCalled();
   });
 
-  test('prints to console.info when error is called regardless of debug state', () => {
+  test('prints to console.error when error is called regardless of debug state', () => {
     const logger = new Logger({ scope: 'database-client', enableDebug: false });
     logger.error('connection timeout', 'primary-replica');
 
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
-    expect(consoleInfoSpy.mock.calls[0]?.[0]).toMatch(
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy.mock.calls[0]?.[0]).toMatch(
       /\[error\]\t\[database-client\]connection timeout$/,
     );
-    expect(consoleInfoSpy.mock.calls[0]?.[1]).toBe('primary-replica');
+    expect(consoleErrorSpy.mock.calls[0]?.[1]).toBe('primary-replica');
+    expect(consoleInfoSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -102,7 +113,7 @@ describe('toggleDebug', () => {
     logger.debug('suppressed message');
 
     expect(logger['isDebugEnabled']).toBe(false);
-    expect(consoleInfoSpy).not.toHaveBeenCalled();
+    expect(consoleDebugSpy).not.toHaveBeenCalled();
   });
 
   test('enables debug logging when state is true', () => {
@@ -111,7 +122,7 @@ describe('toggleDebug', () => {
     logger.debug('visible message');
 
     expect(logger['isDebugEnabled']).toBe(true);
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+    expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
   });
 
   test('flips the current debug state when called with no arguments', () => {
@@ -120,12 +131,12 @@ describe('toggleDebug', () => {
     logger.toggleDebug();
     expect(logger['isDebugEnabled']).toBe(true);
     logger.debug('first flip emits');
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+    expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
 
     logger.toggleDebug();
     expect(logger['isDebugEnabled']).toBe(false);
     logger.debug('second flip suppresses');
-    expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+    expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -2,7 +2,7 @@
 type: Concept
 title: Design decisions
 description: The reasoning behind ARDOR's package split, ESM-only build, DI defaults, shared IGNIS stereotypes, fetch-only transport, and doc-quality gates.
-resource: docs/migration/ra-core-infra.md
+resource: docs/wiki/content/guides/migration/from-ra-core-infra.md
 tags: [overview, design-decisions, architecture, rationale]
 ---
 

@@ -1,8 +1,10 @@
-# Contributing to Ardor
+# Contributing to ARDOR
 
-Thank you for your interest in contributing to Ardor! This guide will help you get started.
+Thank you for your interest in contributing to ARDOR! This guide will help you get started.
 
-For detailed guidelines, see the full [Contribution Workflow](packages/docs/wiki/get-started/best-practices/contribution-workflow.md) documentation.
+The numbered project rules (write boundaries, process, build, code style) live in
+[`.agents/rules.md`](.agents/rules.md); the framework conventions are in the
+[best practices](https://ardor.venizia.ai/best-practices/) of the docs site.
 
 ## Table of Contents
 
@@ -28,7 +30,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We are committ
 
 | Tool    | Version  | Installation                                |
 | ------- | -------- | ------------------------------------------- |
-| **Bun** | >= 1.3.0 | `curl -fsSL https://bun.sh/install \| bash` |
+| **Bun** | >= 1.4.0 | `curl -fsSL https://bun.sh/install \| bash` |
 | **Git** | Latest   | [git-scm.com](https://git-scm.com/)         |
 
 ### Setup
@@ -71,7 +73,7 @@ develop (staging)
   ↑
   │ PRs target here
   │
-feature/*, fix/*, docs/* (your work)
+feature/*, fix/*, docs/*, chore/*, test/* (your work)
 ```
 
 **Important:**
@@ -84,6 +86,11 @@ feature/*, fix/*, docs/* (your work)
 ---
 
 ## Development Workflow
+
+### Step 0: Open an Issue
+
+Every change starts from an issue in [VENIZIA-AI/ardor](https://github.com/VENIZIA-AI/ardor/issues).
+Its number goes into every commit and into the pull request.
 
 ### Step 1: Create Branch
 
@@ -105,25 +112,27 @@ git checkout -b feature/your-feature-name
 | Bug fix | `fix/description`     | `fix/auth-token-expiry`   |
 | Docs    | `docs/description`    | `docs/update-quickstart`  |
 | Chore   | `chore/description`   | `chore/upgrade-deps`      |
+| Tests   | `test/description`    | `test/rejection-helpers`  |
 
 ### Step 2: Make Changes
 
 **Checklist:**
 
-- ✅ Follow [Code Style Standards](packages/docs/wiki/get-started/best-practices/code-style-standards.md)
-- ✅ Follow [Architectural Patterns](packages/docs/wiki/get-started/best-practices/architectural-patterns.md)
+- ✅ Follow the code rules C-01..C-18 in [`.agents/rules.md`](.agents/rules.md)
+- ✅ Follow the [best practices](https://ardor.venizia.ai/best-practices/)
 - ✅ Add tests for new features/fixes
-- ✅ Update docs in `packages/docs/wiki` if needed
+- ✅ Update the docs in `docs/wiki/content` if needed
 
 ### Step 3: Commit
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+One line, `[#N] type(scope): subject`, where `#N` is the issue and the type is a
+[Conventional Commits](https://www.conventionalcommits.org/) type:
 
 ```bash
-git commit -m "feat: add Redis caching helper"
-git commit -m "fix: correct JWT token validation"
-git commit -m "docs: update controller examples"
-git commit -m "chore: upgrade Hono to v4.0"
+git commit -m "[#42] feat(admin): pass per-request headers through meta"
+git commit -m "[#43] fix(kernel): send PATCH in upper case"
+git commit -m "[#44] docs: update the quickstart"
+git commit -m "[#45] chore: upgrade the IGNIS chain"
 ```
 
 **Commit types:**
@@ -173,7 +182,7 @@ make fmt
 bun scripts/examples.ts check
 ```
 
-For detailed standards, see [Code Style Standards](packages/docs/wiki/get-started/best-practices/code-style-standards.md).
+For the detailed standards, see the code rules (C-01..C-18) in [`.agents/rules.md`](.agents/rules.md).
 
 ---
 
@@ -191,9 +200,9 @@ Then create a Pull Request on GitHub targeting the `develop` branch.
 
 | Item                 | Description                                               |
 | -------------------- | --------------------------------------------------------- |
-| **Title**            | Use conventional commit format: `feat: add Redis caching` |
+| **Title**            | The commit line: `[#42] feat(admin): pass per-request headers` |
 | **Description**      | Explain what and why (not just how)                       |
-| **Link issues**      | Reference related issues: `Closes #123`                   |
+| **Link issues**      | The body says `Closes #42`                                |
 | **Screenshots**      | Include for UI changes                                    |
 | **Breaking changes** | Clearly mark and explain                                  |
 
@@ -222,4 +231,4 @@ Then create a Pull Request on GitHub targeting the `develop` branch.
 
 ---
 
-Thank you for contributing to Ardor!
+Thank you for contributing to ARDOR!

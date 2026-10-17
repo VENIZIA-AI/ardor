@@ -96,7 +96,7 @@ The full guide, including the root component and the typed hooks, is in the
 ## Migrating from `@minimaltech/ra-core-infra`
 
 ARDOR is that package, split and rebranded. See
-[the migration guide](https://github.com/VENIZIA-AI/ardor/blob/develop/docs/migration/ra-core-infra.md) -
+[the migration guide](https://ardor.venizia.ai/guides/migration/from-ra-core-infra) -
 the move is four mechanical edits plus four symbol renames.
 
 ## License

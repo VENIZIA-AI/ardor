@@ -37,7 +37,7 @@ Identifies the client platform on every request so the backend can distinguish w
 These two headers carry count semantics:
 
 - `x-request-count` tells the backend whether to compute a total count alongside the data. Values come from `RequestCountData`: `DATA_ONLY` (`'0'`) returns just the list, `DATA_WITH_COUNT` (`'1'`) asks for both data and count.
-- `x-response-count` is read back only for non-list request types: when the call did not ask for `DATA_WITH_COUNT`, its value is parsed into the result's `count`. List totals never use it - they come from `content-range` (see below) - see [Data provider pipeline](/architecture/data-provider-pipeline.md).
+- `x-response-count` is read back only for non-list request types: when the call did not ask for `DATA_WITH_COUNT`, its value is parsed into the result's `count`; a missing or non-numeric header gives `count: undefined`, never `NaN`. List totals never use it - they come from `content-range` (see below) - see [Data provider pipeline](/architecture/data-provider-pipeline.md).
 
 ## x-request-extra and x-response-extra
 

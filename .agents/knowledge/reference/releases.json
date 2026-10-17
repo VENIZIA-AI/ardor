@@ -553,6 +553,18 @@
   },
   "changelogs": [
     {
+      "id": "changelog:2026-10-17-patch-log-levels-pagination-count",
+      "file": "2026-10-17-patch-log-levels-pagination-count.md",
+      "date": "2026-10-17",
+      "title": "PATCH in upper case, log levels, getManyReference without pagination, no NaN count",
+      "packages": [
+        "admin",
+        "kernel"
+      ],
+      "kind": "Bug Fix",
+      "order": 201
+    },
+    {
       "id": "changelog:2026-10-16-oxlint-oxfmt",
       "file": "2026-10-16-oxlint-oxfmt.md",
       "date": "2026-10-16",

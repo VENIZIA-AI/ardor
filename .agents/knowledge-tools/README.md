@@ -2,7 +2,7 @@
 
 Generator, conformance gate, and graph explorer for the ARDOR knowledge bundle at
 `.agents/knowledge/`. Zero runtime dependencies - plain Bun scripts plus vendored Cytoscape for the
-explorer. The bundle is served over MCP by `@venizia/ardor-atlas` (`packages/atlas`), not from here.
+explorer. The bundle is served over MCP by `@venizia/ignis-atlas`, run against this checkout as the `ardor-atlas` server (`.mcp.json`), not from here.
 
 ## Commands
 

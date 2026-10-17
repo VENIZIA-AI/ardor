@@ -328,7 +328,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['offset'] = undefined;
       filter['noLimit'] = undefined;
     } else {
-      const { page = 0, perPage = 0 } = pagination;
+      const { page = 0, perPage = 0 } = pagination ?? {};
 
       if (perPage >= 0) {
         filter['limit'] = perPage;

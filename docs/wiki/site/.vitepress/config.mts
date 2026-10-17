@@ -89,6 +89,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-17',
+        collapsed: true,
+        items: [
+          {
+            text: 'PATCH, log levels, getManyReference, count',
+            link: '/changelogs/2026-10-17-patch-log-levels-pagination-count',
+          },
+        ],
+      },
+      {
         text: '2026-10-16',
         collapsed: true,
         items: [

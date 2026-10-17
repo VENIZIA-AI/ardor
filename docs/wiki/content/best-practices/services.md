@@ -186,7 +186,7 @@ The component never sees how the class was built. Swap the implementation in the
 - **Expecting `@api()` to swallow errors.** It logs and rethrows. The caller still gets the error.
 - **Decorating a sync method.** `@api()` replaces the method with an `async` function. The result is always a promise.
 - **Reusing a scope.** `Logger.getInstance` returns the same logger for the same scope. Two classes with one scope are indistinguishable in the log.
-- **Filtering the console by level.** Every level, including `error`, is written through `console.info`. Filter by the `[error]` prefix in the message, not by the console's level filter.
+- **Hiding debug lines by accident.** Each level is written through the console method of the same name (`console.debug`, `info`, `warn`, `error`). Browsers hide `console.debug` under the default filter, so enable the Verbose level to see debug output.
 - **Passing `enableDebug` from one service.** It is a process-wide switch. Passing it from any scope flips debug logging for every scope.
 - **Storing request state on the class.** The service is a singleton. State on the instance is shared by every caller.
 

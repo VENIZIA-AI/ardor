@@ -650,10 +650,11 @@ export class DefaultNetworkRequestService extends BaseService {
           return data as { data: TData; count?: number };
         }
 
-        const responseCount = headers?.get(HeaderConsts.RESPONSE_COUNT_DATA);
+        // A missing or non-numeric header means the server sent no count - never NaN.
+        const count = Number.parseInt(headers?.get(HeaderConsts.RESPONSE_COUNT_DATA) ?? '', 10);
         return {
           data: data as TData,
-          count: parseInt(responseCount, 10),
+          count: Number.isNaN(count) ? undefined : count,
         };
       }
     }

@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-The following versions of Ardor are currently supported with security updates:
+The following versions of ARDOR are currently supported with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.0.x   | :white_check_mark: |
+| 0.1.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
@@ -41,7 +41,7 @@ We will:
 
 ## Security Best Practices
 
-When using Ardor in your applications, follow these recommendations:
+When using ARDOR in your applications, follow these recommendations:
 
 ### Environment Variables
 
@@ -51,9 +51,9 @@ When using Ardor in your applications, follow these recommendations:
 
 ### Authentication & Authorization
 
-- Use the built-in JWT components with strong secrets
-- Implement proper access control using Casbin integration
-- Validate all user inputs
+- Leave the auth token where `DefaultAuthService` stores it; never log it or copy it elsewhere
+- Keep `noAuthPaths` to the routes that really need no session; never widen them to make a request work
+- Enforce access control on the server - `canAccess` only shapes the UI
 
 ### Dependencies
 
@@ -63,20 +63,16 @@ When using Ardor in your applications, follow these recommendations:
 
 ### Production Deployment
 
-- Enable HTTPS in production
-- Set appropriate CORS policies
-- Use rate limiting for public APIs
-- Enable security headers
+- Serve the application over HTTPS: `crypto.randomUUID` and other secure-context APIs are undefined on plain HTTP
+- Set a Content Security Policy for the admin console
 
-## Security Features in Ardor
+## Security Features in ARDOR
 
-Ardor provides built-in security features:
-
-- **JWT Authentication** - Secure token-based auth via `jose`
-- **Input Validation** - Zod schema validation for all inputs
-- **RBAC/ABAC** - Role-based access control via Casbin integration
-- **Secure Defaults** - Sensible security defaults out of the box
+- **One storage key for the token** - `DefaultAuthService` writes and clears `LocalStorageKeys.KEY_AUTH_TOKEN`; the network layer only reads it
+- **Explicit no-auth paths** - every other request carries the session header
+- **Bounded auth recovery** - a 401 triggers one token refresh and one retry, never a loop
+- **Browser-pure core** - `ardor-kernel` imports no Node builtin, gated by `make purity` on every release
 
 ---
 
-Thank you for helping keep Ardor and its users safe.
+Thank you for helping keep ARDOR and its users safe.

@@ -54,6 +54,11 @@ coverage/
 !**/.env.example
 !**/.env.test
 
+# Keys and certificates
+*.pem
+*.key
+keys/
+
 # IDEs and Editors
 # Add settings and temporary files from common editors to prevent user-specific
 # configurations from being committed.
@@ -98,5 +103,15 @@ node_modules.zip
 
 .agents/plans/
 CLAUDE.md
+CLAUDE.*.md
+**/*/CLAUDE.md
 GEMINI.md
 .mcp.local.json
+
+# Generated or scratch output
+.agents/knowledge/viz.html
+.agents/specs
+docs/temp
+docs/generate
+*.bun-build
+.*.bun-build
