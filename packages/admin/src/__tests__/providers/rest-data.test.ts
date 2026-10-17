@@ -446,6 +446,25 @@ describe('getManyReference behavior', () => {
     expect(filter['offset']).toBe(10);
     expect(filter['order']).toEqual(['createdAt DESC']);
   });
+
+  test('sends the reference filter without pagination instead of throwing, like getList', async () => {
+    const provider = createProvider({ baseUrl });
+    const params: Parameters<typeof provider.getManyReference>[0]['params'] = {
+      target: 'postId',
+      id: 7,
+      pagination: { page: 1, perPage: 10 },
+      sort: { field: 'id', order: 'ASC' },
+      filter: {},
+    };
+    // ra-core types pagination as required, but a JavaScript caller or a hand-built query omits it.
+    Reflect.deleteProperty(params, 'pagination');
+
+    await provider.getManyReference({ resource: 'comments', params });
+
+    expect(recordedRequests.length).toBe(1);
+    const filter = parseFilterQuery({ raw: recordedRequests[0].query['filter'] });
+    expect(filter['where']).toEqual({ postId: 7 });
+  });
 });
 
 describe('mutation operations behavior', () => {

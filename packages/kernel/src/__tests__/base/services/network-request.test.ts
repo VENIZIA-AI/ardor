@@ -805,6 +805,23 @@ describe('DefaultNetworkRequestService', () => {
       expect(res.data).toEqual({ id: 7, name: 'ARDOR Entity' });
       expect(res.count).toBe(84);
     });
+
+    test('leaves count undefined, never NaN, when x-response-count is missing or not a number', () => {
+      const service = createService();
+
+      for (const headers of [
+        new Headers(),
+        new Headers({ [HeaderConsts.RESPONSE_COUNT_DATA]: 'many' }),
+      ]) {
+        const res = service.convertResponse<{ id: number }>({
+          type: RequestTypes.GET_ONE,
+          response: { data: { id: 7 }, headers },
+        });
+
+        expect(res.data).toEqual({ id: 7 });
+        expect(res.count).toBeUndefined();
+      }
+    });
   });
 
   describe('doRequest', () => {

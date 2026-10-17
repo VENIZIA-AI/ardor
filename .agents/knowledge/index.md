@@ -1,7 +1,5 @@
 ---
-okf_version: "0.1"
-title: ARDOR knowledge bundle
-description: The curated, agent-facing source of truth for the ARDOR framework.
+okf_version: "0.2"
 ---
 
 # ARDOR knowledge

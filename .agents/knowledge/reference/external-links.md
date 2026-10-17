@@ -53,6 +53,6 @@ See [admin](/packages/admin.md) for what ARDOR adds on top, and [application lif
 
 ## GitHub repository
 
-The source of truth for code, issues, and the Makefile-driven build is the ARDOR monorepo on GitHub. Use it to check exact source locations referenced elsewhere in this bundle (see [key source files](/reference/key-source-files.md) and [source map](/reference/source-map.md)), and to see the migration notes for teams moving from the legacy `@minimaltech/ra-core-infra` package, referenced in the repo's `docs/migration/ra-core-infra.md`.
+The source of truth for code, issues, and the Makefile-driven build is the ARDOR monorepo on GitHub. Use it to check exact source locations referenced elsewhere in this bundle (see [key source files](/reference/key-source-files.md) and [source map](/reference/source-map.md)), and to see the migration notes for teams moving from the legacy `@minimaltech/ra-core-infra` package, in the wiki page `docs/wiki/content/guides/migration/from-ra-core-infra.md`.
 
 For local setup and everyday commands against a repo checkout, see [onboarding](/overview/onboarding.md), [build, run, test](/overview/build-run-test.md), and [Makefile targets](/reference/makefile-targets.md).

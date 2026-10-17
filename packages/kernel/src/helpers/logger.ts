@@ -82,7 +82,9 @@ export class Logger implements ILogger {
     }
 
     const generated = this.generateLog({ level, message, args });
-    applicationLogger.info(generated.message, ...generated.args);
+    // Each level goes to the console method of the same name, so the browser's level filter and an
+    // error-reporting hook on console.error both see it.
+    applicationLogger[level](generated.message, ...generated.args);
   }
 
   debug(message: any, ...args: any[]) {

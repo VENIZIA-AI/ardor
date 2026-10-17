@@ -38,7 +38,7 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | `packages/` | The five packages above |
 | `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist` - gated by `bun scripts/examples.ts` (`check`, `build`), not by make |
 | `docs/wiki/` | VitePress site `@venizia/ardor-docs` - `content/` pages, `site/` theme, `scripts/` gates (sidebar, snippet compile) |
-| `docs/migration/` | The ra-core-infra migration guide, linked from the npm deprecation of `@minimaltech/ra-core-infra` |
+| `docs/migration/` | A pointer to the wiki migration guide, kept because the npm deprecation of `@minimaltech/ra-core-infra` links to it |
 | `scripts/` | Repository gates: `public-surface.ts`, `check-catalog.ts`, `purity/`, `layer-boundaries.ts`, `module-cycles.ts`, `split-report.ts`, `wiki-source-links.ts`, `refresh-catalog.ts`. Atlas tables: `atlas-symbols.ts`, `atlas-releases.ts`, `atlas-smoke.ts` (see [Atlas MCP server](/reference/atlas-mcp.md)). Release: `release.ts`, `release-local.ts` (see [Release and publish](/process/release-publish.md)) |
 | `.agents/` | `rules.md`, this knowledge bundle, `knowledge-tools/`, `plugin/` (agent setup, skills, session hook) |
 | `.mcp.json` | Registers the `ardor-atlas` MCP server (`@venizia/ignis-atlas` run against this checkout); `.mcp.local.example.json` points it at a local IGNIS checkout instead - see [Atlas MCP server](/reference/atlas-mcp.md) |

@@ -62,19 +62,9 @@ these projects.
 | [React Redux](https://github.com/reduxjs/react-redux) | MIT | React bindings for Redux |
 | [TanStack Query](https://github.com/TanStack/query) | MIT | Asynchronous state management |
 | [React Router](https://github.com/remix-run/react-router) | MIT | Routing |
-| [Axios](https://github.com/axios/axios) | MIT | HTTP client |
 | [Socket.IO Client](https://github.com/socketio/socket.io) | MIT | Real-time bidirectional communication |
 | [Lodash](https://github.com/lodash/lodash) | MIT | Utility library |
 | [node-polyglot](https://github.com/airbnb/polyglot.js) (`ra-i18n-polyglot`) | BSD-2-Clause | Internationalisation |
-
-### UI Kit Dependencies
-
-| Library | License | Description |
-|---------|---------|-------------|
-| [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) | MIT | Utility-first CSS framework |
-| [Radix UI](https://github.com/radix-ui/primitives) | MIT | Unstyled, accessible component primitives |
-| [Lucide](https://github.com/lucide-icons/lucide) | ISC | Icon set |
-| [Day.js](https://github.com/iamkun/dayjs) | MIT | Date manipulation library |
 
 ---
 
@@ -85,7 +75,6 @@ ARDOR is inspired by and built upon the work of many open-source projects:
 - **[IGNIS](https://ignis.venizia.ai)** - The backend framework ARDOR is the frontend sibling of
 - **[react-admin](https://marmelab.com/react-admin/)** by Marmelab - The admin framework ARDOR adapts
 - **[LoopBack 4](https://loopback.io/)** by IBM/StrongLoop - Inspiration for the binding-key and provider patterns
-- **[shadcn/ui](https://ui.shadcn.com/)** - Inspiration and source for the UI kit component layer
 
 We thank all the maintainers and contributors of these projects for their excellent work.
 

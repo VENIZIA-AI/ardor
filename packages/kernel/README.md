@@ -20,7 +20,7 @@ which re-exports this package.
 | Decorators | `api()` - logs and rethrows a failing API method |
 | Bindings | `CoreBindings`, `LocalStorageKeys` |
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConsts`, `Environments`, `App` |
-| Network | `AxiosNetworkRequest`, `NodeFetchNetworkRequest`, `AxiosFetcher`, `NodeFetcher` |
+| Network | `BaseNetworkRequest`, `NodeFetchNetworkRequest`, `NodeFetcher` (fetch only) |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
 | Utilities | `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse` |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |

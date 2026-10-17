@@ -341,7 +341,7 @@ declare class DefaultNetworkRequestService {
 | `type` | `DATA_ONLY` (`'0'`, default) | `DATA_WITH_COUNT` (`'1'`) |
 |---|---|---|
 | `GET_LIST`, `GET_MANY_REFERENCE` | body wrapped in an array if it is not one; `total` from `content-range`, else the array length | body must be `{ data, count }` or an error is thrown; `data` wrapped in an array if needed; `count` = body `count` else array length; `total` from `content-range` as on the left |
-| every other type | `data` = body; `count` = `parseInt(x-response-count)` - `NaN` when the header is absent | body returned as-is, no validation |
+| every other type | `data` = body; `count` = the integer in `x-response-count`, `undefined` when the header is absent or not a number | body returned as-is, no validation |
 
 `content-range` is read with IGNIS `HttpResponseReader.parseContentRange`: `<unit> <start>-<end>/<total>` and the empty page `<unit> */<total>` both give `<total>`. An absent header gives the page's row count, and so does a malformed one: an unknown total (`records 0-24/*`), a bare number such as `137`, or an empty string. `response.headers` must expose `.get()`, which the `fetch` `Headers` object does.
 

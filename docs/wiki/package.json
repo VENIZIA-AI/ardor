@@ -40,16 +40,6 @@
   "engines": {
     "bun": ">=1.4"
   },
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "content",
-    "!content/changelogs",
-    "!**/*.tsbuildinfo"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "docs:build": "sh ./scripts/docs-build.sh",
     "docs:check-sidebar": "bun scripts/check-sidebar.mts",
