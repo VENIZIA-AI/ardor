@@ -235,6 +235,34 @@ Pass `--source-module` once per package your classes import their stereotypes fr
 
 An IGNIS artifact group (`isArtifactGroup: true`) is also accepted by `artifacts()`. Its kind fields throw when read, so `start()` never reads them. A group that carries `content` (a flat index a bundler plugin inlined) is checked as that index. A group without `content` is resolved first: `start()` awaits its `resolve()`, which imports the application's modules and so decorates their classes, then checks the flat index it returns before it registers anything. A group with neither `content` nor a `resolve` function, such as one made by `ArtifactGroup.define()` or `ArtifactGroup.application()`, cannot be resolved here: `start()` throws and names `AutoArtifacts` and `IgnisArtifactsPlugin`, the two ways to give it its classes.
 
+### Without a generated file: ignis-boot auto
+
+`@venizia/ignis-boot` 0.2.1-4 can also hand the application its own decorated classes, found by the scanner, as `AutoArtifacts`. The scan follows ARDOR's re-exports of the decorators, so it needs no flag.
+
+```ts no-check
+import AutoArtifacts from '@venizia/ignis-boot/auto';
+import { BaseArdorApplication, type IArtifactIndex } from '@venizia/ardor';
+
+class Application extends BaseArdorApplication {
+  override artifacts(): Array<IArtifactIndex> {
+    return [AutoArtifacts];
+  }
+  // ... getAppInfo() and bindContext() as usual.
+}
+```
+
+`AutoArtifacts` is a group with a `resolve()`, so `start()` resolves it before it registers anything. How the list gets built depends on how you run the application:
+
+| How you run it | Result |
+| --- | --- |
+| `bun run` from source | `start()` awaits `AutoArtifacts.resolve()`, which scans the application from its entry file (`Bun.main`), whatever the working directory, and imports the modules. |
+| `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]` | The bundle inlines the class list and carries no scanner. `start()` checks that list like a generated index. A build for the browser works too (no `node:fs` in the bundle). |
+| A Vite build | Not measured. Use `artifacts()` with a generated index. |
+
+Auto registers what is decorated: a class that loses its decorator is simply not registered, in both modes. A generated index fails the boot instead, so prefer it when you want that guarantee.
+
+A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
+
 ## Registration by hand
 
 `service()`, `repository()`, `dataSource()` and `component()` register one class, as in IGNIS. Each returns the `Binding`.
