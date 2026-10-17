@@ -110,12 +110,19 @@ describe('AbstractArdorApplication.artifacts', () => {
       expect(application.get({ key: 'services.IndexedService' })).toBeInstanceOf(IndexedService);
     });
 
-    test('starts when the group carries no content, there is nothing to check', async () => {
+    // `ArtifactGroup.define()` and `application()` build this shape: no content, no own resolve. It
+    // resolves only through a resolver IGNIS's realm holds, which ARDOR cannot call, so binding none
+    // of its classes silently would hide a missing plugin.
+    test('throws, naming the plugin, when the group has neither content nor resolve', async () => {
       const application = createApplication({
         artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
       });
 
-      expect(await application.start()).toBeUndefined();
+      expect(await rejectionOf(application.start())).toMatchObject({
+        message: expect.stringMatching(
+          /\[artifacts\] A group has neither content nor resolve.*IgnisArtifactsPlugin/,
+        ),
+      });
     });
 
     test('throws when the inlined content lists a class that was never discovered', async () => {
@@ -187,6 +194,34 @@ describe('AbstractArdorApplication.artifacts', () => {
       await application.start();
 
       expect(group.resolveCalls).toBe(0);
+    });
+
+    // `ArtifactGroup.pick` builds a slice of another group: it keeps `resolve` and `kinds` and has no
+    // `content` when its source group is resolved from source. `resolve()` returns only the picked kinds.
+    test('resolves a picked slice and checks the kinds it keeps', async () => {
+      const slice = new ResolvingGroup(async () => {
+        @service()
+        class PickedService {}
+
+        return { services: [PickedService] };
+      });
+      Object.assign(slice, { kinds: ['services'] });
+      const application = createApplication({ artifacts: [slice as IArtifactIndex] });
+      await application.start();
+
+      expect(slice.resolveCalls).toBe(1);
+      expect(application.get<object>({ key: 'services.PickedService' }).constructor.name).toBe(
+        'PickedService',
+      );
+    });
+
+    test('starts with an empty slice, which is not an error', async () => {
+      const slice = new ResolvingGroup(async () => ({}));
+      Object.assign(slice, { kinds: ['controllers'] });
+      const application = createApplication({ artifacts: [slice as IArtifactIndex] });
+
+      expect(await application.start()).toBeUndefined();
+      expect(slice.resolveCalls).toBe(1);
     });
 
     test('lets a failing resolve stop the boot', async () => {

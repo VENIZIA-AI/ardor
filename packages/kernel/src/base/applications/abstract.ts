@@ -152,12 +152,22 @@ export abstract class AbstractArdorApplication extends Container implements IArd
         content?: IArtifactIndex;
         resolve?: () => Promise<IArtifactIndex>;
       };
-      const needsResolving =
-        group.isArtifactGroup === true &&
-        group.content === undefined &&
-        typeof group.resolve === 'function';
 
-      resolved.push(needsResolving ? await group.resolve!() : entry);
+      if (group.isArtifactGroup !== true || group.content !== undefined) {
+        resolved.push(entry);
+        continue;
+      }
+
+      // Such a group (`ArtifactGroup.define()`, `application()`) resolves only through a resolver in
+      // IGNIS's realm, which this package cannot reach; skipping it would bind none of its classes.
+      if (typeof group.resolve !== 'function') {
+        throw getError({
+          message:
+            '[artifacts] A group has neither content nor resolve | Return AutoArtifacts from @venizia/ignis-boot/auto, or build with IgnisArtifactsPlugin so the group arrives with its content',
+        });
+      }
+
+      resolved.push(await group.resolve());
     }
 
     return resolved;
