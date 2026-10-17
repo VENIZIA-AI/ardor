@@ -21,6 +21,7 @@
     "@reduxjs/toolkit": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@venizia/ardor": "workspace:*",
+    "@venizia/ardor-admin": "workspace:*",
     "@venizia/ignis-connectors": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
