@@ -1,8 +1,8 @@
 import type { VulcanConfig } from '@venizia/vulcan';
 
-// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). The `okf` and `atlas`
-// blocks are validated today and consumed once VULCAN's tools read project config; until then
-// scripts/vulcan-bridge.ts runs ARDOR's own generators.
+// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). VULCAN's surface and
+// symbols tables read `atlas.packages`; its okf and release tables read no project config yet, so
+// scripts/vulcan-bridge.ts runs ARDOR's own generators for those two.
 export default {
   agents: ['claude'],
 
@@ -40,14 +40,15 @@ export default {
   },
 
   atlas: {
-    // Package directory -> npm name, in release order. `ui-kit` is retired; old changelogs keep it.
+    // Package directory -> npm name, in release order. Every key needs a directory under packages/,
+    // so the retired `ui-kit` is not listed; scripts/atlas-releases.ts still labels its old changelogs.
     packages: {
       kernel: '@venizia/ardor-kernel',
       react: '@venizia/ardor-react',
       admin: '@venizia/ardor-admin',
       ardor: '@venizia/ardor',
-      'ui-kit': '@venizia/ardor-ui-kit',
     },
-    releaseCommit: 'chore(<dir>): release v<version> [<mode>]',
+    // <package> is the `packages` key (the directory): @venizia/ardor-kernel@0.1.4-2 is kernel-v0.1.4-2.
+    tagPattern: '<package>-v<version>',
   },
 } satisfies VulcanConfig;

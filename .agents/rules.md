@@ -111,14 +111,15 @@ Chặn: <what blocks, or "không có">
 
 ## C - Code and writing
 
-The coding style is the base V-C rules. ARDOR keeps the two IGNIS rules the base is retiring - ARDOR
-runs on IGNIS's container and errors - and states its own stack.
+The coding style is the base V-C rules. ARDOR keeps the two IGNIS rules the base retired (V-C-03,
+V-C-05) - ARDOR runs on IGNIS's container and errors - and states its own stack, which the base
+leaves to each project (V-C-18).
 
 | ID | Rule |
 |---|---|
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
-| **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model); the backend stack V-C-18 names in VULCAN 0.1.0-0 does not apply here. |
+| **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model). |
 
 ---
 

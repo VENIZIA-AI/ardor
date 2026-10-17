@@ -41,7 +41,7 @@ IGNIS is the backend framework in the VENIZIA family; ARDOR is its frontend sibl
 
 Consult IGNIS docs for details on the inversion-of-control container semantics (`@venizia/ignis-inversion`) that ARDOR's binding model builds on, and on the filter/query vocabulary (`@venizia/ignis-filter`) used by ARDOR's REST data provider. ARDOR itself has no controllers, repositories, datasources, or server-side routing layer - those concerns, if relevant at all, belong to IGNIS, not to this frontend framework.
 
-The `ardor-atlas` MCP server registered in this repository is an IGNIS package too, `@venizia/ignis-atlas`; its package README links its upstream page at https://ignis.venizia.ai/extensions/atlas. How ARDOR pins and runs it is in [Atlas MCP server](/reference/atlas-mcp.md).
+The `ardor-atlas` MCP server registered in this repository is VULCAN's atlas, `@venizia/vulcan-atlas`, pinned through `@venizia/vulcan` (https://github.com/VENIZIA-AI/vulcan). How ARDOR runs it is in [Atlas MCP server](/reference/atlas-mcp.md).
 
 ## react-admin docs
 

@@ -1,13 +1,13 @@
 ---
 type: Convention
 title: Options objects
-description: New functions take a single options object, never positional parameters - and the positional shapes that still ship.
+description: New functions take one options object first, at most 5 parameters - when a second parameter is allowed, and the positional shapes that still ship.
 resource: packages/react/src/hooks/use-injectable.ts
 tags: [conventions, api-design]
 ---
 
-ARDOR functions and constructors take one options object, never a positional argument list.
-Write `fn(opts: { key: string })`, not `fn(key: string)`. It is rule V-C-02, and new code follows it
+ARDOR functions and constructors take one options object in the first position, never a positional
+argument list. Write `fn(opts: { key: string })`, not `fn(key: string)`. It is rule V-C-02, and new code follows it
 across the kernel, react, and admin packages: services, providers, hooks, and internal utilities
 alike. The positional shapes that still ship are listed under known exceptions below.
 
@@ -23,6 +23,13 @@ avoids the choice entirely.
 
 Mixing the two shapes inside one interface is itself the defect. A reader cannot tell which shape a
 method takes without opening it, and neither can a tool.
+
+## A second parameter, and the cap
+
+Fold everything you can into the first object. A second parameter is allowed only where that
+object cannot carry it - V-C-02's example is a repository method that takes its data and its query
+options separately. Never more than 5 parameters in all; VULCAN's `venizia/max-params-own` lint
+(default 5) enforces the cap once the `@venizia/dev-configs` ARDOR installs ships it.
 
 ## Known exceptions
 

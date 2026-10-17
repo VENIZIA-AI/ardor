@@ -39,7 +39,7 @@ Beyond build/test/lint, the Makefile exposes gate scripts that must pass for a c
 - `make size-check` - measures brotli-compressed bundle size against budgets for kernel, react, admin and ardor, run after a build.
 - `make okf-check` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of).
 - `make wiki-links-check` - validates wiki-to-source links.
-- `make symbols-check` and `make releases-check` - freshness gates for the atlas tables (`make symbols-gen` / `make releases-gen` regenerate them). `symbols-check` reads the built `.d.ts`, so it needs a build first; `releases-check` reads release commits from `git log`, so it needs full history - a shallow clone has none, hence `fetch-depth: 0` in CI. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (a pinned `@venizia/ignis-atlas` through `bunx`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
+- `make symbols-check` and `make releases-check` - freshness gates for the atlas tables (`make symbols-gen` / `make releases-gen` regenerate them). `symbols-check` reads the built `.d.ts`, so it needs a build first; `releases-check` reads release commits from `git log`, so it needs full history - a shallow clone has none, hence `fetch-depth: 0` in CI. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (`vulcan x atlas mcp`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
 
 These gates are what CI and reviewers hold a change to; running `make build-all` green does not by itself mean the change is mergeable.
 
