@@ -7,6 +7,7 @@
 - [S - Security](#s---security)
 - [P - Process](#p---process)
 - [B - Build and quality](#b---build-and-quality)
+- [D - Docs](#d---docs)
 - [C - Code and writing](#c---code-and-writing)
 - [What is actually enforced](#what-is-actually-enforced)
 <!-- okf:generated:contents end -->
@@ -30,6 +31,7 @@ base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C
 | [S - Security](#s---security) | S-01 … S-06 | Secrets, injected content, leaks, auth defaults, dependencies |
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
+| [D - Docs](#d---docs) | D-01 … D-05 | Where a wiki page goes, its style, its wiring and its gates |
 | [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
@@ -119,6 +121,19 @@ Chặn: <what blocks, or "không có">
 | **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `.configs/tsconfig.build.json` excludes them for exactly this reason. |
 | **B-07** | **Agent scripting uses `bun`** (`bun -e '…'`, `bun file.ts`, `Bun.file()`), never Python. |
 | **B-08** | **Test-only concerns go through the committed `.env.test`,** never through a framework default or a source change made for a test's convenience. Tests run on the Bun test runner only - never Jest, Vitest or Mocha. |
+
+## D - Docs
+
+The wiki (`docs/wiki/`, package `@venizia/ardor-docs`) is what people read. VULCAN's `docs-update` skill
+reads its paths from the manifest and applies these rules. D-01 to D-04 mean the same as in IGNIS.
+
+| ID | Rule |
+|---|---|
+| **D-01** | **One page per topic, in its section.** Under `docs/wiki/content/`: a release-worthy change is a `changelogs/YYYY-MM-DD-slug.md` from `changelogs/template.md`, with the `packages:` it covers (`[]` for repository tooling); a changed API surface updates `references/<topic>.md`; an optional add-on (socket client, count provider, custom transport) updates `extensions/<name>.md`; a how-to, tutorial or migration is a `guides/<category>/` page; a rule people should follow is a `best-practices/` page. Edit the page that owns the topic before creating one. |
+| **D-02** | **House style, checked page by page.** The brand is **ARDOR**; a hyphen, never an em-dash; no abbreviated identifiers (`Repository`, not `Repo`); every code sample is TypeScript, compiles against the real source, and imports from `@venizia/ardor` (or a sub-package when the page is about one); native VitePress only, no custom components or CSS, alerts as `> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`; frontmatter `title` under 80 characters and `description` under 160; the first screen says what the page is and shows the first example. The full method is VULCAN's `docs-writing` skill. `make okf-check-strict` checks only the brand and the dash. |
+| **D-03** | **A new page is wired in twice:** the sidebar in `docs/wiki/site/.vitepress/config.mts`, and the `index.md` of its section when it has one. A changelog also gets a row at the top of `changelogs/index.md`. |
+| **D-04** | **Four docs gates, all green:** `make docs` (an orphan page or a dead sidebar link via `check-sidebar.mts`, a `ts` fence that does not compile via `check-snippets.mts`, then a dead link in the build), `make wiki-links-check` (a named source path that does not exist), `make wiki-anchors-check` (a `#fragment` that resolves nowhere; it reads the build), `make lint-wiki` (the wiki's own scripts). A red gate sends you back to the step that caused it; then re-run all four. |
+| **D-05** | **Build before the docs gates.** `check-snippets.mts` compiles every `ts` fence of a page as one program against the packages' `dist`, so run `make build-all` first; a stale `dist` passes or fails a fence for the wrong reason. Mark a deliberate fragment `ts no-check`. |
 
 ## C - Code and writing
 

@@ -75,13 +75,8 @@ const initializedResult = initialized.result as
   | { serverInfo?: { name?: string }; instructions?: string }
   | undefined;
 const serverInfo = initializedResult?.serverInfo;
-// `ardor-atlas` when it serves this checkout alone, `vulcan-atlas` once an `atlas.sources` entry is
-// served beside it; an unreachable source is skipped, so the name depends on the network.
-check(
-  'server is the atlas of this repository',
-  serverInfo?.name === 'ardor-atlas' || serverInfo?.name === 'vulcan-atlas',
-  serverInfo,
-);
+// The name stays `ardor-atlas` when `atlas.sources` serves IGNIS beside this checkout.
+check('server names itself after this repository', serverInfo?.name === 'ardor-atlas', serverInfo);
 for (const line of (initializedResult?.instructions ?? '').split('\n')) {
   if (line.startsWith('- ignis:')) {
     console.log(`info | ${line.slice(0, 160)}`);

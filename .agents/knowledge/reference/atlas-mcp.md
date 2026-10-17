@@ -42,9 +42,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
   remote for the ref's commit and tags on each start. An unreachable source is reported
   `UNAVAILABLE` in the `initialize` reply and the server still serves the rest; with the remote
   down but a cache present it serves the last commit and says `OFFLINE`.
-- **The server's name depends on the sources.** It names itself `ardor-atlas` serving this
-  checkout alone, and `vulcan-atlas` once a source is served beside it - so the name varies with the
-  network.
+- **The server is `ardor-atlas`** whether or not a source is served beside this checkout.
 - **Changing the server itself.** `.mcp.local.example.json` runs the atlas CLI of a VULCAN checkout
   beside this one; copy it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally.
   `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
@@ -122,10 +120,9 @@ frontmatter:
   restarts the server. A shallow clone has no history: the tools answer that no release was found,
   hence `fetch-depth: 0` in CI. A release chain leaves nothing to refresh - `scripts/release.ts`
   and the workflow push the tags and that is all.
-- **A rebuild after the first symbol question.** Symbols are read on the first question that needs
-  them. While nothing is built, each question retries, so a build after the server started is
-  picked up; once symbols are loaded, a later public-surface change needs a restart, and a stale
-  local `dist` answers with stale symbols.
+- **A stale local `dist`.** Symbols are read from the built declarations, which atlas fingerprints
+  before each question and reloads when they moved (`declarationsFingerprintOf`), so a rebuild is
+  picked up without a restart. A source change that was not rebuilt answers with the old symbols.
 - **A changelog page** moves `changes` when it is added, and again when it is committed - an
   uncommitted page has no commit position yet.
 - **A manifest edit** reaches atlas only after `make vulcan-sync`.
@@ -133,7 +130,7 @@ frontmatter:
 
 None of these is a CI gate any more: the old `symbols-check` and `releases-check` are gone, because
 nothing is committed to compare. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
-server against this repository and checks that it names itself `ardor-atlas` or `vulcan-atlas`,
+server against this repository and checks that it names itself `ardor-atlas`,
 lists the five tools, finds `no-auth-paths` in the knowledge corpus and the data provider page in
 the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.
 
