@@ -59,16 +59,16 @@ Only `.md` files are indexed, split into H2 and H3 chunks. Before every call the
 the markdown (file count, newest modification time, total bytes) and rebuilds the index when it
 moved, so an edited concept or wiki page is searchable on the next call - no restart, no generation
 step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page, and
-`log.md` lower still. IGNIS's index is built once per commit, so `get` takes a `source` only when two
-sources hold the same id.
+`log.md` lower still. IGNIS's index is built once per commit. `search` takes a `source` (`ardor` or
+`ignis`) to narrow a query to one project, and `get` takes one only when two sources hold the same id.
 
 ## Tools
 
 | Tool | Answers | Backed by |
 |---|---|---|
-| `search` | Chunks matching a keyword query; `corpus` narrows it to one corpus. Page with `nextOffset`, not `offset + limit` - a reply-size budget can trim a page | The live index; a one-word query that exactly names an exported symbol also carries a `symbol` brief |
+| `search` | Chunks matching a keyword query; `corpus` narrows it to one corpus and `source` to one project. Page with `nextOffset`, not `offset + limit` - a reply-size budget can trim a page | The live index; a one-word query that exactly names an exported symbol also carries a `symbol` brief |
 | `get` | One chunk by a search hit's id, or a whole document with the anchor dropped; a long body pages by `cursor` | The live index |
-| `symbol` | An exported symbol's package, specifier, kind, signature and source `file` and `line`, plus up to five doc chunk ids; an unknown name answers with the closest names | The built `.d.ts` of the `packages` list |
+| `symbol` | An exported symbol's package, specifier, kind, signature and source `file` and `line`, plus up to five doc chunk ids; an unknown name answers `matches: []` with the `closest` names | The built `.d.ts` of the `packages` list |
 | `version` | The `@venizia/*` versions a project declares and has installed, next to the newest release of each live package | The git tags |
 | `changes` | The changelog entries between two versions of one package, or between two dates | The git tags and the changelogs' `packages:` |
 
