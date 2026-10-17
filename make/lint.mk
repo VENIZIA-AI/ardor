@@ -44,8 +44,9 @@ lint-wiki:
 fmt-wiki:
 	@$(call FMT_PROJECT,docs/wiki)
 
-# `scripts/` is not a workspace member: oxfmt and tsc resolve from the root package.json.
+# `scripts/` is not a workspace member: oxfmt resolves from the root package.json, and bun check
+# reads scripts/tsconfig.json.
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
 	@node_modules/.bin/oxfmt -c scripts/.configs/oxfmt.config.mts --check "scripts/**/*.{ts,mts}"
-	@node_modules/.bin/tsc -p scripts/tsconfig.json
+	@bun check --no-pretty -p scripts/tsconfig.json
