@@ -64,6 +64,7 @@ help:
 	@$(HELP_ROW) "releases-gen" "Regenerate .agents/knowledge/reference/releases.json for the Atlas version and changes tools."
 	@$(HELP_ROW) "releases-check" "Gate: the release table matches the release commits and the changelogs."
 	@$(HELP_ROW) "wiki-links-check" "Gate: every source path the wiki and knowledge bundle name exists."
+	@$(HELP_ROW) "wiki-anchors-check" "Gate: every wiki '#fragment' link resolves. Needs a build (make docs)."
 	@$(HELP_ROW) "atlas-smoke" "Gate: the pinned IGNIS atlas serves this checkout over MCP."
 	@$(HELP_ROW) "agent-setup" "Link your agent's tool file + skills to the tracked AGENTS.md."
 	@echo ""

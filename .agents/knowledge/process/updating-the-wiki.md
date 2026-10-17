@@ -36,8 +36,9 @@ tags: [process, docs, wiki]
    runnable snippet tagged `no-check` fails the gate on its own. Only then does VitePress build. A
    separate gate, `make wiki-links-check`, checks that every source path the wiki and the knowledge
    bundle name is tracked by git (`git ls-files`) - a path that exists on disk but is gitignored
-   still fails. It is a standalone Makefile target run by hand - neither `make build-all`,
-   `docs:build` nor CI invokes it.
+   still fails. Neither `make build-all` nor `docs:build` invokes it; the CI gates job does. After the
+   build, `make wiki-anchors-check` reads the emitted html and fails on a `#fragment` link whose
+   heading does not exist - CI runs it right after `make docs`.
 4. Preview locally: `cd docs/wiki && bun run docs:dev` (VitePress dev server). Build the static
    site with `bun run docs:build` (`make docs` also builds it, without the dependency chain the
    other Makefile targets carry - `docs` has no prerequisite target). Clean with `bun run

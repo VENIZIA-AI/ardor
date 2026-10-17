@@ -51,6 +51,15 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make purity-test
 
+      # Reads release commits and changelog pages, not dist - the full history above is what it needs.
+      - name: Release table
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make releases-check
+
+      - name: Wiki source links
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make wiki-links-check
+
   build-and-test:
     name: Build, test and lint
     runs-on: ubuntu-latest
@@ -73,9 +82,9 @@ jobs:
 
       # The clean-install gate loads every entry under Node's ESM loader as well as Bun's.
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Build
         id: build
@@ -84,31 +93,55 @@ jobs:
       # The make targets own the test command (make/test.mk: .env.test, the setup preload and the
       # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.
       - name: Test - kernel
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-kernel
 
       - name: Test - react
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-react
 
       - name: Test - admin
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-admin
 
-      - name: Gate scripts - tests
+      # After the build, unlike IGNIS: the atlas-symbols test reads the symbol table against dist.
+      - name: Gate scripts' own tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-scripts
 
       - name: Layer boundaries
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make layer-check
 
       - name: Import cycles
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make cycles-check
 
       - name: Public surface
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make surface-check
 
+      # Reads the built .d.ts, like the public surface.
+      - name: Symbol table
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make symbols-check
+
       - name: Bundle budgets
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make size-check
+
+      # Compiles every ```ts fence of the wiki against the built packages, and fails on an orphan page.
+      - name: Docs build
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make docs
+
+      - name: Wiki anchors
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make wiki-anchors-check
 
       # The examples are not driven by make: they carry their own package.json scripts.
       - name: Examples build
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: bun scripts/examples.ts build
 
       - name: Lint

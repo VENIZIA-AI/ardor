@@ -78,13 +78,21 @@
     "lodash": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": ">=0.2.2-5 <0.3.0",
-    "@venizia/ignis-filter": ">=0.2.2-2 <0.3.0",
-    "@venizia/ignis-helpers": ">=0.2.2-5 <0.3.0",
-    "@venizia/ignis-inversion": ">=0.2.2-2 <0.3.0",
-    "@venizia/ignis-kernel": ">=0.2.2-5 <0.3.0",
+    "@venizia/ignis-connectors": "^0.2.2-5",
+    "@venizia/ignis-filter": "^0.2.2-2",
+    "@venizia/ignis-helpers": "^0.2.2-5",
+    "@venizia/ignis-inversion": "^0.2.2-2",
+    "@venizia/ignis-kernel": "^0.2.2-5",
     "reflect-metadata": ">=0.2.2",
     "socket.io-client": ">=4.8.3"
+  },
+  "peerDependenciesMeta": {
+    "@venizia/ignis-connectors": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "catalog:",
@@ -105,14 +113,6 @@
     "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
-  },
-  "peerDependenciesMeta": {
-    "@venizia/ignis-connectors": {
-      "optional": true
-    },
-    "socket.io-client": {
-      "optional": true
-    }
   },
   "size-limit": [
     {
