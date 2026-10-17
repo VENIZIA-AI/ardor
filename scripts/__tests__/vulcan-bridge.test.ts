@@ -15,17 +15,7 @@ describe('resolveCommand', () => {
     ]);
   });
 
-  test('each atlas table runs the ARDOR script that owns it', () => {
-    expect(resolveCommand({ args: ['x', 'atlas', 'surface', 'check'] })).toEqual([
-      'bun',
-      'scripts/public-surface.ts',
-      'check',
-    ]);
-    expect(resolveCommand({ args: ['x', 'atlas', 'symbols', 'gen'] })).toEqual([
-      'bun',
-      'scripts/atlas-symbols.ts',
-      'gen',
-    ]);
+  test('the release table runs the ARDOR script that owns it', () => {
     expect(resolveCommand({ args: ['x', 'atlas', 'releases', 'check'] })).toEqual([
       'bun',
       'scripts/atlas-releases.ts',
@@ -33,7 +23,17 @@ describe('resolveCommand', () => {
     ]);
   });
 
-  test('every other command goes to VULCAN unchanged', () => {
+  test('every other command goes to VULCAN unchanged, the surface and symbol tables included', () => {
+    expect(resolveCommand({ args: ['x', 'atlas', 'surface', 'check'] })).toEqual([
+      'bun',
+      'x',
+      '--no-install',
+      'vulcan',
+      'x',
+      'atlas',
+      'surface',
+      'check',
+    ]);
     expect(resolveCommand({ args: ['sync'] })).toEqual([
       'bun',
       'x',

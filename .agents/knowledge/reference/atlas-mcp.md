@@ -1,33 +1,31 @@
 ---
 type: Reference
 title: Atlas MCP server
-description: What the ardor-atlas MCP server is - IGNIS's atlas run against this checkout - its tools and corpora, and the two generated tables behind symbol, version and changes, with why they go stale.
+description: What the ardor-atlas MCP server is - VULCAN's atlas run against this checkout - its tools and corpora, and the two generated tables behind symbol, version and changes, with why they go stale.
 resource: .mcp.json
 tags: [reference, atlas, mcp, tooling]
 ---
 
 `ardor-atlas` is the MCP server agents query for this bundle, the wiki and the changelogs (rule
-P-01). ARDOR ships no atlas package of its own: the server is IGNIS's `@venizia/ignis-atlas`, run
-against this checkout. The markdown it serves is read live; the two JSON tables behind `symbol`,
+P-01). ARDOR ships no atlas package of its own: the server is VULCAN's atlas (`@venizia/vulcan-atlas`,
+pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live; the two JSON tables behind `symbol`,
 `version` and `changes` are generated, committed, and go stale.
 
 ## How it runs
 
-`.mcp.json` registers it as `bunx @venizia/ignis-atlas@<exact version> mcp --root .`.
+`.mcp.json` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
 
-- **Pinned, not `latest`.** The `latest` dist-tag still points at a build that predates
-  family-checkout support, so an unpinned `bunx` cannot serve ARDOR. The same pin is repeated in
-  `scripts/atlas-smoke.ts` - move both together.
+- **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
+  `package.json`; `scripts/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
+  fetching the unrelated unscoped `vulcan` package before `bun install` ran.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** A root is a family checkout when `docs/wiki/content`,
   `docs/wiki/content/changelogs` and `.agents/knowledge` exist and the root `package.json` is named
   `@venizia/<family>-workspace` - here `@venizia/ardor-workspace`, so the server names itself
-  `ardor-atlas`. An explicit `--root` that is not a checkout exits 2 rather than falling back to the
-  IGNIS wiki snapshot packaged inside the release, which would answer from the wrong framework.
-- **Changing the server itself.** `.mcp.local.example.json` runs
-  `bun ../ignis/packages/atlas/src/cli.ts mcp --root .` from an IGNIS checkout beside this one; copy
-  it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally. `make atlas-smoke` takes the
-  same override through `ARDOR_ATLAS_CLI`.
+  `ardor-atlas`.
+- **Changing the server itself.** `.mcp.local.example.json` runs the atlas CLI of a VULCAN checkout
+  beside this one; copy it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally.
+  `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
 
 ## Corpora
 
@@ -53,10 +51,9 @@ step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a
 | `version` | The `@venizia/*` versions a project declares and has installed, next to the newest release of each live package | `reference/releases.json` |
 | `changes` | The changelog entries between two versions of one package, or between two dates | `reference/releases.json` |
 
-Package names are where the IGNIS-built server shows through - its name mapping knows only
-`@venizia/ignis-*`:
+Package names are not interchangeable between the tools:
 
-- `symbol`'s `package` filter matches `ardor-react` or `@venizia/ardor-react`, never a bare `react`.
+- `symbol`'s `package` filter takes the npm name `@venizia/ardor-react`, never a bare `react`.
 - `changes` takes the directory name (`kernel`); `@venizia/ardor-kernel` is an unknown package.
 - `version` never fills `behind` for an ARDOR package, however old the installed version - compare
   `installed` against `snapshot` yourself.
@@ -67,14 +64,16 @@ Both live in `reference/`, come from a script, and are never hand-edited. The se
 at startup, so a regenerated table reaches an MCP client only after the server restarts. A missing or
 unreadable table leaves the server up and the tool answering that the build has no such table.
 
-**`symbols.json`** - `scripts/atlas-symbols.ts`, `make symbols-gen`. Every exported symbol of every
-`.d.ts` entry in the `exports` maps of the five packages, with the kind `public-surface.ts` records, a
+**`symbols.json`** - VULCAN's atlas (`make symbols-gen`), over the `atlas.packages` of
+`.configs/vulcan.config.ts`. Every exported symbol of every `.d.ts` entry in the `exports` maps of
+those packages, with the kind the [public surface](/reference/public-surface.md) records, a
 one-line signature capped at 300 characters, and the `src/` file and line recovered through the
 `.d.ts.map` declaration maps. A symbol re-exported from a third-party declaration carries
 `external: true`, its `file` inside `node_modules`. It reads `dist`, so it throws until the packages
 are built.
 
-**`releases.json`** - `scripts/atlas-releases.ts`, `make releases-gen`. No build needed:
+**`releases.json`** - `scripts/atlas-releases.ts`, `make releases-gen` (through `scripts/vulcan-bridge.ts`
+until VULCAN's release table reads the project config). No build needed:
 
 - `releases` - every `chore(<package>): release v<version> [<mode>]` commit, per package: version,
   date, short sha, and first-parent position, which is what separates two releases of one day.
@@ -99,9 +98,9 @@ are built.
   `release.ts` builds nothing first, so a stale local `dist` writes a stale table.
 
 `make symbols-check` and `make releases-check` compare each committed table with a fresh render, and
-`make test-scripts` runs the same checks (skipped when a table is absent) - in the manually
-dispatched CI, after `make build-all`. Release commits only exist in full history, so both CI jobs
-check out with `fetch-depth: 0`. `make atlas-smoke` is manual and gates nothing: it starts the pinned
+`make test-scripts` runs the release check again (skipped when the table is absent) - in the
+manually dispatched CI, after `make build-all`. Release commits only exist in full history, so both CI jobs
+check out with `fetch-depth: 0`. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
 server against this repository and checks that it names itself `ardor-atlas`, lists the five tools,
 finds `no-auth-paths` in the knowledge corpus and the data provider page in the wiki, and resolves
 `useInjectable` to `@venizia/ardor-react`.

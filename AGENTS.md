@@ -42,8 +42,8 @@ in the knowledge bundle instead.
 Canonical, tool-neutral facts for ARDOR, in Open Knowledge Format (markdown + YAML frontmatter, one
 concept per file, links are the graph edges). Start at `.agents/knowledge/index.md`.
 
-It is also served over MCP by **`ardor-atlas`** (registered in `.mcp.json`): the IGNIS atlas
-(`@venizia/ignis-atlas`) run against this checkout - one server, two frameworks - answering over the
+It is also served over MCP by **`ardor-atlas`** (registered in `.mcp.json`): VULCAN's atlas
+(`vulcan x atlas mcp`) run against this checkout, answering over the
 wiki, the changelogs and this bundle:
 
 | Tool | Use it for |

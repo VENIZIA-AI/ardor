@@ -61,6 +61,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make releases-check
 
+      - name: Gate scripts' own tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make test-scripts
+
       - name: Wiki source links
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make wiki-links-check
@@ -108,11 +112,6 @@ jobs:
       - name: Test - admin
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-admin
-
-      # After the build, unlike IGNIS: the atlas-symbols test reads the symbol table against dist.
-      - name: Gate scripts' own tests
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: make test-scripts
 
       - name: Layer boundaries
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

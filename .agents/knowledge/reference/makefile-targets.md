@@ -16,7 +16,7 @@ tags: [reference, make, build]
 | `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
 | `make all` | `build` | Rebuilds all packages (alias for 'build-all'). |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
-| `make atlas-smoke` | - | Gate: the pinned IGNIS atlas serves this checkout over MCP. |
+| `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |

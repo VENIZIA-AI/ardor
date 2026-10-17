@@ -66,7 +66,7 @@ help:
 	@$(HELP_ROW) "releases-check" "Gate: the release table matches the release commits and the changelogs."
 	@$(HELP_ROW) "wiki-links-check" "Gate: every source path the wiki and knowledge bundle name exists."
 	@$(HELP_ROW) "wiki-anchors-check" "Gate: every wiki '#fragment' link resolves. Needs a build (make docs)."
-	@$(HELP_ROW) "atlas-smoke" "Gate: the pinned IGNIS atlas serves this checkout over MCP."
+	@$(HELP_ROW) "atlas-smoke" "Gate: VULCAN's atlas serves this checkout over MCP."
 	@$(HELP_ROW) "vulcan-sync" "Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links."
 	@$(HELP_ROW) "vulcan-doctor" "Gate: the project follows VULCAN (config, layout, rules, make, adapters, style)."
 	@$(HELP_ROW) "agent-setup" "Alias of vulcan-sync."

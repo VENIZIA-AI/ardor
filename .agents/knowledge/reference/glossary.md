@@ -94,9 +94,9 @@ the next until that package is rebuilt too. See [Monorepo layout](/overview/mono
 [Build system](/process/build-system.md).
 
 **Surface snapshot** - a tracked record of a package's public exports, used to catch accidental
-additions or removals to what a package exposes. ARDOR generates it itself with its own
-`scripts/public-surface.ts` (`make surface-gen`, verified by `make surface-check`), reading the built
-`.d.ts` - the same pattern IGNIS follows for its own packages. The snapshot is
+additions or removals to what a package exposes. VULCAN's atlas generates it (`make surface-gen`,
+verified by `make surface-check`) from the built `.d.ts` of the packages `.configs/vulcan.config.ts`
+lists - the same tool IGNIS uses for its own packages. The snapshot is
 [Public surface](/reference/public-surface.md).
 
 **Changelog entry** - a per-release file describing what changed, who is affected, and any breaking

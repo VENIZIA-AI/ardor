@@ -18,7 +18,7 @@
  * refresh and `version` reports a consumer as current while it is ahead of the table, and `changes`
  * answers "unknown version" for what just shipped. `--no-tables` opts out for a one-package fix.
  *
- * ARDOR ships no atlas package - the MCP server is `@venizia/ignis-atlas` run against this checkout
+ * ARDOR ships no atlas package - the MCP server is VULCAN's atlas run against this checkout
  * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
  */
 

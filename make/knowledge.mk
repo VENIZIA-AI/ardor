@@ -14,6 +14,6 @@ wiki-links-check:
 wiki-anchors-check:
 	@bun scripts/wiki-anchors.ts
 
-# Proves the pinned IGNIS atlas serves this checkout over MCP.
+# Proves VULCAN's atlas serves this checkout over MCP.
 atlas-smoke:
 	@bun scripts/atlas-smoke.ts
