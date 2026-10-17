@@ -571,7 +571,7 @@
       "title": "ARDOR's agent tooling is VULCAN",
       "packages": [],
       "kind": "Enhancement",
-      "order": 9007199254740991
+      "order": 203
     },
     {
       "id": "changelog:2026-10-16-oxlint-oxfmt",
