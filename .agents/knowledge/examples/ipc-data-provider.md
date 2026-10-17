@@ -6,6 +6,18 @@ resource: examples/ipc-data-provider/src/index.ts
 tags: [tutorial, data-provider, ipc, transport, examples]
 ---
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [What send() is the seam for](#what-send-is-the-seam-for)
+- [Step 1: model the transport](#step-1-model-the-transport)
+- [Step 2: subclass IpcDataProvider](#step-2-subclass-ipcdataprovider)
+- [Step 3: what still comes from the base class](#step-3-what-still-comes-from-the-base-class)
+- [Step 4: provide it](#step-4-provide-it)
+- [Step 5: run it](#step-5-run-it)
+- [Takeaway](#takeaway)
+<!-- okf:generated:contents end -->
+
 ## What send() is the seam for
 
 `send()` is the point where a resource name and a set of params turn into a network call and come

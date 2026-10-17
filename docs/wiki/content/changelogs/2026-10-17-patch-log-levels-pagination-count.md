@@ -1,6 +1,7 @@
 ---
 title: PATCH in upper case, log levels, getManyReference without pagination, no NaN count
 description: Four kernel and admin fixes found in the IGNIS alignment audit - the fetcher verb shortcuts send upper-case methods, each log level reaches its own console method, getManyReference accepts a missing pagination, and a missing count header gives undefined instead of NaN.
+packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-17

@@ -1,6 +1,7 @@
 ---
 title: A repository sends what the data provider sends
 description: getDataSourceAuth() fills IGNIS 0.2.1-4's per-send hooks - session headers, timezone, channel, no token on no-auth paths, the server's error code.
+packages: ['@venizia/ardor']
 ---
 
 # Changelog - 2026-10-06

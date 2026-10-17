@@ -4,6 +4,8 @@ title: Makefile targets
 description: Every make target, its prerequisites, and what it does (generated).
 resource: Makefile
 tags: [reference, make, build]
+generated:
+  by: process:okf-gen
 ---
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
@@ -16,10 +18,13 @@ tags: [reference, make, build]
 | `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
 | `make all` | `build` | Rebuilds all packages (alias for 'build-all'). |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
+| `make atlas-releases` | - | Print the release table atlas computes from the tags. |
 | `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
+| `make atlas-symbols` | - | Print the symbols atlas reads from the built .d.ts. Needs a build. |
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |
+| `make changelogs-migrate` | - | Write the packages: list into changelog entries that declare none. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
@@ -38,6 +43,7 @@ tags: [reference, make, build]
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
+| `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
@@ -48,8 +54,8 @@ tags: [reference, make, build]
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
 | `make lint-scripts` | - | Format check + tsc type-check of scripts/. |
 | `make lint-wiki` | - | Lint docs/wiki and check its format. |
-| `make okf-check` | - | Gate: frontmatter, links, coverage, freshness. |
-| `make okf-check-strict` | - | Same as okf-check in ARDOR (VULCAN's name for the full check). |
+| `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |
+| `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |
 | `make okf-gen` | - | Regenerate source-derived reference content. |
 | `make okf-viz` | - | Build the offline knowledge-graph explorer. |
@@ -62,15 +68,11 @@ tags: [reference, make, build]
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
 | `make release` | - | Dispatch the release workflow per package, e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
-| `make releases-check` | - | Gate: the release table matches the release commits and the changelogs. |
-| `make releases-gen` | - | Regenerate .agents/knowledge/reference/releases.json for the Atlas version and changes tools. |
 | `make setup-hooks` | - | Configure git to use .githooks directory. |
 | `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |
 | `make split-report` | - | Report hub files, stray types, missing barrels, long files, cycles (informational). |
 | `make surface-check` | - | Gate: the public surface equals the snapshot. |
 | `make surface-gen` | - | Snapshot every exported symbol into .agents/knowledge/reference/public-surface.md. |
-| `make symbols-check` | - | Gate: the symbol table matches the built .d.ts. |
-| `make symbols-gen` | - | Regenerate .agents/knowledge/reference/symbols.json for the Atlas symbol tool. |
 | `make test` | `test-all` | test-<pkg> for every package with a suite. |
 | `make test-admin` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-all` | `test-kernel test-react test-admin` | test-<pkg> for every package with a suite. |

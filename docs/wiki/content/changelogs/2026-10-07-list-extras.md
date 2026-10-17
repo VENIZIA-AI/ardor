@@ -1,6 +1,7 @@
 ---
 title: List extras on the data provider and the repository
 description: ARDOR adopts IGNIS list extras - getList asks with meta.extra and answers meta.extra, and reads a route's default extras unasked.
+packages: ['@venizia/ardor']
 ---
 
 # Changelog - 2026-10-07

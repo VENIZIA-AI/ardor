@@ -1,104 +1,89 @@
 ---
 name: update-wiki
-description: Update ARDOR framework wiki documentation (changelogs, references, guides) based on recent code changes
+description: Update the ARDOR wiki (guides, references, extensions, best practices, changelogs) after a code change
 user-invocable: true
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, Agent
 ---
 
-# Update Wiki Documentation
+# Update the ARDOR wiki
 
-You are updating the ARDOR framework wiki. Its pages live in `docs/wiki/content/`; the playbook with the full rules is `.agents/knowledge/process/updating-the-wiki.md`.
+The wiki (`docs/wiki/`, package `@venizia/ardor-docs`) is what people read; `.agents/` is what agents
+read. Never copy a page from one into the other. **Source code is the ground truth**: when prose and
+code disagree, the prose is the bug (P-03). Write every page with the `docs-writing` skill (P-14).
 
-## Arguments
+`$ARGUMENTS` says what to document - `add changelog for the count provider`, `update the data
+provider reference`. With no arguments, ask what to document.
 
-`$ARGUMENTS` tells you what to document. Examples:
-- `/update-wiki add changelog for model authorize settings` - create a changelog
-- `/update-wiki update authorization reference docs` - update existing reference
-- `/update-wiki add guide for model authorization setup` - create a guide
+## Checklist
 
-If no arguments, ask what to document.
-
-## Wiki Structure
+Copy this into your status message and tick each step as it passes. Order matters.
 
 ```
-docs/wiki/content/
-├── changelogs/          # Date-prefixed: YYYY-MM-DD-slug.md, plus template.md and index.md
-├── guides/
-│   ├── get-started/
-│   └── migration/
-├── references/          # One page per topic: application, data-provider, hooks, types, ...
-├── extensions/
-└── best-practices/
+- [ ] 1. Code read - the changed sources in packages/*/src, not a diff, not dist/, not another doc
+- [ ] 2. Page picked - edit the page that owns the topic before creating one
+- [ ] 3. Page written - from template.md for a changelog
+- [ ] 4. Self-review passed - every style rule below checked against the page
+- [ ] 5. New page wired in - sidebar + section index (+ changelogs/index.md row)
+- [ ] 6. Gates green - make build-all, then make docs wiki-links-check wiki-anchors-check lint-wiki
 ```
 
-## Process
+## Where pages go
 
-### 1. Understand the changes
+| Type | When | Where (under `docs/wiki/content/`) |
+|---|---|---|
+| **Changelog** | a release-worthy change - feature, breaking change, significant refactor | `changelogs/YYYY-MM-DD-slug.md` |
+| **Reference** | the API surface changed | `references/<topic>.md` |
+| **Extension** | an optional add-on changed (socket client, count provider, custom transport) | `extensions/` |
+| **Guide** | how-to, tutorial, migration | `guides/<category>/` |
+| **Best practice** | a rule or pattern people should follow | `best-practices/` |
 
-- Read the relevant source files that were changed
-- Use `git diff develop` or `git log --oneline -20` to understand recent changes
-- Identify: what changed, why, breaking changes, new APIs, migration steps
+A second page on the same subject is how the wiki drifts. A changelog starts from
+`changelogs/template.md`, keeps only the sections that apply, and says what changed, who is affected
+and how to migrate - it is not a commit log.
 
-### 2. Determine doc type
+## Style rules (step 4)
 
-| Type | When | Naming |
-|------|------|--------|
-| **Changelog** | New feature, breaking change, significant refactor | `changelogs/YYYY-MM-DD-slug.md` |
-| **Reference** | New/updated API surface | `references/<topic>.md` |
-| **Guide** | How-to, tutorial, concept explanation | `guides/<category>/file.md` |
+Check the page against each rule; fix and re-check until all pass:
 
-### 3. Write the documentation
+- [ ] The brand is **ARDOR**, always. Hyphen `-`, never an em-dash.
+- [ ] No abbreviated identifiers (`Repository`, not `Repo`).
+- [ ] Every code sample is TypeScript and compiles against the real source - names and signatures
+      verified in `packages/`. Examples import from `@venizia/ardor`, or from a sub-package path
+      when the page is about one.
+- [ ] Native VitePress only - no custom components, no custom CSS. Alerts are `> [!NOTE]`,
+      `> [!WARNING]`, `> [!TIP]`.
+- [ ] Frontmatter `title` under 80 characters, `description` under 160.
+- [ ] The first screen says what the page is and shows the first example.
 
-#### For changelogs
+`make okf-check-strict` machine-checks the brand and the dash rule in the knowledge bundle only. The
+rest is this review.
 
-Follow the template at `docs/wiki/content/changelogs/template.md`, and add a row to `docs/wiki/content/changelogs/index.md`. Key sections:
-- Frontmatter with title and description
-- Overview bullet points
-- Breaking Changes (with before/after code)
-- New Features (with problem/solution/example/benefits)
-- Files Changed table
-- Migration Guide (if breaking)
-- "No Breaking Changes" section (if none)
+## Wiring and gates (steps 5-6)
 
-Only include sections that apply. Remove empty template sections.
+A new file needs these edits, or the build fails:
 
-#### For references
+1. The sidebar in `docs/wiki/site/.vitepress/config.mts`.
+2. The `index.md` of its section, if it has one - for a changelog, a row in `changelogs/index.md`.
 
-- Start with a brief description of what the module does
-- Document every public interface, class, method, decorator
-- Include TypeScript signatures
-- Add usage examples
-- Document options objects with all fields
+Then run, from the repo root:
 
-#### For guides
+```bash
+make build-all     # check-snippets compiles every ts fence against the built dist
+make docs wiki-links-check wiki-anchors-check lint-wiki
+```
 
-- Start with what the reader will learn
-- Step-by-step instructions
-- Complete, runnable code examples
-- Link to relevant reference docs
+| Gate | Fails on |
+|---|---|
+| `make docs` | an orphan page or a dead sidebar link (`check-sidebar.mts`), a ts fence that does not compile (`check-snippets.mts`), then a dead link in the build |
+| `wiki-links-check` | a named source path that does not exist |
+| `wiki-anchors-check` | a `#fragment` that resolves nowhere (reads the build) |
+| `lint-wiki` | the wiki's own scripts and their format |
 
-### 4. Update sidebar (if new file)
+A red gate sends you back to the step that caused it. Fix it and re-run all four.
 
-If you created a new doc file, update the VitePress sidebar config:
+## Done
 
-**File:** `docs/wiki/site/.vitepress/config.mts`
+If the change also touched facts an agent reads, update the knowledge bundle in the same change
+(P-03) - that is the `knowledge-sync` skill's job, not this one.
 
-Add the new page to the appropriate sidebar section.
-
-### 5. Update index pages
-
-If the doc belongs to a category with an `index.md`, add a link to the new doc there.
-
-### 6. Run the gates
-
-From `docs/wiki`: `bun scripts/check-sidebar.mts` and `bun scripts/check-snippets.mts` (snippets compile against the built `dist`, so build first). From the repo root: `make wiki-links-check`.
-
-## Style Rules
-
-- Use TypeScript for all code examples
-- Import from `@venizia/ardor` in examples, or from a sub-package path when the page is about one (`@venizia/ardor-kernel/repository`)
-- Match the technical depth of existing docs - direct, no hand-holding
-- Use GitHub-flavored markdown alerts: `> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`
-- Tables for structured comparisons (files changed, API surfaces, config options)
-- Before/after code blocks for breaking changes
-- Keep frontmatter `title` under 80 chars, `description` under 160 chars
+**Do not commit.** Leave the diff for the user (W-01).

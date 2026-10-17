@@ -1,6 +1,7 @@
 ---
 title: useDocumentTitle no longer overwrites a newer title on unmount
 description: useDocumentTitle puts back the previous tab title only while the tab still shows its own, so a locale switch or a twin call no longer leaves a stale title.
+packages: ['@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-10

@@ -1,6 +1,7 @@
 ---
 title: Const-value types keep their literals when copied
 description: TConstValue, TStringConstValue, TNumberConstValue and TStatusFromClass no longer widen to string or number when a value is copied into an object literal or a let.
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-09

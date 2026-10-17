@@ -37,9 +37,9 @@ Beyond build/test/lint, the Makefile exposes gate scripts that must pass for a c
 - `make cycles-check` - fails on an import cycle in any built `dist`; bun turns every member of a cycle into a lazy initializer, so a barrel `export *` over one can publish an undefined export.
 - `make surface-check` - compares the built public surface (read from `.d.ts` files) against the committed snapshot; run `make surface-gen` after `make build-all` to regenerate that snapshot when the surface intentionally changes. See [Public surface](/reference/public-surface.md).
 - `make size-check` - measures brotli-compressed bundle size against budgets for kernel, react, admin and ardor, run after a build.
-- `make okf-check` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of).
+- `make okf-check-strict` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of) and adds the house rules: links, style, coverage, freshness and a `packages:` list on every changelog entry. This is the CI gate; `make okf-check` alone checks OKF v0.2 conformance only.
 - `make wiki-links-check` - validates wiki-to-source links.
-- `make symbols-check` and `make releases-check` - freshness gates for the atlas tables (`make symbols-gen` / `make releases-gen` regenerate them). `symbols-check` reads the built `.d.ts`, so it needs a build first; `releases-check` reads release commits from `git log`, so it needs full history - a shallow clone has none, hence `fetch-depth: 0` in CI. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (`vulcan x atlas mcp`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
+- `make atlas-symbols` and `make atlas-releases` - print what atlas reads: the symbols from the built `.d.ts` (build first) and the release table computed from the git tags. There is nothing to regenerate or commit, so no freshness gate; CI still checks out with `fetch-depth: 0` so the tags exist. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (`vulcan x atlas mcp`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
 
 These gates are what CI and reviewers hold a change to; running `make build-all` green does not by itself mean the change is mergeable.
 
@@ -49,6 +49,6 @@ These gates are what CI and reviewers hold a change to; running `make build-all`
 2. `make <affected-pkg>` (and its downstream packages, in order) to rebuild through `dist/`.
 3. `make test` (or the specific `test-<pkg>` targets) - remember these test `dist/`, so step 2 must have succeeded first.
 4. `make lint-all`, and `bun scripts/examples.ts check` when an example or a public API changed.
-5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `cycles-check`, `surface-check`, `size-check`, `okf-check`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check`.
+5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `cycles-check`, `surface-check`, `size-check`, `okf-check-strict`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check-strict`.
 
 For the wider workflow this build cycle sits inside, see [Onboarding](/overview/onboarding.md) and [Monorepo layout](/overview/monorepo-layout.md).

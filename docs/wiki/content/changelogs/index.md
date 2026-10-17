@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-17 | [ARDOR's agent tooling moves to VULCAN 0.2.0-1](./2026-10-17-vulcan-0-2-0) | Enhancement |
 | 2026-10-17 | [ARDOR's agent tooling is VULCAN](./2026-10-17-agent-tooling-vulcan) | Enhancement |
 | 2026-10-17 | [PATCH in upper case, log levels, getManyReference without pagination, no NaN count](./2026-10-17-patch-log-levels-pagination-count) | Bug Fix |
 | 2026-10-16 | [Every package builds, lints and formats through make](./2026-10-16-make-per-package) | Enhancement |

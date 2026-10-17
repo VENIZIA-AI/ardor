@@ -8,6 +8,17 @@ tags: [architecture, dependency-injection, stereotypes, registration, hooks, ign
 
 # Artifact registration
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [Declare](#declare)
+- [Discover](#discover)
+- [Bind](#bind)
+- [Resolve](#resolve)
+- [Reading a failed resolve](#reading-a-failed-resolve)
+- [Related](#related)
+<!-- okf:generated:contents end -->
+
 A class reaches a component in four steps, and each step lives in a different place: the stereotype
 **declares** it (IGNIS, `@venizia/ignis-kernel/metadata`), the import **discovers** it, the
 application **binds** it (`packages/kernel/src/base/applications/abstract.ts`), and a hook

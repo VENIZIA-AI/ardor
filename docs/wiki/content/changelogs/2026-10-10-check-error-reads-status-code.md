@@ -1,6 +1,7 @@
 ---
 title: checkError redirects on a 401 or 403 from the data provider
 description: DefaultAuthProvider.checkError falls back to statusCode, so an ApplicationError thrown by the data provider now reaches its 401 and 403 branches.
+packages: ['@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-10

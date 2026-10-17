@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.3
         with:
-          # The atlas release table is generated from release commits; a shallow clone has none.
+          # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0
 
       - name: Setup Bun
@@ -50,16 +50,11 @@ jobs:
 
       - name: Knowledge bundle
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: make okf-check
+        run: make okf-check-strict
 
       - name: Browser purity probe
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make purity-test
-
-      # Reads release commits and changelog pages, not dist - the full history above is what it needs.
-      - name: Release table
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: make releases-check
 
       - name: Gate scripts' own tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -77,7 +72,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.3
         with:
-          # The atlas release table is generated from release commits; a shallow clone has none.
+          # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0
 
       - name: Setup Bun
@@ -124,11 +119,6 @@ jobs:
       - name: Public surface
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make surface-check
-
-      # Reads the built .d.ts, like the public surface.
-      - name: Symbol table
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: make symbols-check
 
       - name: Bundle budgets
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
