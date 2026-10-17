@@ -34,7 +34,7 @@ For anything that issues real HTTP requests - notably `DefaultNetworkRequestServ
 
 ## What CI runs
 
-CI (`.github/workflows/ci.yml`) is manual-only (`workflow_dispatch`), by deliberate decision - the rationale lives in that workflow's header comment. It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing.
+CI (`.github/workflows/ci.yml`) is manual-only (`workflow_dispatch`), by deliberate decision - the rationale lives in that workflow's header comment. It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing. Every workflow runs on `ubuntu-24.04`, pinned: GitHub moves the `ubuntu-latest` label to Ubuntu 26 from 2026-10-19, and the move happens here only after a trial run of the gates on `ubuntu-26.04`.
 
 Two jobs:
 
