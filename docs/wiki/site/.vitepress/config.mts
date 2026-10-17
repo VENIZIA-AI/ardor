@@ -89,6 +89,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-18',
+        collapsed: true,
+        items: [
+          {
+            text: 'IGNIS 0.2.2-9 chain',
+            link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
+          },
+        ],
+      },
+      {
         text: '2026-10-17',
         collapsed: true,
         items: [

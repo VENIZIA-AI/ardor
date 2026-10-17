@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import { io, Socket, type SocketOptions } from 'socket.io-client';
+import { io, type Socket, type SocketOptions } from 'socket.io-client';
 
 import { type AnyType } from '@/common/types';
 import { BaseHelper } from './base-helper';

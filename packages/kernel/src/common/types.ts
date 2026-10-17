@@ -2,11 +2,11 @@ import { type TClass } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
-  Environments,
-  RequestBodyTypes,
-  RequestCountData,
-  RequestMethods,
-  RequestTypes,
+  type Environments,
+  type RequestBodyTypes,
+  type RequestCountData,
+  type RequestMethods,
+  type RequestTypes,
 } from './constants';
 
 export type NumberIdType = number;
