@@ -17,7 +17,7 @@ make vulcan-doctor    # checks the project still follows VULCAN
 | Read before you touch anything | What lives there |
 |---|---|
 | **`node_modules/@venizia/vulcan/base/rules.md`** | **The VULCAN base rules** - write boundaries, security, process, build and the coding style every VENIZIA project shares. Cited `V-W-01`, `V-C-02`. |
-| **[`.agents/rules.md`](.agents/rules.md)** | **ARDOR's rules** - what ARDOR adds to the base: write boundaries (W), security (S), process (P), build (B), code (C). Cited by bare ID. |
+| **[`.agents/rules.md`](.agents/rules.md)** | **ARDOR's rules** - what ARDOR adds to the base: write boundaries (W), security (S), process (P), build (B), docs (D), code (C). Cited by bare ID. |
 | **[`.agents/knowledge/index.md`](.agents/knowledge/index.md)** | **THE facts** - what ARDOR is and why, the monorepo layout, design decisions, the gotchas, per-package concepts, conventions, playbooks. |
 
 All three are mandatory, for every agent, on every task. The two rules that cost the most when skipped:
@@ -28,7 +28,7 @@ All three are mandatory, for every agent, on every task. The two rules that cost
 
 Nothing lives in two places. Every piece of project information has exactly one home:
 
-- **`.agents/`** - what agents read: ARDOR's rules, the knowledge bundle, the project skills and okf renderers.
+- **`.agents/`** - what agents read: ARDOR's rules, the knowledge bundle and the okf renderers.
 - **`docs/wiki/`** - the human-facing VitePress site: guides, references, changelogs.
 
 Source code is the ground truth for both. When prose and code disagree, the code wins and the prose
@@ -65,15 +65,14 @@ periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-a
 
 ```
 .agents/
-├── rules.md          # ARDOR's rules - W · S · P · B · C, cited by ID, on top of the VULCAN base
+├── rules.md          # ARDOR's rules - W · S · P · B · D · C, cited by ID, on top of the VULCAN base
 ├── knowledge/        # THE knowledge bundle
 ├── okf/              # ARDOR's okf renderers (providers, hooks-and-services) - named in .configs/vulcan.config.ts
-├── skills/           # ARDOR's own skills (update-wiki) - linked into .claude/skills/ by vulcan-sync
 ├── vulcan.manifest.json # written by vulcan-sync; another project's atlas reads ARDOR through it
 └── plans/            # gitignored - saved specs and plans, local to each developer
 ```
 
-VULCAN ships the shared skills (`knowledge-sync`, `docs-writing`) and hooks (the rules digest,
+VULCAN ships the shared skills (`knowledge-sync`, `docs-writing`, `docs-update`, which applies the D rules of `rules.md`) and hooks (the rules digest,
 which also prints the minimap block of `rules.md`, and `guard-writes`); a project adds its own and never redefines a shipped one. A skill is a procedure
 you follow; a concept is material you consult. Neither is duplicated in the other. Before adding a
 skill, check the task is not already covered by one here, by VULCAN or by Claude Code.
