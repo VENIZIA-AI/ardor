@@ -562,7 +562,7 @@
         "kernel"
       ],
       "kind": "Bug Fix",
-      "order": 9007199254740991
+      "order": 201
     },
     {
       "id": "changelog:2026-10-16-oxlint-oxfmt",
