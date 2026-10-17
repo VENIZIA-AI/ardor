@@ -65,6 +65,7 @@ How the code is written. Read before writing any.
 - [Testing conventions](/conventions/testing-conventions.md)
 - [Docs writing style](/conventions/docs-writing-style.md)
 - [Gotchas](/conventions/gotchas.md)
+- [File splitting](/conventions/file-splitting.md)
 
 ## Process
 

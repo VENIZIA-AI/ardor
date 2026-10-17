@@ -1,7 +1,7 @@
 # The knowledge bundle (.agents/knowledge), the generated reference tables and the wiki link gate.
 
 .PHONY: agent-setup okf-check okf-gen okf-coverage okf-viz split-report surface-gen surface-check \
-        symbols-gen symbols-check releases-gen releases-check wiki-links-check atlas-smoke
+        symbols-gen symbols-check releases-gen releases-check wiki-links-check wiki-anchors-check atlas-smoke
 
 agent-setup:
 	@bun .agents/plugin/setup.ts
@@ -44,6 +44,10 @@ releases-check:
 
 wiki-links-check:
 	@bun scripts/wiki-source-links.ts
+
+# Dead `#fragment` links. Reads the emitted ids, so it needs a build - run `make docs` first.
+wiki-anchors-check:
+	@bun scripts/wiki-anchors.ts
 
 # Proves the pinned IGNIS atlas serves this checkout over MCP.
 atlas-smoke:

@@ -42,15 +42,13 @@ completeness + usability critics.
    facts `gen` already fixes. `check` must be clean before proceeding.
 2. **Anchor the last sync by COMMIT, not by date:**
    ```bash
-   LAST_SYNC=$(git log -1 --format=%H -- .agents/knowledge/log.md)
+   LAST_SYNC=$(git log -1 --format=%H -G '^## [0-9-]+ - knowledge-sync' -- .agents/knowledge/log.md)
    ```
-   The scan range is `$LAST_SYNC^..HEAD` - it starts AT the anchor, not after it. The anchor is often
-   not a sync at all but a code commit that wrote its own log line (P-03), and a range that excludes
-   it means no sync ever re-reads that commit's knowledge edits. Re-verifying an anchor that really
-   was a sync is cheap: it touched only `.agents/knowledge/`, which the scan ignores. The log entry's
-   date heading is only a display label.
+   The scan range is `$LAST_SYNC..HEAD`. Anchor on the sync's own log heading, never on the last
+   edit of `log.md`: P-03 makes every ordinary change append to it, so the last edit is almost never
+   the last sync and the range would come out empty. The date in the heading is only a display label.
 
-   **If `LAST_SYNC` is empty** the bundle has never been committed (or `log.md` was renamed). Do not
+   **If `LAST_SYNC` is empty** no entry carries the `knowledge-sync` heading yet (or `log.md` was renamed). Do not
    build a `..HEAD` range from it - that silently means "everything". Either anchor on the commit
    that introduced the bundle (`git log --diff-filter=A --format=%H -- .agents/knowledge/index.md`)
    or run `full` mode, which does not depend on the range for its spot-auditors.
@@ -59,10 +57,10 @@ completeness + usability critics.
    last sync get double-counted. A hash range has neither problem.
 3. Changed-area scan:
    ```bash
-   git log $LAST_SYNC^..HEAD --no-merges --name-only --format= -- packages/ examples/ Makefile .github/ .githooks/ scripts/ \
+   git log $LAST_SYNC..HEAD --no-merges --name-only --format= -- packages/ examples/ Makefile make/ .github/ .githooks/ scripts/ \
      | sort -u | awk -F/ '{print $1"/"$2}' | sort | uniq -c | sort -rn
-   git log $LAST_SYNC^..HEAD --no-merges --oneline
-   git diff HEAD --stat -- packages/ examples/ Makefile .github/ .githooks/ scripts/ package.json
+   git log $LAST_SYNC..HEAD --no-merges --oneline
+   git diff HEAD --stat -- packages/ examples/ Makefile make/ .github/ .githooks/ scripts/ package.json
    ```
    The last line is uncommitted code. `okf-gen` already regenerated from the working tree and the
    verifiers read the working tree, so uncommitted changes count as changed areas too - say which
@@ -89,7 +87,7 @@ as concepts are added.
 | `packages/admin` (hooks, broad/other) | packages/admin, architecture/error-flow, conventions/react-hooks |
 | `packages/ardor` | packages/ardor, overview/what-is-ardor |
 | `examples/<x>` | examples/&lt;x&gt; |
-| `Makefile`, `scripts/`, `.githooks/`, root `package.json` | process/build-system, process/testing, process/git-workflow, process/release-publish, overview/build-run-test, conventions/gotchas |
+| `Makefile`, `make/`, `scripts/`, `.githooks/`, root `package.json` | process/build-system, process/testing, process/git-workflow, process/release-publish, overview/build-run-test, conventions/gotchas |
 | `.github/workflows/` | process/release-publish, process/testing, process/updating-the-wiki |
 | `docs/wiki` | process/updating-the-wiki |
 
@@ -109,7 +107,7 @@ Workflow({
     repo: '<git rev-parse --show-toplevel>',
     mode: '<delta|full>',
     since: '<YYYY-MM-DD>',              // display label for prompts/log
-    gitRange: '<LAST_SYNC hash>^..HEAD', // what verifiers actually diff - includes the anchor
+    gitRange: '<LAST_SYNC hash>..HEAD', // what verifiers actually diff
     deltaTargets: [...],
   },
 })
@@ -129,7 +127,7 @@ and runs one Opus applier per file under strict curation rules. Returns
 2. **Gates:** `make okf-gen`, then `make okf-check` (must be OK), then
    `bun .agents/knowledge-tools/okf.ts coverage --min 100` (structural must stay 100% - every
    `packages/*` and `examples/*` needs a concept; the number grows as the repo does).
-3. **Log:** prepend an entry to `.agents/knowledge/log.md` in the existing style: date + mode, a
+3. **Log:** prepend an entry to `.agents/knowledge/log.md` headed `## YYYY-MM-DD - knowledge-sync (<mode>): <summary>` (the `knowledge-sync` word is what Step 0 anchors on), then a
    method one-liner (N verifiers / findings / confirmed / files touched), bullets for the notable
    corrections (the ones that change how someone works), creations, dedups, gate status. **This entry
    is the anchor the next sync reads** - its commit is what `LAST_SYNC` resolves to.

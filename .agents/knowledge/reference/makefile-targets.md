@@ -8,7 +8,7 @@ tags: [reference, make, build]
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**74 targets.**
+**75 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -85,4 +85,5 @@ tags: [reference, make, build]
 | `make update-ardor` | - | Force update one package's dependencies from NPM. |
 | `make update-kernel` | - | Force update one package's dependencies from NPM. |
 | `make update-react` | - | Force update one package's dependencies from NPM. |
+| `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |
 | `make wiki-links-check` | - | Gate: every source path the wiki and knowledge bundle name exists. |
