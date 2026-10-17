@@ -81,7 +81,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.2.0-5",
+    "@venizia/vulcan": "0.2.0-6",
     "oxfmt": "catalog:",
     "typescript": "catalog:"
   }
