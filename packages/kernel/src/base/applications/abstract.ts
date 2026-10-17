@@ -17,6 +17,7 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IArdorApplication,
+  type IArtifactIndex,
   type IFeatureBase,
   type ValueOrPromise,
 } from '@/common';
@@ -64,6 +65,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
     const targets = registry.getDiscoveredArtifacts();
+    this.assertIndexed({ indexes: this.artifacts(), discovered: new Set(targets) });
 
     // Two classes a minifier named alike derive one key, and the second would silently replace the
     // first. Checked here, never at decoration, so a hot reload that re-decorates a class is no error.
@@ -106,9 +108,37 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     return {};
   }
 
+  /**
+   * The generated artifact indexes (`ignis-artifacts generate`). Discovery still binds every
+   * stereotyped class; an index only holds each class by value and has `start()` check it.
+   */
+  artifacts(): Array<IArtifactIndex> {
+    return [];
+  }
+
   /** The feature packages this application mounts, bound under `CoreBindings.FEATURES`. */
   features(): Array<IFeatureBase> {
     return [];
+  }
+
+  /**
+   * Every class an index lists must have been discovered: one that was not lost its decorator, or
+   * the index is stale, and its binding was silently never made.
+   */
+  private assertIndexed(opts: { indexes: Array<IArtifactIndex>; discovered: Set<unknown> }): void {
+    const { indexes, discovered } = opts;
+
+    for (const index of indexes) {
+      for (const [kind, targets] of Object.entries(index)) {
+        for (const target of targets ?? []) {
+          if (!discovered.has(target)) {
+            throw getError({
+              message: `[artifacts] '${kind}' lists ${target.name}, which was never discovered | Decorate it with its stereotype and regenerate the index`,
+            });
+          }
+        }
+      }
+    }
   }
 
   /**

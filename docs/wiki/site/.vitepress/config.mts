@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Generated artifact index',
+            link: '/changelogs/2026-10-17-generated-artifact-index',
+          },
+          {
             text: 'VULCAN 0.2.0-1',
             link: '/changelogs/2026-10-17-vulcan-0-2-0',
           },

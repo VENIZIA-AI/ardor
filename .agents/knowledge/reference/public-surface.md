@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (121)
+### `@venizia/ardor-kernel` (122)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -47,6 +47,7 @@ generated:
 - `HeaderConsts` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
+- `IArtifactIndex` interface
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
@@ -235,7 +236,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (181)
+### `@venizia/ardor` (182)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -281,6 +282,7 @@ generated:
 - `IApplication` interface
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
+- `IArtifactIndex` interface
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface

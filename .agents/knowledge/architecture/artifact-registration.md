@@ -70,6 +70,17 @@ There is no filesystem scan - a class exists at run time only because something 
 why a browser bundle needs nothing extra. A file nobody imports registers nothing, and neither does an
 `import type`, which the compiler erases.
 
+An application can hold its classes by value instead of by side-effect import: `artifacts()` returns
+the indexes `ignis-artifacts generate` (`@venizia/ignis-boot`) emits, typed `IArtifactIndex` in
+`packages/kernel/src/common/types.ts` - one class list per kind, the same six fields as IGNIS's
+index. The index adds no binding; discovery still binds every stereotyped class.
+`registerArtifacts()` first throws `[artifacts] '<kind>' lists <Class>, which was never
+discovered` for a listed class with no stereotype, a stale index or a decorator lost upstream - the
+same check `features()` runs on its configurations. ARDOR does not reuse IGNIS's `IArtifactIndex`:
+it lives in the server entry of `@venizia/ignis-kernel`, which a browser bundle never imports. The
+generator matches stereotypes by the module they are imported from, so a browser project passes
+`--source-module @venizia/ardor` (and `@venizia/ardor-kernel`); without it the index is empty.
+
 The list lives on ignis-kernel's `MetadataRegistry`, whose `getInstance()` anchors one instance on
 `globalThis` under a `Symbol.for` key, so every copy of `@venizia/ignis-kernel` in a realm shares it.
 It is process-wide, not per application: two applications in one process bind the same classes. A
