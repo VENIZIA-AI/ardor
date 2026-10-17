@@ -45,7 +45,7 @@ help:
 	@$(HELP_ROW) "size-check" "Gate: every bundle within its size-limit budget. Needs a build."
 	@echo ""
 	@echo "Repository scripts and wiki:"
-	@$(HELP_ROW) "lint-scripts" "Format check + tsc type-check of scripts/."
+	@$(HELP_ROW) "lint-scripts" "Format check + bun check type-check of scripts/."
 	@$(HELP_ROW) "lint-wiki" "Lint docs/wiki and check its format."
 	@$(HELP_ROW) "fmt-wiki" "Apply the lint fixes and oxfmt to docs/wiki."
 	@$(HELP_ROW) "test-scripts" "Run the repository gate scripts' own regression tests."

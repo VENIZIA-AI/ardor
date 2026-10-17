@@ -52,7 +52,7 @@ generated:
 | `make lint-kernel` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
-| `make lint-scripts` | - | Format check + tsc type-check of scripts/. |
+| `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
 | `make lint-wiki` | - | Lint docs/wiki and check its format. |
 | `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |
 | `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |

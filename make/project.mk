@@ -3,7 +3,9 @@
 #   include ../../make/project.mk
 #
 # Every tool comes from the package's node_modules/.bin, by absolute path: a recipe never depends on
-# PATH (`sh ./scripts/build.sh` once died at `tsc-alias: not found`).
+# PATH (`sh ./scripts/build.sh` once died at `tsc-alias: not found`). The one exception is bun itself,
+# which runs every recipe. Type checking is `bun check` (same diagnostics as `tsc --noEmit`, a
+# fraction of the time); tsc still emits the JS and the .d.ts.
 #
 # Two programs per package. tsconfig.json type-checks src and the tests (Bun reads it too);
 # .configs/tsconfig.build.json emits dist without the tests - a dist that carries __tests__ makes
@@ -11,6 +13,7 @@
 
 BIN := $(CURDIR)/node_modules/.bin
 TSC := $(BIN)/tsc
+TYPECHECK := bun check --no-pretty
 BUILD_TSCONFIG := .configs/tsconfig.build.json
 
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
@@ -19,8 +22,8 @@ FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
 
 # The build program too: it drops the Bun types, so a Bun global in src fails here, not in a consumer.
 typecheck:
-	@$(TSC) --noEmit -p tsconfig.json
-	@$(TSC) --noEmit -p $(BUILD_TSCONFIG)
+	@$(TYPECHECK) -p tsconfig.json
+	@$(TYPECHECK) -p $(BUILD_TSCONFIG)
 
 # tsc-alias reads the ROOT tsconfig: pointed at a .configs/ file it resolves `paths` against
 # .configs/ and leaves every `@/` import unrewritten. --resolve-full-paths: Node's ESM loader refuses

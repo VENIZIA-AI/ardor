@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-17 | [Type checking runs on bun check](./2026-10-17-bun-check) | Enhancement |
 | 2026-10-17 | [VULCAN 0.2.0-2, docs-update and the D rules](./2026-10-17-vulcan-0-2-0-2) | Enhancement |
 | 2026-10-17 | [A generated artifact index for the application](./2026-10-17-generated-artifact-index) | Feature |
 | 2026-10-17 | [ARDOR's agent tooling moves to VULCAN 0.2.0-1](./2026-10-17-vulcan-0-2-0) | Enhancement |

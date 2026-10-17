@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Type checking runs on bun check',
+            link: '/changelogs/2026-10-17-bun-check',
+          },
+          {
             text: 'VULCAN 0.2.0-2 and the D rules',
             link: '/changelogs/2026-10-17-vulcan-0-2-0-2',
           },
