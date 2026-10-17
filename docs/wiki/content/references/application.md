@@ -233,7 +233,7 @@ The index adds no binding. Discovery still binds every stereotyped class; the in
 
 Pass `--source-module` once per package your classes import their stereotypes from (`@venizia/ardor`, `@venizia/ardor-kernel`). Without it the generator reads only IGNIS's own imports and finds none of your classes. `controllers` stays empty in a browser application.
 
-An IGNIS artifact group (`isArtifactGroup: true`) is also accepted by `artifacts()`. Its kind fields throw when read, so `start()` never reads them: it checks the flat index a bundler plugin inlined as its `content`, and skips a group with no `content`.
+An IGNIS artifact group (`isArtifactGroup: true`) is also accepted by `artifacts()`. Its kind fields throw when read, so `start()` never reads them. A group that carries `content` (a flat index a bundler plugin inlined) is checked as that index. A group without `content` is resolved first: `start()` awaits its `resolve()`, which imports the application's modules and so decorates their classes, then checks the flat index it returns before it registers anything.
 
 ## Registration by hand
 
