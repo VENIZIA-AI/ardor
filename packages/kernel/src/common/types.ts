@@ -156,6 +156,20 @@ export interface IFeatureBase {
   permissions?: Array<string>;
 }
 
+/**
+ * The index `ignis-artifacts generate` (from `@venizia/ignis-boot`) emits: every stereotyped class,
+ * by value, per kind. Referencing them keeps a bundler from dropping a module nothing else imports,
+ * and `start()` checks each was discovered. `controllers` stays empty in a browser application.
+ */
+export interface IArtifactIndex {
+  configurations?: ReadonlyArray<TClass<unknown>>;
+  dataSources?: ReadonlyArray<TClass<unknown>>;
+  components?: ReadonlyArray<TClass<unknown>>;
+  repositories?: ReadonlyArray<TClass<unknown>>;
+  services?: ReadonlyArray<TClass<unknown>>;
+  controllers?: ReadonlyArray<TClass<unknown>>;
+}
+
 /** Answers whether the current actor may act on a resource. Bound by the application under `CoreBindings.PERMISSION_PROVIDER`. */
 export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
@@ -167,6 +181,7 @@ export interface IArdorApplication {
   bindContext(): ValueOrPromise<void>;
   bindingList(): Record<string, TClass<unknown>>;
   features(): Array<IFeatureBase>;
+  artifacts(): Array<IArtifactIndex>;
 
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
   service<T>(value: TClass<T>): unknown;

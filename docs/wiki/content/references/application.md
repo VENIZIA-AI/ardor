@@ -17,6 +17,7 @@ You know the IGNIS `Container` API (`bind({ key })`, `toValue`, `toClass`, `get(
 | `BaseArdorApplication` | class | Empty subclass of `AbstractArdorApplication` - the one to extend |
 | `IArdorApplication` | interface | Contract implemented by the application |
 | `IApplicationInfo` | interface | Shape returned by `getAppInfo()` |
+| `IArtifactIndex` | interface | The index `ignis-artifacts generate` emits, returned by `artifacts()` |
 | `CoreBindings.APPLICATION_INSTANCE` | key | Bound to the application itself in `preConfigure()` |
 | `CoreBindings.APPLICATION_INFO` | key | Bound to the result of `getAppInfo()` in `preConfigure()` |
 | `ArdorApplication` | component | Reads the three default providers from the container and renders `CoreAdmin` |
@@ -37,6 +38,7 @@ abstract class AbstractArdorApplication extends Container implements IArdorAppli
   postConfigure(): ValueOrPromise<void>;
 
   registerArtifacts(): void;
+  artifacts(): Array<IArtifactIndex>;
   bindingList(): Record<string, TClass<unknown>>;
 
   service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
@@ -134,7 +136,7 @@ The default implementation does six things, in this order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
 2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
-3. `registerArtifacts()`: binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`. It first throws when two different classes derive the same key from their name (`[registerArtifacts] Two classes derive the binding key 'services.e' ...`), as two classes a minifier named alike would; the second would otherwise silently replace the first. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check uses IGNIS's `ArtifactBindingKeys`, re-exported by ARDOR, and runs once per `start()`, so a hot reload that re-evaluates a module is not an error.
+3. `registerArtifacts()`: checks that every class an `artifacts()` index lists was discovered (see [A generated artifact index](#a-generated-artifact-index)), then binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`. It first throws when two different classes derive the same key from their name (`[registerArtifacts] Two classes derive the binding key 'services.e' ...`), as two classes a minifier named alike would; the second would otherwise silently replace the first. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check uses IGNIS's `ArtifactBindingKeys`, re-exported by ARDOR, and runs once per `start()`, so a hot reload that re-evaluates a module is not an error.
 4. Binds `features()` under `CoreBindings.FEATURES`, after checking that no two share a `name` and that every configuration class a feature lists was discovered - see [Features and permissions](./features).
 5. Binds each entry of `bindingList()` under its literal key, as a singleton.
 6. Returns `this.bindContext()`.
@@ -184,6 +186,52 @@ export class ShopApplication extends BaseArdorApplication {
   }
 }
 ```
+
+## A generated artifact index
+
+A class that nothing imports before `start()` is never bound, and a bundler may drop a module that is imported only for its side effects. Generate an index of every stereotyped class with IGNIS's `ignis-artifacts`, then return it from `artifacts()`:
+
+```bash
+ignis-artifacts generate --root src --out src/_artifacts.ts --source-module @venizia/ardor
+```
+
+```ts
+import {
+  BaseArdorApplication,
+  type IApplicationInfo,
+  type IArtifactIndex,
+  service,
+} from '@venizia/ardor';
+
+@service()
+class OrderService {}
+
+// What the generator writes into src/_artifacts.ts; import it from there.
+const GeneratedArtifacts = {
+  configurations: [],
+  dataSources: [],
+  components: [],
+  repositories: [],
+  services: [OrderService],
+  controllers: [],
+};
+
+class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
+  }
+
+  override artifacts(): Array<IArtifactIndex> {
+    return [GeneratedArtifacts];
+  }
+
+  bindContext(): void {}
+}
+```
+
+The index adds no binding. Discovery still binds every stereotyped class; the index holds each class by value, so the import is a value a bundler keeps. `start()` then throws when a listed class was never discovered (`[artifacts] 'services' lists OrderService, which was never discovered`), which means the class lost its decorator or the index is stale. Regenerate the index after adding or renaming a class.
+
+Pass `--source-module` once per package your classes import their stereotypes from (`@venizia/ardor`, `@venizia/ardor-kernel`). Without it the generator reads only IGNIS's own imports and finds none of your classes. `controllers` stays empty in a browser application.
 
 ## Registration by hand
 
