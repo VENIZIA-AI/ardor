@@ -565,6 +565,15 @@
       "order": 201
     },
     {
+      "id": "changelog:2026-10-17-agent-tooling-vulcan",
+      "file": "2026-10-17-agent-tooling-vulcan.md",
+      "date": "2026-10-17",
+      "title": "ARDOR's agent tooling is VULCAN",
+      "packages": [],
+      "kind": "Enhancement",
+      "order": 203
+    },
+    {
       "id": "changelog:2026-10-16-oxlint-oxfmt",
       "file": "2026-10-16-oxlint-oxfmt.md",
       "date": "2026-10-16",

@@ -16,6 +16,12 @@ PACKAGES := kernel react admin ardor
 # The npm name of a package directory, read from its package.json: $(call PKG_NAME,kernel).
 PKG_NAME = $(shell sed -n 's/^  "name": "\(.*\)",$$/\1/p' packages/$(1)/package.json)
 
+# VULCAN's targets (vulcan-sync, vulcan-doctor, agent-setup, okf-*, surface-*, symbols-*, releases-*).
+# Its okf and atlas tools do not read the project config yet, so the bridge runs ARDOR's own
+# generators for those; see scripts/vulcan-bridge.ts.
+VULCAN := bun scripts/vulcan-bridge.ts
+-include node_modules/@venizia/vulcan/base/make/vulcan.mk
+
 include make/build.mk
 include make/knowledge.mk
 include make/release.mk

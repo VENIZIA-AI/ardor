@@ -118,7 +118,7 @@ git checkout -b feature/your-feature-name
 
 **Checklist:**
 
-- ✅ Follow the code rules C-01..C-18 in [`.agents/rules.md`](.agents/rules.md)
+- ✅ Follow the code rules: the VULCAN base V-C rules and ARDOR's C-03, C-05 and C-18 in [`.agents/rules.md`](.agents/rules.md)
 - ✅ Follow the [best practices](https://ardor.venizia.ai/best-practices/)
 - ✅ Add tests for new features/fixes
 - ✅ Update the docs in `docs/wiki/content` if needed
@@ -182,7 +182,7 @@ make fmt
 bun scripts/examples.ts check
 ```
 
-For the detailed standards, see the code rules (C-01..C-18) in [`.agents/rules.md`](.agents/rules.md).
+For the detailed standards, see the VULCAN base V-C rules (`node_modules/@venizia/vulcan/base/rules.md`) and ARDOR's C rules in [`.agents/rules.md`](.agents/rules.md).
 
 ---
 

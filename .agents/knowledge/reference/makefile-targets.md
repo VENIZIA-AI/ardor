@@ -8,12 +8,12 @@ tags: [reference, make, build]
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**75 targets.**
+**78 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
 | `make admin` | `react` | Rebuild one package, after its dependencies. |
-| `make agent-setup` | - | Link your agent's tool file + skills to the tracked AGENTS.md. |
+| `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
 | `make all` | `build` | Rebuilds all packages (alias for 'build-all'). |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
 | `make atlas-smoke` | - | Gate: the pinned IGNIS atlas serves this checkout over MCP. |
@@ -49,6 +49,7 @@ tags: [reference, make, build]
 | `make lint-scripts` | - | Format check + tsc type-check of scripts/. |
 | `make lint-wiki` | - | Lint docs/wiki and check its format. |
 | `make okf-check` | - | Gate: frontmatter, links, coverage, freshness. |
+| `make okf-check-strict` | - | Same as okf-check in ARDOR (VULCAN's name for the full check). |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |
 | `make okf-gen` | - | Regenerate source-derived reference content. |
 | `make okf-viz` | - | Build the offline knowledge-graph explorer. |
@@ -85,5 +86,7 @@ tags: [reference, make, build]
 | `make update-ardor` | - | Force update one package's dependencies from NPM. |
 | `make update-kernel` | - | Force update one package's dependencies from NPM. |
 | `make update-react` | - | Force update one package's dependencies from NPM. |
+| `make vulcan-doctor` | - | Gate: the project follows VULCAN (config, layout, rules, make, adapters, style). |
+| `make vulcan-sync` | - | Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links. |
 | `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |
 | `make wiki-links-check` | - | Gate: every source path the wiki and knowledge bundle name exists. |

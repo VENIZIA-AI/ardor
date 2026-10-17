@@ -1,13 +1,17 @@
 # Agent rules - ARDOR
 
-**The rules every agent follows in this repository. This is the only file that holds them.**
-[`AGENTS.md`](../AGENTS.md) and every per-developer tool file (`CLAUDE.md`, `GEMINI.md`, ...) point
-here and restate nothing - a rule changes in one place or not at all.
+**The rules ARDOR adds to the VULCAN base rules. Every agent follows both.**
+The base - write boundaries, security, process, build and the coding style - ships with
+`@venizia/vulcan` in `node_modules/@venizia/vulcan/base/rules.md` and is cited with the `V-` prefix
+(`V-C-02`). This file holds only what ARDOR adds, with bare IDs that never collide with a base ID.
+[`AGENTS.md`](../AGENTS.md) and `CLAUDE.md` point here and restate nothing - a rule changes in one
+place or not at all.
 
 Behavior only. Project *facts* live in the [knowledge bundle](knowledge/index.md).
 
 IDs are stable and grouped by domain, so new rules never renumber old ones. Cite them by ID in
-reviews, pull requests and reports ("breaks B-05").
+reviews, pull requests and reports ("breaks B-05", "breaks V-C-10"). A retired C rule is cited by its
+base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C-06 to V-C-17.
 
 | Group | IDs | One line |
 |---|---|---|
@@ -15,7 +19,7 @@ reviews, pull requests and reports ("breaks B-05").
 | [S - Security](#s---security) | S-01 … S-06 | Secrets, injected content, leaks, auth defaults, dependencies |
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
-| [C - Code and writing](#c---code-and-writing) | C-01 … C-18 | Style in code and in prose - simple first, consistent always |
+| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
 
@@ -60,7 +64,7 @@ ARDOR is infrastructure other products stand on. A shortcut here ships to every 
 | **P-07** | **Breaking changes ship batched, and the whole chain releases together.** Three separate "small" breaking notes hide the total from the downstream owner - gather them into one changelog entry. BANA pins exact versions through a Bun catalog, so releasing only the package that changed answers the wrong question. |
 | **P-08** | **Think from first principles - a partner, not a stenographer.** Verify against the code before asserting; never answer from memory of an earlier exploration. When a request, a spec or a prior decision looks wrong, say so with reasoning and a better option, then let the human decide. A decision is ratified only when the human said yes explicitly - never inferred from silence or from your own proposal having been sensible. |
 | **P-09** | **Carry the minimap in every status message.** Work runs against a step list, and every message that reports state - progress, a result, an answer to a question asked mid-task - opens with the full map and the current position marked, so the human catches a wrong turn immediately. The writer never decides the map is unnecessary this time. The map lives in the message, not in a file. Shape and rules: [The minimap](#the-minimap-p-09) below. |
-| **P-10** | **Report like a colleague who was away, not like a log.** Outcome first, reasons after. Say what was verified and how; say plainly what failed, was skipped or is unproven - hiding a failure costs more than the failure. Gloss every abbreviation on first use. A measurement carries its witness: a `file:line`, a command and its output. Chat is Vietnamese; code, comments, commits and docs are English (C-01). |
+| **P-10** | **Report like a colleague who was away, not like a log.** Outcome first, reasons after. Say what was verified and how; say plainly what failed, was skipped or is unproven - hiding a failure costs more than the failure. Gloss every abbreviation on first use. A measurement carries its witness: a `file:line`, a command and its output. Chat is Vietnamese; code, comments, commits and docs are English (V-C-01). |
 | **P-11** | **Work from lean, grounded context.** Re-read the artifact that owns a fact before acting on it; conversation memory and summaries drift. Orchestrate: hand bulk reading and bulk generation to subagents on the right tier - Haiku for mechanical work, Sonnet for standard work, Opus for architecture-critical work - and declare the model explicitly. Keep the main thread for decisions, and curate everything a subagent returns against ground truth before it enters a durable artifact. |
 | **P-12** | **Subagents never run a git command that changes state.** `log`, `diff`, `show`, `status`, `blame` only. The controller holds the working tree. |
 | **P-13** | **Read the code before you write about it.** Any statement about how ARDOR behaves - wiki page, concept, changelog, answer in chat - is written with the source open. When code and doc disagree, say which one you verified and when. |
@@ -107,26 +111,14 @@ Chặn: <what blocks, or "không có">
 
 ## C - Code and writing
 
+The coding style is the base V-C rules. ARDOR keeps the two IGNIS rules the base is retiring - ARDOR
+runs on IGNIS's container and errors - and states its own stack.
+
 | ID | Rule |
 |---|---|
-| **C-01** | **English only in code** - identifiers, comments, commit messages, logs, docs. Vietnamese belongs in chat. |
-| **C-02** | **Options objects everywhere:** `fn({ key, value })`, never `fn(key, value)`. **One parameter is not an exception** - `isValidName({ name })`, not `isValidName(name)`. A single positional parameter reads fine until the second one arrives, and by then the method is published and every call site pays. The cost is highest on an interface others implement: `IStorageHelper` carried three positional methods for exactly this reason and the migration touched 72 call sites. Mixing the two styles in one interface is itself the defect - a reader cannot tell which shape a method takes without opening it. |
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
-| **C-04** | **Never abbreviate identifiers:** `ProductRepository` not `ProductRepo`, `ProductDocument` not `ProductDoc`; type parameters too (`TDocument`, not `TDoc`). |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
-| **C-06** | **Never a silent catch - log it.** Always braces. Early return. `switch` with `default` over a long if-else chain. Strict TypeScript; no `any` where a type exists. |
-| **C-07** | **A function name opens with its verb** - `generate` `build` `to` `is` `has` `assert` `extract` `enrich` `get` `resolve`. `is*` returns a boolean and leaves the branch to the caller; `assert*` throws and returns `void`, so the code after it needs none - reach for `assert*` when every caller would throw on `false` anyway. `has*` is the ownership question (`hasBucket`, never `isBucketExists`). That list is for UTILITY functions; service methods lean on a wider set. **Arrow functions, not `function` declarations** (do not churn existing ones). State plus the operations on it live in a class with static members - the `LoggerFactory` shape - never module-level `let` plus exported arrows. |
-| **C-08** | **Enumerable strings are a const class plus `TConstValue`,** never a raw string-literal union. Every such class carries `static readonly SCHEME_SET = new Set([...])` over its values and `static isValid(value: string): boolean` reading it, so a runtime check exists wherever a value crosses a boundary (`IsolationLevels` in connectors is the model; a subclass redeclares `SCHEME_SET` with `...Parent.SCHEME_SET` first). The `T`/`I` prefix follows the declaration keyword: `type` gets `T`, `interface` gets `I`; an interface turned into a type alias is renamed, and no tool catches it - grep both directions. |
-| **C-09** | **Comments state only a constraint the code cannot show** - one to three lines; no history, no dates, no decision notes, no restating the code. Most code needs none. |
-| **C-10** | **No explicit cast in new code.** `as X`, `as any`, `as unknown as X` and `as never` assert nothing; they silence the compiler where the type is wrong. Fix the type instead: a generic on the setter, a narrower parameter, a typed helper, `satisfies`. A pre-existing cast is removed when the line is touched, never copied. Generic parameters are full words (`ApplicationType`, `TDocument`), never `App` or `TDoc` (C-04). |
-| **C-11** | **SIMPLE FIRST, in code and in prose.** Fewest concepts, plainest words, smallest surface. Complexity must buy correctness, speed or safety the simple version cannot, and the artifact says what it bought. Something a reader cannot follow in one pass is a defect even when it works. Fix the root cause with the smallest change; never layer an abstraction on a misdiagnosed problem. |
-| **C-12** | **Consistent, never self-invented.** Before writing anything new - a constant, file, binding key, error shape - find the nearest precedent in this repo and copy its shape. Binding keys are namespaced (`services.X`, `providers.X`). Every scope is one folder with nested `common/{types,constants}.ts` and an index barrel (`inversion` is the model). A second style for something that already has one is a defect. |
-| **C-13** | **Docs style: hyphen `-`, never an em-dash. The brand is always ARDOR, never "Ardor".** English prose. `docs/wiki` is the human-facing VitePress site and stays native VitePress - no custom components or theme CSS. The knowledge bundle is agent-facing; never conflate the two. |
-| **C-14** | **Our types are camelCase.** A snake_case wire name exists only at the mapper boundary, through a string-literal key - never through an eslint-disable. |
-| **C-15** | **One method with a mode option, not several specialized methods.** Payload variants are zod-per-variant with `z.infer`, discriminated. |
-| **C-16** | **One concept, one implementation.** When the same question is answered in several places, the bug lives at the seam and no tool catches it. Consolidate to one home before building on top. |
-| **C-17** | **A file is named by its role, never by repeating its folder:** `winston/logger.ts`, not `winston/winston-logger.ts`. |
-| **C-18** | **The hard stack, and derived types over duplicates.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Prefer compile-time types derived from definitions (`TFullPaths<typeof englishMessages>`) over hand-maintained copies. |
+| **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model); the backend stack V-C-18 names in VULCAN 0.1.0-0 does not apply here. |
 
 ---
 
@@ -138,10 +130,13 @@ Most of these rules hold because agents read this file. Only these have tooling 
 |---|---|---|
 | B-02 | `.githooks/pre-commit` runs `make lint-all` and `bun scripts/examples.ts check` (after `make setup-hooks`); `make build-all` and the tests run by hand | Lint blocks a commit; build and tests are not gated |
 | P-03 | `make okf-check` when the bundle is touched; the `knowledge-sync` skill periodically | No, by decision - a per-commit check cannot tell whether prose is still true |
-| W group, P-09, P-10, B-03, B-05, P-05, P-15, W-02 | `.agents/plugin/claude/hooks/session-start.ts` prints them into every Claude session, extracted from this file at run time | Reminds, never blocks |
+| The base W rules, every rule in this file, the minimap shape | VULCAN's SessionStart hook prints the base W rules and every row of this file; `.agents/hooks/minimap.ts` adds the minimap shape - both read the rule files at run time | Reminds, never blocks |
+| V-W-02, V-W-03 | VULCAN's `guard-writes` hook asks before a database write, a migration, a deploy or a mutating HTTP call | Asks |
+| The VULCAN layout | `make vulcan-doctor` in CI: one config, the rule namespaces, no shipped skill, hook or make target redefined, adapters in sync | Fails CI |
 | everything else | this file | No |
 
 Git is deliberately not blocked: W-01 is a rule about *when*, not a deny list. Treat the session
-hook as the ceiling of what tooling will do.
+hooks as the ceiling of what tooling will do.
 
-To change a rule, edit this file. Never fork the list into a tool-specific file.
+To change an ARDOR rule, edit this file; a base rule changes in VULCAN, never here. Never fork the
+list into a tool-specific file.

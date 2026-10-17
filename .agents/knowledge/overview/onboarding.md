@@ -14,17 +14,24 @@ mandatory for every task, not optional background reading.
 
 ## Step 1: read the rules
 
-Open `.agents/rules.md` before touching anything. Two rules cost the most when skipped: every
+Open the VULCAN base rules (`node_modules/@venizia/vulcan/base/rules.md`, cited `V-...`) and
+ARDOR's own, `.agents/rules.md`, before touching anything. Two rules cost the most when skipped: every
 status message must open with the minimap (P-09), and a downstream test suite runs `dist`, not
 `src` (B-05). Keep the second one in your head for the build step below.
 
-## Step 2: run `make agent-setup`
+## Step 2: run `make vulcan-sync`
 
-This runs `bun .agents/plugin/setup.ts`, which creates the gitignored per-tool symlinks
-(`CLAUDE.md`, `GEMINI.md`, ...) pointing at `AGENTS.md`, and merges the shared Claude settings and
-session hook from `.agents/plugin/claude/` into your local `.claude/`. There are no per-package
-agent files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle
-instead. Re-run this target after any pull that touched `.agents/plugin/`.
+ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulcan.config.ts`).
+`make vulcan-sync` (alias `make agent-setup`) writes the gitignored adapters: `CLAUDE.md` as
+`@AGENTS.md`, the shared hooks merged into your `.claude/settings.json`, and the skill links under
+`.claude/skills/`. `make vulcan-doctor` then reports 0 violations. There are no per-package agent
+files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle instead.
+Re-run the sync after any pull that touched `.configs/` or `.agents/`.
+
+VULCAN 0.1.0-0 needs up to three syncs on a `settings.json` that already carries `$schema`
+first; run it until every line reads `unchanged`. A checkout set up before VULCAN keeps a
+SessionStart entry for the deleted session hook under `.agents/plugin/` - delete that
+entry from `.claude/settings.json` by hand.
 
 ## Step 3: build, in dependency order
 

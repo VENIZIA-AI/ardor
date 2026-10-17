@@ -53,7 +53,7 @@ internal state.
 
 ## No casts
 
-Test code follows rule C-10 in `.agents/rules.md`: no `any` and no explicit cast - `as X`,
+Test code follows rule V-C-10 of the VULCAN base rules: no `any` and no explicit cast - `as X`,
 `as unknown as X` and `as never` included. Assertions never cast to force a type through, and an
 awkward stub gets a typed helper or `satisfies` instead. A `Storage` stub that mirrors real
 `localStorage` - stored keys as own enumerable properties, because `DefaultAuthService.cleanUp()`
