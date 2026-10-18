@@ -69,3 +69,13 @@ Related repository-wide gates - `typecheck-all`, `test-all`, `size-check`, `surf
 The root `package.json` defines a `workspaces.catalog` map pinning every `@venizia/*` (IGNIS) dependency to one version, shared across all packages via `catalog:` references (visible in kernel's `dependencies`/`devDependencies` above). This is the single source of truth for IGNIS versions.
 
 ARDOR tracks the **highest** published IGNIS line, prerelease included - never `latest`. The `update` Makefile target runs `scripts/refresh-catalog.ts highest`, which queries the npm registry's `dist-tags.highest` for each catalogued `@venizia/*` package and rewrites the catalog entries accordingly, then runs `bun install`. Per-package `force-update` targets exist too, but they intentionally skip any dependency already governed by the catalog - the catalog is refreshed once, at the root, and every package inherits it. Running `make update` therefore always refreshes the catalog first, then lets per-package `force-update highest` handle anything outside the catalog's scope.
+
+## One copy of each: peers
+
+A package whose second copy breaks DI or context identity (React, `react-dom`, `react-redux`, `react-router-dom`, Redux Toolkit, TanStack Query, `ra-core`, `ra-i18n-polyglot`, `reflect-metadata`, every `@venizia/ignis-*`) is a **peer** of every ARDOR package that uses it, never a dependency, with one range across them. The application then owns the single copy and needs no `resolve.dedupe` list. Three rules, pinned by `scripts/__tests__/peer-dependencies.test.ts`:
+
+- An identity package is never in `dependencies`. `ra-i18n-polyglot` was: it depends on `ra-core` itself, so an application pinning an in-range `ra-core` (`5.15.0`) got a second one nested under it (`ra-core 5.15.0 & 5.15.4`), and could not repair it.
+- A package that imports one declares it as a peer, and every package names it with the same range.
+- A package forwards the required peers of the ARDOR packages it depends on (`ardor-react` and `ardor-admin` forward `ardor-kernel`'s `ignis-filter`, `ignis-helpers`, `ignis-kernel` and `reflect-metadata`; the umbrella forwards all of them). Without it an isolated install gives the dependency a copy of its own.
+
+`make clean-install` proves it per sandbox, hoisted and isolated: `findDuplicateCopies` reads the lock (one version of each identity package and of the ARDOR packages, nested keys included), and `scripts/clean-install/peer-identity.ts` runs inside the sandbox and checks that every ARDOR package resolves each peer to the same file as the application. Mutations that went red: an `ardor-react` that stops forwarding `ignis-helpers`, an `ardor-admin` that carries a pinned `ra-core` dependency.

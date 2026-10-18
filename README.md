@@ -31,7 +31,7 @@ through hooks; the data layer speaks the IGNIS filter vocabulary to your API.
 
 ```bash
 bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors reflect-metadata
-bun add ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
+bun add ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
 bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 ```
 

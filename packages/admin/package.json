@@ -65,19 +65,22 @@
   "dependencies": {
     "@venizia/ardor-kernel": "workspace:*",
     "@venizia/ardor-react": "workspace:*",
-    "lodash": "catalog:",
-    "ra-i18n-polyglot": "catalog:"
+    "lodash": "catalog:"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
     "@venizia/ignis-filter": "^0.2.2-4",
+    "@venizia/ignis-helpers": "^0.2.2-7",
     "@venizia/ignis-inversion": "^0.2.2-4",
+    "@venizia/ignis-kernel": "^0.2.2-12",
     "ra-core": ">=5.15.0",
+    "ra-i18n-polyglot": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
     "react-redux": ">=9.3.0",
-    "react-router-dom": ">=7.9.4"
+    "react-router-dom": ">=7.9.4",
+    "reflect-metadata": ">=0.2.2"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "catalog:",
@@ -92,12 +95,15 @@
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-helpers": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-kernel": "catalog:",
     "eslint": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "ra-core": "catalog:",
+    "ra-i18n-polyglot": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-redux": "catalog:",

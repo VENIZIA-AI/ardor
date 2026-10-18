@@ -21,9 +21,12 @@ import { PURITY_MANIFEST } from '../purity/manifest';
 import {
   assertEveryPackageClaimed,
   deriveInstallRows,
+  findDuplicateCopies,
   findLockMismatches,
   INSTALL_CLAIMS,
+  isIdentityPeer,
   listPackageDirectories,
+  peerIdentityHolders,
   readPackageManifest,
   REPOSITORY_ROOT,
 } from './manifest';
@@ -145,6 +148,37 @@ const requiredPeers = (opts: { manifest: IPackageManifest }): Record<string, str
   );
 };
 
+/** The peers an ARDOR package and the ARDOR packages under it resolve differently from the application. */
+const findSplitPeers = async (opts: { name: string; sandbox: string }): Promise<string[]> => {
+  const byName = new Map(
+    listPackageDirectories().map((directory) => {
+      const manifest = readPackageManifest({ package: directory });
+      return [manifest.name, manifest] as const;
+    }),
+  );
+  const holders = peerIdentityHolders({ name: opts.name }).map((name) => ({
+    name,
+    peers: Object.keys(byName.get(name)?.peerDependencies ?? {}).filter((peer) =>
+      isIdentityPeer({ name: peer }),
+    ),
+  }));
+
+  const result = await run({
+    command: [
+      'bun',
+      join(REPOSITORY_ROOT, 'scripts', 'clean-install', 'peer-identity.ts'),
+      JSON.stringify({ holders }),
+    ],
+    cwd: opts.sandbox,
+  });
+  if (!result.ok) {
+    return [`the peer identity check failed to run: ${firstErrorLine(result)}`];
+  }
+
+  const printed = result.output.trim().split('\n').pop() ?? '[]';
+  return JSON.parse(printed) as string[];
+};
+
 const checkRow = async (opts: {
   row: IInstallRow;
   sandbox: string;
@@ -258,13 +292,19 @@ const main = async (): Promise<number> => {
         continue;
       }
 
-      checkCount += 1;
-      for (const mismatch of findLockMismatches({
-        lock: readFileSync(join(sandbox, 'bun.lock'), 'utf8'),
-        tarballs,
-        sandboxed: manifest.name,
-      })) {
+      checkCount += 2;
+      const lock = readFileSync(join(sandbox, 'bun.lock'), 'utf8');
+      for (const mismatch of findLockMismatches({ lock, tarballs, sandboxed: manifest.name })) {
         failures.push(`${manifest.name} [${linker}] lock: ${mismatch}`);
+      }
+
+      // One copy of each package whose second copy breaks DI or context identity: in the lock, and
+      // as the file every ARDOR package resolves each peer to.
+      for (const duplicate of findDuplicateCopies({ lock })) {
+        failures.push(`${manifest.name} [${linker}] copies: ${duplicate}`);
+      }
+      for (const problem of await findSplitPeers({ name: manifest.name, sandbox })) {
+        failures.push(`${manifest.name} [${linker}] peers: ${problem}`);
       }
 
       for (const row of groupRows) {

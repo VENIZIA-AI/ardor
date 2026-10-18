@@ -21,10 +21,12 @@ Scaffold a Vite + React + TypeScript project and install ARDOR with its peers:
 bun create vite my-admin --template react-ts
 cd my-admin
 bun install
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
 ```
 
 `@venizia/ardor` is the umbrella package. It re-exports `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`, so the application needs one import path. `@venizia/ignis-connectors` is only for `@venizia/ardor/repository`, which this guide uses.
+
+Everything after `@venizia/ardor` is a peer dependency, on purpose: a second copy of React, `ra-core`, `ra-i18n-polyglot`, TanStack Query or the IGNIS packages breaks the container or the context a hook reads, so the application owns the one copy, with one range across the ARDOR packages. No `resolve.dedupe` list is needed. Keep `ra-core` and `ra-i18n-polyglot` on the same version: `ra-i18n-polyglot` depends on `ra-core` itself.
 
 > [!IMPORTANT]
 > Keep every `@venizia/ignis-*` package on the same version, and move them together (`bun update @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors`). ARDOR's peer ranges are floors per package, so a project with one package a release behind another still installs without a warning.

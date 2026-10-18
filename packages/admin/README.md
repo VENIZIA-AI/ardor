@@ -4,7 +4,7 @@ The [react-admin](https://marmelab.com/react-admin/) adapter of
 [ARDOR](https://github.com/VENIZIA-AI/ardor): every place the framework touches `ra-core`.
 
 ```bash
-bun add @venizia/ardor-admin @venizia/ardor-kernel @venizia/ardor-react ra-core
+bun add @venizia/ardor-admin @venizia/ardor-kernel @venizia/ardor-react @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata ra-core ra-i18n-polyglot
 ```
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
