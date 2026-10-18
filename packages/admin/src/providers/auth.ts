@@ -95,16 +95,26 @@ export class DefaultAuthProvider<
     super({ scope: DefaultAuthProvider.name });
   }
 
-  /** The body of the sign-in request. The login form's params as given; override to map them. */
+  /**
+   * The body of the sign-in request: `signInBody` of the options, else the IGNIS sign-in body made
+   * from `params.username` and `params.password`. A subclass may override this instead.
+   */
   protected buildSignInBody(params: AnyType): AnyType {
-    return params;
+    if (this.authProviderOptions.signInBody) {
+      return this.authProviderOptions.signInBody(params);
+    }
+
+    return {
+      identifier: { scheme: 'username', value: params?.username },
+      credential: { scheme: 'basic', value: params?.password },
+    };
   }
 
   login(params: AnyType) {
     return new Promise((resolve, reject) => {
       this.restDataProvider
         .send({
-          resource: (this.authProviderOptions.paths?.signIn ?? '/auth/login') as TResource,
+          resource: (this.authProviderOptions.paths?.signIn ?? '/auth/sign-in') as TResource,
           params: { method: RequestMethods.POST, body: this.buildSignInBody(params) },
         })
         .then((rs) => {
@@ -134,7 +144,7 @@ export class DefaultAuthProvider<
     const token = this.authService.getAuth();
 
     if (!token?.value) {
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     if (!this.authProviderOptions.paths?.checkAuth) {
@@ -147,7 +157,7 @@ export class DefaultAuthProvider<
     });
 
     if (!rs?.data) {
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     return Promise.resolve();
@@ -159,7 +169,7 @@ export class DefaultAuthProvider<
 
     if (status === 401) {
       this.authService.cleanUp();
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     if (status === 403) {

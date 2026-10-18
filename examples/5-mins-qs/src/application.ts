@@ -68,12 +68,13 @@ export class AdminConfiguration {
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    return { url: '/api', noAuthPaths: ['/auth/login'] };
+    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
-    return { paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } };
+    // The sign-in path and body default to IGNIS's auth controller: POST /auth/sign-in.
+    return { endpoints: { afterLogin: '/products' } };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })

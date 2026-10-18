@@ -97,7 +97,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-18-quickstart-follows-the-example',
           },
           {
-            text: 'No sign-in and the IGNIS sign-in response',
+            text: 'IGNIS sign-in by default, optional auth',
             link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
           },
           {

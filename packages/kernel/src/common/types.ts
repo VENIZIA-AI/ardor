@@ -95,10 +95,17 @@ export interface IAuthProviderOptions {
     afterLogin?: string;
   };
   paths?: {
+    /** Where `login` posts. Default `/auth/sign-in`, the IGNIS auth controller's route. */
     signIn?: string;
     signUp?: string;
     checkAuth?: string;
   };
+  /**
+   * The body of the sign-in request, made from the login form's params. Default: the IGNIS sign-in
+   * body, `{ identifier: { scheme: 'username', value: params.username }, credential: { scheme:
+   * 'basic', value: params.password } }`. Pass `(params) => params` to post the form as it is.
+   */
+  signInBody?: (params: AnyType) => unknown;
 }
 
 export interface IAuthRecoveryOptions {

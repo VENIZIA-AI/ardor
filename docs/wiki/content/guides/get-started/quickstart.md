@@ -9,7 +9,7 @@ Build a working ARDOR admin: one application file that declares the three defaul
 
 **Time to complete:** ~5 minutes
 
-> **Prerequisite:** Bun 1.4 or later, and a REST API to point the data provider at. The code below signs in at `POST /auth/login`, which answers `{ userId, token: { value, type } }`, and lists `products`. A runnable stub of that API is [`examples/5-mins-qs/api/server.ts`](https://github.com/VENIZIA-AI/ardor/blob/main/examples/5-mins-qs/api/server.ts). An API with no sign-in, or an IGNIS API, needs a different auth setup - see [Your API is not this one](#your-api-is-not-this-one).
+> **Prerequisite:** Bun 1.4 or later, and a REST API to point the data provider at. The code below signs in at `POST /auth/sign-in`, IGNIS's route, which answers `{ token: '<jwt>' }`, and lists `products`. A runnable stub of that API is [`examples/5-mins-qs/api/server.ts`](https://github.com/VENIZIA-AI/ardor/blob/main/examples/5-mins-qs/api/server.ts). An API with no sign-in, or one that signs in elsewhere, needs a different auth setup - see [Your API is not this one](#your-api-is-not-this-one).
 
 Every code block on this page is a file of [`examples/5-mins-qs`](https://github.com/VENIZIA-AI/ardor/tree/main/examples/5-mins-qs), included as it is. `bun scripts/examples.ts build` builds that example against the packages, so the page cannot drift from code that compiles.
 
@@ -72,7 +72,7 @@ What each part does:
 
 `useRepository` resolves the repository by class and checks it is bound under `repositories.`; `useTranslate` resolves a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
 
-`src/pages/login.tsx` is the form react-admin shows when `checkAuth` rejects. `useLogin` calls the auth provider's `login` with whatever object you pass, here `{ username, password }`.
+`src/pages/login.tsx` is the form react-admin shows when `checkAuth` rejects. `useLogin` calls the auth provider's `login` with whatever object you pass, here `{ username, password }`, which the provider turns into IGNIS's sign-in body.
 
 <<< @/../../../examples/5-mins-qs/src/pages/login.tsx{tsx}
 
@@ -118,7 +118,7 @@ The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` spli
 ## Your API is not this one
 
 - **No sign-in.** Leave the auth provider (and its options and service) unbound, drop `loginPage`, and set `useAuth: false` on `REST_DATA_PROVIDER_OPTIONS`: the admin runs with every page public. See [An application with no sign-in](../../references/auth-provider#an-application-with-no-sign-in).
-- **An IGNIS API with the JWT auth controller.** It signs in at `/auth/sign-in`, wants an `identifier`/`credential` body and answers `{ token }`. One setting and one small subclass of `DefaultAuthProvider` cover it - see [Against the IGNIS JWT auth component](../../references/auth-provider#against-the-ignis-jwt-auth-component).
+- **An API that signs in elsewhere, or takes the form as it is.** Set `paths.signIn` and `signInBody` in the auth options, and the same path in `noAuthPaths`. The defaults are the IGNIS auth controller's route, body and response - see [The sign-in contract](../../references/auth-provider#the-sign-in-contract).
 
 ## What you built
 

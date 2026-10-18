@@ -8,7 +8,10 @@ const PRODUCTS = Array.from({ length: 27 }, (_, index) => ({
   price: 1000 + index * 250,
 }));
 
-const TOKEN = 'quickstart-token';
+// What the IGNIS auth controller answers: a JWT whose payload carries the user id. The signature is
+// not checked here, as ARDOR does not check it either - the server does, on every request.
+const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+const TOKEN = [encode({ alg: 'none' }), encode({ userId: 1, roles: [] }), 'stub'].join('.');
 
 const json = (body: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(body), {
@@ -21,15 +24,19 @@ const server = Bun.serve({
   fetch: async (request) => {
     const url = new URL(request.url);
 
-    if (url.pathname === '/api/auth/login' && request.method === 'POST') {
-      const body = (await request.json()) as { username?: string; password?: string };
-      if (body.username !== 'admin' || body.password !== 'admin') {
+    // IGNIS's sign-in route and body: `{ identifier: { scheme, value }, credential: { scheme, value } }`.
+    if (url.pathname === '/api/auth/sign-in' && request.method === 'POST') {
+      const body = (await request.json()) as {
+        identifier?: { value?: string };
+        credential?: { value?: string };
+      };
+      if (body.identifier?.value !== 'admin' || body.credential?.value !== 'admin') {
         return json(
           { error: { message: 'Invalid credentials', statusCode: 401 } },
           { status: 401 },
         );
       }
-      return json({ userId: 1, username: 'admin', token: { value: TOKEN, type: 'Bearer' } });
+      return json({ token: TOKEN });
     }
 
     if (request.headers.get('authorization') !== `Bearer ${TOKEN}`) {

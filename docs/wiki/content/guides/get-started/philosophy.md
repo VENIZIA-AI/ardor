@@ -49,7 +49,7 @@ class AdminConfiguration {
   restDataProviderOptions() {
     return {
       url: import.meta.env.VITE_API_URL,
-      noAuthPaths: ['/auth/login'],
+      noAuthPaths: ['/auth/sign-in'],
       authRecovery: { refreshTokenPath: '/auth/refresh' },
     };
   }

@@ -76,11 +76,11 @@ import { DefaultNetworkRequestService } from '@venizia/ardor';
 const requests = new DefaultNetworkRequestService({
   name: 'api',
   baseUrl: 'https://api.example.com',
-  noAuthPaths: ['/auth/login', '/auth/refresh'],
+  noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
   noAuthPathRegex: [/^\/public\//],
 });
 
-requests.isNoAuthPath({ resource: '/auth/login' }); // true - exact match
+requests.isNoAuthPath({ resource: '/auth/sign-in' }); // true - exact match
 requests.isNoAuthPath({ resource: '/public/pricing' }); // true - regex match
 requests.isNoAuthPath({ resource: '/orders' }); // false - token required
 ```
@@ -218,7 +218,7 @@ The data provider must be a singleton. Declare it with `@provide` in a `@configu
 ## Common pitfalls
 
 - **Adding a path to `noAuthPaths` because it returned `401`.** That hides an expired token instead of refreshing it. If the endpoint needs a user, leave it authenticated and let recovery run.
-- **Forgetting the sign-in path.** `getRequestAuthorizationHeader` throws before the request is sent, so `login` rejects with `Invalid auth token to fetch!` and never reaches the server. `paths.signIn` defaults to `/auth/login`; whatever you configure must also be in `noAuthPaths`.
+- **Forgetting the sign-in path.** `getRequestAuthorizationHeader` throws before the request is sent, so `login` rejects with `Invalid auth token to fetch!` and never reaches the server. `paths.signIn` defaults to `/auth/sign-in`; whatever you configure must also be in `noAuthPaths`.
 - **Forgetting the refresh path.** Without it the service attaches the expired token to the refresh request. Without `refreshTokenPath` a `401` from the refresh request starts another refresh. Declare both.
 - **Expecting `DefaultAuthProvider.refreshToken` to do something.** It resolves with nothing. Override it and pass it to `setAuthRecovery`, or recovery is disabled - `canRecover` returns `false` when `refreshToken` is missing.
 - **Calling `setUseAuth(false)` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.

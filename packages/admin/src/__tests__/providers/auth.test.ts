@@ -56,11 +56,11 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
       this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
         url: this.baseUrl,
         useAuth: true,
-        noAuthPaths: ['/auth/login'],
+        noAuthPaths: ['/auth/sign-in'],
       });
 
       this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
-        paths: { signIn: '/auth/login', checkAuth: '/auth/whoami' },
+        paths: { checkAuth: '/auth/whoami' },
         endpoints: { afterLogin: '/dashboard' },
       });
 
@@ -137,7 +137,7 @@ beforeAll(async () => {
         body,
       });
 
-      if (url.pathname === '/auth/login') {
+      if (url.pathname === '/auth/sign-in') {
         return Response.json(loginBody);
       }
 
@@ -196,7 +196,7 @@ describe('BaseArdorApplication container wiring', () => {
 });
 
 describe('login', () => {
-  test('posts credentials to the sign-in path and resolves with redirect path without double slashes', async () => {
+  test('posts the IGNIS sign-in body to /auth/sign-in and resolves with redirect path without double slashes', async () => {
     const loginResult: unknown = await authProvider.login({
       username: 'alice',
       password: 'secret-password',
@@ -204,11 +204,11 @@ describe('login', () => {
 
     expect(recordedRequests).toHaveLength(1);
     const loginRequest = recordedRequests[0];
-    expect(loginRequest.pathname).toBe('/auth/login');
+    expect(loginRequest.pathname).toBe('/auth/sign-in');
     expect(loginRequest.method).toBe('POST');
     expect(loginRequest.body).toEqual({
-      username: 'alice',
-      password: 'secret-password',
+      identifier: { scheme: 'username', value: 'alice' },
+      credential: { scheme: 'basic', value: 'secret-password' },
     });
 
     const loginOutcome = { value: loginResult };
@@ -293,10 +293,11 @@ describe('login against the IGNIS sign-in contract', () => {
 
   test('sends what buildSignInBody makes of the form params', async () => {
     class IgnisAuthProvider extends DefaultAuthProvider {
-      protected override buildSignInBody(params: { username: string; password: string }) {
+      protected override buildSignInBody(params: { email: string; password: string }) {
         return {
-          identifier: { scheme: 'username', value: params.username },
+          identifier: { scheme: 'email', value: params.email },
           credential: { scheme: 'basic', value: params.password },
+          clientId: 'admin',
         };
       }
     }
@@ -315,13 +316,40 @@ describe('login against the IGNIS sign-in contract', () => {
 
     await container
       .get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .login({ username: 'alice', password: 'secret-password' });
+      .login({ email: 'alice@example.com', password: 'secret-password' });
 
     expect(sent).toEqual([
       {
-        identifier: { scheme: 'username', value: 'alice' },
+        identifier: { scheme: 'email', value: 'alice@example.com' },
         credential: { scheme: 'basic', value: 'secret-password' },
+        clientId: 'admin',
       },
+    ]);
+  });
+
+  // The pre-IGNIS contract, kept behind configuration.
+  test('keeps the form body and the /auth/login path behind paths.signIn and signInBody', async () => {
+    const sent: Array<{ resource: string; body: unknown }> = [];
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
+      send: (opts: { resource: string; params: { body: unknown } }) => {
+        sent.push({ resource: opts.resource, body: opts.params.body });
+        return Promise.resolve({ data: { userId: 7, token: { value: 'jwt', type: 'Bearer' } } });
+      },
+    });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
+      paths: { signIn: '/auth/login' },
+      signInBody: (params: unknown) => params,
+    });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+    await container
+      .get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .login({ username: 'alice', password: 'secret-password' });
+
+    expect(sent).toEqual([
+      { resource: '/auth/login', body: { username: 'alice', password: 'secret-password' } },
     ]);
   });
 
@@ -348,7 +376,7 @@ describe('login against the IGNIS sign-in contract', () => {
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
     expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
-      redirectTo: 'login',
+      redirectTo: '/login',
     });
     expect(recordedRequests).toHaveLength(0);
   });
@@ -378,7 +406,7 @@ describe('checkAuth', () => {
     whoamiReturnsData = false;
 
     expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
-      redirectTo: 'login',
+      redirectTo: '/login',
     });
 
     expect(recordedRequests).toHaveLength(1);
@@ -400,7 +428,7 @@ describe('checkError', () => {
     );
 
     expect(await rejectionOf(authProvider.checkError({ status: 401 }))).toEqual({
-      redirectTo: 'login',
+      redirectTo: '/login',
     });
 
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
@@ -453,7 +481,7 @@ describe('checkError', () => {
       await rejectionOf(
         authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
       ),
-    ).toEqual({ redirectTo: 'login' });
+    ).toEqual({ redirectTo: '/login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
   });
 
