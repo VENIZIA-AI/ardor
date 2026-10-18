@@ -7,6 +7,7 @@ import {
   RequestTypes,
 } from '@/common/constants';
 import type {
+  AnyType,
   TConstValue,
   TEnvironment,
   TNumberConstValue,
@@ -14,6 +15,7 @@ import type {
   TRequestMethod,
   TRequestType,
   TStringConstValue,
+  TPaths,
 } from '@/common/types';
 
 class TimeModes {
@@ -106,5 +108,59 @@ describe('const-value types keep their literal union through inference', () => {
     const values: TStringConstValue<typeof Labels>[] = [Labels.DEFAULT, 'anything'];
 
     expect(values).toEqual(['default', 'anything']);
+  });
+});
+
+interface ITreeState {
+  title: string;
+  isLoading: { user: boolean; license: boolean };
+  user: { profile: { name: string; tags: Array<string> } } | null;
+  createdAt: Date;
+  visited: Set<string>;
+  lookup: Map<string, number>;
+  onClick: () => void;
+  payload: AnyType;
+  deep: { a: { b: { c: { d: { e: { f: number } } } } } };
+}
+
+/** Compile-time: `make typecheck-all` fails when an assertion breaks. */
+describe('TPaths reads every path of a state, with no depth written down', () => {
+  test('names nested keys of any depth and treats arrays and built-ins as leaves', () => {
+    const paths: TPaths<ITreeState>[] = [
+      'title',
+      'isLoading',
+      'isLoading.user',
+      'user',
+      'user.profile',
+      'user.profile.name',
+      'user.profile.tags',
+      'createdAt',
+      'visited',
+      'lookup',
+      'onClick',
+      'payload',
+      'deep.a.b.c.d.e.f',
+    ];
+
+    // @ts-expect-error a key the state does not have
+    const unknownKey: TPaths<ITreeState> = 'isLoading.admin';
+    // @ts-expect-error an array has no paths below it
+    const belowArray: TPaths<ITreeState> = 'user.profile.tags.0';
+    // @ts-expect-error a Date is a leaf: its methods are not state
+    const belowDate: TPaths<ITreeState> = 'createdAt.getTime';
+    // @ts-expect-error a Set is a leaf
+    const belowSet: TPaths<ITreeState> = 'visited.size';
+    // @ts-expect-error a function is a leaf
+    const belowFunction: TPaths<ITreeState> = 'onClick.name';
+
+    expect(paths.length).toBe(13);
+    expect([unknownKey, belowArray, belowDate, belowSet, belowFunction].length).toBe(5);
+  });
+
+  test('an any field is a leaf, never a path to everything', () => {
+    // @ts-expect-error `payload` is any: nothing below it is named
+    const belowAny: TPaths<ITreeState> = 'payload.anything';
+
+    expect<string>(belowAny).toBe('payload.anything');
   });
 });

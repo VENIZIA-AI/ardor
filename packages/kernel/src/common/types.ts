@@ -189,18 +189,35 @@ export interface IArdorApplication {
 
 type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+/** Values a path stops at: their members are not state. */
+type TPathLeaf =
+  | Date
+  | RegExp
+  | ReadonlySet<AnyType>
+  | ReadonlyMap<AnyType, AnyType>
+  | Promise<AnyType>
+  | ((...args: Array<AnyType>) => AnyType);
+
+type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
+
+/**
+ * The dotted paths of an object type, to `DeepLevel` levels (10 by default). An array, a `Date`, a
+ * `Set`, a `Map`, a `Promise`, a function and an `any` field are leaves: the path stops at them.
+ */
 export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
   ? never
-  : T extends Array<AnyType>
+  : T extends Array<AnyType> | TPathLeaf
     ? never
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
-            ? NonNullable<T[K]> extends Array<AnyType>
+            ? TIsAny<T[K]> extends true
               ? `${K}`
-              : NonNullable<T[K]> extends object
-                ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
-                : `${K}`
+              : NonNullable<T[K]> extends Array<AnyType> | TPathLeaf
+                ? `${K}`
+                : NonNullable<T[K]> extends object
+                  ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
+                  : `${K}`
             : never;
         }[keyof T]
       : never;

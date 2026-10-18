@@ -105,6 +105,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-18-exact-sibling-versions',
           },
           {
+            text: 'TPaths stops at values',
+            link: '/changelogs/2026-10-18-tpaths-stops-at-values',
+          },
+          {
             text: 'House style: types, hooks, utilities',
             link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
           },

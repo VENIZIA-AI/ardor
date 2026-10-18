@@ -170,7 +170,7 @@ export type CountMode = TConstValue<typeof RequestCountData>;
 
 Both produce a union of dotted paths over an object type, up to 10 levels deep. They differ in what they emit for nested objects and arrays.
 
-- `TPaths<T>` emits every key, including intermediate object keys (`customer` and `customer.name`). An array-valued key stops the walk: you get `lines`, never `lines.sku`. Optional and nullable properties are unwrapped with `NonNullable` before recursion. A top-level array gives `never`.
+- `TPaths<T>` emits every key, including intermediate object keys (`customer` and `customer.name`). An array-valued key stops the walk: you get `lines`, never `lines.sku`. A `Date`, `RegExp`, `Set`, `Map`, `Promise`, function or `any` field is a leaf too: you get `createdAt`, never `createdAt.getTime`. Optional and nullable properties are unwrapped with `NonNullable` before recursion. A top-level array gives `never`.
 - `TFullPaths<T>` emits leaf paths only. An object-valued key never appears on its own. An array-valued key recurses into the element type, so `lines` becomes `lines.sku` and `lines.qty`. A top-level array is unwrapped to its element type.
 
 ```ts no-check
