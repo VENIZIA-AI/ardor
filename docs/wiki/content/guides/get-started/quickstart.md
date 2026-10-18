@@ -9,7 +9,7 @@ Build a working ARDOR admin: one application file that declares the three defaul
 
 **Time to complete:** ~5 minutes
 
-> **Prerequisite:** Bun 1.4 or later, and a REST API to point the data provider at. The code below signs in at `POST /auth/sign-in`, IGNIS's route, which answers `{ token: '<jwt>' }`, and lists `products`. A runnable stub of that API is [`examples/5-mins-qs/api/server.ts`](https://github.com/VENIZIA-AI/ardor/blob/main/examples/5-mins-qs/api/server.ts). An API with no sign-in, or one that signs in elsewhere, needs a different auth setup - see [Your API is not this one](#your-api-is-not-this-one).
+> **Prerequisite:** Bun 1.4 or later, and a REST API to point the data provider at. The code below signs in at `POST /auth/sign-in`, IGNIS's route, which answers what your application's `signIn` returns - here `{ userId, roles, token: { value, type } }` - and lists `products`. A runnable stub of that API is [`examples/5-mins-qs/api/server.ts`](https://github.com/VENIZIA-AI/ardor/blob/main/examples/5-mins-qs/api/server.ts). An API with no sign-in, or one that signs in elsewhere, needs a different auth setup - see [Your API is not this one](#your-api-is-not-this-one).
 
 Every code block on this page is a file of [`examples/5-mins-qs`](https://github.com/VENIZIA-AI/ardor/tree/main/examples/5-mins-qs), included as it is. `bun scripts/examples.ts build` builds that example against the packages, so the page cannot drift from code that compiles.
 

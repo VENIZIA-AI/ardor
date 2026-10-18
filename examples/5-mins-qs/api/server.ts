@@ -8,10 +8,7 @@ const PRODUCTS = Array.from({ length: 27 }, (_, index) => ({
   price: 1000 + index * 250,
 }));
 
-// What the IGNIS auth controller answers: a JWT whose payload carries the user id. The signature is
-// not checked here, as ARDOR does not check it either - the server does, on every request.
-const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
-const TOKEN = [encode({ alg: 'none' }), encode({ userId: 1, roles: [] }), 'stub'].join('.');
+const TOKEN = 'quickstart-token';
 
 const json = (body: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(body), {
@@ -36,7 +33,8 @@ const server = Bun.serve({
           { status: 401 },
         );
       }
-      return json({ token: TOKEN });
+      // IGNIS answers whatever the application's signIn returns; this is the recommended shape.
+      return json({ userId: 1, roles: ['admin'], token: { value: TOKEN, type: 'Bearer' } });
     }
 
     if (request.headers.get('authorization') !== `Bearer ${TOKEN}`) {

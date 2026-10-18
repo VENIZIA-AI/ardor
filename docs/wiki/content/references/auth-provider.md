@@ -17,7 +17,7 @@ A running application with the REST data provider bound - see [Application](../r
 |---|---|---|
 | `DefaultAuthProvider` | class | `BaseProvider<IAuthProvider>`. `value(container)` returns the object react-admin consumes. |
 | `DefaultAuthService` | class | `localStorage` access: `getAuth`, `getUser`, `getRoles`, `saveAuth`, `cleanUp`. |
-| `IAuthProviderOptions` | interface | `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`, `signInBody`. |
+| `IAuthProviderOptions` | interface | `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`, `signInBody`, `signInUsername`, `onSignIn`, `persistSession`. |
 | `IAuthProvider` | interface | `IReactAdminAuthProvider` plus `getRoles` and `refreshToken`. |
 | `IReactAdminAuthProvider` | interface | The plain react-admin contract: `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`. |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION`. |
@@ -58,6 +58,9 @@ interface IAuthProviderOptions {
     checkAuth?: string;
   };
   signInBody?: (params: AnyType) => unknown;
+  signInUsername?: (params: AnyType) => string;
+  onSignIn?: (opts: { session: ISignInSession; params: AnyType }) => ValueOrPromise<void>;
+  persistSession?: boolean;
 }
 ```
 
@@ -65,6 +68,7 @@ interface IAuthProviderOptions {
 |---|---|---|
 | `paths.signIn` | `login` - the resource that receives `POST` with the sign-in body | `/auth/sign-in`, the IGNIS auth controller's route |
 | `signInBody` | `login` - makes the sign-in body from the login form's params | the IGNIS body, from `params.username` and `params.password` |
+| `signInUsername`, `onSignIn`, `persistSession` | `login` - see [Around login](#around-login-signinusername-onsignin-persistsession) | `params.username`; none; `true` |
 | `paths.checkAuth` | `checkAuth` - the resource that receives `GET` to validate the stored token | not called; `checkAuth` only checks local storage |
 | `paths.signUp` | not read by `DefaultAuthProvider`; available for subclasses | none |
 | `endpoints.afterLogin` | `login` - the `redirectTo` value returned to react-admin | `/` |
@@ -86,15 +90,17 @@ const authProviderOptions: IAuthProviderOptions = {
 
 `login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody(params)`: the `signInBody` option when set, else the IGNIS sign-in body made from `params.username` and `params.password`. A subclass may override `buildSignInBody` instead. The provider reads the session from the response `data`, saves it with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
 
-The response `data` is read in either of two shapes:
+IGNIS's auth controller has no fixed sign-in response: it returns whatever your application's `signIn` returns. The response `data` is read in either of two shapes, the first being the recommended one:
 
 ```ts
 type LoginResponseData =
-  | { userId: string | number; token: { value: string; type: string } }
-  | { userId?: string | number; token: string };
+  | { userId: string | number; roles?: Array<string | { identifier?: string; name?: string }>; token: { value: string; type: string } }
+  | { userId?: string | number; roles?: Array<string | { identifier?: string; name?: string }>; token: string };
 ```
 
-A bare string token is stored as a `Bearer` token. A `userId` that is not sent is read from the token's own claims: `userId`, else `sub`. The JWT's signature is not checked - the server does that on every request. A response with no token, or with no user id anywhere, rejects `login` with a `[login]` error and stores nothing.
+- **The token.** A bare string token is stored as a `Bearer` token. A `userId` that is not sent is read from the token's own claims: `userId`, else `sub`. The JWT's signature is not checked - the server does that on every request.
+- **The roles.** `roles` of the response, else the `roles` claim of the token, are saved where `getRoles` reads them (`@app/auth/permission`). An entry is a string, or an object named by its `identifier` (IGNIS's role model: `{ id, identifier, priority }`) or else its `name`; any other entry is skipped. Each login replaces the roles of the last user, and a response with none leaves the set empty.
+- **Failure.** A response with no token, or with no user id anywhere, rejects `login` with a `[login]` error and stores nothing.
 
 `DefaultAuthService.saveAuth` writes two `localStorage` entries:
 
@@ -103,7 +109,7 @@ A bare string token is stored as a `Bearer` token. A `userId` that is not sent i
 | `@app/auth/token` | `LocalStorageKeys.KEY_AUTH_TOKEN` | `JSON.stringify({ ...token, provider })` |
 | `@app/auth/identity` | `LocalStorageKeys.KEY_AUTH_IDENTITY` | `JSON.stringify({ userId, username, referenceId, provider })` |
 
-`login` passes `params.username` as `username`. `provider` and `referenceId` default to an empty string. Nothing in `login` or `DefaultAuthService` writes `@app/auth/permission`.
+`login` passes `params.username` as `username`. `provider` and `referenceId` default to an empty string. `saveAuth` also takes `roles` (an array of strings) and writes `@app/auth/permission` with them; called without `roles`, as a token refresh does, it leaves the stored roles alone.
 
 ```ts
 import { DefaultAuthService, LocalStorageKeys } from '@venizia/ardor';
@@ -125,6 +131,36 @@ const auth = authService.getAuth();
 
 `getAuth` returns `null` and logs an error if the stored value cannot be parsed.
 
+## Around login: signInUsername, onSignIn, persistSession
+
+Three options cover what an application otherwise overrides `login` for. `login` runs in this order: send the sign-in request, read the response, call `onSignIn`, save the session (unless `persistSession` is `false`), resolve with `redirectTo`.
+
+| Option | Used by | Default |
+|---|---|---|
+| `signInUsername(params)` | The username stored with the identity - `getIdentity` returns it | `params.username` |
+| `onSignIn({ session, params })` | Runs after the response is read and before the session is saved. May be async. A throw or a rejection rejects `login` and nothing is saved | none |
+| `persistSession` | `false` makes `login` save nothing and still resolve | `true` |
+
+`session` is `{ userId, token: { value, type }, roles }`, as read from the response. `params` is the login form's params.
+
+```ts
+import { type IAuthProviderOptions } from '@venizia/ardor';
+
+export const authOptions: IAuthProviderOptions = {
+  // The form sends { identifier: { value }, password }, not { username }.
+  signInUsername: (params) => params.identifier.value,
+
+  // Refuse a user, or hand the token to another service. Nothing is saved when this throws.
+  onSignIn: ({ session }) => {
+    if (!session.roles.includes('admin')) {
+      throw new Error('[signIn] This console is for administrators');
+    }
+  },
+};
+```
+
+An application that keeps the session elsewhere sets `persistSession: false`; `onSignIn` still runs, with the session in hand, and `checkAuth` then finds no stored token, so the application supplies its own check.
+
 ## The sign-in contract
 
 The defaults are the contract of IGNIS's auth controller (`useAuthController: true`), since ARDOR is IGNIS's frontend:
@@ -133,9 +169,9 @@ The defaults are the contract of IGNIS's auth controller (`useAuthController: tr
 |---|---|---|
 | Path | `/auth/sign-in` | `paths: { signIn: '/auth/login' }` |
 | Request body | `{ identifier: { scheme: 'username', value: username }, credential: { scheme: 'basic', value: password } }` | `signInBody: (params) => params` posts the form as it is |
-| Response | `{ token: '<jwt>' }` | `{ userId, token: { value, type } }`; `login` reads both with no setting |
+| Response | whatever your `signIn` returns; recommended `{ userId, roles?, token: { value, type } }` | the same; `login` also reads `{ token: '<jwt>' }`, so nothing to set |
 
-The user id comes from the `userId` claim IGNIS puts in the token. The path must also be in `noAuthPaths`, so the sign-in request goes out without an `Authorization` header. Roles are not stored: `getRoles` stays empty unless you store them (see [getRoles and getPermissions](#getroles-and-getpermissions)).
+The path must also be in `noAuthPaths`, so the sign-in request goes out without an `Authorization` header. The response shapes, the user id and the roles are described in [login and what it stores](#login-and-what-it-stores).
 
 ```ts
 import { type IAuthProviderOptions, type IRestDataProviderOptions } from '@venizia/ardor';
@@ -263,7 +299,7 @@ declare function getPermissions(_params: AnyType): Promise<void>;
 
 For react-admin's `canAccess` - the method behind `useCanAccess` and `<CanAccess>` - bind an `IPermissionProvider` under `CoreBindings.PERMISSION_PROVIDER`: `DefaultAuthProvider` then exposes `canAccess({ resource, action, record })` and answers from it. Without one there is no `canAccess`, and react-admin allows everything. A subclass that declares its own constructor needs no change: the provider is read from the container too, and one passed to `super` as the fourth argument wins. See [Features and permissions](./features#permissions).
 
-`getRoles` resolves with `authService.getRoles()`, which parses `@app/auth/permission` (`LocalStorageKeys.KEY_AUTH_PERMISSION`) as a JSON array and returns it as a `Set<string>`. An empty or missing value gives an empty set. Because the base class never writes that key, the set stays empty unless your application stores it.
+`getRoles` resolves with `authService.getRoles()`, which parses `@app/auth/permission` (`LocalStorageKeys.KEY_AUTH_PERMISSION`) as a JSON array and returns it as a `Set<string>`. An empty or missing value gives an empty set. `login` writes the key from the `roles` of the sign-in response (see [login and what it stores](#login-and-what-it-stores)); an application whose API sends roles another way stores them with `authService.saveAuth({ ..., roles })`.
 
 `getPermissions` resolves with `undefined` in the base class. Override it if react-admin's `usePermissions` should return something.
 
@@ -333,21 +369,9 @@ The constructor injects three fields, all `protected`, so overrides can use them
 A subclass without its own constructor keeps that injection. `value()` calls the methods through `this`, so an overridden method is what react-admin gets.
 
 ```ts
-import { type AnyType, DefaultAuthProvider, LocalStorageKeys } from '@venizia/ardor';
+import { type AnyType, DefaultAuthProvider } from '@venizia/ardor';
 
 export class AppAuthProvider extends DefaultAuthProvider {
-  override async login(params: AnyType) {
-    const rs = await super.login(params);
-
-    // The base class never writes this key; store roles so getRoles() returns them.
-    localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_PERMISSION,
-      JSON.stringify((rs as AnyType).data?.roles ?? []),
-    );
-
-    return rs;
-  }
-
   override checkError(params: AnyType) {
     if (params?.status === 403) {
       return Promise.reject({ redirectTo: '/forbidden', logoutUser: false });
@@ -437,7 +461,7 @@ The binding API itself is documented in [Application](../references/application)
 - `login` rejects a response that has no token, or no user id in the response or the token's claims. A backend whose token is not a JWT must send `userId` next to it.
 - `paths.signIn` defaults to `/auth/sign-in`. An API that signs in elsewhere, or takes the form as it is, sets `paths.signIn` and `signInBody` (see [The sign-in contract](#the-sign-in-contract)); without a matching `noAuthPaths` entry the first request fails before it is sent.
 - `paths.signIn` and `noAuthPaths` must hold the same string. `noAuthPaths` is an exact match list, not a pattern.
-- `getRoles` reads `@app/auth/permission`, but nothing in the base classes writes it. Store it yourself or the set is always empty.
+- `getRoles` reads `@app/auth/permission`, which `login` fills from the `roles` of the sign-in response or the token's `roles` claim. A response with neither leaves the set empty.
 - `checkError` on `403` does not log the user out. If you want a `403` to end the session, override it.
 - `cleanUp` only removes keys under `@app/auth/` and `@app/oauth2/`. Keep session data under those prefixes if it should disappear on logout.
 - `getIdentity` rejects when there is no `userId`. Do not call it before login and expect an empty object.

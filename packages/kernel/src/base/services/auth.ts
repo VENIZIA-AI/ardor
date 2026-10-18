@@ -35,8 +35,14 @@ export class DefaultAuthService extends BaseService {
     referenceId?: IdType;
 
     token: { value: string; type: string };
+
+    /**
+     * The user's roles, where `getRoles` reads them. Left alone when absent, so a token refresh
+     * that saves only the new token keeps the roles; `[]` says the user has none.
+     */
+    roles?: ReadonlyArray<string>;
   }) {
-    const { token, userId, username = '', provider = '', referenceId = '' } = opts;
+    const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
     localStorage.setItem(
       LocalStorageKeys.KEY_AUTH_TOKEN,
       JSON.stringify(Object.assign({}, token, { provider })),
@@ -45,6 +51,10 @@ export class DefaultAuthService extends BaseService {
       LocalStorageKeys.KEY_AUTH_IDENTITY,
       JSON.stringify({ userId, username, referenceId, provider }),
     );
+
+    if (roles) {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, JSON.stringify(roles));
+    }
   }
 
   cleanUp() {

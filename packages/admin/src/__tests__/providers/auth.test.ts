@@ -241,13 +241,13 @@ describe('login', () => {
   });
 });
 
-// What the IGNIS JWT auth component answers: a bare token string, the user id inside its payload.
+// A sign-in response that is only a bare token string, the user id and roles inside its payload.
 const jwtOf = (payload: object): string => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   return [encode({ alg: 'ES256' }), encode(payload), 'signature'].join('.');
 };
 
-describe('login against the IGNIS sign-in contract', () => {
+describe('login against the sign-in response shapes', () => {
   test('stores a bare token string as a Bearer token, with the user id read from its payload', async () => {
     const token = jwtOf({ userId: 'u-9', roles: [{ id: '1', identifier: 'admin', priority: 0 }] });
     loginBody = { token };
@@ -351,6 +351,47 @@ describe('login against the IGNIS sign-in contract', () => {
     expect(sent).toEqual([
       { resource: '/auth/login', body: { username: 'alice', password: 'secret-password' } },
     ]);
+  });
+
+  test('stores the roles of the response where getRoles reads them', async () => {
+    loginBody = {
+      userId: 7,
+      roles: ['admin', { id: '2', identifier: 'editor', priority: 1 }, { name: 'viewer' }],
+      token: { value: 'jwt', type: 'Bearer' },
+    };
+
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    expect(await authProvider.getRoles()).toEqual(new Set(['admin', 'editor', 'viewer']));
+  });
+
+  test('falls back to the roles claim of the token, and prefers the roles of the response', async () => {
+    const token = jwtOf({ userId: 'u-9', roles: [{ id: '1', identifier: 'admin', priority: 0 }] });
+
+    loginBody = { token };
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+    expect(await authProvider.getRoles()).toEqual(new Set(['admin']));
+
+    loginBody = { roles: ['auditor'], token };
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+    expect(await authProvider.getRoles()).toEqual(new Set(['auditor']));
+  });
+
+  test('replaces the roles of the last user, and skips an entry it cannot read', async () => {
+    loginBody = { userId: 1, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } };
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    loginBody = {
+      userId: 2,
+      roles: [{ id: '3' }, 42, 'viewer'],
+      token: { value: 'jwt', type: 'Bearer' },
+    };
+    await authProvider.login({ username: 'bob', password: 'secret-password' });
+    expect(await authProvider.getRoles()).toEqual(new Set(['viewer']));
+
+    loginBody = defaultLoginBody;
+    await authProvider.login({ username: 'carol', password: 'secret-password' });
+    expect(await authProvider.getRoles()).toEqual(new Set());
   });
 
   test('rejects, and stores nothing, when no user id can be found', async () => {
@@ -665,5 +706,121 @@ describe('canAccess', () => {
       { resource: 'stocks', action: 'list', record: { id: 1 } },
       { resource: 'stocks', action: 'delete', record: undefined },
     ]);
+  });
+});
+
+describe('login hooks', () => {
+  const session = { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } };
+
+  const loginWith = (options: IAuthProviderOptions, params: object = { username: 'alice' }) => {
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
+      send: () => Promise.resolve({ data: session }),
+    });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(options);
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+    return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).login(params);
+  };
+
+  const isNothingStored = () => {
+    return [
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      LocalStorageKeys.KEY_AUTH_PERMISSION,
+    ].every((key) => localStorage.getItem(key) === null);
+  };
+
+  test('onSignIn gets the session and the form params, before anything is saved', async () => {
+    const calls: Array<{ session: unknown; params: unknown; wasStored: boolean }> = [];
+
+    await loginWith(
+      {
+        onSignIn: ({ session: read, params }) => {
+          calls.push({ session: read, params, wasStored: !isNothingStored() });
+        },
+      },
+      { username: 'alice', password: 'secret-password' },
+    );
+
+    expect(calls).toEqual([
+      {
+        session: { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } },
+        params: { username: 'alice', password: 'secret-password' },
+        wasStored: false,
+      },
+    ]);
+    expect(isNothingStored()).toBe(false);
+  });
+
+  test('a throw in onSignIn rejects login and saves nothing', async () => {
+    const error = await rejectionOf(
+      loginWith({
+        onSignIn: ({ session: read }) => {
+          if (!read.roles.includes('superuser')) {
+            throw new Error('[onSignIn] Forbidden');
+          }
+        },
+      }),
+    );
+
+    expect(String(error)).toContain('[onSignIn] Forbidden');
+    expect(isNothingStored()).toBe(true);
+  });
+
+  test('a rejection from an async onSignIn rejects login and saves nothing', async () => {
+    const error = await rejectionOf(
+      loginWith({ onSignIn: () => Promise.reject(new Error('[onSignIn] Forbidden')) }),
+    );
+
+    expect(String(error)).toContain('[onSignIn] Forbidden');
+    expect(isNothingStored()).toBe(true);
+  });
+
+  test('onSignIn is awaited before the session is saved', async () => {
+    let wasStoredAfterWait = true;
+
+    await loginWith({
+      onSignIn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        wasStoredAfterWait = !isNothingStored();
+      },
+    });
+
+    expect(wasStoredAfterWait).toBe(false);
+    expect(isNothingStored()).toBe(false);
+  });
+
+  test('persistSession: false saves nothing, runs onSignIn, and login still resolves', async () => {
+    let seen: unknown;
+
+    const result = await loginWith({
+      persistSession: false,
+      endpoints: { afterLogin: '/dashboard' },
+      onSignIn: ({ session: read }) => {
+        seen = read.token.value;
+      },
+    });
+
+    expect(seen).toBe('jwt');
+    expect(isNothingStored()).toBe(true);
+    expect(result).toMatchObject({ redirectTo: '/dashboard' });
+  });
+
+  test('signInUsername is the username that is stored; the default is params.username', async () => {
+    await loginWith(
+      { signInUsername: (params) => params.identifier.value },
+      { identifier: { scheme: 'username', value: 'alice' } },
+    );
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      username: 'alice',
+    });
+
+    localStorage.clear();
+    await loginWith({}, { username: 'bob' });
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      username: 'bob',
+    });
   });
 });

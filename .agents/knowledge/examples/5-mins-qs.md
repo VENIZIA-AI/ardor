@@ -31,8 +31,7 @@ app needs together:
   [Hooks and context](/architecture/hooks-and-context.md) and
   [Module augmentation](/architecture/module-augmentation.md).
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
-  `identifier`/`credential` body, answered with `{ token: '<jwt>' }` whose `userId` claim becomes the
-  identity; `AUTH_PROVIDER_OPTIONS` sets only `endpoints.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
+  `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `endpoints.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
 - **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 590 KB whole, over Vite's 500 KB warning, and three chunks of 49, 219 and 321 KB leave no warning.
 
@@ -56,7 +55,7 @@ example's scripts wrap.
 
 ## What the stub API returns
 
-`api/server.ts` answers `POST /api/auth/sign-in` as an IGNIS backend does: it reads `identifier.value` and `credential.value`, and returns `{ token }`, a JWT-shaped string with a `userId` claim (the signature is not checked, here or by ARDOR - the server checks it on every request).
+`api/server.ts` answers `POST /api/auth/sign-in` as an IGNIS backend does: it reads `identifier.value` and `credential.value`, and returns `{ userId, roles, token: { value, type } }`, the shape recommended for an IGNIS `signIn` (IGNIS returns whatever the application's service returns). The bare-token shape is covered by the admin tests.
 
 `api/server.ts` implements the list contract the data provider expects: it returns rows plus a
 `content-range` header, which `DefaultRestDataProvider` reads to populate `total` in the list

@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'login stores roles, login options',
+            link: '/changelogs/2026-10-18-login-roles-and-hooks',
+          },
+          {
             text: 'Quickstart follows the example',
             link: '/changelogs/2026-10-18-quickstart-follows-the-example',
           },
