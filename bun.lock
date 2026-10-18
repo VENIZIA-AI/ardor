@@ -178,7 +178,7 @@
     },
     "packages/ardor": {
       "name": "@venizia/ardor",
-      "version": "0.1.4-4",
+      "version": "0.1.4-5",
       "dependencies": {
         "@venizia/ardor-admin": "workspace:*",
         "@venizia/ardor-kernel": "workspace:*",
