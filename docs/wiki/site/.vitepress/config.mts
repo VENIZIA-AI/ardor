@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Hooks, not flags',
+            link: '/changelogs/2026-10-18-hooks-not-flags',
+          },
+          {
             text: 'Sign-in hooks, not options',
             link: '/changelogs/2026-10-18-sign-in-hooks',
           },

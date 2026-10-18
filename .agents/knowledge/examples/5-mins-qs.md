@@ -31,7 +31,7 @@ app needs together:
   [Hooks and context](/architecture/hooks-and-context.md) and
   [Module augmentation](/architecture/module-augmentation.md).
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
-  `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `endpoints.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
+  `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
 - **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 590 KB whole, over Vite's 500 KB warning, and three chunks of 49, 219 and 321 KB leave no warning.
 

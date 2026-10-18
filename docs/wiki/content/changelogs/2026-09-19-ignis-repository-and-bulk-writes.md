@@ -21,7 +21,7 @@ This entry covers everything since `0.1.1-2`.
 - **Classes register by stereotype.** `@service()`, `@component()`, `@configuration()`, `@provide()` and the rest are exported from `@venizia/ardor`. A decorated class is bound as a singleton when the application starts, so it no longer needs to be listed in `bindingList()`.
 - **Resolve by class, not by string.** `useService`, `useProvider`, `useComponent` and `useConfiguration` take `{ target: SomeClass }` and return that class's type. Each one checks the namespace, so `useService({ target: SomeComponent })` throws and names both keys.
 - **HTTP repositories.** `@venizia/ardor/repository` re-exports `HttpDataSource` and `HttpRepository` from `@venizia/ignis-connectors/http`. They speak the same filter vocabulary as the data provider and read totals from `Content-Range`. When a total is asked for and the server reports none, they throw instead of guessing one.
-- **One stored token for both transports.** `readAuthTokenFromStorage` is exported, and `DefaultNetworkRequestService` takes an `authTokenResolver` option. Pass the same resolver to an `HttpDataSource` and both transports send the same token.
+- **One stored token for both transports.** `readAuthTokenFromStorage` is exported (a static of `DefaultNetworkRequestService` since the [hooks entry](./2026-10-18-hooks-not-flags)), and `DefaultNetworkRequestService` takes an `authTokenResolver` option. Pass the same resolver to an `HttpDataSource` and both transports send the same token.
 
 ### Fixed
 
@@ -89,12 +89,12 @@ export const useAudit = () => useService({ target: AuditService });
 ```
 
 ```ts
-import { readAuthTokenFromStorage } from '@venizia/ardor';
+import { DefaultNetworkRequestService } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
 const dataSource = new HttpDataSource({
   baseUrl: 'https://api.example.com',
-  authTokenResolver: readAuthTokenFromStorage,
+  authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
 });
 
 const tickets = new HttpRepository<{ id: string; title: string; status: string }>({

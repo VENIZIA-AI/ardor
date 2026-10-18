@@ -32,7 +32,7 @@ The reason for that wiring is scale with a team, not scale of traffic. Three thi
 
 - **Services by key.** An API service is a class, bound once, resolved anywhere in the tree with `useInjectable`. A second developer does not need to know where it was constructed.
 - **Providers as bindings.** The data provider, auth provider and i18n provider are bindings under `CoreBindings` keys. Swapping one is a change to the configuration class, not a search across the component tree.
-- **One place to configure auth.** The REST data provider options hold the API URL, the paths that are reached before a token exists (`noAuthPaths`, or a `noAuthPathRegex`), and the refresh path used for auth recovery. Nothing else in the app needs to repeat that.
+- **One place to configure auth.** The REST data provider options hold the API URL, the paths that are reached before a token exists (`noAuthPaths`, or a `noAuthPathRegex`), and the refresh path used for auth recovery. The refresh itself is one `refreshToken()` hook on the network service. Nothing else in the app needs to repeat that.
 
 The whole idea fits in a few lines:
 
@@ -102,7 +102,7 @@ Plain react-admin is a good fit for many apps. ARDOR changes the parts that get 
 | Structure | You assemble providers and pass them as props to the root component | You declare bindings in an application class; `ArdorApplication` receives the started container |
 | Dependency injection | None built in; you thread objects through props or your own context | IoC container from `@venizia/ignis-inversion`; services and providers are bound by key and resolved with `useInjectable` |
 | Data layer | You write or pick a data provider and its query encoding | `DefaultRestDataProvider` bound under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, speaking the `@venizia/ignis-filter` vocabulary |
-| Auth recovery | You implement token refresh in your own auth provider or HTTP client | Configured once in the REST data provider options: `noAuthPaths` / `noAuthPathRegex` for pre-token paths and `authRecovery.refreshTokenPath` for refresh |
+| Auth recovery | You implement token refresh in your own auth provider or HTTP client | Configured once: `noAuthPaths` / `noAuthPathRegex` and `authRecovery.refreshTokenPath` in the REST data provider options, and the refresh itself as the `refreshToken()` hook of a `DefaultNetworkRequestService` subclass |
 | Typing of keys | Translation and lookup keys are plain strings | `useInjectable` and `useTranslate` keys are typed through `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`, which you augment with your own keys |
 
 ## Is ARDOR for you

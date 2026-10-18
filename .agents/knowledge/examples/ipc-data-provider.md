@@ -85,7 +85,7 @@ class IpcConfiguration {
   restDataProviderOptions() {
     return {
       url: 'ipc://local',
-      useAuth: false,
+      noAuthPathRegex: /./,
     };
   }
 
@@ -98,7 +98,7 @@ class IpcConfiguration {
 
 `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton, following
 [Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for `CoreBindings`.
-`useAuth: false` opts out of the auth pipeline entirely -
+`noAuthPathRegex: /./` opts out of the auth pipeline entirely (every path is no-auth) -
 see [No-auth paths](/architecture/no-auth-paths.md) - since this example has no session concept.
 
 ## Step 5: run it

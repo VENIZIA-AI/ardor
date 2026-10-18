@@ -8,7 +8,7 @@ tags: [headers, network-request, kernel, i18n, auth, tracing]
 
 ARDOR's `DefaultNetworkRequestService` (in the kernel package) builds every outbound request with a consistent set of headers. These are defined centrally as string constants in `HeaderConsts` (`packages/kernel/src/common/constants.ts`) so the header names themselves are never hand-typed at call sites. This is the same const-class pattern used elsewhere in the kernel - see [Const classes](/conventions/const-classes.md).
 
-Every name is lowercase, and the service keys its header record by lowercase name, merging sources so a later one REPLACES an earlier one whatever case either used: custom headers over the timezone pair, the per-request `x-request-*` headers over any custom header of the same name. A plain object spread kept `X-Request-Count` beside `x-request-count`, and `fetch` sent the two joined as `"1, 0"`, which no server parses. `removeHeaders` lowercases the names it is given for the same reason.
+Every name is lowercase, and the service keys its header record by lowercase name, merging sources so a later one REPLACES an earlier one whatever case either used: custom headers over the timezone pair, the per-request `x-request-*` headers over any custom header of the same name. A plain object spread kept `X-Request-Count` beside `x-request-count`, and `fetch` sent the two joined as `"1, 0"`, which no server parses. `removeHeaders({ keys })` lowercases the names it is given for the same reason, and the merging is `NetworkHeaders.merge({ sources })` (`NetworkHeaders.toRecord({ headers })` is the one reading of `HeadersInit`, shared by the service and the data provider).
 
 ## timezone and timezone-offset
 
@@ -21,7 +21,7 @@ Both are computed once at module load (`App` class fields), not per request, so 
 
 ## Authorization and x-auth-provider
 
-When a call requires auth, the service takes the in-memory `authToken` set with `setAuthToken`, and only when there is none asks its `authTokenResolver` - by default `readAuthTokenFromStorage`, which reads `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN` and answers `undefined` where there is no `localStorage` or the value does not parse. It sends:
+When a call requires auth, the service asks its protected hook `resolveAuthToken()` - by default the static `DefaultNetworkRequestService.readAuthTokenFromStorage()`, which reads `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN` and answers `undefined` where there is no `localStorage` or the value does not parse. Overriding `resolveAuthToken()` is the one way to supply a token from somewhere else. It sends:
 
 - `authorization: <type> <value>` where type defaults to `Bearer` if the stored token has no explicit type (see `Authentication.TYPE_BASIC` / `TYPE_BEARER` constants).
 - `x-auth-provider` - the provider name recorded alongside the token, letting the backend know which auth strategy issued it. It is omitted when the token names no provider, rather than sent as the string `undefined`.
@@ -45,7 +45,7 @@ These two headers carry count semantics:
 
 ## x-request-id
 
-Every request is tagged with a tracing id under `x-request-id`. When `requestTracingId` is a function, the id is `requestTracingId({ applicationInfo })`; otherwise (unset or a boolean) it is `<applicationInfo.name>_<uuid>` - a fresh random v4-shaped id per request, prefixed with the application name, not derived from the request. Either way logs and traces can be correlated end to end between client and backend without the client owning a stateful counter.
+Every request is tagged with a tracing id under `x-request-id`. The id is built by the protected hook `buildRequestTracingId({ applicationInfo })`, by default `<applicationInfo.name>_<uuid>` - a fresh random v4-shaped id per request, prefixed with the application name, not derived from the request; a subclass of the service overrides it. The channel (`x-request-channel`) is data: `requestTracingChannel`, `web` unless configured. Either way logs and traces can be correlated end to end between client and backend without the client owning a stateful counter.
 
 The id comes from `uuidV4()` in `@venizia/ignis-helpers/uuid`, which uses `crypto.randomUUID` where that exists and `crypto.getRandomValues` where it does not. `randomUUID` is secure-context-only, so on a plain-http origin such as `http://<lan-ip>` it is `undefined` - and because EVERY request carries this header, calling it directly used to throw before anything was sent: the whole app failed, not one call. The shared helper is the reason this is not solved twice; at 398 B gzip it also measured SMALLER than the local fallback it replaced.
 
@@ -55,11 +55,11 @@ The `content-type` header is chosen from the request's declared `bodyType`, usin
 
 ## x-locale
 
-The `x-locale` header carries the active UI locale. It is opt-in: nothing is sent until the application mounts `useRequestHeaderLocale`, which pushes react-admin's current locale through `setHeaders` - see [i18n](/architecture/i18n.md) for the mechanism. `App.DEFAULT_LOCALE` (`en.UTF-8`) is declared but read nowhere - it is not a fallback.
+The `x-locale` header carries the active UI locale. It is opt-in: nothing is sent until the application mounts `useRequestHeaderLocale`, which pushes react-admin's current locale through `setHeaders({ headers })` - see [i18n](/architecture/i18n.md) for the mechanism. `App.DEFAULT_LOCALE` (`en.UTF-8`) is declared but read nowhere - it is not a fallback.
 
 ## setHeaders / removeHeaders
 
-The network request service keeps its header set mutable at runtime: `setHeaders` merges new key-value pairs into the internal `headers` record (using `lodash/merge`), and `removeHeaders` strips specific keys out. This is how locale (and any static custom header) is updated after the service has already been constructed, without recreating the whole client. It cannot change `authorization` on an authenticated path: stored headers are spread first, then the computed `authorization` and `x-auth-provider` overwrite them. Update the token with `setAuthToken` or the stored session instead. Once `setAuthToken` has been called, that in-memory token always wins, so later changes to the stored session are ignored.
+The network request service keeps its header set mutable at runtime: `setHeaders({ headers })` merges new key-value pairs into the internal `headers` record (through `NetworkHeaders.merge`, so a name in another case replaces the stored one), and `removeHeaders({ keys })` strips specific keys out. This is how locale (and any static custom header) is updated after the service has already been constructed, without recreating the whole client. It cannot change `authorization` on an authenticated path: stored headers are spread first, then the computed `authorization` and `x-auth-provider` overwrite them. Update the token through the stored session, or override `resolveAuthToken()` to read it from elsewhere.
 
 ## content-range and totals
 

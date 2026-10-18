@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (123)
+### `@venizia/ardor-kernel` (122)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -92,13 +92,13 @@ generated:
 - `LocalStorageKeys` class
 - `Logger` class
 - `model` const
+- `NetworkHeaders` class
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `parse` const
 - `provide` const
-- `readAuthTokenFromStorage` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyTypes` class
@@ -109,7 +109,6 @@ generated:
 - `service` const
 - `StringIdType` type
 - `stringify` const
-- `TAuthTokenResolver` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -204,7 +203,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (28)
+### `@venizia/ardor-admin` (29)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -221,6 +220,7 @@ generated:
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
 - `IUseDocumentTitleOptions` interface
+- `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
@@ -340,18 +340,19 @@ generated:
 - `IUseDebounceReturn` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `keysToCamel` const
 - `LocalStorageKeys` class
 - `Logger` class
 - `model` const
+- `NetworkHeaders` class
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `parse` const
 - `provide` const
-- `readAuthTokenFromStorage` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyTypes` class
@@ -363,7 +364,6 @@ generated:
 - `StringIdType` type
 - `stringify` const
 - `SyncFC` interface
-- `TAuthTokenResolver` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type

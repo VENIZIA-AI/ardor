@@ -69,7 +69,7 @@ export function TenantHeaderButton() {
   });
 
   const handleClick = () => {
-    dataProvider.getNetworkService().setHeaders({ 'x-tenant': 'acme' });
+    dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } });
   };
 
   return <button onClick={handleClick}>Use tenant acme</button>;
@@ -219,13 +219,13 @@ export function DeleteButton(props: { onDelete: () => Promise<void> }) {
 
 ## useRefreshToken
 
-Returns a callback that calls `authProvider.refreshToken()` and then invalidates the `['auth', 'getPermissions']` query. If no auth provider is in the tree, the callback resolves to `undefined` without doing anything.
+Returns a callback that calls `authProvider.refreshToken()` and then invalidates the `['auth', 'getPermissions']` query. With `DefaultAuthProvider`, that call is the network service's `refresh()`: it resolves `true` when the session was refreshed and `false` when the service has nothing to refresh, and it shares one refresh with any `401` recovery in flight. If no auth provider is in the tree, the callback resolves to `undefined` without doing anything.
 
 ```ts no-check
 const useRefreshToken: () => () => Promise<any>;
 ```
 
-Needs the ra-core auth provider context and a TanStack `QueryClientProvider`. The auth provider must implement `refreshToken` - see [Auth provider](../references/auth-provider).
+Needs the ra-core auth provider context and a TanStack `QueryClientProvider`. The refresh itself is the `refreshToken` hook of your `DefaultNetworkRequestService` subclass - see [Auth recovery](../best-practices/auth-recovery) and [Auth provider](../references/auth-provider).
 
 ```tsx
 import { useRefreshToken } from '@venizia/ardor';
@@ -238,10 +238,14 @@ export function RefreshTokenButton() {
 
 ## useRequestHeaderLocale
 
-Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConsts.X_LOCALE`.
+Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConsts.X_LOCALE`.
 
 ```ts no-check
-const useRequestHeaderLocale: (params?: { key?: string }) => void;
+interface IUseRequestHeaderLocaleOptions {
+  key?: string; // the header name, default HeaderConsts.X_LOCALE
+}
+
+const useRequestHeaderLocale: (opts?: IUseRequestHeaderLocaleOptions) => void;
 ```
 
 Needs the ra-core locale state and an `ApplicationContext` whose container has the default REST data provider bound. Mount it once, high in the admin tree.

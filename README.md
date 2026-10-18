@@ -49,7 +49,7 @@ import 'reflect-metadata';
 
 import {
   type BaseArdorApplication as TArdorApplication, BaseArdorApplication, configuration, CoreBindings, datasource,
-  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultRestDataProvider, readAuthTokenFromStorage,
+  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultNetworkRequestService, DefaultRestDataProvider,
   repository, RepositoryTypes, type IApplicationInfo, inject, provide,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
@@ -58,7 +58,7 @@ import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 @datasource()
 class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
   }
 }
 
@@ -79,12 +79,12 @@ class AdminConfiguration {
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    return { url: '/api', noAuthPaths: ['/auth/login'] };
+    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
-    return { paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } };
+    return { paths: { afterLogin: '/products' } };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })

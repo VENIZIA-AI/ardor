@@ -33,9 +33,7 @@ options separately. Never more than 5 parameters in all; VULCAN's `venizia/max-p
 
 ## Known exceptions
 
-Positional signatures still ship: the `DefaultNetworkRequestService` setters
-(`setHeaders(headers)`), the `IFetchable` interface
-(`send(opts, logger?)`), the `Logger` methods (`debug(message, ...args)`) and kernel utilities such
+Positional signatures still ship: the `Logger` methods (`debug(message, ...args)`) and kernel utilities such
 as `isNumber(value, exact?)` and `getNumberValue(input, method)`. None of them is a model for new
 code. Three shapes are positional on purpose:
 

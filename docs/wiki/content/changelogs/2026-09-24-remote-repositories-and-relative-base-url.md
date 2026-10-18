@@ -32,7 +32,7 @@ This entry and [2026-09-23](./2026-09-23-registration-by-hand-and-clean-install)
 ```ts
 import {
   datasource,
-  readAuthTokenFromStorage,
+  DefaultNetworkRequestService,
   repository,
   RepositoryTypes,
   useRepository,
@@ -42,7 +42,7 @@ import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 @datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
   }
 }
 

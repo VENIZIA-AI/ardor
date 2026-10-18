@@ -10,8 +10,8 @@ tags: [example, vert-admin, ignis, auth, crud]
 
 `vert-admin` is the family reference example that pairs an ARDOR console with the IGNIS `examples/vert`
 API. It is deliberately production-shaped: it signs in through IGNIS's authentication component, checks
-session validity against a who-am-i endpoint, recovers expired tokens through a refresh call routed
-through an injected service, and lists a real CRUD resource (`configurations`) with totals read from
+session validity against a who-am-i endpoint, recovers expired tokens through a refresh hook of its network service,
+returned by the data provider, and lists a real CRUD resource (`configurations`) with totals read from
 `content-range`. Anyone wiring a new ARDOR app against a real backend should read this example before
 inventing their own auth wiring.
 
@@ -51,19 +51,20 @@ response rejects to login. The rest of `DefaultAuthProvider` is described in
 [Auth recovery](/architecture/auth-recovery.md), and the header protocol used by the data provider is
 covered in [Header protocol](/architecture/header-protocol.md).
 
-## authRecovery via an injected service
+## The 401 refresh as a network service hook
 
-The REST data provider options include an `authRecovery` block with `refreshTokenPath` set to
-`VertPaths.REFRESH_TOKEN` and a `refreshToken` callback. That callback does not call the data provider
-directly - it resolves `IdentityService` from the container (`this.get<IdentityService>({ key: identity.key })`,
-where `identity` is the `Binding` that `this.service(IdentityService)` returned) and calls its `refresh()`
-method. `IdentityService` is a `BaseService` with `@api()` methods, registered by hand, so it is resolved through the same DI container as everything else - see [DI in the browser](/architecture/di-in-the-browser.md).
-The refresh endpoint itself is not listed in `noAuthPaths` (only sign-in is), and
-`DefaultNetworkRequestService.canRecover()` excludes `authRecovery.refreshTokenPath`, so a failed refresh
-surfaces as a real error instead of looping - the general shape of this mechanism is documented in
-[Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
+The REST data provider options include an `authRecovery` block with only `refreshTokenPath`, set to
+`VertPaths.REFRESH_TOKEN` (data). The refresh itself is a hook: `VertNetworkService` extends
+`DefaultNetworkRequestService` and overrides the protected `refreshToken()`, which POSTs the refresh
+route through its own `doRequest` and stores the token IGNIS re-issues under `LocalStorageKeys.KEY_AUTH_TOKEN`
+(the retry re-reads it), resolving `true`. `VertRestDataProvider` extends `DefaultRestDataProvider` and
+overrides `createNetworkService()` to return it, and `AdminConfiguration` binds that provider under
+`CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The refresh endpoint itself is not listed in `noAuthPaths`
+(only sign-in is), and `DefaultNetworkRequestService.canRecover()` excludes `authRecovery.refreshTokenPath`,
+so a failed refresh surfaces as a real error instead of looping - the general shape of this mechanism is
+documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 
-`IdentityService.whoAmI()` and `IdentityService.refresh()` are both decorated with `@api()` and call
+`IdentityService.whoAmI()` is decorated with `@api()` and calls
 `this.dataProvider.send(...)` with an explicit `RequestMethods`, following the pattern in
 [Data provider pipeline](/architecture/data-provider-pipeline.md).
 

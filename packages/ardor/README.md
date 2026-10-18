@@ -43,15 +43,14 @@ export class SellerConfiguration {
   restDataProviderOptions() {
     return {
       url: import.meta.env.VITE_API_URL,
-      noAuthPaths: ['/auth/login'],
+      noAuthPaths: ['/auth/sign-in'],
     };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     return {
-      paths: { signIn: '/auth/login' },
-      endpoints: { afterLogin: '/dashboard' },
+      paths: { afterLogin: '/dashboard' },
     };
   }
 

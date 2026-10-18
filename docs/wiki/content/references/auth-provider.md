@@ -17,7 +17,7 @@ A running application with the REST data provider bound - see [Application](../r
 |---|---|---|
 | `DefaultAuthProvider` | class | `BaseProvider<IAuthProvider>`. `value(container)` returns the object react-admin consumes. |
 | `DefaultAuthService` | class | `localStorage` access: `getAuth`, `getUser`, `getRoles`, `saveAuth`, `cleanUp`. |
-| `IAuthProviderOptions` | interface | Data only: `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`. Behaviour is in the provider's protected hooks. |
+| `IAuthProviderOptions` | interface | Data only: `paths.signIn`, `paths.checkAuth`, `paths.afterLogin`. Behaviour is in the provider's protected hooks. |
 | `IAuthProvider` | interface | `IReactAdminAuthProvider` plus `getRoles` and `refreshToken`. |
 | `IReactAdminAuthProvider` | interface | The plain react-admin contract: `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`. |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION`. |
@@ -49,13 +49,10 @@ The options object is bound under `CoreBindings.AUTH_PROVIDER_OPTIONS` and injec
 
 ```ts no-check
 interface IAuthProviderOptions {
-  endpoints?: {
-    afterLogin?: string;
-  };
   paths?: {
     signIn?: string;
-    signUp?: string;
     checkAuth?: string;
+    afterLogin?: string;
   };
 }
 ```
@@ -64,8 +61,7 @@ interface IAuthProviderOptions {
 |---|---|---|
 | `paths.signIn` | `login` - the resource that receives `POST` with the sign-in body | `/auth/sign-in`, the IGNIS auth controller's route |
 | `paths.checkAuth` | `checkAuth` - the resource that receives `GET` to validate the stored token | not called; `checkAuth` only checks local storage |
-| `paths.signUp` | not read by `DefaultAuthProvider`; available for subclasses | none |
-| `endpoints.afterLogin` | `login` - the `redirectTo` value returned to react-admin | `/` |
+| `paths.afterLogin` | `login` - the `redirectTo` value returned to react-admin | `/` |
 
 ```ts
 import { type IAuthProviderOptions } from '@venizia/ardor';
@@ -73,8 +69,6 @@ import { type IAuthProviderOptions } from '@venizia/ardor';
 const authProviderOptions: IAuthProviderOptions = {
   paths: {
     checkAuth: '/auth/whoami',
-  },
-  endpoints: {
     afterLogin: '/dashboard',
   },
 };
@@ -82,7 +76,7 @@ const authProviderOptions: IAuthProviderOptions = {
 
 ## login and what it stores
 
-`login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody({ params })`: the IGNIS sign-in body made from `params.username` and `params.password`. The provider reads the session from the response `data`, saves it with `saveSession` (by default `authService.saveAuth`), and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
+`login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody({ params })`: the IGNIS sign-in body made from `params.username` and `params.password`. The provider reads the session from the response `data`, saves it with `saveSession` (by default `authService.saveAuth`), and resolves with the response plus a `redirectTo` built from `paths.afterLogin` (double slashes are removed).
 
 IGNIS's auth controller has no fixed sign-in response: it returns whatever your application's `signIn` returns. The response `data` is read in either of two shapes, the first being the recommended one:
 
@@ -135,6 +129,7 @@ const auth = authService.getAuth();
 | `resolveUsername({ params })` | `params.username` | Name the user the form identifies another way |
 | `beforeSaveSession({ session, params })` | Nothing; awaited | Refuse a user, or hand the token to another service: a throw or a rejection rejects `login` and nothing is saved |
 | `saveSession({ session, username })` | `authService.saveAuth` | Keep the session elsewhere: do nothing, and `login` still resolves |
+| `readSignInSession({ data })` | The two response shapes described above | Read a sign-in response of another shape; it also has `decodeJwtClaims({ jwt })` and `readRoleNames({ roles })` |
 
 `session` is `{ userId, token: { value, type }, roles }`, as read from the response. `params` is the login form's params.
 
@@ -155,6 +150,8 @@ export class AdminAuthProvider extends DefaultAuthProvider {
   }
 }
 ```
+
+The pages `login`, `checkAuth` and `checkError` name are protected getters too: `signInPath` (`paths.signIn`, else `/auth/sign-in`), `afterLoginPath` (`paths.afterLogin`, else `/`), `loginPagePath` (`/login`, react-admin's route) and `unauthorizedPagePath` (`/unauthorized`). Override one when the application mounts the page elsewhere.
 
 A provider that keeps the session elsewhere overrides `saveSession` to do nothing; `beforeSaveSession` still runs, with the session in hand. `checkAuth` then finds no stored token, so such an application supplies its own check.
 
@@ -218,7 +215,7 @@ export class EmailAuthProvider extends DefaultAuthProvider {
 
 ## An application with no sign-in
 
-`ArdorApplication` reads `CoreBindings.DEFAULT_AUTH_PROVIDER` as optional. Leave it, `AUTH_PROVIDER_OPTIONS` and `DEFAULT_AUTH_SERVICE` unbound and react-admin runs without an auth provider: no login page, no `checkAuth`, every page public. Set `useAuth: false` on the REST options so the data provider sends no `Authorization` header.
+`ArdorApplication` reads `CoreBindings.DEFAULT_AUTH_PROVIDER` as optional. Leave it, `AUTH_PROVIDER_OPTIONS` and `DEFAULT_AUTH_SERVICE` unbound and react-admin runs without an auth provider: no login page, no `checkAuth`, every page public. Set `noAuthPathRegex: /./` on the REST options so the data provider sends no `Authorization` header.
 
 ```ts
 import {
@@ -238,7 +235,7 @@ export class PublicConfiguration {
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    return { url: 'https://api.example.com', useAuth: false };
+    return { url: 'https://api.example.com', noAuthPathRegex: /./ };
   }
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
@@ -334,24 +331,7 @@ import { type AnyType } from '@venizia/ardor';
 declare function refreshToken(): Promise<AnyType>;
 ```
 
-The base implementation resolves with `undefined` and does not call the backend. Override it when your API has a refresh endpoint. The `IAuthRecoveryOptions.refreshToken` hook of the REST data provider is a separate entry point - see [Network](../references/network).
-
-```ts
-import { DefaultAuthProvider, RequestMethods } from '@venizia/ardor';
-
-export class AppAuthProvider extends DefaultAuthProvider {
-  override async refreshToken() {
-    const rs = await this.restDataProvider.send({
-      resource: '/auth/refresh',
-      params: { method: RequestMethods.POST },
-    });
-
-    const { userId, token } = rs.data;
-    this.authService.saveAuth({ userId, token });
-    return rs.data;
-  }
-}
-```
+`refreshToken` calls `restDataProvider.getNetworkService().refresh()` and resolves `true` when the session was refreshed, `false` when the network service has no refresh to make (its default). The refresh itself is not here: it is the `refreshToken` hook of `DefaultNetworkRequestService`, so a refresh is made in one place. The `401` recovery calls the same `refresh()`, and one burst of `401`s plus this call share one refresh. `useRefreshToken` calls this method. See [Auth recovery](../best-practices/auth-recovery) for the subclass that implements it and [Network](../references/network) for the hooks.
 
 ## logout and cleanUp scope
 
@@ -433,7 +413,7 @@ export class AuthConfiguration {
   authProviderOptions() {
     return {
       paths: { checkAuth: '/auth/whoami' },
-      endpoints: { afterLogin: '/dashboard' },
+      afterLogin: '/dashboard',
     };
   }
 
@@ -474,7 +454,7 @@ The binding API itself is documented in [Application](../references/application)
 - `checkError` on `403` does not log the user out. If you want a `403` to end the session, override it.
 - `cleanUp` only removes keys under `@app/auth/` and `@app/oauth2/`. Keep session data under those prefixes if it should disappear on logout.
 - `getIdentity` rejects when there is no `userId`. Do not call it before login and expect an empty object.
-- `refreshToken` and `getPermissions` are no-ops in the base class. Overriding one of them does not affect the other.
+- `getPermissions` is a no-op in the base class, and `refreshToken` refreshes nothing until the network service's `refreshToken` hook is overridden.
 
 ## Related
 

@@ -56,7 +56,7 @@ How the pieces fit.
 - [DI in the browser](/architecture/di-in-the-browser.md) - the IGNIS container as the application, bindings, injection by key and by class
 - [Data provider pipeline](/architecture/data-provider-pipeline.md) - react-admin call to HTTP request and back, the IGNIS filter vocabulary
 - [Auth recovery](/architecture/auth-recovery.md) - one refresh per 401 burst, one retry, what is never recovered
-- [No-auth paths](/architecture/no-auth-paths.md) - `useAuth`, `noAuthPaths`, `noAuthPathRegex`
+- [No-auth paths](/architecture/no-auth-paths.md) - `noAuthPaths`, `noAuthPathRegex`, the `isNoAuthPath` hook
 - [Request header protocol](/architecture/header-protocol.md) - every header the data layer sends and reads
 - [Internationalization](/architecture/i18n.md) - the i18n provider, the bundles, typed translate keys
 - [Hooks and context](/architecture/hooks-and-context.md) - what each hook needs in the tree

@@ -59,7 +59,7 @@ ARDOR's container is `@venizia/ignis-inversion`, which relies on TypeScript's le
 What each part does:
 
 - `@datasource()` and `@repository(...)` declare the two classes, as IGNIS does. `start()` binds each as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type, and nothing a minifier can rename. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into its constructor. Registering by hand with `this.dataSource(...)` and `this.repository(...)` works too - see [Binding keys](../../best-practices/binding-keys).
-- `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `readAuthTokenFromStorage` gives it the token the auth provider stored. `baseUrl` is relative here, so it resolves against the page and the dev server proxies it.
+- `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `DefaultNetworkRequestService.readAuthTokenFromStorage` gives it the token the auth provider stored. `baseUrl` is relative here, so it resolves against the page and the dev server proxies it.
 - `AdminConfiguration` binds the framework. `start()` binds each `@provide` method under its key, SINGLETON, built on first use, so react-admin, the auth provider and every hook share one data provider with its token, headers and single 401 refresh. `noAuthPaths` lists the paths reached before a token exists; any other path is sent with an `Authorization` header.
 - `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` is empty here, because the bindings live in `AdminConfiguration`.
 - `declare module '@venizia/ardor-admin'` teaches `useTranslate` the two message keys this application adds - see [Module augmentation](../../best-practices/module-augmentation).
@@ -117,7 +117,7 @@ The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` spli
 
 ## Your API is not this one
 
-- **No sign-in.** Leave the auth provider (and its options and service) unbound, drop `loginPage`, and set `useAuth: false` on `REST_DATA_PROVIDER_OPTIONS`: the admin runs with every page public. See [An application with no sign-in](../../references/auth-provider#an-application-with-no-sign-in).
+- **No sign-in.** Leave the auth provider (and its options and service) unbound, drop `loginPage`, and set `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`: the admin runs with every page public. See [An application with no sign-in](../../references/auth-provider#an-application-with-no-sign-in).
 - **An API that signs in elsewhere, or takes the form as it is.** Set `paths.signIn` in the auth options, the same path in `noAuthPaths`, and override `buildSignInBody` in a subclass of `DefaultAuthProvider` to return the form as it is. The defaults are the IGNIS auth controller's route, body and response - see [The sign-in contract](../../references/auth-provider#the-sign-in-contract).
 
 ## What you built

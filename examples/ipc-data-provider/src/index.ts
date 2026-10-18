@@ -68,7 +68,7 @@ export class IpcConfiguration {
   // The base class still needs its options; the URL is never used by the IPC send.
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    return { url: 'ipc://local', useAuth: false };
+    return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })

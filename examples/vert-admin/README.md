@@ -27,5 +27,5 @@ Sign in with a user seeded in `vert` (`bun run seed:authz` there creates test ac
 
 | File | What it shows |
 | --- | --- |
-| `src/application.ts` | `VertPaths` (the IGNIS auth component's routes), `authRecovery` wired to the refresh endpoint through an injected service, `bindingList()` |
+| `src/application.ts` | `VertPaths` (the IGNIS auth component's routes), the 401 refresh as a `refreshToken` hook of a network service subclass, returned by `createNetworkService`, `bindingList()` |
 | `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useInjectable`, `useNotifyError` with an `ApplicationError` |
