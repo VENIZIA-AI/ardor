@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'IGNIS 0.2.2-12 chain',
+            link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
+          },
+          {
             text: 'login stores roles, login options',
             link: '/changelogs/2026-10-18-login-roles-and-hooks',
           },
