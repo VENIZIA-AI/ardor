@@ -22,7 +22,7 @@ app needs together:
   `baseUrl: '/api'`, and `ProductRepository extends HttpRepository<IProduct>` (`src/repositories/`), declared
   `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`, each in a file of its own. `IgnisArtifactsVitePlugin` (in `vite.config.ts`) lists every decorated class under `src/` in the bundle; `Application.artifacts()` returns `AutoArtifacts`; the module that imports it holds no decorated class and is imported by none. `start()` binds each class as a
   singleton, `@repository` injects the datasource, and `useRepository({ target })` resolves by
-  class, which survives a minifier because the plugin turns `keepNames` on: the production bundle keeps both names and works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
+  class, which survives a minifier because the plugin pins the name of each class it lists (ignis-boot 0.2.1-11; -10 used `keepNames` for the whole build): the production bundle keeps those names, renames the rest, and works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
   [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - **`useRepository` + `useTranslate` + `useListContext`** used together in one component
   (`ProductList`). `useListContext` comes from react-admin/ra-core and supplies rows and `total`
@@ -33,7 +33,7 @@ app needs together:
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
   `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
-- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 700 KB whole (about 595 KB without the plugin's `keepNames`), over Vite's 500 KB warning, and three chunks of 11, 278 and 408 KB leave no warning.
+- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 595 KB whole (188 KB gzipped), over Vite's 500 KB warning, and three chunks of 10, 219 and 364 KB leave no warning.
 
 The wiki quickstart (`guides/get-started/quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 

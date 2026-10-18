@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Boot pins class names',
+            link: '/changelogs/2026-10-18-boot-pins-class-names',
+          },
+          {
             text: 'Final pin and autoload',
             link: '/changelogs/2026-10-18-final-pin-and-autoload',
           },

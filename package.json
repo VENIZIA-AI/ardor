@@ -53,7 +53,7 @@
       "@types/react": "^19",
       "@types/react-dom": "^19",
       "@venizia/dev-configs": "0.3.1-4",
-      "@venizia/ignis-boot": "0.2.1-10",
+      "@venizia/ignis-boot": "0.2.1-11",
       "@venizia/ignis-connectors": "0.2.2-14",
       "@venizia/ignis-filter": "0.2.2-6",
       "@venizia/ignis-helpers": "0.2.2-9",
