@@ -33,6 +33,10 @@ app needs together:
 - **Sign-in** through the auth provider: `AUTH_PROVIDER_OPTIONS` sets `paths.signIn` and
   `endpoints.afterLogin`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
+- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 590 KB whole, over Vite's 500 KB warning, and three chunks of 49, 219 and 321 KB leave no warning.
+
+The wiki quickstart (`guides/get-started/quickstart`) includes this example's `application.ts`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
+
 Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.
 
