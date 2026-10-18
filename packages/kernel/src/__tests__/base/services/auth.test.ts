@@ -39,6 +39,26 @@ describe('saveAuth and credential retrieval', () => {
     });
   });
 
+  test('saveAuth stores roles where getRoles reads them, and leaves them alone when none are given', () => {
+    const service = new DefaultAuthService();
+    const session = { userId: 'user-001', token: { value: 'tok', type: 'Bearer' } };
+
+    service.saveAuth({ ...session, roles: ['admin', 'editor'] });
+    expect(service.getRoles()).toEqual(new Set(['admin', 'editor']));
+
+    // A refresh saves the new token and says nothing of roles: they stay.
+    service.saveAuth(session);
+    expect(service.getRoles()).toEqual(new Set(['admin', 'editor']));
+
+    // An empty list is an answer: the user has no roles.
+    service.saveAuth({ ...session, roles: [] });
+    expect(service.getRoles()).toEqual(new Set());
+
+    service.saveAuth({ ...session, roles: ['admin'] });
+    service.cleanUp();
+    expect(service.getRoles()).toEqual(new Set());
+  });
+
   test('getAuth reads back the stored token payload', () => {
     const service = new DefaultAuthService();
 

@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (122)
+### `@venizia/ardor-kernel` (123)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -82,6 +82,7 @@ generated:
 - `ISendParams` interface
 - `ISendResponse` interface
 - `isFloat` const
+- `ISignInSession` interface
 - `isInt` const
 - `isNumber` const
 - `isObject` const
@@ -236,7 +237,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (182)
+### `@venizia/ardor` (183)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -323,6 +324,7 @@ generated:
 - `ISendParams` interface
 - `ISendResponse` interface
 - `isFloat` const
+- `ISignInSession` interface
 - `isInt` const
 - `isNumber` const
 - `isObject` const

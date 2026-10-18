@@ -7,15 +7,11 @@ import {
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
+  type ISignInSession,
   type IPermissionProvider,
   RequestMethods,
 } from '@venizia/ardor-kernel';
 import { type IAuthProvider, type IDataProvider } from '@/common';
-
-interface ISignInSession {
-  userId: number | string;
-  token: { value: string; type: string };
-}
 
 /** The claims of a JWT, or `undefined` for a token that is not one. The signature is not checked. */
 const decodeJwtClaims = (opts: { jwt: string }): Record<string, unknown> | undefined => {
@@ -42,14 +38,45 @@ const isUserId = (value: unknown): value is number | string => {
 };
 
 /**
- * What a sign-in response carries, in either shape: `{ userId, token: { value, type } }`, or what
- * the IGNIS JWT auth component answers - `{ token: '<jwt>' }`, a Bearer token whose user id is a
- * claim of the token itself (`userId`, else `sub`). A response with no token or no user id throws:
- * storing `undefined` would pass `login` and fail every check after it.
+ * The role names of a list: a string is a name, and an object is named by its `identifier`, else
+ * its `name` (IGNIS's role model has an `identifier`). An entry that is neither is skipped.
+ */
+const readRoleNames = (opts: { roles: unknown }): Array<string> => {
+  if (!Array.isArray(opts.roles)) {
+    return [];
+  }
+
+  const names: Array<string> = [];
+  for (const role of opts.roles as Array<unknown>) {
+    const named =
+      typeof role === 'object' && role !== null ? (role as Record<string, unknown>) : {};
+    const name =
+      typeof role === 'string'
+        ? role
+        : [named.identifier, named.name].find((v) => typeof v === 'string');
+    if (typeof name === 'string' && name.length > 0) {
+      names.push(name);
+    }
+  }
+
+  return names;
+};
+
+/**
+ * What a sign-in response carries. IGNIS's auth controller returns whatever the application's
+ * `signIn` returns, so two shapes are read: `{ userId, roles?, token: { value, type } }` (the
+ * recommended one), and `{ token: '<jwt>' }`, a Bearer token whose user id is a claim of the token
+ * itself (`userId`, else `sub`). Roles come from the response, else from the token's `roles`
+ * claim. A response with no token or no user id throws: storing `undefined` would pass `login`
+ * and fail every check after it.
  */
 const readSignInSession = (opts: { data: unknown }): ISignInSession => {
   const { data } = opts;
-  const { userId, token } = (data ?? {}) as { userId?: unknown; token?: unknown };
+  const { userId, token, roles } = (data ?? {}) as {
+    userId?: unknown;
+    token?: unknown;
+    roles?: unknown;
+  };
 
   const record =
     typeof token === 'string'
@@ -76,6 +103,7 @@ const readSignInSession = (opts: { data: unknown }): ISignInSession => {
   return {
     userId: resolvedUserId,
     token: { value: record.value, type: typeof record.type === 'string' ? record.type : 'Bearer' },
+    roles: readRoleNames({ roles: roles ?? claims?.roles }),
   };
 };
 
@@ -110,27 +138,30 @@ export class DefaultAuthProvider<
     };
   }
 
-  login(params: AnyType) {
-    return new Promise((resolve, reject) => {
-      this.restDataProvider
-        .send({
-          resource: (this.authProviderOptions.paths?.signIn ?? '/auth/sign-in') as TResource,
-          params: { method: RequestMethods.POST, body: this.buildSignInBody(params) },
-        })
-        .then((rs) => {
-          const { userId, token } = readSignInSession({ data: rs.data });
-          this.authService.saveAuth({ token, userId, username: params.username });
-          resolve({
-            ...rs,
-            redirectTo: removeDoubleSlashes(
-              `/${this.authProviderOptions.endpoints?.afterLogin ?? '/'}`,
-            ),
-          });
-        })
-        .catch((error) => {
-          reject(error);
-        });
+  async login(params: AnyType) {
+    const rs = await this.restDataProvider.send({
+      resource: (this.authProviderOptions.paths?.signIn ?? '/auth/sign-in') as TResource,
+      params: { method: RequestMethods.POST, body: this.buildSignInBody(params) },
     });
+
+    const session = readSignInSession({ data: rs.data });
+
+    // Before anything is saved, so a throw here leaves no session behind.
+    await this.authProviderOptions.onSignIn?.({ session, params });
+
+    if (this.authProviderOptions.persistSession ?? true) {
+      this.authService.saveAuth({
+        token: session.token,
+        userId: session.userId,
+        roles: session.roles,
+        username: this.authProviderOptions.signInUsername?.(params) ?? params.username,
+      });
+    }
+
+    return {
+      ...rs,
+      redirectTo: removeDoubleSlashes(`/${this.authProviderOptions.endpoints?.afterLogin ?? '/'}`),
+    };
   }
 
   logout(_params: AnyType) {
