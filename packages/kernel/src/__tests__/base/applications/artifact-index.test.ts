@@ -233,4 +233,41 @@ describe('AbstractArdorApplication.artifacts', () => {
       expect(await rejectionOf(application.start())).toMatchObject({ message: 'scan failed' });
     });
   });
+
+  describe('with an index that holds an entry which is not a class', () => {
+    // What a cycle leaves behind: a bundler's eager class list is built while the module of the class
+    // is still evaluating, so the slot holds undefined.
+    const withEntry = (entry: unknown): IArtifactIndex => {
+      return { services: [IndexedService, entry as never] };
+    };
+
+    test('names the kind, the position and the cause instead of a TypeError', async () => {
+      const application = createApplication({ artifacts: [withEntry(undefined)] });
+
+      const error = await rejectionOf(application.start());
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(TypeError);
+      expect(String(error)).toContain("[artifacts] 'services' lists undefined at position 1");
+      expect(String(error)).toContain('cycle');
+    });
+
+    test('says so for null and for a value that is not a function', async () => {
+      for (const entry of [null, 'IndexedService', 42]) {
+        const application = createApplication({ artifacts: [withEntry(entry)] });
+
+        expect(String(await rejectionOf(application.start()))).toContain(
+          "[artifacts] 'services' lists " + (entry === null ? 'null' : typeof entry),
+        );
+      }
+    });
+
+    test('also checks the content of a group', async () => {
+      const application = createApplication({
+        artifacts: [new FakeArtifactGroup(withEntry(undefined)) as IArtifactIndex],
+      });
+
+      expect(String(await rejectionOf(application.start()))).toContain('lists undefined');
+    });
+  });
 });

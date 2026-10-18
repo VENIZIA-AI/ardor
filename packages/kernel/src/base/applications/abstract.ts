@@ -192,7 +192,16 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       }
 
       for (const kind of ArtifactIndexKinds) {
-        for (const target of index[kind] ?? []) {
+        for (const [position, target] of (index[kind] ?? []).entries()) {
+          // A cycle leaves `undefined` here: a bundler's eager class list is built while the module of
+          // the class is still evaluating. Say so, rather than fail on `.name` below.
+          if (typeof target !== 'function') {
+            const found = target === null ? 'null' : typeof target;
+            throw getError({
+              message: `[artifacts] '${kind}' lists ${found} at position ${position}, which is not a class | A module cycle leaves undefined: keep decorated classes out of the module that imports AutoArtifacts`,
+            });
+          }
+
           if (!discovered.has(target)) {
             throw getError({
               message: `[artifacts] '${kind}' lists ${target.name}, which was never discovered | Decorate it with its stereotype and regenerate the index`,

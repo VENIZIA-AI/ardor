@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'start() names a module cycle',
+            link: '/changelogs/2026-10-18-artifact-cycle-error',
+          },
+          {
             text: 'One copy of each package',
             link: '/changelogs/2026-10-18-one-copy-of-each',
           },
