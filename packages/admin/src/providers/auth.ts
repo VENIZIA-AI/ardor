@@ -124,39 +124,56 @@ export class DefaultAuthProvider<
   }
 
   /**
-   * The body of the sign-in request: `signInBody` of the options, else the IGNIS sign-in body made
-   * from `params.username` and `params.password`. A subclass may override this instead.
+   * The body of the sign-in request: the IGNIS sign-in body, made from `params.username` and
+   * `params.password`. Override it when the API wants another shape; `opts.params` as it is posts
+   * the login form unchanged.
    */
-  protected buildSignInBody(params: AnyType): AnyType {
-    if (this.authProviderOptions.signInBody) {
-      return this.authProviderOptions.signInBody(params);
-    }
-
+  protected buildSignInBody(opts: { params: AnyType }): unknown {
     return {
-      identifier: { scheme: 'username', value: params?.username },
-      credential: { scheme: 'basic', value: params?.password },
+      identifier: { scheme: 'username', value: opts.params?.username },
+      credential: { scheme: 'basic', value: opts.params?.password },
     };
+  }
+
+  /** The username `login` remembers with the identity. Default: `params.username`. */
+  protected resolveUsername(opts: { params: AnyType }): string {
+    return opts.params?.username ?? '';
+  }
+
+  /**
+   * Runs once the sign-in response is read and before the session is saved. A throw or a rejection
+   * rejects `login` and nothing is saved: the place to refuse a user, or to hand the token to
+   * another service.
+   */
+  protected beforeSaveSession(_opts: { session: ISignInSession; params: AnyType }): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /**
+   * Saves the session where `checkAuth`, `getIdentity` and `getRoles` read it. A provider that
+   * keeps the session elsewhere overrides this to do nothing; `login` still resolves.
+   */
+  protected saveSession(opts: { session: ISignInSession; username: string }): void {
+    const { session, username } = opts;
+    this.authService.saveAuth({
+      token: session.token,
+      userId: session.userId,
+      roles: session.roles,
+      username,
+    });
   }
 
   async login(params: AnyType) {
     const rs = await this.restDataProvider.send({
       resource: (this.authProviderOptions.paths?.signIn ?? '/auth/sign-in') as TResource,
-      params: { method: RequestMethods.POST, body: this.buildSignInBody(params) },
+      params: { method: RequestMethods.POST, body: this.buildSignInBody({ params }) },
     });
 
     const session = readSignInSession({ data: rs.data });
 
     // Before anything is saved, so a throw here leaves no session behind.
-    await this.authProviderOptions.onSignIn?.({ session, params });
-
-    if (this.authProviderOptions.persistSession ?? true) {
-      this.authService.saveAuth({
-        token: session.token,
-        userId: session.userId,
-        roles: session.roles,
-        username: this.authProviderOptions.signInUsername?.(params) ?? params.username,
-      });
-    }
+    await this.beforeSaveSession({ session, params });
+    this.saveSession({ session, username: this.resolveUsername({ params }) });
 
     return {
       ...rs,

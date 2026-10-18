@@ -12,9 +12,10 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-18 | [The sign-in extension points are protected hooks, not options](./2026-10-18-sign-in-hooks) | Behavior Change |
 | 2026-10-18 | [The release script waits for each tarball, and vert-admin splits its vendor chunks](./2026-10-18-release-waits-for-the-tarball) | Enhancement |
 | 2026-10-18 | [ARDOR builds on the IGNIS 0.2.2-12 chain](./2026-10-18-ignis-0-2-2-12-chain) | Behavior Change |
-| 2026-10-18 | [login stores roles, and three options replace a login override](./2026-10-18-login-roles-and-hooks) | Enhancement |
+| 2026-10-18 | [login stores roles, and hooks replace a login override](./2026-10-18-login-roles-and-hooks) | Enhancement |
 | 2026-10-18 | [The quickstart is the 5-mins-qs example, and says what the bundle is made of](./2026-10-18-quickstart-follows-the-example) | Enhancement |
 | 2026-10-18 | [IGNIS's sign-in is the default, and an application can run with no sign-in](./2026-10-18-auth-optional-and-ignis-sign-in) | Behavior Change |
 | 2026-10-18 | [ARDOR builds on the IGNIS 0.2.2-9 chain](./2026-10-18-ignis-0-2-2-9-chain) | Behavior Change |
