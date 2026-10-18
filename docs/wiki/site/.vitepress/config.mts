@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Stable IGNIS 0.2.2',
+            link: '/changelogs/2026-10-18-stable-ignis-0-2-2',
+          },
+          {
             text: 'Boot pins class names',
             link: '/changelogs/2026-10-18-boot-pins-class-names',
           },
