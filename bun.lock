@@ -333,7 +333,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@venizia/dev-configs": "0.3.1-4",
-    "@venizia/ignis-boot": "0.2.1-10",
+    "@venizia/ignis-boot": "0.2.1-11",
     "@venizia/ignis-connectors": "0.2.2-14",
     "@venizia/ignis-filter": "0.2.2-6",
     "@venizia/ignis-helpers": "0.2.2-9",
@@ -881,7 +881,7 @@
 
     "@venizia/dev-configs": ["@venizia/dev-configs@0.3.1-4", "", { "dependencies": { "@eslint/js": "^10.0.1", "eslint-config-prettier": "^10.1.8", "eslint-plugin-n": "^18.2.1", "eslint-plugin-prettier": "^5.5.6", "eslint-plugin-unicorn": "^74.0.0", "typescript-eslint": "^8.71.2" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxfmt": ">=0.73.0", "oxlint": ">=1.88.0", "oxlint-tsgolint": ">=7.0.2004", "prettier": "^3.0.0", "typescript": "^5.0.0 || ^6.0.0" }, "optionalPeers": ["eslint", "oxfmt", "oxlint", "oxlint-tsgolint", "prettier", "typescript"] }, "sha512-IwiNpjI1cuC5OXi5w+d3MMWm0HapmqwL2gjGiZxE5lTUPyutG10A+5lhOeP6B9BpF0uuJ3DiYB/oYXeeVrvToQ=="],
 
-    "@venizia/ignis-boot": ["@venizia/ignis-boot@0.2.1-10", "", { "dependencies": { "@venizia/ignis-helpers": "0.2.2-9", "@venizia/ignis-inversion": "0.2.2-6" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/cjs/clis/artifacts.js", "ignis-build-info": "dist/cjs/clis/build-info.js" } }, "sha512-+XF1gh716l3GzbeseSWMVm5nwwQ3yJXZZlgy60IymImx2UtVbjp2UqpeUjVE0s4jh5BCMei3qypSJExH63uZ+w=="],
+    "@venizia/ignis-boot": ["@venizia/ignis-boot@0.2.1-11", "", { "dependencies": { "@venizia/ignis-helpers": "0.2.2-9", "@venizia/ignis-inversion": "0.2.2-6" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/cjs/clis/artifacts.js", "ignis-build-info": "dist/cjs/clis/build-info.js" } }, "sha512-zAYq7nqmf3sNvvGlO+h4Ey6rd/7meVY5Y2CzfixoTLaTMLcG0LSlOsjwg3JztP2osgPdieOFnViiVBA7VHOE9A=="],
 
     "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.2.2-14", "", { "dependencies": { "@venizia/ignis-filter": "0.2.2-6", "@venizia/ignis-helpers": "0.2.2-9", "@venizia/ignis-inversion": "0.2.2-6", "@venizia/ignis-kernel": "0.2.2-14", "zod": "^4.5.4" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.4", "@hono/zod-openapi": "^1.5.1", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.2", "drizzle-zod": "^0.8.3", "hono": "^4.12.30", "meilisearch": "^0.59.0 || ^0.60.0", "pg": "^8.21.0", "postgres": "^3.4.0", "typesense": "^3.0.3" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-+tXXD6cgc8c2at2OED+IXSR6tedqSu7zVI+zn1ayiytLpxq5kgBf4IS/cy6B3E+1m/D6PMMhngiVg6xqA3UDKA=="],
 

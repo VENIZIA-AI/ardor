@@ -75,7 +75,7 @@ Every decorated class has a file of its own, and `src/application.ts` holds only
 
 What each part does:
 
-- `start()` binds each decorated class as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type. The key is derived from `Class.name`, which a minifier renames; the plugin turns on `keepNames` for that reason (see [The bundle](#the-bundle)). `RepositoryTypes.REMOTE` says the repository has no model.
+- `start()` binds each decorated class as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type. The key is derived from `Class.name`, which a minifier renames; the plugin pins the name of each class it lists, and only those (see [The bundle](#the-bundle)). `RepositoryTypes.REMOTE` says the repository has no model.
 - `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `DefaultNetworkRequestService.readAuthTokenFromStorage` gives it the token the auth provider stored.
 - `AdminConfiguration`: `noAuthPaths` lists the paths reached before a token exists; any other path is sent with an `Authorization` header. `declare module '@venizia/ardor-admin'` teaches `useTranslate` the two message keys this application adds - see [Module augmentation](../../best-practices/module-augmentation).
 - `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` is empty here, because the bindings live in `AdminConfiguration`.
@@ -105,7 +105,7 @@ What each part does:
 
 ## 6. Configure Vite
 
-`vite.config.ts` adds `IgnisArtifactsVitePlugin` first. It serves the list of decorated classes under `src/` to `@venizia/ignis-boot/auto`, imports it eagerly so the bundle stays tree-shakeable, and turns on `keepNames` because binding keys come from `Class.name`. It also aliases `@` to `src`, forwards `/api` to the API, and splits the vendor code (see [The bundle](#the-bundle)). Point the proxy target at your API; in a real project read it from an environment variable.
+`vite.config.ts` adds `IgnisArtifactsVitePlugin` first. It serves the list of decorated classes under `src/` to `@venizia/ignis-boot/auto`, imports it eagerly so the bundle stays tree-shakeable, and pins the names of those classes (`static { Object.defineProperty(this, 'name', ...) }`, which runs before the decorators) because binding keys come from `Class.name`; the rest of the bundle minifies as usual. It also aliases `@` to `src`, forwards `/api` to the API, and splits the vendor code (see [The bundle](#the-bundle)). Point the proxy target at your API; in a real project read it from an environment variable.
 
 <<< @/../../../examples/5-mins-qs/vite.config.ts{ts}
 
@@ -128,11 +128,11 @@ If the count throws "carried no Content-Range", your list route does not send th
 
 ## The bundle
 
-A production build of this application is about 700 KB (202 KB gzipped), and Vite's default warns above 500 KB for one chunk. Nothing heavy comes in by default. Measured per package on this example, React DOM is about 200 KB, the router 95 KB, `ra-core` 35 KB, `lodash` 34 KB and TanStack Query 31 KB, which is what any react-admin application starts from. ARDOR and the IGNIS packages it needs in the browser (`ardor-admin`, `ardor-kernel`, `ignis-kernel`, `ignis-inversion`, `ignis-helpers`, `ignis-connectors`, `reflect-metadata`) come to about 110 KB, a fifth of it.
+A production build of this application is about 595 KB (188 KB gzipped), and Vite's default warns above 500 KB for one chunk. Nothing heavy comes in by default. Measured per package on this example, React DOM is about 200 KB, the router 95 KB, `ra-core` 35 KB, `lodash` 34 KB and TanStack Query 31 KB, which is what any react-admin application starts from. ARDOR and the IGNIS packages it needs in the browser (`ardor-admin`, `ardor-kernel`, `ignis-kernel`, `ignis-inversion`, `ignis-helpers`, `ignis-connectors`, `reflect-metadata`) come to about 110 KB, a fifth of it.
 
-About 105 KB of the total (14 KB gzipped) is `keepNames`, which the plugin turns on for the whole build so that a decorated class keeps its name through the minifier; without it the same build is about 595 KB (188 KB gzipped).
+The plugin costs almost nothing: it pins the names of the three decorated classes it lists and leaves every dependency to the minifier. (ignis-boot 0.2.1-10 set `output.keepNames` for the whole build instead, which added about 105 KB, 14 KB gzipped, to this application; 0.2.1-11 does not.)
 
-The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` split the bundle into three chunks - the application (11 KB), React (278 KB) and the other vendor code (408 KB) - without shrinking the total. The warning goes away because no chunk is over the limit, and a deploy that changes only application code leaves the two vendor chunks cached. For a bigger application, load each resource page with a dynamic `import()` so the browser fetches a page when its route opens; that is what shrinks the first load.
+The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` split the bundle into three chunks - the application (10 KB), React (219 KB) and the other vendor code (364 KB) - without shrinking the total. The warning goes away because no chunk is over the limit, and a deploy that changes only application code leaves the two vendor chunks cached. For a bigger application, load each resource page with a dynamic `import()` so the browser fetches a page when its route opens; that is what shrinks the first load.
 
 ## Your API is not this one
 
