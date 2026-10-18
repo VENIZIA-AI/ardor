@@ -17,7 +17,7 @@ A running application with the REST data provider bound - see [Application](../r
 |---|---|---|
 | `DefaultAuthProvider` | class | `BaseProvider<IAuthProvider>`. `value(container)` returns the object react-admin consumes. |
 | `DefaultAuthService` | class | `localStorage` access: `getAuth`, `getUser`, `getRoles`, `saveAuth`, `cleanUp`. |
-| `IAuthProviderOptions` | interface | `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`, `signInBody`, `signInUsername`, `onSignIn`, `persistSession`. |
+| `IAuthProviderOptions` | interface | Data only: `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`. Behaviour is in the provider's protected hooks. |
 | `IAuthProvider` | interface | `IReactAdminAuthProvider` plus `getRoles` and `refreshToken`. |
 | `IReactAdminAuthProvider` | interface | The plain react-admin contract: `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`. |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION`. |
@@ -57,18 +57,12 @@ interface IAuthProviderOptions {
     signUp?: string;
     checkAuth?: string;
   };
-  signInBody?: (params: AnyType) => unknown;
-  signInUsername?: (params: AnyType) => string;
-  onSignIn?: (opts: { session: ISignInSession; params: AnyType }) => ValueOrPromise<void>;
-  persistSession?: boolean;
 }
 ```
 
 | Field | Used by | Default when missing |
 |---|---|---|
 | `paths.signIn` | `login` - the resource that receives `POST` with the sign-in body | `/auth/sign-in`, the IGNIS auth controller's route |
-| `signInBody` | `login` - makes the sign-in body from the login form's params | the IGNIS body, from `params.username` and `params.password` |
-| `signInUsername`, `onSignIn`, `persistSession` | `login` - see [Around login](#around-login-signinusername-onsignin-persistsession) | `params.username`; none; `true` |
 | `paths.checkAuth` | `checkAuth` - the resource that receives `GET` to validate the stored token | not called; `checkAuth` only checks local storage |
 | `paths.signUp` | not read by `DefaultAuthProvider`; available for subclasses | none |
 | `endpoints.afterLogin` | `login` - the `redirectTo` value returned to react-admin | `/` |
@@ -88,7 +82,7 @@ const authProviderOptions: IAuthProviderOptions = {
 
 ## login and what it stores
 
-`login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody(params)`: the `signInBody` option when set, else the IGNIS sign-in body made from `params.username` and `params.password`. A subclass may override `buildSignInBody` instead. The provider reads the session from the response `data`, saves it with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
+`login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody({ params })`: the IGNIS sign-in body made from `params.username` and `params.password`. The provider reads the session from the response `data`, saves it with `saveSession` (by default `authService.saveAuth`), and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
 
 IGNIS's auth controller has no fixed sign-in response: it returns whatever your application's `signIn` returns. The response `data` is read in either of two shapes, the first being the recommended one:
 
@@ -131,45 +125,48 @@ const auth = authService.getAuth();
 
 `getAuth` returns `null` and logs an error if the stored value cannot be parsed.
 
-## Around login: signInUsername, onSignIn, persistSession
+## Hooks around login
 
-Three options cover what an application otherwise overrides `login` for. `login` runs in this order: send the sign-in request, read the response, call `onSignIn`, save the session (unless `persistSession` is `false`), resolve with `redirectTo`.
+`login` is a sequence of four protected hooks, so a subclass changes one step and keeps the rest. They take one `opts` object each, and can use `this` and the injected services (`restDataProvider`, `authProviderOptions`, `authService`). The order is: send the sign-in request with `buildSignInBody`, read the response, `beforeSaveSession`, `saveSession` (with `resolveUsername`), resolve with `redirectTo`.
 
-| Option | Used by | Default |
+| Hook | Default | Override it to |
 |---|---|---|
-| `signInUsername(params)` | The username stored with the identity - `getIdentity` returns it | `params.username` |
-| `onSignIn({ session, params })` | Runs after the response is read and before the session is saved. May be async. A throw or a rejection rejects `login` and nothing is saved | none |
-| `persistSession` | `false` makes `login` save nothing and still resolve | `true` |
+| `buildSignInBody({ params })` | The IGNIS sign-in body, from `params.username` and `params.password` | Post another body; return `params` to post the login form as it is |
+| `resolveUsername({ params })` | `params.username` | Name the user the form identifies another way |
+| `beforeSaveSession({ session, params })` | Nothing; awaited | Refuse a user, or hand the token to another service: a throw or a rejection rejects `login` and nothing is saved |
+| `saveSession({ session, username })` | `authService.saveAuth` | Keep the session elsewhere: do nothing, and `login` still resolves |
 
 `session` is `{ userId, token: { value, type }, roles }`, as read from the response. `params` is the login form's params.
 
 ```ts
-import { type IAuthProviderOptions } from '@venizia/ardor';
+import { type AnyType, DefaultAuthProvider, type ISignInSession } from '@venizia/ardor';
 
-export const authOptions: IAuthProviderOptions = {
+export class AdminAuthProvider extends DefaultAuthProvider {
   // The form sends { identifier: { value }, password }, not { username }.
-  signInUsername: (params) => params.identifier.value,
+  protected override resolveUsername(opts: { params: AnyType }) {
+    return opts.params.identifier.value;
+  }
 
   // Refuse a user, or hand the token to another service. Nothing is saved when this throws.
-  onSignIn: ({ session }) => {
-    if (!session.roles.includes('admin')) {
+  protected override async beforeSaveSession(opts: { session: ISignInSession; params: AnyType }) {
+    if (!opts.session.roles.includes('admin')) {
       throw new Error('[signIn] This console is for administrators');
     }
-  },
-};
+  }
+}
 ```
 
-An application that keeps the session elsewhere sets `persistSession: false`; `onSignIn` still runs, with the session in hand, and `checkAuth` then finds no stored token, so the application supplies its own check.
+A provider that keeps the session elsewhere overrides `saveSession` to do nothing; `beforeSaveSession` still runs, with the session in hand. `checkAuth` then finds no stored token, so such an application supplies its own check.
 
 ## The sign-in contract
 
 The defaults are the contract of IGNIS's auth controller (`useAuthController: true`), since ARDOR is IGNIS's frontend:
 
-| | Default (IGNIS) | The previous default, kept behind configuration |
+| | Default (IGNIS) | The previous contract, kept in a subclass |
 |---|---|---|
-| Path | `/auth/sign-in` | `paths: { signIn: '/auth/login' }` |
-| Request body | `{ identifier: { scheme: 'username', value: username }, credential: { scheme: 'basic', value: password } }` | `signInBody: (params) => params` posts the form as it is |
-| Response | whatever your `signIn` returns; recommended `{ userId, roles?, token: { value, type } }` | the same; `login` also reads `{ token: '<jwt>' }`, so nothing to set |
+| Path | `/auth/sign-in` | `paths: { signIn: '/auth/login' }` in the options |
+| Request body | `{ identifier: { scheme: 'username', value: username }, credential: { scheme: 'basic', value: password } }` | a `buildSignInBody` that returns `params`, so the form is posted as it is |
+| Response | whatever your `signIn` returns; recommended `{ userId, roles?, token: { value, type } }` | the same; `login` also reads `{ token: '<jwt>' }`, so nothing to override |
 
 The path must also be in `noAuthPaths`, so the sign-in request goes out without an `Authorization` header. The response shapes, the user id and the roles are described in [login and what it stores](#login-and-what-it-stores).
 
@@ -182,29 +179,41 @@ export const ignisRestOptions: IRestDataProviderOptions = {
   noAuthPaths: ['/auth/sign-in'],
 };
 
-// Another API: its own path and body.
-export const legacyRestOptions: IRestDataProviderOptions = {
+// Another API signs in at its own path: data in the options...
+export const formRestOptions: IRestDataProviderOptions = {
   url: 'https://api.example.com',
   noAuthPaths: ['/auth/login'],
 };
 
-export const legacyAuthOptions: IAuthProviderOptions = {
+export const formAuthOptions: IAuthProviderOptions = {
   paths: { signIn: '/auth/login' },
-  signInBody: (params) => params,
 };
 ```
 
-A login form that is not `{ username, password }` (an e-mail, another scheme) maps its own fields:
+```ts
+import { type AnyType, DefaultAuthProvider } from '@venizia/ardor';
+
+// ...and the body in a hook: the login form as it is.
+export class FormAuthProvider extends DefaultAuthProvider {
+  protected override buildSignInBody(opts: { params: AnyType }) {
+    return opts.params;
+  }
+}
+```
+
+A login form that is not `{ username, password }` (an e-mail, another scheme) maps its own fields the same way:
 
 ```ts
-import { type IAuthProviderOptions } from '@venizia/ardor';
+import { type AnyType, DefaultAuthProvider } from '@venizia/ardor';
 
-export const emailAuthOptions: IAuthProviderOptions = {
-  signInBody: (params) => ({
-    identifier: { scheme: 'email', value: params.email },
-    credential: { scheme: 'basic', value: params.password },
-  }),
-};
+export class EmailAuthProvider extends DefaultAuthProvider {
+  protected override buildSignInBody(opts: { params: AnyType }) {
+    return {
+      identifier: { scheme: 'email', value: opts.params.email },
+      credential: { scheme: 'basic', value: opts.params.password },
+    };
+  }
+}
 ```
 
 ## An application with no sign-in
@@ -459,7 +468,7 @@ The binding API itself is documented in [Application](../references/application)
 ## Common pitfalls
 
 - `login` rejects a response that has no token, or no user id in the response or the token's claims. A backend whose token is not a JWT must send `userId` next to it.
-- `paths.signIn` defaults to `/auth/sign-in`. An API that signs in elsewhere, or takes the form as it is, sets `paths.signIn` and `signInBody` (see [The sign-in contract](#the-sign-in-contract)); without a matching `noAuthPaths` entry the first request fails before it is sent.
+- `paths.signIn` defaults to `/auth/sign-in`. An API that signs in elsewhere sets `paths.signIn`, and a `buildSignInBody` override when it takes the form as it is (see [The sign-in contract](#the-sign-in-contract)); without a matching `noAuthPaths` entry the first request fails before it is sent.
 - `paths.signIn` and `noAuthPaths` must hold the same string. `noAuthPaths` is an exact match list, not a pattern.
 - `getRoles` reads `@app/auth/permission`, which `login` fills from the `roles` of the sign-in response or the token's `roles` claim. A response with neither leaves the set empty.
 - `checkError` on `403` does not log the user out. If you want a `403` to end the session, override it.

@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Sign-in hooks, not options',
+            link: '/changelogs/2026-10-18-sign-in-hooks',
+          },
+          {
             text: 'Release waits for the tarball',
             link: '/changelogs/2026-10-18-release-waits-for-the-tarball',
           },
@@ -101,7 +105,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
           },
           {
-            text: 'login stores roles, login options',
+            text: 'login stores roles',
             link: '/changelogs/2026-10-18-login-roles-and-hooks',
           },
           {

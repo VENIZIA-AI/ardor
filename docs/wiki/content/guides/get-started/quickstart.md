@@ -118,7 +118,7 @@ The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` spli
 ## Your API is not this one
 
 - **No sign-in.** Leave the auth provider (and its options and service) unbound, drop `loginPage`, and set `useAuth: false` on `REST_DATA_PROVIDER_OPTIONS`: the admin runs with every page public. See [An application with no sign-in](../../references/auth-provider#an-application-with-no-sign-in).
-- **An API that signs in elsewhere, or takes the form as it is.** Set `paths.signIn` and `signInBody` in the auth options, and the same path in `noAuthPaths`. The defaults are the IGNIS auth controller's route, body and response - see [The sign-in contract](../../references/auth-provider#the-sign-in-contract).
+- **An API that signs in elsewhere, or takes the form as it is.** Set `paths.signIn` in the auth options, the same path in `noAuthPaths`, and override `buildSignInBody` in a subclass of `DefaultAuthProvider` to return the form as it is. The defaults are the IGNIS auth controller's route, body and response - see [The sign-in contract](../../references/auth-provider#the-sign-in-contract).
 
 ## What you built
 

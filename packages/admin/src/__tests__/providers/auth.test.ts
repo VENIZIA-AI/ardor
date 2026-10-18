@@ -10,6 +10,7 @@ import {
   DefaultAuthService,
   type IApplicationInfo,
   type IAuthProviderOptions,
+  type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
@@ -241,6 +242,36 @@ describe('login', () => {
   });
 });
 
+interface SentRequest {
+  resource: string;
+  body: unknown;
+}
+
+const defaultSession = { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } };
+
+/** A provider built on a data provider stub: what it posts lands in `sent`, and it answers `data`. */
+const signInWith = (opts: {
+  providerClass?: TClass<DefaultAuthProvider>;
+  options?: IAuthProviderOptions;
+  data?: unknown;
+  sent?: Array<SentRequest>;
+}) => {
+  const container = new Container();
+  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
+    send: (request: { resource: string; params: { body: unknown } }) => {
+      opts.sent?.push({ resource: request.resource, body: request.params.body });
+      return Promise.resolve({ data: opts.data ?? defaultSession });
+    },
+  });
+  container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.options ?? {});
+  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+  container
+    .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+    .toProvider(opts.providerClass ?? DefaultAuthProvider);
+
+  return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+};
+
 // A sign-in response that is only a bare token string, the user id and roles inside its payload.
 const jwtOf = (payload: object): string => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -291,62 +322,49 @@ describe('login against the sign-in response shapes', () => {
     });
   });
 
-  test('sends what buildSignInBody makes of the form params', async () => {
-    class IgnisAuthProvider extends DefaultAuthProvider {
-      protected override buildSignInBody(params: { email: string; password: string }) {
+  test('sends what a buildSignInBody override makes of the form params', async () => {
+    class EmailAuthProvider extends DefaultAuthProvider {
+      protected override buildSignInBody(opts: { params: { email: string; password: string } }) {
         return {
-          identifier: { scheme: 'email', value: params.email },
-          credential: { scheme: 'basic', value: params.password },
+          identifier: { scheme: 'email', value: opts.params.email },
+          credential: { scheme: 'basic', value: opts.params.password },
           clientId: 'admin',
         };
       }
     }
 
-    const sent: Array<unknown> = [];
-    const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-      send: (opts: { params: { body: unknown } }) => {
-        sent.push(opts.params.body);
-        return Promise.resolve({ data: { token: jwtOf({ userId: 'u-1' }) } });
-      },
+    const sent: Array<SentRequest> = [];
+    await signInWith({ providerClass: EmailAuthProvider, sent }).login({
+      email: 'alice@example.com',
+      password: 'secret-password',
     });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(IgnisAuthProvider);
-
-    await container
-      .get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .login({ email: 'alice@example.com', password: 'secret-password' });
 
     expect(sent).toEqual([
       {
-        identifier: { scheme: 'email', value: 'alice@example.com' },
-        credential: { scheme: 'basic', value: 'secret-password' },
-        clientId: 'admin',
+        resource: '/auth/sign-in',
+        body: {
+          identifier: { scheme: 'email', value: 'alice@example.com' },
+          credential: { scheme: 'basic', value: 'secret-password' },
+          clientId: 'admin',
+        },
       },
     ]);
   });
 
-  // The pre-IGNIS contract, kept behind configuration.
-  test('keeps the form body and the /auth/login path behind paths.signIn and signInBody', async () => {
-    const sent: Array<{ resource: string; body: unknown }> = [];
-    const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-      send: (opts: { resource: string; params: { body: unknown } }) => {
-        sent.push({ resource: opts.resource, body: opts.params.body });
-        return Promise.resolve({ data: { userId: 7, token: { value: 'jwt', type: 'Bearer' } } });
-      },
-    });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
-      paths: { signIn: '/auth/login' },
-      signInBody: (params: unknown) => params,
-    });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+  // The pre-IGNIS contract: a path in the options, the body in a hook.
+  test('posts the form as it is to /auth/login: paths.signIn and a buildSignInBody that returns params', async () => {
+    class FormAuthProvider extends DefaultAuthProvider {
+      protected override buildSignInBody(opts: { params: unknown }) {
+        return opts.params;
+      }
+    }
 
-    await container
-      .get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-      .login({ username: 'alice', password: 'secret-password' });
+    const sent: Array<SentRequest> = [];
+    await signInWith({
+      providerClass: FormAuthProvider,
+      options: { paths: { signIn: '/auth/login' } },
+      sent,
+    }).login({ username: 'alice', password: 'secret-password' });
 
     expect(sent).toEqual([
       { resource: '/auth/login', body: { username: 'alice', password: 'secret-password' } },
@@ -710,20 +728,6 @@ describe('canAccess', () => {
 });
 
 describe('login hooks', () => {
-  const session = { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } };
-
-  const loginWith = (options: IAuthProviderOptions, params: object = { username: 'alice' }) => {
-    const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-      send: () => Promise.resolve({ data: session }),
-    });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(options);
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-
-    return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).login(params);
-  };
-
   const isNothingStored = () => {
     return [
       LocalStorageKeys.KEY_AUTH_TOKEN,
@@ -732,17 +736,20 @@ describe('login hooks', () => {
     ].every((key) => localStorage.getItem(key) === null);
   };
 
-  test('onSignIn gets the session and the form params, before anything is saved', async () => {
+  test('beforeSaveSession gets the session and the form params, before anything is saved', async () => {
     const calls: Array<{ session: unknown; params: unknown; wasStored: boolean }> = [];
 
-    await loginWith(
-      {
-        onSignIn: ({ session: read, params }) => {
-          calls.push({ session: read, params, wasStored: !isNothingStored() });
-        },
-      },
-      { username: 'alice', password: 'secret-password' },
-    );
+    class SpyAuthProvider extends DefaultAuthProvider {
+      protected override beforeSaveSession(opts: { session: ISignInSession; params: unknown }) {
+        calls.push({ ...opts, wasStored: !isNothingStored() });
+        return Promise.resolve();
+      }
+    }
+
+    await signInWith({ providerClass: SpyAuthProvider }).login({
+      username: 'alice',
+      password: 'secret-password',
+    });
 
     expect(calls).toEqual([
       {
@@ -754,71 +761,115 @@ describe('login hooks', () => {
     expect(isNothingStored()).toBe(false);
   });
 
-  test('a throw in onSignIn rejects login and saves nothing', async () => {
+  test('a throw in beforeSaveSession rejects login and saves nothing', async () => {
+    class AdminOnlyAuthProvider extends DefaultAuthProvider {
+      protected override beforeSaveSession(opts: { session: ISignInSession }) {
+        if (!opts.session.roles.includes('superuser')) {
+          throw new Error('[beforeSaveSession] Forbidden');
+        }
+        return Promise.resolve();
+      }
+    }
+
     const error = await rejectionOf(
-      loginWith({
-        onSignIn: ({ session: read }) => {
-          if (!read.roles.includes('superuser')) {
-            throw new Error('[onSignIn] Forbidden');
-          }
-        },
-      }),
+      signInWith({ providerClass: AdminOnlyAuthProvider }).login({ username: 'alice' }),
     );
 
-    expect(String(error)).toContain('[onSignIn] Forbidden');
+    expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
   });
 
-  test('a rejection from an async onSignIn rejects login and saves nothing', async () => {
+  test('a rejection from beforeSaveSession rejects login and saves nothing', async () => {
+    class RefusingAuthProvider extends DefaultAuthProvider {
+      protected override async beforeSaveSession() {
+        await Promise.resolve();
+        throw new Error('[beforeSaveSession] Forbidden');
+      }
+    }
+
     const error = await rejectionOf(
-      loginWith({ onSignIn: () => Promise.reject(new Error('[onSignIn] Forbidden')) }),
+      signInWith({ providerClass: RefusingAuthProvider }).login({ username: 'alice' }),
     );
 
-    expect(String(error)).toContain('[onSignIn] Forbidden');
+    expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
   });
 
-  test('onSignIn is awaited before the session is saved', async () => {
+  test('beforeSaveSession is awaited before the session is saved', async () => {
     let wasStoredAfterWait = true;
 
-    await loginWith({
-      onSignIn: async () => {
+    class SlowAuthProvider extends DefaultAuthProvider {
+      protected override async beforeSaveSession() {
         await new Promise((resolve) => setTimeout(resolve, 5));
         wasStoredAfterWait = !isNothingStored();
-      },
-    });
+      }
+    }
+
+    await signInWith({ providerClass: SlowAuthProvider }).login({ username: 'alice' });
 
     expect(wasStoredAfterWait).toBe(false);
     expect(isNothingStored()).toBe(false);
   });
 
-  test('persistSession: false saves nothing, runs onSignIn, and login still resolves', async () => {
-    let seen: unknown;
+  test('a saveSession that does nothing leaves storage empty, and login still resolves', async () => {
+    const seen: Array<unknown> = [];
 
-    const result = await loginWith({
-      persistSession: false,
-      endpoints: { afterLogin: '/dashboard' },
-      onSignIn: ({ session: read }) => {
-        seen = read.token.value;
-      },
-    });
+    class ElsewhereAuthProvider extends DefaultAuthProvider {
+      protected override beforeSaveSession(opts: { session: ISignInSession }) {
+        seen.push(opts.session.token.value);
+        return Promise.resolve();
+      }
 
-    expect(seen).toBe('jwt');
+      protected override saveSession() {
+        // The session is kept elsewhere.
+      }
+    }
+
+    const result = await signInWith({
+      providerClass: ElsewhereAuthProvider,
+      options: { endpoints: { afterLogin: '/dashboard' } },
+    }).login({ username: 'alice' });
+
+    expect(seen).toEqual(['jwt']);
     expect(isNothingStored()).toBe(true);
     expect(result).toMatchObject({ redirectTo: '/dashboard' });
   });
 
-  test('signInUsername is the username that is stored; the default is params.username', async () => {
-    await loginWith(
-      { signInUsername: (params) => params.identifier.value },
-      { identifier: { scheme: 'username', value: 'alice' } },
-    );
+  test('saveSession gets the session and the resolved username', async () => {
+    const saved: Array<unknown> = [];
+
+    class RecordingAuthProvider extends DefaultAuthProvider {
+      protected override saveSession(opts: { session: ISignInSession; username: string }) {
+        saved.push(opts);
+      }
+    }
+
+    await signInWith({ providerClass: RecordingAuthProvider }).login({ username: 'alice' });
+
+    expect(saved).toEqual([
+      {
+        session: { userId: 7, roles: ['admin'], token: { value: 'jwt', type: 'Bearer' } },
+        username: 'alice',
+      },
+    ]);
+  });
+
+  test('resolveUsername is the username that is stored; the default is params.username', async () => {
+    class IdentifierAuthProvider extends DefaultAuthProvider {
+      protected override resolveUsername(opts: { params: { identifier: { value: string } } }) {
+        return opts.params.identifier.value;
+      }
+    }
+
+    await signInWith({ providerClass: IdentifierAuthProvider }).login({
+      identifier: { scheme: 'username', value: 'alice' },
+    });
     expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
       username: 'alice',
     });
 
     localStorage.clear();
-    await loginWith({}, { username: 'bob' });
+    await signInWith({}).login({ username: 'bob' });
     expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
       username: 'bob',
     });

@@ -107,22 +107,6 @@ export interface IAuthProviderOptions {
     signUp?: string;
     checkAuth?: string;
   };
-  /**
-   * The body of the sign-in request, made from the login form's params. Default: the IGNIS sign-in
-   * body, `{ identifier: { scheme: 'username', value: params.username }, credential: { scheme:
-   * 'basic', value: params.password } }`. Pass `(params) => params` to post the form as it is.
-   */
-  signInBody?: (params: AnyType) => unknown;
-  /** The username `login` remembers, from the login form's params. Default: `params.username`. */
-  signInUsername?: (params: AnyType) => string;
-  /**
-   * Runs once the sign-in response is read and before the session is saved. A throw or a rejection
-   * rejects `login`, and nothing is saved: the place to refuse a user, or to hand the token to
-   * another service.
-   */
-  onSignIn?: (opts: { session: ISignInSession; params: AnyType }) => ValueOrPromise<void>;
-  /** Set `false` when the session is kept elsewhere: `login` then saves nothing. Default `true`. */
-  persistSession?: boolean;
 }
 
 export interface IAuthRecoveryOptions {
