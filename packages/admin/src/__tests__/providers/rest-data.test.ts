@@ -10,6 +10,7 @@ import {
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
+import { DefaultNetworkRequestService } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -46,7 +47,7 @@ const createProvider = (opts: { baseUrl: string }): DefaultRestDataProvider => {
   const { baseUrl } = opts;
   const restDataProviderOptions: IRestDataProviderOptions = {
     url: baseUrl,
-    useAuth: false,
+    noAuthPathRegex: /./,
   };
   const applicationInfo: IApplicationInfo = {
     name: 'ardor-admin-test',
@@ -825,7 +826,7 @@ describe('network service header configuration behavior', () => {
   test('includes newly set headers on subsequent requests', async () => {
     const provider = createProvider({ baseUrl });
     provider.getNetworkService().setHeaders({
-      'x-tenant-id': 'tenant-ignis-001',
+      headers: { 'x-tenant-id': 'tenant-ignis-001' },
     });
 
     await provider.getOne({
@@ -836,5 +837,158 @@ describe('network service header configuration behavior', () => {
     expect(recordedRequests.length).toBe(1);
     const req = recordedRequests[0];
     expect(req.headers.get('x-tenant-id')).toBe('tenant-ignis-001');
+  });
+});
+
+describe('network service creation', () => {
+  const applicationInfo: IApplicationInfo = {
+    name: 'ardor-admin-test',
+    version: '1.0.0',
+    description: 'x',
+  };
+
+  test('createNetworkService is the one place the service is built, once, on first use', () => {
+    let built = 0;
+
+    class CountingProvider extends DefaultRestDataProvider {
+      protected override createNetworkService() {
+        built += 1;
+        return super.createNetworkService();
+      }
+    }
+
+    const provider = new CountingProvider({ url: baseUrl }, applicationInfo);
+    expect(built).toBe(0);
+
+    const service = provider.getNetworkService();
+    expect(provider.getNetworkService()).toBe(service);
+    expect(built).toBe(1);
+  });
+
+  test('a subclass can return a network service that overrides its hooks', async () => {
+    class TokenService extends DefaultNetworkRequestService {
+      protected override resolveAuthToken() {
+        return { value: 'from-the-override', type: 'Bearer' };
+      }
+    }
+
+    class TokenProvider extends DefaultRestDataProvider {
+      protected override createNetworkService() {
+        return new TokenService({
+          name: 'token-service',
+          baseUrl: this.restDataProviderOptions.url,
+        });
+      }
+    }
+
+    recordedRequests.length = 0;
+    await new TokenProvider({ url: baseUrl }, applicationInfo).getOne({
+      resource: 'posts',
+      params: { id: 1 },
+    });
+
+    expect(recordedRequests[0].headers.get('authorization')).toBe('Bearer from-the-override');
+  });
+});
+
+describe('buildListFilter', () => {
+  class ExposedProvider extends DefaultRestDataProvider {
+    public override buildListFilter(
+      opts: Parameters<DefaultRestDataProvider['buildListFilter']>[0],
+    ) {
+      return super.buildListFilter(opts);
+    }
+  }
+
+  const provider = new ExposedProvider(
+    { url: 'http://127.0.0.1:1', noAuthPathRegex: /./ },
+    { name: 'ardor-admin-test', version: '1.0.0', description: 'x' },
+  );
+
+  test('turns pagination, sort and plain filter keys into the IGNIS filter', () => {
+    const { filter, queryKey, extra } = provider.buildListFilter({
+      params: {
+        pagination: { page: 3, perPage: 20 },
+        sort: { field: 'name', order: 'DESC' },
+        filter: { status: 'open' },
+      },
+    });
+
+    expect(filter.where).toEqual({ status: 'open' });
+    expect(filter.order).toEqual(['name DESC']);
+    expect(filter.limit).toBe(20);
+    expect(filter.skip).toBe(40);
+    expect(queryKey).toEqual({});
+    expect(extra).toBeUndefined();
+  });
+
+  test('keeps a where the caller gave, and routes filter.params and meta into the query', () => {
+    const { filter, queryKey, extra } = provider.buildListFilter({
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: { where: { kind: 'a' }, params: { tenant: 't1' } },
+        meta: { locale: 'vi', extra: { total: true } },
+      },
+    });
+
+    expect(filter.where).toEqual({ kind: 'a' });
+    expect(queryKey).toEqual({ tenant: 't1', locale: 'vi' });
+    expect(extra).toEqual({ total: true });
+  });
+
+  test('noLimit lifts the limit and the skip', () => {
+    const { filter } = provider.buildListFilter({
+      params: {
+        pagination: { page: 2, perPage: 5 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: { noLimit: true },
+      },
+    });
+
+    expect(filter.limit).toBeUndefined();
+    expect(filter.skip).toBeUndefined();
+  });
+
+  test('getList and getManyReference send the same filter apart from the reference key', async () => {
+    const paging = {
+      pagination: { page: 2, perPage: 7 },
+      sort: { field: 'id', order: 'ASC' as const },
+      filter: { status: 'open' },
+    };
+    const sent = createProvider({ baseUrl });
+
+    recordedRequests.length = 0;
+    await sent.getList({ resource: 'posts', params: paging });
+    await sent.getManyReference({
+      resource: 'comments',
+      params: { ...paging, target: 'postId', id: 9 },
+    });
+
+    const listFilter = parseFilterQuery({ raw: recordedRequests[0].query.filter });
+    const referenceFilter = parseFilterQuery({ raw: recordedRequests[1].query.filter });
+
+    expect(referenceFilter).toEqual({
+      ...listFilter,
+      where: { ...(listFilter.where as object), postId: 9 },
+    });
+  });
+});
+
+describe('per-call headers', () => {
+  test('a header named in another case than the computed one replaces it', async () => {
+    const provider = createProvider({ baseUrl });
+    recordedRequests.length = 0;
+
+    await provider.send({
+      resource: 'echo',
+      params: {
+        method: RequestMethods.POST,
+        body: { a: 1 },
+        headers: { 'Content-Type': 'text/plain' },
+      },
+    });
+
+    expect(recordedRequests[0].headers.get('content-type')).toBe('text/plain');
   });
 });

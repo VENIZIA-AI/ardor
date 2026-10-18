@@ -5,6 +5,7 @@ import { type IAuthProvider, type IDataProvider } from '@/common';
 import { DefaultAuthProvider } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 import {
+  type AnyType,
   BaseArdorApplication,
   CoreBindings,
   DefaultAuthService,
@@ -56,13 +57,11 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
     override bindContext = (): void => {
       this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
         url: this.baseUrl,
-        useAuth: true,
         noAuthPaths: ['/auth/sign-in'],
       });
 
       this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
-        paths: { checkAuth: '/auth/whoami' },
-        endpoints: { afterLogin: '/dashboard' },
+        paths: { checkAuth: '/auth/whoami', afterLogin: '/dashboard' },
       });
 
       this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
@@ -617,8 +616,29 @@ describe('getPermissions and refreshToken', () => {
     expect(await authProvider.getPermissions({})).toBeUndefined();
   });
 
-  test('resolves refreshToken to undefined', async () => {
-    expect(await authProvider.refreshToken()).toBeUndefined();
+  test('refreshToken asks the network service to refresh: false when the service has no refresh', async () => {
+    expect(await authProvider.refreshToken()).toBe(false);
+  });
+
+  test('refreshToken is the network service refresh, the one place a refresh is made', async () => {
+    let refreshed = 0;
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
+      getNetworkService: () => ({
+        refresh: () => {
+          refreshed += 1;
+          return Promise.resolve(true);
+        },
+      }),
+    });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+    const provider = container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+
+    expect(await provider.refreshToken()).toBe(true);
+    expect(refreshed).toBe(1);
   });
 });
 
@@ -827,7 +847,7 @@ describe('login hooks', () => {
 
     const result = await signInWith({
       providerClass: ElsewhereAuthProvider,
-      options: { endpoints: { afterLogin: '/dashboard' } },
+      options: { paths: { afterLogin: '/dashboard' } },
     }).login({ username: 'alice' });
 
     expect(seen).toEqual(['jwt']);
@@ -873,5 +893,100 @@ describe('login hooks', () => {
     expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
       username: 'bob',
     });
+  });
+});
+
+describe('paths as protected getters', () => {
+  class RenamedAuthProvider extends DefaultAuthProvider {
+    protected override get signInPath() {
+      return '/v2/sign-in';
+    }
+
+    protected override get loginPagePath() {
+      return '/sign-in-page';
+    }
+
+    protected override get unauthorizedPagePath() {
+      return '/no-access';
+    }
+  }
+
+  test('signInPath defaults to /auth/sign-in and follows paths.signIn; a subclass may override it', async () => {
+    const sent: Array<SentRequest> = [];
+
+    await signInWith({ sent }).login({ username: 'alice' });
+    await signInWith({ sent, options: { paths: { signIn: '/api/login' } } }).login({
+      username: 'a',
+    });
+    await signInWith({ sent, providerClass: RenamedAuthProvider }).login({ username: 'a' });
+
+    expect(sent.map((request) => request.resource)).toEqual([
+      '/auth/sign-in',
+      '/api/login',
+      '/v2/sign-in',
+    ]);
+  });
+
+  test('afterLogin defaults to / and follows paths.afterLogin', async () => {
+    expect(await signInWith({}).login({ username: 'a' })).toMatchObject({ redirectTo: '/' });
+    expect(
+      await signInWith({ options: { paths: { afterLogin: '/home' } } }).login({ username: 'a' }),
+    ).toMatchObject({ redirectTo: '/home' });
+  });
+
+  test('the login page and the unauthorized page are overridable', async () => {
+    const provider = signInWith({ providerClass: RenamedAuthProvider });
+
+    expect(await rejectionOf(provider.checkAuth({}))).toEqual({ redirectTo: '/sign-in-page' });
+    expect(await rejectionOf(provider.checkError({ status: 401 }))).toEqual({
+      redirectTo: '/sign-in-page',
+    });
+    expect(await rejectionOf(provider.checkError({ status: 403 }))).toEqual({
+      redirectTo: '/no-access',
+      logoutUser: false,
+    });
+  });
+});
+
+describe('readSignInSession as a hook', () => {
+  test('a subclass reads a sign-in response of its own shape', async () => {
+    class WrappedResponseAuthProvider extends DefaultAuthProvider {
+      protected override readSignInSession(opts: { data: unknown }) {
+        const { result } = opts.data as { result: { id: string; jwt: string } };
+        return {
+          userId: result.id,
+          token: { value: result.jwt, type: 'Bearer' },
+          roles: ['wrapped'],
+        };
+      }
+    }
+
+    await signInWith({
+      providerClass: WrappedResponseAuthProvider,
+      data: { result: { id: 'u-5', jwt: 'wrapped-token' } },
+    }).login({ username: 'alice' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      userId: 'u-5',
+    });
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_PERMISSION })).toEqual(['wrapped']);
+  });
+});
+
+// A type-level guard, checked by `bun check` (typecheck covers the tests): 0.1.4-3 typed `login`
+// as `(params) => Promise<unknown>`, and a subclass that overrides it so must keep compiling.
+describe('login signature', () => {
+  class LegacyLoginAuthProvider extends DefaultAuthProvider {
+    override async login(params: AnyType): Promise<unknown> {
+      return super.login(params);
+    }
+  }
+
+  test('a subclass overriding login with the 0.1.4-3 signature compiles and runs', async () => {
+    const result = await signInWith({ providerClass: LegacyLoginAuthProvider }).login({
+      username: 'alice',
+    });
+
+    expect(result).toMatchObject({ redirectTo: '/' });
   });
 });

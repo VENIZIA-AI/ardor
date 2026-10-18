@@ -97,35 +97,30 @@ export interface ISignInSession {
   roles: Array<string>;
 }
 
+/** Data only: where the auth provider talks to. Behaviour is in `DefaultAuthProvider`'s protected hooks. */
 export interface IAuthProviderOptions {
-  endpoints?: {
-    afterLogin?: string;
-  };
   paths?: {
     /** Where `login` posts. Default `/auth/sign-in`, the IGNIS auth controller's route. */
     signIn?: string;
-    signUp?: string;
+    /** Where `checkAuth` validates the stored token. Default: not called; the stored token is enough. */
     checkAuth?: string;
+    /** Where the admin goes once `login` resolves. Default `/`. */
+    afterLogin?: string;
   };
 }
 
 export interface IAuthRecoveryOptions {
-  refreshToken?: () => Promise<unknown>;
-  onAuthFailure?: () => ValueOrPromise<unknown>;
+  /** A request to this path never starts a refresh: it is the refresh. */
   refreshTokenPath?: string;
 }
 
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
+/**
+ * Data only. A request that matches goes without an `Authorization` header; to send none at all (an
+ * API with no sign-in) set `noAuthPathRegex: /./`.
+ */
 export interface INoAuthOptions {
-  /**
-   * Enable/disable attaching authorization header by default.
-   * Set to `false` for applications which only consume public (no auth) apis.
-   *
-   * @default true
-   */
-  useAuth?: boolean;
-
   /**
    * Exact resource paths which will be requested without authorization header.
    */
@@ -140,7 +135,7 @@ export interface INoAuthOptions {
 
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
+  /** Sent in `x-request-channel`. Default `web`. */
   requestTracingChannel?: string;
 
   headers?: HeadersInit;

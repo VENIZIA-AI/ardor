@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
-import { readAuthTokenFromStorage } from '@/base/services/network-request';
+import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { LocalStorageKeys } from '@/common';
 import { rejectionOf } from '@/__tests__/rejection';
 
@@ -226,7 +226,7 @@ describe('the re-exported HTTP repository', () => {
     try {
       await repositoryFor({
         server: echo,
-        settings: { authTokenResolver: readAuthTokenFromStorage },
+        settings: { authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage },
       }).find({ filter: {} });
 
       expect(headers).toEqual({ authorization: 'Bearer stored-token', provider: 'oidc' });
