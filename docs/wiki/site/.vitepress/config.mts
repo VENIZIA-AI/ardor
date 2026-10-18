@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Exact sibling versions',
+            link: '/changelogs/2026-10-18-exact-sibling-versions',
+          },
+          {
             text: 'Hooks, not flags',
             link: '/changelogs/2026-10-18-hooks-not-flags',
           },

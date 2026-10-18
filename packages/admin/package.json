@@ -63,8 +63,8 @@
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
-    "@venizia/ardor-kernel": "^0.1.4-4",
-    "@venizia/ardor-react": "^0.1.4-4",
+    "@venizia/ardor-kernel": "workspace:*",
+    "@venizia/ardor-react": "workspace:*",
     "lodash": "catalog:",
     "ra-i18n-polyglot": "catalog:"
   },

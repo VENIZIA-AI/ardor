@@ -85,6 +85,12 @@ bun run --filter "@venizia/*" force-update highest
 - ARDOR always tracks the highest published line, prerelease included - never `npm`'s `latest` tag
   directly - because a release chain in progress needs the just-published prerelease of an earlier
   package before the later package's own release runs.
+- This applies to dependencies outside the repository. The packages of THIS repository name each
+  other as `workspace:*` (react -> kernel; admin -> kernel and react; ardor -> all three), which
+  `force-update` skips (a protocol specifier) and `bun pm pack` / `bun publish` write as the
+  sibling's own version: `@venizia/ardor` X needs `ardor-*` X exactly. A caret here let a fresh install
+  of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/__tests__/sibling-versions.test.ts`
+  pins it: the manifests, and the packed manifest of every package.
 
 ## Build, lint, bump, tag, publish
 

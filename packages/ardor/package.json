@@ -73,9 +73,9 @@
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
-    "@venizia/ardor-admin": "^0.1.4-4",
-    "@venizia/ardor-kernel": "^0.1.4-4",
-    "@venizia/ardor-react": "^0.1.4-4"
+    "@venizia/ardor-admin": "workspace:*",
+    "@venizia/ardor-kernel": "workspace:*",
+    "@venizia/ardor-react": "workspace:*"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
