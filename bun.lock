@@ -170,7 +170,7 @@
     },
     "packages/ardor": {
       "name": "@venizia/ardor",
-      "version": "0.1.4-3",
+      "version": "0.1.4-4",
       "dependencies": {
         "@venizia/ardor-admin": "^0.1.4-3",
         "@venizia/ardor-kernel": "^0.1.4-3",
