@@ -1,8 +1,9 @@
-/** A type guard keeps one positional argument: an options object would lose the narrowing. */
+/** Positional on purpose: a type predicate narrows its own parameter. */
 export const isDefined = <TValue>(value: TValue | null | undefined): value is TValue => {
   return value !== undefined && value !== null;
 };
 
+/** Positional on purpose: a type predicate narrows its own parameter. */
 export const isString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
