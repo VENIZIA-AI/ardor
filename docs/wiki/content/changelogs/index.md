@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-18 | [start() names a module cycle in the artifact index](./2026-10-18-artifact-cycle-error) | Bug Fix |
 | 2026-10-18 | [One copy of each package that carries identity, owned by the application](./2026-10-18-one-copy-of-each) | Behavior Change |
 | 2026-10-18 | [A package depends on its siblings at the exact version released with it](./2026-10-18-exact-sibling-versions) | Bug Fix |
 | 2026-10-18 | [Types, hooks and utilities follow IGNIS house style](./2026-10-18-house-style-types-hooks-utilities) | Behavior Change |
