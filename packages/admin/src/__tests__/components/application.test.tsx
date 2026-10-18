@@ -15,7 +15,7 @@ const ReportList = () => {
   return <h1>{translate('reports.title')}</h1>;
 };
 
-const createContainer = (opts: { load: () => Promise<object> }) => {
+const createContainer = (opts: { load: () => Promise<object>; withAuthProvider?: boolean }) => {
   const reports = defineFeature({
     name: 'reports',
     resources: [{ name: 'reports', list: ReportList }],
@@ -25,13 +25,15 @@ const createContainer = (opts: { load: () => Promise<object> }) => {
   const container = new Container();
   container.bind({ key: CoreBindings.FEATURES }).toValue([reports]);
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-  container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
-    checkAuth: () => Promise.resolve(),
-    checkError: () => Promise.resolve(),
-    login: () => Promise.resolve(),
-    logout: () => Promise.resolve(),
-    getPermissions: () => Promise.resolve(),
-  });
+  if (opts.withAuthProvider ?? true) {
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
+      checkAuth: () => Promise.resolve(),
+      checkError: () => Promise.resolve(),
+      login: () => Promise.resolve(),
+      logout: () => Promise.resolve(),
+      getPermissions: () => Promise.resolve(),
+    });
+  }
   container
     .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
     .toValue(new DefaultI18nProvider({}, [reports]).value(container));
@@ -60,5 +62,22 @@ describe('ArdorApplication with features', () => {
     expect(screen.getByText('loading')).toBeDefined();
     expect(await screen.findByText('Monthly reports')).toBeDefined();
     expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  // No sign-in is a configuration, not a defect: leave the auth provider unbound.
+  test('renders without an auth provider bound', async () => {
+    const load = mock(() => Promise.resolve({ reports: { title: 'Monthly reports' } }));
+
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={createContainer({ load, withAuthProvider: false })}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Monthly reports')).toBeDefined();
   });
 });

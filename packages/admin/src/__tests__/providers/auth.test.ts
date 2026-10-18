@@ -36,6 +36,8 @@ type TServer = ReturnType<typeof Bun.serve>;
 
 let server: TServer;
 let whoamiReturnsData = true;
+const defaultLoginBody = { userId: 7, token: { value: 'jwt', type: 'Bearer' } };
+let loginBody: unknown = defaultLoginBody;
 const recordedRequests: Array<IRecordedRequest> = [];
 
 let application: BaseArdorApplication;
@@ -136,10 +138,7 @@ beforeAll(async () => {
       });
 
       if (url.pathname === '/auth/login') {
-        return Response.json({
-          userId: 7,
-          token: { value: 'jwt', type: 'Bearer' },
-        });
+        return Response.json(loginBody);
       }
 
       if (url.pathname === '/auth/whoami') {
@@ -168,6 +167,7 @@ beforeEach(() => {
   localStorage.clear();
   recordedRequests.length = 0;
   whoamiReturnsData = true;
+  loginBody = defaultLoginBody;
 });
 
 describe('BaseArdorApplication container wiring', () => {
@@ -238,6 +238,110 @@ describe('login', () => {
       referenceId: '',
       provider: '',
     });
+  });
+});
+
+// What the IGNIS JWT auth component answers: a bare token string, the user id inside its payload.
+const jwtOf = (payload: object): string => {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return [encode({ alg: 'ES256' }), encode(payload), 'signature'].join('.');
+};
+
+describe('login against the IGNIS sign-in contract', () => {
+  test('stores a bare token string as a Bearer token, with the user id read from its payload', async () => {
+    const token = jwtOf({ userId: 'u-9', roles: [{ id: '1', identifier: 'admin', priority: 0 }] });
+    loginBody = { token };
+
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_TOKEN })).toEqual({
+      value: token,
+      type: 'Bearer',
+      provider: '',
+    });
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toEqual({
+      userId: 'u-9',
+      username: 'alice',
+      referenceId: '',
+      provider: '',
+    });
+  });
+
+  test('reads the user id from the standard sub claim when userId is absent', async () => {
+    loginBody = { token: jwtOf({ sub: 'u-3' }) };
+
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      userId: 'u-3',
+    });
+  });
+
+  test('keeps the userId a backend sends next to a string token', async () => {
+    loginBody = { userId: 5, token: 'opaque-token' };
+
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_TOKEN })).toMatchObject({
+      value: 'opaque-token',
+      type: 'Bearer',
+    });
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      userId: 5,
+    });
+  });
+
+  test('sends what buildSignInBody makes of the form params', async () => {
+    class IgnisAuthProvider extends DefaultAuthProvider {
+      protected override buildSignInBody(params: { username: string; password: string }) {
+        return {
+          identifier: { scheme: 'username', value: params.username },
+          credential: { scheme: 'basic', value: params.password },
+        };
+      }
+    }
+
+    const sent: Array<unknown> = [];
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
+      send: (opts: { params: { body: unknown } }) => {
+        sent.push(opts.params.body);
+        return Promise.resolve({ data: { token: jwtOf({ userId: 'u-1' }) } });
+      },
+    });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(IgnisAuthProvider);
+
+    await container
+      .get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .login({ username: 'alice', password: 'secret-password' });
+
+    expect(sent).toEqual([
+      {
+        identifier: { scheme: 'username', value: 'alice' },
+        credential: { scheme: 'basic', value: 'secret-password' },
+      },
+    ]);
+  });
+
+  test('rejects, and stores nothing, when no user id can be found', async () => {
+    loginBody = { token: 'opaque-token' };
+
+    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+
+    expect(String(error)).toContain('[login]');
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
+  });
+
+  test('rejects, and stores nothing, when the response carries no token', async () => {
+    loginBody = { userId: 7 };
+
+    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+
+    expect(String(error)).toContain('[login]');
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
   });
 });
 

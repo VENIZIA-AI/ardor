@@ -14,7 +14,7 @@ The package barrel (`src/index.ts`) re-exports four areas: `common`, `components
 
 Providers (`src/providers/index.ts`):
 - `DefaultRestDataProvider` and `CountRestDataProvider` - implementations of react-admin's data provider contract, translated into ARDOR's REST/filter vocabulary. React-admin's pagination, sort and filter parameters are mapped onto the `{ where, order, limit, skip, fields, include }` shape used by `@venizia/ignis-filter`. This is the concrete edge of the [data provider pipeline](/architecture/data-provider-pipeline.md).
-- `DefaultAuthProvider` - the react-admin auth provider, feeding into [auth recovery](/architecture/auth-recovery.md) and respecting [no-auth paths](/architecture/no-auth-paths.md).
+- `DefaultAuthProvider` - the react-admin auth provider, feeding into [auth recovery](/architecture/auth-recovery.md) and respecting [no-auth paths](/architecture/no-auth-paths.md). `login` reads the session from either `{ userId, token: { value, type } }` or the IGNIS auth component's `{ token: '<jwt>' }` (a Bearer token; the user id from the JWT's `userId`, else `sub` claim; a response with no token or no user id rejects with `[login]`), and sends `buildSignInBody(params)`, the form params unless a subclass overrides it.
 - `DefaultI18nProvider`, plus bundled `englishMessages` and `vietnameseMessages` - the concrete i18n provider for react-admin, part of the framework's [i18n](/architecture/i18n.md) story.
 
 Hooks (`src/hooks/index.ts`):

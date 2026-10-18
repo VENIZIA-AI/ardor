@@ -323,7 +323,7 @@ interface IApplication extends Omit<CoreAdminProps, 'children'> {
 
 What the component does:
 
-1. Inside a `useMemo` keyed on `container` and the remaining props, it calls `container.get({ key })` for `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `CoreBindings.DEFAULT_AUTH_PROVIDER` and `CoreBindings.DEFAULT_I18N_PROVIDER`. These three keys must be bound before the component renders - see [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n).
+1. Inside a `useMemo` keyed on `container` and the remaining props, it calls `container.get({ key })` for `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `CoreBindings.DEFAULT_AUTH_PROVIDER` and `CoreBindings.DEFAULT_I18N_PROVIDER`. The data and i18n keys must be bound before the component renders; the auth key is optional - leave it unbound and the admin runs with no sign-in (see [An application with no sign-in](../references/auth-provider#an-application-with-no-sign-in)). See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n).
 2. Wraps the tree in `ApplicationContext.Provider` with `{ container, registry: container, logger }`. The logger is `Logger.getInstance({ scope: 'ArdorApplication', enableDebug })`.
 3. Wraps that in `ReduxProvider` with `reduxStore`, then `React.Suspense` with `suspense` as the fallback.
 4. Renders `CoreAdmin` with `dataProvider`, `authProvider`, `i18nProvider` and every other `CoreAdminProps` prop you passed.

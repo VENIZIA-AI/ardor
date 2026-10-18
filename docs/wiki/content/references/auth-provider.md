@@ -1,6 +1,6 @@
 ---
 title: Auth provider
-description: DefaultAuthProvider and DefaultAuthService - options, what login stores, checkAuth, checkError, identity, roles, logout scope, and how an application subclasses and binds them.
+description: DefaultAuthProvider and DefaultAuthService - options, what login sends and stores (including against the IGNIS JWT auth component), checkAuth, checkError, identity, roles, logout scope, an application with no sign-in, and how an application subclasses and binds them.
 ---
 
 # Auth provider
@@ -83,16 +83,17 @@ const authProviderOptions: IAuthProviderOptions = {
 
 ## login and what it stores
 
-`login(params)` sends `params` as the body of a `POST` to `paths.signIn` through `restDataProvider.send`. It reads `userId` and `token` from the response `data`, saves them with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
+`login(params)` sends the login form's `params` as the body of a `POST` to `paths.signIn` through `restDataProvider.send`. The body is `buildSignInBody(params)`, which returns `params` unchanged; override it when the API wants another shape. The provider reads the session from the response `data`, saves it with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
 
-The backend response `data` must contain at least:
+The response `data` is read in either of two shapes:
 
 ```ts
-type LoginResponseData = {
-  userId: string | number;
-  token: { value: string; type: string };
-};
+type LoginResponseData =
+  | { userId: string | number; token: { value: string; type: string } }
+  | { userId?: string | number; token: string };
 ```
+
+A bare string token is stored as a `Bearer` token. A `userId` that is not sent is read from the token's own claims: `userId`, else `sub`. The JWT's signature is not checked - the server does that on every request. A response with no token, or with no user id anywhere, rejects `login` with a `[login]` error and stores nothing.
 
 `DefaultAuthService.saveAuth` writes two `localStorage` entries:
 
@@ -122,6 +123,65 @@ const auth = authService.getAuth();
 ```
 
 `getAuth` returns `null` and logs an error if the stored value cannot be parsed.
+
+## Against the IGNIS JWT auth component
+
+IGNIS's auth controller (`useAuthController: true`) differs from the defaults in three places, and each has one setting:
+
+| | ARDOR default | IGNIS auth controller | Setting |
+|---|---|---|---|
+| Path | `/auth/login` | `/auth/sign-in` | `paths.signIn`, and the same string in `noAuthPaths` |
+| Request body | the form params | `{ identifier: { scheme, value }, credential: { scheme, value } }` | override `buildSignInBody` |
+| Response | `{ userId, token: { value, type } }` | `{ token: '<jwt>' }` | none - `login` reads both |
+
+```ts
+import { type AnyType, DefaultAuthProvider } from '@venizia/ardor';
+
+export class IgnisAuthProvider extends DefaultAuthProvider {
+  protected override buildSignInBody(params: AnyType) {
+    return {
+      identifier: { scheme: 'username', value: params.username },
+      credential: { scheme: 'basic', value: params.password },
+    };
+  }
+}
+```
+
+Bind `IgnisAuthProvider` under `CoreBindings.DEFAULT_AUTH_PROVIDER`, and set `paths: { signIn: '/auth/sign-in' }` in the auth options and `noAuthPaths: ['/auth/sign-in']` in the REST options. The user id comes from the `userId` claim IGNIS puts in the token. Roles are not stored: `getRoles` stays empty unless you store them (see [getRoles and getPermissions](#getroles-and-getpermissions)).
+
+## An application with no sign-in
+
+`ArdorApplication` reads `CoreBindings.DEFAULT_AUTH_PROVIDER` as optional. Leave it, `AUTH_PROVIDER_OPTIONS` and `DEFAULT_AUTH_SERVICE` unbound and react-admin runs without an auth provider: no login page, no `checkAuth`, every page public. Set `useAuth: false` on the REST options so the data provider sends no `Authorization` header.
+
+```ts
+import {
+  type BaseArdorApplication as TArdorApplication,
+  configuration,
+  CoreBindings,
+  DefaultRestDataProvider,
+  inject,
+  provide,
+} from '@venizia/ardor';
+
+@configuration()
+export class PublicConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: 'https://api.example.com', useAuth: false };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+}
+```
+
+The data provider and the i18n provider stay required. Bind the i18n options and provider as in the [quickstart](../guides/get-started/quickstart).
 
 ## checkAuth
 
@@ -352,7 +412,8 @@ The binding API itself is documented in [Application](../references/application)
 
 ## Common pitfalls
 
-- `login` expects `data.userId` and `data.token` in the response. A backend that returns a bare string token will store `undefined` and `checkAuth` will reject.
+- `login` rejects a response that has no token, or no user id in the response or the token's claims. A backend whose token is not a JWT must send `userId` next to it.
+- `paths.signIn` defaults to `/auth/login`. The IGNIS auth controller serves `/auth/sign-in`: set it, and its `noAuthPaths` entry, or the first request returns 404.
 - `paths.signIn` and `noAuthPaths` must hold the same string. `noAuthPaths` is an exact match list, not a pattern.
 - `getRoles` reads `@app/auth/permission`, but nothing in the base classes writes it. Store it yourself or the set is always empty.
 - `checkError` on `403` does not log the user out. If you want a `403` to end the session, override it.

@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-18 | [No sign-in is a configuration, and login reads the IGNIS sign-in response](./2026-10-18-auth-optional-and-ignis-sign-in) | Enhancement |
 | 2026-10-18 | [ARDOR builds on the IGNIS 0.2.2-9 chain](./2026-10-18-ignis-0-2-2-9-chain) | Behavior Change |
 | 2026-10-17 | [VULCAN 0.2.0-3 and the atlas source filter](./2026-10-17-vulcan-0-2-0-3) | Enhancement |
 | 2026-10-17 | [Type checking runs on bun check](./2026-10-17-bun-check) | Enhancement |

@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'No sign-in and the IGNIS sign-in response',
+            link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
+          },
+          {
             text: 'IGNIS 0.2.2-9 chain',
             link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
           },
