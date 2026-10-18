@@ -18,11 +18,11 @@ app needs together:
   under a `CoreBindings` key with its own options object, following
   [Options objects](/conventions/options-objects.md). See [Data provider pipeline](/architecture/data-provider-pipeline.md),
   [Auth recovery](/architecture/auth-recovery.md) and [I18n](/architecture/i18n.md).
-- **Discovery** - `ApiDataSource extends HttpDataSource`, declared `@datasource()` with the relative
-  `baseUrl: '/api'`, and `ProductRepository extends HttpRepository<IProduct>`, declared
-  `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`. `start()` binds both as
-  singletons, `@repository` injects the datasource, and `useRepository({ target })` resolves by
-  class, which survives a minifier: the production bundle renames both classes and still works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
+- **Discovery by `AutoArtifacts`** - `ApiDataSource extends HttpDataSource` (`src/datasources/`), declared `@datasource()` with the relative
+  `baseUrl: '/api'`, and `ProductRepository extends HttpRepository<IProduct>` (`src/repositories/`), declared
+  `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`, each in a file of its own. `IgnisArtifactsVitePlugin` (in `vite.config.ts`) lists every decorated class under `src/` in the bundle; `Application.artifacts()` returns `AutoArtifacts`; the module that imports it holds no decorated class and is imported by none. `start()` binds each class as a
+  singleton, `@repository` injects the datasource, and `useRepository({ target })` resolves by
+  class, which survives a minifier because the plugin turns `keepNames` on: the production bundle keeps both names and works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
   [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - **`useRepository` + `useTranslate` + `useListContext`** used together in one component
   (`ProductList`). `useListContext` comes from react-admin/ra-core and supplies rows and `total`
@@ -33,9 +33,9 @@ app needs together:
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
   `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
-- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 590 KB whole, over Vite's 500 KB warning, and three chunks of 49, 219 and 321 KB leave no warning.
+- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 700 KB whole (about 595 KB without the plugin's `keepNames`), over Vite's 500 KB warning, and three chunks of 11, 278 and 408 KB leave no warning.
 
-The wiki quickstart (`guides/get-started/quickstart`) includes this example's `application.ts`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
+The wiki quickstart (`guides/get-started/quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 
 Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.
@@ -70,6 +70,6 @@ Before reading the source, skim [What is ARDOR](/overview/what-is-ardor.md) and
 [Onboarding](/overview/onboarding.md) for the shape of an application, then
 [Application lifecycle](/architecture/application-lifecycle.md) and
 [DI in the browser](/architecture/di-in-the-browser.md) to understand `@configuration` + `@provide` and
-the registration modes. The four files worth opening in order are `src/application.ts` (application, the configuration class with the three providers, the datasource and repository, the translate augmentation), `src/pages/product-list.tsx` (the three hooks used
+the registration modes. The files worth opening in order are `src/application.ts` (the application and `AutoArtifacts`), `src/configurations/admin.configuration.ts` (the three providers, the translate augmentation), `src/datasources/` and `src/repositories/` (one decorated class per file), `src/pages/product-list.tsx` (the three hooks used
 together), `src/main.tsx` (`ArdorApplication` receiving the container), and `api/server.ts` (the
 list contract, especially `content-range`).

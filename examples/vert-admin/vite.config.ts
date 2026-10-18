@@ -1,3 +1,4 @@
+import { IgnisArtifactsVitePlugin } from '@venizia/ignis-boot/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -5,7 +6,8 @@ import { defineConfig } from 'vite';
 const API_URL = 'http://127.0.0.1:3000';
 
 export default defineConfig({
-  plugins: [react()],
+  // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
+  plugins: [IgnisArtifactsVitePlugin.create(), react()],
   resolve: { alias: { '@': '/src' } },
   server: { proxy: { '/api': API_URL } },
   preview: { proxy: { '/api': API_URL } },

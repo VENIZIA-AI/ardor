@@ -2,7 +2,7 @@ import { useRepository, useTranslate } from '@venizia/ardor';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
-import { type IProduct, ProductRepository } from '@/application';
+import { type IProduct, ProductRepository } from '@/repositories/product.repository';
 
 // react-admin's list context holds the page the data provider fetched; the repository answers a
 // question the page alone cannot.

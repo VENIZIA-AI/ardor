@@ -1,122 +1,18 @@
 import 'reflect-metadata';
 
-import {
-  type BaseArdorApplication as TArdorApplication,
-  BaseArdorApplication,
-  configuration,
-  CoreBindings,
-  datasource,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultI18nProvider,
-  DefaultNetworkRequestService,
-  DefaultRestDataProvider,
-  englishMessages,
-  type IApplicationInfo,
-  inject,
-  provide,
-  repository,
-  RepositoryTypes,
-} from '@venizia/ardor';
-import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+import AutoArtifacts from '@venizia/ignis-boot/auto';
 
-export interface IProduct {
-  id: number;
-  name: string;
-  price: number;
-}
+import { BaseArdorApplication, type IApplicationInfo, type IArtifactIndex } from '@venizia/ardor';
 
-// Declared, never listed: the application discovers both classes at start(). A relative baseUrl
-// resolves against the page, and Vite proxies `/api` to the stub API.
-@datasource()
-export class ApiDataSource extends HttpDataSource {
-  constructor() {
-    super({
-      baseUrl: '/api',
-      authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
-    });
-  }
-}
-
-// One class per resource, in the IGNIS filter vocabulary. `@repository` injects the datasource, and
-// `count` reads the total from `Content-Range`.
-@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
-export class ProductRepository extends HttpRepository<IProduct> {
-  constructor(dataSource: ApiDataSource) {
-    super({ dataSource, resource: 'products' });
-  }
-
-  countExpensive(opts: { minimumPrice: number }) {
-    return this.count({ where: { price: { gte: opts.minimumPrice } } });
-  }
-}
-
-// The message keys this application adds, made known to `useTranslate`.
-declare module '@venizia/ardor-admin' {
-  interface IUseTranslateKeysOverrides {
-    'quickstart.title': unknown;
-    'quickstart.expensive': unknown;
-  }
-}
-
-// Every framework binding, declared. start() binds each @provide method under its key, SINGLETON,
-// built on first use: react-admin, the auth provider and every hook share one data provider - its
-// token, headers and single 401 refresh.
-@configuration()
-export class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
-  }
-
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
-    // The sign-in path and body default to IGNIS's auth controller: POST /auth/sign-in.
-    return { paths: { afterLogin: '/products' } };
-  }
-
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {
-      i18nSources: {
-        en: {
-          ...englishMessages,
-          quickstart: { title: 'Products', expensive: 'Expensive products (>= 5,000)' },
-        },
-      },
-      languages: [{ locale: 'en', name: 'English' }],
-    };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService() {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
-  }
-}
-
+// The decorated classes live in their own files and this module imports none of them: the build lists
+// every one under src/ in `AutoArtifacts`, and importing it here keeps the list out of any shared kit.
 export class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'quickstart', version: '0.0.0', description: 'ARDOR 5-minute quickstart' };
+  }
+
+  override artifacts(): Array<IArtifactIndex> {
+    return [AutoArtifacts];
   }
 
   bindContext(): void {}

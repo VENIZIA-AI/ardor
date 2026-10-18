@@ -1,4 +1,5 @@
-import { reactNamingConventionConfigs } from '@venizia/dev-configs/linters';
+import { reactHouseConfigs } from '@venizia/dev-configs/linters';
 
-// oxlint runs every other rule; ESLint keeps the one oxlint has no port of yet.
-export default reactNamingConventionConfigs;
+// oxlint runs the shared rules; ESLint runs what oxlint cannot: the naming convention, the house rules
+// and `no-leaked-render`.
+export default reactHouseConfigs;

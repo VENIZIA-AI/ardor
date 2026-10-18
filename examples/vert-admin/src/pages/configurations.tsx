@@ -3,7 +3,7 @@ import { type ApplicationError } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
-import { IdentityService, type IWhoAmI } from '@/application';
+import { IdentityService, type IWhoAmI } from '@/services/identity.service';
 
 interface IConfiguration {
   id: number;

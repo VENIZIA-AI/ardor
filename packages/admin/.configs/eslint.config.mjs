@@ -1,8 +1,9 @@
-import { reactNamingConventionConfigs } from '@venizia/dev-configs/linters';
+import { reactHouseConfigs } from '@venizia/dev-configs/linters';
 
-// oxlint runs every other rule; ESLint keeps the one oxlint has no port of yet.
+// oxlint runs the shared rules; ESLint runs what oxlint cannot: the naming convention, the house rules
+// and `no-leaked-render`.
 export default [
-  ...reactNamingConventionConfigs,
+  ...reactHouseConfigs,
   {
     // react-admin reads its messages by wire key (`ra.action.add_filter`, `ra.page.not_found`, ...).
     // These bundles are the mapper boundary to that vocabulary, not ARDOR identifiers, so they must
