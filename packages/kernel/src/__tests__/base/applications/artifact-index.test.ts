@@ -248,8 +248,10 @@ describe('AbstractArdorApplication.artifacts', () => {
 
       expect(error).toBeInstanceOf(Error);
       expect(error).not.toBeInstanceOf(TypeError);
-      expect(String(error)).toContain("[artifacts] 'services' lists undefined at position 1");
-      expect(String(error)).toContain('cycle');
+      expect(String(error)).toContain(
+        "[artifacts] 'services' lists an entry that is not a class (position 1)",
+      );
+      expect(String(error)).toContain('import cycle');
     });
 
     test('says so for null and for a value that is not a function', async () => {
@@ -257,7 +259,7 @@ describe('AbstractArdorApplication.artifacts', () => {
         const application = createApplication({ artifacts: [withEntry(entry)] });
 
         expect(String(await rejectionOf(application.start()))).toContain(
-          "[artifacts] 'services' lists " + (entry === null ? 'null' : typeof entry),
+          "[artifacts] 'services' lists an entry that is not a class (position 1)",
         );
       }
     });
@@ -267,7 +269,9 @@ describe('AbstractArdorApplication.artifacts', () => {
         artifacts: [new FakeArtifactGroup(withEntry(undefined)) as IArtifactIndex],
       });
 
-      expect(String(await rejectionOf(application.start()))).toContain('lists undefined');
+      expect(String(await rejectionOf(application.start()))).toContain(
+        'lists an entry that is not a class',
+      );
     });
   });
 });

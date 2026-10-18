@@ -196,9 +196,8 @@ export abstract class AbstractArdorApplication extends Container implements IArd
           // A cycle leaves `undefined` here: a bundler's eager class list is built while the module of
           // the class is still evaluating. Say so, rather than fail on `.name` below.
           if (typeof target !== 'function') {
-            const found = target === null ? 'null' : typeof target;
             throw getError({
-              message: `[artifacts] '${kind}' lists ${found} at position ${position}, which is not a class | A module cycle leaves undefined: keep decorated classes out of the module that imports AutoArtifacts`,
+              message: `[artifacts] '${kind}' lists an entry that is not a class (position ${position}) | Usually an import cycle: the module that imports the index (or @venizia/ignis-boot/auto) must not define decorated classes or be imported by them`,
             });
           }
 

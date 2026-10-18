@@ -262,7 +262,7 @@ class Application extends BaseArdorApplication {
 
 Auto registers what is decorated: a class that loses its decorator is simply not registered, in every mode. A generated index fails the boot instead, so prefer it when you want that guarantee.
 
-In a browser build, import `@venizia/ignis-boot/auto` from the application's own module, never from a shared kit. The eager import evaluates the application's classes when the auto module loads, and a kit that imports it would evaluate them inside its own half-loaded module graph. The same holds for the application module itself: keep every decorated class in a file of its own, and keep the module that imports `AutoArtifacts` free of them. When a cycle leaves `undefined` in the list, `start()` throws `[artifacts] 'services' lists undefined at position 1, which is not a class` and names the cause.
+In a browser build, import `@venizia/ignis-boot/auto` from the application's own module, never from a shared kit. The eager import evaluates the application's classes when the auto module loads, and a kit that imports it would evaluate them inside its own half-loaded module graph. The same holds for the application module itself: keep every decorated class in a file of its own, and keep the module that imports `AutoArtifacts` free of them. When a cycle leaves `undefined` in the list, `start()` throws `[artifacts] 'services' lists an entry that is not a class (position 1)` and names the cause, as IGNIS's own index check does.
 
 A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
 
