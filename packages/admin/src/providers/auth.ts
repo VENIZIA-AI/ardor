@@ -1,4 +1,4 @@
-import { type Container, inject } from '@venizia/ignis-inversion';
+import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
@@ -11,6 +11,73 @@ import {
   RequestMethods,
 } from '@venizia/ardor-kernel';
 import { type IAuthProvider, type IDataProvider } from '@/common';
+
+interface ISignInSession {
+  userId: number | string;
+  token: { value: string; type: string };
+}
+
+/** The claims of a JWT, or `undefined` for a token that is not one. The signature is not checked. */
+const decodeJwtClaims = (opts: { jwt: string }): Record<string, unknown> | undefined => {
+  const segment = opts.jwt.split('.')[1];
+  if (!segment) {
+    return undefined;
+  }
+
+  try {
+    const bytes = Uint8Array.from(atob(segment.replace(/-/g, '+').replace(/_/g, '/')), (char) =>
+      char.charCodeAt(0),
+    );
+    const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    return typeof claims === 'object' && claims !== null
+      ? (claims as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const isUserId = (value: unknown): value is number | string => {
+  return typeof value === 'number' || (typeof value === 'string' && value.length > 0);
+};
+
+/**
+ * What a sign-in response carries, in either shape: `{ userId, token: { value, type } }`, or what
+ * the IGNIS JWT auth component answers - `{ token: '<jwt>' }`, a Bearer token whose user id is a
+ * claim of the token itself (`userId`, else `sub`). A response with no token or no user id throws:
+ * storing `undefined` would pass `login` and fail every check after it.
+ */
+const readSignInSession = (opts: { data: unknown }): ISignInSession => {
+  const { data } = opts;
+  const { userId, token } = (data ?? {}) as { userId?: unknown; token?: unknown };
+
+  const record =
+    typeof token === 'string'
+      ? { value: token, type: 'Bearer' }
+      : (token as { value?: unknown; type?: unknown } | undefined);
+
+  if (typeof record?.value !== 'string' || record.value.length === 0) {
+    throw getError({
+      message:
+        '[login] The sign-in response carries no token | Expect { userId, token: { value, type } } or { token: <jwt> }',
+    });
+  }
+
+  const claims = decodeJwtClaims({ jwt: record.value });
+  const resolvedUserId = [userId, claims?.userId, claims?.sub].find(isUserId);
+
+  if (resolvedUserId === undefined) {
+    throw getError({
+      message:
+        '[login] The sign-in response carries no user id | Send userId next to the token, or put a userId or sub claim in the JWT',
+    });
+  }
+
+  return {
+    userId: resolvedUserId,
+    token: { value: record.value, type: typeof record.type === 'string' ? record.type : 'Bearer' },
+  };
+};
 
 export class DefaultAuthProvider<
   TResource extends string = string,
@@ -28,15 +95,30 @@ export class DefaultAuthProvider<
     super({ scope: DefaultAuthProvider.name });
   }
 
+  /**
+   * The body of the sign-in request: `signInBody` of the options, else the IGNIS sign-in body made
+   * from `params.username` and `params.password`. A subclass may override this instead.
+   */
+  protected buildSignInBody(params: AnyType): AnyType {
+    if (this.authProviderOptions.signInBody) {
+      return this.authProviderOptions.signInBody(params);
+    }
+
+    return {
+      identifier: { scheme: 'username', value: params?.username },
+      credential: { scheme: 'basic', value: params?.password },
+    };
+  }
+
   login(params: AnyType) {
     return new Promise((resolve, reject) => {
       this.restDataProvider
         .send({
-          resource: (this.authProviderOptions.paths?.signIn ?? '/auth/login') as TResource,
-          params: { method: RequestMethods.POST, body: params },
+          resource: (this.authProviderOptions.paths?.signIn ?? '/auth/sign-in') as TResource,
+          params: { method: RequestMethods.POST, body: this.buildSignInBody(params) },
         })
         .then((rs) => {
-          const { userId, token } = rs.data;
+          const { userId, token } = readSignInSession({ data: rs.data });
           this.authService.saveAuth({ token, userId, username: params.username });
           resolve({
             ...rs,
@@ -62,7 +144,7 @@ export class DefaultAuthProvider<
     const token = this.authService.getAuth();
 
     if (!token?.value) {
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     if (!this.authProviderOptions.paths?.checkAuth) {
@@ -75,7 +157,7 @@ export class DefaultAuthProvider<
     });
 
     if (!rs?.data) {
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     return Promise.resolve();
@@ -87,7 +169,7 @@ export class DefaultAuthProvider<
 
     if (status === 401) {
       this.authService.cleanUp();
-      return Promise.reject({ redirectTo: 'login' });
+      return Promise.reject({ redirectTo: '/login' });
     }
 
     if (status === 403) {

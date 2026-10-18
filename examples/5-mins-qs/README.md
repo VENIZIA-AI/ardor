@@ -20,4 +20,5 @@ resolved with `useRepository`.
 | `src/application.ts` | The application, the three default providers, an `HttpDataSource` and an `HttpRepository`, declared with `@datasource()` and `@repository` and discovered at start |
 | `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
+| `vite.config.ts` | The `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |

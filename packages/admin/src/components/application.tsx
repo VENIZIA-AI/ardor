@@ -117,14 +117,17 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     const dataProvider = container.get<IDataProvider>({
       key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
     });
+    // Optional: an application with no sign-in leaves it unbound, and react-admin then runs
+    // without an auth provider - every page is public.
     const authProvider = container.get<IAuthProvider>({
       key: CoreBindings.DEFAULT_AUTH_PROVIDER,
+      isOptional: true,
     });
     const i18nProvider = container.get<I18nProvider>({
       key: CoreBindings.DEFAULT_I18N_PROVIDER,
     });
 
-    return { dataProvider, authProvider, i18nProvider, ...raProps };
+    return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider, ...raProps };
   }, [container, raProps]);
 
   const isMessagesReady = useFeatureMessagesReady({

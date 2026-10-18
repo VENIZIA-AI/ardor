@@ -67,7 +67,7 @@ that tells the data provider how to obtain a new token when a request fails on a
 instead of failing outright. See [Auth recovery](/architecture/auth-recovery.md).
 
 **No-auth path** - an endpoint listed in `noAuthPaths` (or matched by `noAuthPathRegex`) that is
-called before a token exists, such as `/auth/login`. Anything not matched is sent with an
+called before a token exists, such as `/auth/sign-in`. Anything not matched is sent with an
 Authorization header and fails without a token. See [No-auth paths](/architecture/no-auth-paths.md).
 
 **Umbrella** - `@venizia/ardor`, the single package an application depends on. It re-exports

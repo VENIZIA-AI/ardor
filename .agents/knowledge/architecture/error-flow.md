@@ -20,7 +20,7 @@ Service methods that make outbound calls are wrapped with the `@api()` decorator
 
 `DefaultAuthProvider.checkError` (part of the auth provider consumed by react-admin) inspects the status on the thrown error - `status` (react-admin's own `HttpError`), else `statusCode` (an `ApplicationError`) - and maps it to react-admin's expected reject shape:
 
-- `401` triggers `authService.cleanUp()` and rejects with `{ redirectTo: 'login' }`.
+- `401` triggers `authService.cleanUp()` and rejects with `{ redirectTo: '/login' }`.
 - `403` rejects with `{ redirectTo: '/unauthorized', logoutUser: false }` - the session is kept alive, only the route changes.
 - Anything else resolves, meaning react-admin treats it as not an auth-related failure.
 

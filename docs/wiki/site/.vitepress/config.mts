@@ -93,6 +93,14 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Quickstart follows the example',
+            link: '/changelogs/2026-10-18-quickstart-follows-the-example',
+          },
+          {
+            text: 'IGNIS sign-in by default, optional auth',
+            link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
+          },
+          {
             text: 'IGNIS 0.2.2-9 chain',
             link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
           },

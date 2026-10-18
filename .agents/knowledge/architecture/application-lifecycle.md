@@ -53,10 +53,10 @@ Registration helpers on the application, not lifecycle steps, called from inside
 
 The `ArdorApplication` React component, from the admin package, is handed a fully-started application's container as a prop. It does not call `start()`, `bindContext()`, or any lifecycle method itself - by the time React sees the container, `preConfigure()` and `postConfigure()` have already completed.
 
-Inside `ArdorApplication`, a memoized `adminProps` block resolves exactly three bindings by key from the container:
+Inside `ArdorApplication`, a memoized `adminProps` block resolves three bindings by key from the container:
 
 - `CoreBindings.DEFAULT_REST_DATA_PROVIDER` for the data provider
-- `CoreBindings.DEFAULT_AUTH_PROVIDER` for the auth provider
+- `CoreBindings.DEFAULT_AUTH_PROVIDER` for the auth provider - optional: unbound, `authProvider` is left out and react-admin runs with no sign-in
 - `CoreBindings.DEFAULT_I18N_PROVIDER` for the i18n provider
 
 The remaining props are spread after these three resolved values, so an explicit `dataProvider`, `authProvider` or `i18nProvider` prop overrides the bound one. The result is fed to react-admin's `CoreAdmin`.

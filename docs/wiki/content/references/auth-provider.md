@@ -1,6 +1,6 @@
 ---
 title: Auth provider
-description: DefaultAuthProvider and DefaultAuthService - options, what login stores, checkAuth, checkError, identity, roles, logout scope, and how an application subclasses and binds them.
+description: DefaultAuthProvider and DefaultAuthService - options, what login sends and stores (the IGNIS sign-in contract by default, and how to keep another), checkAuth, checkError, identity, roles, logout scope, an application with no sign-in, and how an application subclasses and binds them.
 ---
 
 # Auth provider
@@ -17,7 +17,7 @@ A running application with the REST data provider bound - see [Application](../r
 |---|---|---|
 | `DefaultAuthProvider` | class | `BaseProvider<IAuthProvider>`. `value(container)` returns the object react-admin consumes. |
 | `DefaultAuthService` | class | `localStorage` access: `getAuth`, `getUser`, `getRoles`, `saveAuth`, `cleanUp`. |
-| `IAuthProviderOptions` | interface | `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`. |
+| `IAuthProviderOptions` | interface | `paths.signIn`, `paths.signUp`, `paths.checkAuth`, `endpoints.afterLogin`, `signInBody`. |
 | `IAuthProvider` | interface | `IReactAdminAuthProvider` plus `getRoles` and `refreshToken`. |
 | `IReactAdminAuthProvider` | interface | The plain react-admin contract: `login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`. |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION`. |
@@ -57,12 +57,14 @@ interface IAuthProviderOptions {
     signUp?: string;
     checkAuth?: string;
   };
+  signInBody?: (params: AnyType) => unknown;
 }
 ```
 
 | Field | Used by | Default when missing |
 |---|---|---|
-| `paths.signIn` | `login` - the resource that receives `POST` with the login params | `/auth/login` |
+| `paths.signIn` | `login` - the resource that receives `POST` with the sign-in body | `/auth/sign-in`, the IGNIS auth controller's route |
+| `signInBody` | `login` - makes the sign-in body from the login form's params | the IGNIS body, from `params.username` and `params.password` |
 | `paths.checkAuth` | `checkAuth` - the resource that receives `GET` to validate the stored token | not called; `checkAuth` only checks local storage |
 | `paths.signUp` | not read by `DefaultAuthProvider`; available for subclasses | none |
 | `endpoints.afterLogin` | `login` - the `redirectTo` value returned to react-admin | `/` |
@@ -72,7 +74,6 @@ import { type IAuthProviderOptions } from '@venizia/ardor';
 
 const authProviderOptions: IAuthProviderOptions = {
   paths: {
-    signIn: '/auth/login',
     checkAuth: '/auth/whoami',
   },
   endpoints: {
@@ -83,16 +84,17 @@ const authProviderOptions: IAuthProviderOptions = {
 
 ## login and what it stores
 
-`login(params)` sends `params` as the body of a `POST` to `paths.signIn` through `restDataProvider.send`. It reads `userId` and `token` from the response `data`, saves them with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
+`login(params)` sends a `POST` to `paths.signIn` (default `/auth/sign-in`) through `restDataProvider.send`. The body is `buildSignInBody(params)`: the `signInBody` option when set, else the IGNIS sign-in body made from `params.username` and `params.password`. A subclass may override `buildSignInBody` instead. The provider reads the session from the response `data`, saves it with `authService.saveAuth`, and resolves with the response plus a `redirectTo` built from `endpoints.afterLogin` (double slashes are removed).
 
-The backend response `data` must contain at least:
+The response `data` is read in either of two shapes:
 
 ```ts
-type LoginResponseData = {
-  userId: string | number;
-  token: { value: string; type: string };
-};
+type LoginResponseData =
+  | { userId: string | number; token: { value: string; type: string } }
+  | { userId?: string | number; token: string };
 ```
+
+A bare string token is stored as a `Bearer` token. A `userId` that is not sent is read from the token's own claims: `userId`, else `sub`. The JWT's signature is not checked - the server does that on every request. A response with no token, or with no user id anywhere, rejects `login` with a `[login]` error and stores nothing.
 
 `DefaultAuthService.saveAuth` writes two `localStorage` entries:
 
@@ -123,6 +125,86 @@ const auth = authService.getAuth();
 
 `getAuth` returns `null` and logs an error if the stored value cannot be parsed.
 
+## The sign-in contract
+
+The defaults are the contract of IGNIS's auth controller (`useAuthController: true`), since ARDOR is IGNIS's frontend:
+
+| | Default (IGNIS) | The previous default, kept behind configuration |
+|---|---|---|
+| Path | `/auth/sign-in` | `paths: { signIn: '/auth/login' }` |
+| Request body | `{ identifier: { scheme: 'username', value: username }, credential: { scheme: 'basic', value: password } }` | `signInBody: (params) => params` posts the form as it is |
+| Response | `{ token: '<jwt>' }` | `{ userId, token: { value, type } }`; `login` reads both with no setting |
+
+The user id comes from the `userId` claim IGNIS puts in the token. The path must also be in `noAuthPaths`, so the sign-in request goes out without an `Authorization` header. Roles are not stored: `getRoles` stays empty unless you store them (see [getRoles and getPermissions](#getroles-and-getpermissions)).
+
+```ts
+import { type IAuthProviderOptions, type IRestDataProviderOptions } from '@venizia/ardor';
+
+// IGNIS: nothing to set but noAuthPaths.
+export const ignisRestOptions: IRestDataProviderOptions = {
+  url: 'https://api.example.com',
+  noAuthPaths: ['/auth/sign-in'],
+};
+
+// Another API: its own path and body.
+export const legacyRestOptions: IRestDataProviderOptions = {
+  url: 'https://api.example.com',
+  noAuthPaths: ['/auth/login'],
+};
+
+export const legacyAuthOptions: IAuthProviderOptions = {
+  paths: { signIn: '/auth/login' },
+  signInBody: (params) => params,
+};
+```
+
+A login form that is not `{ username, password }` (an e-mail, another scheme) maps its own fields:
+
+```ts
+import { type IAuthProviderOptions } from '@venizia/ardor';
+
+export const emailAuthOptions: IAuthProviderOptions = {
+  signInBody: (params) => ({
+    identifier: { scheme: 'email', value: params.email },
+    credential: { scheme: 'basic', value: params.password },
+  }),
+};
+```
+
+## An application with no sign-in
+
+`ArdorApplication` reads `CoreBindings.DEFAULT_AUTH_PROVIDER` as optional. Leave it, `AUTH_PROVIDER_OPTIONS` and `DEFAULT_AUTH_SERVICE` unbound and react-admin runs without an auth provider: no login page, no `checkAuth`, every page public. Set `useAuth: false` on the REST options so the data provider sends no `Authorization` header.
+
+```ts
+import {
+  type BaseArdorApplication as TArdorApplication,
+  configuration,
+  CoreBindings,
+  DefaultRestDataProvider,
+  inject,
+  provide,
+} from '@venizia/ardor';
+
+@configuration()
+export class PublicConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: 'https://api.example.com', useAuth: false };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+}
+```
+
+The data provider and the i18n provider stay required. Bind the i18n options and provider as in the [quickstart](../guides/get-started/quickstart).
+
 ## checkAuth
 
 ```ts
@@ -133,9 +215,9 @@ declare function checkAuth(_params: AnyType): Promise<void>;
 
 The order is:
 
-1. Read the token with `authService.getAuth()`. If there is no `token.value`, reject with `{ redirectTo: 'login' }`.
+1. Read the token with `authService.getAuth()`. If there is no `token.value`, reject with `{ redirectTo: '/login' }`.
 2. If `paths.checkAuth` is not set, resolve.
-3. Otherwise send `GET paths.checkAuth`. If the response has no `data`, reject with `{ redirectTo: 'login' }`. Otherwise resolve.
+3. Otherwise send `GET paths.checkAuth`. If the response has no `data`, reject with `{ redirectTo: '/login' }`. Otherwise resolve.
 
 Set `paths.checkAuth` only when you want a server round trip on every check. Without it, a token in storage is enough.
 
@@ -151,7 +233,7 @@ The status is `params.status` - react-admin's own `HttpError` - or, when that is
 
 | Status | Effect | Result |
 |---|---|---|
-| `401` | `authService.cleanUp()` runs first | rejects with `{ redirectTo: 'login' }` |
+| `401` | `authService.cleanUp()` runs first | rejects with `{ redirectTo: '/login' }` |
 | `403` | nothing is removed from storage | rejects with `{ redirectTo: '/unauthorized', logoutUser: false }` |
 | anything else | none | resolves |
 
@@ -310,14 +392,14 @@ export class AuthConfiguration {
   restDataProviderOptions() {
     return {
       url: 'https://api.example.com',
-      noAuthPaths: ['/auth/login'],
+      noAuthPaths: ['/auth/sign-in'],
     };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     return {
-      paths: { signIn: '/auth/login', checkAuth: '/auth/whoami' },
+      paths: { checkAuth: '/auth/whoami' },
       endpoints: { afterLogin: '/dashboard' },
     };
   }
@@ -352,7 +434,8 @@ The binding API itself is documented in [Application](../references/application)
 
 ## Common pitfalls
 
-- `login` expects `data.userId` and `data.token` in the response. A backend that returns a bare string token will store `undefined` and `checkAuth` will reject.
+- `login` rejects a response that has no token, or no user id in the response or the token's claims. A backend whose token is not a JWT must send `userId` next to it.
+- `paths.signIn` defaults to `/auth/sign-in`. An API that signs in elsewhere, or takes the form as it is, sets `paths.signIn` and `signInBody` (see [The sign-in contract](#the-sign-in-contract)); without a matching `noAuthPaths` entry the first request fails before it is sent.
 - `paths.signIn` and `noAuthPaths` must hold the same string. `noAuthPaths` is an exact match list, not a pattern.
 - `getRoles` reads `@app/auth/permission`, but nothing in the base classes writes it. Store it yourself or the set is always empty.
 - `checkError` on `403` does not log the user out. If you want a `403` to end the session, override it.
