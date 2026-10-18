@@ -66,7 +66,7 @@ describe('const-value types keep their literal union through inference', () => {
     expect(typedCounts[0].value).toBe('1');
   });
 
-  test('TStatusFromClass aliases keep their literal union', () => {
+  test('TRequestMethod and TEnvironment aliases keep their literal union', () => {
     const methods: TRequestMethod[] = [RequestMethods.GET, RequestMethods.POST];
     const methodOptions = methods.map((value) => ({ value, label: String(value) }));
     const typedMethods: {

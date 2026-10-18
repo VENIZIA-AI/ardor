@@ -4,15 +4,8 @@ import React from 'react';
 import { Container } from '@venizia/ignis-inversion';
 import { Logger } from '@venizia/ardor-kernel';
 
-import { ApplicationContext } from '@/contexts/application';
+import { ApplicationContext, type IApplicationContextValue } from '@/contexts/application';
 import { useApplicationContext, useApplicationLogger } from '@/hooks/use-application-context';
-
-interface IApplicationContextValue {
-  readonly container: Container | null;
-  readonly registry: Container | null;
-  readonly logger: Logger | null;
-}
-
 interface IRenderHookOptions<TReturn> {
   readonly hook: () => TReturn;
   readonly providerValue?: IApplicationContextValue;
@@ -41,7 +34,6 @@ const renderHookResult = <TReturn>({
       return (
         providerValue ?? {
           container: null,
-          registry: null,
           logger: null,
         }
       );
@@ -71,7 +63,6 @@ describe('useApplicationContext', () => {
       hook: useApplicationContext,
       providerValue: {
         container,
-        registry: null,
         logger: null,
       },
     });
@@ -93,7 +84,6 @@ describe('useApplicationContext', () => {
         hook: useApplicationContext,
         providerValue: {
           container: null,
-          registry: null,
           logger: null,
         },
       });
@@ -119,7 +109,6 @@ describe('useApplicationLogger', () => {
       hook: useApplicationLogger,
       providerValue: {
         container: null,
-        registry: null,
         logger,
       },
     });
@@ -141,7 +130,6 @@ describe('useApplicationLogger', () => {
         hook: useApplicationLogger,
         providerValue: {
           container: null,
-          registry: null,
           logger: null,
         },
       });

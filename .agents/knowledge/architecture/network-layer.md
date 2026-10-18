@@ -23,7 +23,7 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 `doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method. It passes no `timeout`, no `signal` and no logger.
 
-**Query string.** Whenever `params` is set, `send` appends `?` and `stringify(params)` (`packages/kernel/src/utilities/url.ts`). `stringify` skips `undefined` and `null` only, keeps strings and numbers as they are, and JSON-encodes everything else: objects, arrays, booleans, and a `Date` as a quoted ISO string. The `?` is appended unconditionally, so a path that already carries a query string gets a second `?`, and the params land inside its last value.
+**Query string.** Whenever `params` is set, `send` appends `?` and `toQueryString({ params })` (`packages/kernel/src/utilities/url.ts`). `toQueryString` skips `undefined` and `null` only, keeps strings and numbers as they are, and JSON-encodes everything else: objects, arrays, booleans, and a `Date` as a quoted ISO string. The `?` is appended unconditionally, so a path that already carries a query string gets a second `?`, and the params land inside its last value.
 
 ## Body encoding
 
@@ -47,7 +47,7 @@ Then `NodeFetcher.send` passes a `FormData` or `URLSearchParams` straight to `fe
 After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `parseResponse` decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
-- A `content-disposition` starting with `attachment` (`HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConsts.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.
+- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.
 - Anything else goes through `rs.json()` and then `convertResponse`, which reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
 The textual pattern admits `text/*` and XML, but those bodies are still parsed with `rs.json()`, so a 2xx `text/plain` or XML response rejects with a `SyntaxError`. A 2xx response with no `content-type` comes back as a `Blob`.
@@ -60,7 +60,7 @@ Three seams, widest first. A provider subclass overrides `send()` and the CRUD m
 
 The socket client (`packages/kernel/src/helpers/socket-io-client.ts`) is outside the helpers barrel and ships only on the `./socket-io` sub-path, so the optional `socket.io-client` peer loads only for an application that imports that sub-path - see [Kernel package](/packages/kernel.md). It is built from `{ identifier, host, options }`, where `options` is socket.io's `SocketOptions` plus a required `path` and `extraHeaders`, and the constructor passes them straight to `io(host, options)`. socket.io connects on `io()` unless `autoConnect` is `false`, a key the options type does not admit, so the socket starts connecting when the helper is built. `connect()` and `disconnect()` forward to the client.
 
-- `subscribe({ events, ignoreDuplicate })` calls each handler as `handler(client, ...args)`: the socket first, the payload after. An event with no handler is skipped, and `ignoreDuplicate` skips an event that already has any listener, not only this handler.
-- `unsubscribe({ events })` calls `off(eventName)`, which removes every listener on that event, including ones registered outside the helper.
+- `subscribe({ events, ignoreDuplicate })` calls each handler (`TSocketIOEventHandler`) as `handler(client, ...args)`: the socket first, the payload after. An event with no handler is skipped, and `ignoreDuplicate` skips an event that already has any listener, not only this handler. The helper keeps a map of handler to wrapper per event, so subscribing the same handler twice registers one listener.
+- `unsubscribe({ events, handler? })` with a `handler` removes only that handler's wrapper. Without one it calls `off(eventName)`, which removes every listener on that event, including ones registered outside the helper.
 - `emit({ topic, message, doLog })` throws `getError` with status 400 when the client is not connected, so an emit before the handshake completes throws instead of buffering. It sends no acknowledgement callback.
 - `getSocketClient()` returns the raw socket.io `Socket` for anything else.

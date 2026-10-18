@@ -1,4 +1,4 @@
-import { stringify } from '@/utilities/url';
+import { toQueryString } from '@/utilities/url';
 import { AbstractNetworkFetchableHelper, type IRequestOptions } from './abstract';
 
 export interface INodeFetchRequestOptions extends RequestInit, IRequestOptions {
@@ -45,7 +45,7 @@ export class NodeFetcher extends AbstractNetworkFetchableHelper<
 
     let requestUrl = url;
     if (params) {
-      requestUrl = `${url}?${stringify(params)}`;
+      requestUrl = `${url}?${toQueryString({ params })}`;
     }
 
     this.logger.info('[send] URL: %s | Props: %o | Timeout: %s', url, requestConfigs, timeout);

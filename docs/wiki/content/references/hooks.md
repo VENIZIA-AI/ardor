@@ -35,7 +35,7 @@ An ARDOR application mounted with `ApplicationContext` (see [Application](../ref
 | `createAppDispatch` | react-redux `Provider` (for the hooks it returns) | `{ useAppDispatch, useMultipleAppDispatch }` |
 | `createAppSelectors` | react-redux `Provider` (for the hooks it returns) | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 
-Types covered on this page: `TUseInjectableKeys`, `TUseInjectableKeysDefault`, `IUseInjectableKeysOverrides`, `TUseInjectableOptions`, `TUseTranslateKeys`, `TUseTranslateKeysDefault`, `TUseTranslateFn`, `IUseTranslateKeysOverrides`, `IUseDebounceParams`, `IUseDebounceReturn`, `IUseAutosaveParams`, `IUseConfirmReturn`, `IUseCopyToClipboardReturn`, `IUseBeforeUnloadParams`.
+Types covered on this page: `TUseInjectableKeys`, `TUseInjectableKeysDefault`, `IUseInjectableKeysOverrides`, `TUseInjectableOptions`, `TUseTranslateKeys`, `TUseTranslateKeysDefault`, `TUseTranslateFn`, `IUseTranslateKeysOverrides`, `IApplicationContextValue`, `IUseDebounceOptions`, `IUseDebounceReturn`, `IUseAutosaveOptions`, `IUseConfirmReturn`, `IUseCopyToClipboardReturn`, `IUseBeforeUnloadOptions`, `IUseSizerOptions`, `IUseSizerReturn`.
 
 ## useInjectable
 
@@ -49,7 +49,7 @@ type TUseInjectableOptions =
   | { container?: Container; key: TUseInjectableKeys; target?: never }
   | { container?: Container; key?: never; target: TClass<AnyType> };
 
-const useInjectable: <T>(opts: TUseInjectableOptions) => T;
+const useInjectable: <TInstance>(opts: TUseInjectableOptions) => TInstance;
 ```
 
 How it resolves:
@@ -159,7 +159,7 @@ export function LoggerStatus() {
 }
 ```
 
-`ApplicationContext` itself is a plain React context with the shape `{ container, registry, logger }`, each `null` by default. The ARDOR application fills it - see [Application](../references/application).
+`ApplicationContext` itself is a plain React context typed `IApplicationContextValue`: `{ container, logger }`, each `null` by default. The ARDOR application fills it - see [Application](../references/application).
 
 ## useTranslate
 
@@ -238,11 +238,11 @@ export function RefreshTokenButton() {
 
 ## useRequestHeaderLocale
 
-Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConsts.X_LOCALE`.
+Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConstants.X_LOCALE`.
 
 ```ts no-check
 interface IUseRequestHeaderLocaleOptions {
-  key?: string; // the header name, default HeaderConsts.X_LOCALE
+  key?: string; // the header name, default HeaderConstants.X_LOCALE
 }
 
 const useRequestHeaderLocale: (opts?: IUseRequestHeaderLocaleOptions) => void;
@@ -315,20 +315,20 @@ export function HtmlLangSync() {
 Delays a value. The debounced value updates `delay` milliseconds after the last change. The default delay is `App.DEFAULT_DEBOUNCE_TIME`.
 
 ```tsx no-check
-interface IUseDebounceParams<TValue> {
+interface IUseDebounceOptions<TValue> {
   value: TValue;
   delay?: number;
-  disabled?: boolean;
+  enabled?: boolean; // default true
 }
 
 interface IUseDebounceReturn<TValue> {
   debouncedValue: TValue;
 }
 
-const useDebounce: <TValue>(params: IUseDebounceParams<TValue>) => IUseDebounceReturn<TValue>;
+const useDebounce: <TValue>(opts: IUseDebounceOptions<TValue>) => IUseDebounceReturn<TValue>;
 ```
 
-When `disabled` is true, or outside a browser, the timer is not set and `debouncedValue` keeps its last value.
+When `enabled` is `false`, or outside a browser, the timer is not set and `debouncedValue` keeps its last value.
 
 ```tsx
 import React from 'react';
@@ -352,18 +352,18 @@ export function ProductSearch() {
 Calls `onSave` with the latest `data` after it has been stable for `interval` milliseconds (default `2000`). It is built on `useDebounce`. The first render is skipped. A rejected `onSave` is logged with `console.error` and swallowed.
 
 ```tsx no-check
-interface IUseAutosaveParams<TData, TReturn> {
+interface IUseAutosaveOptions<TData, TReturn> {
   data: TData;
   onSave: (data: TData) => Promise<TReturn> | TReturn | void;
-  interval?: number;
+  interval?: number; // default 2000
   enableSaveOnUnmount?: boolean;
-  disabled?: boolean;
+  enabled?: boolean; // default true
 }
 
-const useAutosave: <TData, TReturn>(params: IUseAutosaveParams<TData, TReturn>) => void;
+const useAutosave: <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => void;
 ```
 
-With `enableSaveOnUnmount: true` the hook calls `onSave` one more time with the latest `data` when the component unmounts. `disabled` stops the debounce timer, so no save is scheduled.
+With `enableSaveOnUnmount: true` the hook calls `onSave` one more time with the latest `data` when the component unmounts. `enabled: false` stops the debounce timer, so no save is scheduled.
 
 A custom hook that owns the note text and autosaves it. Bind `text` and `setText` to a textarea in the component that uses it:
 
@@ -451,16 +451,18 @@ export function useCopyLink(opts: { href: string }) {
 
 ## useBeforeUnload
 
-Registers a `beforeunload` listener while the component is mounted. When `enabled` (a boolean or a function returning one) is true, the handler calls `event.preventDefault()` and sets `event.returnValue` to `message` if one is given.
+Registers a `beforeunload` listener while the component is mounted. While `enabled` is `true` (the default), the handler calls `event.preventDefault()` and sets `event.returnValue` to `message` if one is given.
 
 ```ts no-check
-interface IUseBeforeUnloadParams {
-  enabled: boolean | (() => boolean);
+interface IUseBeforeUnloadOptions {
+  enabled?: boolean; // default true
   message?: string;
 }
 
-const useBeforeUnload: (params: IUseBeforeUnloadParams) => void;
+const useBeforeUnload: (opts: IUseBeforeUnloadOptions) => void;
 ```
+
+Pass the current boolean. The handler is rebuilt when `enabled` changes, so the listener always sees the latest value:
 
 ```ts
 import React from 'react';
@@ -470,7 +472,7 @@ export function useDraftGuard() {
   const [draft, setDraft] = React.useState('');
 
   useBeforeUnload({
-    enabled: () => draft.length > 0,
+    enabled: draft.length > 0,
     message: 'You have unsaved changes.',
   });
 
@@ -483,18 +485,25 @@ export function useDraftGuard() {
 Tracks the size of a DOM element found by id, using a `ResizeObserver`. It returns `{ width, height }`, both `0` until the element is found and measured. The reported width is `clientWidth + 1` and the reported height is `offsetHeight + 1`.
 
 ```ts no-check
-const useSizer: (props: { containerId: string }) => { width: number; height: number };
+interface IUseSizerOptions {
+  containerId: string;
+}
+
+interface IUseSizerReturn {
+  width: number;
+  height: number;
+}
+
+const useSizer: (opts: IUseSizerOptions) => IUseSizerReturn;
 ```
 
-The effect depends on the `props` object itself. Pass a stable object so the observer is not recreated on every render. The element with id `chart` must be in the DOM for the values to update:
+The observer is keyed on `containerId`, so an inline options object does not recreate it on every render. The element with id `chart` must be in the DOM for the values to update:
 
 ```ts
 import { useSizer } from '@venizia/ardor';
 
-const CHART_SIZER = { containerId: 'chart' };
-
 export function useChartSize() {
-  const { width, height } = useSizer(CHART_SIZER);
+  const { width, height } = useSizer({ containerId: 'chart' });
   return { width, height, isMeasured: width > 0 && height > 0 };
 }
 ```
@@ -523,21 +532,21 @@ export function useIsNarrowViewport(opts: { breakpoint: number }) {
 Two factories that build typed react-redux hooks for your store. Call them once in a module and export the result. The hooks they return need a react-redux `Provider` in the tree.
 
 ```ts no-check
-const createAppDispatch: <D extends Dispatch<UnknownAction> = Dispatch<UnknownAction>>() => {
-  useAppDispatch: () => D;
-  useMultipleAppDispatch: () => (...actions: Parameters<D>[0][]) => void;
+const createAppDispatch: <TDispatch extends Dispatch<UnknownAction> = Dispatch<UnknownAction>>() => {
+  useAppDispatch: () => TDispatch;
+  useMultipleAppDispatch: () => (...actions: Parameters<TDispatch>[0][]) => void;
 };
 
-const createAppSelectors: <S>() => {
-  useAppSelector: <T>(selector: (state: S) => T, equalityFn?: (a: T, b: T) => boolean) => T;
-  useShallowEqualSelector: <T>(selector: (state: S) => T) => T;
-  useDeepEqualSelector: <T>(selector: (state: S) => T) => T;
+const createAppSelectors: <TState>() => {
+  useAppSelector: <TSelected>(selector: (state: TState) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean) => TSelected;
+  useShallowEqualSelector: <TSelected>(selector: (state: TState) => TSelected) => TSelected;
+  useDeepEqualSelector: <TSelected>(selector: (state: TState) => TSelected) => TSelected;
 };
 ```
 
-- `useAppDispatch` is `useDispatch.withTypes<D>()`.
+- `useAppDispatch` is `useDispatch.withTypes<TDispatch>()`.
 - `useMultipleAppDispatch` returns a function that dispatches each given action in order. Falsy entries are skipped.
-- `useAppSelector` is `useSelector.withTypes<S>()`.
+- `useAppSelector` is `useSelector.withTypes<TState>()`.
 - `useShallowEqualSelector` uses react-redux `shallowEqual`.
 - `useDeepEqualSelector` uses lodash `isEqual`.
 

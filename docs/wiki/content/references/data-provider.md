@@ -27,7 +27,7 @@ An ARDOR application with `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBin
 | `ISendParams` / `ISendResponse` | interfaces | Input and output of `send()` |
 | `ICustomParams` | interface | Extra `params` bag accepted by the read calls |
 | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData` | classes | Constants used in `send()` and internally |
-| `HeaderConsts` | class | Header names, including `CONTENT_RANGE` |
+| `HeaderConstants` | class | Header names, including `CONTENT_RANGE` |
 
 ## Options: `IRestDataProviderOptions`
 
@@ -315,7 +315,7 @@ await dataProvider.deleteMany('products', { ids: ['p-1', 'p-2'] });
 
 ## Totals
 
-`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConsts.CONTENT_RANGE`) in the form `unit start-end/total` (or `unit */total` for an empty page); without it, or with a malformed one such as `records 0-24/*`, `total` is the number of rows in the page. Parsing is described in [Network](../references/network).
+`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConstants.CONTENT_RANGE`) in the form `unit start-end/total` (or `unit */total` for an empty page); without it, or with a malformed one such as `records 0-24/*`, `total` is the number of rows in the page. Parsing is described in [Network](../references/network).
 
 `CountRestDataProvider` overrides `getListHelper` so that `getList` and `getManyReference` issue two requests in parallel:
 

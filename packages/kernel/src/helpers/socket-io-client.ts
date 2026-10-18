@@ -4,7 +4,9 @@ import { io, type Socket, type SocketOptions } from 'socket.io-client';
 import { type AnyType } from '@/common/types';
 import { BaseHelper } from './base-helper';
 
-interface IOptions extends SocketOptions {
+export type TSocketIOEventHandler = (client: Socket, ...props: AnyType[]) => void;
+
+interface ISocketIOConnectionOptions extends SocketOptions {
   path: string;
   extraHeaders: Record<string | symbol | number, AnyType>;
 }
@@ -12,15 +14,21 @@ interface IOptions extends SocketOptions {
 export interface ISocketIOClientOptions {
   identifier: string;
   host: string;
-  options: IOptions;
+  options: ISocketIOConnectionOptions;
 }
 
 export class SocketIOClientHelper extends BaseHelper {
   private identifier: string;
   private host: string;
-  private options: IOptions;
+  private options: ISocketIOConnectionOptions;
   private client: Socket;
 
+  // subscribe() registers a wrapper that passes `this.client`, never the caller handler directly:
+  // without this map, unsubscribe() cannot unbind one handler or deduplicate repeat subscriptions.
+  private wrappedHandlers = new Map<
+    string,
+    Map<TSocketIOEventHandler, (...props: AnyType[]) => void>
+  >();
   constructor(opts: ISocketIOClientOptions) {
     super({ scope: SocketIOClientHelper.name });
 
@@ -48,10 +56,7 @@ export class SocketIOClientHelper extends BaseHelper {
     return this.client;
   }
 
-  subscribe(opts: {
-    events: Record<string, (...props: AnyType) => void>;
-    ignoreDuplicate?: boolean;
-  }) {
+  subscribe(opts: { events: Record<string, TSocketIOEventHandler>; ignoreDuplicate?: boolean }) {
     const { events: eventHandlers, ignoreDuplicate = false } = opts;
 
     const eventNames = Object.keys(eventHandlers);
@@ -77,21 +82,49 @@ export class SocketIOClientHelper extends BaseHelper {
         continue;
       }
 
-      this.client.on(eventName, (...props) => {
+      let handlersForEvent = this.wrappedHandlers.get(eventName);
+      if (!handlersForEvent) {
+        handlersForEvent = new Map();
+        this.wrappedHandlers.set(eventName, handlersForEvent);
+      }
+
+      if (handlersForEvent.has(handler)) {
+        continue;
+      }
+
+      const wrappedHandler = (...props: AnyType[]) => {
         handler(this.client, ...props);
-      });
+      };
+      handlersForEvent.set(handler, wrappedHandler);
+      this.client.on(eventName, wrappedHandler);
     }
   }
 
-  unsubscribe(opts: { events: Array<string> }) {
-    const { events: eventNames } = opts;
+  unsubscribe(opts: { events: Array<string>; handler?: TSocketIOEventHandler }) {
+    const { events: eventNames, handler } = opts;
     this.logger.info('[unsubscribe][%s] Handling events: %j', this.identifier, eventNames);
     for (const eventName of eventNames) {
       if (!this.client?.hasListeners(eventName)) {
         continue;
       }
 
+      const handlersForEvent = this.wrappedHandlers.get(eventName);
+      if (handler) {
+        const wrappedHandler = handlersForEvent?.get(handler);
+        if (!wrappedHandler) {
+          continue;
+        }
+
+        this.client.off(eventName, wrappedHandler);
+        handlersForEvent?.delete(handler);
+        if (handlersForEvent?.size === 0) {
+          this.wrappedHandlers.delete(eventName);
+        }
+        continue;
+      }
+
       this.client.off(eventName);
+      this.wrappedHandlers.delete(eventName);
     }
   }
 

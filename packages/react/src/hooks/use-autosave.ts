@@ -2,17 +2,18 @@ import React from 'react';
 
 import { useDebounce } from './use-debounce';
 
-export interface IUseAutosaveParams<TData, TReturn> {
+export interface IUseAutosaveOptions<TData, TReturn> {
   data: TData;
   onSave: (data: TData) => Promise<TReturn> | TReturn | void;
   /** @default 2000 */
   interval?: number;
   enableSaveOnUnmount?: boolean;
-  disabled?: boolean;
+  /** @default true */
+  enabled?: boolean;
 }
 
-export const useAutosave = <TData, TReturn>(params: IUseAutosaveParams<TData, TReturn>) => {
-  const { data, onSave, interval = 2000, enableSaveOnUnmount, disabled } = params;
+export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => {
+  const { data, onSave, interval = 2000, enableSaveOnUnmount, enabled = true } = opts;
 
   const valueOnCleanup = React.useRef(data);
   const initialRender = React.useRef(true);
@@ -21,7 +22,7 @@ export const useAutosave = <TData, TReturn>(params: IUseAutosaveParams<TData, TR
   const { debouncedValue: debouncedValueToSave } = useDebounce({
     value: data,
     delay: interval,
-    disabled,
+    enabled,
   });
 
   React.useEffect(() => {

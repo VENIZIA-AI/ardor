@@ -4,14 +4,14 @@ import { type Dispatch, type UnknownAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 
 export const createAppDispatch = <
-  D extends Dispatch<UnknownAction> = Dispatch<UnknownAction>,
+  TDispatch extends Dispatch<UnknownAction> = Dispatch<UnknownAction>,
 >() => {
-  const useAppDispatch = useDispatch.withTypes<D>();
+  const useAppDispatch = useDispatch.withTypes<TDispatch>();
 
   const useMultipleAppDispatch = () => {
     const dispatch = useAppDispatch();
 
-    type DispatchActionType = Parameters<D>[0];
+    type DispatchActionType = Parameters<TDispatch>[0];
 
     const multipleDispatch = React.useCallback(
       (...actions: DispatchActionType[]) => {

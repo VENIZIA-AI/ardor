@@ -6,11 +6,11 @@ import polyglotI18nProvider from 'ra-i18n-polyglot';
 import { BaseProvider, CoreBindings } from '@venizia/ardor-kernel';
 import { type II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { type IFeature } from '@/features/feature';
+import { type TFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 
 /**
- * The options hold data (`i18nSources`, `listLanguages`); the hooks are `resolveInitialLocale` and
+ * The options hold data (`i18nSources`, `languages`); the hooks are `resolveInitialLocale` and
  * `composeMessages`, each taking one `opts` object.
  */
 export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
@@ -18,7 +18,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     @inject({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
     protected i18nProviderOptions: II18nProviderOptions,
     @inject({ key: CoreBindings.FEATURES, isOptional: true })
-    protected features: Array<IFeature> = [],
+    protected features: Array<TFeature> = [],
   ) {
     super({ scope: DefaultI18nProvider.name });
   }
@@ -46,10 +46,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   }
 
   override value(_container: Container): I18nProvider {
-    const { listLanguages = [{ locale: 'en', name: 'English' }] } = this.i18nProviderOptions;
+    const { languages = [{ locale: 'en', name: 'English' }] } = this.i18nProviderOptions;
 
     const initialLocale = this.resolveInitialLocale({
-      locales: listLanguages.map(({ locale }) => locale),
+      locales: languages.map(({ locale }) => locale),
     });
 
     const featureMessages = new FeatureMessages({ features: this.features });
@@ -70,7 +70,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
           .then((messages) => this.composeMessages({ locale, messages }));
       },
       initialLocale,
-      listLanguages,
+      languages,
       {
         allowMissing: true,
         onMissingKey: (key: string, _options: unknown, _locale: unknown) => key,

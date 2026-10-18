@@ -3,13 +3,13 @@ import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 import { configureStore, createSlice, type Dispatch, type UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { useDebounce } from '@/hooks/use-debounce';
-import { useAutosave } from '@/hooks/use-autosave';
+import { useDebounce, type IUseDebounceOptions } from '@/hooks/use-debounce';
+import { useAutosave, type IUseAutosaveOptions } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { useBeforeUnload } from '@/hooks/use-before-unload';
+import { useBeforeUnload, type IUseBeforeUnloadOptions } from '@/hooks/use-before-unload';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
-import { useSizer } from '@/hooks/use-sizer';
+import { useSizer, type IUseSizerOptions } from '@/hooks/use-sizer';
 import { createAppDispatch } from '@/hooks/redux/use-app-dispatch';
 import { createAppSelectors } from '@/hooks/redux/use-app-selector';
 
@@ -93,17 +93,17 @@ describe('useDebounce', () => {
     expect(result.current.debouncedValue).toBe('updated');
   });
 
-  test('does not update debounced value when disabled is true', async () => {
+  test('does not update debounced value when enabled is false', async () => {
     const { result, rerender } = renderHook(
-      ({ value, delay, disabled }: { value: string; delay: number; disabled: boolean }) => {
-        return useDebounce({ value, delay, disabled });
+      (opts: IUseDebounceOptions<string>) => {
+        return useDebounce(opts);
       },
-      { initialProps: { value: 'initial', delay: 20, disabled: true } },
+      { initialProps: { value: 'initial', delay: 20, enabled: false } },
     );
 
     expect(result.current.debouncedValue).toBe('initial');
 
-    rerender({ value: 'updated', delay: 20, disabled: true });
+    rerender({ value: 'updated', delay: 20, enabled: false });
 
     await act(async () => {
       await wait({ ms: 40 });
@@ -151,6 +151,37 @@ describe('useAutosave', () => {
 
     expect(onSaveMock).toHaveBeenCalledTimes(1);
     expect(onSaveMock).toHaveBeenCalledWith('modified');
+  });
+
+  test('does not call onSave when enabled is false', async () => {
+    const onSaveMock = mock((_data: string) => {});
+
+    const { rerender } = renderHook(
+      (opts: IUseAutosaveOptions<string, void>) => {
+        return useAutosave(opts);
+      },
+      {
+        initialProps: {
+          data: 'initial',
+          onSave: onSaveMock,
+          interval: 20,
+          enabled: false,
+        },
+      },
+    );
+
+    rerender({
+      data: 'modified',
+      onSave: onSaveMock,
+      interval: 20,
+      enabled: false,
+    });
+
+    await act(async () => {
+      await wait({ ms: 40 });
+    });
+
+    expect(onSaveMock).not.toHaveBeenCalled();
   });
 
   test('calls onSave on unmount with the last value when enableSaveOnUnmount is true', () => {
@@ -299,9 +330,10 @@ describe('useCopyToClipboard', () => {
 });
 
 describe('useBeforeUnload', () => {
-  test('calls preventDefault on beforeunload event when enabled is true', () => {
+  test('calls preventDefault on beforeunload event by default and when enabled is true', () => {
+    const options: IUseBeforeUnloadOptions = { enabled: true, message: 'Unsaved progress' };
     const hook = renderHook(() => {
-      return useBeforeUnload({ enabled: true, message: 'Unsaved progress' });
+      return useBeforeUnload(options);
     });
 
     const event = new Event('beforeunload', { cancelable: true });
@@ -311,13 +343,9 @@ describe('useBeforeUnload', () => {
     hook.unmount();
   });
 
-  test('calls preventDefault when enabled is a function returning true', () => {
+  test('defaults enabled to true when omitted', () => {
     const hook = renderHook(() => {
-      return useBeforeUnload({
-        enabled: () => {
-          return true;
-        },
-      });
+      return useBeforeUnload({ message: 'Unsaved progress' });
     });
 
     const event = new Event('beforeunload', { cancelable: true });
@@ -402,8 +430,9 @@ describe('useSizer', () => {
     });
     document.body.appendChild(container);
 
+    const sizerOptions: IUseSizerOptions = { containerId: 'sizer-container' };
     const { result, unmount } = renderHook(() => {
-      return useSizer({ containerId: 'sizer-container' });
+      return useSizer(sizerOptions);
     });
 
     expect(result.current).toEqual({ width: 0, height: 0 });

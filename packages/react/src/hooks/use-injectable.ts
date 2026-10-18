@@ -34,7 +34,7 @@ export const useInjectableContainer = (opts?: { container?: Container }): Contai
   return container;
 };
 
-export const useInjectable = <T>(opts: TUseInjectableOptions) => {
+export const useInjectable = <TInstance>(opts: TUseInjectableOptions) => {
   const container = useInjectableContainer({ container: opts?.container });
 
   const { key, target } = opts;
@@ -46,7 +46,7 @@ export const useInjectable = <T>(opts: TUseInjectableOptions) => {
       });
     }
 
-    return container.get<T>({ key });
+    return container.get<TInstance>({ key });
   }
 
   if (!target) {
@@ -62,5 +62,5 @@ export const useInjectable = <T>(opts: TUseInjectableOptions) => {
     });
   }
 
-  return container.get<T>({ key: resolved });
+  return container.get<TInstance>({ key: resolved });
 };

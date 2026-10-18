@@ -6,7 +6,7 @@ resource: packages/kernel/src/common/constants.ts
 tags: [headers, network-request, kernel, i18n, auth, tracing]
 ---
 
-ARDOR's `DefaultNetworkRequestService` (in the kernel package) builds every outbound request with a consistent set of headers. These are defined centrally as string constants in `HeaderConsts` (`packages/kernel/src/common/constants.ts`) so the header names themselves are never hand-typed at call sites. This is the same const-class pattern used elsewhere in the kernel - see [Const classes](/conventions/const-classes.md).
+ARDOR's `DefaultNetworkRequestService` (in the kernel package) builds every outbound request with a consistent set of headers. These are defined centrally as string constants in `HeaderConstants` (`packages/kernel/src/common/constants.ts`) so the header names themselves are never hand-typed at call sites. This is the same const-class pattern used elsewhere in the kernel - see [Const classes](/conventions/const-classes.md).
 
 Every name is lowercase, and the service keys its header record by lowercase name, merging sources so a later one REPLACES an earlier one whatever case either used: custom headers over the timezone pair, the per-request `x-request-*` headers over any custom header of the same name. A plain object spread kept `X-Request-Count` beside `x-request-count`, and `fetch` sent the two joined as `"1, 0"`, which no server parses. `removeHeaders({ keys })` lowercases the names it is given for the same reason, and the merging is `NetworkHeaders.merge({ sources })` (`NetworkHeaders.toRecord({ headers })` is the one reading of `HeadersInit`, shared by the service and the data provider).
 

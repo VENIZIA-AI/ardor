@@ -5,25 +5,25 @@ import { getError } from '@venizia/ignis-inversion';
 import { ApplicationContext } from '../contexts/application';
 
 export const useApplicationContext = () => {
-  const rs = React.useContext(ApplicationContext);
+  const context = React.useContext(ApplicationContext);
 
-  if (!rs?.container) {
+  if (!context?.container) {
     throw getError({
       message: '[useApplicationContext] must be used within a ApplicationContextProvider',
     });
   }
 
-  return rs.container;
+  return context.container;
 };
 
 export const useApplicationLogger = () => {
-  const rs = React.useContext(ApplicationContext);
+  const context = React.useContext(ApplicationContext);
 
-  if (!rs?.logger) {
+  if (!context?.logger) {
     throw getError({
       message: '[useApplicationLogger] must be used within a ApplicationContextProvider',
     });
   }
 
-  return rs.logger;
+  return context.logger;
 };

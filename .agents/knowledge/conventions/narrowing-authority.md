@@ -23,7 +23,7 @@ In `packages/kernel/src/common/constants.ts`, `RequestMethods`, `RequestTypes`, 
 and `Environments` each pair a fixed set of values with a `SCHEME_SET` and an `isValid` check, and
 their value types are closed unions. ARDOR owns these vocabularies outright: an HTTP method is
 closed by the protocol, and the request types, body encodings and environment names are the ones
-ARDOR itself defines and handles. That is what makes narrowing them legitimate. `HeaderConsts` is
+ARDOR itself defines and handles. That is what makes narrowing them legitimate. `HeaderConstants` is
 plain `static readonly` header names with neither, and no type narrows a header name - see
 [const classes](/conventions/const-classes.md).
 

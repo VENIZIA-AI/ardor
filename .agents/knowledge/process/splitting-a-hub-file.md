@@ -13,7 +13,7 @@ exported classes, or as a `types.ts` / `constants.ts` outside `common/`. The cou
 criterion is topics. A file whose exports all serve one concept stays. Typical ARDOR candidates: a
 `services/` barrel that has grown several unrelated service classes, a `hooks/` file mixing data-hooks
 and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class family (alongside
-`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConsts`,
+`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`,
 `Environments`) grows large enough to deserve its own file.
 
 ## Steps

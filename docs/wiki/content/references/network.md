@@ -23,7 +23,7 @@ A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localS
 | `IDataSourceAuth` | interface | `authTokenResolver`, `headersResolver`, `onUnauthorized` and `errorRootKey` for an `HttpDataSource`, from `getDataSourceAuth()` |
 | `IGetRequestPropsParams` / `IGetRequestPropsResult` | interface | Input and output of `getRequestProps` |
 | `NetworkHeaders` | class | `toRecord({ headers })` and `merge({ sources })`: header records with lowercased keys |
-| `HeaderConsts` | class | Header names and the content-type / attachment regexes |
+| `HeaderConstants` | class | Header names and the content-type / attachment regexes |
 | `RequestBodyTypes` | class | `JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, `NONE`, `BINARY` |
 | `RequestCountData` | class | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) |
 | `RequestChannel` | class | `WEB` (`'100_WEB'`), the default `x-request-channel` |
@@ -338,7 +338,7 @@ For a 2xx response:
 | Condition | Result |
 |---|---|
 | status `204` | `{ data: {} }` - the body is not read |
-| `content-disposition` starts with `attachment`, or `content-type` is missing or does not match `HeaderConsts.TEXTUAL_CONTENT_TYPE_RE` | `{ data: Blob, filename?, contentDisposition? }` |
+| `content-disposition` starts with `attachment`, or `content-type` is missing or does not match `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE` | `{ data: Blob, filename?, contentDisposition? }` |
 | otherwise | `response.json()` passed to `convertResponse` |
 
 `TEXTUAL_CONTENT_TYPE_RE` accepts `application/json`, `*+json`, `application/xml`, `*+xml`, `application/x-www-form-urlencoded`, `application/javascript`, `application/graphql` and anything under `text/`. The check is case-insensitive.
@@ -500,7 +500,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
 
 **`NodeFetcher`** - `send(opts: INodeFetchRequestOptions)`:
 
-- `params` is appended as `?` + `stringify(params)`.
+- `params` is appended as `?` + `toQueryString({ params })`.
 - `body` is passed through when it is a `FormData` or `URLSearchParams`, otherwise `JSON.stringify(body)`.
 - `headers` from the call replace the default headers entirely; the default `content-type: application/json; charset=utf-8` only applies when no headers are passed.
 - `timeout` creates an `AbortController` and aborts after that many milliseconds; the timer is cleared in `finally`.

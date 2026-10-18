@@ -139,7 +139,7 @@ export class AdminConfiguration {
           vert: { configurations: 'Configurations', signedInAs: 'Signed in as user %{userId}' },
         },
       },
-      listLanguages: [{ locale: 'en', name: 'English' }],
+      languages: [{ locale: 'en', name: 'English' }],
     };
   }
 

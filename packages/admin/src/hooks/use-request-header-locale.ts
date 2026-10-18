@@ -3,7 +3,7 @@ import React from 'react';
 import { useLocaleState } from 'ra-core';
 
 import type { DefaultRestDataProvider } from '@/providers/rest-data';
-import { CoreBindings, HeaderConsts } from '@venizia/ardor-kernel';
+import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { useInjectable } from '@venizia/ardor-react';
 
 export interface IUseRequestHeaderLocaleOptions {
@@ -12,7 +12,7 @@ export interface IUseRequestHeaderLocaleOptions {
 }
 
 export const useRequestHeaderLocale = (opts?: IUseRequestHeaderLocaleOptions) => {
-  const key = opts?.key?.length ? opts.key : HeaderConsts.X_LOCALE;
+  const key = opts?.key?.length ? opts.key : HeaderConstants.X_LOCALE;
 
   const [locale] = useLocaleState();
 

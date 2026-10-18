@@ -1,17 +1,17 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
-import { defineFeature } from '@/features/feature';
+import { Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { rejectionOf } from '@/__tests__/rejection';
 
-const inventory = defineFeature({
+const inventory = Features.define({
   name: 'inventory',
   messages: { en: { inventory: { title: 'Stock', unit: 'Unit' } } },
 });
 
-const commerce = defineFeature({
+const commerce = Features.define({
   name: 'commerce',
   messages: {
     en: { commerce: { title: 'Orders' } },
@@ -31,7 +31,7 @@ describe('FeatureMessages', () => {
 
   // A silent "later wins" is a wrong label nobody notices.
   test('throws on a key two features both define, naming both and the key', async () => {
-    const shadow = defineFeature({
+    const shadow = Features.define({
       name: 'shadow',
       messages: { en: { inventory: { title: 'X' } } },
     });
@@ -50,7 +50,7 @@ describe('FeatureMessages', () => {
   test('loads a lazy bundle once, and readNow leaves it out until then', async () => {
     const loader = mock(() => Promise.resolve({ commerce: { title: 'Don hang' } }));
     const messages = new FeatureMessages({
-      features: [defineFeature({ name: 'commerce', messages: { vi: loader } })],
+      features: [Features.define({ name: 'commerce', messages: { vi: loader } })],
     });
 
     expect(messages.isPending({ locale: 'vi' })).toBe(true);
@@ -77,7 +77,7 @@ describe('DefaultI18nProvider with features', () => {
     return new DefaultI18nProvider(
       {
         ...(opts.i18nSources ? { i18nSources: opts.i18nSources } : {}),
-        listLanguages: [
+        languages: [
           { locale: 'en', name: 'English' },
           { locale: 'vi', name: 'Tieng Viet' },
         ],

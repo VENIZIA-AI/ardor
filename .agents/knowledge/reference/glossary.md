@@ -52,8 +52,8 @@ Both record the key on the class, so `useService({ target })` resolves either an
 landed in the `services` namespace. A repository is the same with `@repository` /
 `this.repository(X)` / `useRepository`. See [Hooks and services reference](/reference/hooks-and-services.md).
 
-**ApplicationContext** - the React context in `ardor-react` that holds the `container`, the
-`registry` and the `logger`. `ArdorApplication` provides it, and `useInjectable` and the stereotype
+**ApplicationContext** - the React context in `ardor-react` that holds the `container` and the
+`logger` (`IApplicationContextValue`). `ArdorApplication` provides it, and `useInjectable` and the stereotype
 hooks fall back to its container when none is passed. See
 [Hooks and context](/architecture/hooks-and-context.md).
 

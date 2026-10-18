@@ -13,6 +13,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | Date | Title | Type |
 |------|-------|------|
 | 2026-10-18 | [A package depends on its siblings at the exact version released with it](./2026-10-18-exact-sibling-versions) | Bug Fix |
+| 2026-10-18 | [Types, hooks and utilities follow IGNIS house style](./2026-10-18-house-style-types-hooks-utilities) | Behavior Change |
 | 2026-10-18 | [Options hold data, behaviour lives in protected hooks](./2026-10-18-hooks-not-flags) | Behavior Change |
 | 2026-10-18 | [The sign-in extension points are protected hooks, not options](./2026-10-18-sign-in-hooks) | Behavior Change |
 | 2026-10-18 | [The release script waits for each tarball, and vert-admin splits its vendor chunks](./2026-10-18-release-waits-for-the-tarball) | Enhancement |

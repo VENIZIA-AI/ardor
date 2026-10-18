@@ -63,4 +63,4 @@ let anyText: string = modes[0]; // write the wider type when you mean it
 | `src/common/types.ts` | kernel |
 | `src/__tests__/common/types.test.ts` | kernel |
 
-See [Types and constants](../references/types#tstatusfromclass-and-tconstvalue).
+See [Types and constants](../references/types#tconstvalue).

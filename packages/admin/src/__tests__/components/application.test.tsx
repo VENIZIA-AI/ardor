@@ -5,7 +5,7 @@ import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
-import { defineFeature } from '@/features';
+import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { Container } from '@venizia/ignis-inversion';
@@ -16,7 +16,7 @@ const ReportList = () => {
 };
 
 const createContainer = (opts: { load: () => Promise<object>; withAuthProvider?: boolean }) => {
-  const reports = defineFeature({
+  const reports = Features.define({
     name: 'reports',
     resources: [{ name: 'reports', list: ReportList }],
     messages: { en: opts.load },

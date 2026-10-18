@@ -1,6 +1,6 @@
 ---
 title: Socket.IO client helper
-description: SocketIOClientHelper wraps a socket.io-client Socket with scoped logging, subscribe and unsubscribe by event map, guarded emit, and the lifecycle calls you need to bind it as a service.
+description: SocketIOClientHelper wraps a socket.io-client Socket with scoped logging, subscribe and unsubscribe per event or per handler, guarded emit, and lifecycle calls.
 ---
 
 # Socket.IO client helper
@@ -84,25 +84,27 @@ socketHelper.disconnect();
 
 ## subscribe and unsubscribe
 
-`subscribe` takes a map of event name to handler. For each entry the helper calls `client.on(eventName, ...)`. Entries with no handler are skipped and logged. With `ignoreDuplicate: true`, an event that already has listeners (`client.hasListeners(eventName)`) is skipped and logged instead of getting a second listener.
+`subscribe` takes a map of event name to handler. For each entry the helper calls `client.on(eventName, ...)`. Entries with no handler are skipped and logged. Subscribing the same handler to the same event twice registers one listener. With `ignoreDuplicate: true`, an event that already has any listener (`client.hasListeners(eventName)`) is skipped and logged instead of getting a second one.
 
 ```ts no-check
+type TSocketIOEventHandler = (client: Socket, ...props: AnyType[]) => void;
+
 declare class SocketIOClientHelper {
   subscribe(opts: {
-    events: Record<string, (...props: AnyType) => void>;
+    events: Record<string, TSocketIOEventHandler>;
     ignoreDuplicate?: boolean; // default false
   }): void;
 
-  unsubscribe(opts: { events: Array<string> }): void;
+  unsubscribe(opts: { events: Array<string>; handler?: TSocketIOEventHandler }): void;
 }
 ```
 
 The handler is not called with the raw event arguments alone. The helper prepends the `Socket` instance: `handler(client, ...eventArgs)`. So the first parameter of your handler is the socket, and the payload starts at the second.
 
-`unsubscribe` calls `client.off(eventName)` for every name that currently has listeners. `off` with only an event name removes all listeners for that event, including any you added through `getSocketClient()`.
+To remove one listener, pass the same `handler` you subscribed. Without `handler`, `unsubscribe` calls `client.off(eventName)`, which removes every listener for that event, including any you added through `getSocketClient()`.
 
 ```ts
-import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
+import { SocketIOClientHelper, type TSocketIOEventHandler } from '@venizia/ardor/socket-io';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
@@ -110,20 +112,24 @@ const socketHelper = new SocketIOClientHelper({
   options: { path: '/io', extraHeaders: {} },
 });
 
+const onCreated: TSocketIOEventHandler = (client, payload) => {
+  console.log('connected as', client.id, 'received', payload);
+};
+
 socketHelper.subscribe({
-  ignoreDuplicate: true,
   events: {
-    'order:created': (client, payload) => {
-      console.log('connected as', client.id, 'received', payload);
-    },
+    'order:created': onCreated,
     'order:cancelled': (_client, payload) => {
       console.log('cancelled', payload);
     },
   },
 });
 
-// remove both listeners
-socketHelper.unsubscribe({ events: ['order:created', 'order:cancelled'] });
+// remove only onCreated
+socketHelper.unsubscribe({ events: ['order:created'], handler: onCreated });
+
+// remove every listener on the event
+socketHelper.unsubscribe({ events: ['order:cancelled'] });
 ```
 
 ## emit
@@ -236,8 +242,8 @@ Keep one instance per host. Because `configure()` refuses to rebuild an existing
 - **`emit` throws when not connected.** Check `getSocketClient().connected` or wait for the `connect` event before emitting. There is no queue.
 - **`message` must be a string.** The type is `string`, not an object. `JSON.stringify` first.
 - **`path` and `extraHeaders` are required.** Both fields are non-optional on the options type. Pass `extraHeaders: {}` when you have none.
-- **`unsubscribe` removes every listener for the event.** It calls `client.off(eventName)` without a handler reference. Listeners you added through `getSocketClient()` go too.
-- **`ignoreDuplicate` defaults to `false`.** Calling `subscribe` twice with the same events without it adds a second listener each time. Set it to `true` inside React effects, or unsubscribe on cleanup.
+- **`unsubscribe` without `handler` removes every listener for the event.** It calls `client.off(eventName)`. Listeners you added through `getSocketClient()` go too. Pass `handler` to remove one.
+- **`ignoreDuplicate` checks any listener, not your handler.** The same handler is never registered twice anyway; `ignoreDuplicate: true` also skips an event that another handler already listens to.
 - **Options are fixed after construction.** `configure()` is a no-op once a client exists. To change host, path or headers, create a new helper.
 
 ## Related

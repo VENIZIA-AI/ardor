@@ -1,153 +1,155 @@
-import get from 'lodash/get.js';
 import round from 'lodash/round.js';
 
-export const INTL_0_DIGITS_FORMATER = new Intl.NumberFormat('en-US', {
+import { type AnyType, type TConstValue } from '@/common';
+
+export class NumberParseMethods {
+  static readonly INT = 'int';
+  static readonly FLOAT = 'float';
+
+  static readonly SCHEME_SET = new Set([this.INT, this.FLOAT]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+export type TNumberParseMethod = TConstValue<typeof NumberParseMethods>;
+
+export const INTL_0_DIGITS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
   minimumFractionDigits: 0,
 });
 
-export const INTL_2_DIGITS_FORMATER = new Intl.NumberFormat('en-US', {
+export const INTL_2_DIGITS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
   minimumFractionDigits: 2,
 });
 
-export const getUID = () => Math.random().toString(36).slice(2).toUpperCase();
+export const generateUniqueId = (): string => Math.random().toString(36).slice(2).toUpperCase();
 
-export const toCamel = (s: string) => {
-  return s.replace(/([-_][a-z])/gi, (sub: string) => {
-    return sub.toUpperCase().replace('-', '').replace('_', '');
+export const toCamelCase = (opts: { value: string }): string => {
+  return opts.value.replace(/([-_][a-z])/gi, (match: string) => {
+    return match.toUpperCase().replace('-', '').replace('_', '');
   });
 };
 
-export const keysToCamel = (object: object) => {
-  const n: any = {};
-  const keys = Object.keys(object);
+/** Nested objects are converted; an array is kept as it is. */
+export const keysToCamelCase = (opts: { value: object }): Record<string, AnyType> => {
+  const converted: Record<string, AnyType> = {};
 
-  for (const key of keys) {
-    const value = get(object, key);
-    const valueType = Array.isArray(value) ? 'array' : typeof value;
+  for (const [key, child] of Object.entries(opts.value)) {
+    const isNestedObject = typeof child === 'object' && child !== null && !Array.isArray(child);
 
-    switch (valueType) {
-      case 'object': {
-        if (!value) {
-          n[toCamel(key)] = value;
-          break;
-        }
-
-        n[toCamel(key)] = keysToCamel(value);
-        break;
-      }
-      case 'array': {
-        n[toCamel(key)] = value;
-        break;
-      }
-      default: {
-        n[toCamel(key)] = value;
-        break;
-      }
-    }
+    converted[toCamelCase({ value: key })] = isNestedObject
+      ? keysToCamelCase({ value: child })
+      : child;
   }
 
-  return n;
+  return converted;
 };
 
-export const isInt = (n: any) => {
-  if (Number.isNaN(n)) {
+export const isInteger = (opts: { value: unknown }): boolean => {
+  const { value } = opts;
+
+  if (Number.isNaN(value)) {
     return false;
   }
 
-  return Number.isInteger(n) || Math.floor(Number(n)) === n || Number(n) % 1 === 0;
+  return Number.isInteger(value) || Math.floor(Number(value)) === value || Number(value) % 1 === 0;
 };
 
-export const isFloat = (n: any) => {
-  if (Number.isNaN(n)) {
+export const isFloat = (opts: { value: unknown }): boolean => {
+  const { value } = opts;
+
+  if (Number.isNaN(value)) {
     return false;
   }
 
-  return n === +n && n !== (n | 0);
+  return value === Number(value) && value !== Math.trunc(Number(value));
 };
 
-export const int = (input: any) => {
-  if (!input || Number.isNaN(input)) {
+/** Thousands separators are stripped; anything that is not a number reads as `0`. */
+export const toInteger = (opts: { value: unknown }): number => {
+  const { value } = opts;
+
+  if (!value || Number.isNaN(value)) {
     return 0;
   }
 
-  const normalized = input?.toString()?.replace(/,/g, '');
-  return Number.parseInt(normalized, 10);
+  return Number.parseInt(String(value).replace(/,/g, ''), 10);
 };
 
-export const float = (input: any, digit = 2) => {
-  if (!input || Number.isNaN(input)) {
+/** Thousands separators are stripped; anything that is not a number reads as `0`. */
+export const toFloat = (opts: { value: unknown; digits?: number }): number => {
+  const { value, digits = 2 } = opts;
+
+  if (!value || Number.isNaN(value)) {
     return 0;
   }
 
-  const normalized = input?.toString()?.replace(/,/g, '');
-  return round(Number.parseFloat(normalized), digit);
+  return round(Number.parseFloat(String(value).replace(/,/g, '')), digits);
 };
 
-export const toBoolean = (input: any) => {
+export const toBoolean = (opts: { value: unknown }): boolean => {
+  const { value } = opts;
+
   return (
-    (input !== 'false' &&
-      input !== '0' &&
-      input !== false &&
-      input !== 0 &&
-      input !== null &&
-      input !== undefined) ??
-    Boolean(input)
+    value !== 'false' &&
+    value !== '0' &&
+    value !== false &&
+    value !== 0 &&
+    value !== null &&
+    value !== undefined
   );
 };
 
-export const toStringDecimal = (input: any, digit = 2, options = { localeFormat: true }) => {
-  const { localeFormat: shouldFormatWithLocale } = options;
-  if (Number.isNaN(input)) {
+export const toStringDecimal = (opts: {
+  value: unknown;
+  digits?: number;
+  localeFormat?: boolean;
+}): string | number => {
+  const { value, digits = 2, localeFormat = true } = opts;
+
+  if (Number.isNaN(value)) {
     return 0;
   }
 
-  const number = isInt(input) ? int(input) : float(input, digit);
+  const number = isInteger({ value }) ? toInteger({ value }) : toFloat({ value, digits });
 
-  if (!shouldFormatWithLocale) {
-    return number.toFixed(digit);
+  if (!localeFormat) {
+    return number.toFixed(digits);
   }
 
   if (Number.isInteger(number)) {
-    return INTL_0_DIGITS_FORMATER.format(number);
+    return INTL_0_DIGITS_FORMATTER.format(number);
   }
 
-  if (digit === 2) {
-    return INTL_2_DIGITS_FORMATER.format(number);
+  if (digits === 2) {
+    return INTL_2_DIGITS_FORMATTER.format(number);
   }
 
-  const formater = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: digit,
-    minimumFractionDigits: digit,
-  });
-  return formater.format(number);
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  }).format(number);
 };
 
-export const getNumberValue = (input: string, method: 'int' | 'float' = 'int') => {
+/** Thousands separators and dots are stripped before parsing, so `'1.234'` reads as `1234`. */
+export const getNumberValue = (opts: { input: string; method?: TNumberParseMethod }): number => {
+  const { input, method = NumberParseMethods.INT } = opts;
+
   if (!input) {
     return 0;
   }
 
-  let raw: any;
-
-  switch (typeof input) {
-    case 'string': {
-      raw = input.replace(/,|\./gi, '');
-      break;
-    }
-    default: {
-      raw = input;
-      break;
-    }
-  }
+  const raw = typeof input === 'string' ? input.replace(/,|\./gi, '') : input;
 
   switch (method) {
-    case 'int': {
-      return int(raw);
+    case NumberParseMethods.FLOAT: {
+      return toFloat({ value: raw });
     }
     default: {
-      return float(raw);
+      return toInteger({ value: raw });
     }
   }
 };

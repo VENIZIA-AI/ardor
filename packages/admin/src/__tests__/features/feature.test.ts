@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import React from 'react';
 import { cleanup, renderHook } from '@testing-library/react';
 
-import { defineFeature, mountFeatures, readFeatures, type IFeature } from '@/features/feature';
+import { Features, type TFeature } from '@/features/feature';
 import { useFeatures } from '@/hooks/use-features';
 import { CoreBindings, Logger } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
@@ -15,20 +15,20 @@ interface IMenuExtension {
   menu: Array<{ id: string; label: string }>;
 }
 
-const inventory = defineFeature<IMenuExtension>({
+const inventory = Features.define<IMenuExtension>({
   name: 'inventory',
   resources: [{ name: 'stocks', list: List }],
   routes: [{ path: '/stock-report', element: null }],
   menu: [{ id: 'stocks', label: 'inventory.menu.stocks' }],
 });
 
-const commerce = defineFeature<IMenuExtension>({
+const commerce = Features.define<IMenuExtension>({
   name: 'commerce',
   resources: [{ name: 'orders', list: List }],
   menu: [{ id: 'orders', label: 'commerce.menu.orders' }],
 });
 
-const containerWith = (opts: { features?: Array<IFeature> }) => {
+const containerWith = (opts: { features?: Array<TFeature> }) => {
   const container = new Container();
   if (opts.features) {
     container.bind({ key: CoreBindings.FEATURES }).toValue(opts.features);
@@ -40,21 +40,21 @@ afterEach(() => {
   cleanup();
 });
 
-describe('readFeatures', () => {
+describe('Features.read', () => {
   test('reads the features the application bound', () => {
-    expect(readFeatures({ container: containerWith({ features: [inventory, commerce] }) })).toEqual(
-      [inventory, commerce],
-    );
+    expect(
+      Features.read({ container: containerWith({ features: [inventory, commerce] }) }),
+    ).toEqual([inventory, commerce]);
   });
 
   test('reads none from a container that holds no list', () => {
-    expect(readFeatures({ container: containerWith({}) })).toEqual([]);
+    expect(Features.read({ container: containerWith({}) })).toEqual([]);
   });
 });
 
-describe('mountFeatures', () => {
+describe('Features.mount', () => {
   test("mounts the application's own resources and routes first, then each feature's in order", () => {
-    const mounted = mountFeatures({
+    const mounted = Features.mount({
       features: [inventory, commerce],
       resources: [{ name: 'dashboard', list: List }],
       routes: [{ path: '/settings', element: null }],
@@ -69,7 +69,7 @@ describe('mountFeatures', () => {
   });
 
   test('mounts features alone when the application declares no resources or routes', () => {
-    const mounted = mountFeatures({ features: [commerce] });
+    const mounted = Features.mount({ features: [commerce] });
 
     expect(mounted.resources.map((resource) => resource.name)).toEqual(['orders']);
     expect(mounted.routes).toEqual([]);
@@ -77,16 +77,16 @@ describe('mountFeatures', () => {
 
   // react-admin keeps one of two same-named resources and drops the other without a word.
   test('throws on a resource name two features both mount, naming both', () => {
-    const shadow = defineFeature({ name: 'shadow', resources: [{ name: 'stocks', list: List }] });
+    const shadow = Features.define({ name: 'shadow', resources: [{ name: 'stocks', list: List }] });
 
-    expect(() => mountFeatures({ features: [inventory, shadow] })).toThrow(
+    expect(() => Features.mount({ features: [inventory, shadow] })).toThrow(
       "[features] Resource 'stocks' is mounted by both 'inventory' and 'shadow'",
     );
   });
 
   test('throws on a feature resource the application already mounts', () => {
     expect(() =>
-      mountFeatures({ features: [inventory], resources: [{ name: 'stocks', list: List }] }),
+      Features.mount({ features: [inventory], resources: [{ name: 'stocks', list: List }] }),
     ).toThrow("[features] Resource 'stocks' is mounted by both 'the application' and 'inventory'");
   });
 });
@@ -98,12 +98,12 @@ describe('useFeatures', () => {
       React.createElement(
         ApplicationContext.Provider,
         {
-          value: { container, registry: container, logger: Logger.getInstance({ scope: 'test' }) },
+          value: { container, logger: Logger.getInstance({ scope: 'test' }) },
         },
         children,
       );
 
-    const { result } = renderHook(() => useFeatures<IFeature<IMenuExtension>>(), { wrapper });
+    const { result } = renderHook(() => useFeatures<TFeature<IMenuExtension>>(), { wrapper });
 
     expect(result.current.flatMap((feature) => feature.menu.map((entry) => entry.id))).toEqual([
       'stocks',

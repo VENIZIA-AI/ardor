@@ -23,24 +23,16 @@ export type ValueOf<T> = T[keyof T];
 export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
 
-export type ClassProps<T> = ValueOf<T>;
-
-export type ClassType<T> = Function & { prototype: T };
-
 // `& {}` turns the widening literals of `static readonly` members into regular ones, so a value
 // copied into an object literal or a `let` keeps its union instead of widening to string/number.
-export type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<
-  Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>
-> & {};
-
-export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {};
-export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {};
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
+export type TStringConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string> & {};
+export type TNumberConstValue<T extends TClass<any>> = Extract<ValueOf<T>, number> & {};
+export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
 
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 
-export type TRequestMethod = TStatusFromClass<typeof RequestMethods>;
-export type TEnvironment = TStatusFromClass<typeof Environments>;
+export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
+export type TEnvironment = TStringConstValue<typeof Environments>;
 
 export interface IRequestProps {
   headers?: { [key: string]: string | number };
@@ -145,7 +137,7 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
 
 /**
  * A feature package an application mounts: what it registers in the container. The admin package
- * extends it with resources, routes and messages (`IFeature`); the kernel knows no UI.
+ * extends it with resources, routes and messages (`TFeature`); the kernel knows no UI.
  */
 export interface IFeatureBase {
   /** Unique within an application. */

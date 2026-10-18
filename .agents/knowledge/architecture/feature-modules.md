@@ -17,8 +17,8 @@ application's. Decided by Phat on 2026-10-07; design reviewed by BANA (Inven-1).
 ## Split by layer
 
 The kernel imports no React and no ra-core, so the type is split. `IFeatureBase` and
-`IPermissionProvider` live in `packages/kernel/src/common/types.ts`; `IFeature<TExtension>`,
-`defineFeature` and `useFeatures` in admin. `TExtension` is what a shell adds (BANA: menu entries);
+`IPermissionProvider` live in `packages/kernel/src/common/types.ts`; `TFeature<TExtension>`,
+`Features.define` and `useFeatures` in admin. `TExtension` is what a shell adds (BANA: menu entries);
 ARDOR carries it and never reads it - a generic rather than an untyped `extensions` bag.
 
 ## Registration
@@ -32,11 +32,13 @@ the list under `CoreBindings.FEATURES` - always, empty included, so readers neve
 
 ## Mounting
 
-`ArdorApplication` reads the list (`readFeatures`) and `mountFeatures` puts the application's own
-`resources` / `customRoutes` first, then each feature's. A resource name mounted twice throws, naming
-both owners: react-admin keeps one and drops the other silently. `readFeatures`, `mountFeatures` and
-`FeatureMessages` are internal to admin (imported by path, not exported); the public surface is
-`IFeature`, `TFeatureMessages`, `defineFeature`, `useFeatures`, plus the kernel's two types and keys.
+`ArdorApplication` reads the list (`Features.read({ container })`) and `Features.mount({ features,
+resources, routes })` puts the application's own `resources` / `routes` first, then each feature's.
+`IApplication.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
+naming both owners: react-admin keeps one and drops the other silently. Only `FeatureMessages` is
+internal to admin (imported by path, not exported); the public surface is `TFeature`,
+`TFeatureMessages`, the `Features` class (`define`, `read`, `mount`), `useFeatures`, plus the kernel's
+two types and keys.
 
 ## Permissions
 

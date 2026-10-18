@@ -1,17 +1,17 @@
 import React from 'react';
 
-export interface IUseBeforeUnloadParams {
-  enabled: boolean | (() => boolean);
+export interface IUseBeforeUnloadOptions {
+  /** @default true */
+  enabled?: boolean;
   message?: string;
 }
 
-export const useBeforeUnload = (params: IUseBeforeUnloadParams) => {
-  const { enabled, message } = params;
+export const useBeforeUnload = (opts: IUseBeforeUnloadOptions) => {
+  const { enabled = true, message } = opts;
 
   const handleBeforeUnload = React.useCallback(
     (event: BeforeUnloadEvent) => {
-      const isEnabled = enabled instanceof Function ? enabled() : enabled;
-      if (!isEnabled) {
+      if (!enabled) {
         return;
       }
 

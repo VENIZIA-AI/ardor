@@ -47,7 +47,6 @@ const createWrapper = ({ container }: ICreateWrapperOptions) => {
       {
         value: {
           container,
-          registry: container,
           logger: null,
         },
       },

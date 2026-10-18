@@ -1,3 +1,3 @@
-// The public surface: the feature type and its helper. `readFeatures`, `mountFeatures` and
-// `FeatureMessages` stay internal to the admin package.
-export { defineFeature, type IFeature, type TFeatureMessages } from './feature';
+// The public surface: the feature type and its statics. `FeatureMessages` stays internal to the
+// admin package.
+export { Features, type TFeature, type TFeatureMessages } from './feature';

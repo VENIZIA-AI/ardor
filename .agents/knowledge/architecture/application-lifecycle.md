@@ -63,7 +63,7 @@ The remaining props are spread after these three resolved values, so an explicit
 
 The tree it mounts, outermost first:
 
-- `ApplicationContext.Provider`, whose value carries the container (as both `container` and `registry`) and a `Logger` scoped to `ArdorApplication`. `enableDebug` (default `false`) goes to `Logger.getInstance` on every render, and that switch covers the whole process, so leaving it off turns debug logging off for every scope - see [debugging](/process/debugging.md). Hooks throughout the tree call `container.get(...)` through it for anything else the application bound.
+- `ApplicationContext.Provider`, whose value (`IApplicationContextValue`) carries the container and a `Logger` scoped to `ArdorApplication`. `enableDebug` (default `false`) goes to `Logger.getInstance` on every render, and that switch covers the whole process, so leaving it off turns debug logging off for every scope - see [debugging](/process/debugging.md). Hooks throughout the tree call `container.get(...)` through it for anything else the application bound.
 - A react-redux `Provider` over `reduxStore` - a Redux store is always required.
 - `React.Suspense` with `suspense` as its fallback.
 - `CoreAdmin` with `adminProps`.
