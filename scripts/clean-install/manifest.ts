@@ -163,3 +163,94 @@ export const findLockMismatches = (opts: {
   }
   return mismatches;
 };
+
+/**
+ * Packages a second copy of breaks DI or context identity: each keeps a module-level container,
+ * context, registry or polyfill. An ARDOR package that uses one declares it as a PEER with one
+ * range, so the application owns the single copy.
+ */
+export const IDENTITY_PEERS = [
+  'react',
+  'react-dom',
+  'react-redux',
+  'react-router-dom',
+  '@reduxjs/toolkit',
+  '@tanstack/react-query',
+  'ra-core',
+  'ra-i18n-polyglot',
+  'reflect-metadata',
+];
+
+export const isIdentityPeer = (opts: { name: string }): boolean => {
+  return IDENTITY_PEERS.includes(opts.name) || opts.name.startsWith('@venizia/ignis-');
+};
+
+/** What those peers bring, and the ARDOR packages themselves: one copy of each in an install too. */
+const isSingleCopy = (opts: { name: string }): boolean => {
+  return (
+    isIdentityPeer(opts) ||
+    ['@tanstack/query-core', 'react-router', 'redux'].includes(opts.name) ||
+    opts.name.startsWith('@venizia/ardor')
+  );
+};
+
+/**
+ * Every package of `isSingleCopy` must resolve to one version in a sandbox lock, nested keys
+ * (`"ra-i18n-polyglot/ra-core"`) included. A packed tarball is one copy however many keys name it.
+ */
+export const findDuplicateCopies = (opts: { lock: string }): string[] => {
+  const versions = new Map<string, Set<string>>();
+
+  for (const match of opts.lock.matchAll(/"[^"]*": \["([^"]+)"/g)) {
+    const spec = match[1];
+    const at = spec.indexOf('@', 1);
+    if (at < 0) {
+      continue;
+    }
+
+    const name = spec.slice(0, at);
+    if (!isSingleCopy({ name })) {
+      continue;
+    }
+
+    const set = versions.get(name) ?? new Set<string>();
+    set.add(spec.slice(at + 1));
+    versions.set(name, set);
+  }
+
+  return [...versions]
+    .filter(([, set]) => set.size > 1)
+    .map(([name, set]) => `${name} resolves to ${[...set].sort().join(' and ')}`)
+    .sort();
+};
+
+/**
+ * The packages whose resolution of a peer must match the application's: the package itself and the
+ * ARDOR packages it depends on, transitively (`@venizia/ardor` -> admin -> react -> kernel).
+ */
+export const peerIdentityHolders = (opts: { name: string }): string[] => {
+  const byName = new Map(
+    listPackageDirectories().map((directory) => {
+      const manifest = readPackageManifest({ package: directory });
+      return [manifest.name, manifest] as const;
+    }),
+  );
+
+  const holders = new Set<string>();
+  const queue = [opts.name];
+  while (queue.length > 0) {
+    const name = queue.shift() as string;
+    if (holders.has(name)) {
+      continue;
+    }
+
+    holders.add(name);
+    for (const dependency of Object.keys(byName.get(name)?.dependencies ?? {})) {
+      if (byName.has(dependency)) {
+        queue.push(dependency);
+      }
+    }
+  }
+
+  return [...holders];
+};

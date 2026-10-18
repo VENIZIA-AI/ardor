@@ -4,7 +4,7 @@ The React bindings of [ARDOR](https://github.com/VENIZIA-AI/ardor): the applicat
 hooks that resolve out of it, and the UI hooks. No react-admin.
 
 ```bash
-bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion
+bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,

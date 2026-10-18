@@ -3,10 +3,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   assertEveryPackageClaimed,
   deriveInstallRows,
+  findDuplicateCopies,
   findLockMismatches,
   INSTALL_CLAIMS,
   isCodeSubpath,
   listPackageDirectories,
+  peerIdentityHolders,
 } from '../clean-install/manifest';
 
 const TARBALL = '/tmp/ci/tarballs/kernel/venizia-ardor-kernel-0.1.1-3.tgz';
@@ -81,6 +83,76 @@ describe('findLockMismatches', () => {
   test('the sandboxed package missing from the lock is caught', () => {
     expect(findLockMismatches({ lock: '', tarballs, sandboxed: '@venizia/ardor-kernel' })).toEqual([
       '@venizia/ardor-kernel is missing from the lock',
+    ]);
+  });
+});
+
+describe('findDuplicateCopies', () => {
+  const lock = (opts: { entries: Record<string, string> }): string => {
+    const body = Object.entries(opts.entries)
+      .map(([key, spec]) => `    "${key}": ["${spec}", {}, "sha512-x"],`)
+      .join('\n');
+    return `{\n  "lockfileVersion": 1,\n  "packages": {\n${body}\n  }\n}`;
+  };
+
+  test('one version of each package passes', () => {
+    const text = lock({
+      entries: {
+        'ra-core': 'ra-core@5.15.4',
+        react: 'react@19.3.1',
+        lodash: 'lodash@4.18.1',
+      },
+    });
+
+    expect(findDuplicateCopies({ lock: text })).toEqual([]);
+  });
+
+  test('a nested second copy of an identity package is reported with both versions', () => {
+    const text = lock({
+      entries: {
+        'ra-core': 'ra-core@5.15.0',
+        'ra-i18n-polyglot/ra-core': 'ra-core@5.15.4',
+        'ra-i18n-polyglot': 'ra-i18n-polyglot@5.15.4',
+      },
+    });
+
+    expect(findDuplicateCopies({ lock: text })).toEqual(['ra-core resolves to 5.15.0 and 5.15.4']);
+  });
+
+  test('two copies of a package that carries no identity are fine', () => {
+    const text = lock({
+      entries: { lodash: 'lodash@4.18.1', 'some/lodash': 'lodash@4.17.21' },
+    });
+
+    expect(findDuplicateCopies({ lock: text })).toEqual([]);
+  });
+
+  test('scoped IGNIS packages count, and a packed tarball is one copy however many keys name it', () => {
+    const text = lock({
+      entries: {
+        '@venizia/ignis-inversion': '@venizia/ignis-inversion@0.2.2-5',
+        'a/@venizia/ignis-inversion': '@venizia/ignis-inversion@0.2.2-4',
+        '@venizia/ardor-kernel': '@venizia/ardor-kernel@/tmp/x/venizia-ardor-kernel-0.1.4-5.tgz',
+        'b/@venizia/ardor-kernel': '@venizia/ardor-kernel@/tmp/x/venizia-ardor-kernel-0.1.4-5.tgz',
+      },
+    });
+
+    expect(findDuplicateCopies({ lock: text })).toEqual([
+      '@venizia/ignis-inversion resolves to 0.2.2-4 and 0.2.2-5',
+    ]);
+  });
+});
+
+describe('peerIdentityHolders', () => {
+  test('is the package and the ARDOR packages it depends on, transitively', () => {
+    expect(peerIdentityHolders({ name: '@venizia/ardor' }).sort()).toEqual([
+      '@venizia/ardor',
+      '@venizia/ardor-admin',
+      '@venizia/ardor-kernel',
+      '@venizia/ardor-react',
+    ]);
+    expect(peerIdentityHolders({ name: '@venizia/ardor-kernel' })).toEqual([
+      '@venizia/ardor-kernel',
     ]);
   });
 });

@@ -10,7 +10,7 @@ control comes from `@venizia/ignis-inversion`, and the data layer speaks the que
 `@venizia/ignis-filter`.
 
 ```bash
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter reflect-metadata
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
 ## Quick start

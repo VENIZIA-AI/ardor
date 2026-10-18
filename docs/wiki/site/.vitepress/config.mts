@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'One copy of each package',
+            link: '/changelogs/2026-10-18-one-copy-of-each',
+          },
+          {
             text: 'Exact sibling versions',
             link: '/changelogs/2026-10-18-exact-sibling-versions',
           },
