@@ -258,11 +258,25 @@ class Application extends BaseArdorApplication {
 | `bun run` from source | `start()` awaits `AutoArtifacts.resolve()`, which scans the application from its entry file (`Bun.main`), whatever the working directory, and imports the modules. |
 | `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]`, server target | The bundle carries the class list, with no scanner. `AutoArtifacts` has a `resolve()` over the bundle's own imports, and `start()` checks the index it returns like a generated index. |
 | The same plugin with `target: 'browser'` | The list is imported eagerly and sits in `AutoArtifacts` as `content`, which `start()` checks as it is. Eager imports keep the bundle tree-shakeable; a lazy index doubled a measured browser bundle. No `node:fs` in the bundle. |
-| A Vite build | Not measured. Use `artifacts()` with a generated index. |
+| A Vite build with `IgnisArtifactsVitePlugin.create()` from `@venizia/ignis-boot/vite` | The list is built into the bundle and imported eagerly, so `AutoArtifacts` carries it as `content` and the bundle stays tree-shakeable. The plugin sets `output.keepNames` (binding keys come from `Class.name`, which a minifier renames) and runs under Node. Measured on `examples/5-mins-qs` and `examples/vert-admin` in a minified build in a browser. |
 
 Auto registers what is decorated: a class that loses its decorator is simply not registered, in every mode. A generated index fails the boot instead, so prefer it when you want that guarantee.
 
 In a browser build, import `@venizia/ignis-boot/auto` from the application's own module, never from a shared kit. The eager import evaluates the application's classes when the auto module loads, and a kit that imports it would evaluate them inside its own half-loaded module graph. The same holds for the application module itself: keep every decorated class in a file of its own, and keep the module that imports `AutoArtifacts` free of them. When a cycle leaves `undefined` in the list, `start()` throws `[artifacts] 'services' lists an entry that is not a class (position 1)` and names the cause, as IGNIS's own index check does.
+
+In a Vite build, add the plugin before `react()` and keep one decorated class per file:
+
+```ts no-check
+// vite.config.ts
+import { IgnisArtifactsVitePlugin } from '@venizia/ignis-boot/vite';
+
+export default defineConfig({
+  plugins: [IgnisArtifactsVitePlugin.create(), react()],
+  // ... the rest of the config
+});
+```
+
+`keepNames` adds about 105 KB (14 KB gzipped) to the bundle of `examples/5-mins-qs`, because the plugin applies it to the whole build, dependencies included.
 
 A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
 

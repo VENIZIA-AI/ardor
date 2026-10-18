@@ -52,12 +52,13 @@
       "@types/lodash": "^4.17.24",
       "@types/react": "^19",
       "@types/react-dom": "^19",
-      "@venizia/dev-configs": "0.3.1-2",
-      "@venizia/ignis-connectors": "0.2.2-12",
-      "@venizia/ignis-filter": "0.2.2-4",
-      "@venizia/ignis-helpers": "0.2.2-7",
-      "@venizia/ignis-inversion": "0.2.2-4",
-      "@venizia/ignis-kernel": "0.2.2-12",
+      "@venizia/dev-configs": "0.3.1-4",
+      "@venizia/ignis-boot": "0.2.1-10",
+      "@venizia/ignis-connectors": "0.2.2-14",
+      "@venizia/ignis-filter": "0.2.2-6",
+      "@venizia/ignis-helpers": "0.2.2-9",
+      "@venizia/ignis-inversion": "0.2.2-6",
+      "@venizia/ignis-kernel": "0.2.2-14",
       "@vitejs/plugin-react": "^6.1.1",
       "eslint": "^10.10.0",
       "lodash": "^4.18.1",
@@ -81,7 +82,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.2.0-7",
+    "@venizia/vulcan": "0.2.0-8",
     "oxfmt": "catalog:",
     "typescript": "catalog:"
   }

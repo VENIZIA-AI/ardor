@@ -17,8 +17,10 @@ resolved with `useRepository`.
 
 | File | What it shows |
 | --- | --- |
-| `src/application.ts` | The application, the three default providers, an `HttpDataSource` and an `HttpRepository`, declared with `@datasource()` and `@repository` and discovered at start |
+| `src/application.ts` | The application alone: `artifacts()` returns `AutoArtifacts`, the list of decorated classes the build made |
+| `src/datasources/api.datasource.ts`, `src/repositories/product.repository.ts` | An `HttpDataSource` and an `HttpRepository`, one decorated class per file, found by the build and bound at start |
+| `src/configurations/admin.configuration.ts` | The three default providers and their options, as `@provide` methods |
 | `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
-| `vite.config.ts` | The `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
+| `vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |

@@ -6,6 +6,19 @@ resource: examples/vert-admin/src/application.ts
 tags: [example, vert-admin, ignis, auth, crud]
 ---
 
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [What it is](#what-it-is)
+- [Run vert first](#run-vert-first)
+- [VertPaths](#vertpaths)
+- [checkAuth against who-am-i](#checkauth-against-who-am-i)
+- [The 401 refresh as a network service hook](#the-401-refresh-as-a-network-service-hook)
+- [configurations CRUD list](#configurations-crud-list)
+- [Module augmentation and i18n](#module-augmentation-and-i18n)
+- [Where things live](#where-things-live)
+<!-- okf:generated:contents end -->
+
 ## What it is
 
 `vert-admin` is the family reference example that pairs an ARDOR console with the IGNIS `examples/vert`
@@ -90,8 +103,11 @@ keys to the English message bundle on top of `englishMessages`, following
 
 ## Where things live
 
-- `src/application.ts` - `VertPaths`, `IdentityService`, and the `Application` class binding rest, auth, and
-  i18n provider options and registering `IdentityService` by hand.
+- `src/application.ts` - the `Application` class alone, whose `artifacts()` returns `AutoArtifacts`; the
+  Vite plugin lists the decorated classes under `src/`. One decorated class per file: `src/constants/vert-paths.ts`
+  (`VertPaths`), `src/services/identity.service.ts` (`IdentityService`), `src/services/vert-network.service.ts`,
+  `src/providers/vert-rest-data.provider.ts` and `src/configurations/admin.configuration.ts` (rest, auth and
+  i18n provider options).
 - `src/pages/configurations.tsx` - the CRUD list page.
 
 This example builds on the same [`@venizia/ardor`](/packages/ardor.md) and

@@ -93,6 +93,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Final pin and autoload',
+            link: '/changelogs/2026-10-18-final-pin-and-autoload',
+          },
+          {
             text: 'start() names a module cycle',
             link: '/changelogs/2026-10-18-artifact-cycle-error',
           },

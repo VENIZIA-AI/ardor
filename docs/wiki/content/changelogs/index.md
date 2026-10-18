@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-18 | [The final IGNIS chain, and the examples autoload with the Vite plugin](./2026-10-18-final-pin-and-autoload) | Behavior Change |
 | 2026-10-18 | [TPaths stops at a Date, a Set, a function and an any field](./2026-10-18-tpaths-stops-at-values) | Bug Fix |
 | 2026-10-18 | [start() names a module cycle in the artifact index](./2026-10-18-artifact-cycle-error) | Bug Fix |
 | 2026-10-18 | [One copy of each package that carries identity, owned by the application](./2026-10-18-one-copy-of-each) | Behavior Change |

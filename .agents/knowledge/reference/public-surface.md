@@ -137,7 +137,7 @@ generated:
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
-### `@venizia/ardor-kernel/repository` (19)
+### `@venizia/ardor-kernel/repository` (21)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -149,11 +149,13 @@ generated:
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
 - `IHttpRequestContext` interface
+- `IHttpSearchResult` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
 - `TExtraRequest` type
 - `TExtraResult` type
 - `THttpBody` type
+- `THttpExtraQuery` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
@@ -430,7 +432,7 @@ generated:
 - `ValueOrPromise` type
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (19)
+### `@venizia/ardor/repository` (21)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -442,11 +444,13 @@ generated:
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
 - `IHttpRequestContext` interface
+- `IHttpSearchResult` interface
 - `IHttpWriteResult` interface
 - `TAuthTokenResolver` type
 - `TExtraRequest` type
 - `TExtraResult` type
 - `THttpBody` type
+- `THttpExtraQuery` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type

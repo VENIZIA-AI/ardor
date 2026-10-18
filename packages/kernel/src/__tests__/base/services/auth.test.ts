@@ -191,6 +191,20 @@ describe('getAuth error handling', () => {
     }
   });
 
+  // Nothing stored is the normal state of every visitor who has not signed in: no error to log.
+  test('getAuth returns null without logging when no token is stored', () => {
+    const service = new DefaultAuthService();
+    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    try {
+      expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
+
+      expect(service.getAuth()).toBeNull();
+      expect(loggerSpy).not.toHaveBeenCalled();
+    } finally {
+      loggerSpy.mockRestore();
+    }
+  });
+
   test('getAuth returns null and logs error when stored token is empty string', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});

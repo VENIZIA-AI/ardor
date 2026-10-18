@@ -18,9 +18,14 @@ export class DefaultAuthService extends BaseService {
   }
 
   getAuth() {
+    // Nothing stored is not an error: it is every visitor who has not signed in.
+    const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+    if (stored === null) {
+      return null;
+    }
+
     try {
-      const encryptedToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN) ?? '';
-      return JSON.parse(encryptedToken);
+      return JSON.parse(stored);
     } catch (error) {
       this.logger.error('[getAuth] Failed to parse stored auth token | error: %s', error);
       return null;

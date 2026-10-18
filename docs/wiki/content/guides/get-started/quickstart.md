@@ -22,9 +22,10 @@ bun create vite my-admin --template react-ts
 cd my-admin
 bun install
 bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
+bun add -d @venizia/ignis-boot
 ```
 
-`@venizia/ardor` is the umbrella package. It re-exports `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`, so the application needs one import path. `@venizia/ignis-connectors` is only for `@venizia/ardor/repository`, which this guide uses.
+`@venizia/ardor` is the umbrella package. It re-exports `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`, so the application needs one import path. `@venizia/ignis-connectors` is only for `@venizia/ardor/repository`, which this guide uses. `@venizia/ignis-boot` is a build-time dependency: it holds the Vite plugin that lists your decorated classes.
 
 Everything after `@venizia/ardor` is a peer dependency, on purpose: a second copy of React, `ra-core`, `ra-i18n-polyglot`, TanStack Query or the IGNIS packages breaks the container or the context a hook reads, so the application owns the one copy, with one range across the ARDOR packages. No `resolve.dedupe` list is needed. Keep `ra-core` and `ra-i18n-polyglot` on the same version: `ra-i18n-polyglot` depends on `ra-core` itself.
 
@@ -54,17 +55,31 @@ ARDOR's container is `@venizia/ignis-inversion`, which relies on TypeScript's le
 
 ## 3. Write the application
 
-`src/application.ts` is the container side: the datasource, the repository, the framework bindings and the application class.
+Every decorated class has a file of its own, and `src/application.ts` holds only the application. Nothing lists the classes and nothing imports them for their side effect: the Vite plugin of step 6 finds every decorated class under `src/` at build time and puts the list into the bundle, and `AutoArtifacts` hands it to `start()`.
+
+`src/datasources/api.datasource.ts` is the transport. `@datasource()` declares it, as IGNIS does; a relative `baseUrl` resolves against the page, and the dev server proxies it.
+
+<<< @/../../../examples/5-mins-qs/src/datasources/api.datasource.ts{ts}
+
+`src/repositories/product.repository.ts` reads one resource. `@repository` injects the datasource into the constructor, and `RepositoryTypes.REMOTE` says the repository has no model.
+
+<<< @/../../../examples/5-mins-qs/src/repositories/product.repository.ts{ts}
+
+`src/configurations/admin.configuration.ts` binds the framework. `start()` binds each `@provide` method under its key, SINGLETON, built on first use, so react-admin, the auth provider and every hook share one data provider with its token, headers and single 401 refresh.
+
+<<< @/../../../examples/5-mins-qs/src/configurations/admin.configuration.ts{ts}
+
+`src/application.ts` is the application. Its `artifacts()` returns `AutoArtifacts`, the list the build made.
 
 <<< @/../../../examples/5-mins-qs/src/application.ts{ts}
 
 What each part does:
 
-- `@datasource()` and `@repository(...)` declare the two classes, as IGNIS does. `start()` binds each as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type, and nothing a minifier can rename. `RepositoryTypes.REMOTE` says the repository has no model, and `@repository` injects the datasource into its constructor. Registering by hand with `this.dataSource(...)` and `this.repository(...)` works too - see [Binding keys](../../best-practices/binding-keys).
-- `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `DefaultNetworkRequestService.readAuthTokenFromStorage` gives it the token the auth provider stored. `baseUrl` is relative here, so it resolves against the page and the dev server proxies it.
-- `AdminConfiguration` binds the framework. `start()` binds each `@provide` method under its key, SINGLETON, built on first use, so react-admin, the auth provider and every hook share one data provider with its token, headers and single 401 refresh. `noAuthPaths` lists the paths reached before a token exists; any other path is sent with an `Authorization` header.
+- `start()` binds each decorated class as a singleton and records the key on the class, so `useRepository({ target })` resolves by class: no key string to type. The key is derived from `Class.name`, which a minifier renames; the plugin turns on `keepNames` for that reason (see [The bundle](#the-bundle)). `RepositoryTypes.REMOTE` says the repository has no model.
+- `ProductRepository` extends `HttpRepository` from `@venizia/ardor/repository`. It reads the `products` resource with the IGNIS filter vocabulary, and `count` reads the total from the `Content-Range` header. `ApiDataSource` is the transport; `DefaultNetworkRequestService.readAuthTokenFromStorage` gives it the token the auth provider stored.
+- `AdminConfiguration`: `noAuthPaths` lists the paths reached before a token exists; any other path is sent with an `Authorization` header. `declare module '@venizia/ardor-admin'` teaches `useTranslate` the two message keys this application adds - see [Module augmentation](../../best-practices/module-augmentation).
 - `Application` extends `BaseArdorApplication`. Two methods are abstract: `getAppInfo()` returns the app's name, version and description; `bindContext()` is empty here, because the bindings live in `AdminConfiguration`.
-- `declare module '@venizia/ardor-admin'` teaches `useTranslate` the two message keys this application adds - see [Module augmentation](../../best-practices/module-augmentation).
+- `AutoArtifacts` comes from `@venizia/ignis-boot/auto`. **The module that imports it must hold no decorated class and must not be imported by one.** The list imports the module of every class, so a class in that module (or one that imports it) is still being evaluated when the list is built and the list holds `undefined`; `start()` then stops with `[artifacts] '<kind>' lists an entry that is not a class (position N)`. One decorated class per file, and the application module free of them, avoids it.
 
 ## 4. Write the pages
 
@@ -84,13 +99,13 @@ What each part does:
 
 <<< @/../../../examples/5-mins-qs/src/main.tsx{tsx}
 
-- `import 'reflect-metadata'` must be the first import: it has to run once, before the application class is defined.
+- `import 'reflect-metadata'` must be the first import: it has to run once, before the first decorated class is defined.
 - `application.start()` runs `preConfigure()`, which binds the application instance, its info, every decorated class and every `@provide` method of `AdminConfiguration`, then calls your `bindContext()`. It then runs `postConfigure()`, which is empty by default.
 - `ArdorApplication` reads the data provider, auth provider and i18n provider from the container by their `CoreBindings` keys, wraps the tree in the application context, the Redux provider and `React.Suspense`, and renders one react-admin `Resource` per entry in `resources`. Any other prop, such as `loginPage`, is passed to `CoreAdmin` as-is.
 
 ## 6. Configure Vite
 
-`vite.config.ts` aliases `@` to `src`, forwards `/api` to the API, and splits the vendor code (see [The bundle](#the-bundle)). Point the proxy target at your API; in a real project read it from an environment variable.
+`vite.config.ts` adds `IgnisArtifactsVitePlugin` first. It serves the list of decorated classes under `src/` to `@venizia/ignis-boot/auto`, imports it eagerly so the bundle stays tree-shakeable, and turns on `keepNames` because binding keys come from `Class.name`. It also aliases `@` to `src`, forwards `/api` to the API, and splits the vendor code (see [The bundle](#the-bundle)). Point the proxy target at your API; in a real project read it from an environment variable.
 
 <<< @/../../../examples/5-mins-qs/vite.config.ts{ts}
 
@@ -113,9 +128,11 @@ If the count throws "carried no Content-Range", your list route does not send th
 
 ## The bundle
 
-A production build of this application is about 590 KB (186 KB gzipped), and Vite's default warns above 500 KB for one chunk. Nothing heavy comes in by default. Measured per package on this example, React DOM is about 200 KB, the router 95 KB, `ra-core` 35 KB, `lodash` 34 KB and TanStack Query 31 KB, which is what any react-admin application starts from. ARDOR and the IGNIS packages it needs in the browser (`ardor-admin`, `ardor-kernel`, `ignis-kernel`, `ignis-inversion`, `ignis-helpers`, `ignis-connectors`, `reflect-metadata`) come to about 110 KB, a fifth of it.
+A production build of this application is about 700 KB (202 KB gzipped), and Vite's default warns above 500 KB for one chunk. Nothing heavy comes in by default. Measured per package on this example, React DOM is about 200 KB, the router 95 KB, `ra-core` 35 KB, `lodash` 34 KB and TanStack Query 31 KB, which is what any react-admin application starts from. ARDOR and the IGNIS packages it needs in the browser (`ardor-admin`, `ardor-kernel`, `ignis-kernel`, `ignis-inversion`, `ignis-helpers`, `ignis-connectors`, `reflect-metadata`) come to about 110 KB, a fifth of it.
 
-The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` split the bundle into three chunks - the application (49 KB), React (219 KB) and the other vendor code (321 KB) - without shrinking the total. The warning goes away because no chunk is over the limit, and a deploy that changes only application code leaves the two vendor chunks cached. For a bigger application, load each resource page with a dynamic `import()` so the browser fetches a page when its route opens; that is what shrinks the first load.
+About 105 KB of the total (14 KB gzipped) is `keepNames`, which the plugin turns on for the whole build so that a decorated class keeps its name through the minifier; without it the same build is about 595 KB (188 KB gzipped).
+
+The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` split the bundle into three chunks - the application (11 KB), React (278 KB) and the other vendor code (408 KB) - without shrinking the total. The warning goes away because no chunk is over the limit, and a deploy that changes only application code leaves the two vendor chunks cached. For a bigger application, load each resource page with a dynamic `import()` so the browser fetches a page when its route opens; that is what shrinks the first load.
 
 ## Your API is not this one
 
