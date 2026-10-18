@@ -49,6 +49,8 @@ dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushe
 `<package>-v<version>` tags the workflow pushes, so there is nothing to regenerate (see
 [Atlas MCP server](/reference/atlas-mcp.md)).
 
+After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
+
 `bun scripts/release-local.ts` publishes from the machine instead, without Actions minutes. It runs
 the workflow's force-update, build, lint, version bump and `bun publish`, but not
 `refresh-catalog.ts`, and it checks the files the `exports` map names rather than `dist/index.js`.
