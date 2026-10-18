@@ -13,9 +13,14 @@
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
  *
  * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
+ *
+ * Each package is also waited for until its TARBALL answers 200 (`release-wait.ts`), not only its
+ * dist-tag: the packument is listed minutes before the tarball, and the next package's clean-install
+ * gate installs the one before it.
  */
 
 import { countChangedSinceRelease, withDependents } from './release-scope';
+import { waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
@@ -288,7 +293,11 @@ const releasePackage = async (opts: {
   }
 
   const published = await assertPublished({ state });
-  console.log(`  published ${state.packageName}@${published}`);
+  console.log(`  published ${state.packageName}@${published} - waiting for its tarball...`);
+
+  // The next package installs this one. Its packument is listed before its tarball answers.
+  await waitForTarball({ packageName: state.packageName, version: published });
+  console.log('  tarball installable');
 
   // The workflow pushes its own release commit. Without this the next package reads a stale local
   // version and the operator reads a repo that disagrees with the registry.
