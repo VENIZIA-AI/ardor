@@ -78,7 +78,7 @@ import 'reflect-metadata';
 
 import {
   BaseArdorApplication,
-  readAuthTokenFromStorage,
+  DefaultNetworkRequestService,
   useRepository,
   type IApplicationInfo,
 } from '@venizia/ardor';
@@ -87,7 +87,7 @@ import { inject } from '@venizia/ignis-inversion';
 
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: 'https://api.example.com', authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: 'https://api.example.com', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
   }
 }
 

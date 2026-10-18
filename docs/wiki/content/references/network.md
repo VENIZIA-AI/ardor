@@ -1,11 +1,11 @@
 ---
 title: Network layer
-description: DefaultNetworkRequestService - request headers, the authorization token source, no-auth paths, body types, response parsing, error shape, count modes, 401 recovery, and the fetchers underneath.
+description: DefaultNetworkRequestService - request headers, the token hook, no-auth paths, body types, response parsing, error shape, count modes, 401 recovery hooks, and the fetchers underneath.
 ---
 
 # Network layer
 
-`DefaultNetworkRequestService` is the HTTP layer of the ARDOR kernel. It builds headers, formats the body, sends the request through a `NodeFetchNetworkRequest`, parses the response, and recovers from a 401 once. Everything on this page is what the class does today - options are objects, never positional.
+`DefaultNetworkRequestService` is the HTTP layer of the ARDOR kernel. It builds headers, formats the body, sends the request through a `NodeFetchNetworkRequest`, parses the response, and recovers from a 401 once. Everything on this page is what the class does today: options are data, behaviour is in protected hooks, and every method takes one object, never positional arguments.
 
 ## Prerequisites
 
@@ -15,12 +15,14 @@ A runtime with global `fetch`, `Headers`, `FormData`, `URLSearchParams`, `localS
 
 | Export | Kind | Role |
 |---|---|---|
-| `DefaultNetworkRequestService` | class | The request service: headers, body, send, parse, recover |
-| `INoAuthOptions` | interface | `useAuth`, `noAuthPaths`, `noAuthPathRegex` constructor options |
+| `DefaultNetworkRequestService` | class | The request service: headers, body, send, parse, recover. Options are data, behaviour is in protected hooks |
+| `INoAuthOptions` | interface | `noAuthPaths`, `noAuthPathRegex` constructor options (data) |
 | `TNoAuthPathRegex` | type | One `RegExp \| string` or an array of them |
-| `IAuthRecoveryOptions` | interface | `refreshToken`, `refreshTokenPath`, `onAuthFailure` |
-| `IDataSourceAuth` | interface | `authTokenResolver` + `onUnauthorized` for an `HttpDataSource`, from `getDataSourceAuth()` |
+| `IAuthRecoveryOptions` | interface | `refreshTokenPath` (data) |
+| `IAuthTokenRecord` | interface | The token a request carries: `type`, `value`, `provider` |
+| `IDataSourceAuth` | interface | `authTokenResolver`, `headersResolver`, `onUnauthorized` and `errorRootKey` for an `HttpDataSource`, from `getDataSourceAuth()` |
 | `IGetRequestPropsParams` / `IGetRequestPropsResult` | interface | Input and output of `getRequestProps` |
+| `NetworkHeaders` | class | `toRecord({ headers })` and `merge({ sources })`: header records with lowercased keys |
 | `HeaderConsts` | class | Header names and the content-type / attachment regexes |
 | `RequestBodyTypes` | class | `JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, `NONE`, `BINARY` |
 | `RequestCountData` | class | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) |
@@ -46,7 +48,9 @@ declare class DefaultNetworkRequestService {
 }
 ```
 
-`headers` may be a plain record, a `Headers` instance or a tuple list; the service keeps a plain record. `useAuth` defaults to `true`. The constructor creates one `NodeFetchNetworkRequest` named `name` for the given `baseUrl`.
+`headers` may be a plain record, a `Headers` instance or a tuple list; the service keeps a plain record with lowercased keys. The constructor creates one `NodeFetchNetworkRequest` named `name` for the given `baseUrl`.
+
+Every option is data. There is no callback in the options and no flag that switches behaviour: what the service does is decided by the protected hooks below, which a subclass overrides.
 
 ```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
@@ -58,6 +62,51 @@ const network = new DefaultNetworkRequestService({
   noAuthPaths: ['auth/login'],
 });
 ```
+
+## Hooks
+
+Behaviour you can change is a protected method. Each takes one `opts` object, and the default is what the section for it describes.
+
+| Hook | Default | Override it to |
+|---|---|---|
+| `resolveAuthToken(): IAuthTokenRecord \| undefined` | Reads storage through `DefaultNetworkRequestService.readAuthTokenFromStorage()` | Supply the token from somewhere else, such as memory |
+| `isNoAuthPath({ resource, paths }): boolean` | `resource` in `noAuthPaths`, or `noAuthPathRegex` matches | Use a rule of your own |
+| `refreshToken(): Promise<boolean>` | Resolves `false`: there is nothing to refresh | Refresh the session after a 401 |
+| `onAuthFailure(): Promise<void>` | Does nothing | Send the user back to sign-in |
+| `buildRequestTracingId({ applicationInfo }): string` | `<application name>_<uuid>` | Build the `x-request-id` differently |
+
+The data provider builds the service in its protected `createNetworkService()`, called once on first use. To use a subclass, override that method in a `DefaultRestDataProvider` subclass and return it:
+
+```ts
+import {
+  DefaultNetworkRequestService,
+  DefaultRestDataProvider,
+  type IApplicationInfo,
+} from '@venizia/ardor';
+
+class AppNetworkService extends DefaultNetworkRequestService {
+  protected override buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
+    return `${opts.applicationInfo.name}-${Date.now()}`;
+  }
+}
+
+export class AppRestDataProvider extends DefaultRestDataProvider {
+  protected override createNetworkService() {
+    return new AppNetworkService({
+      name: 'app-network-service',
+      baseUrl: this.restDataProviderOptions.url,
+      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
+      noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
+      headers: this.restDataProviderOptions.headers,
+      authRecovery: this.restDataProviderOptions.authRecovery,
+    });
+  }
+}
+// bind AppRestDataProvider under CoreBindings.DEFAULT_REST_DATA_PROVIDER:
+//   this.application.instantiate(AppRestDataProvider).value(this.application)
+```
+
+The sections below show a subclass for a token and for a refresh.
 
 ## Request headers
 
@@ -72,10 +121,10 @@ const network = new DefaultNetworkRequestService({
 | `x-auth-provider` | `provider` from the token, omitted when the token names none | `getRequestHeader`, skipped on no-auth paths |
 | `x-request-channel` | `restDataProviderOptions.requestTracingChannel`, else `RequestChannel.WEB` (`'100_WEB'`) | `getRequestProps` |
 | `x-request-count` | `requestCountData`, default `RequestCountData.DATA_ONLY` (`'0'`) | `getRequestProps` |
-| `x-request-id` | `restDataProviderOptions.requestTracingId({ applicationInfo })` when it is a function, else `${applicationInfo.name}_<v4 uuid>` from `uuidV4()` (`@venizia/ignis-helpers/uuid`) | `getRequestProps` |
+| `x-request-id` | `buildRequestTracingId({ applicationInfo })`: `${applicationInfo.name}_<v4 uuid>` from `uuidV4()` (`@venizia/ignis-helpers/uuid`) unless a subclass overrides it | `getRequestProps` |
 | `content-type` | depends on the body type, see below | `getRequestProps` |
 
-Header names are merged case-insensitively and a later source replaces an earlier one: custom headers override the timezone headers, and the per-request `x-request-channel`, `x-request-count` and `x-request-id` override a custom header of the same name. The record is keyed by lowercase name. A plain object spread would keep `X-Request-Count` beside `x-request-count`, and `fetch` would send the two joined as `"1, 0"`.
+Header names are merged case-insensitively and a later source replaces an earlier one: custom headers override the timezone headers, and the per-request `x-request-channel`, `x-request-count` and `x-request-id` override a custom header of the same name. The record is keyed by lowercase name. A plain object spread would keep `X-Request-Count` beside `x-request-count`, and `fetch` would send the two joined as `"1, 0"`. `NetworkHeaders.merge({ sources })` is that merge (later wins, any case), and `NetworkHeaders.toRecord({ headers })` turns a `HeadersInit` into a record with lowercased keys and number values as text.
 
 ```ts
 import type { IGetRequestPropsParams, IGetRequestPropsResult } from '@venizia/ardor';
@@ -90,53 +139,62 @@ declare class DefaultNetworkRequestService {
 
 ```ts no-check
 declare class DefaultNetworkRequestService {
+  static readAuthTokenFromStorage(): IAuthTokenRecord | undefined;
   getRequestAuthorizationHeader(): { provider: string | undefined; token: string };
-  resolveAuthToken(): IAuthTokenRecord | undefined; // the token, without building a header
-  setAuthToken(opts: { type?: string; value: string }): void;
+  protected resolveAuthToken(): IAuthTokenRecord | undefined; // the hook: the token, without building a header
 }
 ```
 
-The token is resolved in this order:
+The token comes from one place, the protected `resolveAuthToken()` hook. Its default calls the static `readAuthTokenFromStorage()`, which parses `localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)` as JSON and returns `undefined` where there is no `localStorage` or the value does not parse. The token may carry `type`, `value` and `provider`.
 
-1. The in-memory token set with `setAuthToken({ type, value })`.
-2. Otherwise the constructor's `authTokenResolver`. It defaults to `readAuthTokenFromStorage`, which parses `localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)` as JSON and returns `undefined` where there is no `localStorage` or the value does not parse. The token may carry `type`, `value` and `provider`.
+If the token has no `value`, `getRequestAuthorizationHeader` throws an error with `statusCode: 401` and the request is never sent. `type` defaults to `Bearer`, so the header reads `Bearer <value>`. A service whose `resolveAuthToken` is overridden never touches `localStorage`, which is what lets it run where no DOM exists.
 
-If neither has a `value`, the method throws an error with `statusCode: 401` and the request is never sent. `type` defaults to `Bearer`, so the header reads `Bearer <value>`. The resolver is consulted only when there is no in-memory token, so a service given a token never touches `localStorage` - which is what lets it run where no DOM exists.
+To supply a token from somewhere else, override `resolveAuthToken` in a subclass and return that subclass from `DefaultRestDataProvider.createNetworkService()` (see [Hooks](#hooks)):
 
 ```ts
-import { DefaultNetworkRequestService } from '@venizia/ardor';
+import { DefaultNetworkRequestService, type IAuthTokenRecord } from '@venizia/ardor';
 
-const network = new DefaultNetworkRequestService({
+class MemoryTokenNetworkService extends DefaultNetworkRequestService {
+  protected token?: string;
+
+  setToken(opts: { value: string }) {
+    this.token = opts.value;
+  }
+
+  protected override resolveAuthToken(): IAuthTokenRecord | undefined {
+    return this.token ? { value: this.token, provider: 'app' } : undefined;
+  }
+}
+
+const network = new MemoryTokenNetworkService({
   name: 'api',
   baseUrl: 'https://api.example.com',
 });
 
-network.setAuthToken({ value: 'eyJhbGciOi...' });
+network.setToken({ value: 'eyJhbGciOi...' });
 network.getRequestAuthorizationHeader().token; // 'Bearer eyJhbGciOi...'
 ```
 
-`setAuthToken` has no `provider` field, so an in-memory token sends no `x-auth-provider` header at all. Only a resolved token can supply one.
+A token with no `provider` sends no `x-auth-provider` header at all.
 
 ## No-auth paths
 
-```ts
-import type { TNoAuthPathRegex } from '@venizia/ardor';
+`noAuthPaths` and `noAuthPathRegex` are data. The rule that reads them is the protected `isNoAuthPath` hook:
 
+```ts no-check
 declare class DefaultNetworkRequestService {
-  isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean;
-  setUseAuth(useAuth: boolean): void;
-  setNoAuthPaths(noAuthPaths?: string[]): void;
-  setNoAuthPathRegex(noAuthPathRegex?: TNoAuthPathRegex): void;
+  protected isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean;
 }
 ```
 
-`isNoAuthPath` returns `true` when any of these hold, checked in order:
+`isNoAuthPath` returns `true` when either holds, checked in order:
 
-1. `useAuth` is `false` - every path is a no-auth path.
-2. `resource` is an exact entry of `noAuthPaths`.
-3. One of the `noAuthPathRegex` patterns matches `resource` or `paths.join('/')`. Strings are compiled with `new RegExp`; an invalid pattern is logged with `console.error` and dropped. `lastIndex` is reset before each test, so global regexes are safe.
+1. `resource` is an exact entry of `noAuthPaths`.
+2. One of the `noAuthPathRegex` patterns matches `resource` or `paths.join('/')`. Strings are compiled with `new RegExp`; an invalid pattern is logged and dropped. `lastIndex` is reset before each test, so global regexes are safe.
 
-`getRequestHeader` calls it with `{ resource }` only. The 401 recovery path calls it with `{ resource: paths[0], paths }`.
+`getRequestHeader` calls it with `{ resource }` only. The 401 recovery path and `getDataSourceAuth` call it with `{ resource: paths[0], paths }`.
+
+To send no token at all, for an API with no sign-in, set `noAuthPathRegex: /./`. For a rule of your own, override `isNoAuthPath` in the subclass.
 
 ```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
@@ -148,21 +206,30 @@ const network = new DefaultNetworkRequestService({
   noAuthPathRegex: [/^public\//, 'health$'],
 });
 
-network.isNoAuthPath({ resource: 'auth/login' }); // true - exact entry
-network.isNoAuthPath({ resource: 'public', paths: ['public', 'banners'] }); // true - regex on 'public/banners'
-network.isNoAuthPath({ resource: 'users' }); // false
+network.getRequestHeader({ resource: 'auth/login' }); // no authorization: exact entry
+network.getRequestHeader({ resource: 'public/banners' }); // no authorization: regex match
+```
+
+```ts
+import { DefaultNetworkRequestService } from '@venizia/ardor';
+
+class PublicReadsNetworkService extends DefaultNetworkRequestService {
+  protected override isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
+    return opts.resource?.startsWith('catalog/') === true || super.isNoAuthPath(opts);
+  }
+}
 ```
 
 ## setHeaders and removeHeaders
 
 ```ts no-check
 declare class DefaultNetworkRequestService {
-  setHeaders(headers: HeadersInit): void;   // lodash merge into the current record
-  removeHeaders(keys: string[]): void;      // delete by exact key
+  setHeaders(opts: { headers: HeadersInit }): void; // merged into the current record, a name replaced in any case
+  removeHeaders(opts: { keys: string[] }): void;    // delete by name, in any case
 }
 ```
 
-Keys are stored as given - `removeHeaders` does not normalise case, so remove the key with the same spelling you set it with.
+The record is keyed by lowercase name, so `removeHeaders` finds a key whatever case you set it with.
 
 ```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
@@ -173,8 +240,8 @@ const network = new DefaultNetworkRequestService({
   noAuthPaths: ['auth/login'],
 });
 
-network.setHeaders({ 'x-locale': 'vi', 'x-tenant': 'acme' });
-network.removeHeaders(['x-tenant']);
+network.setHeaders({ headers: { 'x-locale': 'vi', 'x-tenant': 'acme' } });
+network.removeHeaders({ keys: ['x-tenant'] });
 network.getRequestHeader({ resource: 'auth/login' });
 // { timezone: ..., 'timezone-offset': ..., 'x-locale': 'vi' }
 ```
@@ -186,8 +253,8 @@ network.getRequestHeader({ resource: 'auth/login' });
 | `bodyType` | `content-type` header | Body sent |
 |---|---|---|
 | `RequestBodyTypes.JSON`, `NONE`, `BINARY`, or omitted | `application/json` | `body` unchanged; `NodeFetcher` runs `JSON.stringify` on it |
-| `RequestBodyTypes.FORM_URL_ENCODED` (`'x-www-form-urlencoded'`) | `application/x-www-form-urlencoded` | `URLSearchParams`; falsy values are skipped, others go through `String()` |
-| `RequestBodyTypes.FORM_DATA` (`'form-data'`) | not set - the runtime adds the boundary | `FormData`; each value is a `File`, `File[]` or `FileList`, appended with `item.name`; falsy values are skipped |
+| `RequestBodyTypes.FORM_URL_ENCODED` (`'x-www-form-urlencoded'`) | `application/x-www-form-urlencoded` | `URLSearchParams`; `undefined` and `null` are skipped, `0`, `false` and `''` are sent; a `Date` is sent as ISO-8601, an object as JSON, anything else through `String()`; a file throws |
+| `RequestBodyTypes.FORM_DATA` (`'form-data'`) | not set - the runtime adds the boundary | `FormData`; a `File`, `Blob`, array of them or `FileList` is appended with its `name`; other values are encoded as above; `undefined` and `null` are skipped |
 
 `doRequest` drops the body when `method` is `RequestMethods.GET`.
 
@@ -197,7 +264,7 @@ import type { IApplicationInfo, IRestDataProviderOptions } from '@venizia/ardor'
 
 declare const file: File;
 declare const fileList: FileList;
-declare const restDataProviderOptions: IRestDataProviderOptions; // tracing id and channel
+declare const restDataProviderOptions: IRestDataProviderOptions; // the request channel
 declare const applicationInfo: IApplicationInfo;                 // its name prefixes x-request-id
 
 const network = new DefaultNetworkRequestService({
@@ -214,6 +281,7 @@ const props = network.getRequestProps({
 });
 // props.headers has no content-type; props.body is a FormData
 ```
+
 
 ## Sending a request
 
@@ -347,57 +415,83 @@ declare class DefaultNetworkRequestService {
 
 ## Auth recovery
 
-```ts
-import type { IAuthRecoveryOptions, IDataSourceAuth } from '@venizia/ardor';
-
+```ts no-check
 declare class DefaultNetworkRequestService {
-  setAuthRecovery(authRecovery: Partial<IAuthRecoveryOptions>): void;   // shallow merge
-  getAuthRecovery(): IAuthRecoveryOptions | undefined;
-  getDataSourceAuth(): IDataSourceAuth; // share both with an HttpDataSource
+  refresh(): Promise<boolean>;                  // one shared refresh per 401 burst
+  protected refreshToken(): Promise<boolean>;   // the hook: the refresh itself
+  protected onAuthFailure(): Promise<void>;     // the hook: runs once when refreshToken threw
+  getDataSourceAuth(): IDataSourceAuth;         // share all of it with an HttpDataSource
 }
 ```
 
-When the first send returns `401`, `doRequest` recovers only if all of these hold:
+`authRecovery` holds one piece of data, `refreshTokenPath`. The refresh is behaviour: the two protected hooks above, which a subclass overrides. The defaults do nothing: `refreshToken` resolves `false` (there is nothing to refresh) and `onAuthFailure` resolves with no effect. Resolve `true` after refreshing, `false` when there is nothing to refresh, and throw when the refresh failed.
 
-- `authRecovery.refreshToken` is set,
+When the first send returns `401`, `doRequest` recovers only if both of these hold:
+
 - `isNoAuthPath({ resource: paths[0], paths })` is `false`,
 - `paths.join('/')` does not contain `authRecovery.refreshTokenPath`, when one is configured.
 
 Then:
 
-1. `ensureRefreshed` runs `refreshToken()` inside `Promise.resolve().then(...)`. The promise is stored on the instance, so every 401 that arrives while a refresh is in flight awaits the same one. It is cleared in `finally`.
-2. If `refreshToken` resolves, the service calls `getRequestAuthorizationHeader()` again, replaces `authorization` and `x-auth-provider` on the original headers, and sends exactly once more. A second 401 is thrown like any other non-2xx, as an `ApplicationError`.
-3. If `refreshToken` throws or rejects, `onAuthFailure` is awaited (its own errors are logged and swallowed), the refresh resolves to `false`, and the original 401 is thrown as the `ApplicationError` described under Error shape on non-2xx.
+1. The public `refresh()` runs the `refreshToken` hook. The promise is stored on the instance, so every 401 that arrives while a refresh is in flight awaits the same one. It is cleared when it settles. `authProvider.refreshToken()` calls `refresh()` too, so a refresh is made in one place.
+2. If it resolves `true`, the service calls `getRequestAuthorizationHeader()` again, replaces `authorization` and `x-auth-provider` on the original headers, and sends exactly once more. A second 401 is thrown like any other non-2xx, as an `ApplicationError`.
+3. If it resolves `false` (the default hook), nothing is retried and the original 401 is thrown.
+4. If `refreshToken` throws or rejects, `onAuthFailure` is awaited (its own errors are logged and swallowed), `refresh()` resolves to `false`, and the original 401 is thrown as the `ApplicationError` described under Error shape on non-2xx.
 
-`refreshToken` must leave the new token where step 2 will find it - `setAuthToken` if you use in-memory tokens, otherwise `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`. An in-memory token always shadows the stored one.
+`refreshToken` must leave the new token where `resolveAuthToken` will find it: `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN` by default, or the field your own `resolveAuthToken` reads.
 
-**One refresh for both transports.** `getDataSourceAuth()` returns `{ authTokenResolver, onUnauthorized }` for an `HttpDataSource`:
-- `authTokenResolver` reads `resolveAuthToken()`, so the repository sends this service's token.
+**One refresh for both transports.** `getDataSourceAuth()` returns `{ authTokenResolver, headersResolver, onUnauthorized, errorRootKey }` for an `HttpDataSource`:
+- `authTokenResolver` reads `resolveAuthToken()`, and returns `undefined` on a no-auth path, so the repository sends this service's token.
 - `onUnauthorized` joins the same in-flight refresh as step 1, so a burst of `401`s across the data provider and any repository calls `refreshToken` once.
 - A failed refresh runs `onAuthFailure` once.
-- With no `refreshToken` configured, `onUnauthorized` answers `false` and the repository's `401` stands.
+- With the default `refreshToken`, `onUnauthorized` answers `false` and the repository's `401` stands.
 
 The data provider binding must be a singleton for this to hold; see [auth recovery](../best-practices/auth-recovery#where-tokens-live).
 
+To refresh, override the hooks in a subclass and return it from `createNetworkService()` (see [Hooks](#hooks)):
+
 ```ts
-import { DefaultNetworkRequestService, LocalStorageKeys } from '@venizia/ardor';
+import {
+  DefaultNetworkRequestService,
+  DefaultRestDataProvider,
+  LocalStorageKeys,
+  RequestMethods,
+  RequestTypes,
+} from '@venizia/ardor';
 
-declare function fetchNewAccessToken(): Promise<string>; // your call to auth/refresh
+class AppNetworkService extends DefaultNetworkRequestService {
+  protected override async refreshToken(): Promise<boolean> {
+    const { data } = await this.doRequest<{ token: string }>({
+      type: RequestTypes.SEND,
+      method: RequestMethods.POST,
+      paths: ['auth/refresh'],
+      headers: this.getRequestHeader({ resource: 'auth/refresh' }),
+    });
 
-const network = new DefaultNetworkRequestService({
-  name: 'api',
-  baseUrl: 'https://api.example.com',
-  authRecovery: {
-    refreshTokenPath: 'auth/refresh',
-    refreshToken: async () => {
-      const next = await fetchNewAccessToken();
-      network.setAuthToken({ value: next });
-    },
-    onAuthFailure: () => {
-      localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-    },
-  },
-});
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: data.token, type: 'Bearer' }),
+    );
+    return true;
+  }
+
+  protected override async onAuthFailure(): Promise<void> {
+    localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+  }
+}
+
+export class AppRestDataProvider extends DefaultRestDataProvider {
+  protected override createNetworkService() {
+    return new AppNetworkService({
+      name: 'app-network-service',
+      baseUrl: this.restDataProviderOptions.url,
+      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
+      authRecovery: this.restDataProviderOptions.authRecovery, // { refreshTokenPath: 'auth/refresh' }
+    });
+  }
+}
+// then bind AppRestDataProvider under CoreBindings.DEFAULT_REST_DATA_PROVIDER:
+//   this.application.instantiate(AppRestDataProvider).value(this.application)
 ```
 
 ## Fetchers
@@ -440,14 +534,16 @@ request.getRequestUrl({ paths: ['users', '/1'] });
 - **`timezone-offset` is in hours, not minutes.** `App.TIMEZONE_OFFSET` is `-(getTimezoneOffset() / 60)`, so UTC+7 sends `7`.
 - **`doRequest` does not build headers.** Pass the result of `getRequestProps`, or at least `getRequestHeader` plus a `content-type`; otherwise a JSON body goes out without one.
 - **A response without `content-type` becomes a `Blob`**, even if the body is JSON. The textual check requires a non-empty matching header.
-- **`getRequestAuthorizationHeader` reads `localStorage` first, every time.** In a runtime without `localStorage` it throws before the in-memory token is considered.
-- **`x-auth-provider` is empty for `setAuthToken` tokens.** Only the stored JSON object carries `provider`.
-- **Refreshing must update the token where it is read.** If `setAuthToken` was used, write the refreshed value with `setAuthToken` again - a new `localStorage` entry is shadowed by the in-memory one.
+- **`getRequestAuthorizationHeader` throws a 401 when there is no token.** The token comes from `resolveAuthToken`; the default reads `localStorage`, and a token with no `value` is no token. Put the paths that need none in `noAuthPaths`.
+- **`x-auth-provider` is empty when the token names no `provider`.** Only a token with a `provider` field sends it.
+- **Refreshing must update the token where it is read.** If you overrode `resolveAuthToken` to read memory, `refreshToken` must write that same field; a new `localStorage` entry is ignored.
+- **The hooks are protected.** You override them in a subclass; you cannot call `isNoAuthPath`, `refreshToken` or `resolveAuthToken` from outside. Call `refresh()` to refresh, and `getRequestHeader` to see what a path sends.
+- **The default `refreshToken` refreshes nothing.** A 401 stands until you override the hook and return the subclass from `createNetworkService()`.
 - **`refreshTokenPath` is a substring check** on `paths.join('/')`, and `refreshToken` is never retried more than once per burst.
-- **`count` is `NaN` for non-list `DATA_ONLY` responses** that do not set `x-response-count`.
+- **`count` is `undefined` for non-list `DATA_ONLY` responses** that do not set `x-response-count`.
 - **A non-JSON error body has no server message.** The error is `HTTP <status>` with `core.system_error`; read `statusCode`, not the text. A 2xx body that is not JSON still rejects with a parse error.
 - **Read the request id from `error.extra.requestId`.** The top-level `requestId` of the body is not a property of the error, and nor is any other body key (`type`, `path`, `url`, `field`).
-- **`FORM_URL_ENCODED` drops falsy values** - `0`, `''` and `false` are not sent.
+- **`FORM_URL_ENCODED` and `FORM_DATA` skip only `undefined` and `null`** - `0`, `''` and `false` are sent.
 
 ## Related
 

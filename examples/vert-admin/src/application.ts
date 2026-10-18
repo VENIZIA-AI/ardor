@@ -10,15 +10,18 @@ import {
   DefaultAuthProvider,
   DefaultAuthService,
   DefaultI18nProvider,
+  DefaultNetworkRequestService,
   DefaultRestDataProvider,
   englishMessages,
   type IApplicationInfo,
   type IDataProvider,
   inject,
+  LocalStorageKeys,
   type IRestDataProviderOptions,
   type ISendParams,
   provide,
   RequestMethods,
+  RequestTypes,
   service,
 } from '@venizia/ardor';
 
@@ -55,12 +58,38 @@ export class IdentityService extends BaseService {
     });
     return response.data;
   }
+}
 
-  // The refresh endpoint is excluded from recovery by `refreshTokenPath`, so a 401 here surfaces.
-  @api()
-  async refresh(): Promise<void> {
-    const params: ISendParams = { method: RequestMethods.POST };
-    await this.dataProvider.send({ resource: VertPaths.REFRESH_TOKEN, params });
+// The refresh is a hook of the network service, so a 401 is recovered where it is seen. The refresh
+// endpoint is excluded from recovery by `refreshTokenPath`, so a 401 from it surfaces and
+// `onAuthFailure` runs.
+class VertNetworkService extends DefaultNetworkRequestService {
+  protected override async refreshToken(): Promise<boolean> {
+    const { data } = await this.doRequest<{ token: string }>({
+      type: RequestTypes.SEND,
+      method: RequestMethods.POST,
+      paths: [VertPaths.REFRESH_TOKEN],
+      headers: this.getRequestHeader({ resource: VertPaths.REFRESH_TOKEN }),
+    });
+
+    // IGNIS re-issues the token from the caller's valid one; the next request reads this one.
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: data.token, type: 'Bearer' }),
+    );
+    return true;
+  }
+}
+
+// `createNetworkService` is the one place the data provider's service is built.
+class VertRestDataProvider extends DefaultRestDataProvider {
+  protected override createNetworkService() {
+    return new VertNetworkService({
+      name: 'vert-network-service',
+      baseUrl: this.restDataProviderOptions.url,
+      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
+      authRecovery: this.restDataProviderOptions.authRecovery,
+    });
   }
 }
 
@@ -86,28 +115,18 @@ export class AdminConfiguration {
     return {
       url: '/api',
       noAuthPaths: [VertPaths.SIGN_IN],
-      authRecovery: {
-        refreshTokenPath: VertPaths.REFRESH_TOKEN,
-        // Resolved when a 401 is recovered, not now: IdentityService needs the data provider. The
-        // key is read off the class, so a minifier renaming it changes nothing.
-        refreshToken: () => {
-          const key = this.application
-            .getMetadataRegistry()
-            .getBindingKey({ target: IdentityService });
-          if (!key) {
-            throw new Error('[refreshToken] IdentityService is not registered');
-          }
-          return this.application.get<IdentityService>({ key }).refresh();
-        },
-      },
+      authRecovery: { refreshTokenPath: VertPaths.REFRESH_TOKEN },
     };
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     return {
-      paths: { signIn: VertPaths.SIGN_IN, checkAuth: VertPaths.WHO_AM_I },
-      endpoints: { afterLogin: '/configurations' },
+      paths: {
+        signIn: VertPaths.SIGN_IN,
+        checkAuth: VertPaths.WHO_AM_I,
+        afterLogin: '/configurations',
+      },
     };
   }
 
@@ -126,7 +145,7 @@ export class AdminConfiguration {
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
   restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+    return this.application.instantiate(VertRestDataProvider).value(this.application);
   }
 
   @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })

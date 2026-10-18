@@ -63,3 +63,62 @@ describe('DefaultI18nProvider', () => {
     expect(i18n.getLocales?.()).toEqual(listLanguages);
   });
 });
+
+describe('DefaultI18nProvider hooks', () => {
+  const setNavigatorLanguage = (language: string | undefined) => {
+    Object.defineProperty(navigator, 'language', { value: language, configurable: true });
+  };
+
+  test('reads navigator.language when the provider is built, not when the module is imported', () => {
+    const original = navigator.language;
+
+    try {
+      setNavigatorLanguage('vi-VN');
+      const i18n = new DefaultI18nProvider({
+        listLanguages: [
+          { locale: 'en', name: 'English' },
+          { locale: 'vi', name: 'Tieng Viet' },
+        ],
+      }).value(new Container());
+      expect(i18n.getLocale()).toBe('vi');
+
+      setNavigatorLanguage('fr-FR');
+      const unlisted = new DefaultI18nProvider({
+        listLanguages: [
+          { locale: 'en', name: 'English' },
+          { locale: 'vi', name: 'Tieng Viet' },
+        ],
+      }).value(new Container());
+      expect(unlisted.getLocale()).toBe('en');
+    } finally {
+      setNavigatorLanguage(original);
+    }
+  });
+
+  test('resolveInitialLocale decides the initial locale', () => {
+    class StoredLocaleProvider extends DefaultI18nProvider {
+      protected override resolveInitialLocale(opts: { locales: Array<string> }) {
+        return opts.locales.includes('vi') ? 'vi' : 'en';
+      }
+    }
+
+    const i18n = new StoredLocaleProvider({
+      listLanguages: [{ locale: 'vi', name: 'Tieng Viet' }],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test('composeMessages decides the messages of a locale', () => {
+    class BrandedProvider extends DefaultI18nProvider {
+      protected override composeMessages(opts: { locale: string; messages: object }) {
+        return { ...super.composeMessages(opts), app: { brand: 'Ardor (branded)' } };
+      }
+    }
+
+    const i18n = new BrandedProvider({}).value(new Container());
+
+    expect(i18n.translate('app.brand')).toBe('Ardor (branded)');
+    expect(i18n.translate('ra.action.add')).toBe('Add');
+  });
+});

@@ -9,12 +9,12 @@ import {
   DefaultAuthProvider,
   DefaultAuthService,
   DefaultI18nProvider,
+  DefaultNetworkRequestService,
   DefaultRestDataProvider,
   englishMessages,
   type IApplicationInfo,
   inject,
   provide,
-  readAuthTokenFromStorage,
   repository,
   RepositoryTypes,
 } from '@venizia/ardor';
@@ -31,7 +31,10 @@ export interface IProduct {
 @datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
+    super({
+      baseUrl: '/api',
+      authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
+    });
   }
 }
 
@@ -74,7 +77,7 @@ export class AdminConfiguration {
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     // The sign-in path and body default to IGNIS's auth controller: POST /auth/sign-in.
-    return { endpoints: { afterLogin: '/products' } };
+    return { paths: { afterLogin: '/products' } };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })

@@ -2,7 +2,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@/base/repositories';
-import { DefaultNetworkRequestService } from '@/base/services/network-request';
+import {
+  DefaultNetworkRequestService,
+  type IAuthTokenRecord,
+} from '@/base/services/network-request';
 import {
   App,
   HeaderConsts,
@@ -37,30 +40,85 @@ type TServerHandler = (opts: IServerHandlerOptions) => Promise<Response> | Respo
 interface ICreateServiceOptions {
   name?: string;
   baseUrl?: string;
-  useAuth?: boolean;
+  /** Every path goes without a token: `noAuthPathRegex: /./`. */
+  isOpen?: boolean;
   noAuthPaths?: string[];
   noAuthPathRegex?: TNoAuthPathRegex;
   headers?: HeadersInit;
   authRecovery?: IAuthRecoveryOptions;
 }
 
-const createService = (opts: ICreateServiceOptions = {}): DefaultNetworkRequestService => {
+/**
+ * The hooks a subclass overrides, driven by the test: the token (`resolveAuthToken`), the refresh
+ * (`refreshToken`, `onAuthFailure`) and the tracing id (`buildRequestTracingId`). `isNoAuthPath`
+ * is protected on the service; the test reads it.
+ */
+class TestNetworkService extends DefaultNetworkRequestService {
+  private token?: IAuthTokenRecord;
+  private refreshImpl?: () => Promise<unknown>;
+  private failureImpl?: () => Promise<unknown>;
+  private tracingIdImpl?: (opts: { applicationInfo: IApplicationInfo }) => string;
+
+  setToken(token: IAuthTokenRecord) {
+    this.token = token;
+  }
+
+  setAuthRecovery(opts: {
+    refreshToken?: () => Promise<unknown>;
+    onAuthFailure?: () => Promise<unknown> | unknown;
+    refreshTokenPath?: string;
+  }) {
+    this.refreshImpl = opts.refreshToken;
+    this.failureImpl = opts.onAuthFailure ? async () => opts.onAuthFailure?.() : undefined;
+    this.authRecovery = { refreshTokenPath: opts.refreshTokenPath };
+  }
+
+  setTracingId(impl: (opts: { applicationInfo: IApplicationInfo }) => string) {
+    this.tracingIdImpl = impl;
+  }
+
+  public override isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
+    return super.isNoAuthPath(opts);
+  }
+
+  protected override resolveAuthToken(): IAuthTokenRecord | undefined {
+    return this.token ?? super.resolveAuthToken();
+  }
+
+  protected override async refreshToken(): Promise<boolean> {
+    if (!this.refreshImpl) {
+      return super.refreshToken();
+    }
+
+    await this.refreshImpl();
+    return true;
+  }
+
+  protected override async onAuthFailure(): Promise<void> {
+    await this.failureImpl?.();
+  }
+
+  protected override buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
+    return this.tracingIdImpl ? this.tracingIdImpl(opts) : super.buildRequestTracingId(opts);
+  }
+}
+
+const createService = (opts: ICreateServiceOptions = {}): TestNetworkService => {
   const {
     name = 'test-network-service',
     baseUrl = '',
-    useAuth = true,
+    isOpen = false,
     noAuthPaths,
     noAuthPathRegex,
     headers,
     authRecovery,
   } = opts;
 
-  return new DefaultNetworkRequestService({
+  return new TestNetworkService({
     name,
     baseUrl,
-    useAuth,
     noAuthPaths,
-    noAuthPathRegex,
+    noAuthPathRegex: isOpen ? /./ : noAuthPathRegex,
     headers,
     authRecovery,
   });
@@ -83,15 +141,13 @@ const createApplicationInfo = (opts: ICreateAppInfoOptions = {}): IApplicationIn
 
 interface ICreateRestOptions {
   url?: string;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
   requestTracingChannel?: string;
 }
 
 const createRestDataProviderOptions = (opts: ICreateRestOptions = {}): IRestDataProviderOptions => {
-  const { url = 'http://127.0.0.1:8080', requestTracingId, requestTracingChannel } = opts;
+  const { url = 'http://127.0.0.1:8080', requestTracingChannel } = opts;
   return {
     url,
-    requestTracingId,
     requestTracingChannel,
   };
 };
@@ -194,7 +250,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('adds authorization with custom token type when specified', () => {
       const service = createService();
-      service.setAuthToken({ value: 'token-custom', type: 'Basic' });
+      service.setToken({ value: 'token-custom', type: 'Basic' });
 
       const headers = service.getRequestHeader({ resource: 'protected-resource' });
 
@@ -235,13 +291,13 @@ describe('DefaultNetworkRequestService', () => {
       expect(result.provider).toBe('ardor-auth');
     });
 
-    test('prefers authToken set via setAuthToken over localStorage', () => {
+    test('prefers the token an overridden resolveAuthToken returns over localStorage', () => {
       localStorage.setItem(
         LocalStorageKeys.KEY_AUTH_TOKEN,
         JSON.stringify({ value: 'from-local-storage', type: 'Bearer' }),
       );
       const service = createService();
-      service.setAuthToken({ value: 'from-set-token', type: 'Bearer' });
+      service.setToken({ value: 'from-set-token', type: 'Bearer' });
 
       const result = service.getRequestAuthorizationHeader();
 
@@ -270,8 +326,8 @@ describe('DefaultNetworkRequestService', () => {
   });
 
   describe('isNoAuthPath', () => {
-    test('makes every path no-auth when useAuth is false', () => {
-      const service = createService({ useAuth: false });
+    test('makes every path no-auth for noAuthPathRegex /./', () => {
+      const service = createService({ isOpen: true });
 
       expect(service.isNoAuthPath({ resource: 'users' })).toBe(true);
       expect(service.isNoAuthPath({ resource: 'admin/secret', paths: ['admin', 'secret'] })).toBe(
@@ -281,7 +337,6 @@ describe('DefaultNetworkRequestService', () => {
 
     test('matches the resource exactly against noAuthPaths', () => {
       const service = createService({
-        useAuth: true,
         noAuthPaths: ['public', 'health'],
       });
 
@@ -293,7 +348,6 @@ describe('DefaultNetworkRequestService', () => {
 
     test('accepts string, RegExp, and array patterns matching resource or joined paths in noAuthPathRegex', () => {
       const stringService = createService({
-        useAuth: true,
         noAuthPathRegex: '^auth/.*',
       });
       expect(stringService.isNoAuthPath({ resource: 'auth/login' })).toBe(true);
@@ -301,7 +355,6 @@ describe('DefaultNetworkRequestService', () => {
       expect(stringService.isNoAuthPath({ resource: 'users' })).toBe(false);
 
       const regexService = createService({
-        useAuth: true,
         noAuthPathRegex: /^guest\/[0-9]+/,
       });
       expect(regexService.isNoAuthPath({ resource: 'guest/42' })).toBe(true);
@@ -309,7 +362,6 @@ describe('DefaultNetworkRequestService', () => {
       expect(regexService.isNoAuthPath({ resource: 'guest/abc' })).toBe(false);
 
       const arrayService = createService({
-        useAuth: true,
         noAuthPathRegex: ['^open/.*', /^public-api\/.*/],
       });
       expect(arrayService.isNoAuthPath({ resource: 'open/catalog' })).toBe(true);
@@ -317,27 +369,29 @@ describe('DefaultNetworkRequestService', () => {
       expect(arrayService.isNoAuthPath({ resource: 'secure/data' })).toBe(false);
     });
 
-    test('updates no-auth configuration at runtime via setUseAuth, setNoAuthPaths, and setNoAuthPathRegex', () => {
-      const service = createService({
-        useAuth: true,
-        noAuthPaths: ['initial-open'],
-        noAuthPathRegex: '^v1/open/.*',
-      });
+    test('keeps no-auth configuration fixed once constructed: data in, no setters', () => {
+      const service = createService({ noAuthPaths: ['open'], noAuthPathRegex: '^v1/open/.*' });
 
-      expect(service.isNoAuthPath({ resource: 'initial-open' })).toBe(true);
-      expect(service.isNoAuthPath({ resource: 'runtime-open' })).toBe(false);
-
-      service.setNoAuthPaths(['runtime-open']);
-      expect(service.isNoAuthPath({ resource: 'initial-open' })).toBe(false);
-      expect(service.isNoAuthPath({ resource: 'runtime-open' })).toBe(true);
-
+      expect(service.isNoAuthPath({ resource: 'open' })).toBe(true);
       expect(service.isNoAuthPath({ resource: 'v1/open/data' })).toBe(true);
-      service.setNoAuthPathRegex('^v2/open/.*');
-      expect(service.isNoAuthPath({ resource: 'v1/open/data' })).toBe(false);
-      expect(service.isNoAuthPath({ resource: 'v2/open/data' })).toBe(true);
+      expect('setUseAuth' in service).toBe(false);
+      expect('setNoAuthPaths' in service).toBe(false);
+      expect('setNoAuthPathRegex' in service).toBe(false);
+    });
 
-      service.setUseAuth(false);
-      expect(service.isNoAuthPath({ resource: 'strictly-secret' })).toBe(true);
+    test('is a hook: a subclass decides which requests go without a token', () => {
+      class ReadOnlyOpenService extends TestNetworkService {
+        public override isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
+          return opts.resource?.startsWith('public-') ?? false;
+        }
+      }
+
+      const service = new ReadOnlyOpenService({ name: 'open-service' });
+
+      expect(service.getRequestHeader({ resource: 'public-news' })).not.toHaveProperty(
+        HeaderConsts.AUTHORIZATION,
+      );
+      expect(() => service.getRequestHeader({ resource: 'private-news' })).toThrow();
     });
   });
 
@@ -351,8 +405,10 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       service.setHeaders({
-        'x-shared': 'v2',
-        'x-new': 'added',
+        headers: {
+          'x-shared': 'v2',
+          'x-new': 'added',
+        },
       });
 
       expect(service['headers']).toEqual({
@@ -371,13 +427,13 @@ describe('DefaultNetworkRequestService', () => {
         },
       });
 
-      service.removeHeaders(['x-drop-1', 'x-drop-2']);
+      service.removeHeaders({ keys: ['x-drop-1', 'x-drop-2'] });
 
       expect(service['headers']).toEqual({
         'x-keep': 'remain',
       });
 
-      service.removeHeaders([]);
+      service.removeHeaders({ keys: [] });
       expect(service['headers']).toEqual({
         'x-keep': 'remain',
       });
@@ -386,23 +442,23 @@ describe('DefaultNetworkRequestService', () => {
     /**
      * Header names are case-insensitive, and the record is keyed by lowercase name so an override
      * replaces instead of joining. Removal has to follow the same rule, or a header set as
-     * `X-Tenant` is stored as `x-tenant` and `removeHeaders(['X-Tenant'])` quietly removes nothing.
+     * `X-Tenant` is stored as `x-tenant` and `removeHeaders({ keys: ['X-Tenant'] })` quietly removes nothing.
      */
     test('removes a header whatever case it was set or named in', () => {
       const service = createService();
 
-      service.setHeaders({ 'X-Tenant': 'acme', 'x-locale': 'vi' });
-      service.removeHeaders(['X-Tenant']);
+      service.setHeaders({ headers: { 'X-Tenant': 'acme', 'x-locale': 'vi' } });
+      service.removeHeaders({ keys: ['X-Tenant'] });
       expect(service['headers']).toEqual({ 'x-locale': 'vi' });
 
-      service.removeHeaders(['X-LOCALE']);
+      service.removeHeaders({ keys: ['X-LOCALE'] });
       expect(service['headers']).toEqual({});
     });
 
     test('a setHeaders override in another case replaces the stored value', () => {
       const service = createService({ headers: { 'x-tenant': 'north' } });
 
-      service.setHeaders({ 'X-Tenant': 'south' });
+      service.setHeaders({ headers: { 'X-Tenant': 'south' } });
 
       expect(service['headers']).toEqual({ 'x-tenant': 'south' });
     });
@@ -410,7 +466,7 @@ describe('DefaultNetworkRequestService', () => {
 
   describe('getRequestProps', () => {
     test('builds x-request-channel, x-request-count, and default x-request-id', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
       const applicationInfo = createApplicationInfo({ name: 'ardor-core' });
       const restDataProviderOptions = createRestDataProviderOptions();
 
@@ -460,7 +516,7 @@ describe('DefaultNetworkRequestService', () => {
       expect(crypto.randomUUID).toBeUndefined();
 
       try {
-        const props = createService({ useAuth: false }).getRequestProps({
+        const props = createService({ isOpen: true }).getRequestProps({
           resource: 'items',
           applicationInfo: createApplicationInfo({ name: 'ardor-core' }),
           restDataProviderOptions: createRestDataProviderOptions(),
@@ -480,14 +536,12 @@ describe('DefaultNetworkRequestService', () => {
       }
     });
 
-    test('uses requestTracingChannel and function-based requestTracingId when provided', () => {
-      const service = createService({ useAuth: false });
+    test('uses requestTracingChannel, and the tracing id buildRequestTracingId builds', () => {
+      const service = createService({ isOpen: true });
+      service.setTracingId((opts) => `custom-trace-${opts.applicationInfo.name}`);
       const applicationInfo = createApplicationInfo({ name: 'custom-app' });
       const restDataProviderOptions = createRestDataProviderOptions({
         requestTracingChannel: '200_MOBILE',
-        requestTracingId: (opts: { applicationInfo: IApplicationInfo }) => {
-          return `custom-trace-${opts.applicationInfo.name}`;
-        },
       });
 
       const props = service.getRequestProps({
@@ -504,7 +558,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('sets application/json content-type and passes body through for default bodyType', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
       const testBody = { title: 'New Item', count: 12 };
 
       const props = service.getRequestProps({
@@ -519,7 +573,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('builds FormData with File and File array entries, skipping undefined and null', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
       const singleFile = new File(['alpha'], 'single.txt', { type: 'text/plain' });
       const fileList = [
         new File(['beta1'], 'file1.txt', { type: 'text/plain' }),
@@ -549,7 +603,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('refuses a file in a form-urlencoded body instead of losing it', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       // There is no encoding that would have made this work: url-encoded carries text. Silently
       // sending "{}" or "[object Blob]" loses the upload and tells nobody.
@@ -565,7 +619,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('carries falsy values in a form-urlencoded body, and skips only undefined and null', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       const props = service.getRequestProps({
         resource: 'oauth',
@@ -594,7 +648,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('carries text fields in a form-data body, and skips only undefined and null', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       const props = service.getRequestProps({
         resource: 'upload',
@@ -627,7 +681,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('serialises a structured value instead of stringifying it to [object Object]', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       const props = service.getRequestProps({
         resource: 'upload',
@@ -652,7 +706,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('mixes files and text in one form-data array', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
       const file = new File(['alpha'], 'note.txt', { type: 'text/plain' });
 
       const props = service.getRequestProps({
@@ -678,7 +732,7 @@ describe('DefaultNetworkRequestService', () => {
      * An omitted field is `undefined`, and that is still skipped - the case below covers it.
      */
     test('encodes the body as application/x-www-form-urlencoded, keeping an empty string', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       const props = service.getRequestProps({
         resource: 'oauth',
@@ -1046,12 +1100,12 @@ describe('DefaultNetworkRequestService', () => {
     test('calls refreshToken once for concurrent 401s, retries with refreshed Authorization header, and returns 200', async () => {
       let refreshCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'stale-token' });
+      service.setToken({ value: 'stale-token' });
 
       const refreshToken = mock(async () => {
         refreshCallCount++;
         await delay({ milliseconds: 40 });
-        service.setAuthToken({ value: 'fresh-token' });
+        service.setToken({ value: 'fresh-token' });
         return true;
       });
 
@@ -1100,7 +1154,7 @@ describe('DefaultNetworkRequestService', () => {
     test('never recovers a path containing refreshTokenPath on 401', async () => {
       let refreshCalled = false;
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'expired-token' });
+      service.setToken({ value: 'expired-token' });
 
       const refreshToken = mock(async () => {
         refreshCalled = true;
@@ -1183,7 +1237,7 @@ describe('DefaultNetworkRequestService', () => {
     test('calls onAuthFailure once and throws original 401 response error when refreshToken rejects', async () => {
       let authFailureCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'unrecoverable-token' });
+      service.setToken({ value: 'unrecoverable-token' });
 
       const refreshToken = mock(() =>
         Promise.reject(getError({ message: 'Refresh token service offline' })),
@@ -1228,7 +1282,7 @@ describe('DefaultNetworkRequestService', () => {
     test('calls onAuthFailure once and throws original 401 response error when refreshToken throws synchronously', async () => {
       let authFailureCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'unrecoverable-token' });
+      service.setToken({ value: 'unrecoverable-token' });
 
       const refreshToken = mock((): Promise<unknown> => {
         throw getError({ message: 'Refresh token service offline' });
@@ -1275,12 +1329,12 @@ describe('DefaultNetworkRequestService', () => {
     test('an HttpDataSource given getDataSourceAuth() joins the same single refresh and retries with its token', async () => {
       let refreshCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'stale-token' });
+      service.setToken({ value: 'stale-token' });
       service.setAuthRecovery({
         refreshToken: async () => {
           refreshCallCount++;
           await delay({ milliseconds: 40 });
-          service.setAuthToken({ value: 'fresh-token' });
+          service.setToken({ value: 'fresh-token' });
         },
       });
 
@@ -1313,7 +1367,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('an HttpDataSource given getDataSourceAuth() lets the 401 stand when no refreshToken is configured', async () => {
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'stale-token' });
+      service.setToken({ value: 'stale-token' });
 
       serverHandler = () => Response.json({ error: 'expired' }, { status: 401 });
 
@@ -1346,15 +1400,15 @@ describe('DefaultNetworkRequestService', () => {
 
     test('sends the session headers set after the datasource was built, and the timezone', async () => {
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'session-token' });
+      service.setToken({ value: 'session-token' });
       serverHandler = () => Response.json([]);
 
       const orders = createRepository({ service, resource: 'orders' });
 
-      service.setHeaders({ 'x-merchant-id': 'merchant-1', 'x-locale': 'vi' });
+      service.setHeaders({ headers: { 'x-merchant-id': 'merchant-1', 'x-locale': 'vi' } });
       await orders.find({ filter: {} });
 
-      service.setHeaders({ 'x-merchant-id': 'merchant-2' });
+      service.setHeaders({ headers: { 'x-merchant-id': 'merchant-2' } });
       await orders.find({ filter: {} });
 
       expect(recordedRequests).toHaveLength(2);
@@ -1370,7 +1424,8 @@ describe('DefaultNetworkRequestService', () => {
 
     test('sends the request channel and tracing id when given the data provider options', async () => {
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'session-token' });
+      service.setToken({ value: 'session-token' });
+      service.setTracingId(({ applicationInfo }) => `${applicationInfo.name}-trace`);
       serverHandler = () => Response.json([]);
 
       const orders = createRepository({
@@ -1379,7 +1434,6 @@ describe('DefaultNetworkRequestService', () => {
         auth: service.getDataSourceAuth({
           restDataProviderOptions: createRestDataProviderOptions({
             requestTracingChannel: 'pos',
-            requestTracingId: ({ applicationInfo }) => `${applicationInfo.name}-trace`,
           }),
           applicationInfo: createApplicationInfo({ name: 'kiosk' }),
         }),
@@ -1393,7 +1447,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('sends no token to a no-auth route, and the token elsewhere', async () => {
       const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
-      service.setAuthToken({ value: 'session-token' });
+      service.setToken({ value: 'session-token' });
       serverHandler = () => Response.json([]);
 
       await createRepository({ service, resource: 'sign-in' }).find({ filter: {} });
@@ -1405,8 +1459,8 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('sends no token anywhere when the service does not use auth', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
-      service.setAuthToken({ value: 'session-token' });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+      service.setToken({ value: 'session-token' });
       serverHandler = () => Response.json([]);
 
       await createRepository({ service, resource: 'orders' }).find({ filter: {} });
@@ -1416,7 +1470,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('does not refresh on a 401 from a no-auth route', async () => {
       const service = createService({ baseUrl: serverBaseUrl, noAuthPaths: ['sign-in'] });
-      service.setAuthToken({ value: 'session-token' });
+      service.setToken({ value: 'session-token' });
       const refreshToken = mock(async () => {});
       service.setAuthRecovery({ refreshToken });
       serverHandler = () => Response.json({ error: 'bad credentials' }, { status: 401 });
@@ -1430,7 +1484,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('keeps the server error code from under the `error` root key', async () => {
       const service = createService({ baseUrl: serverBaseUrl });
-      service.setAuthToken({ value: 'session-token' });
+      service.setToken({ value: 'session-token' });
       serverHandler = () =>
         Response.json(
           {
@@ -1470,7 +1524,7 @@ describe('DefaultNetworkRequestService', () => {
     };
 
     test('asks for extras in x-request-extra', () => {
-      const service = createService({ useAuth: false });
+      const service = createService({ isOpen: true });
 
       const props = service.getRequestProps({
         resource: 'tickets',
@@ -1486,7 +1540,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('sends no x-request-extra when none is asked for', () => {
-      const props = createService({ useAuth: false }).getRequestProps({
+      const props = createService({ isOpen: true }).getRequestProps({
         resource: 'tickets',
         applicationInfo: createApplicationInfo(),
         restDataProviderOptions: createRestDataProviderOptions(),
@@ -1496,7 +1550,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('unwraps a marked { data, extra } list, keeping the rows and the total', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
       serverHandler = () =>
         Response.json(
           { data: [{ id: 'a' }], extra: { stats: { open: 3 } } },
@@ -1511,7 +1565,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('keeps the count beside the rows when the count rides in the body', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
       serverHandler = () =>
         Response.json(
           { data: [{ id: 'a' }], count: 1, extra: { stats: { open: 3 } } },
@@ -1529,7 +1583,7 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('never reads an unmarked body as extras', async () => {
-      const service = createService({ baseUrl: serverBaseUrl, useAuth: false });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
       serverHandler = () =>
         Response.json([{ id: 'a', data: 'own column', extra: 'own column' }], {
           headers: { 'content-range': 'records 0-0/1' },
@@ -1539,6 +1593,96 @@ describe('DefaultNetworkRequestService', () => {
 
       expect(rs.data).toEqual([{ id: 'a', data: 'own column', extra: 'own column' }]);
       expect(rs.extra).toBeUndefined();
+    });
+  });
+  describe('refresh and its hooks', () => {
+    test('a service with no refreshToken override refreshes nothing: false, and onAuthFailure stays quiet', async () => {
+      const failures = mock(async () => {});
+      const service = createService();
+      service.setAuthRecovery({ onAuthFailure: failures });
+
+      expect(await service.refresh()).toBe(false);
+      expect(failures).not.toHaveBeenCalled();
+    });
+
+    test('resolves true when refreshToken succeeds', async () => {
+      const service = createService();
+      service.setAuthRecovery({ refreshToken: async () => {} });
+
+      expect(await service.refresh()).toBe(true);
+    });
+
+    test('a refreshToken that throws resolves false and runs onAuthFailure once', async () => {
+      const failures = mock(async () => {});
+      const service = createService();
+      service.setAuthRecovery({
+        refreshToken: () => Promise.reject(new Error('refresh rejected')),
+        onAuthFailure: failures,
+      });
+
+      expect(await service.refresh()).toBe(false);
+      expect(failures).toHaveBeenCalledTimes(1);
+    });
+
+    test('a refreshToken that throws synchronously is still a failed refresh', async () => {
+      const failures = mock(async () => {});
+      const service = createService();
+      service.setAuthRecovery({
+        refreshToken: () => {
+          throw new Error('sync failure');
+        },
+        onAuthFailure: failures,
+      });
+
+      expect(await service.refresh()).toBe(false);
+      expect(failures).toHaveBeenCalledTimes(1);
+    });
+
+    test('callers in flight share one refreshToken call', async () => {
+      const refreshToken = mock(async () => {
+        await delay({ milliseconds: 10 });
+      });
+      const service = createService();
+      service.setAuthRecovery({ refreshToken });
+
+      const results = await Promise.all([service.refresh(), service.refresh(), service.refresh()]);
+
+      expect(results).toEqual([true, true, true]);
+      expect(refreshToken).toHaveBeenCalledTimes(1);
+
+      await service.refresh();
+      expect(refreshToken).toHaveBeenCalledTimes(2);
+    });
+
+    test('a failing onAuthFailure does not escape refresh', async () => {
+      const service = createService();
+      service.setAuthRecovery({
+        refreshToken: () => Promise.reject(new Error('no')),
+        onAuthFailure: () => {
+          throw new Error('hook failed');
+        },
+      });
+
+      expect(await service.refresh()).toBe(false);
+    });
+  });
+
+  describe('readAuthTokenFromStorage', () => {
+    test('reads the stored token, and is undefined for nothing or for text that is not JSON', () => {
+      localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+      expect(DefaultNetworkRequestService.readAuthTokenFromStorage()).toBeUndefined();
+
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '{not json');
+      expect(DefaultNetworkRequestService.readAuthTokenFromStorage()).toBeUndefined();
+
+      localStorage.setItem(
+        LocalStorageKeys.KEY_AUTH_TOKEN,
+        JSON.stringify({ value: 'stored', type: 'Bearer' }),
+      );
+      expect(DefaultNetworkRequestService.readAuthTokenFromStorage()).toEqual({
+        value: 'stored',
+        type: 'Bearer',
+      });
     });
   });
 });

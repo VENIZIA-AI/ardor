@@ -34,15 +34,11 @@ An ARDOR application with `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBin
 ```ts no-check
 interface IRestDataProviderOptions {
   url: string;
-  useAuth?: boolean;                 // default true
   noAuthPaths?: Array<string>;
   noAuthPathRegex?: string | RegExp | Array<string | RegExp>;
   headers?: HeadersInit;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
   requestTracingChannel?: string;
   authRecovery?: {
-    refreshToken?: () => Promise<unknown>;
-    onAuthFailure?: () => ValueOrPromise<unknown>;
     refreshTokenPath?: string;
   };
 }
@@ -51,33 +47,26 @@ interface IRestDataProviderOptions {
 | Option | Where it goes | Meaning |
 | --- | --- | --- |
 | `url` | `baseUrl` of the internal `DefaultNetworkRequestService` | Base URL every resource path is appended to |
-| `useAuth` | network service | Attach the authorization header by default. Set `false` for apps that only call public APIs |
 | `noAuthPaths` | network service | Exact resource paths requested without the authorization header |
-| `noAuthPathRegex` | network service | Pattern(s) of paths requested without the authorization header. Strings are compiled with `new RegExp(...)` |
+| `noAuthPathRegex` | network service | Pattern(s) of paths requested without the authorization header. Strings are compiled with `new RegExp(...)`. For an API with no sign-in, `/./` sends no token at all |
 | `headers` | network service | Default headers for every request |
-| `requestTracingId` | `getRequestProps` on each call | `true`, or a function that receives `{ applicationInfo }` and returns the id to send |
 | `requestTracingChannel` | `getRequestProps` on each call | Channel value to send alongside the tracing id |
-| `authRecovery` | network service | Hooks used when a request fails authentication |
+| `authRecovery` | network service | `refreshTokenPath` only: a request to this path never starts a refresh |
 
-The constructor builds one `DefaultNetworkRequestService` named `default-application-network-service` from `url`, `useAuth`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery`. The full options object, together with `applicationInfo`, is then passed to `networkService.getRequestProps(...)` on every call - that is how `requestTracingId` and `requestTracingChannel` reach the request. How the network service turns them into headers is covered in [Network](../references/network).
+The options hold data. Behaviour is in protected hooks of the network service, which you override in a subclass: `refreshToken` and `onAuthFailure` for a `401`, `resolveAuthToken` for the token, `isNoAuthPath` for a custom no-auth rule, `buildRequestTracingId({ applicationInfo })` for the tracing id (default `<application name>_<uuid>`). The subclass reaches the provider through `createNetworkService()`, below. See [Auth recovery](../best-practices/auth-recovery).
+
+`createNetworkService()` builds one `DefaultNetworkRequestService` named `default-application-network-service` from `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery`. The full options object, together with `applicationInfo`, is passed to `networkService.getRequestProps(...)` on every call - that is how `requestTracingChannel` reaches the request, next to the tracing id the service's `buildRequestTracingId` hook returns. How the network service turns them into headers is covered in [Network](../references/network).
 
 ```ts
 import { type IRestDataProviderOptions } from '@venizia/ardor';
 
 const restDataProviderOptions: IRestDataProviderOptions = {
   url: 'https://api.example.com',
-  useAuth: true,
   noAuthPaths: ['auth/sign-in', 'auth/sign-up'],
   noAuthPathRegex: [/^public\//, 'health'],
   headers: { 'x-client': 'shop-admin' },
-  requestTracingId: ({ applicationInfo }) => `${applicationInfo.name}-${Date.now()}`,
   requestTracingChannel: 'admin',
-  authRecovery: {
-    refreshTokenPath: 'auth/refresh',
-    onAuthFailure: () => {
-      window.location.assign('/login');
-    },
-  },
+  authRecovery: { refreshTokenPath: 'auth/refresh' },
 };
 ```
 
@@ -93,10 +82,24 @@ class DefaultRestDataProvider<TResource extends string = string>
 
   value(container: Container): IDataProvider<TResource>;
   getNetworkService(): DefaultNetworkRequestService;
+
+  protected createNetworkService(): DefaultNetworkRequestService;
+  protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
+    filter: Record<string, AnyType>;
+    queryKey: Record<string, AnyType>;
+    extra: Record<string, AnyType> | undefined;
+  };
 }
 ```
 
-The class methods take an options object: `getList({ resource, params })`. `value()` wraps them in the shape react-admin expects, where every method is positional: `getList(resource, params)`. `send` and `getNetworkService` keep their own shape on that object.
+The class methods take an options object: `getList({ resource, params })`. `value()` wraps them in the shape react-admin expects, where every method is positional: `getList(resource, params)`. That is the one documented exception to the options-object rule: the signatures on the object `value()` returns are react-admin's own, and they stay positional. `send` and `getNetworkService` keep their own shape on that object.
+
+### Protected hooks
+
+Two protected methods are the places to change behaviour in a subclass:
+
+- `createNetworkService(): DefaultNetworkRequestService` builds the network service the provider sends through. It is called once, on first use, so a subclass's own fields are set by then. Override it to return a subclass of the service that overrides its hooks (`refreshToken`, `onAuthFailure`, `resolveAuthToken`, ...), then bind the provider subclass under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. [Auth recovery](../best-practices/auth-recovery#wiring-the-refresh) has the full example.
+- `buildListFilter({ params }): { filter, queryKey, extra }` turns react-admin's list params into the IGNIS filter, the extra query keys and the list extras. `getList` and `getManyReference` both call it - the algorithm is in [`getList` and `getManyReference`](#getlist-and-getmanyreference-building-the-filter). Override it to change how a list is filtered for both calls at once.
 
 ```ts
 import {
@@ -153,7 +156,7 @@ Every call sends `requestCountData: RequestCountData.DATA_ONLY` (`'0'`). Every c
 
 ## `getList` and `getManyReference`: building the filter
 
-Both calls share one algorithm. The react-admin `filter` object is read in one of two ways:
+Both calls share one algorithm, the protected `buildListFilter({ params })`. The react-admin `filter` object is read in one of two ways:
 
 - If `filter.where` exists, the whole `filter` is taken as-is. You are writing the IGNIS filter yourself.
 - Otherwise every key of `filter` except `include`, `params`, `noLimit` and `fields` becomes `where`. Those four keys are lifted to the top level of the filter.
@@ -413,7 +416,7 @@ exported.data.url;
 
 ## `getNetworkService()`
 
-Returns the `DefaultNetworkRequestService` the provider built in its constructor. It is available both on the class and on the object returned by `value()`. Use it when a component or service needs the same base URL, auth rules and headers without going through react-admin's vocabulary. Its API is documented in [Network](../references/network).
+Returns the `DefaultNetworkRequestService` the provider built, through `createNetworkService()`, on first use. It is available both on the class and on the object returned by `value()`. Use it when a component or service needs the same base URL, auth rules and headers without going through react-admin's vocabulary. Its API is documented in [Network](../references/network).
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -436,13 +439,14 @@ const networkService = dataProvider.getNetworkService();
 - **Extra truthy keys on list `params` leak into the filter.** Anything on `params` other than `pagination`, `sort`, `filter`, `meta` (and `target`/`id` for references) is copied into the filter as-is.
 - **`DefaultRestDataProvider` has no `total` of its own.** If your backend does not send `content-range`, use `CountRestDataProvider` or expose a `/count` endpoint.
 - **A failed request throws an `ApplicationError`.** Every method, `send()` and `CountRestDataProvider` included, rejects with the error described in [Network](../references/network#error-shape-on-non-2xx): `statusCode` is the HTTP status, `message` the server's text, `normalized.code` and `normalized.args` the server's, and the request id is in `error.extra.requestId`.
-- **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`. Only the latter is what react-admin and `useDataProvider` see.
+- **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`, react-admin's positional signature. Only the latter is what react-admin and `useDataProvider` see.
 
 ## Related
 
 - [Application](../references/application) - where the provider is registered and started
 - [Binding keys](../references/binding-keys) - `CoreBindings.REST_DATA_PROVIDER_OPTIONS`, `CoreBindings.APPLICATION_INFO`
 - [Network](../references/network) - `DefaultNetworkRequestService`, `getRequestProps`, `content-range`
-- [Auth provider](../references/auth-provider) - who supplies the token that `useAuth` attaches
+- [Auth provider](../references/auth-provider) - who supplies the token the network service attaches
+- [Auth recovery](../best-practices/auth-recovery) - the `refreshToken` hook and `createNetworkService()`
 - [Types](../references/types) - `IRestDataProviderOptions`, `ISendParams`, `ICustomParams`, request constants
 - [Migrating from ra-core-infra](../guides/migration/from-ra-core-infra)

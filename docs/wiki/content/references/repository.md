@@ -36,16 +36,16 @@ interface IHttpDataSourceSettings {
 ```
 
 - `baseUrl` may be relative (`'/api'`). It resolves against `location.href` when a request is sent, in a page or a Web Worker, so a dev-server proxy needs nothing more. Where there is no `location` (Bun, a test runner) a relative `baseUrl` throws on the first request; pass an absolute URL there.
-- `authTokenResolver: readAuthTokenFromStorage` (from `@venizia/ardor`) sends the token the auth provider stored, the same one the data provider sends.
+- `authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage` (from `@venizia/ardor`) sends the token the auth provider stored, the same one the data provider sends by default.
 - `x-request-count` is owned by the datasource: configuring it in `headers` throws. Rows come back as an array and the total in `Content-Range`.
 - On a `401`, `onUnauthorized` runs once. Return `true` after refreshing the token to retry the request once.
-- **Send what the data provider sends:** spread `dataProvider.getDataSourceAuth()` into the settings. It supplies `headersResolver`, `authTokenResolver`, `onUnauthorized` and `errorRootKey`, read on every send: the session headers set with `setHeaders()`, the timezone, the request channel and tracing id, the data provider's token (including one set with `setAuthToken`) except on a no-auth path, and the server's error code under `error`. A `401` on either transport triggers one `refreshToken` call. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
+- **Send what the data provider sends:** spread `dataProvider.getDataSourceAuth()` into the settings. It supplies `headersResolver`, `authTokenResolver`, `onUnauthorized` and `errorRootKey`, read on every send: the session headers set with `setHeaders({ headers })`, the timezone, the request channel and tracing id, the data provider's token (whatever its `resolveAuthToken` hook returns) except on a no-auth path, and the server's error code under `error`. A `401` on either transport joins one shared refresh, the service's `refreshToken` hook. See [auth recovery](../best-practices/auth-recovery#where-tokens-live).
 - `request({ paths, method, body, headers })` answers the raw `Response`, for a route the repository verbs do not cover, such as an export or a `PUT` to a hand-written route. A plain object or array goes out as JSON; a string, `Blob`, `FormData`, `URLSearchParams` or binary goes out as it is. A stream does not: the `401` retry resends the same body.
 
 ## HttpRepository
 
 ```ts
-import { readAuthTokenFromStorage } from '@venizia/ardor';
+import { DefaultNetworkRequestService } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
 interface ITicket {
@@ -62,7 +62,7 @@ export class TicketRepository extends HttpRepository<ITicket> {
 const tickets = new TicketRepository({
   dataSource: new HttpDataSource({
     baseUrl: 'https://api.example.com',
-    authTokenResolver: readAuthTokenFromStorage,
+    authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
   }),
 });
 
@@ -150,7 +150,7 @@ Two ways, as in IGNIS. Both bind a singleton and record the key on the class, so
 ```ts
 import {
   datasource,
-  readAuthTokenFromStorage,
+  DefaultNetworkRequestService,
   repository,
   RepositoryTypes,
   useRepository,
@@ -165,7 +165,7 @@ interface ITicket {
 @datasource()
 export class ApiDataSource extends HttpDataSource {
   constructor() {
-    super({ baseUrl: '/api', authTokenResolver: readAuthTokenFromStorage });
+    super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
   }
 }
 

@@ -54,8 +54,8 @@ When package size is checked against its budget, peer dependencies are treated a
 
 A bare `bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider)` is transient, so every `get()` builds a new data provider with a new network service. `<ArdorApplication>`, `DefaultAuthProvider`, every hook and every injected datasource each hold a different one. What one consumer sets, another never sees:
 - a header from `useRequestHeaderLocale`,
-- a token from `setAuthToken`,
-- the recovery options,
+- a token an overridden `resolveAuthToken()` holds in memory,
+- the state a network service subclass keeps for its recovery hooks,
 - the single in-flight refresh.
 
 A started application with the old wiring showed it: react-admin's request carried `locale=null`, and a repository wired through `getDataSourceAuth()` sent no `authorization` at all.

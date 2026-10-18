@@ -27,8 +27,9 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IRequestProps`, `IGetRequestPropsParams`, `IGetRequestPropsResult`, `ICustomParams` | interface | Request building types used by the network layer |
 | `IRestDataProviderOptions` | interface | REST data provider options (extends `INoAuthOptions`) |
 | `INoAuthOptions`, `TNoAuthPathRegex` | interface, type | Which paths are sent without an authorization header |
-| `IAuthRecoveryOptions` | interface | Refresh token and failure hooks |
-| `IAuthProviderOptions` | interface | Auth provider endpoints and paths |
+| `IAuthRecoveryOptions` | interface | The refresh endpoint path (data only) |
+| `IAuthProviderOptions` | interface | Auth provider paths (`signIn`, `checkAuth`, `afterLogin`) |
+| `IAuthTokenRecord`, `IDataSourceAuth` | interface | The token a request carries; the settings an `HttpDataSource` takes from the network service |
 | `II18nProviderOptions` | interface | i18n sources and language list |
 | `IReactAdminDataProvider`, `IDataProvider` | interface | react-admin data contract plus `send` and `getNetworkService` |
 | `IReactAdminAuthProvider`, `IAuthProvider` | interface | react-admin auth contract plus `getRoles` and `refreshToken` |
@@ -80,7 +81,7 @@ export const pick = (opts: { source: AnyObject; keys: Array<string> }) =>
 
 ## ValueOrPromise
 
-A value that may or may not be wrapped in a promise. The application lifecycle hooks (`preConfigure`, `postConfigure`, `bindContext`, `start` on `IArdorApplication`) and `IAuthRecoveryOptions.onAuthFailure` use it, so you can implement them synchronously or with `async`.
+A value that may or may not be wrapped in a promise. The application lifecycle hooks (`preConfigure`, `postConfigure`, `bindContext`, `start` on `IArdorApplication`) use it, so you can implement them synchronously or with `async`.
 
 ```ts no-check
 export type ValueOrPromise<T> = T | Promise<T>;
@@ -202,7 +203,7 @@ Pick `TPaths` when you need to name a container (a sort field, a group key). Pic
 
 ## IApplicationInfo
 
-Identity of the app. It is passed to the request builder (`IGetRequestPropsParams.applicationInfo`) and to the `requestTracingId` callback of the REST options. Extra keys are allowed.
+Identity of the app. It is passed to the request builder (`IGetRequestPropsParams.applicationInfo`) and to the `buildRequestTracingId` hook of the network service. Extra keys are allowed.
 
 ```ts no-check
 export interface IApplicationInfo {
@@ -264,17 +265,17 @@ The related request building types are `IRequestProps` (headers, body, query), `
 
 ## INoAuthOptions
 
-Controls when the authorization header is attached.
+Controls when the authorization header is attached. Data only: the matching rule is the network service's protected `isNoAuthPath` hook, see [network](../references/network#no-auth-paths).
 
-- `useAuth` - defaults to `true`. Set `false` for apps that only call public APIs.
 - `noAuthPaths` - exact resource paths sent without the header.
 - `noAuthPathRegex` - one or more patterns. A string is compiled with `new RegExp(...)`.
+
+To send no token at all (an API with no sign-in), set `noAuthPathRegex: /./`.
 
 ```ts no-check
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
 export interface INoAuthOptions {
-  useAuth?: boolean;
   noAuthPaths?: Array<string>;
   noAuthPathRegex?: TNoAuthPathRegex;
 }
@@ -282,29 +283,48 @@ export interface INoAuthOptions {
 
 ## IAuthRecoveryOptions
 
-Hooks the network layer uses when a request fails on authentication.
+Data the network layer uses when a request fails on authentication: the path of the refresh endpoint.
 
 ```ts no-check
 export interface IAuthRecoveryOptions {
-  refreshToken?: () => Promise<unknown>;
-  onAuthFailure?: () => ValueOrPromise<unknown>;
+  /** A request to this path never starts a refresh: it is the refresh. */
   refreshTokenPath?: string;
 }
 ```
 
-`refreshToken` runs a refresh, `refreshTokenPath` names the refresh endpoint, and `onAuthFailure` runs when recovery is not possible. See [auth provider](../references/auth-provider).
+`refreshTokenPath` names the refresh endpoint, so a 401 from it does not start another refresh. The refresh itself is behaviour, not an option: it is the `refreshToken` and `onAuthFailure` hooks of a `DefaultNetworkRequestService` subclass. See [network](../references/network#auth-recovery) and [auth provider](../references/auth-provider).
+
+## IAuthTokenRecord and IDataSourceAuth
+
+`IAuthTokenRecord` is the token a request carries. `resolveAuthToken()` of the network service returns it, and so does the `authTokenResolver` of an `HttpDataSource`. `IDataSourceAuth` is what `getDataSourceAuth()` returns for an `HttpDataSource`: the token resolver, the headers resolver, the 401 hook and the error root key, all bound to one network service.
+
+```ts no-check
+export interface IAuthTokenRecord {
+  type?: string; // defaults to 'Bearer'
+  value: string;
+  provider?: string; // sent as x-auth-provider
+}
+
+export interface IDataSourceAuth {
+  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
+  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
+  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
+  errorRootKey: string;
+}
+```
+
+ARDOR has no token resolver type or option of its own any more (the `TAuthTokenResolver` of an `HttpDataSource` is IGNIS's). The token has one source: the `resolveAuthToken` hook of the service, which reads storage by default through the static `DefaultNetworkRequestService.readAuthTokenFromStorage()`.
 
 ## IRestDataProviderOptions
 
-Options of the REST data provider. It extends `INoAuthOptions` and adds the base `url`, default `headers`, request tracing and auth recovery.
+Options of the REST data provider. It extends `INoAuthOptions` and adds the base `url`, default `headers`, the request channel and auth recovery. All of it is data.
 
-- `requestTracingId` - `true` to attach a tracing id, or a function `({ applicationInfo }) => string` that produces it.
-- `requestTracingChannel` - the channel value sent with the request.
+- `requestTracingChannel` - the channel value sent with the request in `x-request-channel`. Default `web`.
+- The tracing id is behaviour: override `buildRequestTracingId({ applicationInfo })` in a network service subclass. The default is `<application name>_<uuid>`.
 
 ```ts no-check
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
   requestTracingChannel?: string;
   headers?: HeadersInit;
   authRecovery?: IAuthRecoveryOptions;
@@ -317,14 +337,10 @@ import { HeaderConsts, RequestChannel, type IRestDataProviderOptions } from '@ve
 export const restOptions: IRestDataProviderOptions = {
   url: 'https://api.example.com',
   headers: { [HeaderConsts.X_LOCALE]: 'en' },
-  requestTracingId: true,
   requestTracingChannel: RequestChannel.WEB,
   noAuthPaths: ['auth/sign-in'],
   noAuthPathRegex: [/^public\//],
-  authRecovery: {
-    refreshTokenPath: 'auth/refresh',
-    onAuthFailure: () => console.warn('session expired'),
-  },
+  authRecovery: { refreshTokenPath: 'auth/refresh' },
 };
 ```
 
@@ -332,17 +348,18 @@ Bind the object under the key listed in [binding keys](../references/binding-key
 
 ## IAuthProviderOptions
 
-Options of the default auth provider. `endpoints.afterLogin` is the route to go to after login. `paths` are the API paths for sign in, sign up and auth check.
+Options of the default auth provider. Data only: where it talks to and where the admin goes next. The literals it does not take as options (the login and unauthorized pages, how it reads the sign-in response) are protected members of `DefaultAuthProvider`, see [auth provider](../references/auth-provider).
+
+- `paths.signIn` - where `login` posts. Default `/auth/sign-in`.
+- `paths.checkAuth` - where `checkAuth` validates the stored token. Default: not called.
+- `paths.afterLogin` - where the admin goes once `login` resolves. Default `/`.
 
 ```ts no-check
 export interface IAuthProviderOptions {
-  endpoints?: {
-    afterLogin?: string;
-  };
   paths?: {
     signIn?: string;
-    signUp?: string;
     checkAuth?: string;
+    afterLogin?: string;
   };
 }
 ```
@@ -351,10 +368,10 @@ export interface IAuthProviderOptions {
 import type { IAuthProviderOptions } from '@venizia/ardor';
 
 export const authOptions: IAuthProviderOptions = {
-  endpoints: { afterLogin: '/dashboard' },
   paths: {
     signIn: 'auth/sign-in',
     checkAuth: 'auth/who-am-i',
+    afterLogin: '/dashboard',
   },
 };
 ```
@@ -405,7 +422,7 @@ export const exportFirstPage = async (opts: { dataProvider: IDataProvider }) => 
 };
 ```
 
-`IReactAdminAuthProvider` is react-admin's auth contract (`login`, `logout`, `checkAuth`, `checkError`, optional `getIdentity`, `getPermissions`). `IAuthProvider` adds `getRoles`, which resolves to a `Set<string>`, and `refreshToken`.
+`IReactAdminAuthProvider` is react-admin's auth contract (`login`, `logout`, `checkAuth`, `checkError`, optional `getIdentity`, `getPermissions`). `IAuthProvider` adds `getRoles`, which resolves to a `Set<string>`, and `refreshToken`, which asks the network service to refresh and resolves `true` or `false`.
 
 ```ts no-check
 export interface IAuthProvider extends IReactAdminAuthProvider {

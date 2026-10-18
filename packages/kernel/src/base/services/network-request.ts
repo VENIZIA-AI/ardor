@@ -2,12 +2,12 @@ import { getError } from '@venizia/ignis-inversion';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest, HttpResponseReader } from '@venizia/ignis-kernel/repository';
 import isEmpty from 'lodash/isEmpty.js';
-import merge from 'lodash/merge.js';
 
 import {
   type AnyType,
   App,
   HeaderConsts,
+  type IApplicationInfo,
   type IAuthRecoveryOptions,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
@@ -23,171 +23,15 @@ import {
   type TRequestMethod,
   type TRequestType,
 } from '@/common';
-import { NodeFetchNetworkRequest } from '@/helpers';
+import { NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
 import { isDefined } from '@/utilities';
 import { BaseService } from './base';
-
-const parseFilenameFromContentDisposition = (header: string): string | undefined => {
-  if (!header) {
-    return undefined;
-  }
-
-  const extMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
-  if (extMatch) {
-    try {
-      return decodeURIComponent(extMatch[2].trim());
-    } catch {
-      return extMatch[2].trim();
-    }
-  }
-
-  const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
-  if (quotedMatch) {
-    return quotedMatch[1];
-  }
-
-  const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
-  if (bareMatch) {
-    return bareMatch[1].trim();
-  }
-
-  return undefined;
-};
-
-const normalizeNoAuthPathRegex = (input?: TNoAuthPathRegex): RegExp[] => {
-  if (!input) {
-    return [];
-  }
-
-  const patterns = Array.isArray(input) ? input : [input];
-  const rs: RegExp[] = [];
-
-  for (const pattern of patterns) {
-    if (!pattern) {
-      continue;
-    }
-
-    if (pattern instanceof RegExp) {
-      rs.push(pattern);
-      continue;
-    }
-
-    try {
-      rs.push(new RegExp(pattern));
-    } catch {
-      console.error(
-        '[DefaultNetworkRequestService][normalizeNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s',
-        pattern,
-      );
-    }
-  }
-
-  return rs;
-};
-
-/**
- * `HeadersInit` as a plain record, keys lowercased: header names are case-insensitive but object keys
- * are not, and two spellings of one name would reach the wire joined as `"1, 0"`.
- */
-const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string> => {
-  if (!headers) {
-    return {};
-  }
-
-  const entries = (() => {
-    if (headers instanceof Headers) {
-      return [...headers.entries()];
-    }
-    return Array.isArray(headers) ? headers : Object.entries(headers);
-  })();
-
-  const rs: Record<string, string> = {};
-  for (const [key, value] of entries) {
-    rs[key.toLowerCase()] = value;
-  }
-
-  return rs;
-};
-
-/** Merge header sources so a later source REPLACES an earlier one, whatever case either used. */
-const mergeHeaders = (...sources: Array<HeadersInit | undefined>): Record<string, string> => {
-  return sources.reduce<Record<string, string>>((acc, source) => {
-    return Object.assign(acc, toHeaderRecord(source));
-  }, {});
-};
-
-// `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
-const isFileList = (value: unknown): value is FileList => {
-  return typeof FileList !== 'undefined' && value instanceof FileList;
-};
-
-/** A multipart text value: JSON for objects and arrays, ISO-8601 for a `Date`, `String()` otherwise. */
-const encodeFormValue = (opts: { key: string; value: unknown; bodyType: string }): string => {
-  const { key, value, bodyType } = opts;
-
-  // A urlencoded body carries text only; a file here would be sent as `"{}"` with nothing said.
-  if (value instanceof Blob) {
-    throw getError({
-      message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
-    });
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
-};
-
-/** Skips only `undefined` and `null`: `0`, `false` and `''` are values the caller meant to send. */
-const appendFormDataValue = (opts: { formData: FormData; key: string; value: unknown }): void => {
-  const { formData, key, value } = opts;
-
-  if (!isDefined(value)) {
-    return;
-  }
-
-  if (value instanceof Blob) {
-    formData.append(key, value, (value as File).name);
-    return;
-  }
-
-  formData.append(key, encodeFormValue({ key, value, bodyType: RequestBodyTypes.FORM_DATA }));
-};
 
 export interface IAuthTokenRecord {
   type?: string;
   value: string;
   provider?: string;
 }
-
-/** Where a token comes from when none was set on the service. */
-export type TAuthTokenResolver = () => IAuthTokenRecord | undefined;
-
-/**
- * Reads the stored token, and `undefined` outside a browser. Also the resolver to hand
- * `HttpDataSource`, so both transports send the same token.
- */
-export const readAuthTokenFromStorage: TAuthTokenResolver = () => {
-  if (typeof localStorage === 'undefined') {
-    return undefined;
-  }
-
-  const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-  if (!stored?.length) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return undefined;
-  }
-};
 
 /** The server wraps an error body under this key; both transports unwrap it. */
 const ERROR_ROOT_KEY = 'error';
@@ -209,10 +53,13 @@ export interface IDataSourceAuth {
   errorRootKey: string;
 }
 
+/**
+ * The options hold data: the base URL, headers, the no-auth lists and the refresh path. Behaviour
+ * is in the protected hooks, each taking one `opts` object - `resolveAuthToken`, `isNoAuthPath`,
+ * `refreshToken`, `onAuthFailure` and `buildRequestTracingId` - which a subclass overrides, and
+ * `DefaultRestDataProvider.createNetworkService` returns.
+ */
 export class DefaultNetworkRequestService extends BaseService {
-  protected authToken?: IAuthTokenRecord;
-  protected authTokenResolver: TAuthTokenResolver;
-  protected useAuth: boolean;
   protected noAuthPaths?: string[];
   protected noAuthPathRegexes: RegExp[];
   protected headers: Record<string, string>;
@@ -228,26 +75,14 @@ export class DefaultNetworkRequestService extends BaseService {
       baseUrl?: string;
       headers?: HeadersInit;
       authRecovery?: IAuthRecoveryOptions;
-      authTokenResolver?: TAuthTokenResolver;
     },
   ) {
     super({ scope: DefaultNetworkRequestService.name });
-    const {
-      name,
-      baseUrl = '',
-      headers = {},
-      useAuth = true,
-      noAuthPaths,
-      noAuthPathRegex,
-      authRecovery,
-      authTokenResolver = readAuthTokenFromStorage,
-    } = opts;
+    const { name, baseUrl = '', headers = {}, noAuthPaths, noAuthPathRegex, authRecovery } = opts;
 
-    this.authTokenResolver = authTokenResolver;
-    this.headers = toHeaderRecord(headers);
-    this.useAuth = useAuth;
+    this.headers = NetworkHeaders.toRecord({ headers });
     this.noAuthPaths = noAuthPaths;
-    this.noAuthPathRegexes = normalizeNoAuthPathRegex(noAuthPathRegex);
+    this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
     this.networkRequest = new NodeFetchNetworkRequest({
@@ -256,11 +91,44 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
-    if (!this.useAuth) {
-      return true;
+  /**
+   * Reads the stored token, and `undefined` outside a browser. The default of `resolveAuthToken`,
+   * and what to hand an `HttpDataSource` as its `authTokenResolver`, so both transports send the
+   * same token.
+   */
+  static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
+    if (typeof localStorage === 'undefined') {
+      return undefined;
     }
 
+    const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+    if (!stored?.length) {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return undefined;
+    }
+  }
+
+  // --- Hooks -----------------------------------------------------------------------------------
+
+  /**
+   * The token this service sends. The one way to supply a token: override it to read another
+   * store, or to hold the token in memory.
+   */
+  protected resolveAuthToken(): IAuthTokenRecord | undefined {
+    return DefaultNetworkRequestService.readAuthTokenFromStorage();
+  }
+
+  /**
+   * Whether a request goes without a token: its `resource` is in `noAuthPaths`, or the resource, or
+   * the joined `paths`, matches `noAuthPathRegex`. To send no token at all (an API with no sign-in),
+   * set `noAuthPathRegex: /./`.
+   */
+  protected isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
     const { resource, paths } = opts;
 
     if (resource && this.noAuthPaths?.includes(resource)) {
@@ -287,36 +155,73 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  setUseAuth(useAuth: boolean) {
-    this.useAuth = useAuth;
+  /**
+   * Refreshes the session after a 401. Resolve `true` once it is refreshed - the request is then
+   * retried with the new token; resolve `false` when this service has no refresh (the default); throw
+   * when the refresh failed, and `onAuthFailure` runs. A request to `authRecovery.refreshTokenPath`
+   * never gets here.
+   */
+  protected refreshToken(): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
-  setNoAuthPaths(noAuthPaths?: string[]) {
-    this.noAuthPaths = noAuthPaths;
+  /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
+  protected onAuthFailure(): Promise<void> {
+    return Promise.resolve();
   }
 
-  setNoAuthPathRegex(noAuthPathRegex?: TNoAuthPathRegex) {
-    this.noAuthPathRegexes = normalizeNoAuthPathRegex(noAuthPathRegex);
+  /** The tracing id of a request, sent in `x-request-tracing-id`. Default `<application name>_<uuid>`. */
+  protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
+    return `${opts.applicationInfo.name}_${uuidV4()}`;
   }
 
-  private ensureRefreshed(): Promise<boolean> {
-    const rec = this.authRecovery;
-    const refreshToken = rec?.refreshToken;
-    if (!rec || !refreshToken) {
-      return Promise.resolve(false);
+  // --- No-auth and recovery --------------------------------------------------------------------
+
+  /** `noAuthPathRegex` as `RegExp`s; a string is compiled, and an invalid one is logged and dropped. */
+  protected compileNoAuthPathRegex(opts: { input?: TNoAuthPathRegex }): RegExp[] {
+    const { input } = opts;
+
+    if (!input) {
+      return [];
     }
 
+    const patterns = Array.isArray(input) ? input : [input];
+    const rs: RegExp[] = [];
+
+    for (const pattern of patterns) {
+      if (!pattern) {
+        continue;
+      }
+
+      if (pattern instanceof RegExp) {
+        rs.push(pattern);
+        continue;
+      }
+
+      try {
+        rs.push(new RegExp(pattern));
+      } catch {
+        this.logger.error('[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s', pattern);
+      }
+    }
+
+    return rs;
+  }
+
+  /**
+   * Refreshes the session, once for every 401 in flight on either transport: the callers share one
+   * `refreshToken` call. `true` when the token was refreshed. Also what `DefaultAuthProvider.refreshToken`
+   * calls, so a refresh is made in one place.
+   */
+  refresh(): Promise<boolean> {
     // A refreshToken that throws synchronously is still a failed refresh, not a stray exception.
     this.refreshing ??= Promise.resolve()
-      .then(() => refreshToken())
-      .then(() => true)
+      .then(() => this.refreshToken())
       .catch(async () => {
         try {
-          await rec.onAuthFailure?.();
+          await this.onAuthFailure();
         } catch {
-          console.error(
-            '[DefaultNetworkRequestService][ensureRefreshed] onAuthFailure callback failed',
-          );
+          this.logger.error('[refresh] onAuthFailure failed');
         }
         return false;
       })
@@ -328,34 +233,27 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   private canRecover(paths: string[]): boolean {
-    const rec = this.authRecovery;
-    if (!rec?.refreshToken) {
-      return false;
-    }
-
     if (this.isNoAuthPath({ resource: paths?.[0], paths })) {
       return false;
     }
 
-    if (rec.refreshTokenPath && paths?.join('/').includes(rec.refreshTokenPath)) {
+    const refreshTokenPath = this.authRecovery?.refreshTokenPath;
+    if (refreshTokenPath && paths?.join('/').includes(refreshTokenPath)) {
       return false;
     }
 
     return true;
   }
 
-  /** The token this service sends: the one `setAuthToken` set, else the resolver's. */
-  resolveAuthToken(): IAuthTokenRecord | undefined {
-    return this.authToken ?? this.authTokenResolver();
-  }
+  // --- Requests --------------------------------------------------------------------------------
 
   /**
    * Spread into an `HttpDataSource`'s settings. Each of its requests then carries, as read at send
    * time, the session headers (`setHeaders`) and the timezone; with the data provider's options,
    * the request channel and tracing id too. A no-auth path gets no token and no refresh, as on the
-   * data provider. Any other 401 joins this service's refresh: one `refreshToken` call for every
-   * 401 in flight on either transport, `onAuthFailure` on a failed one, and no retry when no
-   * `refreshToken` is configured. The refresh is shared, so one call's abort never cancels it.
+   * data provider. Any other 401 joins this service's `refresh`: one `refreshToken` call for every
+   * 401 in flight on either transport, `onAuthFailure` on a failed one, and no retry when the
+   * service has no refresh. The refresh is shared, so one call's abort never cancels it.
    */
   getDataSourceAuth(
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
@@ -367,10 +265,12 @@ export class DefaultNetworkRequestService extends BaseService {
           : this.resolveAuthToken();
       },
       headersResolver: () => {
-        return mergeHeaders(this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {});
+        return NetworkHeaders.merge({
+          sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
+        });
       },
       onUnauthorized: ({ paths }) => {
-        return this.canRecover(paths) ? this.ensureRefreshed() : Promise.resolve(false);
+        return this.canRecover(paths) ? this.refresh() : Promise.resolve(false);
       },
       errorRootKey: ERROR_ROOT_KEY,
     };
@@ -392,43 +292,33 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
-  setAuthToken(opts: { type?: string; value: string }) {
-    const { type, value } = opts;
-    this.authToken = { type, value };
+  /** Adds headers to every request this service sends; a name already set is replaced, in any case. */
+  setHeaders(opts: { headers: HeadersInit }) {
+    this.headers = NetworkHeaders.merge({ sources: [this.headers, opts.headers] });
   }
 
-  setAuthRecovery(authRecovery: Partial<IAuthRecoveryOptions>) {
-    this.authRecovery = { ...this.authRecovery, ...authRecovery };
-  }
-
-  getAuthRecovery() {
-    return this.authRecovery;
-  }
-
-  setHeaders(headers: HeadersInit) {
-    this.headers = merge(this.headers, toHeaderRecord(headers));
-  }
-
-  removeHeaders(keys: string[]) {
-    if (!keys?.length) {
+  removeHeaders(opts: { keys: string[] }) {
+    if (!opts.keys?.length) {
       return;
     }
 
     // The record is keyed by lowercase name.
-    for (const key of keys) {
+    for (const key of opts.keys) {
       delete this.headers[key.toLowerCase()];
     }
   }
 
   /** The timezone, then whatever `setHeaders` holds now. Both transports send these. */
   protected getSessionHeaders(): Record<string, string> {
-    return mergeHeaders(
-      {
-        [HeaderConsts.TIMEZONE]: App.TIMEZONE,
-        [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
-      },
-      this.headers,
-    );
+    return NetworkHeaders.merge({
+      sources: [
+        {
+          [HeaderConsts.TIMEZONE]: App.TIMEZONE,
+          [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+        },
+        this.headers,
+      ],
+    });
   }
 
   /** The request channel, `web` unless configured, and a fresh tracing id. */
@@ -436,17 +326,13 @@ export class DefaultNetworkRequestService extends BaseService {
     opts: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
   ): Record<string, string> {
     const { restDataProviderOptions, applicationInfo } = opts;
-    const requestTracingId = restDataProviderOptions.requestTracingId;
     const channel = restDataProviderOptions.requestTracingChannel?.length
       ? restDataProviderOptions.requestTracingChannel
       : RequestChannel.WEB;
 
     return {
       [HeaderConsts.REQUEST_CHANNEL]: channel,
-      [HeaderConsts.REQUEST_TRACING_ID]:
-        requestTracingId instanceof Function
-          ? requestTracingId({ applicationInfo })
-          : `${applicationInfo.name}_${uuidV4()}`,
+      [HeaderConsts.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
     };
   }
 
@@ -469,6 +355,82 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  // `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
+  protected isFileList(opts: { value: unknown }): boolean {
+    return typeof FileList !== 'undefined' && opts.value instanceof FileList;
+  }
+
+  /** A multipart text value: JSON for objects and arrays, ISO-8601 for a `Date`, `String()` otherwise. */
+  protected encodeFormValue(opts: { key: string; value: unknown; bodyType: string }): string {
+    const { key, value, bodyType } = opts;
+
+    // A urlencoded body carries text only; a file here would be sent as `"{}"` with nothing said.
+    if (value instanceof Blob) {
+      throw getError({
+        message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
+      });
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+
+    return String(value);
+  }
+
+  /** Skips only `undefined` and `null`: `0`, `false` and `''` are values the caller meant to send. */
+  protected appendFormDataValue(opts: { formData: FormData; key: string; value: unknown }): void {
+    const { formData, key, value } = opts;
+
+    if (!isDefined(value)) {
+      return;
+    }
+
+    if (value instanceof Blob) {
+      formData.append(key, value, (value as File).name);
+      return;
+    }
+
+    formData.append(
+      key,
+      this.encodeFormValue({ key, value, bodyType: RequestBodyTypes.FORM_DATA }),
+    );
+  }
+
+  /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
+  protected parseFilenameFromContentDisposition(opts: { header: string }): string | undefined {
+    const { header } = opts;
+
+    if (!header) {
+      return undefined;
+    }
+
+    const extMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
+    if (extMatch) {
+      try {
+        return decodeURIComponent(extMatch[2].trim());
+      } catch {
+        return extMatch[2].trim();
+      }
+    }
+
+    const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
+    if (quotedMatch) {
+      return quotedMatch[1];
+    }
+
+    const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
+    if (bareMatch) {
+      return bareMatch[1].trim();
+    }
+
+    return undefined;
+  }
+
   getRequestProps(params: IGetRequestPropsParams) {
     const {
       bodyType,
@@ -482,12 +444,14 @@ export class DefaultNetworkRequestService extends BaseService {
     const extraHeader = HttpExtraRequest.toHeader({ extra });
 
     // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers: Record<string, AnyType> = mergeHeaders(
-      this.getRequestHeader({ resource }),
-      this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-      { [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData },
-      extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
-    );
+    const headers: Record<string, AnyType> = NetworkHeaders.merge({
+      sources: [
+        this.getRequestHeader({ resource }),
+        this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
+        { [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData },
+        extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
+      ],
+    });
 
     const rs: IGetRequestPropsResult = { headers, body };
 
@@ -508,7 +472,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
           encoded.append(
             key,
-            encodeFormValue({
+            this.encodeFormValue({
               key,
               value: body[key],
               bodyType: RequestBodyTypes.FORM_URL_ENCODED,
@@ -528,14 +492,14 @@ export class DefaultNetworkRequestService extends BaseService {
         for (const key in body) {
           const val = body[key];
 
-          if (Array.isArray(val) || isFileList(val)) {
+          if (Array.isArray(val) || this.isFileList({ value: val })) {
             Array.from(val as ArrayLike<unknown>).forEach((item) => {
-              appendFormDataValue({ formData, key, value: item });
+              this.appendFormDataValue({ formData, key, value: item });
             });
             continue;
           }
 
-          appendFormDataValue({ formData, key, value: val });
+          this.appendFormDataValue({ formData, key, value: val });
         }
 
         rs.body = formData;
@@ -686,7 +650,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     if (isAttachment || !isTextual) {
       const blob = await rs.blob();
-      const filename = parseFilenameFromContentDisposition(contentDisposition);
+      const filename = this.parseFilenameFromContentDisposition({ header: contentDisposition });
 
       return {
         data: blob as ReturnType,
@@ -764,7 +728,7 @@ export class DefaultNetworkRequestService extends BaseService {
     let rs = await sendOnce(headers);
 
     if (rs.status === 401 && this.canRecover(paths)) {
-      const isRefreshed = await this.ensureRefreshed();
+      const isRefreshed = await this.refresh();
 
       if (isRefreshed) {
         const authHeader = this.getRequestAuthorizationHeader();

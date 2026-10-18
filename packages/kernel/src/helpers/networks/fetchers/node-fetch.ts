@@ -13,16 +13,14 @@ export class NodeFetcher extends AbstractNetworkFetchableHelper<
 > {
   private defaultConfigs: RequestInit;
 
-  constructor(opts: { name: string; defaultConfigs: RequestInit; logger?: any }) {
+  constructor(opts: { name: string; defaultConfigs: RequestInit }) {
     super({ name: opts.name, variant: 'node-fetch', worker: fetch });
-    const { name, defaultConfigs } = opts;
-    this.name = name;
-    opts?.logger?.info('Creating new network request worker instance! Name: %s', this.name);
+    this.logger.debug('Creating new network request worker instance! Name: %s', this.name);
 
-    this.defaultConfigs = defaultConfigs;
+    this.defaultConfigs = opts.defaultConfigs;
   }
 
-  override async send(opts: INodeFetchRequestOptions, logger?: any) {
+  override async send(opts: INodeFetchRequestOptions) {
     const { url, method = 'get', params, body, headers, timeout, signal, ...rest } = opts;
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -50,7 +48,7 @@ export class NodeFetcher extends AbstractNetworkFetchableHelper<
       requestUrl = `${url}?${stringify(params)}`;
     }
 
-    logger?.info('[send] URL: %s | Props: %o | Timeout: %s', url, requestConfigs, timeout);
+    this.logger.info('[send] URL: %s | Props: %o | Timeout: %s', url, requestConfigs, timeout);
 
     try {
       const rs = await fetch(requestUrl, requestConfigs);
