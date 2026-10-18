@@ -258,7 +258,7 @@ class Application extends BaseArdorApplication {
 | `bun run` from source | `start()` awaits `AutoArtifacts.resolve()`, which scans the application from its entry file (`Bun.main`), whatever the working directory, and imports the modules. |
 | `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]`, server target | The bundle carries the class list, with no scanner. `AutoArtifacts` has a `resolve()` over the bundle's own imports, and `start()` checks the index it returns like a generated index. |
 | The same plugin with `target: 'browser'` | The list is imported eagerly and sits in `AutoArtifacts` as `content`, which `start()` checks as it is. Eager imports keep the bundle tree-shakeable; a lazy index doubled a measured browser bundle. No `node:fs` in the bundle. |
-| A Vite build with `IgnisArtifactsVitePlugin.create()` from `@venizia/ignis-boot/vite` | The list is built into the bundle and imported eagerly, so `AutoArtifacts` carries it as `content` and the bundle stays tree-shakeable. The plugin pins the name of each class it lists with an injected `static { Object.defineProperty(this, 'name', ...) }` (binding keys come from `Class.name`, which a minifier renames; ignis-boot 0.2.1-11), so the rest of the bundle minifies as usual, and it runs under Node. Measured on `examples/5-mins-qs` and `examples/vert-admin` in a minified build in a browser. |
+| A Vite build with `IgnisArtifactsVitePlugin.create()` from `@venizia/ignis-boot/vite` | The list is built into the bundle and imported eagerly, so `AutoArtifacts` carries it as `content` and the bundle stays tree-shakeable. The plugin pins the name of each class it lists, including the classes of a borrowed kit group (see [Borrowing a kit's classes in a browser build](#borrowing-a-kit-s-classes-in-a-browser-build)), with an injected `static { Object.defineProperty(this, 'name', ...) }` (binding keys come from `Class.name`, which a minifier renames; ignis-boot 0.2.1-11), so the rest of the bundle minifies as usual, and it runs under Node. Measured on `examples/5-mins-qs` and `examples/vert-admin` in a minified build in a browser. |
 
 Auto registers what is decorated: a class that loses its decorator is simply not registered, in every mode. A generated index fails the boot instead, so prefer it when you want that guarantee.
 
@@ -279,6 +279,28 @@ export default defineConfig({
 ignis-boot 0.2.1-10 set `output.keepNames` for the whole build instead, which added about 105 KB (14 KB gzipped) to `examples/5-mins-qs`; from 0.2.1-11 only the listed classes are pinned.
 
 A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
+
+### Borrowing a kit's classes in a browser build
+
+A shared package (a kit) declares the classes it offers once, as a group, and an application borrows it from `artifacts()`:
+
+```ts no-check
+// kit/src/index.ts
+import { ArtifactGroup } from '@venizia/ignis-kernel/metadata';
+
+export const KitServices = ArtifactGroup.define({ folder: 'services' });
+
+// app/src/application.ts (the rest of the class is as usual)
+// ...
+override artifacts(): Array<IArtifactIndex> {
+  return [AutoArtifacts, KitServices];
+}
+```
+
+- **Import `ArtifactGroup` from `@venizia/ignis-kernel/metadata`**, the browser-safe entry (ignis-kernel 0.2.2-16). The `@venizia/ignis-kernel` root re-exports the HTTP server, and a browser build that imports it fails on the optional `hono` and `@hono/zod-openapi` peers.
+- **The plugin pins the kit's class names too** (ignis-boot 0.2.1-12). It also scans the `src` of every package that defines a group the application can borrow, so a borrowed class keeps its name under minification and its key stays `services.GreetingService`, not `services.T`. Before 0.2.1-12 a borrowed class was renamed by the minifier: its key was wrong, or two kits collided and `start()` threw.
+- **The kit must be a workspace package or a dependency the application can resolve**, and `folder` must be a string literal: the plugin reads it at build time.
+- **The list is scanned once, when the dev server starts.** Editing a decorated class keeps hot reload. Adding or removing a decorated class, or a group, needs a `vite dev` restart, as it does on the backend: Vite fires no hook for a file that was just created, and a rescan on every save is too slow on a large application. A `vite build` always scans afresh.
 
 ## Registration by hand
 

@@ -124,6 +124,8 @@ Two things confirm the container is doing the work:
 - The heading shows the product total and the list shows the page. They came from `DefaultRestDataProvider`, resolved from the container by `ArdorApplication`, with the total read from `Content-Range`.
 - The "expensive products" count came from `ProductRepository`, resolved by class from the container, and its heading from `translate`, which resolves the key through the i18n provider provided in `AdminConfiguration`.
 
+The plugin scans `src/` once, when the dev server starts. Editing a class keeps hot reload; when you add or remove a decorated class, restart `bun run dev` so the new class is registered.
+
 If the count throws "carried no Content-Range", your list route does not send that header; pass `countPath` to the repository if the API has a count route.
 
 ## The bundle
