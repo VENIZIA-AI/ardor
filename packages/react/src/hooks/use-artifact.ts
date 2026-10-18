@@ -52,21 +52,27 @@ const useArtifactInNamespace = <TInstance>(opts: {
   return useInjectable<TInstance>(options);
 };
 
-export const useService = <TInstance = AnyType>(opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey): TInstance =>
+export const useService = <TInstance = AnyType>(
+  opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
+): TInstance =>
   useArtifactInNamespace<TInstance>({
     options: opts,
     namespace: BindingNamespaces.SERVICE,
     hook: 'useService',
   });
 
-export const useProvider = <TInstance = AnyType>(opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey): TInstance =>
+export const useProvider = <TInstance = AnyType>(
+  opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
+): TInstance =>
   useArtifactInNamespace<TInstance>({
     options: opts,
     namespace: BindingNamespaces.PROVIDER,
     hook: 'useProvider',
   });
 
-export const useComponent = <TInstance = AnyType>(opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey): TInstance =>
+export const useComponent = <TInstance = AnyType>(
+  opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
+): TInstance =>
   useArtifactInNamespace<TInstance>({
     options: opts,
     namespace: BindingNamespaces.COMPONENT,
@@ -82,7 +88,9 @@ export const useConfiguration = <TInstance = AnyType>(
     hook: 'useConfiguration',
   });
 
-export const useRepository = <TInstance = AnyType>(opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey): TInstance =>
+export const useRepository = <TInstance = AnyType>(
+  opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
+): TInstance =>
   useArtifactInNamespace<TInstance>({
     options: opts,
     namespace: BindingNamespaces.REPOSITORY,

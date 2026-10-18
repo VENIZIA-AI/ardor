@@ -14,7 +14,7 @@ ARDOR gives you a small set of tools for tracing problems: a per-scope logger, a
 
 `Logger.getInstance({ scope, enableDebug })` (`packages/kernel/src/helpers/logger.ts`) returns one logger instance per scope string, cached in a static map. The scope is almost always the class name, so every log line is prefixed with `[scope]` and you can tell at a glance which class emitted it.
 
-`enableDebug` is process-wide, not per-instance. Passing `enableDebug: true` from any single call flips a static `debugEnabled` flag that every logger checks - so turning on debug logging anywhere turns it on everywhere. `debug()` calls are silently dropped unless that flag is set; `info`, `warn`, `error` always print. There's also `toggleDebug({ state })` on an instance to flip it programmatically.
+`enableDebug` is process-wide, not per-instance. Passing `enableDebug: true` from any single call flips a static `debugEnabled` flag that every logger checks - so turning on debug logging anywhere turns it on everywhere. A call without `enableDebug` leaves the flag alone. `debug()` calls are silently dropped unless that flag is set; `info`, `warn`, `error` always print. `Logger.getInstance({ scope, enableDebug })` is the only way to set the flag: `new Logger({ scope })` takes no `enableDebug`, and there is no per-instance toggle.
 
 Each log line is timestamped (`getTimestamp()`) and formatted through `generateLog`. If the message is a string it's inlined into the prefix (`printf`-style with `...args`); if it's an object, the object is passed through as the first arg so `console`'s object inspector renders it.
 

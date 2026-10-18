@@ -33,9 +33,10 @@ options separately. Never more than 5 parameters in all; VULCAN's `venizia/max-p
 
 ## Known exceptions
 
-Positional signatures still ship: the `Logger` methods (`debug(message, ...args)`) and kernel utilities such
-as `isNumber(value, exact?)` and `getNumberValue(input, method)`. None of them is a model for new
-code. Three shapes are positional on purpose:
+The kernel utilities take one options object (`isNumber({ value })`, `getNumberValue({ input, method })`),
+except the type guards `isDefined(value)` and `isString(value)`: an options object would lose the
+narrowing. The `Logger` methods (`debug(message, ...args)`) stay positional, console-style. Three more
+shapes are positional on purpose:
 
 - **Registration on the application.** `AbstractArdorApplication.injectable(scope, value, tags?)`
   and `service(value)` (`packages/kernel/src/base/applications/abstract.ts`) take positional

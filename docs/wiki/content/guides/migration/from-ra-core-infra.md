@@ -89,10 +89,10 @@ Three removals and one requirement:
 - **`@venizia/ignis-inversion` must be `^0.2.0`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
 
-One bug fix worth knowing about, because it changes behavior:
+One logger change worth knowing about, because it changes the call:
 
-- `Logger.toggleDebug({ state: false })` now disables debug logging. It previously fell through to
-  a toggle, so asking it to turn debug off could turn it on.
+- The per-instance debug toggle is gone. Set debug once, process-wide, with
+  `Logger.getInstance({ scope, enableDebug })`; `new Logger({ scope })` takes no `enableDebug`.
 
 ## Migrating a consumer, by hand
 

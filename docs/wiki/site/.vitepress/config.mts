@@ -97,6 +97,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-18-exact-sibling-versions',
           },
           {
+            text: 'House style: types, hooks, utilities',
+            link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
+          },
+          {
             text: 'Hooks, not flags',
             link: '/changelogs/2026-10-18-hooks-not-flags',
           },

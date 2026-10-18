@@ -12,7 +12,9 @@ export const toQueryString = (opts: { params: Record<string | symbol, unknown> }
     }
 
     normalized[key] =
-      typeof value === 'number' || typeof value === 'string' ? String(value) : JSON.stringify(value);
+      typeof value === 'number' || typeof value === 'string'
+        ? String(value)
+        : JSON.stringify(value);
   }
 
   return new URLSearchParams(normalized).toString();

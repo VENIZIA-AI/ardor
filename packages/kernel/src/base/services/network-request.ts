@@ -646,7 +646,8 @@ export class DefaultNetworkRequestService extends BaseService {
     const contentDisposition = rs.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
 
     const isAttachment = HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
-    const isTextual = contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
+    const isTextual =
+      contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
 
     if (isAttachment || !isTextual) {
       const blob = await rs.blob();
@@ -735,7 +736,9 @@ export class DefaultNetworkRequestService extends BaseService {
         const retryHeaders = {
           ...(headers as Record<string, AnyType>),
           [HeaderConstants.AUTHORIZATION]: authHeader.token,
-          ...(authHeader.provider ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider } : {}),
+          ...(authHeader.provider
+            ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider }
+            : {}),
         };
 
         rs = await sendOnce(retryHeaders);

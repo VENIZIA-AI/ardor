@@ -17,12 +17,12 @@ Applications rarely install this package directly - most install [ardor](/packag
 The package barrel (`src/index.ts`) re-exports three groups:
 
 - **common** - `ISyncFC`.
-- **contexts** - `ApplicationContext` only.
+- **contexts** - `ApplicationContext` and its value type `IApplicationContextValue`.
 - **hooks** - everything else: `useApplicationContext` and `useApplicationLogger`; the DI hooks `useInjectable`, `useInjectableContainer`, `useService`, `useProvider`, `useComponent` and `useConfiguration`, together with the `TUseInjectableKeys`/`IUseInjectableKeysOverrides` types; the UI hooks `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer` and `useWindowDimensions`; and the Redux factories `createAppDispatch` and `createAppSelectors`, for binding a typed `RootState`/`AppDispatch` pair.
 
 ## ApplicationContext
 
-Defined in `src/contexts/application.ts`, this is a plain `React.createContext` holding `{ container, registry, logger }`, all nullable by default. It is the single source of truth that hooks read from - there is no other way for a hook to reach the IGNIS container from inside a component tree. See [Hooks and context](/architecture/hooks-and-context.md) for how this fits into the broader dependency flow, and [DI in the browser](/architecture/di-in-the-browser.md) for how the container itself gets built and put into this context during [application lifecycle](/architecture/application-lifecycle.md).
+Defined in `src/contexts/application.ts`, this is a plain `React.createContext<IApplicationContextValue>` holding `{ container, logger }`, both nullable by default. It is the single source of truth that hooks read from - there is no other way for a hook to reach the IGNIS container from inside a component tree. See [Hooks and context](/architecture/hooks-and-context.md) for how this fits into the broader dependency flow, and [DI in the browser](/architecture/di-in-the-browser.md) for how the container itself gets built and put into this context during [application lifecycle](/architecture/application-lifecycle.md).
 
 ## useInjectable
 

@@ -27,7 +27,7 @@ If the hook exposes an extensible key space (like `TUseInjectableKeys`), declare
 
 A hook that needs the DI container accepts an optional `container` in its options object and calls `useInjectableContainer({ container: opts.container })` from `packages/react/src/hooks/use-injectable.ts`, never a fresh container instance. `useInjectableContainer` applies the override pattern - the passed `container`, else `applicationContext.container` - and throws when neither exists. This lets tests and unusual call sites bypass the ambient context while normal application code just relies on the provider set up during [Application lifecycle](/architecture/application-lifecycle.md).
 
-Do not re-derive the container with your own `React.useContext(ApplicationContext)` plus fallback. A hook that checks the container and then resolves through `useInjectable` would otherwise check one container and resolve from another - see the per-stereotype hooks in [react package](/packages/react.md). Take the logger from `useApplicationLogger`, and read `ApplicationContext` directly only for the registry. Read more on the general pattern in [Hooks and context](/architecture/hooks-and-context.md) and [DI in the browser](/architecture/di-in-the-browser.md).
+Do not re-derive the container with your own `React.useContext(ApplicationContext)` plus fallback. A hook that checks the container and then resolves through `useInjectable` would otherwise check one container and resolve from another - see the per-stereotype hooks in [react package](/packages/react.md). Take the logger from `useApplicationLogger`; the metadata registry is `container.getMetadataRegistry()`, not a context field. Read more on the general pattern in [Hooks and context](/architecture/hooks-and-context.md) and [DI in the browser](/architecture/di-in-the-browser.md).
 
 Fail loudly and specifically. `useInjectable` throws via `getError` with a `[useInjectable] ...` prefixed message when it cannot determine a container, or when neither `key` nor `target` is supplied, or when a `target` class cannot be resolved to a binding key. Follow this style: prefix errors with the hook name in brackets, and give the caller an actionable hint (e.g. "Decorate it (@service, @component, ...) or register it on the application before injecting"). See [Error handling](/conventions/error-handling.md).
 
@@ -36,7 +36,7 @@ Fail loudly and specifically. `useInjectable` throws via `getError` with a `[use
 Tests go in `packages/react/src/__tests__/hooks/<hook>.test.ts` (or `packages/admin/src/__tests__/hooks/` for an admin hook), not next to the hook file, and use `renderHook` from `@testing-library/react` under happy-dom, per [Testing conventions](/conventions/testing-conventions.md) and [Testing](/process/testing.md). The standard pattern:
 
 1. Build a real `Container` from `@venizia/ignis-inversion` and bind test values into it with a small helper (`bindConstantValue` in the reference test).
-2. Create a `wrapper` component that renders `ApplicationContext.Provider` with `{ container, registry, logger }` as the value.
+2. Create a `wrapper` component that renders `ApplicationContext.Provider` with `{ container, logger }` as the value.
 3. Call `renderHook(() => useYourHook(options), { wrapper })` and assert on `result.current`.
 
 Cover at minimum: the happy path resolving from ApplicationContext, and the override path where an explicit option (e.g. `container`) takes precedence over context even when both are populated differently - this proves the override logic isn't accidentally ignored.

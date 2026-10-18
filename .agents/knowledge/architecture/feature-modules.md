@@ -32,11 +32,13 @@ the list under `CoreBindings.FEATURES` - always, empty included, so readers neve
 
 ## Mounting
 
-`ArdorApplication` reads the list (`Features.read`) and `Features.mount` puts the application's own
-`resources` / `customRoutes` first, then each feature's. A resource name mounted twice throws, naming
-both owners: react-admin keeps one and drops the other silently. `Features.read`, `Features.mount` and
-`FeatureMessages` are internal to admin (imported by path, not exported); the public surface is
-`TFeature`, `TFeatureMessages`, `Features.define`, `useFeatures`, plus the kernel's two types and keys.
+`ArdorApplication` reads the list (`Features.read({ container })`) and `Features.mount({ features,
+resources, routes })` puts the application's own `resources` / `routes` first, then each feature's.
+`IApplication.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
+naming both owners: react-admin keeps one and drops the other silently. Only `FeatureMessages` is
+internal to admin (imported by path, not exported); the public surface is `TFeature`,
+`TFeatureMessages`, the `Features` class (`define`, `read`, `mount`), `useFeatures`, plus the kernel's
+two types and keys.
 
 ## Permissions
 

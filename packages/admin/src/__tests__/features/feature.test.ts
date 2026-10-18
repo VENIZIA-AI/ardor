@@ -42,9 +42,9 @@ afterEach(() => {
 
 describe('Features.read', () => {
   test('reads the features the application bound', () => {
-    expect(Features.read({ container: containerWith({ features: [inventory, commerce] }) })).toEqual(
-      [inventory, commerce],
-    );
+    expect(
+      Features.read({ container: containerWith({ features: [inventory, commerce] }) }),
+    ).toEqual([inventory, commerce]);
   });
 
   test('reads none from a container that holds no list', () => {

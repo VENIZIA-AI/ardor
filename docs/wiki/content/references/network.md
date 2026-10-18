@@ -500,7 +500,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
 
 **`NodeFetcher`** - `send(opts: INodeFetchRequestOptions)`:
 
-- `params` is appended as `?` + `stringify(params)`.
+- `params` is appended as `?` + `toQueryString({ params })`.
 - `body` is passed through when it is a `FormData` or `URLSearchParams`, otherwise `JSON.stringify(body)`.
 - `headers` from the call replace the default headers entirely; the default `content-type: application/json; charset=utf-8` only applies when no headers are passed.
 - `timeout` creates an `AbortController` and aborts after that many milliseconds; the timer is cleared in `finally`.

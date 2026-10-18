@@ -11,10 +11,11 @@ For a fixed set of string values, ARDOR uses a class of `static readonly` fields
 
 ```typescript
 // packages/kernel/src/common/types.ts
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
+export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
 ```
 
-The trailing `& {}` is on `TStatusFromClass`, `TStringConstValue`, `TNumberConstValue` and `TConstValue`. A
+`TClass` comes from `@venizia/ignis-inversion`; ARDOR has no class type of its own. The trailing `& {}` is
+on `TStringConstValue`, `TNumberConstValue` and `TConstValue`. A
 `static readonly X = '12h'` member has a widening literal type; without `& {}`, a value copied into an object
 literal (`rows.map(r => ({ value: r.value }))`) or a `let` widened to `string` or `number` and no longer fit
 the union. With it the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives
@@ -31,8 +32,9 @@ so the two never drift apart.
 
 ## Real examples in source
 
-`RequestCountData` in `packages/kernel/src/common/constants.ts` is the plain form - two
-`static readonly` values, typed at the use site as `TConstValue<typeof RequestCountData>`.
+`RequestCountData` in `packages/kernel/src/common/constants.ts` is the smallest form - two
+`static readonly` values plus `SCHEME_SET` and `isValid`, typed at the use site as
+`TConstValue<typeof RequestCountData>`.
 
 `RequestTypes` in the same file goes further: it derives a runtime `Set` from its own static
 fields so callers can validate an incoming string without a chain of `===` checks, which a
@@ -49,8 +51,8 @@ export class RequestTypes {
 
   static readonly SCHEME_SET = new Set([this.SEND, this.GET_ONE, this.GET_LIST /* ... */]);
 
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 
@@ -58,19 +60,20 @@ export class RequestTypes {
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
 ```
 
-`TRequestType` and `TRequestBodyType` are `TStringConstValue` of their class; `TRequestMethod` and
-`TEnvironment` are built on `TStatusFromClass`. All four inherit the `& {}`.
+All four prebuilt unions (`TRequestType`, `TRequestBodyType`, `TRequestMethod`, `TEnvironment`) are
+`TStringConstValue` of their class and inherit the `& {}`. `TLogLevel` (from `LogLevels`) and
+`TNumberParseMethod` (from `NumberParseMethods`) are `TConstValue` of theirs.
 
 The value type is a closed union - no `| (string & {})` escape - because ARDOR owns this vocabulary
-(see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` inside `TStringConstValue` drops
-`SCHEME_SET` and `isValid` from the union by type; `TStatusFromClass` does the same by omitting
-`prototype`, `isValid`, `SCHEME_SET` and `TYPE_SET` by name.
+(see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` inside
+`TStringConstValue` drops `SCHEME_SET`, `isValid` and `prototype` from the union by type.
 
-`RequestMethods`, `RequestBodyTypes` and `Environments` carry the same `SCHEME_SET` plus `isValid()`
-pair, typed as `TRequestMethod` and `TEnvironment` (via `TStatusFromClass`) and `TRequestBodyType`
-(via `Extract<ValueOf<...>, string>`). `HeaderConstants`, the names behind the
-[header protocol](/architecture/header-protocol.md), is plain `static readonly` constants with no
-`SCHEME_SET` and no `isValid()`.
+Every const class carries the `SCHEME_SET` plus `isValid(value: string)` pair: `RequestMethods`,
+`RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`,
+`Authentication`, `LocalStorageKeys`, `LogLevels` and `NumberParseMethods`. A new one does too, and
+names the `isValid` parameter `value`. Two are exempt: `HeaderConstants`, the names behind the
+[header protocol](/architecture/header-protocol.md), also holds regexes, and `App` holds runtime
+defaults, so neither has a `SCHEME_SET` or `isValid()`.
 
 ## Related
 

@@ -18,6 +18,7 @@ A feature package brings one area of an admin - inventory, orders, billing - as 
 | `IFeatureBase` | `@venizia/ardor-kernel` | `name`, `configurations`, `permissions` - what the container needs |
 | `TFeature<TExtension>` | `@venizia/ardor-admin` | `IFeatureBase` plus `resources`, `routes`, `messages`, and your own extension |
 | `Features.define()` | `@venizia/ardor-admin` | Types a feature, keeping the extension |
+| `Features.read()`, `Features.mount()` | `@venizia/ardor-admin` | What `ArdorApplication` calls: read the bound list, then merge resources and routes |
 | `features()` | application class | The features the application mounts, bound under `CoreBindings.FEATURES` |
 | `useFeatures()` | `@venizia/ardor-admin` | The mounted features, for a menu or a role editor |
 | `IPermissionProvider` | `@venizia/ardor-kernel` | `canAccess({ resource, action, record })`, bound under `CoreBindings.PERMISSION_PROVIDER` |
@@ -102,7 +103,7 @@ export class WebManagerApplication extends BaseArdorApplication {
 - two features with one `name`: `[features] Two features are named 'inventory'`;
 - a listed configuration class that was never discovered: `[features] 'billing' lists BillingConfiguration, which was never discovered`.
 
-`ArdorApplication` reads the list from the container and mounts the application's own `resources` and `customRoutes` first, then each feature's, in order. `resources` is optional when the features bring them all. A resource name mounted twice throws, naming both owners - react-admin would keep one and drop the other without a word.
+`ArdorApplication` reads the list from the container (`Features.read({ container })`) and mounts the application's own `resources` and `routes` first, then each feature's, in order (`Features.mount({ features, resources, routes })`). `resources` is optional when the features bring them all. A resource name mounted twice throws, naming both owners - react-admin would keep one and drop the other without a word.
 
 `useFeatures()` returns the mounted features, typed with your extension:
 

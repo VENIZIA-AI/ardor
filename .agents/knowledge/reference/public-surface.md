@@ -18,7 +18,7 @@ generated:
 - `AbstractNetworkFetchableHelper` class
 - `AnyObject` type
 - `AnyType` type
-- `api` function
+- `api` const
 - `App` class
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
@@ -31,9 +31,6 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
-- `blobToBase64` const
-- `ClassProps` type
-- `ClassType` type
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -41,9 +38,8 @@ generated:
 - `DefaultAuthService` class
 - `DefaultNetworkRequestService` class
 - `Environments` class
-- `float` const
+- `generateUniqueId` const
 - `getNumberValue` const
-- `getUID` const
 - `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
@@ -69,9 +65,8 @@ generated:
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
-- `int` const
-- `INTL_0_DIGITS_FORMATER` const
-- `INTL_2_DIGITS_FORMATER` const
+- `INTL_0_DIGITS_FORMATTER` const
+- `INTL_2_DIGITS_FORMATTER` const
 - `IPermissionProvider` interface
 - `IRequestOptions` interface
 - `IRequestProps` interface
@@ -83,21 +78,23 @@ generated:
 - `ISendResponse` interface
 - `isFloat` const
 - `ISignInSession` interface
-- `isInt` const
+- `isInteger` const
 - `isNumber` const
 - `isObject` const
 - `isString` const
 - `isValidDate` const
-- `keysToCamel` const
+- `keysToCamelCase` const
 - `LocalStorageKeys` class
 - `Logger` class
+- `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
-- `parse` const
+- `NumberParseMethods` class
+- `parseQueryString` const
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -108,7 +105,6 @@ generated:
 - `RequestTypes` class
 - `service` const
 - `StringIdType` type
-- `stringify` const
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -121,8 +117,13 @@ generated:
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
+- `TNumberParseMethod` type
 - `toBoolean` const
-- `toCamel` const
+- `toCamelCase` const
+- `toDataUrl` const
+- `toFloat` const
+- `toInteger` const
+- `toQueryString` const
 - `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
@@ -130,7 +131,6 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
-- `TStatusFromClass` type
 - `TStringConstValue` type
 - `ValueOf` type
 - `ValueOptional` type
@@ -159,28 +159,32 @@ generated:
 - `THttpQuery` type
 - `THttpRepositoryOptions` type
 
-### `@venizia/ardor-kernel/socket-io` (2)
+### `@venizia/ardor-kernel/socket-io` (3)
 
 - `ISocketIOClientOptions` interface
 - `SocketIOClientHelper` class
+- `TSocketIOEventHandler` type
 
 ## react
 
-### `@venizia/ardor-react` (32)
+### `@venizia/ardor-react` (35)
 
 - `ApplicationContext` const
 - `createAppDispatch` const
 - `createAppSelectors` const
+- `IApplicationContextValue` interface
+- `ISyncFC` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
-- `IUseAutosaveParams` interface
-- `IUseBeforeUnloadParams` interface
+- `IUseAutosaveOptions` interface
+- `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
 - `IUseCopyToClipboardReturn` interface
-- `IUseDebounceParams` interface
+- `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
 - `IUseInjectableKeysOverrides` interface
-- `SyncFC` interface
+- `IUseSizerOptions` interface
+- `IUseSizerReturn` interface
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
@@ -210,18 +214,18 @@ generated:
 - `DefaultAuthProvider` class
 - `DefaultI18nProvider` class
 - `DefaultRestDataProvider` class
-- `defineFeature` const
 - `englishMessages` const
+- `Features` class
 - `IApplication` interface
 - `IAuthProvider` interface
 - `IDataProvider` interface
-- `IFeature` type
 - `II18nProviderOptions` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
+- `TFeature` type
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
@@ -237,13 +241,13 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (183)
+### `@venizia/ardor` (186)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
 - `AnyObject` type
 - `AnyType` type
-- `api` function
+- `api` const
 - `App` class
 - `ApplicationContext` const
 - `ArdorApplication` const
@@ -258,9 +262,6 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
-- `blobToBase64` const
-- `ClassProps` type
-- `ClassType` type
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -273,14 +274,14 @@ generated:
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
-- `defineFeature` const
 - `englishMessages` const
 - `Environments` class
-- `float` const
+- `Features` class
+- `generateUniqueId` const
 - `getNumberValue` const
-- `getUID` const
 - `HeaderConstants` class
 - `IApplication` interface
+- `IApplicationContextValue` interface
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactIndex` interface
@@ -296,7 +297,6 @@ generated:
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
 - `IdType` type
-- `IFeature` type
 - `IFeatureBase` interface
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -309,9 +309,8 @@ generated:
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
-- `int` const
-- `INTL_0_DIGITS_FORMATER` const
-- `INTL_2_DIGITS_FORMATER` const
+- `INTL_0_DIGITS_FORMATTER` const
+- `INTL_2_DIGITS_FORMATTER` const
 - `IPermissionProvider` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
@@ -325,33 +324,38 @@ generated:
 - `ISendResponse` interface
 - `isFloat` const
 - `ISignInSession` interface
-- `isInt` const
+- `isInteger` const
 - `isNumber` const
 - `isObject` const
 - `isString` const
 - `isValidDate` const
+- `ISyncFC` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
-- `IUseAutosaveParams` interface
-- `IUseBeforeUnloadParams` interface
+- `IUseAutosaveOptions` interface
+- `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
 - `IUseCopyToClipboardReturn` interface
-- `IUseDebounceParams` interface
+- `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseRequestHeaderLocaleOptions` interface
+- `IUseSizerOptions` interface
+- `IUseSizerReturn` interface
 - `IUseTranslateKeysOverrides` interface
-- `keysToCamel` const
+- `keysToCamelCase` const
 - `LocalStorageKeys` class
 - `Logger` class
+- `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
 - `NodeFetcher` class
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
-- `parse` const
+- `NumberParseMethods` class
+- `parseQueryString` const
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -362,13 +366,12 @@ generated:
 - `RequestTypes` class
 - `service` const
 - `StringIdType` type
-- `stringify` const
-- `SyncFC` interface
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
 - `TDataCount` type
 - `TEnvironment` type
+- `TFeature` type
 - `TFeatureMessages` type
 - `TFetcherResponse` type
 - `TFetcherVariant` type
@@ -377,8 +380,13 @@ generated:
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
+- `TNumberParseMethod` type
 - `toBoolean` const
-- `toCamel` const
+- `toCamelCase` const
+- `toDataUrl` const
+- `toFloat` const
+- `toInteger` const
+- `toQueryString` const
 - `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
@@ -386,7 +394,6 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
-- `TStatusFromClass` type
 - `TStringConstValue` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
@@ -445,8 +452,9 @@ generated:
 - `THttpQuery` type
 - `THttpRepositoryOptions` type
 
-### `@venizia/ardor/socket-io` (2)
+### `@venizia/ardor/socket-io` (3)
 
 - `ISocketIOClientOptions` interface
 - `SocketIOClientHelper` class
+- `TSocketIOEventHandler` type
 

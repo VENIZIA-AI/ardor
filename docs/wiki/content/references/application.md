@@ -314,20 +314,18 @@ interface IApplication extends Omit<CoreAdminProps, 'children'> {
   enableDebug?: boolean;
   reduxStore: Store;
   suspense: ReactNode;
-  resources: Array<ResourceProps>;
-  customRoutes?: {
-    routes: Array<RouteProps>;
-  };
+  resources?: Array<ResourceProps>; // the application's own; each feature's mount after them
+  routes?: Array<RouteProps>; // same for routes
 }
 ```
 
 What the component does:
 
 1. Inside a `useMemo` keyed on `container` and the remaining props, it calls `container.get({ key })` for `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `CoreBindings.DEFAULT_AUTH_PROVIDER` and `CoreBindings.DEFAULT_I18N_PROVIDER`. The data and i18n keys must be bound before the component renders; the auth key is optional - leave it unbound and the admin runs with no sign-in (see [An application with no sign-in](../references/auth-provider#an-application-with-no-sign-in)). See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n).
-2. Wraps the tree in `ApplicationContext.Provider` with `{ container, registry: container, logger }`. The logger is `Logger.getInstance({ scope: 'ArdorApplication', enableDebug })`.
+2. Wraps the tree in `ApplicationContext.Provider` with `{ container, logger }`. The logger is `Logger.getInstance({ scope: 'ArdorApplication', enableDebug })`.
 3. Wraps that in `ReduxProvider` with `reduxStore`, then `React.Suspense` with `suspense` as the fallback.
 4. Renders `CoreAdmin` with `dataProvider`, `authProvider`, `i18nProvider` and every other `CoreAdminProps` prop you passed.
-5. Renders one `Resource` per entry in `resources`, and one `Route` per entry in `customRoutes.routes` inside `CustomRoutes`. Route keys are `route.id ?? route.path`.
+5. Renders one `Resource` per entry in `resources`, and one `Route` per entry in `routes` inside `CustomRoutes`, then the same for each feature. Route keys are `route.id ?? route.path`.
 
 ```tsx
 import { ArdorApplication } from '@venizia/ardor';
@@ -338,7 +336,7 @@ export const Root = () => (
     reduxStore={store}
     suspense={<Spinner />}
     resources={[{ name: 'products', list: ProductList }]}
-    customRoutes={{ routes: [{ path: '/about', element: <div>About</div> }] }}
+    routes={[{ path: '/about', element: <div>About</div> }]}
   />
 );
 ```

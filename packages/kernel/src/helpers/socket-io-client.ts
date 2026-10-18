@@ -25,7 +25,10 @@ export class SocketIOClientHelper extends BaseHelper {
 
   // subscribe() registers a wrapper that passes `this.client`, never the caller handler directly:
   // without this map, unsubscribe() cannot unbind one handler or deduplicate repeat subscriptions.
-  private wrappedHandlers = new Map<string, Map<TSocketIOEventHandler, (...props: AnyType[]) => void>>();
+  private wrappedHandlers = new Map<
+    string,
+    Map<TSocketIOEventHandler, (...props: AnyType[]) => void>
+  >();
   constructor(opts: ISocketIOClientOptions) {
     super({ scope: SocketIOClientHelper.name });
 
@@ -53,10 +56,7 @@ export class SocketIOClientHelper extends BaseHelper {
     return this.client;
   }
 
-  subscribe(opts: {
-    events: Record<string, TSocketIOEventHandler>;
-    ignoreDuplicate?: boolean;
-  }) {
+  subscribe(opts: { events: Record<string, TSocketIOEventHandler>; ignoreDuplicate?: boolean }) {
     const { events: eventHandlers, ignoreDuplicate = false } = opts;
 
     const eventNames = Object.keys(eventHandlers);

@@ -8,13 +8,13 @@ tags: [hooks, context, react, ignis, ra-core]
 
 # Hooks and context
 
-ARDOR bridges the IGNIS dependency injection container into the React tree with a single plain context, `ApplicationContext`, defined at `packages/react/src/contexts/application.ts`. Its shape is:
+ARDOR bridges the IGNIS dependency injection container into the React tree with a single plain context, `ApplicationContext`, defined at `packages/react/src/contexts/application.ts`. Its value type is the exported `IApplicationContextValue`:
 
 ```ts
-{ container: Container | null, registry: Container | null, logger: Logger | null }
+{ container: Container | null, logger: Logger | null }
 ```
 
-All three fields default to `null`. The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
+Both fields default to `null`. There is no `registry` field: the container is its own metadata registry (`container.getMetadataRegistry()`). The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
 
 ## Core context hooks
 

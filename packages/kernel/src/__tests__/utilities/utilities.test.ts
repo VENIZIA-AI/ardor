@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/naming-convention -- the fixtures are snake_case wire objects on purpose: keysToCamel exists to convert them */
+/* eslint-disable @typescript-eslint/naming-convention -- the fixtures are snake_case wire objects on purpose: keysToCamelCase exists to convert them */
 import { describe, expect, test } from 'bun:test';
 import {
   isBrowser,
@@ -174,7 +174,7 @@ describe('string and object transformation utilities', () => {
     expect(toCamelCase({ value: 'alreadyCamel' })).toBe('alreadyCamel');
   });
 
-  test('keysToCamel converts nested objects but leaves arrays untouched', () => {
+  test('keysToCamelCase converts nested objects but leaves arrays untouched', () => {
     const input = {
       ardor_framework: 'ARDOR',
       ignis_engine: {

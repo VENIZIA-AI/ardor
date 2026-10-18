@@ -16,10 +16,9 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IdType`, `NumberIdType`, `StringIdType`, `NullableType` | type | Entity id and nullable aliases |
 | `AnyType`, `AnyObject` | type | Named escape hatches for `any` and loose records |
 | `ValueOrPromise<T>` | type | `T \| Promise<T>` |
-| `ValueOf<T>`, `ClassProps<T>` | type | Union of the values of `T` |
+| `ValueOf<T>` | type | Union of the values of `T` |
 | `ValueOptional`, `ValueOptionalExcept`, `TPrettify` | type | Object shaping helpers |
-| `ClassType<T>` | type | A function with a `prototype` of `T` |
-| `TStatusFromClass`, `TConstValue`, `TStringConstValue`, `TNumberConstValue` | type | Value unions from a const class |
+| `TConstValue`, `TStringConstValue`, `TNumberConstValue` | type | Value unions from a const class |
 | `TRequestMethod`, `TRequestType`, `TRequestBodyType`, `TEnvironment` | type | Prebuilt unions from the const classes |
 | `TPaths<T>`, `TFullPaths<T>` | type | Dotted path unions over an object type |
 | `IApplicationInfo` | interface | Name, version, description, author |
@@ -35,8 +34,8 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IReactAdminAuthProvider`, `IAuthProvider` | interface | react-admin auth contract plus `getRoles` and `refreshToken` |
 | `IArdorApplication`, `IApplication` | interface | Application lifecycle and `<ArdorApplication>` props |
 | `TDataCount<T>` | type | Data with optional count |
-| `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments` | class | Const classes with `SCHEME_SET` and `isValid` |
-| `RequestCountData`, `HeaderConstants`, `RequestChannel`, `Authentication`, `App` | class | Const classes without a scheme set |
+| `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`, `Authentication`, `LocalStorageKeys`, `LogLevels`, `NumberParseMethods` | class | Const classes with `SCHEME_SET` and `isValid` |
+| `HeaderConstants`, `App` | class | Const classes without a scheme set |
 
 ## Id and nullable aliases
 
@@ -96,15 +95,13 @@ export const resolve = async <T>(opts: { value: ValueOrPromise<T> }): Promise<T>
 
 ## ValueOf and the object shaping helpers
 
-`ValueOf<T>` is the union of the property types of `T`. `ClassProps<T>` is an alias for it. Three helpers reshape object types: `ValueOptional` makes the listed keys optional, `ValueOptionalExcept` makes everything optional except the listed keys, and `TPrettify` flattens an intersection so editors show one object.
+`ValueOf<T>` is the union of the property types of `T`. Three helpers reshape object types: `ValueOptional` makes the listed keys optional, `ValueOptionalExcept` makes everything optional except the listed keys, and `TPrettify` flattens an intersection so editors show one object.
 
 ```ts no-check
 export type ValueOf<T> = T[keyof T];
-export type ClassProps<T> = ValueOf<T>;
 export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
-export type ClassType<T> = Function & { prototype: T };
 ```
 
 ```ts
@@ -127,22 +124,20 @@ export type UserPatch = TPrettify<ValueOptionalExcept<User, 'id'>>;
 // { id: string; name?: string; email?: string; age?: number }
 ```
 
-## TStatusFromClass and TConstValue
+## TConstValue
 
 ARDOR keeps its enums as classes with `static readonly` literal members. These types turn such a class into a union of its values.
 
-- `TStatusFromClass<T>` takes `ValueOf` over the class and drops `prototype`, `isValid`, `SCHEME_SET` and `TYPE_SET`, so only the constants remain.
-- `TConstValue<T>` keeps the string and number values only. `TStringConstValue` and `TNumberConstValue` keep one of the two.
+- `TConstValue<T>` keeps the string and number values. `TStringConstValue` and `TNumberConstValue` keep one of the two.
+- `SCHEME_SET` (a `Set`), `isValid` (a function) and `prototype` are neither a string nor a number, so they drop out of the union by type.
 
-All four end with `& {}`. A `static readonly X = '12h'` member has a widening literal type, so a value copied into an object literal (`rows.map(row => ({ value: row.value }))`) or a `let` used to widen to `string` or `number` and no longer fit the union. `& {}` makes the literals regular: the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives `string`, and the result is still assignable to `string` or `number`.
+All three end with `& {}`. A `static readonly X = '12h'` member has a widening literal type, so a value copied into an object literal (`rows.map(row => ({ value: row.value }))`) or a `let` used to widen to `string` or `number` and no longer fit the union. `& {}` makes the literals regular: the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives `string`, and the result is still assignable to `string` or `number`.
 
 ```ts no-check
-export type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<
-  Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>
-> & {};
-export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string> & {};
-export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number> & {};
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number> & {};
+// TClass comes from @venizia/ignis-inversion
+export type TStringConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string> & {};
+export type TNumberConstValue<T extends TClass<any>> = Extract<ValueOf<T>, number> & {};
+export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
 ```
 
 ```ts
@@ -159,12 +154,12 @@ export const options = modes.map(value => ({ value, label: String(value) }));
 // { value: '12h' | '24h'; label: string }[]
 ```
 
-The prebuilt unions are `TRequestMethod` (from `RequestMethods`), `TEnvironment` (from `Environments`), `TRequestType` (from `RequestTypes`) and `TRequestBodyType` (from `RequestBodyTypes`). `TRequestMethod` and `TEnvironment` are built on `TStatusFromClass`; `TRequestType` and `TRequestBodyType` are `TStringConstValue` of their class. All four keep their literals.
+The prebuilt unions are `TRequestMethod` (from `RequestMethods`), `TEnvironment` (from `Environments`), `TRequestType` (from `RequestTypes`) and `TRequestBodyType` (from `RequestBodyTypes`). All four are `TStringConstValue` of their class and keep their literals.
 
 ```ts
-import { RequestCountData, RequestMethods, type TConstValue, type TStatusFromClass } from '@venizia/ardor';
+import { RequestCountData, RequestMethods, type TConstValue, type TStringConstValue } from '@venizia/ardor';
 
-export type Method = TStatusFromClass<typeof RequestMethods>;
+export type Method = TStringConstValue<typeof RequestMethods>;
 // 'HEAD' | 'OPTIONS' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export type CountMode = TConstValue<typeof RequestCountData>;
@@ -444,7 +439,7 @@ How to obtain both from the container is covered in [data provider](../reference
 
 ## Const classes and the SCHEME_SET + isValid pattern
 
-ARDOR does not use TypeScript `enum`. Each group of constants is a class with `static readonly` members. Four of them also carry a `SCHEME_SET` (a `Set` of every member) and a static `isValid(input: string): boolean` that checks membership at runtime. Pair `isValid` with `TStatusFromClass` when you need both a runtime check and a compile-time union from the same source.
+ARDOR does not use TypeScript `enum`. Each group of constants is a class with `static readonly` members. Most of them also carry a `SCHEME_SET` (a `Set` of every member) and a static `isValid(value: string): boolean` that checks membership at runtime. Pair `isValid` with `TConstValue` when you need both a runtime check and a compile-time union from the same source.
 
 | Class | Members | `SCHEME_SET` + `isValid` |
 | --- | --- | --- |
@@ -452,10 +447,13 @@ ARDOR does not use TypeScript `enum`. Each group of constants is a class with `s
 | `RequestTypes` | `SEND`, `GET_LIST`, `GET_ONE`, `GET_MANY`, `GET_MANY_REFERENCE`, `CREATE`, `UPDATE`, `UPDATE_MANY`, `DELETE`, `DELETE_MANY` | yes |
 | `RequestBodyTypes` | `NONE` (`'none'`), `FORM_DATA` (`'form-data'`), `FORM_URL_ENCODED` (`'x-www-form-urlencoded'`), `JSON` (`'json'`), `BINARY` (`'binary'`) | yes |
 | `Environments` | `DEVELOPMENT` (`'development'`), `PRODUCTION` (`'production'`) | yes |
-| `RequestCountData` | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) | no |
+| `RequestCountData` | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) | yes |
+| `RequestChannel` | `WEB` (`'100_WEB'`) | yes |
+| `Authentication` | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` | yes |
+| `LocalStorageKeys` | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` | yes |
+| `LogLevels` | `DEBUG`, `INFO`, `WARN`, `ERROR` (the `TLogLevel` union) | yes |
+| `NumberParseMethods` | `INT` (`'int'`), `FLOAT` (`'float'`) (the `TNumberParseMethod` union) | yes |
 | `HeaderConstants` | header names, see below | no |
-| `RequestChannel` | `WEB` (`'100_WEB'`) | no |
-| `Authentication` | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` | no |
 | `App` | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_LOCALE`, `DEFAULT_DEBOUNCE_TIME` | no |
 
 ```ts no-check
@@ -463,8 +461,8 @@ export class RequestMethods {
   static readonly GET = 'GET';
   // ...
   static readonly SCHEME_SET = new Set([this.HEAD, this.OPTIONS, this.GET, this.POST, this.PUT, this.PATCH, this.DELETE]);
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 ```
@@ -525,7 +523,7 @@ export const timezoneHeaders = (): Record<string, string> => ({
 - `INoAuthOptions.noAuthPaths` is an exact match. Use `noAuthPathRegex` for prefixes, and remember a string pattern is compiled with `new RegExp(...)`.
 - `AnyType` is `any`. It is fine as a generic default at a boundary; do not let it become the type of your domain records.
 - `IAuthProviderOptions` carries no defaults in its type. What happens when a path is missing is decided by the provider, see [auth provider](../references/auth-provider).
-- `TStatusFromClass` drops `SCHEME_SET`, `isValid`, `prototype` and `TYPE_SET`. Any other static you add to a const class becomes part of the union.
+- `TConstValue` keeps every string or number static. Any other string static you add to a const class becomes part of the union.
 
 ## Related
 
