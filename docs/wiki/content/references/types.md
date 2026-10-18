@@ -36,7 +36,7 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IArdorApplication`, `IApplication` | interface | Application lifecycle and `<ArdorApplication>` props |
 | `TDataCount<T>` | type | Data with optional count |
 | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments` | class | Const classes with `SCHEME_SET` and `isValid` |
-| `RequestCountData`, `HeaderConsts`, `RequestChannel`, `Authentication`, `App` | class | Const classes without a scheme set |
+| `RequestCountData`, `HeaderConstants`, `RequestChannel`, `Authentication`, `App` | class | Const classes without a scheme set |
 
 ## Id and nullable aliases
 
@@ -332,11 +332,11 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
 ```
 
 ```ts
-import { HeaderConsts, RequestChannel, type IRestDataProviderOptions } from '@venizia/ardor';
+import { HeaderConstants, RequestChannel, type IRestDataProviderOptions } from '@venizia/ardor';
 
 export const restOptions: IRestDataProviderOptions = {
   url: 'https://api.example.com',
-  headers: { [HeaderConsts.X_LOCALE]: 'en' },
+  headers: { [HeaderConstants.X_LOCALE]: 'en' },
   requestTracingChannel: RequestChannel.WEB,
   noAuthPaths: ['auth/sign-in'],
   noAuthPathRegex: [/^public\//],
@@ -376,7 +376,7 @@ export const authOptions: IAuthProviderOptions = {
 };
 ```
 
-`II18nProviderOptions` (`i18nSources`, `listLanguages`) follows the same shape and is documented in [i18n](../references/i18n).
+`II18nProviderOptions` (`i18nSources`, `languages`) follows the same shape and is documented in [i18n](../references/i18n).
 
 ## IDataProvider and IAuthProvider
 
@@ -453,7 +453,7 @@ ARDOR does not use TypeScript `enum`. Each group of constants is a class with `s
 | `RequestBodyTypes` | `NONE` (`'none'`), `FORM_DATA` (`'form-data'`), `FORM_URL_ENCODED` (`'x-www-form-urlencoded'`), `JSON` (`'json'`), `BINARY` (`'binary'`) | yes |
 | `Environments` | `DEVELOPMENT` (`'development'`), `PRODUCTION` (`'production'`) | yes |
 | `RequestCountData` | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) | no |
-| `HeaderConsts` | header names, see below | no |
+| `HeaderConstants` | header names, see below | no |
 | `RequestChannel` | `WEB` (`'100_WEB'`) | no |
 | `Authentication` | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` | no |
 | `App` | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_LOCALE`, `DEFAULT_DEBOUNCE_TIME` | no |
@@ -483,9 +483,9 @@ export const toEnvironment = (opts: { raw: string }): TEnvironment =>
   Environments.isValid(opts.raw) ? (opts.raw as TEnvironment) : Environments.DEVELOPMENT;
 ```
 
-`RequestCountData` selects what the server puts in the body: `DATA_ONLY` returns only the data, `DATA_WITH_COUNT` returns data and count. It travels in the `HeaderConsts.REQUEST_COUNT_DATA` header and is the type of `ISendParams.requestCountData`. `TDataCount<T>` (`{ data: T; count?: number }`) is the matching result shape.
+`RequestCountData` selects what the server puts in the body: `DATA_ONLY` returns only the data, `DATA_WITH_COUNT` returns data and count. It travels in the `HeaderConstants.REQUEST_COUNT_DATA` header and is the type of `ISendParams.requestCountData`. `TDataCount<T>` (`{ data: T; count?: number }`) is the matching result shape.
 
-`HeaderConsts` names every header the network layer reads or writes:
+`HeaderConstants` names every header the network layer reads or writes:
 
 | Member | Value |
 | --- | --- |
@@ -509,11 +509,11 @@ export const toEnvironment = (opts: { raw: string }): TEnvironment =>
 `App` holds runtime defaults: `TIMEZONE` is the browser's IANA zone, `TIMEZONE_OFFSET` is the offset in hours, `DEFAULT_LOCALE` is `'en.UTF-8'`, and `DEFAULT_DEBOUNCE_TIME` is `500` milliseconds.
 
 ```ts
-import { App, HeaderConsts } from '@venizia/ardor';
+import { App, HeaderConstants } from '@venizia/ardor';
 
 export const timezoneHeaders = (): Record<string, string> => ({
-  [HeaderConsts.TIMEZONE]: App.TIMEZONE,
-  [HeaderConsts.TIMEZONE_OFFSET]: String(App.TIMEZONE_OFFSET),
+  [HeaderConstants.TIMEZONE]: App.TIMEZONE,
+  [HeaderConstants.TIMEZONE_OFFSET]: String(App.TIMEZONE_OFFSET),
 });
 ```
 
@@ -534,6 +534,6 @@ export const timezoneHeaders = (): Record<string, string> => ({
 - [Data provider](../references/data-provider) - `IDataProvider`, `IRestDataProviderOptions` in use
 - [Auth provider](../references/auth-provider) - `IAuthProvider`, `IAuthProviderOptions`, `IAuthRecoveryOptions`
 - [i18n](../references/i18n) - `II18nProviderOptions`
-- [Network](../references/network) - request building with `ISendParams` and `HeaderConsts`
+- [Network](../references/network) - request building with `ISendParams` and `HeaderConstants`
 - [Hooks](../references/hooks) - resolving providers from components
 - [Module augmentation](../best-practices/module-augmentation) - extending key unions

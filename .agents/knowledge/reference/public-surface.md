@@ -44,7 +44,7 @@ generated:
 - `float` const
 - `getNumberValue` const
 - `getUID` const
-- `HeaderConsts` class
+- `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactIndex` interface
@@ -279,7 +279,7 @@ generated:
 - `float` const
 - `getNumberValue` const
 - `getUID` const
-- `HeaderConsts` class
+- `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationInfo` interface
 - `IArdorApplication` interface

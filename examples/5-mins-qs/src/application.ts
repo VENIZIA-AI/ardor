@@ -89,7 +89,7 @@ export class AdminConfiguration {
           quickstart: { title: 'Products', expensive: 'Expensive products (>= 5,000)' },
         },
       },
-      listLanguages: [{ locale: 'en', name: 'English' }],
+      languages: [{ locale: 'en', name: 'English' }],
     };
   }
 

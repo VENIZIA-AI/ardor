@@ -16,7 +16,7 @@ Applications rarely install this package directly - most install [ardor](/packag
 
 The package barrel (`src/index.ts`) re-exports three groups:
 
-- **common** - `SyncFC`.
+- **common** - `ISyncFC`.
 - **contexts** - `ApplicationContext` only.
 - **hooks** - everything else: `useApplicationContext` and `useApplicationLogger`; the DI hooks `useInjectable`, `useInjectableContainer`, `useService`, `useProvider`, `useComponent` and `useConfiguration`, together with the `TUseInjectableKeys`/`IUseInjectableKeysOverrides` types; the UI hooks `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer` and `useWindowDimensions`; and the Redux factories `createAppDispatch` and `createAppSelectors`, for binding a typed `RootState`/`AppDispatch` pair.
 

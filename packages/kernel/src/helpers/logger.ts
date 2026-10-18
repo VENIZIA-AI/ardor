@@ -1,26 +1,38 @@
 import { getError } from '@venizia/ignis-inversion';
 
-const applicationLogger = console;
+import { type AnyType, type TConstValue } from '@/common';
 
-export type TLogLevel = 'debug' | 'info' | 'warn' | 'error';
+export class LogLevels {
+  static readonly DEBUG = 'debug';
+  static readonly INFO = 'info';
+  static readonly WARN = 'warn';
+  static readonly ERROR = 'error';
+
+  static readonly SCHEME_SET = new Set([this.DEBUG, this.INFO, this.WARN, this.ERROR]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+export type TLogLevel = TConstValue<typeof LogLevels>;
+
 export interface ILogger {
-  debug(message: string, ...args: any[]): void;
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, ...args: any[]): void;
+  debug(message: string, ...args: AnyType[]): void;
+  info(message: string, ...args: AnyType[]): void;
+  warn(message: string, ...args: AnyType[]): void;
+  error(message: string, ...args: AnyType[]): void;
 }
 
 export class Logger implements ILogger {
   private static instances = new Map<string, Logger>();
   private static debugEnabled = false;
+  private static readonly sink = console;
 
   protected scope: string;
 
-  constructor(opts: { scope: string; enableDebug?: boolean }) {
+  constructor(opts: { scope: string }) {
     this.scope = opts.scope;
-    if (opts.enableDebug !== undefined) {
-      Logger.debugEnabled = opts.enableDebug;
-    }
   }
 
   /**
@@ -48,11 +60,7 @@ export class Logger implements ILogger {
     return new Date().toISOString();
   }
 
-  toggleDebug(opts?: { state: boolean }) {
-    Logger.debugEnabled = opts ? opts.state : !Logger.debugEnabled;
-  }
-
-  generateLog(opts: { level: TLogLevel; message: any; args: any[] }) {
+  generateLog(opts: { level: TLogLevel; message: AnyType; args: AnyType[] }) {
     const { level, message, args } = opts;
     const timestamp = this.getTimestamp();
 
@@ -72,34 +80,35 @@ export class Logger implements ILogger {
     }
   }
 
-  private log(level: TLogLevel, message: any, ...args: any[]) {
-    if (!applicationLogger) {
+  private log(opts: { level: TLogLevel; message: AnyType; args: AnyType[] }) {
+    const { level, message, args } = opts;
+    if (!Logger.sink) {
       throw getError({ message: '[info] Invalid logger instance!' });
     }
 
-    if (level === 'debug' && !this.isDebugEnabled) {
+    if (level === LogLevels.DEBUG && !this.isDebugEnabled) {
       return;
     }
 
     const generated = this.generateLog({ level, message, args });
     // Each level goes to the console method of the same name, so the browser's level filter and an
     // error-reporting hook on console.error both see it.
-    applicationLogger[level](generated.message, ...generated.args);
+    Logger.sink[level](generated.message, ...generated.args);
   }
 
-  debug(message: any, ...args: any[]) {
-    this.log('debug', message, ...args);
+  debug(message: AnyType, ...args: AnyType[]) {
+    this.log({ level: LogLevels.DEBUG, message, args });
   }
 
-  info(message: any, ...args: any[]) {
-    this.log('info', message, ...args);
+  info(message: AnyType, ...args: AnyType[]) {
+    this.log({ level: LogLevels.INFO, message, args });
   }
 
-  warn(message: any, ...args: any[]) {
-    this.log('warn', message, ...args);
+  warn(message: AnyType, ...args: AnyType[]) {
+    this.log({ level: LogLevels.WARN, message, args });
   }
 
-  error(message: any, ...args: any[]) {
-    this.log('error', message, ...args);
+  error(message: AnyType, ...args: AnyType[]) {
+    this.log({ level: LogLevels.ERROR, message, args });
   }
 }

@@ -2,7 +2,7 @@ import { getError } from '@venizia/ignis-inversion';
 import isPlainObject from 'lodash/isPlainObject.js';
 import merge from 'lodash/merge.js';
 
-import { type IFeature } from './feature';
+import { type TFeature } from './feature';
 
 interface IFeatureBundle {
   feature: string;
@@ -17,10 +17,10 @@ interface IFeatureBundle {
 export class FeatureMessages {
   private readonly loaded = new Map<string, object>();
 
-  constructor(private readonly opts: { features: Array<IFeature> }) {}
+  constructor(private readonly opts: { features: Array<TFeature> }) {}
 
   /** Whether some feature in the list loads this locale lazily. */
-  static hasLoader(opts: { features: Array<IFeature>; locale: string }): boolean {
+  static hasLoader(opts: { features: Array<TFeature>; locale: string }): boolean {
     const { features, locale } = opts;
     return features.some((feature) => typeof feature.messages?.[locale] === 'function');
   }

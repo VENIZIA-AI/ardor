@@ -1,13 +1,22 @@
 import React from 'react';
 
-export const useSizer = (props: { containerId: string }): { width: number; height: number } => {
+export interface IUseSizerOptions {
+  containerId: string;
+}
+
+export interface IUseSizerReturn {
+  width: number;
+  height: number;
+}
+
+export const useSizer = (opts: IUseSizerOptions): IUseSizerReturn => {
+  const { containerId } = opts;
   const [width, setWidth] = React.useState<number>(0);
   const [height, setHeight] = React.useState<number>(0);
 
   const cached = React.useRef<{ width: number; height: number }>({ width, height });
 
   React.useEffect(() => {
-    const { containerId } = props;
     const container = document.getElementById(containerId);
     if (!container) {
       return;
@@ -27,7 +36,7 @@ export const useSizer = (props: { containerId: string }): { width: number; heigh
     return () => {
       sizeObserver.disconnect();
     };
-  }, [props]);
+  }, [containerId]);
 
   React.useEffect(() => {
     cached.current.width = width;

@@ -1,14 +1,14 @@
 import isEqual from 'lodash/isEqual.js';
 import { shallowEqual, useSelector } from 'react-redux';
 
-export const createAppSelectors = <S>() => {
-  const useAppSelector = useSelector.withTypes<S>();
+export const createAppSelectors = <TState>() => {
+  const useAppSelector = useSelector.withTypes<TState>();
 
-  const useShallowEqualSelector = <T>(selector: (state: S) => T) => {
+  const useShallowEqualSelector = <TSelected>(selector: (state: TState) => TSelected) => {
     return useAppSelector(selector, shallowEqual);
   };
 
-  const useDeepEqualSelector = <T>(selector: (state: S) => T) => {
+  const useDeepEqualSelector = <TSelected>(selector: (state: TState) => TSelected) => {
     return useAppSelector(selector, isEqual);
   };
 

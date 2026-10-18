@@ -2,10 +2,11 @@ import React from 'react';
 
 import { App, isBrowser } from '@venizia/ardor-kernel';
 
-export interface IUseDebounceParams<TValue> {
+export interface IUseDebounceOptions<TValue> {
   value: TValue;
   delay?: number;
-  disabled?: boolean;
+  /** @default true */
+  enabled?: boolean;
 }
 
 export interface IUseDebounceReturn<TValue> {
@@ -13,14 +14,14 @@ export interface IUseDebounceReturn<TValue> {
 }
 
 export const useDebounce = <TValue>(
-  params: IUseDebounceParams<TValue>,
+  opts: IUseDebounceOptions<TValue>,
 ): IUseDebounceReturn<TValue> => {
-  const { value, delay, disabled } = params;
+  const { value, delay, enabled = true } = opts;
 
   const [debouncedValue, setDebouncedValue] = React.useState<TValue>(value);
 
   React.useEffect(() => {
-    if (!isBrowser() || disabled) {
+    if (!isBrowser() || !enabled) {
       return;
     }
 
@@ -31,7 +32,7 @@ export const useDebounce = <TValue>(
     return () => {
       clearTimeout(timer);
     };
-  }, [value, delay, disabled]);
+  }, [value, delay, enabled]);
 
   return { debouncedValue };
 };

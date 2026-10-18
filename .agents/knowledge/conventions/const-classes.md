@@ -68,7 +68,7 @@ The value type is a closed union - no `| (string & {})` escape - because ARDOR o
 
 `RequestMethods`, `RequestBodyTypes` and `Environments` carry the same `SCHEME_SET` plus `isValid()`
 pair, typed as `TRequestMethod` and `TEnvironment` (via `TStatusFromClass`) and `TRequestBodyType`
-(via `Extract<ValueOf<...>, string>`). `HeaderConsts`, the names behind the
+(via `Extract<ValueOf<...>, string>`). `HeaderConstants`, the names behind the
 [header protocol](/architecture/header-protocol.md), is plain `static readonly` constants with no
 `SCHEME_SET` and no `isValid()`.
 

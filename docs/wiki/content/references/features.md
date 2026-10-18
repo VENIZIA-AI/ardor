@@ -16,8 +16,8 @@ A feature package brings one area of an admin - inventory, orders, billing - as 
 | Symbol | Package | What it is |
 |---|---|---|
 | `IFeatureBase` | `@venizia/ardor-kernel` | `name`, `configurations`, `permissions` - what the container needs |
-| `IFeature<TExtension>` | `@venizia/ardor-admin` | `IFeatureBase` plus `resources`, `routes`, `messages`, and your own extension |
-| `defineFeature()` | `@venizia/ardor-admin` | Types a feature, keeping the extension |
+| `TFeature<TExtension>` | `@venizia/ardor-admin` | `IFeatureBase` plus `resources`, `routes`, `messages`, and your own extension |
+| `Features.define()` | `@venizia/ardor-admin` | Types a feature, keeping the extension |
 | `features()` | application class | The features the application mounts, bound under `CoreBindings.FEATURES` |
 | `useFeatures()` | `@venizia/ardor-admin` | The mounted features, for a menu or a role editor |
 | `IPermissionProvider` | `@venizia/ardor-kernel` | `canAccess({ resource, action, record })`, bound under `CoreBindings.PERMISSION_PROVIDER` |
@@ -25,7 +25,7 @@ A feature package brings one area of an admin - inventory, orders, billing - as 
 ## Declaring a feature
 
 ```ts
-import { configuration, defineFeature, provide } from '@venizia/ardor';
+import { configuration, Features, provide } from '@venizia/ardor';
 
 @configuration()
 export class InventoryConfiguration {
@@ -37,7 +37,7 @@ export class InventoryConfiguration {
 
 const StockList = () => null;
 
-export const inventoryFeature = defineFeature({
+export const inventoryFeature = Features.define({
   name: 'inventory',
   configurations: [InventoryConfiguration],
   resources: [{ name: 'stocks', list: StockList }],
@@ -57,15 +57,15 @@ export const inventoryFeature = defineFeature({
 A shell adds its own fields through the extension parameter, typed end to end:
 
 ```ts
-import { defineFeature, type IFeature } from '@venizia/ardor';
+import { Features, type TFeature } from '@venizia/ardor';
 
 interface IMenuExtension {
   menu: Array<{ id: string; label: string; resource: string }>;
 }
 
-export type TShellFeature = IFeature<IMenuExtension>;
+export type TShellFeature = TFeature<IMenuExtension>;
 
-export const ordersFeature = defineFeature<IMenuExtension>({
+export const ordersFeature = Features.define<IMenuExtension>({
   name: 'orders',
   resources: [{ name: 'orders' }],
   menu: [{ id: 'orders', label: 'orders.menu', resource: 'orders' }],
@@ -79,10 +79,10 @@ ARDOR carries the extension and never reads it.
 The application class lists them once:
 
 ```ts
-import { BaseArdorApplication, type IFeature } from '@venizia/ardor';
+import { BaseArdorApplication, type TFeature } from '@venizia/ardor';
 
-declare const inventoryFeature: IFeature;
-declare const ordersFeature: IFeature;
+declare const inventoryFeature: TFeature;
+declare const ordersFeature: TFeature;
 
 export class WebManagerApplication extends BaseArdorApplication {
   override features() {
@@ -107,9 +107,9 @@ export class WebManagerApplication extends BaseArdorApplication {
 `useFeatures()` returns the mounted features, typed with your extension:
 
 ```ts
-import { type IFeature, useFeatures } from '@venizia/ardor';
+import { type TFeature, useFeatures } from '@venizia/ardor';
 
-type TShellFeature = IFeature<{ menu: Array<{ id: string; label: string }> }>;
+type TShellFeature = TFeature<{ menu: Array<{ id: string; label: string }> }>;
 
 export const useMenu = () => {
   return useFeatures<TShellFeature>().flatMap((feature) => feature.menu);

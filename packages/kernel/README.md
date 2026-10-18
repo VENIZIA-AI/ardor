@@ -19,7 +19,7 @@ which re-exports this package.
 | Providers | `BaseProvider` |
 | Decorators | `api()` - logs and rethrows a failing API method |
 | Bindings | `CoreBindings`, `LocalStorageKeys` |
-| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConsts`, `Environments`, `App` |
+| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
 | Network | `BaseNetworkRequest`, `NodeFetchNetworkRequest`, `NodeFetcher` (fetch only) |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
 | Utilities | `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse` |

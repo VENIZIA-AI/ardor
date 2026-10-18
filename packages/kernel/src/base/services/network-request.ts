@@ -6,7 +6,7 @@ import isEmpty from 'lodash/isEmpty.js';
 import {
   type AnyType,
   App,
-  HeaderConsts,
+  HeaderConstants,
   type IApplicationInfo,
   type IAuthRecoveryOptions,
   type IGetRequestPropsParams,
@@ -313,8 +313,8 @@ export class DefaultNetworkRequestService extends BaseService {
     return NetworkHeaders.merge({
       sources: [
         {
-          [HeaderConsts.TIMEZONE]: App.TIMEZONE,
-          [HeaderConsts.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+          [HeaderConstants.TIMEZONE]: App.TIMEZONE,
+          [HeaderConstants.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
         },
         this.headers,
       ],
@@ -331,8 +331,8 @@ export class DefaultNetworkRequestService extends BaseService {
       : RequestChannel.WEB;
 
     return {
-      [HeaderConsts.REQUEST_CHANNEL]: channel,
-      [HeaderConsts.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
+      [HeaderConstants.REQUEST_CHANNEL]: channel,
+      [HeaderConstants.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
     };
   }
 
@@ -350,8 +350,8 @@ export class DefaultNetworkRequestService extends BaseService {
     return {
       ...defaultHeaders,
       // A token need not name a provider; never send the string `undefined`.
-      ...(authHeader.provider ? { [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider } : {}),
-      [HeaderConsts.AUTHORIZATION]: authHeader.token,
+      ...(authHeader.provider ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider } : {}),
+      [HeaderConstants.AUTHORIZATION]: authHeader.token,
     };
   }
 
@@ -448,7 +448,7 @@ export class DefaultNetworkRequestService extends BaseService {
       sources: [
         this.getRequestHeader({ resource }),
         this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-        { [HeaderConsts.REQUEST_COUNT_DATA]: requestCountData },
+        { [HeaderConstants.REQUEST_COUNT_DATA]: requestCountData },
         extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
       ],
     });
@@ -459,7 +459,7 @@ export class DefaultNetworkRequestService extends BaseService {
       case RequestBodyTypes.FORM_URL_ENCODED: {
         rs.headers = {
           ...headers,
-          [HeaderConsts.CONTENT_TYPE]: 'application/x-www-form-urlencoded',
+          [HeaderConstants.CONTENT_TYPE]: 'application/x-www-form-urlencoded',
         };
 
         const encoded = new URLSearchParams();
@@ -509,7 +509,7 @@ export class DefaultNetworkRequestService extends BaseService {
       default: {
         rs.headers = {
           ...headers,
-          [HeaderConsts.CONTENT_TYPE]: 'application/json',
+          [HeaderConstants.CONTENT_TYPE]: 'application/json',
         };
         rs.body = body;
         break;
@@ -522,7 +522,7 @@ export class DefaultNetworkRequestService extends BaseService {
   /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
   private resolveTotal(opts: { headers: Record<string, AnyType>; rowCount: number }): number {
     const range = HttpResponseReader.parseContentRange({
-      header: opts.headers?.get(HeaderConsts.CONTENT_RANGE),
+      header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
     });
     return range?.total ?? opts.rowCount;
   }
@@ -615,7 +615,7 @@ export class DefaultNetworkRequestService extends BaseService {
         }
 
         // A missing or non-numeric header means the server sent no count - never NaN.
-        const count = Number.parseInt(headers?.get(HeaderConsts.RESPONSE_COUNT_DATA) ?? '', 10);
+        const count = Number.parseInt(headers?.get(HeaderConstants.RESPONSE_COUNT_DATA) ?? '', 10);
         return {
           data: data as TData,
           count: Number.isNaN(count) ? undefined : count,
@@ -642,11 +642,11 @@ export class DefaultNetworkRequestService extends BaseService {
       return { data: {} as ReturnType };
     }
 
-    const contentType = (rs.headers?.get(HeaderConsts.CONTENT_TYPE) ?? '').toLowerCase();
-    const contentDisposition = rs.headers?.get(HeaderConsts.CONTENT_DISPOSITION) ?? '';
+    const contentType = (rs.headers?.get(HeaderConstants.CONTENT_TYPE) ?? '').toLowerCase();
+    const contentDisposition = rs.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
 
-    const isAttachment = HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
-    const isTextual = contentType !== '' && HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
+    const isAttachment = HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
+    const isTextual = contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
 
     if (isAttachment || !isTextual) {
       const blob = await rs.blob();
@@ -734,8 +734,8 @@ export class DefaultNetworkRequestService extends BaseService {
         const authHeader = this.getRequestAuthorizationHeader();
         const retryHeaders = {
           ...(headers as Record<string, AnyType>),
-          [HeaderConsts.AUTHORIZATION]: authHeader.token,
-          ...(authHeader.provider ? { [HeaderConsts.X_AUTH_PROVIDER]: authHeader.provider } : {}),
+          [HeaderConstants.AUTHORIZATION]: authHeader.token,
+          ...(authHeader.provider ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider } : {}),
         };
 
         rs = await sendOnce(retryHeaders);

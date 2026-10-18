@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { cleanup, renderHook } from '@testing-library/react';
 
 import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
-import { CoreBindings, HeaderConsts, Logger } from '@venizia/ardor-kernel';
+import { CoreBindings, HeaderConstants, Logger } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -61,7 +61,6 @@ const createTestHarness = (opts: ICreateTestHarnessOptions): ITestHarness => {
       {
         value: {
           container,
-          registry: container,
           logger: Logger.getInstance({ scope: 'test' }),
         },
       },
@@ -106,7 +105,7 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      headers: { [HeaderConsts.X_LOCALE]: harness.expectedLocale },
+      headers: { [HeaderConstants.X_LOCALE]: harness.expectedLocale },
     });
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
       headers: { 'x-locale': harness.expectedLocale },

@@ -126,7 +126,7 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
 
 export interface II18nProviderOptions {
   i18nSources?: Record<string | symbol, AnyType>;
-  listLanguages?: Locale[];
+  languages?: Array<Locale>;
 }
 
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
@@ -138,7 +138,6 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
 
   /** The application's own resources; each feature's are mounted after them. */
   resources?: Array<ResourceProps>;
-  customRoutes?: {
-    routes: Array<RouteProps>;
-  };
+  /** The application's own routes; each feature's are mounted after them. */
+  routes?: Array<RouteProps>;
 }

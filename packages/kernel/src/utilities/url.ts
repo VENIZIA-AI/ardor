@@ -1,29 +1,23 @@
 import { isDefined } from './boolean';
 
-export const stringify = (params: Record<string | symbol, any>) => {
-  const normalizedParams: Record<string | symbol, any> = {};
+/** `undefined` and `null` are dropped, numbers and strings are kept, anything else is JSON-encoded. */
+export const toQueryString = (opts: { params: Record<string | symbol, unknown> }): string => {
+  const { params } = opts;
+  const normalized: Record<string, string> = {};
+
   for (const key in params) {
-    if (!isDefined(params[key])) {
+    const value = params[key];
+    if (!isDefined(value)) {
       continue;
     }
 
-    switch (typeof params[key]) {
-      case 'number':
-      case 'string': {
-        normalizedParams[key] = params[key];
-        break;
-      }
-      default: {
-        normalizedParams[key] = JSON.stringify(params[key]);
-        break;
-      }
-    }
+    normalized[key] =
+      typeof value === 'number' || typeof value === 'string' ? String(value) : JSON.stringify(value);
   }
-  const rs = new URLSearchParams(normalizedParams);
-  return rs.toString();
+
+  return new URLSearchParams(normalized).toString();
 };
 
-export const parse = (searchString: string) => {
-  const searchParams = new URLSearchParams(searchString);
-  return Object.fromEntries(searchParams);
+export const parseQueryString = (opts: { search: string }): Record<string, string> => {
+  return Object.fromEntries(new URLSearchParams(opts.search));
 };

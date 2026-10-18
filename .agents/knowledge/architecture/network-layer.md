@@ -47,7 +47,7 @@ Then `NodeFetcher.send` passes a `FormData` or `URLSearchParams` straight to `fe
 After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `parseResponse` decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
-- A `content-disposition` starting with `attachment` (`HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConsts.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.
+- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.
 - Anything else goes through `rs.json()` and then `convertResponse`, which reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
 The textual pattern admits `text/*` and XML, but those bodies are still parsed with `rs.json()`, so a 2xx `text/plain` or XML response rejects with a `SyntaxError`. A 2xx response with no `content-type` comes back as a `Blob`.

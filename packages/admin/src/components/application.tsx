@@ -8,7 +8,7 @@ import { Route } from 'react-router-dom';
 
 import { CoreBindings, Logger } from '@venizia/ardor-kernel';
 import { type IAuthProvider, type IDataProvider } from '@/common';
-import { type IFeature, mountFeatures, readFeatures } from '@/features/feature';
+import { type TFeature, Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { type IApplication } from '../common/types';
@@ -32,7 +32,6 @@ const Wrapper: React.FC<{
     <ApplicationContext.Provider
       value={{
         container,
-        registry: container,
         logger: Logger.getInstance({ scope: applicationName, enableDebug }),
       }}>
       <ReduxProvider store={reduxStore}>
@@ -48,7 +47,7 @@ const Wrapper: React.FC<{
  * failed load, such as a key two features define, is thrown from render for an error boundary.
  */
 const useFeatureMessagesReady = (opts: {
-  features: Array<IFeature>;
+  features: Array<TFeature>;
   i18nProvider: I18nProvider;
 }): boolean => {
   const { features, i18nProvider } = opts;
@@ -98,19 +97,17 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     suspense,
     enableDebug = false,
     resources,
-    customRoutes,
-    ...raProps
+    routes,
+    ...reactAdminProps
   } = props;
 
-  const { routes } = customRoutes ?? {};
-
   const features = React.useMemo(() => {
-    return readFeatures({ container });
+    return Features.read({ container });
   }, [container]);
 
   // The application's own resources and routes, then each feature's it bound in `features()`.
   const mounted = React.useMemo(() => {
-    return mountFeatures({ features, resources, routes });
+    return Features.mount({ features, resources, routes });
   }, [features, resources, routes]);
 
   const adminProps = React.useMemo(() => {
@@ -127,8 +124,13 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       key: CoreBindings.DEFAULT_I18N_PROVIDER,
     });
 
-    return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider, ...raProps };
-  }, [container, raProps]);
+    return {
+      dataProvider,
+      ...(authProvider ? { authProvider } : {}),
+      i18nProvider,
+      ...reactAdminProps,
+    };
+  }, [container, reactAdminProps]);
 
   const isMessagesReady = useFeatureMessagesReady({
     features,

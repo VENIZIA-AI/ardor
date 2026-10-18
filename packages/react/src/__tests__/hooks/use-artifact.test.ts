@@ -64,7 +64,7 @@ const createWrapper = ({ container }: { container: Container }) => {
   return ({ children }: { children: React.ReactNode }) =>
     React.createElement(
       ApplicationContext.Provider,
-      { value: { container, registry: null, logger: null } },
+      { value: { container, logger: null } },
       children,
     );
 };

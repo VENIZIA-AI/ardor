@@ -238,11 +238,11 @@ export function RefreshTokenButton() {
 
 ## useRequestHeaderLocale
 
-Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConsts.X_LOCALE`.
+Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConstants.X_LOCALE`.
 
 ```ts no-check
 interface IUseRequestHeaderLocaleOptions {
-  key?: string; // the header name, default HeaderConsts.X_LOCALE
+  key?: string; // the header name, default HeaderConstants.X_LOCALE
 }
 
 const useRequestHeaderLocale: (opts?: IUseRequestHeaderLocaleOptions) => void;

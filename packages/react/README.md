@@ -18,7 +18,7 @@ which re-exports this package.
 | Injection | `useInjectable` - resolve a binding by key or by class |
 | Redux | `createAppDispatch`, `createAppSelectors` - factories that bind your `RootState` and `AppDispatch` |
 | UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer`, `useWindowDimensions` |
-| Types | `SyncFC`, `TUseInjectableKeys` |
+| Types | `ISyncFC`, `TUseInjectableKeys` |
 
 ## Typing your own binding keys
 

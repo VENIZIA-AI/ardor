@@ -23,4 +23,14 @@ export class LocalStorageKeys {
   static readonly KEY_AUTH_TOKEN = '@app/auth/token';
   static readonly KEY_AUTH_IDENTITY = '@app/auth/identity';
   static readonly KEY_AUTH_PERMISSION = '@app/auth/permission';
+
+  static readonly SCHEME_SET = new Set([
+    this.KEY_AUTH_TOKEN,
+    this.KEY_AUTH_IDENTITY,
+    this.KEY_AUTH_PERMISSION,
+  ]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
 }

@@ -1,4 +1,5 @@
-export const isDefined = <T>(value: T | null | undefined): value is T => {
+/** A type guard keeps one positional argument: an options object would lose the narrowing. */
+export const isDefined = <TValue>(value: TValue | null | undefined): value is TValue => {
   return value !== undefined && value !== null;
 };
 
@@ -6,32 +7,34 @@ export const isString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
 
-export const isNumber = (value: unknown, exact?: boolean): value is number => {
-  if (exact) {
-    return typeof value === 'number';
-  }
+/** A number, or a string that reads as a finite number. */
+export const isNumber = (opts: { value: unknown }): boolean => {
+  const { value } = opts;
 
   if (typeof value !== 'string' && typeof value !== 'number') {
     return false;
   }
 
-  return !isNaN(parseFloat(String(value))) && isFinite(Number(value));
+  return !Number.isNaN(Number.parseFloat(String(value))) && Number.isFinite(Number(value));
 };
 
-export const isObject = (value: any) => {
+export const isObject = (opts: { value: unknown }): boolean => {
+  const { value } = opts;
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
-export const isBrowser = () => {
+export const isBrowser = (): boolean => {
   return typeof window !== 'undefined';
 };
 
-export const isValidDate = (value: any) => {
-  const date = new Date(value);
-  return date instanceof Date && !isNaN(date.valueOf());
+export const isValidDate = (opts: { value: string | number | Date }): boolean => {
+  const date = new Date(opts.value);
+  return !Number.isNaN(date.valueOf());
 };
 
-export const isEditableTarget = (target: EventTarget | null) => {
+export const isEditableTarget = (opts: { target: EventTarget | null }): boolean => {
+  const { target } = opts;
+
   if (!(target instanceof HTMLElement)) {
     return false;
   }

@@ -3,8 +3,8 @@ import { type Logger } from '@/helpers';
 import { type BaseService } from '../services';
 
 /** Logs a failing method with its name, and its `resource` when the class has one, then rethrows. */
-export function api() {
-  return function (_target: BaseService, propertyKey: string, descriptor: PropertyDescriptor) {
+export const api = () => {
+  return (_target: BaseService, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (
@@ -27,4 +27,4 @@ export function api() {
 
     return descriptor;
   };
-}
+};
