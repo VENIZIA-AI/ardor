@@ -385,7 +385,8 @@ const config = defineConfig({
     "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
   head: [
     // Favicon + PWA
-    ['link', { rel: 'icon', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'manifest', href: '/site.webmanifest' }],
     // Fonts - preconnect
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
