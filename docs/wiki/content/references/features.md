@@ -1,166 +1,207 @@
 ---
-title: Features and permissions
-description: Mount feature packages - resources, routes, bindings, messages - from the application class, and answer react-admin's canAccess from your own rules.
+title: Features
+description: Package domain modules with configurations, resources, routes, and messages, mount them in BaseArdorApplication, and read them with useFeatures.
 ---
 
-# Features and permissions
+# Features
 
-A feature package brings one area of an admin - inventory, orders, billing - as a single value: the resources and routes it mounts, the `@configuration()` classes that register its services and repositories, its messages, and the permissions it checks. An application lists the features it mounts; two shells can mount the same feature packages. Permission checks go through react-admin's `canAccess`, answered by a provider the application binds.
+## What it does
 
-## Prerequisites
+A feature package encapsulates one domain area into a self-contained module containing its `@configuration()` classes, react-admin resources, custom routes, and localized message bundles. An application mounts feature packages by returning them from the `features()` method of its application class. ARDOR validates their configuration bindings, merges resources and routes into the administration tree, and coordinates lazy message loading before rendering.
 
-- An application class built on `BaseArdorApplication` and rendered with `ArdorApplication` - see [Application](./application).
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `Features` | class | Static helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes |
+| `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
+| `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) declared in `packages/kernel/src/common/types.ts` |
+| `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |
+| `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
+| `CoreBindings.FEATURES` | binding key | Binding key (`'@app/application/features'`) where `preConfigure()` binds the mounted feature array |
 
-## Quick Reference
+## How to provide it
 
-| Symbol | Package | What it is |
-|---|---|---|
-| `IFeatureBase` | `@venizia/ardor-kernel` | `name`, `configurations`, `permissions` - what the container needs |
-| `TFeature<TExtension>` | `@venizia/ardor-admin` | `IFeatureBase` plus `resources`, `routes`, `messages`, and your own extension |
-| `Features.define()` | `@venizia/ardor-admin` | Types a feature, keeping the extension |
-| `Features.read()`, `Features.mount()` | `@venizia/ardor-admin` | What `ArdorApplication` calls: read the bound list, then merge resources and routes |
-| `features()` | application class | The features the application mounts, bound under `CoreBindings.FEATURES` |
-| `useFeatures()` | `@venizia/ardor-admin` | The mounted features, for a menu or a role editor |
-| `IPermissionProvider` | `@venizia/ardor-kernel` | `canAccess({ resource, action, record })`, bound under `CoreBindings.PERMISSION_PROVIDER` |
+A feature encapsulates its domain services, configuration options, resources, routes, and messages in a self-contained module, as demonstrated in the [orders feature example](#example). Its services and options are declared through a class decorated with `@configuration()`. Methods decorated with `@provide({ key })` register lazy singletons into the container. An application class derived from `BaseArdorApplication` mounts features by overriding its `features()` method.
 
-## Declaring a feature
+The default `features()` method in `BaseArdorApplication` returns an empty array `[]`. During application startup, `AbstractArdorApplication.start()` executes `preConfigure()`, which binds the returned feature array under `CoreBindings.FEATURES` (`'@app/application/features'`).
 
-```ts
-import { configuration, Features, provide } from '@venizia/ardor';
+In the startup lifecycle, `registerFeatures()` runs after the stereotypes and before `bindingList()` and `bindContext()`, so the application can override what a feature provides. See [The bind order](../guides/core-concepts/configuration#the-bind-order) for the complete application container sequence.
+
+## Options
+
+`Features.define()` accepts a feature definition conforming to `TFeature<TExtension>`. It combines `IFeatureBase` with react-admin UI properties, message bundles, and optional shell extensions:
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `name` | `string` | None (required) | Unique identifier for the feature within an application. Used in resource ownership checks and diagnostic errors. |
+| `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes belonging to the feature. Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`. |
+| `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the application view tree. Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`. |
+| `routes` | `Array<RouteProps>` | `undefined` | Custom `<Route>` elements mounted under react-admin's `<CustomRoutes>`. Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. |
+| `messages` | `TFeatureMessages` | `undefined` | Dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`. |
+| `permissions` | `Array<string>` | `undefined` | Permission keys checked by the feature in the application's vocabulary. Preserved on the feature for consumers such as role editors; ARDOR enforces nothing. See [Permission](./permission). |
+| `[extension]` | `TExtension` | None | Custom shell metadata (such as menu entries, navigation paths, or icons) preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it. |
+
+## Example
+
+The following example defines an orders feature with its own `@configuration()`, react-admin resource, custom route, messages, and shell menu extension, then mounts it in an application:
+
+```tsx
+import React from 'react';
+import {
+  BaseArdorApplication,
+  configuration,
+  Features,
+  provide,
+  type IApplicationInfo,
+  type IFeatureBase,
+  type TFeature,
+} from '@venizia/ardor';
+
+export class OrderService {
+  calculateDiscount(total: number): number {
+    return total > 100 ? total * 0.05 : 0;
+  }
+}
 
 @configuration()
-export class InventoryConfiguration {
-  @provide({ key: 'services.InventoryLabels' })
-  labels() {
-    return { unit: 'pcs' };
+export class OrdersConfiguration {
+  @provide({ key: 'services.orders' })
+  orderService(): OrderService {
+    return new OrderService();
   }
 }
 
-const StockList = () => null;
+const OrderList: React.FC = () => {
+  return <div>Order list</div>;
+};
 
-export const inventoryFeature = Features.define({
-  name: 'inventory',
-  configurations: [InventoryConfiguration],
-  resources: [{ name: 'stocks', list: StockList }],
-  routes: [{ path: '/stock-report', element: null }],
-  messages: {
-    en: { inventory: { title: 'Stock' } },
-    vi: () => Promise.resolve({ inventory: { title: 'Kho' } }),
-  },
-  permissions: ['stock.read', 'stock.adjust'],
-});
-```
+const OrderAnalyticsPage: React.FC = () => {
+  return <div>Order analytics</div>;
+};
 
-- `configurations` lists the feature's `@configuration()` classes by value. ARDOR packages are `sideEffects: false`, so a module that nothing references can be dropped by the bundler and its bindings silently lost; the list is that reference, and `start()` checks it.
-- `messages` maps a locale to a bundle, or to a loader for one.
-- `permissions` is declared, never enforced by ARDOR: a role editor can list what each feature checks.
-
-A shell adds its own fields through the extension parameter, typed end to end:
-
-```ts
-import { Features, type TFeature } from '@venizia/ardor';
-
-interface IMenuExtension {
-  menu: Array<{ id: string; label: string; resource: string }>;
+interface IShellMenuExtension {
+  menu: {
+    label: string;
+    path: string;
+  };
 }
 
-export type TShellFeature = TFeature<IMenuExtension>;
+export type TOrdersFeature = TFeature<IShellMenuExtension>;
 
-export const ordersFeature = Features.define<IMenuExtension>({
+export const ordersFeature = Features.define<IShellMenuExtension>({
   name: 'orders',
-  resources: [{ name: 'orders' }],
-  menu: [{ id: 'orders', label: 'orders.menu', resource: 'orders' }],
+  configurations: [OrdersConfiguration],
+  resources: [
+    {
+      name: 'orders',
+      list: OrderList,
+    },
+  ],
+  routes: [
+    {
+      path: '/orders/analytics',
+      element: <OrderAnalyticsPage />,
+    },
+  ],
+  messages: {
+    en: { orders: { title: 'Orders', analytics: 'Analytics' } },
+    vi: () => Promise.resolve({ orders: { title: 'Đơn hàng', analytics: 'Thống kê' } }),
+  },
+  permissions: ['orders.read', 'orders.export'],
+  menu: {
+    label: 'orders.title',
+    path: '/orders',
+  },
 });
-```
 
-ARDOR carries the extension and never reads it.
-
-## Mounting features
-
-The application class lists them once:
-
-```ts
-import { BaseArdorApplication, type TFeature } from '@venizia/ardor';
-
-declare const inventoryFeature: TFeature;
-declare const ordersFeature: TFeature;
-
-export class WebManagerApplication extends BaseArdorApplication {
-  override features() {
-    return [inventoryFeature, ordersFeature];
+export class CommerceApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return {
+      name: 'commerce-admin',
+      version: '1.0.0',
+      description: 'Commerce management console',
+    };
   }
 
-  getAppInfo() {
-    return { name: 'web-manager', version: '1.0.0', description: 'merchant console' };
+  override features(): Array<IFeatureBase> {
+    return [ordersFeature];
   }
 
   bindContext() {}
 }
 ```
 
-`preConfigure()` binds the list under `CoreBindings.FEATURES`, after the stereotypes and before `bindingList()` and `bindContext()`, which still override what a feature provides. It throws on:
+## Mount order and conflict checks
 
-- two features with one `name`: `[features] Two features are named 'inventory'`;
-- a listed configuration class that was never discovered: `[features] 'billing' lists BillingConfiguration, which was never discovered`.
+`ArdorApplication` calls `Features.mount({ features, resources, routes })` to assemble the UI tree. Mount order is deterministic:
 
-`ArdorApplication` reads the list from the container (`Features.read({ container })`) and mounts the application's own `resources` and `routes` first, then each feature's, in order (`Features.mount({ features, resources, routes })`). `resources` is optional when the features bring them all. A resource name mounted twice throws, naming both owners - react-admin would keep one and drop the other without a word.
+1. The application's own `resources` and `routes` passed to `<ArdorApplication>` are mounted first. The application's own `resources` prop is optional when all resources are brought by mounted features.
+2. Each feature's `resources` and `routes` are mounted next, in the exact order listed in `features()`.
 
-`useFeatures()` returns the mounted features, typed with your extension:
+### During startup and mount
 
-```ts
+ARDOR performs checks to guarantee isolation. The two `registerFeatures()` errors come from `start()`, while the duplicate-resource error comes from `Features.mount()`, which `ArdorApplication` calls when it renders (a `useMemo` in `packages/admin/src/components/application.tsx`):
+
+- **Duplicate feature name (`start`):** In `packages/kernel/src/base/applications/abstract.ts`, `registerFeatures()` checks that every feature name is unique. If two features share a name, it throws:
+  `[features] Two features are named '${feature.name}' | A feature name is unique within an application`
+- **Undiscovered configuration (`start`):** In `packages/kernel/src/base/applications/abstract.ts`, `registerFeatures()` checks that every class listed in a feature's `configurations` array was discovered by the metadata registry. If a listed class was not discovered, it throws:
+  `[features] '${feature.name}' lists ${target.name}, which was never discovered | Decorate it with @configuration() and import its module before start()`
+- **Duplicate resource name (`mount`):** In `packages/admin/src/features/feature.ts`, `Features.mount()` tracks the owner of each resource name (`'the application'` or `feature.name`). If a resource name is mounted more than once, it throws:
+  `[features] Resource '${resource.name}' is mounted by both '${owner}' and '${entry.owner}' | A resource name is unique within an application`
+
+## Message loading and suspense
+
+Feature messages are merged per locale by `FeatureMessages.combine()` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.
+
+- **Duplicate message keys:** If two features define the same leaf key for a locale, ARDOR refuses to guess which label wins and throws:
+  `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`
+- **Application overrides:** The application's own `i18nSources` (configured in `II18nProviderOptions`) are layered on top of all feature messages by `DefaultI18nProvider`. An application can relabel any feature message by defining the same key in its own dictionary. See [Internationalization](./i18n).
+- **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. For the initial locale, `ArdorApplication` inspects the feature list using `FeatureMessages.hasLoader()`. When a loader exists for that locale, `useFeatureMessagesReady()` keeps the application in a loading state and displays the configured `suspense` fallback until the loader resolves through `i18nProvider.changeLocale()`. If loading rejects, the error is thrown during render for an error boundary to handle. When switching locales later, react-admin's `changeLocale()` manages subsequent loads dynamically.
+
+## Reading features with useFeatures
+
+The `useFeatures()` hook retrieves the array of features mounted in the container. It uses `useInjectableContainer()` to access the current container and calls `Features.read<TItem>({ container })`. If `CoreBindings.FEATURES` is not bound, it returns an empty array.
+
+Passing a shell extension type parameter preserves typed access to custom properties:
+
+```tsx
+import React from 'react';
 import { type TFeature, useFeatures } from '@venizia/ardor';
 
-type TShellFeature = TFeature<{ menu: Array<{ id: string; label: string }> }>;
+interface IMenuExtension {
+  menu?: {
+    label: string;
+    path: string;
+  };
+}
 
-export const useMenu = () => {
-  return useFeatures<TShellFeature>().flatMap((feature) => feature.menu);
+export type TAppFeature = TFeature<IMenuExtension>;
+
+export const FeatureNavigationMenu: React.FC = () => {
+  const features = useFeatures<TAppFeature>();
+
+  return (
+    <nav>
+      <ul>
+        {features.map((feature) => {
+          if (!feature.menu) {
+            return null;
+          }
+          return (
+            <li key={feature.name}>
+              <a href={feature.menu.path}>{feature.menu.label}</a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
 };
 ```
 
-## Permissions
-
-Bind an `IPermissionProvider` and `DefaultAuthProvider` answers react-admin's `canAccess` from it:
-
-```ts
-import { configuration, CoreBindings, type IPermissionProvider, provide } from '@venizia/ardor';
-
-declare const loadPermissionsForCurrentWorkspace: () => Promise<Set<string>>;
-
-@configuration()
-export class PermissionConfiguration {
-  @provide({ key: CoreBindings.PERMISSION_PROVIDER })
-  permissions(): IPermissionProvider {
-    return {
-      canAccess: async ({ resource, action }) => {
-        const granted = await loadPermissionsForCurrentWorkspace();
-        return granted.has('*') || granted.has(`${resource}.${action}`);
-      },
-    };
-  }
-}
-```
-
-The vocabulary - `'<resource>.<action>'`, a `'*'` wildcard, where the set comes from - is the application's; ARDOR only asks. Check with react-admin's own hooks and components, `useCanAccess` and `<CanAccess>`.
-
-- **No provider bound:** `DefaultAuthProvider` has no `canAccess`, and react-admin allows everything, as before.
-- **Context switch:** react-admin caches answers under `['auth', 'canAccess', ...]`. When the workspace changes, invalidate the `['auth']` queries.
-- **A subclass with its own constructor** needs no change: `DefaultAuthProvider` reads the bound provider from the container, whatever the subclass passes to `super`. To use a different provider for one subclass, pass it to `super` as the fourth argument; it wins over the bound one.
-
-## Messages
-
-`DefaultI18nProvider` merges, per locale, every feature's messages, then the application's own `i18nSources` over them: the application may relabel a feature. Keys stay flat; no namespace is added, so give each feature its own prefix.
-
-- A key two features both define throws, naming both and the key: `[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'`. A silent "later wins" is a wrong label nobody notices.
-- A loader runs once per locale. For the initial locale, `ArdorApplication` loads it before react-admin renders, showing `suspense` meanwhile; another locale loads on `changeLocale()`. A failed load is thrown from render, for an error boundary.
-
-## Common pitfalls
-
-- **A configuration not in `configurations`.** It may be tree-shaken away in a production build, and nothing tells you. List every `@configuration()` class the feature relies on.
-- **Calling `useCanAccess` and seeing everything allowed.** No `IPermissionProvider` is bound.
-- **A stale answer after switching workspace.** Invalidate `['auth']`.
-
 ## Related
 
-- [Application](./application) - `features()` in the `preConfigure()` order
-- [Auth provider](./auth-provider) - `canAccess`
-- [Internationalization](./i18n) - how feature messages layer under `i18nSources`
+- [Application](./application) - Application lifecycle, container setup, and `preConfigure()` binding order
+- [Binding keys](./binding-keys) - Container keys in `CoreBindings`, including `CoreBindings.FEATURES`
+- [Permission](./permission) - How permissions are checked with react-admin's `canAccess`
+- [Internationalization](./i18n) - How feature messages layer beneath `i18nSources`
+- [Hooks](./hooks) - Details on `useFeatures` and container resolution hooks

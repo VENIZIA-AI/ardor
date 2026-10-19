@@ -1,541 +1,207 @@
 ---
-title: Types and constants
-description: The public type vocabulary of ARDOR - id and escape-hatch aliases, promise and value helpers, const-class value extraction, path types, option interfaces, the service and provider contracts, and the const classes with their SCHEME_SET + isValid pattern.
+title: Types
+description: The public type vocabulary of ARDOR grouped by package, with each type described on one line alongside where it is used across kernel, react, and admin.
 ---
 
-# Types and constants
+# Types
 
-## Prerequisites
-
-You have a running ARDOR app (see the [quickstart](../guides/get-started/quickstart)) and you know that everything below is imported from `@venizia/ardor`.
-
-## Quick Reference
-
-| Export | Kind | What it is |
-| --- | --- | --- |
-| `IdType`, `NumberIdType`, `StringIdType`, `NullableType` | type | Entity id and nullable aliases |
-| `AnyType`, `AnyObject` | type | Named escape hatches for `any` and loose records |
-| `ValueOrPromise<T>` | type | `T \| Promise<T>` |
-| `ValueOf<T>` | type | Union of the values of `T` |
-| `ValueOptional`, `ValueOptionalExcept`, `TPrettify` | type | Object shaping helpers |
-| `TConstValue`, `TStringConstValue`, `TNumberConstValue` | type | Value unions from a const class |
-| `TRequestMethod`, `TRequestType`, `TRequestBodyType`, `TEnvironment` | type | Prebuilt unions from the const classes |
-| `TPaths<T>`, `TFullPaths<T>` | type | Dotted path unions over an object type |
-| `IApplicationInfo` | interface | Name, version, description, author |
-| `ISendParams`, `ISendResponse<T>` | interface | Input and output of `dataProvider.send` |
-| `IRequestProps`, `IGetRequestPropsParams`, `IGetRequestPropsResult`, `ICustomParams` | interface | Request building types used by the network layer |
-| `IRestDataProviderOptions` | interface | REST data provider options (extends `INoAuthOptions`) |
-| `INoAuthOptions`, `TNoAuthPathRegex` | interface, type | Which paths are sent without an authorization header |
-| `IAuthRecoveryOptions` | interface | The refresh endpoint path (data only) |
-| `IAuthProviderOptions` | interface | Auth provider paths (`signIn`, `checkAuth`, `afterLogin`) |
-| `IAuthTokenRecord`, `IDataSourceAuth` | interface | The token a request carries; the settings an `HttpDataSource` takes from the network service |
-| `II18nProviderOptions` | interface | i18n sources and language list |
-| `IReactAdminDataProvider`, `IDataProvider` | interface | react-admin data contract plus `send`, `getNetworkService` and `getDataSourceAuth` |
-| `IReactAdminAuthProvider`, `IAuthProvider` | interface | react-admin auth contract plus `getRoles` and `refreshToken` |
-| `IArdorApplication`, `IApplication` | interface | Application lifecycle and `<ArdorApplication>` props |
-| `TDataCount<T>` | type | Data with optional count |
-| `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`, `Authentication`, `LocalStorageKeys`, `LogLevels`, `NumberParseMethods` | class | Const classes with `SCHEME_SET` and `isValid` |
-| `HeaderConstants`, `App` | class | Const classes without a scheme set |
-
-## Id and nullable aliases
-
-`IdType` is the id type used by every CRUD and provider contract. `NumberIdType` and `StringIdType` narrow it when a service knows its id shape. `NullableType` names the three "no value" cases.
-
-```ts no-check
-export type NumberIdType = number;
-export type StringIdType = string;
-export type IdType = string | number;
-export type NullableType = undefined | null | void;
-```
+ARDOR organizes its public type vocabulary across three packages: `@venizia/ardor-kernel` (primitives, constants, network options, and repositories), `@venizia/ardor-react` (React context and hooks), and `@venizia/ardor-admin` (react-admin providers and application components). All symbols can be imported directly from `@venizia/ardor` (or `@venizia/ardor/repository` for repository classes and datasource settings).
 
 ```ts
-import type { IdType } from '@venizia/ardor';
+import type { IdType, ISendParams, ValueOrPromise } from '@venizia/ardor';
 
-export interface Product {
+export interface UserItem {
   id: IdType;
-  name: string;
+  title: string;
 }
 
-export const byId = (opts: { items: Array<Product>; id: IdType }) =>
-  opts.items.find(item => item.id === opts.id);
-```
-
-## AnyType and AnyObject
-
-`AnyType` is `any` under a name. `AnyObject` is a record with any keys and any values. They exist so that the places where the framework gives up type precision are explicit and searchable, instead of a bare `any` scattered through signatures. The framework uses them as generic defaults (`ISendResponse<T = AnyType>`, the `RecordType` defaults of `IDataProvider`) and for untyped inputs (`ISendParams.body`, `IAuthProvider.login(params: AnyType)`).
-
-```ts no-check
-export type AnyType = any;
-export type AnyObject = Record<string | symbol | number, any>;
-```
-
-Use them at the same boundaries in your own code - untyped payloads, generic defaults - and give your domain types real shapes.
-
-```ts
-import type { AnyObject } from '@venizia/ardor';
-
-export const pick = (opts: { source: AnyObject; keys: Array<string> }) =>
-  Object.fromEntries(opts.keys.map(key => [key, opts.source[key]]));
-```
-
-## ValueOrPromise
-
-A value that may or may not be wrapped in a promise. The application lifecycle hooks (`preConfigure`, `postConfigure`, `bindContext`, `start` on `IArdorApplication`) use it, so you can implement them synchronously or with `async`.
-
-```ts no-check
-export type ValueOrPromise<T> = T | Promise<T>;
-```
-
-```ts
-import type { ValueOrPromise } from '@venizia/ardor';
-
-export const resolve = async <T>(opts: { value: ValueOrPromise<T> }): Promise<T> =>
-  await opts.value;
-```
-
-## ValueOf and the object shaping helpers
-
-`ValueOf<T>` is the union of the property types of `T`. Three helpers reshape object types: `ValueOptional` makes the listed keys optional, `ValueOptionalExcept` makes everything optional except the listed keys, and `TPrettify` flattens an intersection so editors show one object.
-
-```ts no-check
-export type ValueOf<T> = T[keyof T];
-export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
-export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
-```
-
-```ts
-import type { TPrettify, ValueOf, ValueOptional, ValueOptionalExcept } from '@venizia/ardor';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  age: number;
-}
-
-export type UserField = ValueOf<User>;
-// string | number
-
-export type UserInput = TPrettify<ValueOptional<User, 'email' | 'age'>>;
-// { id: string; name: string; email?: string; age?: number }
-
-export type UserPatch = TPrettify<ValueOptionalExcept<User, 'id'>>;
-// { id: string; name?: string; email?: string; age?: number }
-```
-
-## TConstValue
-
-ARDOR keeps its enums as classes with `static readonly` literal members. These types turn such a class into a union of its values.
-
-- `TConstValue<T>` keeps the string and number values. `TStringConstValue` and `TNumberConstValue` keep one of the two.
-- `SCHEME_SET` (a `Set`), `isValid` (a function) and `prototype` are neither a string nor a number, so they drop out of the union by type.
-
-All three end with `& {}`. A `static readonly X = '12h'` member has a widening literal type, so a value copied into an object literal (`rows.map(row => ({ value: row.value }))`) or a `let` used to widen to `string` or `number` and no longer fit the union. `& {}` makes the literals regular: the union is unchanged (`'12h' | '24h'`), a member declared `: string` still gives `string`, and the result is still assignable to `string` or `number`.
-
-```ts no-check
-// TClass comes from @venizia/ignis-inversion
-export type TStringConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string> & {};
-export type TNumberConstValue<T extends TClass<any>> = Extract<ValueOf<T>, number> & {};
-export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
-```
-
-```ts
-import { type TConstValue } from '@venizia/ardor';
-
-class TimeModes {
-  static readonly HALF_DAY = '12h';
-  static readonly FULL_DAY = '24h';
-}
-
-const modes: TConstValue<typeof TimeModes>[] = [TimeModes.HALF_DAY, TimeModes.FULL_DAY];
-
-export const options = modes.map(value => ({ value, label: String(value) }));
-// { value: '12h' | '24h'; label: string }[]
-```
-
-The prebuilt unions are `TRequestMethod` (from `RequestMethods`), `TEnvironment` (from `Environments`), `TRequestType` (from `RequestTypes`) and `TRequestBodyType` (from `RequestBodyTypes`). All four are `TStringConstValue` of their class and keep their literals.
-
-```ts
-import { RequestCountData, RequestMethods, type TConstValue, type TStringConstValue } from '@venizia/ardor';
-
-export type Method = TStringConstValue<typeof RequestMethods>;
-// 'HEAD' | 'OPTIONS' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-
-export type CountMode = TConstValue<typeof RequestCountData>;
-// '0' | '1'
-```
-
-## TPaths and TFullPaths
-
-Both produce a union of dotted paths over an object type, up to 10 levels deep. They differ in what they emit for nested objects and arrays.
-
-- `TPaths<T>` emits every key, including intermediate object keys (`customer` and `customer.name`). An array-valued key stops the walk: you get `lines`, never `lines.sku`. A `Date`, `RegExp`, `Set`, `Map`, `Promise`, function or `any` field is a leaf too: you get `createdAt`, never `createdAt.getTime`. Optional and nullable properties are unwrapped with `NonNullable` before recursion. A top-level array gives `never`.
-- `TFullPaths<T>` emits leaf paths only. An object-valued key never appears on its own. An array-valued key recurses into the element type, so `lines` becomes `lines.sku` and `lines.qty`. A top-level array is unwrapped to its element type.
-
-```ts no-check
-export type TPaths<T, DeepLevel extends number = 10> = /* keys, stops at arrays */ never;
-export type TFullPaths<T, DeepLevel extends number = 10> = /* leaves, walks into arrays */ never;
-```
-
-```ts
-import type { TFullPaths, TPaths } from '@venizia/ardor';
-
-export interface Order {
-  id: number;
-  customer: { name: string; address: { city: string } };
-  lines: Array<{ sku: string; qty: number }>;
-}
-
-export type OrderPath = TPaths<Order>;
-// 'id' | 'customer' | 'customer.name' | 'customer.address' | 'customer.address.city' | 'lines'
-
-export type OrderLeaf = TFullPaths<Order>;
-// 'id' | 'customer.name' | 'customer.address.city' | 'lines.sku' | 'lines.qty'
-```
-
-Pick `TPaths` when you need to name a container (a sort field, a group key). Pick `TFullPaths` when you need to name a value inside a list.
-
-## IApplicationInfo
-
-Identity of the app. It is passed to the request builder (`IGetRequestPropsParams.applicationInfo`) and to the `buildRequestTracingId` hook of the network service. Extra keys are allowed.
-
-```ts no-check
-export interface IApplicationInfo {
-  name: string;
-  version: string;
-  description: string;
-  author?: { name: string; email: string; url?: string };
-  [extra: string | symbol]: any;
-}
-```
-
-```ts
-import type { IApplicationInfo } from '@venizia/ardor';
-
-export const applicationInfo: IApplicationInfo = {
-  name: 'shop-admin',
-  version: '1.4.0',
-  description: 'Back office for the shop',
-  author: { name: 'Shop team', email: 'team@example.com' },
+export const loadUser = (id: IdType): ValueOrPromise<UserItem> => {
+  return { id, title: 'Sample' };
 };
-```
-
-## ISendParams and ISendResponse
-
-`ISendParams` is the input of `dataProvider.send`. Every field is optional and unknown keys are allowed. `method`, `requestType`, `bodyType` and `requestCountData` are typed from the const classes below. `ISendResponse<T>` wraps the payload under `data` and allows extra keys.
-
-```ts no-check
-export interface ISendParams {
-  id?: string | number;
-  method?: TRequestMethod;
-  requestType?: TRequestType;
-  bodyType?: TRequestBodyType;
-  body?: any;
-  file?: any;
-  query?: { [key: string]: any };
-  headers?: { [key: string]: string | number };
-  requestCountData?: TConstValue<typeof RequestCountData>;
-  [key: string]: any;
-}
-
-export interface ISendResponse<T = AnyType> {
-  data: T;
-  [key: string]: any;
-}
-```
-
-```ts
-import { RequestBodyTypes, RequestMethods, type ISendParams } from '@venizia/ardor';
 
 export const exportParams: ISendParams = {
-  method: RequestMethods.POST,
-  bodyType: RequestBodyTypes.JSON,
-  body: { ids: [1, 2, 3] },
-  query: { format: 'csv' },
+  query: { format: 'json' },
 };
 ```
 
-The related request building types are `IRequestProps` (headers, body, query), `IGetRequestPropsParams` and `IGetRequestPropsResult` (input and output of header and body preparation), and `ICustomParams` (an optional `params` bag merged into react-admin params). See [network](../references/network).
+## @venizia/ardor-kernel
 
-## INoAuthOptions
+Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common/constants.ts`, `packages/kernel/src/common/keys.ts`, and `packages/kernel/src/base/services/network-request.ts`.
 
-Controls when the authorization header is attached. Data only: the matching rule is the network service's protected `isNoAuthPath` hook, see [network](../references/network#no-auth-paths).
+### Primitives and value helpers
 
-- `noAuthPaths` - exact resource paths sent without the header.
-- `noAuthPathRegex` - one or more patterns. A string is compiled with `new RegExp(...)`.
-
-To send no token at all (an API with no sign-in), set `noAuthPathRegex: /./`.
-
-```ts no-check
-export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
-
-export interface INoAuthOptions {
-  noAuthPaths?: Array<string>;
-  noAuthPathRegex?: TNoAuthPathRegex;
-}
-```
-
-## IAuthRecoveryOptions
-
-Data the network layer uses when a request fails on authentication: the path of the refresh endpoint.
-
-```ts no-check
-export interface IAuthRecoveryOptions {
-  /** A request to this path never starts a refresh: it is the refresh. */
-  refreshTokenPath?: string;
-}
-```
-
-`refreshTokenPath` names the refresh endpoint, so a 401 from it does not start another refresh. The refresh itself is behaviour, not an option: it is the `refreshToken` and `onAuthFailure` hooks of a `DefaultNetworkRequestService` subclass. See [network](../references/network#auth-recovery) and [auth provider](../references/auth-provider).
-
-## IAuthTokenRecord and IDataSourceAuth
-
-`IAuthTokenRecord` is the token a request carries. `resolveAuthToken()` of the network service returns it, and so does the `authTokenResolver` of an `HttpDataSource`. `IDataSourceAuth` is what `getDataSourceAuth()` returns for an `HttpDataSource`: the token resolver, the headers resolver, the 401 hook and the error root key, all bound to one network service.
-
-```ts no-check
-export interface IAuthTokenRecord {
-  type?: string; // defaults to 'Bearer'
-  value: string;
-  provider?: string; // sent as x-auth-provider
-}
-
-export interface IDataSourceAuth {
-  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
-  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
-  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
-  errorRootKey: string;
-}
-```
-
-ARDOR has no token resolver type or option of its own any more (the `TAuthTokenResolver` of an `HttpDataSource` is IGNIS's). The token has one source: the `resolveAuthToken` hook of the service, which reads storage by default through the static `DefaultNetworkRequestService.readAuthTokenFromStorage()`.
-
-## IRestDataProviderOptions
-
-Options of the REST data provider. It extends `INoAuthOptions` and adds the base `url`, default `headers`, the request channel and auth recovery. All of it is data.
-
-- `requestTracingChannel` - the channel value sent with the request in `x-request-channel`. Default `web`.
-- The tracing id is behaviour: override `buildRequestTracingId({ applicationInfo })` in a network service subclass. The default is `<application name>_<uuid>`.
-
-```ts no-check
-export interface IRestDataProviderOptions extends INoAuthOptions {
-  url: string;
-  requestTracingChannel?: string;
-  headers?: HeadersInit;
-  authRecovery?: IAuthRecoveryOptions;
-}
-```
+| Type | Kind | Definition and usage |
+|---|---|---|
+| `IdType` | `type` | Entity identifier (`string \| number`), used by all CRUD and provider method signatures. |
+| `NumberIdType` | `type` | Numeric entity identifier (`number`), used to narrow numeric entity ids. |
+| `StringIdType` | `type` | String entity identifier (`string`), used to narrow string entity ids. |
+| `NullableType` | `type` | Absent value union (`undefined \| null \| void`), used for empty or uninitialized states. |
+| `AnyType` | `type` | Named alias for `any`, used at untyped boundaries and generic defaults. |
+| `AnyObject` | `type` | Loose record (`Record<string \| symbol \| number, any>`), used for untyped property dictionaries. |
+| `ValueOrPromise<T>` | `type` | Sync or async value (`T \| Promise<T>`), used in application lifecycle methods (`preConfigure`, `start`). |
+| `ValueOf<T>` | `type` | Property value union (`T[keyof T]`), used to extract property value types from objects. |
+| `ValueOptional<T, K>` | `type` | Makes keys `K` optional in `T`, used to model partial creation payloads. |
+| `ValueOptionalExcept<T, K>` | `type` | Makes all keys optional in `T` except `K`, used to model patch payloads. |
+| `TPrettify<T>` | `type` | Flattens intersection types into a single object shape for editor hints. |
+| `TConstValue<T>` | `type` | Extracts string and number literal unions from a const class with regular literal types (`& {}`). |
+| `TStringConstValue<T>` | `type` | Extracts string literal unions from a const class with regular literal types (`& {}`). |
+| `TNumberConstValue<T>` | `type` | Extracts numeric literal unions from a const class with regular literal types (`& {}`). |
+| `TPaths<T>` | `type` | Dotted path union over object keys up to 10 levels deep, stopping at arrays. |
+| `TFullPaths<T>` | `type` | Dotted leaf path union over object keys up to 10 levels deep, descending into arrays. |
+| `TDataCount<T>` | `type` | Payload with optional total count (`{ data: T; count?: number }`). |
 
 ```ts
-import { HeaderConstants, RequestChannel, type IRestDataProviderOptions } from '@venizia/ardor';
+import type { IdType, TFullPaths, TPaths, ValueOf, ValueOptional } from '@venizia/ardor';
 
-export const restOptions: IRestDataProviderOptions = {
-  url: 'https://api.example.com',
-  headers: { [HeaderConstants.X_LOCALE]: 'en' },
-  requestTracingChannel: RequestChannel.WEB,
-  noAuthPaths: ['auth/sign-in'],
-  noAuthPathRegex: [/^public\//],
-  authRecovery: { refreshTokenPath: 'auth/refresh' },
+export interface UserRecord {
+  id: IdType;
+  name: string;
+  email?: string;
+  meta: { role: string };
+}
+
+export type UserValues = ValueOf<UserRecord>;
+export type NewUser = ValueOptional<UserRecord, 'email'>;
+export type UserPath = TPaths<UserRecord>;
+export type UserLeaf = TFullPaths<UserRecord>;
+```
+
+### Network and options
+
+| Type | Kind | Definition and usage |
+|---|---|---|
+| `TRequestMethod` | `type` | HTTP methods union (`'HEAD' \| 'OPTIONS' \| 'GET' \| 'POST' \| 'PUT' \| 'PATCH' \| 'DELETE'`), used in network requests. |
+| `TRequestType` | `type` | Operation types union (`RequestTypes`), used by data provider operations. |
+| `TRequestBodyType` | `type` | Payload format union (`'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'`), used in requests. |
+| `TEnvironment` | `type` | Environment names union (`'development' \| 'production'`), used for runtime environment checks. |
+| `IRequestProps` | `interface` | HTTP request options (`headers`, `body`, `query`), used by network fetchers. |
+| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. |
+| `ISendResponse<T>` | `interface` | Envelope returned by `dataProvider.send` containing `{ data: T }`. |
+| `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. |
+| `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. |
+| `ICustomParams` | `interface` | Parameter bag merged into react-admin calls via `params`. |
+| `INoAuthOptions` | `interface` | Unauthenticated paths configuration (`noAuthPaths`, e.g. `['/auth/sign-in']`; `noAuthPathRegex`), used in network services. |
+| `TNoAuthPathRegex` | `type` | Regex patterns (`string \| RegExp \| Array<string \| RegExp>`) matched against no-auth request paths. |
+| `IAuthRecoveryOptions` | `interface` | Configuration for session refresh endpoint (`refreshTokenPath`, e.g. `'/auth/refresh'`), used in network auth recovery. |
+| `IRestDataProviderOptions` | `interface` | Configuration options for REST data provider (URL, headers, channel, auth recovery, no-auth). |
+| `ISignInSession` | `interface` | Session data extracted on login (`userId`, `token`, `roles`), used in sign-in lifecycle hooks. |
+| `IAuthProviderOptions` | `interface` | Auth provider endpoint paths (`paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin`), bound under `CoreBindings.AUTH_PROVIDER_OPTIONS`. |
+| `IAuthTokenRecord` | `interface` | Auth token payload (`value`, `type`, `provider`), returned by `resolveAuthToken()`. |
+| `IDataSourceRequestContext` | `interface` | Request context (`paths`) supplied to `HttpDataSource` auth hooks. |
+| `IDataSourceAuth` | `interface` | Bridge settings (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) returned by `getDataSourceAuth()`. |
+| `IApplicationInfo` | `interface` | Application metadata (`name`, `version`, `description`, `author`), bound under `CoreBindings.APPLICATION_INFO`. |
+| `IFeatureBase` | `interface` | Base feature configuration (`name`, `configurations`, `permissions`), bound under `CoreBindings.FEATURES`. |
+| `IArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. |
+| `IPermissionProvider` | `interface` | Authorization checker contract (`canAccess`), bound under `CoreBindings.PERMISSION_PROVIDER`. |
+| `IArdorApplication` | `interface` | Application lifecycle contract implemented by `AbstractArdorApplication`. |
+
+### Const classes
+
+| Class | Kind | Definition and usage |
+|---|---|---|
+| `CoreBindings` | `class` | The eleven container keys for instances, options, providers, and features. |
+| `LocalStorageKeys` | `class` | The three local storage keys for tokens, identities, and permissions. |
+| `RequestMethods` | `class` | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) with `SCHEME_SET` and `isValid`. |
+| `RequestTypes` | `class` | Data operation constants (`SEND`, `GET_LIST`, `GET_ONE`, etc.) with `SCHEME_SET` and `isValid`. |
+| `RequestBodyTypes` | `class` | Request body formats (`JSON`, `FORM_DATA`, `BINARY`, etc.) with `SCHEME_SET` and `isValid`. |
+| `Environments` | `class` | Environment constants (`DEVELOPMENT`, `PRODUCTION`) with `SCHEME_SET` and `isValid`. |
+| `RequestCountData` | `class` | Count mode constants (`DATA_ONLY: '0'`, `DATA_WITH_COUNT: '1'`) with `SCHEME_SET` and `isValid`. |
+| `RequestChannel` | `class` | Client channel constant (`WEB: '100_WEB'`) with `SCHEME_SET` and `isValid`. |
+| `Authentication` | `class` | Auth types and strategies (`TYPE_BEARER`, `STRATEGY_JWT`) with `SCHEME_SET` and `isValid`. |
+| `HeaderConstants` | `class` | HTTP header string constants read and written by network services. |
+| `App` | `class` | Runtime defaults for `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_LOCALE`, and `DEFAULT_DEBOUNCE_TIME`. |
+
+### Repositories (@venizia/ardor/repository)
+
+Source files: `packages/ardor/src/repository.ts` and `packages/kernel/src/base/repositories/index.ts`.
+
+| Type | Kind | Definition and usage |
+|---|---|---|
+| `HttpDataSource` | `class` | Transport class managing HTTP requests for repositories. |
+| `HttpRepository<E, P>` | `class` | Typed CRUD repository reading and writing a backend resource. |
+| `IHttpDataSourceSettings` | `interface` | Constructor options for `HttpDataSource` (baseUrl, headers, auth token, resolvers, retry hook). |
+| `IHttpReadResult<R>` | `interface` | Response from `HttpDataSource.read` containing rows, range flag, and count. |
+| `IHttpWriteResult<R>` | `interface` | Response from `HttpDataSource.write` containing affected rows, count, and extras. |
+| `IHttpCallOptions` | `interface` | Per-request options (`headers`, `signal`) accepted by repository calls. |
+| `THttpRepositoryOptions` | `type` | Options accepted by `HttpRepository` methods combining call options and query flags. |
+| `IAuthToken` | `interface` | Authentication token shape (`value`, `type`, `provider`) accepted by `HttpDataSource`. |
+| `TAuthTokenResolver` | `type` | Hook function returning `IAuthToken \| undefined` for `HttpDataSource`. |
+| `THttpHeaders` | `type` | Header inputs (`Headers \| Array<[string, string]> \| Record<string, string>`) accepted by `HttpDataSource`. |
+| `THttpHeadersResolver` | `type` | Hook function returning dynamic `THttpHeaders` on each request. |
+| `THttpBody` | `type` | Request body types (`string \| object`) accepted by `HttpDataSource`. |
+| `TExtraRequest` | `type` | Request specification for list extras (`x-request-extra`). |
+| `TExtraResult<T>` | `type` | Type extraction helper for list extras returned in `x-response-extra`. |
+| `HttpExtraRequest` | `class` | Utility converting list extra definitions into `x-request-extra` header values. |
+
+## @venizia/ardor-react
+
+Source files: `packages/react/src/common/types.ts` and `packages/react/src/hooks/use-injectable.ts`.
+
+| Type | Kind | Definition and usage |
+|---|---|---|
+| `ISyncFC<TProps>` | `interface` | Synchronous functional component interface returning `ReactNode`. |
+| `IUseInjectableKeysOverrides` | `interface` | Augmentation interface for registering custom string keys with `useInjectable`. |
+| `TUseInjectableKeysDefault` | `type` | Union of default string keys extracted from `CoreBindings`. |
+| `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable` (`TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides`). |
+| `TUseInjectableOptions` | `type` | Options discriminated union (`key` or `target`) accepted by `useInjectable`. |
+
+```tsx
+import { useInjectable, type ISyncFC } from '@venizia/ardor';
+
+interface UserBadgeProps {
+  name: string;
+}
+
+export const UserBadge: ISyncFC<UserBadgeProps> = (props) => {
+  return <span>{props.name}</span>;
+};
+
+class GreetingService {
+  greet(name: string) {
+    return `Hello, ${name}`;
+  }
+}
+
+export const useGreeting = () => {
+  return useInjectable<GreetingService>({ target: GreetingService });
 };
 ```
 
-Bind the object under the key listed in [binding keys](../references/binding-keys). Behaviour of each field is covered in [data provider](../references/data-provider).
+## @venizia/ardor-admin
 
-## IAuthProviderOptions
+Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/features/feature.ts`.
 
-Options of the default auth provider. Data only: where it talks to and where the admin goes next. The literals it does not take as options (the login and unauthorized pages, how it reads the sign-in response) are protected members of `DefaultAuthProvider`, see [auth provider](../references/auth-provider).
-
-- `paths.signIn` - where `login` posts. Default `/auth/sign-in`.
-- `paths.checkAuth` - where `checkAuth` validates the stored token. Default: not called.
-- `paths.afterLogin` - where the admin goes once `login` resolves. Default `/`.
-
-```ts no-check
-export interface IAuthProviderOptions {
-  paths?: {
-    signIn?: string;
-    checkAuth?: string;
-    afterLogin?: string;
-  };
-}
-```
-
-```ts
-import type { IAuthProviderOptions } from '@venizia/ardor';
-
-export const authOptions: IAuthProviderOptions = {
-  paths: {
-    signIn: 'auth/sign-in',
-    checkAuth: 'auth/who-am-i',
-    afterLogin: '/dashboard',
-  },
-};
-```
-
-`II18nProviderOptions` (`i18nSources`, `languages`) follows the same shape and is documented in [i18n](../references/i18n).
-
-## IDataProvider and IAuthProvider
-
-Both contracts are react-admin's interface plus ARDOR extensions.
-
-`IReactAdminDataProvider<TResource>` is the nine react-admin methods, called with positional `(resource, params)`. `params` is react-admin's own params type intersected with `QueryFunctionContext` and `ICustomParams`. `IDataProvider` adds three methods:
-
-- `send({ resource, params })` - an arbitrary request, typed by `ISendParams` and returning `ISendResponse<ReturnType>`. This one takes an options object.
-- `getNetworkService()` - the `DefaultNetworkRequestService` behind the provider.
-- `getDataSourceAuth()` - the `IDataSourceAuth` to spread into an `HttpDataSource`, so a repository sends what this provider sends.
-
-```ts no-check
-export interface IDataProvider<TResource extends string = string>
-  extends IReactAdminDataProvider<TResource> {
-  send: <ReturnType = AnyType>(opts: {
-    resource: TResource;
-    params: ISendParams;
-  }) => Promise<ISendResponse<ReturnType>>;
-
-  getNetworkService(): DefaultNetworkRequestService;
-
-  /** Spread into an `HttpDataSource`: the repository then sends what this provider sends. */
-  getDataSourceAuth(): IDataSourceAuth;
-}
-```
+| Type | Kind | Definition and usage |
+|---|---|---|
+| `IReactAdminDataProvider<TResource>` | `interface` | Nine standard react-admin data methods with positional arguments `(resource, params)`. |
+| `IDataProvider<TResource>` | `interface` | ARDOR data provider contract extending react-admin with `send`, `getNetworkService`, and `getDataSourceAuth`. |
+| `IReactAdminAuthProvider` | `interface` | Standard react-admin auth provider contract (`login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess`). |
+| `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. |
+| `II18nProviderOptions` | `interface` | i18n configuration options (`i18nSources`, `languages`), bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. |
+| `IApplication` | `interface` | Props accepted by `<ArdorApplication>` (`container`, `reduxStore`, `suspense`, `resources`, `routes`). |
+| `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. |
+| `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. |
 
 ```ts
 import { RequestMethods, type IDataProvider } from '@venizia/ardor';
 
-export const exportFirstPage = async (opts: { dataProvider: IDataProvider }) => {
-  const { dataProvider } = opts;
-
-  // react-admin contract: positional (resource, params)
-  const list = await dataProvider.getList('products', {
-    pagination: { page: 1, perPage: 10 },
-    sort: { field: 'id', order: 'ASC' },
-    filter: {},
+export const runCustomQuery = async (dataProvider: IDataProvider) => {
+  const response = await dataProvider.send<{ status: string }>({
+    resource: 'system/health',
+    params: { method: RequestMethods.GET },
   });
-
-  // ARDOR extension: options object
-  const exported = await dataProvider.send<{ url: string }>({
-    resource: 'products/export',
-    params: { method: RequestMethods.POST, body: { ids: list.data.map(record => record.id) } },
-  });
-
-  return exported.data.url;
+  return response.data.status;
 };
 ```
-
-`IReactAdminAuthProvider` is react-admin's auth contract (`login`, `logout`, `checkAuth`, `checkError`, optional `getIdentity`, `getPermissions`). `IAuthProvider` adds `getRoles`, which resolves to a `Set<string>`, and `refreshToken`, which asks the network service to refresh and resolves `true` or `false`.
-
-```ts no-check
-export interface IAuthProvider extends IReactAdminAuthProvider {
-  getRoles: (params?: AnyType) => Promise<Set<string>>;
-  refreshToken: () => Promise<AnyType>;
-}
-```
-
-```ts
-import type { IAuthProvider } from '@venizia/ardor';
-
-export const canManage = async (opts: { authProvider: IAuthProvider }) => {
-  const roles = await opts.authProvider.getRoles();
-  return roles.has('admin');
-};
-```
-
-How to obtain both from the container is covered in [data provider](../references/data-provider), [auth provider](../references/auth-provider) and [hooks](../references/hooks). `IArdorApplication` (the lifecycle contract) and `IApplication` (the props of `ArdorApplication`) are documented in [application](../references/application).
-
-## Const classes and the SCHEME_SET + isValid pattern
-
-ARDOR does not use TypeScript `enum`. Each group of constants is a class with `static readonly` members. Most of them also carry a `SCHEME_SET` (a `Set` of every member) and a static `isValid(value: string): boolean` that checks membership at runtime. Pair `isValid` with `TConstValue` when you need both a runtime check and a compile-time union from the same source.
-
-| Class | Members | `SCHEME_SET` + `isValid` |
-| --- | --- | --- |
-| `RequestMethods` | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` | yes |
-| `RequestTypes` | `SEND`, `GET_LIST`, `GET_ONE`, `GET_MANY`, `GET_MANY_REFERENCE`, `CREATE`, `UPDATE`, `UPDATE_MANY`, `DELETE`, `DELETE_MANY` | yes |
-| `RequestBodyTypes` | `NONE` (`'none'`), `FORM_DATA` (`'form-data'`), `FORM_URL_ENCODED` (`'x-www-form-urlencoded'`), `JSON` (`'json'`), `BINARY` (`'binary'`) | yes |
-| `Environments` | `DEVELOPMENT` (`'development'`), `PRODUCTION` (`'production'`) | yes |
-| `RequestCountData` | `DATA_ONLY` (`'0'`), `DATA_WITH_COUNT` (`'1'`) | yes |
-| `RequestChannel` | `WEB` (`'100_WEB'`) | yes |
-| `Authentication` | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` | yes |
-| `LocalStorageKeys` | `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` | yes |
-| `LogLevels` | `DEBUG`, `INFO`, `WARN`, `ERROR` (the `TLogLevel` union) | yes |
-| `NumberParseMethods` | `INT` (`'int'`), `FLOAT` (`'float'`) (the `TNumberParseMethod` union) | yes |
-| `HeaderConstants` | header names, see below | no |
-| `App` | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_LOCALE`, `DEFAULT_DEBOUNCE_TIME` | no |
-
-```ts no-check
-export class RequestMethods {
-  static readonly GET = 'GET';
-  // ...
-  static readonly SCHEME_SET = new Set([this.HEAD, this.OPTIONS, this.GET, this.POST, this.PUT, this.PATCH, this.DELETE]);
-  static isValid(value: string): boolean {
-    return this.SCHEME_SET.has(value);
-  }
-}
-```
-
-```ts
-import { Environments, RequestMethods, type TEnvironment, type TRequestMethod } from '@venizia/ardor';
-
-export const toMethod = (opts: { raw: string }): TRequestMethod => {
-  if (!RequestMethods.isValid(opts.raw)) {
-    throw new Error(`Unsupported method: ${opts.raw}`);
-  }
-  return opts.raw as TRequestMethod;
-};
-
-export const toEnvironment = (opts: { raw: string }): TEnvironment =>
-  Environments.isValid(opts.raw) ? (opts.raw as TEnvironment) : Environments.DEVELOPMENT;
-```
-
-`RequestCountData` selects what the server puts in the body: `DATA_ONLY` returns only the data, `DATA_WITH_COUNT` returns data and count. It travels in the `HeaderConstants.REQUEST_COUNT_DATA` header and is the type of `ISendParams.requestCountData`. `TDataCount<T>` (`{ data: T; count?: number }`) is the matching result shape.
-
-`HeaderConstants` names every header the network layer reads or writes:
-
-| Member | Value |
-| --- | --- |
-| `CONTENT_TYPE` | `content-type` |
-| `CONTENT_RANGE` | `content-range` (`unit start-end/total`) |
-| `CONTENT_DISPOSITION` | `content-disposition` |
-| `AUTHORIZATION` | `authorization` |
-| `X_AUTH_PROVIDER` | `x-auth-provider` |
-| `X_LOCALE` | `x-locale` |
-| `TIMEZONE` | `timezone` |
-| `TIMEZONE_OFFSET` | `timezone-offset` |
-| `REQUEST_TRACING_ID` | `x-request-id` |
-| `REQUEST_DEVICE_INFO` | `x-device-info` |
-| `REQUEST_CHANNEL` | `x-request-channel` |
-| `REQUEST_COUNT_DATA` | `x-request-count` |
-| `RESPONSE_COUNT_DATA` | `x-response-count` |
-| `RESPONSE_FORMAT` | `x-response-format` |
-| `TEXTUAL_CONTENT_TYPE_RE` | regex matching JSON, XML, form, javascript, graphql and `text/*` content types |
-| `ATTACHMENT_CONTENT_DISPOSITION_RE` | regex matching `attachment` dispositions |
-
-`App` holds runtime defaults: `TIMEZONE` is the browser's IANA zone, `TIMEZONE_OFFSET` is the offset in hours, `DEFAULT_LOCALE` is `'en.UTF-8'`, and `DEFAULT_DEBOUNCE_TIME` is `500` milliseconds.
-
-```ts
-import { App, HeaderConstants } from '@venizia/ardor';
-
-export const timezoneHeaders = (): Record<string, string> => ({
-  [HeaderConstants.TIMEZONE]: App.TIMEZONE,
-  [HeaderConstants.TIMEZONE_OFFSET]: String(App.TIMEZONE_OFFSET),
-});
-```
-
-## Common pitfalls
-
-- `isValid` returns `boolean`, not a type guard. It does not narrow `string` to the union; cast after the check, as in the example above.
-- `TPaths` never descends into arrays and `TFullPaths` never emits an intermediate object key. Using one where you meant the other gives a union that silently misses the path you wanted.
-- `IDataProvider` is positional on purpose. Only `send` takes an options object, because it is an ARDOR extension and not part of the react-admin contract.
-- `INoAuthOptions.noAuthPaths` is an exact match. Use `noAuthPathRegex` for prefixes, and remember a string pattern is compiled with `new RegExp(...)`.
-- `AnyType` is `any`. It is fine as a generic default at a boundary; do not let it become the type of your domain records.
-- `IAuthProviderOptions` carries no defaults in its type. What happens when a path is missing is decided by the provider, see [auth provider](../references/auth-provider).
-- `TConstValue` keeps every string or number static. Any other string static you add to a const class becomes part of the union.
 
 ## Related
 
-- [Application](../references/application) - `IArdorApplication`, `IApplication`, lifecycle hooks
-- [Binding keys](../references/binding-keys) - where the option objects are bound
-- [Data provider](../references/data-provider) - `IDataProvider`, `IRestDataProviderOptions` in use
-- [Auth provider](../references/auth-provider) - `IAuthProvider`, `IAuthProviderOptions`, `IAuthRecoveryOptions`
-- [i18n](../references/i18n) - `II18nProviderOptions`
-- [Network](../references/network) - request building with `ISendParams` and `HeaderConstants`
-- [Hooks](../references/hooks) - resolving providers from components
-- [Module augmentation](../best-practices/module-augmentation) - extending key unions
+- [Binding keys](binding-keys) - container binding keys and storage keys
+- [Application](application) - application lifecycle and configuration
+- [Data provider](data-provider) - data provider contract and options
+- [Auth provider](auth-provider) - auth provider contract and options
+- [i18n](i18n) - i18n provider contract and options
+- [Network](network) - network service request types and headers
+- [Repository](repository) - repository classes and datasource settings
+- [Hooks](hooks) - React hooks and context types
+- [Module augmentation](../best-practices/module-augmentation) - augmenting `IUseInjectableKeysOverrides`

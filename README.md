@@ -13,7 +13,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 [Documentation](https://ardor.venizia.ai) &#8226;
-[Quickstart](https://ardor.venizia.ai/guides/get-started/quickstart) &#8226;
+[Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) &#8226;
 [References](https://ardor.venizia.ai/references/) &#8226;
 [Examples](#examples) &#8226;
 [Changelog](https://ardor.venizia.ai/changelogs/)
@@ -139,7 +139,7 @@ createRoot(root).render(
 );
 ```
 
-Full walkthrough: [5-minute quickstart](https://ardor.venizia.ai/guides/get-started/quickstart) -
+Full walkthrough: [5-minute quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
 then the [references](https://ardor.venizia.ai/references/).
 
 ## What you get
@@ -225,7 +225,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, ...), branches `feature/*` / `fi
 ## Migrating from `@minimaltech/ra-core-infra`
 
 ARDOR is that package, split and rebranded. See the
-[migration guide](https://ardor.venizia.ai/guides/migration/from-ra-core-infra) - four mechanical
+[migration guide](https://ardor.venizia.ai/guides/migrations/from-ra-core-infra) - four mechanical
 edits, four symbol renames among them.
 
 ## Credits

@@ -10,15 +10,36 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     text: 'Get started',
     collapsed: false,
     items: [
-      { text: '5-minute quickstart', link: '/guides/get-started/quickstart' },
+      { text: 'Setup', link: '/guides/get-started/setup' },
+      { text: '5-minute quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
     ],
   },
   {
-    text: 'Migration',
+    text: 'Tutorials',
     collapsed: false,
     items: [
-      { text: 'From @minimaltech/ra-core-infra', link: '/guides/migration/from-ra-core-infra' },
+      { text: 'Build an admin', link: '/guides/tutorials/build-an-admin' },
+      { text: 'Add sign-in', link: '/guides/tutorials/add-sign-in' },
+      { text: 'Add a language', link: '/guides/tutorials/add-a-language' },
+    ],
+  },
+  {
+    text: 'Core concepts',
+    collapsed: false,
+    items: [
+      { text: 'Application', link: '/guides/core-concepts/application' },
+      { text: 'Configuration', link: '/guides/core-concepts/configuration' },
+      { text: 'Providers', link: '/guides/core-concepts/providers' },
+      { text: 'Resources and pages', link: '/guides/core-concepts/resources-and-pages' },
+      { text: 'Dependency injection', link: '/guides/core-concepts/dependency-injection' },
+    ],
+  },
+  {
+    text: 'Migrations',
+    collapsed: false,
+    items: [
+      { text: 'From @minimaltech/ra-core-infra', link: '/guides/migrations/from-ra-core-infra' },
     ],
   },
 ];
@@ -30,23 +51,30 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Application', link: '/references/application' },
-      { text: 'Features and permissions', link: '/references/features' },
       { text: 'Binding keys', link: '/references/binding-keys' },
       { text: 'Types and constants', link: '/references/types' },
     ],
   },
   {
-    text: 'Data and auth',
+    text: 'Providers',
     collapsed: false,
     items: [
       { text: 'REST data provider', link: '/references/data-provider' },
-      { text: 'Network layer', link: '/references/network' },
-      { text: 'Repositories', link: '/references/repository' },
       { text: 'Auth provider', link: '/references/auth-provider' },
       { text: 'Internationalization', link: '/references/i18n' },
+      { text: 'Network layer', link: '/references/network' },
+      { text: 'Permission provider', link: '/references/permission' },
+      { text: 'Features', link: '/references/features' },
     ],
   },
-  { text: 'React', collapsed: false, items: [{ text: 'Hooks', link: '/references/hooks' }] },
+  {
+    text: 'Data and React',
+    collapsed: false,
+    items: [
+      { text: 'Repositories', link: '/references/repository' },
+      { text: 'Hooks', link: '/references/hooks' },
+    ],
+  },
 ];
 
 const extensionsSidebar: DefaultTheme.SidebarItem[] = [
@@ -491,8 +519,8 @@ const config = defineConfig({
       { text: 'Guides', link: '/guides/' },
       { text: 'References', link: '/references/' },
       { text: 'Extensions', link: '/extensions/' },
-      { text: 'Best practices', link: '/best-practices/' },
-      { text: 'Changelog', link: '/changelogs/' },
+      { text: 'Best Practices', link: '/best-practices/' },
+      { text: 'Changelogs', link: '/changelogs/' },
     ],
     sidebar: {
       '/guides/': guidesSidebar,

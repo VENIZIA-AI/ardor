@@ -10,7 +10,7 @@ packages: []
 
 <Badge type="tip" text="Enhancement" />
 
-**In one line.** `guides/get-started/quickstart.md` shows the files of `examples/5-mins-qs` as they are, so the guide and the example that CI builds are one shape (issues #69, #70 and #71).
+**In one line.** `guides/get-started/5-minute-quickstart.md` shows the files of `examples/5-mins-qs` as they are, so the guide and the example that CI builds are one shape (issues #69, #70 and #71).
 
 ## What changed
 
