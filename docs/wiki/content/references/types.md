@@ -30,7 +30,7 @@ You have a running ARDOR app (see the [quickstart](../guides/get-started/quickst
 | `IAuthProviderOptions` | interface | Auth provider paths (`signIn`, `checkAuth`, `afterLogin`) |
 | `IAuthTokenRecord`, `IDataSourceAuth` | interface | The token a request carries; the settings an `HttpDataSource` takes from the network service |
 | `II18nProviderOptions` | interface | i18n sources and language list |
-| `IReactAdminDataProvider`, `IDataProvider` | interface | react-admin data contract plus `send` and `getNetworkService` |
+| `IReactAdminDataProvider`, `IDataProvider` | interface | react-admin data contract plus `send`, `getNetworkService` and `getDataSourceAuth` |
 | `IReactAdminAuthProvider`, `IAuthProvider` | interface | react-admin auth contract plus `getRoles` and `refreshToken` |
 | `IArdorApplication`, `IApplication` | interface | Application lifecycle and `<ArdorApplication>` props |
 | `TDataCount<T>` | type | Data with optional count |
@@ -377,10 +377,11 @@ export const authOptions: IAuthProviderOptions = {
 
 Both contracts are react-admin's interface plus ARDOR extensions.
 
-`IReactAdminDataProvider<TResource>` is the nine react-admin methods, called with positional `(resource, params)`. `params` is react-admin's own params type intersected with `QueryFunctionContext` and `ICustomParams`. `IDataProvider` adds two methods:
+`IReactAdminDataProvider<TResource>` is the nine react-admin methods, called with positional `(resource, params)`. `params` is react-admin's own params type intersected with `QueryFunctionContext` and `ICustomParams`. `IDataProvider` adds three methods:
 
 - `send({ resource, params })` - an arbitrary request, typed by `ISendParams` and returning `ISendResponse<ReturnType>`. This one takes an options object.
 - `getNetworkService()` - the `DefaultNetworkRequestService` behind the provider.
+- `getDataSourceAuth()` - the `IDataSourceAuth` to spread into an `HttpDataSource`, so a repository sends what this provider sends.
 
 ```ts no-check
 export interface IDataProvider<TResource extends string = string>
@@ -391,6 +392,9 @@ export interface IDataProvider<TResource extends string = string>
   }) => Promise<ISendResponse<ReturnType>>;
 
   getNetworkService(): DefaultNetworkRequestService;
+
+  /** Spread into an `HttpDataSource`: the repository then sends what this provider sends. */
+  getDataSourceAuth(): IDataSourceAuth;
 }
 ```
 

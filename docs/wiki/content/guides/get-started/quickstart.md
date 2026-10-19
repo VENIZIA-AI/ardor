@@ -89,6 +89,66 @@ What each part does:
 
 `useRepository` resolves the repository by class and checks it is bound under `repositories.`; `useTranslate` resolves a message key against the bundles bound to `I18N_PROVIDER_OPTIONS`.
 
+### Create and edit pages
+
+A resource can also have `create` and `edit` pages. `CreateBase` and `EditBase` come from `ra-core`, like `ListBase` in step 5. Each runs the controller and hands you `save` through a `render` prop. `save` calls the data provider: `create` sends `POST /products` and `update` sends `PATCH /products/{id}` (see [Write calls](../../references/data-provider#write-calls)).
+
+```tsx
+import { CreateBase, EditBase } from 'ra-core';
+
+type TProductForm = { name: string; price: number };
+
+const readForm = (form: HTMLFormElement): TProductForm => {
+  const data = new FormData(form);
+  return { name: String(data.get('name')), price: Number(data.get('price')) };
+};
+
+export const ProductCreate = () => (
+  <CreateBase
+    resource="products"
+    redirect="list"
+    render={({ save }) => (
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save?.(readForm(event.currentTarget));
+        }}
+      >
+        <input name="name" placeholder="Name" required />
+        <input name="price" type="number" placeholder="Price" required />
+        <button type="submit">Create</button>
+      </form>
+    )}
+  />
+);
+
+export const ProductEdit = () => (
+  <EditBase
+    resource="products"
+    render={({ record, save, isPending }) =>
+      isPending || !record ? (
+        <p>Loading</p>
+      ) : (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save?.(readForm(event.currentTarget));
+          }}
+        >
+          <input name="name" defaultValue={record.name} required />
+          <input name="price" type="number" defaultValue={record.price} required />
+          <button type="submit">Save</button>
+        </form>
+      )
+    }
+  />
+);
+```
+
+Register them next to `list` in `resources`: `resources={[{ name: 'products', list: ProductsPage, create: ProductCreate, edit: ProductEdit }]}`. `EditBase` reads the record id from the route, `/products/:id`.
+
+### The login page
+
 `src/pages/login.tsx` is the form react-admin shows when `checkAuth` rejects. `useLogin` calls the auth provider's `login` with whatever object you pass, here `{ username, password }`, which the provider turns into IGNIS's sign-in body.
 
 <<< @/../../../examples/5-mins-qs/src/pages/login.tsx{tsx}
@@ -132,7 +192,7 @@ If the count throws "carried no Content-Range", your list route does not send th
 
 A production build of this application is about 595 KB (188 KB gzipped), and Vite's default warns above 500 KB for one chunk. Nothing heavy comes in by default. Measured per package on this example, React DOM is about 200 KB, the router 95 KB, `ra-core` 35 KB, `lodash` 34 KB and TanStack Query 31 KB, which is what any react-admin application starts from. ARDOR and the IGNIS packages it needs in the browser (`ardor-admin`, `ardor-kernel`, `ignis-kernel`, `ignis-inversion`, `ignis-helpers`, `ignis-connectors`, `reflect-metadata`) come to about 110 KB, a fifth of it.
 
-The plugin costs almost nothing: it pins the names of the three decorated classes it lists and leaves every dependency to the minifier. (ignis-boot 0.2.1-10 set `output.keepNames` for the whole build instead, which added about 105 KB, 14 KB gzipped, to this application; 0.2.1-11 does not.)
+The plugin costs almost nothing: it pins the names of the three decorated classes it lists and leaves every dependency to the minifier. (Setting `output.keepNames` for the whole build instead adds about 105 KB, 14 KB gzipped, to this application.)
 
 The `build.rolldownOptions.output.codeSplitting` groups in `vite.config.ts` split the bundle into three chunks - the application (10 KB), React (219 KB) and the other vendor code (364 KB) - without shrinking the total. The warning goes away because no chunk is over the limit, and a deploy that changes only application code leaves the two vendor chunks cached. For a bigger application, load each resource page with a dynamic `import()` so the browser fetches a page when its route opens; that is what shrinks the first load.
 

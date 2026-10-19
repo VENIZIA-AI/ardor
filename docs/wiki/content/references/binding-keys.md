@@ -54,7 +54,7 @@ const key: string = CoreBindings.DEFAULT_REST_DATA_PROVIDER;
 
 ## What the framework binds itself
 
-`AbstractArdorApplication.start()` runs `preConfigure()` and then `postConfigure()`. `preConfigure()` binds exactly two keys before it calls your `bindContext()`:
+`AbstractArdorApplication.start()` runs `preConfigure()` and then `postConfigure()`. `preConfigure()` binds exactly three keys of its own, and registers your classes, before it calls your `bindContext()`:
 
 ```ts no-check
 export abstract class AbstractArdorApplication {
@@ -62,6 +62,9 @@ export abstract class AbstractArdorApplication {
   preConfigure(): ValueOrPromise<void> {
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
+    this.registerArtifacts();
+    this.registerFeatures({ features: this.features() }); // binds FEATURES
+    for (const [key, target] of Object.entries(this.bindingList())) { ... }
     return this.bindContext();
   }
   ...
@@ -70,12 +73,13 @@ export abstract class AbstractArdorApplication {
 
 - `APPLICATION_INSTANCE` is the application object itself.
 - `APPLICATION_INFO` is whatever `getAppInfo()` returns, bound as a value. `getAppInfo()` is typed `ValueOrPromise<IApplicationInfo>`, so if you return a promise, the promise is what gets bound.
+- `FEATURES` is the validated list from `features()`, bound by `registerFeatures()`.
 
-`postConfigure()` is a no-op in the abstract class. Nothing else is bound by the kernel. Every other `CoreBindings` key is declared with `@provide` in a `@configuration()` class - either in yours or in the one of the subclass you extend. `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton. Check [Application](../references/application) for what `ArdorApplication` from `@venizia/ardor-admin` binds for you.
+`postConfigure()` is a no-op in the abstract class. The kernel binds no other `CoreBindings` key. Every other `CoreBindings` key is declared with `@provide` in a `@configuration()` class - either in yours or in the one of the subclass you extend. `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton. Check [Application](../references/application) for what `ArdorApplication` from `@venizia/ardor-admin` binds for you.
 
 ## What the application binds
 
-A `@configuration()` class declares the options objects and the providers. `registerArtifacts()` runs after the two framework keys are in place, so a provided value can read them.
+A `@configuration()` class declares the options objects and the providers. `registerArtifacts()` runs after the instance and info keys are in place, so a provided value can read them.
 
 ```ts
 import {
@@ -164,7 +168,7 @@ export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, st
 export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
 ```
 
-- `TUseInjectableKeysDefault` is every string value on `CoreBindings` - the nine keys in the table above.
+- `TUseInjectableKeysDefault` is every string value on `CoreBindings` - the eleven keys in the table above.
 - `IUseInjectableKeysOverrides` is empty. Its property names, not its property types, are added to the union.
 - `TUseInjectableKeys` is the union the hook accepts.
 
