@@ -32,7 +32,7 @@ When you derive the keys you merge into `IUseInjectableKeysOverrides` or `IUseTr
 
 ## Augmenting the umbrella package merges too
 
-`IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react` and `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`; the `@venizia/ardor` umbrella only re-exports them through `export *`. A `declare module '@venizia/ardor'` block still merges into the real interfaces, because TypeScript follows the umbrella's `export *` to the module that declares them - so an umbrella target is not why keys are rejected, and an existing umbrella block is not broken. Still prefer `@venizia/ardor-react` for `IUseInjectableKeysOverrides` and `@venizia/ardor-admin` for `IUseTranslateKeysOverrides` in a new block: it names the declaring package and does not depend on the umbrella being installed. See [module-augmentation](/architecture/module-augmentation.md).
+`IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react` and `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`; the `@venizia/ardor` umbrella only re-exports them through `export *`. A `declare module '@venizia/ardor'` block still merges into the real interfaces, because TypeScript follows the umbrella's `export *` to the module that declares them - so an umbrella target is not why keys are rejected, and an existing umbrella block is not broken. Prefer the umbrella in a new block: `declare module '@venizia/ardor-react'` or `'@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist (Bun's `isolated` linker, pnpm) unless the application depends on that package itself. See [module-augmentation](/architecture/module-augmentation.md).
 
 ## `ra.boolean.null` renders blank on purpose
 

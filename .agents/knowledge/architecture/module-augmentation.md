@@ -30,11 +30,15 @@ Only the `keyof` of the override interface matters - property values are ignored
 - `IUseInjectableKeysOverrides` is declared in the [React package](/packages/react.md).
 - `IUseTranslateKeysOverrides` is declared in the [Admin package](/packages/admin.md).
 
-Both are re-exported from the [ARDOR umbrella package](/packages/ardor.md), but re-export is not declaration. To extend either interface you must target the package that owns it, even though the rest of your application code imports types and helpers from the umbrella.
+Both are re-exported from the [ARDOR umbrella package](/packages/ardor.md) with `export *`. An application augments the umbrella: `declare module '@venizia/ardor'` merges into both declaring interfaces (next section).
 
-## Why the umbrella cannot be augmented
+## Why the umbrella is the module to augment
 
-TypeScript merges interface declarations by module identity, not by re-export chain. A `declare module '@venizia/ardor-package-name'` block only merges with an interface declared in that exact module specifier. Writing `declare module` against the umbrella package creates a brand-new, unrelated interface that happens to share a name - it compiles cleanly and does nothing. `TUseInjectableKeys` and `TUseTranslateKeys` never see the added keys, and the hooks keep rejecting them. The rule: always augment the declaring package (react for injectable keys, admin for translate keys), never the umbrella re-export.
+TypeScript merges interface declarations by module identity, and it follows an `export *` chain to the module that declares the interface. `@venizia/ardor` re-exports `@venizia/ardor-react` and `@venizia/ardor-admin` with `export *`, so a `declare module '@venizia/ardor'` block merges into the real `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`. Measured on a registry-only app (`@venizia/ardor@0.1.4-5`, TypeScript 6, Bun 1.4.3) under both linkers: the umbrella block merges, a declared key is accepted and an undeclared one rejected (issue #98). An older claim here, that an umbrella block creates an unrelated interface and does nothing, was wrong.
+
+The declaring packages are the fragile target. An application depends on `@venizia/ardor` alone, so under a linker that does not hoist (Bun's `isolated` linker, pnpm) `@venizia/ardor-react` and `@venizia/ardor-admin` are not resolvable from it. `declare module '@venizia/ardor-react'` then fails with `TS2664 Invalid module name in augmentation, module cannot be found`, and the keys are missing; under a hoisting linker the same block compiles, which hides the problem. A declaring package works only when the application lists it as its own dependency. The rule: augment `@venizia/ardor`.
+
+`examples/5-mins-qs/src/augmentation.check.ts` holds the type-level check: it declares one injectable key through the umbrella, uses one translate key declared in `admin.configuration.ts`, and carries two `@ts-expect-error` lines. It is never imported; the example's `typecheck` fails if the claim stops holding.
 
 ## The any-widening footgun
 
@@ -42,7 +46,7 @@ Applications are expected to derive their key unions from something real - a `co
 
 ## Retargeting legacy augmentation blocks
 
-Code that predates this pattern, or that was written against the umbrella package by mistake, needs its `declare module` targets rewritten from the umbrella specifier to the owning package specifier - injectable overrides move to react's module, translate overrides move to admin's module. This retargeting is mechanical: the interface body and the derived key type stay the same, only the string after `declare module` changes. After retargeting, augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten.
+Code that augments `@venizia/ardor-react` or `@venizia/ardor-admin` works only where the application depends on that package itself; elsewhere its `declare module` target is rewritten to `@venizia/ardor`. This retargeting is mechanical: the interface body and the derived key type stay the same, only the string after `declare module` changes, and one block can hold both override interfaces. After retargeting, augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten.
 
 ## Verifying with @ts-expect-error
 

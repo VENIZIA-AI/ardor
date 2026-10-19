@@ -206,7 +206,7 @@ import { useInjectable } from '@venizia/ardor';
 import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 
 // The key you bound the helper under, made known to `useInjectable`.
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
     'services.SocketIOClientHelper': unknown;
   }

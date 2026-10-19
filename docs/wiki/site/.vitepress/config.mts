@@ -96,6 +96,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'toDataUrl without withResolvers',
             link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
           },
+          {
+            text: 'Augment the umbrella',
+            link: '/changelogs/2026-10-19-augment-the-umbrella',
+          },
         ],
       },
       {

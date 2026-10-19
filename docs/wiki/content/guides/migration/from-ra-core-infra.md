@@ -67,24 +67,20 @@ Three removals and one requirement:
   `BaseCrudApiService.find()` merged `limit: 100` into every filter that had none;
   `HttpRepository.find()` sends the filter as given, so a call site that relied on that default
   gets the server's own page size. Pass `filter: { limit }` where it matters.
-- **Module augmentation moves to the declaring package.** A TypeScript interface merges only into
-  the module that declares it, never through a re-export, so augmenting `@venizia/ardor` would
-  silently do nothing. Augment the owner instead:
+- **Module augmentation targets the umbrella.** `@venizia/ardor` re-exports the two override
+  interfaces with `export *`, and TypeScript follows that chain to the declaring package, so one
+  block on the umbrella merges into both:
 
   ```typescript
-  // IUseInjectableKeysOverrides is declared in @venizia/ardor-react
-  declare module '@venizia/ardor-react' {
+  declare module '@venizia/ardor' {
     interface IUseInjectableKeysOverrides extends Record<keyof ReturnType<Application['bindingList']>, unknown> {}
-  }
-
-  // IUseTranslateKeysOverrides is declared in @venizia/ardor-admin
-  declare module '@venizia/ardor-admin' {
     interface IUseTranslateKeysOverrides extends ITranslateKeys {}
   }
   ```
 
-  The hooks themselves are still imported from `@venizia/ardor`; only the `declare module` target
-  changes.
+  Do not retarget the block to `@venizia/ardor-react` or `@venizia/ardor-admin` unless the
+  application depends on that package itself: under a linker that does not hoist (Bun's
+  `isolated` linker, pnpm) it fails with TS2664 and the keys are missing.
 
 - **`@venizia/ignis-inversion` must be `^0.2.2`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
@@ -107,12 +103,10 @@ search-and-replace.
    and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three
    layers under the same names.
 3. **The four renames** from the table above.
-4. **The `declare module` blocks.** Retarget each one to the package that *declares* the
-   interface - `IUseInjectableKeysOverrides` to `@venizia/ardor-react`,
-   `IUseTranslateKeysOverrides` to `@venizia/ardor-admin` - splitting a block that augments both.
-   Pointing the whole block at `@venizia/ardor` compiles clean and silently drops the
-   augmentation, leaving `useInjectable` typed as `string`. A type checker never reports this;
-   only reading the block does.
+4. **The `declare module` blocks.** Retarget each one to `@venizia/ardor`; one block can hold
+   both override interfaces. Probe it once: a `// @ts-expect-error` above a key you did not
+   declare must be a real error (see
+   [Module augmentation](../../best-practices/module-augmentation#verify-with-a-compile-error)).
 
 Grep for `DIContainer` before you start - it was dropped, and every use becomes the inversion
 `Container` the application already is.

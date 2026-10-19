@@ -126,7 +126,7 @@ ARDOR is early. The code has export and member parity with the legacy package, a
 
 - **Forgetting `reflect-metadata`.** It must be imported once, before the application class is defined. Without it the container cannot read the decorator metadata it relies on.
 - **Expecting UI components from `@venizia/ardor`.** The umbrella re-exports `kernel`, `react` and `admin` only. ARDOR ships no UI components; bring your own.
-- **Augmenting the umbrella instead of the declaring package.** `declare module '@venizia/ardor'` does not extend `IUseInjectableKeysOverrides`. Augment `@venizia/ardor-react` and `@venizia/ardor-admin`.
+- **Augmenting a declaring package the application does not depend on.** `declare module '@venizia/ardor-react'` or `'@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist, so the keys are missing. Augment `@venizia/ardor`, which an application depends on and which merges into `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`.
 - **Rebuilding one package and testing another.** `admin` compiles against the kernel's `dist`. After a kernel change, rebuild the kernel (or `make build`) before expecting `admin` to see it.
 - **Listing too few `noAuthPaths`.** Any path not listed and not matched by `noAuthPathRegex` is sent with an Authorization header and fails without one. Login and register paths belong in the list.
 
