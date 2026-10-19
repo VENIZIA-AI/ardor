@@ -372,12 +372,13 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 ## Binding the provider
 
-Three bindings are involved, plus one entry in the REST data provider options:
+Five bindings are involved. The REST data provider options carry one entry that matters here:
 
 - `CoreBindings.DEFAULT_AUTH_SERVICE` - provided by `DefaultAuthService`.
 - `CoreBindings.AUTH_PROVIDER_OPTIONS` - provided as your `IAuthProviderOptions` value.
 - `CoreBindings.DEFAULT_AUTH_PROVIDER` - provided as your subclass (or `DefaultAuthProvider` itself).
-- `IRestDataProviderOptions.noAuthPaths` - must contain the sign-in path, so the login request goes out without an authorization header.
+- `CoreBindings.REST_DATA_PROVIDER_OPTIONS` - provided as your `IRestDataProviderOptions` value. Its `noAuthPaths` must contain the sign-in path, so the login request goes out without an authorization header.
+- `CoreBindings.DEFAULT_REST_DATA_PROVIDER` - provided as `DefaultRestDataProvider`, the provider the auth provider sends its requests through.
 
 Declare all of them in a `@configuration()` class:
 
@@ -412,8 +413,7 @@ export class AuthConfiguration {
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     return {
-      paths: { checkAuth: '/auth/whoami' },
-      afterLogin: '/dashboard',
+      paths: { checkAuth: '/auth/whoami', afterLogin: '/dashboard' },
     };
   }
 

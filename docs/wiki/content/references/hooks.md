@@ -17,8 +17,10 @@ An ARDOR application mounted with `ApplicationContext` (see [Application](../ref
 |---|---|---|
 | `useInjectable` | `ApplicationContext` with a `container`, or an explicit `container` option | The bound instance |
 | `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration` | Same as `useInjectable` | The bound instance, checked against its namespace |
+| `useInjectableContainer` | `ApplicationContext` with a `container`, or an explicit `container` option | The `Container` that `useInjectable` resolves from; throws when there is none |
 | `useApplicationContext` | `ApplicationContext` with a `container` | The `Container` |
 | `useApplicationLogger` | `ApplicationContext` with a `logger` | The `Logger` |
+| `useFeatures` | `ApplicationContext` with a `container` | The mounted features, `Array<TFeature>` - empty when the application has none. See [Features](../references/features#mounting-features) |
 | `useTranslate` | ra-core i18n context (optional - falls back to identity) | `(key, options?) => string` |
 | `useNotifyError` | ra-core notification context | `(error, options?) => void` |
 | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | `() => Promise<any>` |

@@ -161,16 +161,14 @@ then the [references](https://ardor.venizia.ai/references/).
 
 In release order - each builds on the ones above it.
 
-| Package | Role | Latest | Next |
-| :--- | :--- | ---: | ---: |
-| [`@venizia/ardor-kernel`](packages/kernel/) | Isomorphic core: application base, services, network layer, constants and keys | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) | [![npm next](https://img.shields.io/npm/v/@venizia/ardor-kernel/next.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
-| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) | [![npm next](https://img.shields.io/npm/v/@venizia/ardor-react/next.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-react) |
-| [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) | [![npm next](https://img.shields.io/npm/v/@venizia/ardor-admin/next.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-admin) |
-| [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) | [![npm next](https://img.shields.io/npm/v/@venizia/ardor/next.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor) |
+| Package | Role | Version |
+| :--- | :--- | ---: |
+| [`@venizia/ardor-kernel`](packages/kernel/) | Isomorphic core: application base, services, network layer, constants and keys | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
+| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) |
+| [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) |
+| [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) |
 
-**Latest** is the stable line. **Next** is the prerelease tag this repository releases to today.
-ARDOR tracks the **highest** published version of every IGNIS package it uses (`@venizia/ignis-*` and
-`@venizia/dev-configs`), prerelease included - never `latest`. The documentation site lives in
+ARDOR 0.1.4 is on the npm `latest` tag. It is built on stable IGNIS: the workspace catalog pins `@venizia/ignis-*` 0.2.2, `@venizia/ignis-boot` 0.2.1 and `@venizia/dev-configs` 0.3.1, and every ARDOR package peers on `@venizia/ignis-*` `^0.2.2`. The documentation site lives in
 [`docs/wiki`](docs/wiki/) and is not published to npm.
 
 ## Is ARDOR for you?
