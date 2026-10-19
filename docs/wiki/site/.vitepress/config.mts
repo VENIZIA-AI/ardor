@@ -89,6 +89,20 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-19',
+        collapsed: true,
+        items: [
+          {
+            text: 'toDataUrl without withResolvers',
+            link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
+          },
+          {
+            text: 'Augment the umbrella',
+            link: '/changelogs/2026-10-19-augment-the-umbrella',
+          },
+        ],
+      },
+      {
         text: '2026-10-18',
         collapsed: true,
         items: [
@@ -385,7 +399,8 @@ const config = defineConfig({
     "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
   head: [
     // Favicon + PWA
-    ['link', { rel: 'icon', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'manifest', href: '/site.webmanifest' }],
     // Fonts - preconnect
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],

@@ -35,7 +35,7 @@ If no `container` override is passed, it falls back to `applicationContext.conta
 
 ## IUseInjectableKeysOverrides
 
-This package owns the augmentation point for typed injection keys. `TUseInjectableKeys` is defined as `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides`, where the default comes from kernel's `CoreBindings`. Downstream packages or applications that want `useInjectable({ key: ... })` to autocomplete and typecheck their own binding keys must augment `IUseInjectableKeysOverrides` by declaring `module '@venizia/ardor-react'` directly - not through `@venizia/ardor` or any other re-exporting package, because TypeScript's declaration merging only applies to the module that actually declares the interface. This is the canonical example referenced in [module augmentation](/architecture/module-augmentation.md).
+This package owns the augmentation point for typed injection keys. `TUseInjectableKeys` is defined as `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides`, where the default comes from kernel's `CoreBindings`. Downstream packages or applications that want `useInjectable({ key: ... })` to autocomplete and typecheck their own binding keys must augment `IUseInjectableKeysOverrides` with `declare module '@venizia/ardor'`: the umbrella re-exports it with `export *`, which TypeScript follows to this package, and it resolves where `@venizia/ardor-react` does not (an application that does not depend on this package, under a non-hoisting linker). This is the canonical example referenced in [module augmentation](/architecture/module-augmentation.md).
 
 ## The per-stereotype hooks
 

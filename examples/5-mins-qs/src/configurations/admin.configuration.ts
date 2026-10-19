@@ -12,7 +12,7 @@ import {
 } from '@venizia/ardor';
 
 // The message keys this application adds, made known to `useTranslate`.
-declare module '@venizia/ardor-admin' {
+declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides {
     'quickstart.title': unknown;
     'quickstart.expensive': unknown;
