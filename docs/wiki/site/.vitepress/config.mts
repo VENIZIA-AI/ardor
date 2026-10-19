@@ -121,6 +121,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'The wiki is rebuilt around the core of ARDOR',
+            link: '/changelogs/2026-10-19-wiki-rebuild',
+          },
+          {
             text: 'toDataUrl without withResolvers',
             link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
           },
