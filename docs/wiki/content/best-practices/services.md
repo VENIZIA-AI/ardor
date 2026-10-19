@@ -9,7 +9,7 @@ A service is a plain class that owns one job and one logger: extend `BaseService
 
 ## Prerequisites
 
-A running ARDOR application with a container - see the [quickstart](../guides/get-started/quickstart).
+A running ARDOR application with a container - see the [quickstart](../guides/get-started/5-minute-quickstart).
 
 ## Quick Reference
 

@@ -1,145 +1,45 @@
 ---
 title: Philosophy
-description: Why ARDOR exists, what it deliberately does not do, why it is four packages, and whether it is for you.
+description: Why ARDOR exists next to react-admin, how it connects to IGNIS, and the five architectural decisions it makes for your application.
 ---
 
 # Philosophy
 
-ARDOR is the frontend application framework of the VENIZIA family. It is the frontend sibling of IGNIS and a consumer of it. This page explains the reasoning behind the design so the rest of the guide reads as a set of consequences, not a set of rules.
+ARDOR exists to assemble `ra-core` applications inside an IGNIS inversion-of-control container (`@venizia/ignis-inversion`). While `ra-core` provides the CRUD data contract and UI runtime, ARDOR manages dependency injection, provider wiring, and service lifetimes across your application. It decides five core architectural concerns for you: the application is the container, configuration is a class of `@provide` methods, providers are resolved by key, classes are found by the build not listed by hand, and the same IGNIS packages run on browser and server.
 
-## Prerequisites
+<<< @/../../../examples/5-mins-qs/src/application.ts{ts}
 
-None - this page is about the shape of the framework, not about running it. See the [quickstart](./quickstart) for that.
+## The application is the container
 
-## Quick Reference
+The application class inherits directly from the IGNIS `Container` rather than wrapping one. In `packages/kernel/src/base/applications/abstract.ts`, `AbstractArdorApplication` extends `Container` to manage the lifecycle and resolution of every service. During `start()`, `preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, registers discovered stereotypes, binds `FEATURES`, binds `bindingList()`, and finally calls `bindContext()`. The root component in `packages/admin/src/components/application.tsx` places this container into React context so hooks can resolve dependencies anywhere in the tree. See [Application](../core-concepts/application) and [Dependency injection](../core-concepts/dependency-injection).
 
-The framework is four packages. Each has one role.
+## Configuration is a class of `@provide` methods
 
-| Package | Role | Depends on React | Depends on react-admin |
-|---|---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetcher (`fetch`), socket client, utilities | No | No |
-| `@venizia/ardor-react` | React bindings: the application context, `useInjectable`, typed Redux hook factories, the UI hooks | Yes | No |
-| `@venizia/ardor-admin` | react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, English and Vietnamese messages | Yes | Yes |
-| `@venizia/ardor` | Umbrella entry point that re-exports the three packages above, so an application needs one dependency | Via re-export | Via re-export |
+Instead of passing static configuration dictionaries to initialization functions, ARDOR defines application configuration as a class decorated with `@configuration()`. Each provider or set of options is declared on a method decorated with `@provide({ key })`. When the application boots, `packages/kernel/src/base/applications/abstract.ts` iterates over the discovered provide metadata and registers each method as a lazy singleton provider. Options and services are therefore instantiated on demand and shared across components. See [Configuration](../core-concepts/configuration).
 
-## Why ARDOR exists
+## Providers are resolved by key
 
-react-admin already gives two things an admin app needs: a data contract (`getList`, `getOne`, `create`, and the rest) and a UI runtime that drives that contract. IGNIS already gives a third thing: an inversion-of-control container, published as `@venizia/ignis-inversion`, and a query vocabulary, published as `@venizia/ignis-filter`.
+`ra-core` providers are resolved by key from the container rather than passed as direct component props. The eleven standard framework keys are declared under `CoreBindings` in `packages/kernel/src/common/keys.ts`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` retrieves the data provider and optional authentication provider using these keys, running without an authentication provider if `DEFAULT_AUTH_PROVIDER` is left unbound. You swap an implementation across the whole application simply by binding a different provider to its key in your configuration class. See [Providers](../core-concepts/providers) and [Binding keys](../../references/binding-keys).
 
-ARDOR wires those together. An ARDOR application is an IoC container. You declare what it binds in a `@configuration` class, start the application, and the React tree resolves what it needs through hooks.
+## Classes are found by the build, not listed by hand
 
-The reason for that wiring is scale with a team, not scale of traffic. Three things become possible:
+Applications avoid manual registration lists and centralized barrels for decorated classes. The build system scans `src/` at compile time and emits `AutoArtifacts`, which lists decorated configurations, data sources, components, repositories, and services. In `packages/kernel/src/base/applications/abstract.ts`, `artifacts()` returns this index, and `start()` checks that every class the index lists was discovered, throwing an error when one was not. See [5-minute quickstart](./5-minute-quickstart).
 
-- **Services by key.** An API service is a class, bound once, resolved anywhere in the tree with `useInjectable`. A second developer does not need to know where it was constructed.
-- **Providers as bindings.** The data provider, auth provider and i18n provider are bindings under `CoreBindings` keys. Swapping one is a change to the configuration class, not a search across the component tree.
-- **One place to configure auth.** The REST data provider options hold the API URL, the paths that are reached before a token exists (`noAuthPaths`, or a `noAuthPathRegex`), and the refresh path used for auth recovery. The refresh itself is one `refreshToken()` hook on the network service. Nothing else in the app needs to repeat that.
+## Same IGNIS packages on browser and server
 
-The whole idea fits in a few lines:
+ARDOR shares foundational IGNIS packages across the browser and the server: inversion, kernel, and connectors. The dependency injection container (`@venizia/ignis-inversion`), metadata stereotypes in `packages/kernel/src/base/metadata/index.ts`, and filter vocabulary (`@venizia/ignis-filter`) run in both environments. The repository is IGNIS's own: `packages/kernel/src/base/repositories/index.ts` re-exports `@venizia/ignis-connectors/http` (the HTTP repository) and `HttpExtraRequest` from IGNIS. ARDOR re-exports IGNIS's HTTP repository on `@venizia/ardor/repository` so a browser repository reads the server's list route with the same filter. Because both environments share the filter vocabulary, pagination, filtering, and sorting require no client-to-server translation layer.
 
-```tsx no-check
-// The configuration class - declare what is bound. start() binds each @provide
-// method under its key, SINGLETON, built on first use.
-@configuration()
-class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
+## What ARDOR does not do
 
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return {
-      url: import.meta.env.VITE_API_URL,
-      noAuthPaths: ['/auth/sign-in'],
-      authRecovery: { refreshTokenPath: '/auth/refresh' },
-    };
-  }
+- **It is not a UI kit.** ARDOR ships no visual components, buttons, form controls, or CSS themes. Visual presentation belongs to your chosen component library.
+- **It does not replace ra-core.** ARDOR relies on `ra-core` for CRUD operations, controller hooks, and page lifecycles. Only `packages/admin/src` connects to `ra-core`, acting as an adapter between the container and `ra-core`.
+- **It does not write your REST API.** ARDOR provides the browser-side HTTP transport (`DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` using the browser `fetch` API), but it does not generate backend endpoints, database schemas, or server routes.
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
+## Packages
 
-  // ... the remaining @provide methods, as in the quickstart
-}
-
-class Application extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
-  }
-
-  bindContext(): void {}
-}
-
-// Anywhere in the tree - resolve by class.
-const products = useRepository({ target: ProductRepository });
-```
-
-## What ARDOR deliberately does not do
-
-The boundaries matter as much as the features.
-
-- **No UI components.** `kernel`, `react` and `admin` ship no visual components, and neither does the umbrella. Buttons, dialogs and styling belong to your application, so the framework never dictates a component library or a design system.
-- **No second query language.** The data layer speaks the query vocabulary of `@venizia/ignis-filter`. ARDOR does not invent its own filter, sort or pagination syntax, and it does not translate between two of them. If the backend is IGNIS, the vocabulary is already shared.
-- **No react-admin in `kernel` or `react`.** `@venizia/ardor-kernel` has no React and no react-admin. `@venizia/ardor-react` has React but no `ra-core`. Only `@venizia/ardor-admin` imports react-admin. That is the same guarantee `ignis-kernel` carries on the backend side: the lowest layers stay pure so they can be reused, tested and reasoned about without the runtime on top.
-
-## Why four packages
-
-The split follows the dependency graph, not the feature list.
-
-- **`kernel` is isomorphic.** It runs in the browser and in Node. The network layer is the platform `fetch` and nothing else - no HTTP client dependency to carry or keep current. Service bases, request constants and binding keys do not need a DOM. Keeping them React-free means they can be used in scripts, in tests and on a server.
-- **`react` has no `ra-core`.** The application context, `useInjectable` and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, `useSizer`, and others) are useful in any React app that owns an ARDOR container. They should not drag react-admin along.
-- **`admin` is the adapter.** This is where react-admin's contract meets the container: `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider`, the `ArdorApplication` root component and `useTranslate`. Everything react-admin-specific stays here.
-- **`ardor` is the umbrella.** One `import ... from '@venizia/ardor'` for an application that wants all three. The umbrella re-exports; it adds nothing of its own.
-
-Two practical consequences follow. First, the build order is the dependency order, and a package type-checks against the `dist` of its dependency, never its `src` - so a change to the kernel is invisible to `admin` until the kernel is rebuilt. Second, module augmentation targets the package that declares the interface: `IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react`, `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`. Augment those, not the umbrella. See [module augmentation](../../best-practices/module-augmentation).
-
-## ARDOR compared with plain react-admin
-
-Plain react-admin is a good fit for many apps. ARDOR changes the parts that get in the way once several people own the same admin.
-
-| Concern | Plain react-admin | ARDOR |
-|---|---|---|
-| Structure | You assemble providers and pass them as props to the root component | You declare bindings in an application class; `ArdorApplication` receives the started container |
-| Dependency injection | None built in; you thread objects through props or your own context | IoC container from `@venizia/ignis-inversion`; services and providers are bound by key and resolved with `useInjectable` |
-| Data layer | You write or pick a data provider and its query encoding | `DefaultRestDataProvider` bound under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, speaking the `@venizia/ignis-filter` vocabulary |
-| Auth recovery | You implement token refresh in your own auth provider or HTTP client | Configured once: `noAuthPaths` / `noAuthPathRegex` and `authRecovery.refreshTokenPath` in the REST data provider options, and the refresh itself as the `refreshToken()` hook of a `DefaultNetworkRequestService` subclass |
-| Typing of keys | Translation and lookup keys are plain strings | `useInjectable` and `useTranslate` keys are typed through `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`, which you augment with your own keys |
-
-## Is ARDOR for you
-
-**Yes, if:**
-
-- You are building a react-admin app that must scale with a team - more screens, more services, more people who need to find where something is bound.
-- Your backend already runs on IGNIS. The filter vocabulary and the container conventions are shared, so the two halves fit without an adapter you write yourself.
-- You are on `@minimaltech/ra-core-infra`. ARDOR is that package, split and rebranded; the move is four mechanical edits plus four symbol renames. See [migrating from ra-core-infra](../migration/from-ra-core-infra).
-
-**No, if:**
-
-- You are building a marketing site. There is no data contract to wire and no container to fill.
-- You are building a three-screen internal tool. Plain react-admin with one data provider object is less to learn and less to maintain.
-
-## Honest about being 0.x
-
-ARDOR is early. The code has export and member parity with the legacy package, and the build and lint are green. The parts around the code are still being built: the test suite, the changelog convention, the public-surface snapshot, CI gates and runnable examples are planned against the IGNIS standard but not all in place yet. Expect breaking changes between minor versions until 1.0, and read the migration notes before upgrading.
-
-## Common pitfalls
-
-- **Forgetting `reflect-metadata`.** It must be imported once, before the application class is defined. Without it the container cannot read the decorator metadata it relies on.
-- **Expecting UI components from `@venizia/ardor`.** The umbrella re-exports `kernel`, `react` and `admin` only. ARDOR ships no UI components; bring your own.
-- **Augmenting a declaring package the application does not depend on.** `declare module '@venizia/ardor-react'` or `'@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist, so the keys are missing. Augment `@venizia/ardor`, which an application depends on and which merges into `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`.
-- **Rebuilding one package and testing another.** `admin` compiles against the kernel's `dist`. After a kernel change, rebuild the kernel (or `make build`) before expecting `admin` to see it.
-- **Listing too few `noAuthPaths`.** Any path not listed and not matched by `noAuthPathRegex` is sent with an Authorization header and fails without one. Login and register paths belong in the list.
-
-## Related
-
-- [Quickstart](./quickstart) - bind, start, render.
-- [Application](../../references/application) - the application base classes and lifecycle.
-- [Binding keys](../../references/binding-keys) - every `CoreBindings` key.
-- [Data provider](../../references/data-provider) - `DefaultRestDataProvider` and its options.
-- [Auth provider](../../references/auth-provider) - `DefaultAuthProvider` and auth recovery.
-- [i18n](../../references/i18n) - `DefaultI18nProvider`, `useTranslate`, message bundles.
-- [Hooks](../../references/hooks) - `useInjectable` and the UI hooks.
-- [Network](../../references/network) - fetchers and request constants.
-- [Types](../../references/types) - the shared type helpers.
-- [Module augmentation](../../best-practices/module-augmentation) - typing your own keys.
-- [Migrating from ra-core-infra](../migration/from-ra-core-infra) - the manual pass and the four renames.
+| Package | Contents |
+|---|---|
+| `@venizia/ardor` | Umbrella package re-exporting kernel, react, and admin under a single dependency. |
+| `@venizia/ardor-kernel` | Container and service foundation: application base classes, network request services, decorators, metadata, and `CoreBindings`. |
+| `@venizia/ardor-react` | React bindings: application context, `useInjectable`, UI helper hooks, and the Redux hook factories `createAppDispatch` and `createAppSelectors`. |
+| `@venizia/ardor-admin` | ra-core adapter: `DefaultRestDataProvider`, auth and i18n providers, and `ArdorApplication`. |

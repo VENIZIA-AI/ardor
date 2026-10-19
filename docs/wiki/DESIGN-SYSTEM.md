@@ -34,32 +34,33 @@ and are applied live in the VitePress theme (`site/.vitepress/theme/style.css`).
 
 ## Color - WCAG-verified
 
-ARDOR is water where IGNIS is fire: the same design system - one brand, one light accent for
-links, two decorators, a display gradient, a glow - in a cool palette. Every value is drawn from
-the slate / sky / teal / cyan ramps. Brand anchor is
-**`#0369a1`** (sky.700, deep water). Contrast measured with the WCAG 2.1 formula against the dark
-background `#020617` (slate.950).
+ARDOR uses the devglow **Tide** palette ("still water"): sea-glass, slate and fog over deep water,
+with one flush of coral. IGNIS is devglow Sage and VULCAN is Amber; the design system is the same
+(one brand, one light accent for links, two decorators, a display gradient, a glow). Brand anchor
+is **`#2B6B6A`**, Tide TEAL `#6FB0AE` darkened for fills. Contrast measured with the WCAG 2.1
+formula against the dark background `#07090b` (Tide BACKGROUND).
 
 | Token | Hex | Contrast (dark bg) | Rating | Use |
 | --- | --- | --- | --- | --- |
-| `text` | `#f8fafc` | 19.3:1 | AAA | Body, headings |
-| `text-2` | `#cbd5e1` | 13.6:1 | AAA | Secondary body, lede |
-| `text-3` | `#94a3b8` | 7.87:1 | AAA | Smallest readable muted |
-| `faint` | `#64748b` | 4.24:1 | ⚠️ large-only | ≥24px / decorative **only** |
-| **brand** | `#0369a1` | 3.40:1 | ⚠️ fill/large | Button fills, large accents |
-| brand-lt | `#38bdf8` | 9.42:1 | AAA | **Links / accent text (dark)** |
-| teal | `#2dd4bf` | 10.8:1 | AAA | Eyebrow, code decorators, gradient middle |
-| aqua | `#67e8f9` | 13.9:1 | AAA | Accent, code keywords, gradient end |
+| `text` | `#d5dee0` | 14.58:1 | AAA | Body, headings (Tide FOREGROUND) |
+| `text-2` | `#b4c0c4` | 10.71:1 | AAA | Secondary body, lede |
+| `text-3` | `#8e9ca3` | 7.06:1 | AAA | Smallest readable muted |
+| `faint` | `#66727c` | 4.05:1 | ⚠️ large-only | ≥24px / decorative **only** (Tide DARK_04) |
+| **brand** | `#2b6b6a` | 3.24:1 | ⚠️ fill/large | Button fills, large accents |
+| brand-lt | `#6fb0ae` | 8.07:1 | AAA | **Links / accent text (dark)** (Tide TEAL) |
+| teal | `#7fb0a6` | 8.23:1 | AAA | Eyebrow, code decorators, gradient middle (Tide GREEN) |
+| aqua | `#88a8c2` | 8.00:1 | AAA | Accent, code keywords, gradient end (Tide SKY) |
 
-The display gradient runs `brand -> teal -> aqua`: from depth to the surface.
+The display gradient runs `brand -> teal -> aqua`: from depth to the surface. The glow adds a
+faint Tide GOLD `#d0bc88` at the top right.
 
 ### Hard rules (these prevent real bugs)
 
-1. **Primary button** = `--ar-primary` (`#0369a1`) with **white** text → 5.93:1 AA.
-   Dark text on brand fails (3.4:1).
-2. **Accent text** is theme-dependent: dark theme → `brand-lt #38bdf8` (9.42:1);
-   light theme → `brand #0369a1` (5.93:1 on white; `brand-lt` is only 1.9:1 on white - fails).
-3. **`#0369a1` is never small body text on dark** (3.40:1). Fills & large accents only.
+1. **Primary button** = `--ar-primary` (`#2b6b6a`) with **white** text → 6.15:1 AA.
+   Dark text on brand fails (3.24:1).
+2. **Accent text** is theme-dependent: dark theme → `brand-lt #6fb0ae` (8.07:1);
+   light theme → `brand #2b6b6a` (6.15:1 on white; `brand-lt` is only 2.47:1 on white - fails).
+3. **`#2b6b6a` is never small body text on dark** (3.24:1). Fills & large accents only.
 4. **`faint` is never essential body text** - large or decorative only.
 5. **Prose width caps at `--ar-measure` (70ch)**; lede at 62ch.
 6. Gradients (`--ar-gradient`) are for **large display text only** (≥39px), where the 3:1

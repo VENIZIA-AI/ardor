@@ -301,4 +301,4 @@ The data provider must be a singleton. Declare it with `@provide` in a `@configu
 - [Binding keys](../references/binding-keys) - the `CoreBindings` used to resolve the service and the provider
 - [Binding keys best practices](./binding-keys)
 - [Services](./services)
-- [Migration from ra-core-infra](../guides/migration/from-ra-core-infra)
+- [Migration from ra-core-infra](../guides/migrations/from-ra-core-infra)

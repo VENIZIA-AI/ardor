@@ -1,82 +1,25 @@
 ---
 title: Application
-description: The ARDOR application base - BaseArdorApplication, the start() lifecycle, registration by stereotype and by hand, getAppInfo, and how ArdorApplication hands the container to the React tree.
+description: Technical reference for BaseArdorApplication, lifecycle methods, artifact registration, the ArdorApplication component, and startup errors.
 ---
 
 # Application
 
-## Prerequisites
-
-You know the IGNIS `Container` API (`bind({ key })`, `toValue`, `toClass`, `get({ key })`) and have read the [Quickstart](../guides/get-started/quickstart).
-
-## Quick Reference
-
-| Export | Kind | Purpose |
-| --- | --- | --- |
-| `AbstractArdorApplication` | class | Container subclass with the lifecycle and registration helpers |
-| `BaseArdorApplication` | class | Empty subclass of `AbstractArdorApplication` - the one to extend |
-| `IArdorApplication` | interface | Contract implemented by the application |
-| `IApplicationInfo` | interface | Shape returned by `getAppInfo()` |
-| `IArtifactIndex` | interface | The index `ignis-artifacts generate` emits, returned by `artifacts()` |
-| `CoreBindings.APPLICATION_INSTANCE` | key | Bound to the application itself in `preConfigure()` |
-| `CoreBindings.APPLICATION_INFO` | key | Bound to the result of `getAppInfo()` in `preConfigure()` |
-| `ArdorApplication` | component | Reads the three default providers from the container and renders `CoreAdmin` |
-| `IApplication` | interface | Props of `ArdorApplication` |
-
-## The application is the container
-
-`AbstractArdorApplication` extends the IGNIS `Container`. There is no separate `container` property. You call `this.bind(...)` and `this.get(...)` directly on the application, and you pass the application instance wherever a `Container` is expected.
-
-`BaseArdorApplication` adds nothing on top of `AbstractArdorApplication`. Extend it and implement the two abstract methods.
-
-```tsx no-check
-abstract class AbstractArdorApplication extends Container implements IArdorApplication {
-  abstract bindContext(): ValueOrPromise<void>;
-  abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
-
-  preConfigure(): ValueOrPromise<void>;
-  postConfigure(): ValueOrPromise<void>;
-
-  registerArtifacts(): void;
-  artifacts(): Array<IArtifactIndex>;
-  bindingList(): Record<string, TClass<unknown>>;
-
-  service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
-  repository<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
-  dataSource<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
-  component<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>;
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-
-  start(): Promise<void>;
-}
-
-abstract class BaseArdorApplication extends AbstractArdorApplication {}
-```
+`BaseArdorApplication` is the inversion-of-control container subclass for ARDOR applications, and `ArdorApplication` is the root React component rendering react-admin's `CoreAdmin`. For architectural context, see the [Application Guide](../guides/core-concepts/application) and [Configuration Guide](../guides/core-concepts/configuration).
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
   configuration,
   CoreBindings,
   type IApplicationInfo,
-  inject,
   provide,
 } from '@venizia/ardor';
 
-class CatalogService {
-  list() {
-    return ['book', 'pen'];
-  }
-}
+class CatalogService {}
 
-// The framework bindings, declared: start() binds each @provide method under its key, SINGLETON.
 @configuration()
 export class ShopConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
     return { url: 'https://api.example.com' };
@@ -88,86 +31,76 @@ export class ShopApplication extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext() {
+  bindContext(): void {
     this.service(CatalogService);
   }
 }
 
-export async function boot() {
-  const app = new ShopApplication();
-  await app.start();
-  return app;
+export async function boot(): Promise<ShopApplication> {
+  const application = new ShopApplication();
+  await application.start();
+  return application;
 }
 ```
 
-## getAppInfo()
+## Quick Reference
 
-`getAppInfo()` is abstract. It returns an `IApplicationInfo`:
+| Export | Kind | Source Package | Role |
+|---|---|---|---|
+| `BaseArdorApplication` | class | `@venizia/ardor` | Concrete application container class to extend |
+| `AbstractArdorApplication` | class | `@venizia/ardor` | Base container class implementing `IArdorApplication` |
+| `ArdorApplication` | component | `@venizia/ardor` | Root component connecting container to react-admin `CoreAdmin` |
+| `IArdorApplication` | interface | `@venizia/ardor` | Container interface contract in `packages/kernel/src/common/types.ts` |
+| `IApplicationInfo` | interface | `@venizia/ardor` | Application metadata shape returned by `getAppInfo()` |
+| `IArtifactIndex` | interface | `@venizia/ardor` | Stereotyped class index shape returned by `artifacts()` |
+| `IArtifactRegistration` | interface | `@venizia/ardor` | Registration options for `service()`, `repository()`, `dataSource()`, `component()` |
+| `IApplication` | interface | `@venizia/ardor` | Props accepted by `ArdorApplication` in `packages/admin/src/common/types.ts` |
+| `CoreBindings` | class | `@venizia/ardor` | Container binding keys in `packages/kernel/src/common/keys.ts` |
 
-```ts no-check
-interface IApplicationInfo {
-  name: string;
-  version: string;
-  description: string;
-  author?: { name: string; email: string; url?: string };
-  [extra: string | symbol]: any;
-}
-```
+> [!NOTE]
+> `CoreBindings` (in `packages/kernel/src/common/keys.ts`) defines eleven keys: `APPLICATION_INSTANCE`, `APPLICATION_INFO`, `DEFAULT_AUTH_PROVIDER`, `DEFAULT_I18N_PROVIDER`, `DEFAULT_REST_DATA_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE`, `REST_DATA_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS`, `FEATURES`, and `PERMISSION_PROVIDER`. See [Binding keys](./binding-keys) for details on each key.
 
-`preConfigure()` binds whatever `getAppInfo()` returns under `CoreBindings.APPLICATION_INFO`. The return value is bound as-is - it is not awaited. Return a plain object so consumers that resolve `APPLICATION_INFO` (for example the REST data provider, which receives `applicationInfo` in `IGetRequestPropsParams`) get an object and not a Promise.
+## BaseArdorApplication
 
-## start() lifecycle
+`BaseArdorApplication` (in `packages/kernel/src/base/applications/abstract.ts`) extends `AbstractArdorApplication`, which extends the IGNIS `Container`. The application instance is the container itself: call `this.bind(...)` and `this.get(...)` directly on the application instance.
 
-`start()` runs two steps in order and awaits each one:
+### start()
 
-```ts no-check
-abstract class AbstractArdorApplication extends Container {
-  ...
-  async start() {
-    await this.preConfigure();
-    await this.postConfigure();
-  }
-}
-```
+Signature: `start(): Promise<void>`
+
+Startup executes in three steps:
+
+1. **Resolves dynamic artifact indexes**: awaits `group.resolve()` if an artifact group provides one.
+2. **Executes pre-configuration**: `await this.preConfigure();`.
+3. **Executes post-configuration**: `await this.postConfigure();`.
 
 ### preConfigure()
 
-The default implementation does six things, in this order:
+Signature: `preConfigure(): ValueOrPromise<void>`
 
-1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this`.
-2. Binds `CoreBindings.APPLICATION_INFO` to `this.getAppInfo()`.
-3. `registerArtifacts()`: checks that every class an `artifacts()` index lists was discovered (see [A generated artifact index](#a-generated-artifact-index)), then binds every class a stereotype marked (`@service()` and the rest), and binds each `@provide` method of every `@configuration()` class under its key - lazy, `BindingScopes.SINGLETON` unless the decorator passes a `scope`. It first throws when two different classes derive the same key from their name (`[registerArtifacts] Two classes derive the binding key 'services.e' ...`), as two classes a minifier named alike would; the second would otherwise silently replace the first. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check uses IGNIS's `ArtifactBindingKeys`, re-exported by ARDOR, and runs once per `start()`, so a hot reload that re-evaluates a module is not an error.
-4. Binds `features()` under `CoreBindings.FEATURES`, after checking that no two share a `name` and that every configuration class a feature lists was discovered - see [Features and permissions](./features).
-5. Binds each entry of `bindingList()` under its literal key, as a singleton.
-6. Returns `this.bindContext()`.
+The exact execution order in `packages/kernel/src/base/applications/abstract.ts` is:
 
-Least explicit first, so for a shared key the later step wins: a stereotype, a `@provide` binding or a feature's binding loses to `bindingList()`, and all of them lose to `bindContext()`.
+1. Binds `CoreBindings.APPLICATION_INSTANCE`: `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);`.
+2. Binds `CoreBindings.APPLICATION_INFO`: `this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());` without awaiting.
+3. Invokes `this.registerArtifacts()`: discovers and binds stereotyped classes and `@provide` methods on `@configuration()` classes.
+4. Invokes `this.registerFeatures({ features: this.features() })`: validates features and binds `CoreBindings.FEATURES`.
+5. Iterates entries of `this.bindingList()`: binds each target under its literal key as `BindingScopes.SINGLETON`.
+6. Returns `this.bindContext()`: executes custom manual bindings and awaits if asynchronous.
 
-Because `start()` awaits the return value, an async `bindContext()` finishes before `postConfigure()` runs. If you override `preConfigure()`, call `super.preConfigure()` or the two core keys are never bound and `bindContext()` is never called.
-
-### bindContext()
-
-Abstract. The framework bindings - provider options and the default providers - are declared in a `@configuration()` class instead, as the `ShopConfiguration` example above shows, so this is usually empty.
-
-`registerArtifacts()` binds each `@provide` method under the key the decorator names. The value is resolved lazily, on the first `get()` for the key, and cached as a singleton unless `@provide({ key, scope })` says otherwise - so react-admin, `DefaultAuthProvider`, every hook and every datasource share one data provider. A configuration class works like any other discovered class: import it before `application.start()`, or it is never bound.
-
-Use `bindContext()` only for an override - a binding declared there replaces a provided one.
-
-An async `@provide` method caches its promise as the singleton. If that promise rejects, the rejection stays cached until the container is cleared, and every later `get()` rejects again. Keep `@provide` methods synchronous, or catch inside the method.
-
-There is no base implementation, so do not call `super.bindContext()`.
+> [!IMPORTANT]
+> `preConfigure()` itself directly binds exactly three keys: `APPLICATION_INSTANCE`, `APPLICATION_INFO`, and `FEATURES`. All other keys are bound through `@provide` methods, `bindingList()`, `bindContext()`, or stereotype decorators. When overriding `preConfigure()`, you must call `await super.preConfigure()`, or core bindings are skipped and `bindContext()` is not invoked.
 
 ### postConfigure()
 
-A no-op by default. Override it for work that needs the bindings from `bindContext()` to exist, such as resolving a service and calling an async method on it.
+Signature: `postConfigure(): ValueOrPromise<void>`
 
-```tsx
+Lifecycle hook called after `preConfigure()` and `bindContext()` complete. In `BaseArdorApplication`, this method is an empty no-op. Override it to execute initialization that requires container bindings to be in place:
+
+```ts
 import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
 
-class ConfigService {
-  async load() {
-    return { featureFlags: ['beta'] };
-  }
+class SettingsService {
+  async load(): Promise<void> {}
 }
 
 export class ShopApplication extends BaseArdorApplication {
@@ -175,148 +108,103 @@ export class ShopApplication extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext() {
-    this.service(ConfigService);
+  bindContext(): void {
+    this.service(SettingsService);
   }
 
-  async postConfigure() {
-    const key = this.getMetadataRegistry().getBindingKey({ target: ConfigService });
-    const config = this.get<ConfigService>({ key: String(key) });
-    await config.load();
+  override async postConfigure(): Promise<void> {
+    const settings = this.get<SettingsService>({ key: 'services.SettingsService' });
+    await settings.load();
   }
 }
 ```
 
-## A generated artifact index
+### registerArtifacts()
 
-A class that nothing imports before `start()` is never bound, and a bundler may drop a module that is imported only for its side effects. Generate an index of every stereotyped class with IGNIS's `ignis-artifacts`, then return it from `artifacts()`:
+Signature: `registerArtifacts(): void`
 
-```bash
-ignis-artifacts generate --root src --out src/_artifacts.ts --source-module @venizia/ardor
-```
+Discovers and binds stereotyped classes and their `@provide` methods:
 
-```ts
-import {
-  BaseArdorApplication,
-  type IApplicationInfo,
-  type IArtifactIndex,
-  service,
-} from '@venizia/ardor';
+1. Retrieves discovered classes from `MetadataRegistry.getInstance().getDiscoveredArtifacts()`.
+2. Asserts indexed classes via `this.assertIndexed()`: verifies every class in `this.resolvedIndexes ?? this.artifacts()` was discovered.
+3. Checks derived keys via `ArtifactBindingKeys.assertNoDerivedCollision()`: ensures no key collisions under minification.
+4. Binds each discovered class under its resolved key using its declared scope (`BindingScopes.SINGLETON` by default).
+5. Binds every `@provide` method on `@configuration()` classes to a lazy singleton provider (`toProvider`), resolving on first `get()`.
 
-@service()
-class OrderService {}
+### artifacts()
 
-// What the generator writes into src/_artifacts.ts; import it from there.
-const GeneratedArtifacts = {
-  configurations: [],
-  dataSources: [],
-  components: [],
-  repositories: [],
-  services: [OrderService],
-  controllers: [],
-};
+Signature: `artifacts(): Array<IArtifactIndex>`
 
-class Application extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
-  }
+Returns artifact index definitions checked by `start()` (default `[]`). `IArtifactIndex` in `packages/kernel/src/common/types.ts` holds indexed classes grouped by kind:
 
-  override artifacts(): Array<IArtifactIndex> {
-    return [GeneratedArtifacts];
-  }
+| Kind | Type | Description |
+|---|---|---|
+| `configurations` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@configuration()` classes to verify upon startup |
+| `dataSources` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@datasource()` classes to verify upon startup |
+| `components` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@component()` classes to verify upon startup |
+| `repositories` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@repository()` classes to verify upon startup |
+| `services` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@service()` classes to verify upon startup |
+| `controllers` | `ReadonlyArray<TClass<unknown>>` | Optional list of controller classes (remains empty in browser applications) |
 
-  bindContext(): void {}
-}
-```
+Artifact indexes ensure that bundlers do not drop classes that are only imported for decorator side-effects. The `ignis-artifacts generate` command emits the index, while the [5-minute quickstart](../guides/get-started/5-minute-quickstart) uses `AutoArtifacts` from `@venizia/ignis-boot/auto` instead. An artifact group with `isArtifactGroup: true` provides inlined `content` or a `resolve()` function that `start()` awaits dynamically.
 
-The index adds no binding. Discovery still binds every stereotyped class; the index holds each class by value, so the import is a value a bundler keeps. `start()` then throws when a listed class was never discovered (`[artifacts] 'services' lists OrderService, which was never discovered`), which means the class lost its decorator or the index is stale. Regenerate the index after adding or renaming a class.
+### features()
 
-Pass `--source-module` once per package your classes import their stereotypes from (`@venizia/ardor`, `@venizia/ardor-kernel`). Without it the generator reads only IGNIS's own imports and finds none of your classes. `controllers` stays empty in a browser application.
+Signature: `features(): Array<IFeatureBase>`
 
-An IGNIS artifact group (`isArtifactGroup: true`) is also accepted by `artifacts()`. Its kind fields throw when read, so `start()` never reads them. A group that carries `content` (a flat index a bundler plugin inlined) is checked as that index. A group without `content` is resolved first: `start()` awaits its `resolve()`, which imports the application's modules and so decorates their classes, then checks the flat index it returns before it registers anything. A group with neither `content` nor a `resolve` function, such as one made by `ArtifactGroup.define()` or `ArtifactGroup.application()`, cannot be resolved here: `start()` throws and names `AutoArtifacts` and `IgnisArtifactsPlugin`, the two ways to give it its classes.
+Returns feature packages mounted by the application (default `[]`), bound by `preConfigure()` under `CoreBindings.FEATURES`. `IFeatureBase` in `packages/kernel/src/common/types.ts` defines the feature contract:
 
-### Without a generated file: ignis-boot auto
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Unique identifier for the feature package within an application |
+| `configurations` | `Array<TClass<unknown>>` | Optional list of feature `@configuration()` classes to verify and discover |
+| `permissions` | `Array<string>` | Optional list of permission strings checked by the feature for role editors |
 
-`@venizia/ignis-boot` 0.2.1 and later can also hand the application its own decorated classes, found by the scanner, as `AutoArtifacts`. The scan follows ARDOR's re-exports of the decorators, so it needs no flag.
+For details on feature mounting, routes, resources, and translations, see [Features](./features).
 
-```ts no-check
-import AutoArtifacts from '@venizia/ignis-boot/auto';
-import { BaseArdorApplication, type IArtifactIndex } from '@venizia/ardor';
+### bindingList()
 
-class Application extends BaseArdorApplication {
-  override artifacts(): Array<IArtifactIndex> {
-    return [AutoArtifacts];
-  }
-  // ... getAppInfo() and bindContext() as usual.
-}
-```
+Signature: `bindingList(): Record<string, TClass<unknown>>`
 
-`AutoArtifacts` is a group with a `resolve()`, so `start()` resolves it before it registers anything. How the list gets built depends on how you run the application:
+Returns a mapping of literal binding keys to class constructors. Default returns `{}`. `preConfigure()` registers each class under its literal key as `BindingScopes.SINGLETON`.
 
-| How you run it | Result |
-| --- | --- |
-| `bun run` from source | `start()` awaits `AutoArtifacts.resolve()`, which scans the application from its entry file (`Bun.main`), whatever the working directory, and imports the modules. |
-| `Bun.build` with `plugins: [IgnisArtifactsPlugin.create()]`, server target | The bundle carries the class list, with no scanner. `AutoArtifacts` has a `resolve()` over the bundle's own imports, and `start()` checks the index it returns like a generated index. |
-| The same plugin with `target: 'browser'` | The list is imported eagerly and sits in `AutoArtifacts` as `content`, which `start()` checks as it is. Eager imports keep the bundle tree-shakeable; a lazy index doubled a measured browser bundle. No `node:fs` in the bundle. |
-| A Vite build with `IgnisArtifactsVitePlugin.create()` from `@venizia/ignis-boot/vite` | The list is built into the bundle and imported eagerly, so `AutoArtifacts` carries it as `content` and the bundle stays tree-shakeable. The plugin pins the name of each class it lists, including the classes of a borrowed kit group (see [Borrowing a kit's classes in a browser build](#borrowing-a-kit-s-classes-in-a-browser-build)), with an injected `static { Object.defineProperty(this, 'name', ...) }` (binding keys come from `Class.name`, which a minifier renames; needs ignis-boot 0.2.1 or later), so the rest of the bundle minifies as usual, and it runs under Node. Measured on `examples/5-mins-qs` and `examples/vert-admin` in a minified build in a browser. |
+### bindContext()
 
-Auto registers what is decorated: a class that loses its decorator is simply not registered, in every mode. A generated index fails the boot instead, so prefer it when you want that guarantee.
+Signature: `abstract bindContext(): ValueOrPromise<void>`
 
-In a browser build, import `@venizia/ignis-boot/auto` from the application's own module, never from a shared kit. The eager import evaluates the application's classes when the auto module loads, and a kit that imports it would evaluate them inside its own half-loaded module graph. The same holds for the application module itself: keep every decorated class in a file of its own, and keep the module that imports `AutoArtifacts` free of them. When a cycle leaves `undefined` in the list, `start()` throws `[artifacts] 'services' lists an entry that is not a class (position 1)` and names the cause, as IGNIS's own index check does.
+Abstract method implemented by subclasses to register manual bindings or overrides directly on the container. Because `bindContext()` runs last in `preConfigure()`, any binding created here takes precedence over stereotype decorators, configuration `@provide` methods, features, and `bindingList()`. Do not call `super.bindContext()`.
 
-In a Vite build, add the plugin before `react()` and keep one decorated class per file:
+### getAppInfo()
 
-```ts no-check
-// vite.config.ts
-import { IgnisArtifactsVitePlugin } from '@venizia/ignis-boot/vite';
+Signature: `abstract getAppInfo(): ValueOrPromise<IApplicationInfo>`
 
-export default defineConfig({
-  plugins: [IgnisArtifactsVitePlugin.create(), react()],
-  // ... the rest of the config
-});
-```
+Abstract method returning application metadata, bound directly under `CoreBindings.APPLICATION_INFO` without awaiting. `IApplicationInfo` in `packages/kernel/src/common/types.ts` specifies application metadata:
 
-Setting `output.keepNames` for the whole build instead adds about 105 KB (14 KB gzipped) to `examples/5-mins-qs`; the plugin pins only the listed classes.
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Name of the application |
+| `version` | `string` | Application version string |
+| `description` | `string` | Human-readable application description |
+| `author` | `{ name: string; email: string; url?: string }` | Optional author contact information |
+| `[extra]` | `any` | Additional application metadata indexed by string or symbol |
 
-A group made with `ArtifactGroup.define()` or `ArtifactGroup.application()` has no `resolve()` of its own. Without content inlined by `IgnisArtifactsPlugin`, `start()` throws and names the plugin.
+### service(), repository(), dataSource(), component()
 
-### Borrowing a kit's classes in a browser build
+Signatures:
+- `service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>`
+- `repository<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>`
+- `dataSource<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>`
+- `component<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T>`
 
-A shared package (a kit) declares the classes it offers once, as a group, and an application borrows it from `artifacts()`:
+`IArtifactRegistration` (defined in `packages/kernel/src/base/applications/abstract.ts`) configures individual registration behavior:
 
-```ts no-check
-// kit/src/index.ts
-import { ArtifactGroup } from '@venizia/ignis-kernel/metadata';
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `binding` | `{ namespace: string; key: string }` | Derived from stereotype | Custom namespace and key to bind under instead of `<namespace>.<ClassName>` |
+| `scope` | `TBindingScope` | `BindingScopes.SINGLETON` | Inversion-of-control lifecycle scope for the class |
+| `allowOverride` | `boolean` | `true` | When `false`, refuses to replace a binding if the key is already bound |
 
-export const KitServices = ArtifactGroup.define({ folder: 'services' });
-
-// app/src/application.ts (the rest of the class is as usual)
-// ...
-override artifacts(): Array<IArtifactIndex> {
-  return [AutoArtifacts, KitServices];
-}
-```
-
-- **Import `ArtifactGroup` from `@venizia/ignis-kernel/metadata`**, the browser-safe entry (ignis-kernel 0.2.2 or later). The `@venizia/ignis-kernel` root re-exports the HTTP server, and a browser build that imports it fails on the optional `hono` and `@hono/zod-openapi` peers.
-- **The plugin pins the kit's class names too** (ignis-boot 0.2.1 or later). It also scans the `src` of every package that defines a group the application can borrow, so a borrowed class keeps its name under minification and its key stays `services.GreetingService`, not `services.T`. Without this, the minifier renames a borrowed class: its key is wrong, or two kits collide and `start()` throws.
-- **The kit must be a workspace package or a dependency the application can resolve**, and `folder` must be a string literal: the plugin reads it at build time.
-- **The list is scanned once, when the dev server starts.** Editing a decorated class keeps hot reload. Adding or removing a decorated class, or a group, needs a `vite dev` restart, as it does on the backend: Vite fires no hook for a file that was just created, and a rescan on every save is too slow on a large application. A `vite build` always scans afresh.
-
-## Registration by hand
-
-`service()`, `repository()`, `dataSource()` and `component()` register one class, as in IGNIS. Each returns the `Binding`.
-
-```ts no-check
-interface IArtifactRegistration {
-  binding?: { namespace: string; key: string }; // instead of <namespace>.<ClassName>
-  scope?: TBindingScope; // default: singleton
-  allowOverride?: boolean; // false refuses to replace an existing binding
-}
-```
-
-- Key: `opts.binding`, else the class's stereotype binding, else `<namespace>.<ClassName>` (`services`, `repositories`, `datasources`, `components`).
-- Scope: `opts.scope`, else the stereotype's, else `BindingScopes.SINGLETON`. IGNIS's server defaults services and repositories to transient; a browser does not, because a hook resolves on every render.
-- The key is recorded on the class, so `@inject({ target })` and the `use*({ target })` hooks resolve it by class.
+Each method binds the class into its stereotype namespace as a `BindingScopes.SINGLETON` and associates the key with the constructor in the metadata registry. For non-standard artifacts, `injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void` binds the class under `${scope}.${value.name}`.
 
 ```ts
 import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
@@ -330,72 +218,82 @@ export class ShopApplication extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext() {
-    this.dataSource(ApiClient); // datasources.ApiClient
-    this.repository(ProductRepository); // repositories.ProductRepository
-    this.service(EmailService, { binding: { namespace: 'services', key: 'mail' } }); // services.mail
+  bindContext(): void {
+    this.dataSource(ApiClient);
+    this.repository(ProductRepository);
+    this.service(EmailService, {
+      binding: { namespace: 'services', key: 'mail' },
+      allowOverride: false,
+    });
   }
 }
 ```
 
-`injectable(scope, value, tags?)` binds under `<scope>.<ClassName>` as a singleton with tags, and records the key too. Prefer the per-kind methods; see [Binding keys](../best-practices/binding-keys) for registration by stereotype.
+## ArdorApplication
 
-## ArdorApplication - handing the container to React
+`ArdorApplication` (in `packages/admin/src/components/application.tsx`) is the root React component connecting the started application container to react-admin's `CoreAdmin`. Component properties are typed by `IApplication` in `packages/admin/src/common/types.ts`.
 
-`ArdorApplication` is the root component. It takes the started application as `container`, resolves the three default providers from it, and renders react-admin's `CoreAdmin`.
+### Props
 
-```tsx no-check
-interface IApplication extends Omit<CoreAdminProps, 'children'> {
-  container: Container;
-  enableDebug?: boolean;
-  reduxStore: Store;
-  suspense: ReactNode;
-  resources?: Array<ResourceProps>; // the application's own; each feature's mount after them
-  routes?: Array<RouteProps>; // same for routes
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
+| `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
+| `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
+| `enableDebug` | `boolean` | No | Enables debug-level logging in the application logger. Default is `false`. |
+| `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
+| `routes` | `Array<RouteProps>` | No | Custom route definitions registered inside `CustomRoutes` before feature routes. |
+| `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties passed directly to `CoreAdmin` (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`). |
+
+### Render Lifecycle
+
+When rendered, `ArdorApplication` executes the following sequence:
+
+1. **Resolves Default Providers**:
+   - `CoreBindings.DEFAULT_REST_DATA_PROVIDER`: Required. Resolves `IDataProvider`, which extends react-admin's nine data methods with `send`, `getNetworkService`, and `getDataSourceAuth`. See [Data provider](./data-provider).
+   - `CoreBindings.DEFAULT_AUTH_PROVIDER`: Optional (`isOptional: true`). If unbound, react-admin runs without an auth provider - every page is public. See [Auth provider](./auth-provider).
+   - `CoreBindings.DEFAULT_I18N_PROVIDER`: Required. Resolves the `I18nProvider` implementation. See [i18n](./i18n).
+2. **Mounts Resources and Routes**: Reads features from `CoreBindings.FEATURES` via `Features.read({ container })` and mounts the application's own `resources` and `routes`, followed by each feature's resources and routes in order via `Features.mount({ features, resources, routes })`. If duplicate resource names are detected across the application and mounted features, an error is thrown.
+3. **Verifies Translation Readiness**: Calls `useFeatureMessagesReady`. If any feature supplies lazy translation loaders for the active locale, `changeLocale()` is triggered, and `suspense` is rendered until messages are loaded.
+4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`), and `React.Suspense` (`suspense`).
+5. **Renders CoreAdmin**: Forwards providers and props to `CoreAdmin`, mounting each resource under `<Resource />` and routes under `<CustomRoutes>`.
+
+```tsx
+import React from 'react';
+import { type Store } from '@reduxjs/toolkit';
+import { ArdorApplication, type BaseArdorApplication } from '@venizia/ardor';
+
+export function renderAdmin(application: BaseArdorApplication, reduxStore: Store) {
+  return (
+    <ArdorApplication
+      container={application}
+      reduxStore={reduxStore}
+      suspense={<div>Loading...</div>}
+      enableDebug={false}
+      resources={[{ name: 'products' }]}
+    />
+  );
 }
 ```
 
-What the component does:
+## Errors
 
-1. Inside a `useMemo` keyed on `container` and the remaining props, it calls `container.get({ key })` for `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `CoreBindings.DEFAULT_AUTH_PROVIDER` and `CoreBindings.DEFAULT_I18N_PROVIDER`. The data and i18n keys must be bound before the component renders; the auth key is optional - leave it unbound and the admin runs with no sign-in (see [An application with no sign-in](../references/auth-provider#an-application-with-no-sign-in)). See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n).
-2. Wraps the tree in `ApplicationContext.Provider` with `{ container, logger }`. The logger is `Logger.getInstance({ scope: 'ArdorApplication', enableDebug })`.
-3. Wraps that in `ReduxProvider` with `reduxStore`, then `React.Suspense` with `suspense` as the fallback.
-4. Renders `CoreAdmin` with `dataProvider`, `authProvider`, `i18nProvider` and every other `CoreAdminProps` prop you passed.
-5. Renders one `Resource` per entry in `resources`, and one `Route` per entry in `routes` inside `CustomRoutes`, then the same for each feature. Route keys are `route.id ?? route.path`.
+`packages/kernel/src/base/applications/abstract.ts` and `Features.mount()` throw errors during startup and render when configuration constraints or artifact expectations are violated:
 
-```tsx
-import { ArdorApplication } from '@venizia/ardor';
-
-export const Root = () => (
-  <ArdorApplication
-    container={container}
-    reduxStore={store}
-    suspense={<Spinner />}
-    resources={[{ name: 'products', list: ProductList }]}
-    routes={[{ path: '/about', element: <div>About</div> }]}
-  />
-);
-```
-
-Everything under `ArdorApplication` can reach the container with `useApplicationContext()` or `useInjectable()` and the logger with `useApplicationLogger()`.
-
-## Common pitfalls
-
-- **Rendering before `start()` resolves.** `ArdorApplication` calls `container.get` for the three default provider keys during render. Await `app.start()` first, then mount.
-- **Calling `super.bindContext()`.** `bindContext()` is abstract. There is nothing to call.
-- **Overriding `preConfigure()` without `super.preConfigure()`.** The override then skips binding `APPLICATION_INSTANCE` and `APPLICATION_INFO` and never runs `bindContext()`.
-- **Async `getAppInfo()`.** `preConfigure()` binds the return value without awaiting it. Return a plain object.
-- **Expecting `this.container`.** The application is the container. Use `this.bind(...)` and `this.get(...)`. Legacy ra-core-infra code that used `this.container.bind({ key, value })` becomes `this.bind({ key }).toValue(value)` - see the [migration guide](../guides/migration/from-ra-core-infra).
-- **Typing a derived key.** A derived key contains the class name, which a production build renames. Resolve such classes by `target`, not by a typed `'services.X'` string.
-- **`Two classes derive the binding key` at `start()`.** Two discovered classes share a name, usually two short names a minifier gave classes in different chunks. Pin `binding: { namespace, key }` on one of them, or keep the class names: `keepNames` in a bundler, or in a Vite build the plugin of ignis-boot 0.2.1 or later, which pins the names of the classes it lists.
-- **Two instances of a service.** Registering the same class under two scopes gives two singletons, one per key.
+| Error Message | Method / Caller | Cause | Fix |
+|---|---|---|---|
+| `[registerArtifacts] Two classes derive the binding key '<key>'` | `registerArtifacts()` via `ArtifactBindingKeys.assertNoDerivedCollision` | Two discovered classes share the same name or were renamed to the same name by a minifier, causing colliding derived binding keys (`${namespace}.${name}`). | Set an explicit binding key via `@service({ binding: { namespace, key } })` or the `binding` registration option, or configure the bundler to preserve class names. |
+| `[artifacts] A group has neither content nor resolve` | `resolveArtifactIndexes()` in `start()` | An artifact group returned by `artifacts()` has `isArtifactGroup: true`, but has neither pre-inlined `content` nor a `resolve()` function. | Return `AutoArtifacts` from `@venizia/ignis-boot/auto`, or build with `IgnisArtifactsPlugin` so the group includes inlined content. |
+| `[artifacts] '<kind>' lists an entry that is not a class (position <pos>)` | `assertIndexed()` in `registerArtifacts()` | An artifact index entry is `undefined` or not a function. This is typically caused by circular imports evaluating a module before its class is defined. | Break the circular import cycle. Ensure the module importing the artifact index does not define decorated classes or get imported by them. |
+| `[artifacts] '<kind>' lists <Name>, which was never discovered` | `assertIndexed()` in `registerArtifacts()` | A class listed in an artifact index was not found in `MetadataRegistry.getDiscoveredArtifacts()`. The class is missing its stereotype decorator, was never imported, or the index is stale. | Decorate the class with its stereotype (`@service()`, `@repository()`, `@datasource()`, `@component()`, `@configuration()`), import its module, and regenerate the index. |
+| `[features] Two features are named '<name>'` | `registerFeatures()` in `preConfigure()` | Two feature definitions returned by `this.features()` have the same `name` property. | Ensure every mounted feature has a unique `name`. |
+| `[features] '<feature>' lists <Name>, which was never discovered` | `registerFeatures()` in `preConfigure()` | A configuration class listed in a feature's `configurations` array was not discovered in the metadata registry. | Decorate the class with `@configuration()` and import its module before calling `start()`. |
+| `[features] Resource '<name>' is mounted by both '<owner1>' and '<owner2>'` | `Features.mount()` in `ArdorApplication` | Two mounted features, or the application and a mounted feature, register a resource with the same `name`. | Ensure resource names are unique across the application and all mounted features. |
+| `[<caller>] '<key>' is already bound and allowOverride is false` | `service()`, `repository()`, `dataSource()`, `component()` | A registration method was called with `allowOverride: false` (or its decorator set `allowOverride: false`), but the key is already bound in the container. | Pass a distinct binding key via `opts.binding`, or omit `allowOverride: false` if replacing the existing binding is intentional. |
 
 ## Related
 
-- [Binding keys](../references/binding-keys)
-- [Data provider](../references/data-provider)
-- [Auth provider](../references/auth-provider)
-- [i18n](../references/i18n)
-- [Hooks](../references/hooks)
-- [Quickstart](../guides/get-started/quickstart)
-- [Migration from ra-core-infra](../guides/migration/from-ra-core-infra)
+- [Application Guide](../guides/core-concepts/application) - Architectural overview of the ARDOR container and component tree
+- [Configuration Guide](../guides/core-concepts/configuration) - Using `@configuration()` classes and `@provide` methods
+- [Binding keys](./binding-keys) - CoreBindings reference and key conventions
+- [Features](./features) - Feature packages, routing, resources, and translation modules

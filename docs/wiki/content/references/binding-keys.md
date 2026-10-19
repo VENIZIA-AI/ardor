@@ -1,185 +1,78 @@
 ---
 title: Binding keys
-description: Every CoreBindings and LocalStorageKeys constant, which keys the framework binds itself, the services.* namespace produced by service(), and how useInjectable keys are typed and augmented.
+description: Every CoreBindings and LocalStorageKeys constant in ARDOR, who binds each key, who reads it, required or optional status, and useInjectable key resolution.
 ---
 
 # Binding keys
 
-`CoreBindings` is a class of string constants. Each constant is a key in the IGNIS container that an ARDOR application extends. `LocalStorageKeys` is the same idea for browser storage. This page lists every key, says who is responsible for binding it, and shows how the key union that `useInjectable` accepts is built and extended.
+`CoreBindings` defines the eleven keys used in the ARDOR container for application instances, options, providers, and features. `LocalStorageKeys` defines the keys used in browser storage for authentication state.
 
-## Prerequisites
+```ts
+import { CoreBindings, useInjectable, type IDataProvider } from '@venizia/ardor';
 
-You have an application class that extends `AbstractArdorApplication` or `BaseArdorApplication` (see [Application](../references/application)).
-
-## Quick Reference
-
-| Export | Kind | Package | Role |
-|---|---|---|---|
-| `CoreBindings` | class | `@venizia/ardor` | Container keys for the application, providers, services and their options |
-| `LocalStorageKeys` | class | `@venizia/ardor` | Keys for auth state in `localStorage` |
-| `AbstractArdorApplication.injectable` | method | `@venizia/ardor` | Binds a class under `${scope}.${ClassName}` as a singleton |
-| `AbstractArdorApplication.service` | method | `@venizia/ardor` | `injectable('services', value)` |
-| `useInjectable` | const | `@venizia/ardor` | Resolves a binding by `key` or by class `target` |
-| `TUseInjectableKeysDefault` | type | `@venizia/ardor` | Union of every `CoreBindings` string value |
-| `IUseInjectableKeysOverrides` | interface | `@venizia/ardor-react` | Empty interface you augment to add keys |
-| `TUseInjectableKeys` | type | `@venizia/ardor` | `TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides` |
-| `TUseInjectableOptions` | type | `@venizia/ardor` | Options union accepted by `useInjectable` |
+export const useRestDataProvider = () => {
+  return useInjectable<IDataProvider>({
+    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+  });
+};
+```
 
 ## CoreBindings
 
-All keys and their string values, exactly as defined in the kernel.
+`CoreBindings` is defined in `packages/kernel/src/common/keys.ts`.
 
-| Constant | Value | Bound by |
-|---|---|---|
-| `APPLICATION_INSTANCE` | `@app/application/instance` | Framework (`preConfigure`) |
-| `APPLICATION_INFO` | `@app/application/info` | Framework (`preConfigure`) |
-| `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | Configuration (`@provide`) |
-| `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | Configuration (`@provide`) |
-| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Configuration (`@provide`) |
-| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Configuration (`@provide`) |
-| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Configuration (`@provide`) |
-| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Configuration (`@provide`) |
-| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Configuration (`@provide`) |
-| `FEATURES` | `@app/application/features` | `preConfigure()`, from `features()` |
-| `PERMISSION_PROVIDER` | `@app/application/permission/provider` | The application (optional) |
+| Constant | Value | Bound by | Read by | Status |
+|---|---|---|---|---|
+| `APPLICATION_INSTANCE` | `@app/application/instance` | Framework (`preConfigure()`) | Services, configurations, components | Always bound |
+| `APPLICATION_INFO` | `@app/application/info` | Framework (`preConfigure()`) | `DefaultRestDataProvider`, network request tracing | Always bound |
+| `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | Application (`@provide`) | `ArdorApplication` | Optional |
+| `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | Application (`@provide`) | `ArdorApplication` | Required |
+| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Application (`@provide`) | `ArdorApplication`, `DefaultAuthProvider` | Required |
+| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provide`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
+| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Application (`@provide`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
+| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provide`) | `DefaultRestDataProvider` | Required by `DefaultRestDataProvider` |
+| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provide`) | `DefaultI18nProvider` | Required by `DefaultI18nProvider` |
+| `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
+| `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
 
-The three `*_OPTIONS` keys hold the options objects read by the matching provider: `IAuthProviderOptions`, `IRestDataProviderOptions` and `II18nProviderOptions`. The provider keys hold the provider instances. See [Data provider](../references/data-provider), [Auth provider](../references/auth-provider) and [i18n](../references/i18n) for what each provider expects.
-
-```ts
-import { CoreBindings } from '@venizia/ardor';
-
-const key: string = CoreBindings.DEFAULT_REST_DATA_PROVIDER;
-// '@app/application/data/rest/default'
-```
-
-## What the framework binds itself
-
-`AbstractArdorApplication.start()` runs `preConfigure()` and then `postConfigure()`. `preConfigure()` binds exactly three keys of its own, and registers your classes, before it calls your `bindContext()`:
-
-```ts no-check
-export abstract class AbstractArdorApplication {
-  ...
-  preConfigure(): ValueOrPromise<void> {
-    this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
-    this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
-    this.registerArtifacts();
-    this.registerFeatures({ features: this.features() }); // binds FEATURES
-    for (const [key, target] of Object.entries(this.bindingList())) { ... }
-    return this.bindContext();
-  }
-  ...
-}
-```
-
-- `APPLICATION_INSTANCE` is the application object itself.
-- `APPLICATION_INFO` is whatever `getAppInfo()` returns, bound as a value. `getAppInfo()` is typed `ValueOrPromise<IApplicationInfo>`, so if you return a promise, the promise is what gets bound.
-- `FEATURES` is the validated list from `features()`, bound by `registerFeatures()`.
-
-`postConfigure()` is a no-op in the abstract class. The kernel binds no other `CoreBindings` key. Every other `CoreBindings` key is declared with `@provide` in a `@configuration()` class - either in yours or in the one of the subclass you extend. `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton. Check [Application](../references/application) for what `ArdorApplication` from `@venizia/ardor-admin` binds for you.
-
-## What the application binds
-
-A `@configuration()` class declares the options objects and the providers. `registerArtifacts()` runs after the instance and info keys are in place, so a provided value can read them.
-
-```ts
-import {
-  type BaseArdorApplication as TArdorApplication,
-  configuration,
-  CoreBindings,
-  DefaultRestDataProvider,
-  inject,
-  provide,
-} from '@venizia/ardor';
-
-@configuration()
-export class ShopConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return { url: 'https://api.example.com' };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-}
-```
-
-`bindContext()` stays empty unless you override a provided key.
-
-## The `services.*` namespace
-
-`injectable()` binds a class under a key derived from a scope and the class name. `service()` fixes the scope to `services`.
-
-```ts no-check
-export abstract class AbstractArdorApplication {
-  ...
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  service<T>(value: TClass<T>): void;
-}
-```
-
-Both are positional - this is the IGNIS container surface, not an ARDOR options object. The resulting key is `${scope}.${value.name}`, so `this.service(UserService)` binds `services.UserService`. The binding is `toClass(value)` with scope `BindingScopes.SINGLETON`: one instance per application. Tags are applied when given.
-
-```ts no-check
-export class MyApplication extends BaseArdorApplication {
-  bindContext() {
-    this.service(UserService);                    // key: 'services.UserService'
-    this.injectable('helpers', ClockHelper);      // key: 'helpers.ClockHelper'
-    this.injectable('services', AuditService, ['audit']); // tagged
-  }
-  ...
-}
-```
-
-Nothing in `CoreBindings` covers `services.*` keys. To pass one to `useInjectable({ key })` with type checking, augment the key union as shown below, or resolve by `target` instead.
+For binding order in the application lifecycle, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
 
 ## LocalStorageKeys
 
-Three constants for auth state in `localStorage`. Their names say what each slot holds.
+`LocalStorageKeys` (defined in `packages/kernel/src/common/keys.ts`) provides keys for browser local storage.
 
-| Constant | Value |
-|---|---|
-| `KEY_AUTH_TOKEN` | `@app/auth/token` |
-| `KEY_AUTH_IDENTITY` | `@app/auth/identity` |
-| `KEY_AUTH_PERMISSION` | `@app/auth/permission` |
+| Constant | Value | Role |
+|---|---|---|
+| `KEY_AUTH_TOKEN` | `@app/auth/token` | Serialized authentication token record (`IAuthTokenRecord`) |
+| `KEY_AUTH_IDENTITY` | `@app/auth/identity` | Stored user identity |
+| `KEY_AUTH_PERMISSION` | `@app/auth/permission` | Stored user permissions and roles |
+
+Each key belongs to `LocalStorageKeys.SCHEME_SET` and can be verified with `LocalStorageKeys.isValid(value)`.
 
 ```ts
 import { LocalStorageKeys } from '@venizia/ardor';
 
-const raw = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+export const readStoredToken = (): string | null => {
+  return localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+};
 ```
 
-Use the constants rather than the raw strings so a rename in the framework does not leave stale entries behind in your code. How the auth service reads and writes these slots is covered in [Auth provider](../references/auth-provider).
+## Key resolution in useInjectable
 
-## How useInjectable keys are typed
+`useInjectable` accepts keys from the `TUseInjectableKeys` union:
 
-The key parameter of `useInjectable` is not `string`. It is a union built in `@venizia/ardor-react`:
+- `TUseInjectableKeysDefault`: union of all string values on `CoreBindings`.
+- `IUseInjectableKeysOverrides`: interface augmented to register custom keys.
+- `TUseInjectableKeys`: `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides`.
 
-```ts no-check
-export interface IUseInjectableKeysOverrides {}
-
-export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-
-export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
-```
-
-- `TUseInjectableKeysDefault` is every string value on `CoreBindings` - the eleven keys in the table above.
-- `IUseInjectableKeysOverrides` is empty. Its property names, not its property types, are added to the union.
-- `TUseInjectableKeys` is the union the hook accepts.
-
-To add your own keys, augment the interface once in a `.d.ts` or any module file. The property type is irrelevant because only `keyof` is used.
+To resolve custom keys such as service namespaces (`services.<ClassName>`), augment `IUseInjectableKeysOverrides`:
 
 ```tsx
 import { useInjectable } from '@venizia/ardor';
 
 declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
-    'services.UserService': unknown;
+    'services.UserService': true;
   }
 }
 
@@ -194,87 +87,9 @@ export const useUserService = () => {
 };
 ```
 
-The augmentation targets `@venizia/ardor-react`, where the interface is declared, even if you import from `@venizia/ardor`. See [Module augmentation](../best-practices/module-augmentation) for the file layout that keeps this in one place.
-
-## Resolving by key or by target
-
-`useInjectable` takes one options object. `key` and `target` are mutually exclusive; `container` is optional in both forms.
-
-```ts no-check
-export type TUseInjectableOptions =
-  | { container?: Container; key: TUseInjectableKeys; target?: never }
-  | { container?: Container; key?: never; target: TClass<AnyType> };
-
-export const useInjectable: <T>(opts: TUseInjectableOptions) => T;
-```
-
-Resolution order:
-
-1. Use `opts.container` if given, otherwise `ApplicationContext.container`. If neither exists, throw `[useInjectable] Failed to determine injectable container!`.
-2. If `key` is set, return `container.get<T>({ key })`.
-3. Otherwise look up the class in the container's metadata registry with `getBindingKey({ target })`. If nothing is found, throw with the message: `Decorate it (@service, @component, ...) or register it on the application before injecting`.
-4. Return `container.get<T>({ key: resolved })`.
-
-By key, with a `CoreBindings` constant:
-
-```tsx
-import { CoreBindings, useInjectable, type IDataProvider } from '@venizia/ardor';
-
-export const useDataProvider = () => {
-  return useInjectable<IDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
-};
-```
-
-By target, with no key augmentation needed:
-
-```tsx
-import { useInjectable } from '@venizia/ardor';
-
-class ReportService {
-  build() {
-    return 'report';
-  }
-}
-
-export const useReportService = () => {
-  return useInjectable<ReportService>({ target: ReportService });
-};
-```
-
-Against an explicit container, bypassing `ApplicationContext`:
-
-```tsx
-import { CoreBindings, useInjectable, type IApplicationInfo } from '@venizia/ardor';
-
-export const useAppInfoFrom = () => {
-  return useInjectable<IApplicationInfo>({
-    container,
-    key: CoreBindings.APPLICATION_INFO,
-  });
-};
-```
-
-`useInjectable` does not check that `T` matches what is bound. The generic is an assertion, not a lookup.
-
-## Common pitfalls
-
-- **Binding a provider key before `preConfigure()` has run.** A `@configuration()` class is the right place: `registerArtifacts()` runs after `APPLICATION_INSTANCE` and `APPLICATION_INFO` exist. An override goes in `bindContext()`, which `preConfigure()` calls last. Binding in the application constructor happens before either of them.
-- **Returning a promise from `getAppInfo()` and expecting an object under `APPLICATION_INFO`.** The value is bound as-is with `toValue`, so consumers get the promise.
-- **Passing `'services.UserService'` as `key` without augmentation.** It is not in `TUseInjectableKeysDefault`, so TypeScript rejects it. Either augment `IUseInjectableKeysOverrides` or use `target`.
-- **Relying on `value.name` under minification.** `service()` builds the key from the class's runtime `name`. If your bundler renames classes, the key in production differs from the one you typed in an augmentation. Resolve by `target` or disable class name mangling.
-- **Augmenting `@venizia/ardor` instead of `@venizia/ardor-react`.** The interface lives in `@venizia/ardor-react`. Augmenting the umbrella package does not extend the union.
-- **`target` for a class bound only with `bind().toClass()`.** `bind()` records no key on the class, and step 3 above reads the metadata registry. If the lookup returns nothing, the hook throws. The error text lists the accepted ways to register.
-- **Both `key` and `target` set.** The options type forbids it (`target?: never` / `key?: never`), and at runtime `key` wins.
-
 ## Related
 
-- [Application](../references/application) - `start()`, `preConfigure()`, `bindContext()` and what `ArdorApplication` binds
-- [Hooks](../references/hooks) - the full `useInjectable` and `useApplicationContext` reference
-- [Data provider](../references/data-provider) - what sits behind `DEFAULT_REST_DATA_PROVIDER` and `REST_DATA_PROVIDER_OPTIONS`
-- [Auth provider](../references/auth-provider) - `DEFAULT_AUTH_PROVIDER`, `DEFAULT_AUTH_SERVICE` and the `LocalStorageKeys` slots
-- [i18n](../references/i18n) - `DEFAULT_I18N_PROVIDER` and `I18N_PROVIDER_OPTIONS`
-- [Types](../references/types) - `ValueOf`, `ValueOrPromise` and the other helpers used in these signatures
-- [Module augmentation](../best-practices/module-augmentation) - where to put `IUseInjectableKeysOverrides` augmentations
-- [Migrating from ra-core-infra](../guides/migration/from-ra-core-infra) - old `container.bind({ key, value })` calls versus `bind({ key }).toValue()`
+- [Configuration](../guides/core-concepts/configuration) - declaring `@configuration()` classes and `@provide` methods
+- [Application](application) - `preConfigure()`, `bindContext()`, and application lifecycle
+- [Hooks](hooks) - `useInjectable` hook reference
+- [Module augmentation](../best-practices/module-augmentation) - augmenting `IUseInjectableKeysOverrides`

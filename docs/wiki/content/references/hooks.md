@@ -1,181 +1,270 @@
 ---
-title: React hooks
-description: Every hook exported by ARDOR - what it returns, what it needs in the React tree, and one example each.
+title: Hooks
+description: Reference for every React hook exported by ARDOR, covering container access, Redux utilities, ra-core companions, and browser helpers.
 ---
 
-# React hooks
+# Hooks
 
-ARDOR ships two groups of hooks. The `@venizia/ardor-react` hooks work with the ARDOR container and plain browser APIs. The `@venizia/ardor-admin` hooks sit on top of ra-core providers. All of them are re-exported from `@venizia/ardor`.
-
-## Prerequisites
-
-An ARDOR application mounted with `ApplicationContext` (see [Application](../references/application)), and for the admin hooks a react-admin tree with its providers (see [Data provider](../references/data-provider), [Auth provider](../references/auth-provider), [i18n](../references/i18n)).
-
-## Quick Reference
-
-| Export | Needs in the tree | Returns |
-|---|---|---|
-| `useInjectable` | `ApplicationContext` with a `container`, or an explicit `container` option | The bound instance |
-| `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration` | Same as `useInjectable` | The bound instance, checked against its namespace |
-| `useInjectableContainer` | `ApplicationContext` with a `container`, or an explicit `container` option | The `Container` that `useInjectable` resolves from; throws when there is none |
-| `useApplicationContext` | `ApplicationContext` with a `container` | The `Container` |
-| `useApplicationLogger` | `ApplicationContext` with a `logger` | The `Logger` |
-| `useFeatures` | `ApplicationContext` with a `container` | The mounted features, `Array<TFeature>` - empty when the application has none. See [Features](../references/features#mounting-features) |
-| `useTranslate` | ra-core i18n context (optional - falls back to identity) | `(key, options?) => string` |
-| `useNotifyError` | ra-core notification context | `(error, options?) => void` |
-| `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | `() => Promise<any>` |
-| `useRequestHeaderLocale` | ra-core locale state, `ApplicationContext` with `DEFAULT_REST_DATA_PROVIDER` bound | `void` |
-| `useDocumentTitle` | Nothing (browser only) | `void` |
-| `useHtmlLang` | ra-core locale state | `void` |
-| `useDebounce` | Nothing (browser only) | `{ debouncedValue }` |
-| `useAutosave` | Nothing (browser only) | `void` |
-| `useConfirm` | Nothing | `{ message, confirm, handleClose, handleConfirm, handleAbort }` |
-| `useCopyToClipboard` | Nothing | `{ copy }` |
-| `useBeforeUnload` | Nothing (browser only) | `void` |
-| `useSizer` | Nothing (browser only) | `{ width, height }` |
-| `useWindowDimensions` | Nothing (browser only) | `{ width, height }` |
-| `createAppDispatch` | react-redux `Provider` (for the hooks it returns) | `{ useAppDispatch, useMultipleAppDispatch }` |
-| `createAppSelectors` | react-redux `Provider` (for the hooks it returns) | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
-
-Types covered on this page: `TUseInjectableKeys`, `TUseInjectableKeysDefault`, `IUseInjectableKeysOverrides`, `TUseInjectableOptions`, `TUseTranslateKeys`, `TUseTranslateKeysDefault`, `TUseTranslateFn`, `IUseTranslateKeysOverrides`, `IApplicationContextValue`, `IUseDebounceOptions`, `IUseDebounceReturn`, `IUseAutosaveOptions`, `IUseConfirmReturn`, `IUseCopyToClipboardReturn`, `IUseBeforeUnloadOptions`, `IUseSizerOptions`, `IUseSizerReturn`.
-
-## useInjectable
-
-Resolves a binding from the IGNIS container. You can ask by `key` or by `target` class. The container comes from `ApplicationContext` unless you pass one explicitly.
-
-```tsx no-check
-type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
-
-type TUseInjectableOptions =
-  | { container?: Container; key: TUseInjectableKeys; target?: never }
-  | { container?: Container; key?: never; target: TClass<AnyType> };
-
-const useInjectable: <TInstance>(opts: TUseInjectableOptions) => TInstance;
-```
-
-How it resolves:
-
-- `{ key }` - calls `container.get({ key })` directly.
-- `{ target }` - looks up the binding key recorded on the class, then calls `container.get`. A stereotype records it (`@service`, `@component`, ...), and so does registration by hand (`service()`, `repository()`, `dataSource()`, `component()`, `bindingList()`). A class bound only with `bind()` has none, and the hook throws.
-- `{ container }` - overrides the context container. If neither an explicit container nor a context container exists, the hook throws.
-
-By key, using a core binding:
+ARDOR provides hooks to interact with the dependency injection container, Redux state, react-admin contexts, and browser APIs. All hooks are exported from `@venizia/ardor`.
 
 ```tsx
-import { CoreBindings, DefaultRestDataProvider, useInjectable } from '@venizia/ardor';
+import { useDocumentTitle } from '@venizia/ardor';
 
-export function TenantHeaderButton() {
-  const dataProvider = useInjectable<DefaultRestDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
-
-  const handleClick = () => {
-    dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } });
-  };
-
-  return <button onClick={handleClick}>Use tenant acme</button>;
+export function StatusWidget() {
+  useDocumentTitle({ title: 'Status', appTitle: 'Back Office' });
+  return <span>Ready</span>;
 }
 ```
 
-By target class:
+## Which hook do I need?
 
-```tsx
-import { useInjectable } from '@venizia/ardor';
+| I want to... | Hook | Needs in the tree | Returns |
+| --- | --- | --- | --- |
+| Access the IoC container from context | `useApplicationContext` | `ApplicationContext` with a container | `Container` |
+| Access the container with an optional override | `useInjectableContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
+| Resolve a bound dependency by key or class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
+| Resolve a service from the `services` namespace | `useService` | `ApplicationContext` with a container, or explicit option | Bound service instance |
+| Resolve a repository from the `repositories` namespace | `useRepository` | `ApplicationContext` with a container, or explicit option | Bound repository instance |
+| Resolve a provider from the `providers` namespace | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
+| Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
+| Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
+| Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `Logger` |
+| Build typed dispatch hooks for a Redux store | `createAppDispatch` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
+| Build typed selector hooks for Redux state | `createAppSelectors` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
+| Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
+| Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
+| Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
+| Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
+| List mounted application features | `useFeatures` | `ApplicationContext` with a container | `Array<TItem>` |
+| Set document title with automatic restoration on unmount | `useDocumentTitle` | Browser DOM | `void` |
+| Synchronize `<html lang>` with the active locale | `useHtmlLang` | ra-core locale state, browser DOM | `void` |
+| Debounce a rapidly changing value | `useDebounce` | Browser DOM | `{ debouncedValue }` |
+| Automatically save stable form data | `useAutosave` | Browser DOM | `void` |
+| Show a Promise-based confirmation prompt | `useConfirm` | React tree | Confirmation controls |
+| Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
+| Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
+| Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
+| Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 
-export function PricingServiceName() {
-  const pricing = useInjectable<PricingService>({ target: PricingService });
-  return <pre>{pricing.constructor.name}</pre>;
-}
-```
+## Reach the container
 
-With an explicit container, outside of `ApplicationContext`:
-
-```tsx
-import { useInjectable } from '@venizia/ardor';
-
-export function PricingServiceFromContainer() {
-  const pricing = useInjectable<PricingService>({ container, target: PricingService });
-  return <pre>{pricing.constructor.name}</pre>;
-}
-```
-
-`TUseInjectableKeys` is the union of the string values of `CoreBindings` plus the keys of `IUseInjectableKeysOverrides`. That interface is empty by default. Augment it to make your own binding keys type-safe - see [Module augmentation](../best-practices/module-augmentation) and [Binding keys](../references/binding-keys).
-
-```ts
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeysOverrides {
-    'services.PricingService': true;
-  }
-}
-```
-
-## useService, useRepository and the other stereotype hooks
-
-One hook per namespace: `useService` (`services`), `useRepository` (`repositories`), `useProvider` (`providers`), `useComponent` (`components`), `useConfiguration` (`configurations`). Each takes `{ target }` or `{ key }` like `useInjectable`, and infers the type from `target`.
-
-```tsx no-check
-const useService: <T = AnyType>(opts: { container?: Container; target: TClass<T> } | { container?: Container; key: TUseInjectableKeys }) => T;
-// useRepository, useProvider, useComponent and useConfiguration have the same shape.
-```
-
-They are not aliases. With `{ target }`, each checks the class is bound under its own namespace and throws naming both otherwise, so `useService({ target: SomeRepository })` fails instead of returning a repository to code that expects a service. A `{ key }` is passed through unchecked.
-
-```tsx no-check
-// ...
-const pricing = useService({ target: PricingService }); // typed PricingService
-const products = useRepository({ target: ProductRepository }); // typed ProductRepository
-```
-
-## useApplicationContext
-
-Returns the `Container` stored in `ApplicationContext`. Throws if the context has no container.
-
-```ts no-check
-const useApplicationContext: () => Container;
-```
+### useApplicationContext
 
 ```tsx
 import { useApplicationContext } from '@venizia/ardor';
 
 export function ContainerStatus() {
-  const appContainer = useApplicationContext();
-  return <span>{appContainer ? 'container ready' : 'no container'}</span>;
+  const container = useApplicationContext();
+  return <span>{container ? 'container ready' : 'no container'}</span>;
 }
 ```
 
-## useApplicationLogger
+- **Parameters**: None.
+- **Return value**: `Container` from `@venizia/ignis-inversion`.
+- **Gotcha**: Throws an error (`[useApplicationContext] must be used within a ApplicationContextProvider`) if called when no container is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
-Returns the `Logger` stored in `ApplicationContext`. Throws if the context has no logger.
+### useInjectableContainer
 
-```ts no-check
-const useApplicationLogger: () => Logger;
+```tsx
+import { useInjectableContainer } from '@venizia/ardor';
+
+export function ContainerChecker() {
+  const container = useInjectableContainer();
+  return <span>{container ? 'container ready' : 'no container'}</span>;
+}
 ```
+
+- **Parameters**: Optional `opts?: { container?: Container }`.
+- **Return value**: `Container`.
+- **Gotcha**: Throws an error (`[useInjectable] Failed to determine injectable container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
+
+### useInjectable
+
+```tsx
+import { CoreBindings, type DefaultRestDataProvider, useInjectable } from '@venizia/ardor';
+
+export function TenantHeaderButton() {
+  const dataProvider = useInjectable<DefaultRestDataProvider>({
+    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+  });
+  return (
+    <button onClick={() => dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } })}>
+      Tenant
+    </button>
+  );
+}
+```
+
+- **Parameters**: `opts: TUseInjectableOptions` - `{ key: TUseInjectableKeys; container?: Container }` or `{ target: TClass<AnyType>; container?: Container }`.
+- **Return value**: The resolved instance `TInstance`.
+- **Gotcha**: When resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
+
+### useService
+
+```tsx
+import { service, useService } from '@venizia/ardor';
+
+@service()
+class OrderService {
+  calculateTotal(subtotal: number, tax: number) { return subtotal + tax; }
+}
+
+export function OrderTotal() {
+  const orderService = useService({ target: OrderService });
+  return <span>Total: {orderService.calculateTotal(100, 10)}</span>;
+}
+```
+
+- **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
+- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
+- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `services`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+
+### useRepository
+
+```tsx
+import { repository, useRepository } from '@venizia/ardor';
+
+@repository()
+class ProductRepository {
+  findStock(productId: string) { return productId ? 42 : 0; }
+}
+
+export function StockDisplay() {
+  const productRepository = useRepository({ target: ProductRepository });
+  return <span>Stock: {productRepository.findStock('p1')}</span>;
+}
+```
+
+- **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
+- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
+- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `repositories`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+
+### useProvider
+
+```tsx
+import { CoreBindings, type IDataProvider, useProvider } from '@venizia/ardor';
+
+export function DataProviderWidget() {
+  const dataProvider = useProvider<IDataProvider>({
+    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+  });
+  return <span>Data provider mounted: {dataProvider ? 'yes' : 'no'}</span>;
+}
+```
+
+- **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
+- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
+- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `providers`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+
+### useComponent
+
+```tsx
+import { component, useComponent } from '@venizia/ardor';
+
+@component()
+class BannerComponent {
+  getLabel() { return 'Dashboard'; }
+}
+
+export function BannerView() {
+  const banner = useComponent({ target: BannerComponent });
+  return <span>{banner.getLabel()}</span>;
+}
+```
+
+- **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
+- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
+- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `components`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+
+### useConfiguration
+
+```tsx
+import { configuration, useConfiguration } from '@venizia/ardor';
+
+@configuration()
+class AppSettings {
+  readonly environment = 'production';
+}
+
+export function EnvironmentLabel() {
+  const settings = useConfiguration({ target: AppSettings });
+  return <span>{settings.environment}</span>;
+}
+```
+
+- **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
+- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
+- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `configurations`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+
+### useApplicationLogger
 
 ```tsx
 import { useApplicationLogger } from '@venizia/ardor';
 
-export function LoggerStatus() {
+export function LoggerButton() {
   const logger = useApplicationLogger();
-  return <span>{logger ? 'logger ready' : 'no logger'}</span>;
+  return <button onClick={() => logger.info('Action executed')}>Log action</button>;
 }
 ```
 
-`ApplicationContext` itself is a plain React context typed `IApplicationContextValue`: `{ container, logger }`, each `null` by default. The ARDOR application fills it - see [Application](../references/application).
+- **Parameters**: None.
+- **Return value**: `Logger`.
+- **Gotcha**: Throws an error (`[useApplicationLogger] must be used within a ApplicationContextProvider`) if called when no logger is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
-## useTranslate
+## Redux
 
-A typed wrapper over the ra-core i18n provider. The `key` argument is typed as `TUseTranslateKeys`: every dotted path of `englishMessages`, plus the keys of `IUseTranslateKeysOverrides`.
+### createAppDispatch
 
-```ts no-check
-type TUseTranslateKeysDefault = TFullPaths<typeof englishMessages>;
-type TUseTranslateKeys = TUseTranslateKeysDefault | keyof IUseTranslateKeysOverrides;
-type TUseTranslateFn = (key: TUseTranslateKeys, options?: AnyType) => string;
+```ts
+import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
+import { createAppDispatch } from '@venizia/ardor';
 
-const useTranslate: () => TUseTranslateFn | ((key: AnyType) => AnyType);
+type AppDispatch = Dispatch<UnknownAction>;
+
+export const { useAppDispatch, useMultipleAppDispatch } = createAppDispatch<AppDispatch>();
+
+export function useResetAction() {
+  const dispatch = useAppDispatch();
+  const dispatchMultiple = useMultipleAppDispatch();
+  return {
+    reset: () => dispatch({ type: 'reset' }),
+    batchReset: () => dispatchMultiple({ type: 'step1' }, { type: 'step2' }),
+  };
+}
 ```
 
-When no i18n provider is in the tree, the hook returns an identity function - `translate('x')` gives back `'x'`. So the hook is safe to call in components that are also rendered outside of react-admin.
+- **Parameters**: None. The factory accepts a type parameter `TDispatch extends Dispatch<UnknownAction>`.
+- **Return value**: `{ useAppDispatch, useMultipleAppDispatch }` - typed `useDispatch` hook returning `TDispatch`, and callback `(...actions) => void` dispatching non-falsy actions in sequential order.
+- **Gotcha**: Requires a react-redux `Provider` in the tree. Falsy action arguments passed to `useMultipleAppDispatch` are skipped. Defined in `packages/react/src/hooks/redux/use-app-dispatch.ts`.
+
+### createAppSelectors
+
+```ts
+import { createAppSelectors } from '@venizia/ardor';
+
+interface RootState {
+  user: { name: string };
+  settings: { theme: string };
+}
+
+export const { useAppSelector, useShallowEqualSelector, useDeepEqualSelector } =
+  createAppSelectors<RootState>();
+
+export function useUserState() {
+  const userName = useAppSelector((state) => state.user.name);
+  const settings = useShallowEqualSelector((state) => state.settings);
+  const user = useDeepEqualSelector((state) => state.user);
+  return { userName, settings, user };
+}
+```
+
+- **Parameters**: None. The factory accepts a type parameter `TState`.
+- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using default, react-redux `shallowEqual`, and lodash `isEqual` comparators.
+- **Gotcha**: Requires a react-redux `Provider` in the tree. Defined in `packages/react/src/hooks/redux/use-app-selector.ts`.
+
+## ra-core companions
+
+### useTranslate
 
 ```tsx
 import { useTranslate } from '@venizia/ardor';
@@ -186,71 +275,47 @@ export function SaveButton() {
 }
 ```
 
-Add your own message keys by augmenting `IUseTranslateKeysOverrides` - see [i18n](../references/i18n) and [Module augmentation](../best-practices/module-augmentation).
+- **Parameters**: None.
+- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`) when an i18n provider is present, or a fallback identity function `(key: AnyType) => AnyType`.
+- **Gotcha**: Returns an identity function when no i18n provider is mounted in the tree, returning the key unchanged rather than throwing. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
 
-## useNotifyError
-
-Turns an `ApplicationError` into a react-admin notification. It reads `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. The default type is `'error'`; any `options` you pass are spread last and win. A failed request through the REST data providers rejects with an `ApplicationError` built from the server's envelope, so it can be passed in as it is (see [Network](../references/network#error-shape-on-non-2xx)).
-
-```ts no-check
-const useNotifyError: () => (
-  error: ApplicationError,
-  options?: NotificationOptions & { type?: NotificationType },
-) => void;
-```
-
-Needs the ra-core notification context (the one `useNotify` reads).
-
-```tsx
-import { useNotifyError } from '@venizia/ardor';
-
-type TAppError = Parameters<ReturnType<typeof useNotifyError>>[0];
-
-export function DeleteButton(props: { onDelete: () => Promise<void> }) {
-  const notifyError = useNotifyError();
-
-  const handleClick = () => {
-    props.onDelete().catch((error: TAppError) => {
-      notifyError(error);
-    });
-  };
-
-  return <button onClick={handleClick}>Delete</button>;
-}
-```
-
-## useRefreshToken
-
-Returns a callback that calls `authProvider.refreshToken()` and then invalidates the `['auth', 'getPermissions']` query. With `DefaultAuthProvider`, that call is the network service's `refresh()`: it resolves `true` when the session was refreshed and `false` when the service has nothing to refresh, and it shares one refresh with any `401` recovery in flight. If no auth provider is in the tree, the callback resolves to `undefined` without doing anything.
-
-```ts no-check
-const useRefreshToken: () => () => Promise<any>;
-```
-
-Needs the ra-core auth provider context and a TanStack `QueryClientProvider`. The refresh itself is the `refreshToken` hook of your `DefaultNetworkRequestService` subclass - see [Auth recovery](../best-practices/auth-recovery) and [Auth provider](../references/auth-provider).
+### useRefreshToken
 
 ```tsx
 import { useRefreshToken } from '@venizia/ardor';
 
 export function RefreshTokenButton() {
   const refreshToken = useRefreshToken();
-  return <button onClick={() => refreshToken()}>Refresh token</button>;
+  return <button onClick={() => void refreshToken()}>Refresh token</button>;
 }
 ```
 
-## useRequestHeaderLocale
+- **Parameters**: None.
+- **Return value**: A callback function `() => Promise<any>`.
+- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. If no auth provider is mounted, calling the returned function resolves to `undefined` without executing anything. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
 
-Keeps a request header in sync with the react-admin locale. On every locale change it calls `setHeaders({ headers })` on the network service of the `DefaultRestDataProvider` bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The header name defaults to `HeaderConstants.X_LOCALE`.
+### useNotifyError
 
-```ts no-check
-interface IUseRequestHeaderLocaleOptions {
-  key?: string; // the header name, default HeaderConstants.X_LOCALE
+```tsx
+import { useNotifyError } from '@venizia/ardor';
+
+type TNotifyError = ReturnType<typeof useNotifyError>;
+type TAppError = Parameters<TNotifyError>[0];
+
+export function DeleteAction(props: { onDelete: () => Promise<void> }) {
+  const notifyError = useNotifyError();
+  const handleClick = () => {
+    props.onDelete().catch((error: TAppError) => notifyError(error));
+  };
+  return <button onClick={handleClick}>Delete</button>;
 }
-
-const useRequestHeaderLocale: (opts?: IUseRequestHeaderLocaleOptions) => void;
 ```
 
-Needs the ra-core locale state and an `ApplicationContext` whose container has the default REST data provider bound. Mount it once, high in the admin tree.
+- **Parameters**: None. The returned callback accepts `(error: ApplicationError, options?: NotificationOptions & { type?: NotificationType }) => void`.
+- **Return value**: Notification callback function.
+- **Gotcha**: Reads `error.normalized?.code` as the translation key and `error.normalized?.args` as `messageArgs`. Passing an error without a `normalized` property results in an `undefined` notification message. Defined in `packages/admin/src/hooks/use-notify-error.ts`.
+
+### useRequestHeaderLocale
 
 ```tsx
 import { useRequestHeaderLocale } from '@venizia/ardor';
@@ -261,22 +326,26 @@ export function LocaleHeaderSync() {
 }
 ```
 
-## useDocumentTitle
+- **Parameters**: Optional `opts?: { key?: string }`.
+- **Return value**: `void`.
+- **Gotcha**: Requires `CoreBindings.DEFAULT_REST_DATA_PROVIDER` to be bound in the container. The header name defaults to `HeaderConstants.X_LOCALE` (`'x-locale'`) if `key` is omitted. Defined in `packages/admin/src/hooks/use-request-header-locale.ts`.
 
-Sets the browser tab title to the screen title followed by `appTitle`, joined by `separator`. Empty segments (`false`, `null`, `undefined`, `''`) are skipped. When the title changes or the component unmounts, it puts back the title it replaced, so no reset on navigation is needed. It does so only while the tab still shows its own title: a title written after it - a layout re-mounted for a new locale, or a twin call with the same title - is left in place.
+### useFeatures
 
-```ts no-check
-interface IUseDocumentTitleOptions {
-  title: string | false | null | undefined | Array<string | false | null | undefined>;
-  appTitle: string;
-  separator?: string; // default ' · '
-  enabled?: boolean; // default true
+```tsx
+import { useFeatures } from '@venizia/ardor';
+
+export function FeatureNavigation() {
+  const features = useFeatures();
+  return <nav>{features.map((feature) => <span key={feature.name}>{feature.name}</span>)}</nav>;
 }
-
-const useDocumentTitle: (opts: IUseDocumentTitleOptions) => void;
 ```
 
-It lives in `@venizia/ardor-admin` and needs nothing from the tree. With `enabled: false` it leaves the title alone.
+- **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
+- **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
+- **Gotcha**: Reads from the container using `useInjectableContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+
+### useDocumentTitle
 
 ```tsx
 import { useDocumentTitle } from '@venizia/ardor';
@@ -288,20 +357,13 @@ export function OrderPage(props: { orderNumber?: string }) {
   });
   return null;
 }
-// Order #12 · Orders · Back Office
 ```
 
-Call it from one component per screen. React runs child effects before parent effects, so a call in a parent would overwrite the title a child set.
+- **Parameters**: `opts: IUseDocumentTitleOptions` - `title`, `appTitle`, optional `separator` (default `' · '`), optional `enabled` (default `true`).
+- **Return value**: `void`.
+- **Gotcha**: Restores the previous title on cleanup only if `document.title` still equals what this hook set; an update from a later writer is left in place. Child effects run before parent effects, so calling `useDocumentTitle` in a parent component overwrites a title set in a child component. Defined in `packages/admin/src/hooks/use-document-title.ts`.
 
-## useHtmlLang
-
-Keeps `document.documentElement.lang` equal to the ra-core locale, so screen readers pick the right voice. It updates on every locale change.
-
-```ts no-check
-const useHtmlLang: () => void;
-```
-
-Needs the ra-core locale state. Mount it once, high in the admin tree, like `useRequestHeaderLocale`.
+### useHtmlLang
 
 ```tsx
 import { useHtmlLang } from '@venizia/ardor';
@@ -312,25 +374,13 @@ export function HtmlLangSync() {
 }
 ```
 
-## useDebounce
+- **Parameters**: None.
+- **Return value**: `void`.
+- **Gotcha**: Requires ra-core `useLocaleState` in the tree. Modifies `document.documentElement.lang`, requiring a browser DOM environment. Defined in `packages/admin/src/hooks/use-html-lang.ts`.
 
-Delays a value. The debounced value updates `delay` milliseconds after the last change. The default delay is `App.DEFAULT_DEBOUNCE_TIME`.
+## Browser and UI utilities
 
-```tsx no-check
-interface IUseDebounceOptions<TValue> {
-  value: TValue;
-  delay?: number;
-  enabled?: boolean; // default true
-}
-
-interface IUseDebounceReturn<TValue> {
-  debouncedValue: TValue;
-}
-
-const useDebounce: <TValue>(opts: IUseDebounceOptions<TValue>) => IUseDebounceReturn<TValue>;
-```
-
-When `enabled` is `false`, or outside a browser, the timer is not set and `debouncedValue` keeps its last value.
+### useDebounce
 
 ```tsx
 import React from 'react';
@@ -339,265 +389,129 @@ import { useDebounce } from '@venizia/ardor';
 export function ProductSearch() {
   const [term, setTerm] = React.useState('');
   const { debouncedValue } = useDebounce({ value: term, delay: 400 });
+  return <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={debouncedValue} />;
+}
+```
 
+- **Parameters**: `opts: IUseDebounceOptions<TValue>` - `value`, optional `delay` (default `App.DEFAULT_DEBOUNCE_TIME` = 500 ms), optional `enabled` (default `true`).
+- **Return value**: `IUseDebounceReturn<TValue>` containing `{ debouncedValue: TValue }`.
+- **Gotcha**: When `enabled` is `false` or outside the browser (`!isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
+
+### useAutosave
+
+```tsx
+import React from 'react';
+import { useAutosave } from '@venizia/ardor';
+
+export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
+  const [text, setText] = React.useState('');
+  useAutosave({ data: text, onSave: props.onSave, interval: 2000, enableSaveOnUnmount: true });
+  return <textarea value={text} onChange={(e) => setText(e.target.value)} />;
+}
+```
+
+- **Parameters**: `opts: IUseAutosaveOptions<TData, TReturn>` - `data`, `onSave`, optional `interval` (default `2000`), optional `enableSaveOnUnmount`, optional `enabled` (default `true`).
+- **Return value**: `void`.
+- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged via `console.error` and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
+
+### useConfirm
+
+```tsx
+import { useConfirm } from '@venizia/ardor';
+
+export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
+  const { message, confirm, handleConfirm, handleAbort } = useConfirm();
+  const handleClick = async () => {
+    if (await confirm({ message: 'Delete this item?' })) {
+      await props.onDelete();
+    }
+  };
   return (
     <div>
-      <input value={term} onChange={(event) => setTerm(event.target.value)} />
-      <p>Searching for: {debouncedValue}</p>
+      <button onClick={handleClick}>Delete</button>
+      {message && <button onClick={handleConfirm}>Confirm</button>}
+      {message && <button onClick={handleAbort}>Cancel</button>}
     </div>
   );
 }
 ```
 
-## useAutosave
+- **Parameters**: None.
+- **Return value**: `IUseConfirmReturn` - `{ message?, confirm, handleClose, handleConfirm, handleAbort }`.
+- **Gotcha**: `handleConfirm` resolves `true`, `handleAbort` resolves `false`, `handleClose` clears the state without resolving. Calling `confirm` again while a prior confirmation is pending replaces the internal resolver, leaving the previous Promise unresolved. Defined in `packages/react/src/hooks/use-confirm.ts`.
 
-Calls `onSave` with the latest `data` after it has been stable for `interval` milliseconds (default `2000`). It is built on `useDebounce`. The first render is skipped. A rejected `onSave` is logged with `console.error` and swallowed.
+### useCopyToClipboard
 
-```tsx no-check
-interface IUseAutosaveOptions<TData, TReturn> {
-  data: TData;
-  onSave: (data: TData) => Promise<TReturn> | TReturn | void;
-  interval?: number; // default 2000
-  enableSaveOnUnmount?: boolean;
-  enabled?: boolean; // default true
-}
-
-const useAutosave: <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => void;
-```
-
-With `enableSaveOnUnmount: true` the hook calls `onSave` one more time with the latest `data` when the component unmounts. `enabled: false` stops the debounce timer, so no save is scheduled.
-
-A custom hook that owns the note text and autosaves it. Bind `text` and `setText` to a textarea in the component that uses it:
-
-```ts
-import React from 'react';
-import { useAutosave } from '@venizia/ardor';
-
-export function useNoteAutosave(opts: { onSave: (params: { text: string }) => Promise<void> }) {
-  const [text, setText] = React.useState('');
-
-  useAutosave({
-    data: text,
-    onSave: (value) => opts.onSave({ text: value }),
-    interval: 3000,
-    enableSaveOnUnmount: true,
-  });
-
-  return { text, setText };
-}
-```
-
-## useConfirm
-
-A promise-based confirmation. `confirm({ message })` stores the message and returns a promise. `handleConfirm` resolves it with `true`, `handleAbort` with `false`. Both also clear the message. `handleClose` only clears the message - the pending promise is never resolved.
-
-```ts no-check
-interface IUseConfirmReturn {
-  message?: string;
-  confirm: (opts: { message: string }) => Promise<boolean>;
-  handleClose: () => void;
-  handleConfirm: () => void;
-  handleAbort: () => void;
-}
-
-const useConfirm: () => IUseConfirmReturn;
-```
-
-Wire `message` to a dialog, `handleConfirm` to its confirm button and `handleAbort` to its cancel button. `requestDelete` waits for the answer before calling `onDelete`:
-
-```ts
-import { useConfirm } from '@venizia/ardor';
-
-export function useDeleteConfirmation(opts: { onDelete: () => Promise<void> }) {
-  const { message, confirm, handleConfirm, handleAbort } = useConfirm();
-
-  const requestDelete = async () => {
-    const ok = await confirm({ message: 'Delete this product?' });
-    if (ok) {
-      await opts.onDelete();
-    }
-  };
-
-  return { message, requestDelete, handleConfirm, handleAbort };
-}
-```
-
-## useCopyToClipboard
-
-Wraps `navigator.clipboard.writeText`. `copy` resolves to `true` on success. It resolves to `false`, with a `console.warn`, when the Clipboard API is missing or the write fails.
-
-```ts no-check
-interface IUseCopyToClipboardReturn {
-  copy: (opts: { value: string }) => Promise<boolean>;
-}
-
-const useCopyToClipboard: () => IUseCopyToClipboardReturn;
-```
-
-```ts
+```tsx
 import React from 'react';
 import { useCopyToClipboard } from '@venizia/ardor';
 
-export function useCopyLink(opts: { href: string }) {
+export function CopyShareLink(props: { url: string }) {
   const { copy } = useCopyToClipboard();
   const [copied, setCopied] = React.useState(false);
-
-  const copyLink = async () => {
-    const ok = await copy({ value: opts.href });
-    setCopied(ok);
-  };
-
-  return { copied, copyLink };
+  const handleCopy = async () => setCopied(await copy({ value: props.url }));
+  return <button onClick={handleCopy}>{copied ? 'Copied' : 'Share'}</button>;
 }
 ```
 
-## useBeforeUnload
+- **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
+- **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
+- **Gotcha**: Resolves to `false` and outputs `console.warn` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
-Registers a `beforeunload` listener while the component is mounted. While `enabled` is `true` (the default), the handler calls `event.preventDefault()` and sets `event.returnValue` to `message` if one is given.
+### useBeforeUnload
 
-```ts no-check
-interface IUseBeforeUnloadOptions {
-  enabled?: boolean; // default true
-  message?: string;
-}
-
-const useBeforeUnload: (opts: IUseBeforeUnloadOptions) => void;
-```
-
-Pass the current boolean. The handler is rebuilt when `enabled` changes, so the listener always sees the latest value:
-
-```ts
+```tsx
 import React from 'react';
 import { useBeforeUnload } from '@venizia/ardor';
 
-export function useDraftGuard() {
-  const [draft, setDraft] = React.useState('');
-
-  useBeforeUnload({
-    enabled: draft.length > 0,
-    message: 'You have unsaved changes.',
-  });
-
-  return { draft, setDraft };
+export function EditFormGuard() {
+  const [dirty, setDirty] = React.useState(false);
+  useBeforeUnload({ enabled: dirty, message: 'You have unsaved changes.' });
+  return <input onChange={() => setDirty(true)} />;
 }
 ```
 
-## useSizer
+- **Parameters**: `opts: IUseBeforeUnloadOptions` - optional `enabled` (default `true`), optional `message`.
+- **Return value**: `void`.
+- **Gotcha**: Modern browsers display a generic browser-defined confirmation prompt rather than custom `message` text, but assigning `message` populates `event.returnValue` as required by the specification. Defined in `packages/react/src/hooks/use-before-unload.ts`.
 
-Tracks the size of a DOM element found by id, using a `ResizeObserver`. It returns `{ width, height }`, both `0` until the element is found and measured. The reported width is `clientWidth + 1` and the reported height is `offsetHeight + 1`.
+### useSizer
 
-```ts no-check
-interface IUseSizerOptions {
-  containerId: string;
-}
-
-interface IUseSizerReturn {
-  width: number;
-  height: number;
-}
-
-const useSizer: (opts: IUseSizerOptions) => IUseSizerReturn;
-```
-
-The observer is keyed on `containerId`, so an inline options object does not recreate it on every render. The element with id `chart` must be in the DOM for the values to update:
-
-```ts
+```tsx
 import { useSizer } from '@venizia/ardor';
 
-export function useChartSize() {
-  const { width, height } = useSizer({ containerId: 'chart' });
-  return { width, height, isMeasured: width > 0 && height > 0 };
+export function ChartContainer() {
+  const { width, height } = useSizer({ containerId: 'chart-panel' });
+  return (
+    <div id="chart-panel">
+      <span>Width: {width}, Height: {height}</span>
+    </div>
+  );
 }
 ```
 
-## useWindowDimensions
+- **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
+- **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
+- **Gotcha**: Reported width is `clientWidth + 1` and reported height is `offsetHeight + 1`. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
 
-Returns `window.innerWidth` and `window.innerHeight`, updated on every `resize` event.
+### useWindowDimensions
 
-```ts no-check
-const useWindowDimensions: () => { width: number; height: number };
-```
-
-The initial state reads `window` synchronously, so this hook is browser only. It composes well into your own hooks:
-
-```ts
+```tsx
 import { useWindowDimensions } from '@venizia/ardor';
 
-export function useIsNarrowViewport(opts: { breakpoint: number }) {
+export function ViewportInfo() {
   const { width, height } = useWindowDimensions();
-  return { isNarrow: width < opts.breakpoint, width, height };
+  return <span>Viewport: {width}x{height}</span>;
 }
 ```
 
-## createAppDispatch / createAppSelectors
-
-Two factories that build typed react-redux hooks for your store. Call them once in a module and export the result. The hooks they return need a react-redux `Provider` in the tree.
-
-```ts no-check
-const createAppDispatch: <TDispatch extends Dispatch<UnknownAction> = Dispatch<UnknownAction>>() => {
-  useAppDispatch: () => TDispatch;
-  useMultipleAppDispatch: () => (...actions: Parameters<TDispatch>[0][]) => void;
-};
-
-const createAppSelectors: <TState>() => {
-  useAppSelector: <TSelected>(selector: (state: TState) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean) => TSelected;
-  useShallowEqualSelector: <TSelected>(selector: (state: TState) => TSelected) => TSelected;
-  useDeepEqualSelector: <TSelected>(selector: (state: TState) => TSelected) => TSelected;
-};
-```
-
-- `useAppDispatch` is `useDispatch.withTypes<TDispatch>()`.
-- `useMultipleAppDispatch` returns a function that dispatches each given action in order. Falsy entries are skipped.
-- `useAppSelector` is `useSelector.withTypes<TState>()`.
-- `useShallowEqualSelector` uses react-redux `shallowEqual`.
-- `useDeepEqualSelector` uses lodash `isEqual`.
-
-Create the hooks once, in a module next to the store, then compose them into your own hooks:
-
-```ts
-import { createAppDispatch, createAppSelectors } from '@venizia/ardor';
-
-export const { useAppDispatch, useMultipleAppDispatch } =
-  createAppDispatch<typeof store.dispatch>();
-
-export const { useAppSelector, useShallowEqualSelector, useDeepEqualSelector } =
-  createAppSelectors<ReturnType<typeof store.getState>>();
-
-export function useRefreshAll() {
-  const dispatch = useAppDispatch();
-  const dispatchAll = useMultipleAppDispatch();
-  const state = useShallowEqualSelector((current) => current);
-
-  return {
-    refreshProducts: () => dispatch({ type: 'products/refresh' }),
-    refreshAll: () => dispatchAll({ type: 'products/refresh' }, { type: 'orders/refresh' }),
-    sliceNames: Object.keys(state),
-  };
-}
-```
-
-## Common pitfalls
-
-- `useInjectable({ target })` throws when the class has no binding key in the metadata registry. Decorate the class or register it on the application first.
-- `useApplicationContext` and `useApplicationLogger` throw outside of a filled `ApplicationContext`. `useInjectable` throws too, unless you pass `container` explicitly.
-- `useTranslate` returns an identity function without an i18n provider. Missing translations will not error - they render the key.
-- `useNotifyError` reads `error.normalized.code`. An error without a `normalized` field notifies with an `undefined` message. The data providers' errors always carry one; a plain object rejected elsewhere (the auth provider's `getIdentity`, for example) does not.
-- `useConfirm`: `handleClose` clears the dialog but leaves the pending promise unresolved. Use `handleAbort` for a cancel button. Calling `confirm` again before the first promise settles replaces the resolver, so the first promise never resolves.
-- `useAutosave` swallows `onSave` rejections after logging them. Handle failures inside `onSave` if the UI must react.
-- `useSizer` re-subscribes when its argument object changes identity. Keep the `{ containerId }` object stable.
-- `useWindowDimensions` and `useSizer` touch `window` and `document`. They are not for server rendering. `useDebounce` and `useAutosave` do nothing outside a browser.
-- `useRequestHeaderLocale` requires `CoreBindings.DEFAULT_REST_DATA_PROVIDER` to be bound. See [Binding keys](../references/binding-keys).
-- The redux factories rely on `useDispatch.withTypes` and `useSelector.withTypes`, so react-redux must be a version that provides them.
-- `useDocumentTitle` belongs in one component per screen. React runs child effects before parent effects, so a call in a parent wins over a call in a child.
+- **Parameters**: None.
+- **Return value**: `{ width: number; height: number }`.
+- **Gotcha**: Reads `window.innerWidth` and `window.innerHeight` synchronously during initial state evaluation. Throws a `ReferenceError` during server-side rendering (SSR) if `window` is undefined. Defined in `packages/react/src/hooks/use-window-dimensions.ts`.
 
 ## Related
 
-- [Application](../references/application)
-- [Binding keys](../references/binding-keys)
-- [Data provider](../references/data-provider)
-- [Auth provider](../references/auth-provider)
-- [i18n](../references/i18n)
-- [Types](../references/types)
+- [Application](./application)
+- [Binding keys](./binding-keys)
+- [Data provider](./data-provider)
 - [Module augmentation](../best-practices/module-augmentation)
-- [Quickstart](../guides/get-started/quickstart)
-- [Migration from ra-core-infra](../guides/migration/from-ra-core-infra)

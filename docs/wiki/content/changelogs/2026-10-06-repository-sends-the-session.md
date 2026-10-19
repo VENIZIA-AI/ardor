@@ -54,4 +54,4 @@ export class ApiDataSource extends HttpDataSource {
 - **Code that called `getDataSourceAuth().authTokenResolver()` or `.onUnauthorized()` itself.** Both now take the request context, `{ paths }`.
 
 > [!WARNING]
-> A `@repository` whose constructor has no `@inject` at parameter 0 takes its datasource key from the datasource's class name, built when the class is decorated (IGNIS kernel `0.2.1-2`). When the datasource pins its key with `binding`, a minified build renames the class and the repository asks for a key nothing is bound under. Until IGNIS injects by class, write `@inject({ target: ApiDataSource })` on that parameter. See [Repositories](../references/repository#registering-a-repository).
+> A `@repository` whose constructor has no `@inject` at parameter 0 takes its datasource key from the datasource's class name, built when the class is decorated (IGNIS kernel `0.2.1-2`). When the datasource pins its key with `binding`, a minified build renames the class and the repository asks for a key nothing is bound under. Until IGNIS injects by class, write `@inject({ target: ApiDataSource })` on that parameter. See [Repositories](../references/repository).
