@@ -61,4 +61,4 @@ packages: ['@venizia/ardor']
 - **Code that matches a failed read by its message.** A failed request now throws with the server's message after the URL, `[http][read] 404 | <url> | Ticket not found`, and with the server's `normalized.code` and `normalized.args`. Match on the status or the code instead.
 - **A server-side order entry with more than two tokens, or an empty one,** is now a `400` on an IGNIS backend. ARDOR's data provider always sends two (`field ASC`), so nothing changes there.
 
-See [Repositories](../references/repository#writes).
+See [Repositories](../references/repository).

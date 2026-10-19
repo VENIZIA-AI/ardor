@@ -24,7 +24,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor', '@venizia/ardor-kernel', '@
 
 ## Who is affected
 
-- **All consumers of `@minimaltech/ra-core-infra`.** Action required: migrate by hand following the guide, and update the dependency to `@venizia/ardor`. See `../guides/migration/from-ra-core-infra`.
+- **All consumers of `@minimaltech/ra-core-infra`.** Action required: migrate by hand following the guide, and update the dependency to `@venizia/ardor`. See `../guides/migrations/from-ra-core-infra`.
 
 ## Breaking changes
 

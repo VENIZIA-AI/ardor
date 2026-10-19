@@ -9,7 +9,7 @@ description: How to extend the typed key sets of useInjectable and useTranslate 
 
 ## Prerequisites
 
-An ARDOR application that registers its own bindings and, if you use i18n, a message object of your own - see [Quickstart](../guides/get-started/quickstart).
+An ARDOR application that registers its own bindings and, if you use i18n, a message object of your own - see [Quickstart](../guides/get-started/5-minute-quickstart).
 
 ## Quick Reference
 

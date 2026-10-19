@@ -1,36 +1,43 @@
 ---
-title: Extensions Overview
+title: Extensions
+description: Optional extensions and transport adapters for real-time sockets, count queries, and custom transports.
 ---
 
 # ARDOR Extensions
 
-Welcome to the extensions overview for ARDOR - the frontend framework of the VENIZIA ecosystem that structures react-admin inside an IGNIS inversion-of-control container. The framework is divided across core modules including `@venizia/ardor`, `ardor-kernel`, `ardor-react`, and `ardor-admin`, with several optional packages and implementation patterns available to extend standard functionality.
-
-The extensions layer provides real-time networking utilities and specialized data providers. Because ARDOR relies on the IGNIS dependency injection container, you can register these add-ons as services or replace default implementations without altering application boot logic. Whether you need a persistent socket connection or a custom data transport protocol, these modules adapt ARDOR to your infrastructure.
+ARDOR provides extension packages and integration patterns to adapt applications to specialized protocols. Use these add-ons to connect persistent real-time sockets, query dedicated count endpoints, or swap the network transport for IPC and in-memory stores.
 
 <div class="guide-cards">
-
-<div class="guide-card">
-<h3>Socket Client Helper</h3>
-<p>Real-time communication utilities integrated with the DI container</p>
+<a href="./socket-client" class="guide-card">
+  <h3>Socket.IO Client Helper</h3>
+  <p>Real-time socket client wrapper with scoped logging, subscriptions, and container injection</p>
+</a>
+<a href="./count-provider" class="guide-card">
+  <h3>CountRestDataProvider</h3>
+  <p>Drop-in REST data provider subclass that queries a separate count endpoint for total records</p>
+</a>
+<a href="./custom-transport" class="guide-card">
+  <h3>Custom Transport</h3>
+  <p>Route react-admin queries through non-HTTP transports like Web Workers, IPC, or in-memory stores</p>
+</a>
 </div>
 
-<div class="guide-card">
-<h3>CountRestDataProvider</h3>
-<p>REST data provider optimized for precise record-count queries</p>
+## Extension Roadmap
+
+<div class="roadmap">
+<div class="roadmap-stage">
+  <div class="stage-header"><span class="stage-num">1</span><h4>Real-Time Networking</h4></div>
+  <p><a href="./socket-client">Socket.IO Client Helper</a></p>
+  <span class="stage-desc">Connect real-time socket events with the dependency injection container</span>
 </div>
-
-<div class="guide-card">
-<h3>Custom Transports</h3>
-<p>Override DefaultRestDataProvider.send for non-HTTP protocols</p>
+<div class="roadmap-stage">
+  <div class="stage-header"><span class="stage-num">2</span><h4>Alternative Pagination</h4></div>
+  <p><a href="./count-provider">CountRestDataProvider</a></p>
+  <span class="stage-desc">Handle APIs that expose explicit count endpoints instead of Content-Range headers</span>
 </div>
-
+<div class="roadmap-stage">
+  <div class="stage-header"><span class="stage-num">3</span><h4>Non-HTTP Transports</h4></div>
+  <p><a href="./custom-transport">Custom Transport</a></p>
+  <span class="stage-desc">Route data provider requests through in-memory APIs, Web Workers, or desktop IPC</span>
 </div>
-
-## Extension Registry
-
-| Extension | Layer | Purpose |
-| --- | --- | --- |
-| Socket Client Helper | Real-time networking | Client wrapper for managing persistent socket connections in services |
-| `CountRestDataProvider` | Data retrieval | Data provider implementation specialized in handling explicit record counting |
-| `DefaultRestDataProvider.send` Override | Transport layer | Transport abstraction pattern to route requests through non-HTTP channels |
+</div>

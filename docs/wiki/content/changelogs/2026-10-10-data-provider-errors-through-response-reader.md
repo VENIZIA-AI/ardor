@@ -101,4 +101,4 @@ try {
 | `src/base/services/network-request.ts` | kernel |
 | `src/__tests__/base/services/network-request.test.ts` | kernel |
 
-See [Network](../references/network#error-shape-on-non-2xx) and [Data provider](../references/data-provider#totals).
+See [Network](../references/network) and [Data provider](../references/data-provider).

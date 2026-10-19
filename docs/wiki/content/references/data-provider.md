@@ -1,392 +1,154 @@
 ---
 title: REST data provider
-description: DefaultRestDataProvider and CountRestDataProvider - options, how react-admin calls become HTTP requests in the IGNIS filter vocabulary, send() for arbitrary endpoints, and the positional shape handed to react-admin.
+description: Options, configuration, HTTP mapping, and error handling for DefaultRestDataProvider and IDataProvider in ARDOR.
 ---
 
 # REST data provider
 
-`DefaultRestDataProvider` is the ARDOR class that turns react-admin's data calls (`getList`, `getOne`, `create`, ...) into HTTP requests against a REST backend. The query language it emits is the IGNIS filter vocabulary: `{ where, order, limit, skip, offset, include, fields }`, JSON-serialised under a single `filter` query key.
-
-`CountRestDataProvider` is a subclass that adds a second request to `/{resource}/count` for list totals.
-
-Both are IGNIS providers: the container constructs them, and `value()` returns the object react-admin actually receives.
-
-## Prerequisites
-
-An ARDOR application with `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO` bound - see [Application](../references/application) and [Binding keys](../references/binding-keys).
-
-## Quick Reference
-
-| Export | Kind | What it is |
-| --- | --- | --- |
-| `DefaultRestDataProvider<TResource>` | class | Provider that maps react-admin calls onto REST + IGNIS filters |
-| `CountRestDataProvider<TResource>` | class | Same, plus a `/{resource}/count` request for `total` |
-| `IRestDataProviderOptions` | interface | Options injected under `CoreBindings.REST_DATA_PROVIDER_OPTIONS` |
-| `IDataProvider<TResource>` | interface | The positional, react-admin-facing object returned by `value()` |
-| `IReactAdminDataProvider<TResource>` | interface | The react-admin subset of `IDataProvider` (no `send`, no `getNetworkService`) |
-| `ISendParams` / `ISendResponse` | interfaces | Input and output of `send()` |
-| `ICustomParams` | interface | Extra `params` bag accepted by the read calls |
-| `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData` | classes | Constants used in `send()` and internally |
-| `HeaderConstants` | class | Header names, including `CONTENT_RANGE` |
-
-## Options: `IRestDataProviderOptions`
-
-```ts no-check
-interface IRestDataProviderOptions {
-  url: string;
-  noAuthPaths?: Array<string>;
-  noAuthPathRegex?: string | RegExp | Array<string | RegExp>;
-  headers?: HeadersInit;
-  requestTracingChannel?: string;
-  authRecovery?: {
-    refreshTokenPath?: string;
-  };
-}
-```
-
-| Option | Where it goes | Meaning |
-| --- | --- | --- |
-| `url` | `baseUrl` of the internal `DefaultNetworkRequestService` | Base URL every resource path is appended to |
-| `noAuthPaths` | network service | Exact resource paths requested without the authorization header |
-| `noAuthPathRegex` | network service | Pattern(s) of paths requested without the authorization header. Strings are compiled with `new RegExp(...)`. For an API with no sign-in, `/./` sends no token at all |
-| `headers` | network service | Default headers for every request |
-| `requestTracingChannel` | `getRequestProps` on each call | Channel value to send alongside the tracing id |
-| `authRecovery` | network service | `refreshTokenPath` only: a request to this path never starts a refresh |
-
-The options hold data. Behaviour is in protected hooks of the network service, which you override in a subclass: `refreshToken` and `onAuthFailure` for a `401`, `resolveAuthToken` for the token, `isNoAuthPath` for a custom no-auth rule, `buildRequestTracingId({ applicationInfo })` for the tracing id (default `<application name>_<uuid>`). The subclass reaches the provider through `createNetworkService()`, below. See [Auth recovery](../best-practices/auth-recovery).
-
-`createNetworkService()` builds one `DefaultNetworkRequestService` named `default-application-network-service` from `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery`. The full options object, together with `applicationInfo`, is passed to `networkService.getRequestProps(...)` on every call - that is how `requestTracingChannel` reaches the request, next to the tracing id the service's `buildRequestTracingId` hook returns. How the network service turns them into headers is covered in [Network](../references/network).
-
-```ts
-import { type IRestDataProviderOptions } from '@venizia/ardor';
-
-const restDataProviderOptions: IRestDataProviderOptions = {
-  url: 'https://api.example.com',
-  noAuthPaths: ['auth/sign-in', 'auth/sign-up'],
-  noAuthPathRegex: [/^public\//, 'health'],
-  headers: { 'x-client': 'shop-admin' },
-  requestTracingChannel: 'admin',
-  authRecovery: { refreshTokenPath: 'auth/refresh' },
-};
-```
-
-## Constructing and `value()`
-
-```tsx no-check
-class DefaultRestDataProvider<TResource extends string = string>
-  extends BaseProvider<IDataProvider<TResource>> {
-  constructor(
-    @inject({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }) restDataProviderOptions: IRestDataProviderOptions,
-    @inject({ key: CoreBindings.APPLICATION_INFO }) applicationInfo: IApplicationInfo,
-  );
-
-  value(container: Container): IDataProvider<TResource>;
-  getNetworkService(): DefaultNetworkRequestService;
-
-  protected createNetworkService(): DefaultNetworkRequestService;
-  protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
-    filter: Record<string, AnyType>;
-    queryKey: Record<string, AnyType>;
-    extra: Record<string, AnyType> | undefined;
-  };
-}
-```
-
-The class methods take an options object: `getList({ resource, params })`. `value()` wraps them in the shape react-admin expects, where every method is positional: `getList(resource, params)`. That is the one documented exception to the options-object rule: the signatures on the object `value()` returns are react-admin's own, and they stay positional. `send` and `getNetworkService` keep their own shape on that object.
-
-### Protected hooks
-
-Two protected methods are the places to change behaviour in a subclass:
-
-- `createNetworkService(): DefaultNetworkRequestService` builds the network service the provider sends through. It is called once, on first use, so a subclass's own fields are set by then. Override it to return a subclass of the service that overrides its hooks (`refreshToken`, `onAuthFailure`, `resolveAuthToken`, ...), then bind the provider subclass under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. [Auth recovery](../best-practices/auth-recovery#wiring-the-refresh) has the full example.
-- `buildListFilter({ params }): { filter, queryKey, extra }` turns react-admin's list params into the IGNIS filter, the extra query keys and the list extras. `getList` and `getManyReference` both call it - the algorithm is in [`getList` and `getManyReference`](#getlist-and-getmanyreference-building-the-filter). Override it to change how a list is filtered for both calls at once.
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON:
 
 ```ts
 import {
+  type BaseArdorApplication as TArdorApplication,
+  configuration,
+  CoreBindings,
   DefaultRestDataProvider,
-  type IApplicationInfo,
   type IDataProvider,
+  inject,
   type IRestDataProviderOptions,
+  provide,
 } from '@venizia/ardor';
 
-const restDataProviderOptions: IRestDataProviderOptions = { url: 'https://api.example.com' };
-const applicationInfo: IApplicationInfo = {
-  name: 'shop-admin',
-  version: '1.0.0',
-  description: 'Shop administration',
-};
+@configuration()
+export class RestDataConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
+    private readonly application: TArdorApplication,
+  ) {}
 
-// In an application the container does this; shown directly for clarity.
-const provider = new DefaultRestDataProvider<'products' | 'orders'>(
-  restDataProviderOptions,
-  applicationInfo,
-);
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return {
+      url: 'https://api.example.com',
+      noAuthPaths: ['/auth/sign-in'],
+      requestTracingChannel: 'admin',
+    };
+  }
 
-const dataProvider: IDataProvider<'products' | 'orders'> = provider.value(container);
-
-// react-admin shape: positional on purpose
-const products = await dataProvider.getList('products', {
-  pagination: { page: 1, perPage: 20 },
-  sort: { field: 'name', order: 'ASC' },
-  filter: { status: 'active' },
-});
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider(): IDataProvider {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+}
 ```
 
-`TResource` narrows the accepted resource names. It defaults to `string`.
+## What it does
 
-## Call to request mapping
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) instantiates the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
 
-`{resource}` is the react-admin resource name, appended to `url`. "filter" means the `filter` query key, serialised as JSON. "query keys" means extra top-level query parameters.
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that instantiates and configures the default REST `IDataProvider`. |
+| `CountRestDataProvider<TResource>` | class | Subclass of `DefaultRestDataProvider` that queries `/{resource}/count` for list totals. |
+| `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
+| `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
+| `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
+| `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
+| `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
+| `ISendResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
+| `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
+| `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
+| `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
+| `RequestBodyTypes` | class | Body serialization constants (`json`, `form-data`, `x-www-form-urlencoded`, `binary`, `none`). |
+| `RequestCountData` | class | Count request constants (`DATA_ONLY`, `DATA_WITH_COUNT`). |
 
-| react-admin call | Verb | Path | Query / body |
+## Options
+
+`IRestDataProviderOptions` extends `INoAuthOptions` to configure network connectivity, authentication exclusions, default headers, and token recovery. For custom token refresh workflows, see [Auth recovery](../best-practices/auth-recovery).
+
+| Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `getList` | GET | `/{resource}` | `filter = { where, include, fields, order, limit, skip, offset }` + query keys from `filter.params` and `meta` |
-| `getOne` | GET | `/{resource}/{id}` | `filter = meta.filter` without `params`; query keys from `meta.filter.params` |
-| `getMany` | GET | `/{resource}` | `filter = { ...meta.filter without params, where: { ...meta.filter.where, id: { inq: ids } } }`; query keys from `meta.filter.params` |
-| `getManyReference` | GET | `/{resource}` | Same as `getList`, plus `where[target] = id` |
-| `create` | POST | `/{resource}` | body = `params.data` |
-| `update` | PATCH | `/{resource}/{id}` | body = `params.data` |
-| `updateMany` | PATCH | `/{resource}` | body = `{ ...params.data, where: { id: { inq: ids } } }`; nothing in the query |
-| `delete` | DELETE | `/{resource}/{id}` | - |
-| `deleteMany` | DELETE | `/{resource}`, one request | body = `{ where: { id: { inq: ids } } }`; nothing in the query |
-| `send` | `params.method` | `/{resource}` | `params.query` as-is; body from `params.body` / `bodyType` |
-| count (`CountRestDataProvider`, list calls only) | GET | `/{resource}/count` | `where = filter.where` + the same query keys |
+| `url` | `string` | (Required) | Base URL prepended to all resource request paths. |
+| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource path strings requested without an `Authorization` header and excluded from 401 refresh. Entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match. |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression patterns matching resource paths that must omit `Authorization` headers. Set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path. |
+| `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
+| `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header. Defaults to `RequestChannel.WEB` (`'100_WEB'`). |
+| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint to prevent recursive 401 recovery loops. |
 
-Every call sends `requestCountData: RequestCountData.DATA_ONLY` (`'0'`). Every call's `type` is the matching `RequestTypes` constant (`GET_LIST`, `GET_ONE`, ... ); the count request uses `RequestTypes.SEND`.
-
-## `getList` and `getManyReference`: building the filter
-
-Both calls share one algorithm, the protected `buildListFilter({ params })`. The react-admin `filter` object is read in one of two ways:
-
-- If `filter.where` exists, the whole `filter` is taken as-is. You are writing the IGNIS filter yourself.
-- Otherwise every key of `filter` except `include`, `params`, `noLimit` and `fields` becomes `where`. Those four keys are lifted to the top level of the filter.
-
-Then:
-
-1. `sort.field` becomes `order: ["<field> <ASC|DESC>"]`.
-2. Pagination: `limit = perPage`, `skip = offset = (page - 1) * perPage` - see `noLimit` below.
-3. Any other truthy top-level key on `params` (anything that is not `pagination`, `sort`, `filter`, `meta`, and for `getManyReference` also not `target` or `id`) is copied into the filter under the same name.
-4. `filter.params` is moved out into query keys and removed from the filter.
-5. Every key of `meta` is added as a query key.
-
-`getManyReference` additionally sets `where[target] = id` before sorting.
+## Example
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
+import { type RaRecord } from 'ra-core';
 
-declare const dataProvider: IDataProvider;
+interface Product extends RaRecord {
+  id: string;
+  name: string;
+  price: number;
+  status: string;
+}
 
-// Flat filter: keys become `where`, include/fields are lifted.
-// GET /products?filter={"where":{"status":"active"},"include":["category"],"fields":{"id":true,"name":true},"order":["name ASC"],"limit":20,"skip":0,"offset":0}
-await dataProvider.getList('products', {
-  pagination: { page: 1, perPage: 20 },
-  sort: { field: 'name', order: 'ASC' },
-  filter: { status: 'active', include: ['category'], fields: { id: true, name: true } },
-});
+export async function manageProducts(dataProvider: IDataProvider): Promise<void> {
+  const listResult = await dataProvider.getList<Product>('products', {
+    pagination: { page: 1, perPage: 10 },
+    sort: { field: 'price', order: 'DESC' },
+    filter: { status: 'active' },
+  });
 
-// Explicit `where`: the filter object is sent verbatim, plus order/limit/skip/offset.
-await dataProvider.getList('products', {
-  pagination: { page: 2, perPage: 10 },
-  sort: { field: 'createdAt', order: 'DESC' },
-  filter: { where: { price: { gt: 100 } }, include: [{ relation: 'category' }] },
-});
+  const items = listResult.data;
 
-// Reference: where[target] = id
-// GET /orders?filter={"where":{"customerId":"c-1","status":"paid"},...}
-await dataProvider.getManyReference('orders', {
-  target: 'customerId',
-  id: 'c-1',
-  pagination: { page: 1, perPage: 10 },
-  sort: { field: 'createdAt', order: 'DESC' },
-  filter: { status: 'paid' },
-});
+  const created = await dataProvider.create<Omit<Product, 'id'>, Product>('products', {
+    data: { name: 'Desk Lamp', price: 45, status: 'draft' },
+  });
+
+  await dataProvider.update<Product>('products', {
+    id: created.data.id,
+    data: { status: 'active' },
+    previousData: created.data,
+  });
+
+  if (items.length > 0) {
+    await dataProvider.updateMany<Product>('products', {
+      ids: items.map((product) => product.id),
+      data: { status: 'archived' },
+    });
+  }
+}
 ```
 
-### `noLimit`
+## HTTP request and response mapping
 
-When `filter.noLimit` is truthy, `limit`, `skip`, `offset` and `noLimit` itself are all set to `undefined` and pagination is ignored. Use it to fetch a whole collection regardless of react-admin's default page size.
-
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-// GET /categories?filter={"where":{},"order":["name ASC"]}
-await dataProvider.getList('categories', {
-  pagination: { page: 1, perPage: 25 },
-  sort: { field: 'name', order: 'ASC' },
-  filter: { noLimit: true },
-});
-```
-
-### `filter.params` and `meta` as query keys
-
-Anything under `filter.params` and anything under `meta` except `meta.extra` is sent as a top-level query parameter next to `filter`, not inside it. `filter.params` is removed from the filter afterwards.
-
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-// GET /products?locale=vi&view=compact&filter={"where":{"status":"active"},"limit":20,"skip":0,"offset":0}
-await dataProvider.getList('products', {
-  pagination: { page: 1, perPage: 20 },
-  filter: { status: 'active', params: { locale: 'vi' } },
-  meta: { view: 'compact' },
-});
-```
-
-### List extras: `meta.extra`
-
-A route that declares list extras computes them beside the rows, such as facet counts for a filter sidebar. `getList` and `getManyReference` ask for them with `meta.extra`, a `TExtraRequest`: `true` asks for a plain extra, a list of keys asks a group for those keys, and `false` switches a default off. The request goes out in the `x-request-extra` header, never in the query. What the route answered comes back as the result's `meta.extra`:
-
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-// GET /tickets?filter=... with x-request-extra: facets(status,tag)
-const { data, total, meta } = await dataProvider.getList('tickets', {
-  pagination: { page: 1, perPage: 20 },
-  sort: { field: 'id', order: 'ASC' },
-  filter: {},
-  meta: { extra: { facets: ['status', 'tag'] } },
-});
-// meta?.extra?.facets -> { status: { ... }, tag: { ... } }
-```
-
-Every entry may be absent: a route without extras, or an older server, answers none, and then the result has no `meta`. A route that declares a DEFAULT extra answers it to every request, asked or not; the data provider reads that too, marked by the `x-response-extra` header, so the rows and the total stay right. A body without that header is never read as extras, even when a row has its own `data` and `extra` columns.
+| react-admin method | HTTP method | Path | Request body / query | Result conversion |
+| --- | --- | --- | --- | --- |
+| `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `offset`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
+| `getOne` | `GET` | `/{resource}/{id}` | Query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body. | `{ data: RecordType }` from JSON response body. |
+| `getMany` | `GET` | `/{resource}` | Always a GET with the ids in `filter.where.id.inq` (query `filter` JSON string containing `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`). A very long id list can answer 414 or 431. No body. | `{ data: RecordType[] }` from JSON response array. |
+| `getManyReference` | `GET` | `/{resource}` | Same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
+| `create` | `POST` | `/{resource}` | JSON body `params.data`. No query. | `{ data: ResultRecordType }` containing the assigned `id`. |
+| `update` | `PATCH` | `/{resource}/{id}` | JSON body `params.data`. `previousData` is not sent. No query. | `{ data: RecordType }` from JSON response body. |
+| `updateMany` | `PATCH` | `/{resource}` | JSON body `{ ...params.data, where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty or if `params.data` contains a `where` property. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
+| `delete` | `DELETE` | `/{resource}/{id}` | No body. No query. | `{ data: RecordType }` from JSON response body. |
+| `deleteMany` | `DELETE` | `/{resource}` | JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
 
 > [!NOTE]
-> A cross-origin server must allow `x-request-extra` and expose `x-response-extra` (IGNIS: `HTTP.CorsHeaders.ALLOW` and `EXPOSE`), or the browser drops them.
+> `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string to avoid HTTP 414 and 431 errors on long ID lists. Backend endpoints handling bulk operations must support body-based selectors.
 
-## `getOne` and `getMany`
+## Filter and pagination encoding
 
-These read the IGNIS filter from `params.meta.filter`, not from `params.filter`. Only `meta.filter.params` becomes query keys; other `meta` keys are not used.
+`getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })` in `packages/admin/src/providers/rest-data.ts`:
+- **Filter modes**: If `params.filter.where` is defined, the filter is treated as an explicit IGNIS filter and sent as `{ ...filterInput, where: { ...filterInput.where } }`. Otherwise, flat keys in `params.filter` become properties in `where`, except `include`, `fields`, `params`, and `noLimit`, which are lifted to the top level of the filter.
+- **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
+- **Pagination**: By default, `limit` is set to `perPage`, and `skip` and `offset` are set to `(page - 1) * perPage`. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
+- **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
+- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
+- **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
 
-- `getOne`: `GET /{resource}/{id}?filter=<meta.filter without params>`.
-- `getMany`: `GET /{resource}?filter=<meta.filter without params>` with `where` merged to `{ ...meta.filter.where, id: { inq: ids } }`.
+## Extended provider methods
 
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-// GET /products/p-1?filter={"include":[{"relation":"category"}]}
-await dataProvider.getOne('products', {
-  id: 'p-1',
-  meta: { filter: { include: [{ relation: 'category' }] } },
-});
-
-// GET /products?filter={"where":{"id":{"inq":["p-1","p-2"]}}}
-await dataProvider.getMany('products', { ids: ['p-1', 'p-2'] });
-```
-
-## Write calls
-
-- `create`: `POST /{resource}` with `params.data` as body.
-- `update`: `PATCH /{resource}/{id}` with `params.data` as body. `previousData` is not sent.
-- `updateMany`: `PATCH /{resource}` with `{ ...params.data, where: { id: { inq: [...] } } }` as body. The route reads `where` as the row selector and never writes it. Throws `[updateMany] No IDs to execute update!` when `ids` is empty, and refuses `params.data` that has its own `where` field - update those records with `update()`. The result is `{ data: [ids] }`, read from the rows the server reports as written - see below.
-- `delete`: `DELETE /{resource}/{id}`.
-- `deleteMany`: one `DELETE /{resource}` with `{ where: { id: { inq: [...] } } }` as body; the result is `{ data: [ids] }` read the same way. Throws `[deleteMany] No IDs to execute delete!` when `ids` is empty.
-
-The bulk selector travels in the body because an id list in the URL is capped by the request line: an IGNIS server answered `431` at 400 UUIDs, and a proxy with 8k header buffers refuses sooner. This needs a server whose bulk routes accept `where` in the body. A route that reads it only from the query answers `400` and writes nothing - treat that `400` as "this route does not support body selectors yet", never as a partial update.
-
-The ids in a bulk result are the ones the server reports touching - an IGNIS bulk route answers the affected rows - not the ids you asked for, so an id that no longer exists does not appear. When the body is not an array of rows, `data` is left out rather than filled with the requested ids.
-
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-const created = await dataProvider.create('products', {
-  data: { name: 'Lamp', status: 'draft' },
-});
-
-await dataProvider.update('products', {
-  id: created.data.id,
-  data: { status: 'active' },
-  previousData: created.data,
-});
-
-await dataProvider.updateMany('products', { ids: ['p-1', 'p-2'], data: { status: 'archived' } });
-await dataProvider.deleteMany('products', { ids: ['p-1', 'p-2'] });
-```
-
-## Totals
-
-`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConstants.CONTENT_RANGE`) in the form `unit start-end/total` (or `unit */total` for an empty page); without it, or with a malformed one such as `records 0-24/*`, `total` is the number of rows in the page. Parsing is described in [Network](../references/network).
-
-`CountRestDataProvider` overrides `getListHelper` so that `getList` and `getManyReference` issue two requests in parallel:
-
-1. `GET /{resource}?filter=...` (as above)
-2. `GET /{resource}/count?where=<filter.where>` plus the same query keys
-
-The result is `{ data: <first response>.data, total: <second response>.data.count ?? 0 }`. Use it when the backend exposes a `/count` endpoint instead of `content-range`. Every other method is inherited unchanged.
-
-```ts
-import {
-  CountRestDataProvider,
-  type IApplicationInfo,
-  type IRestDataProviderOptions,
-} from '@venizia/ardor';
-
-const restDataProviderOptions: IRestDataProviderOptions = { url: 'https://api.example.com' };
-const applicationInfo: IApplicationInfo = {
-  name: 'shop-admin',
-  version: '1.0.0',
-  description: 'Shop administration',
-};
-
-const dataProvider = new CountRestDataProvider(restDataProviderOptions, applicationInfo).value(
-  container,
-);
-
-// GET /products?filter={...}  and  GET /products/count?where={"status":"active"}
-const { data, total } = await dataProvider.getList('products', {
-  pagination: { page: 1, perPage: 20 },
-  filter: { status: 'active' },
-});
-```
-
-## `send()`: arbitrary endpoints
-
-```ts no-check
-class DefaultRestDataProvider<TResource extends string = string> {
-  ...
-  send<ReturnType = AnyType>(opts: {
-    resource: TResource;
-    params: ISendParams;
-  }): Promise<ISendResponse<ReturnType>>;
-}
-
-interface ISendParams {
-  id?: string | number;
-  method?: TRequestMethod;          // required at runtime
-  requestType?: TRequestType;       // default RequestTypes.SEND
-  bodyType?: TRequestBodyType;      // 'none' | 'form-data' | 'x-www-form-urlencoded' | 'json' | 'binary'
-  body?: any;
-  file?: any;
-  query?: { [key: string]: any };
-  headers?: { [key: string]: string | number };
-  requestCountData?: '0' | '1';     // RequestCountData.DATA_ONLY | DATA_WITH_COUNT
-  [key: string]: any;
-}
-
-interface ISendResponse<T = AnyType> {
-  data: T;
-  [key: string]: any;
-}
-```
-
-`send()` is for endpoints that are not plain CRUD. It:
-
-- throws `[send] Invalid http method to send request!` when `method` is missing;
-- passes `body`, `bodyType`, `requestCountData` and any other extra key to `networkService.getRequestProps(...)` together with the provider options and application info;
-- merges `params.headers` on top of the computed headers, with every value converted to a string - a header you name wins;
-- requests `/{resource}` with `params.method`, `params.query` as query parameters, and `params.requestType ?? RequestTypes.SEND` as type.
-
-On the object returned by `value()`, `send` keeps the options-object shape: `dataProvider.send({ resource, params })`.
+`IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
+1. `send<ReturnType = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<ReturnType>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
+3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
 import {
@@ -396,57 +158,42 @@ import {
   RequestMethods,
 } from '@venizia/ardor';
 
-declare const dataProvider: IDataProvider;
+export async function exportProducts(dataProvider: IDataProvider): Promise<string> {
+  const response = await dataProvider.send<{ downloadUrl: string }>({
+    resource: 'products/export',
+    params: {
+      method: RequestMethods.POST,
+      bodyType: RequestBodyTypes.JSON,
+      body: { format: 'csv' },
+      query: { notify: 'true' },
+      requestCountData: RequestCountData.DATA_ONLY,
+    },
+  });
 
-// POST /products/export?format=csv
-const exported = await dataProvider.send<{ url: string }>({
-  resource: 'products/export',
-  params: {
-    method: RequestMethods.POST,
-    bodyType: RequestBodyTypes.JSON,
-    body: { status: 'active' },
-    query: { format: 'csv' },
-    headers: { 'x-export-version': 2 },
-    requestCountData: RequestCountData.DATA_ONLY,
-  },
-});
+  return response.data.downloadUrl;
+}
 
-exported.data.url;
+export function configureNetwork(dataProvider: IDataProvider): void {
+  const networkService = dataProvider.getNetworkService();
+  networkService.setHeaders({ headers: { 'x-tenant-id': 'tenant-42' } });
+
+  const dataSourceAuth = dataProvider.getDataSourceAuth();
+  if (dataSourceAuth.errorRootKey !== 'error') {
+    throw new Error('Unexpected error root key');
+  }
+}
 ```
 
-## `getNetworkService()`
+## Error handling
 
-Returns the `DefaultNetworkRequestService` the provider built, through `createNetworkService()`, on first use. It is available both on the class and on the object returned by `value()`. Use it when a component or service needs the same base URL, auth rules and headers without going through react-admin's vocabulary. Its API is documented in [Network](../references/network).
-
-```ts
-import { type IDataProvider } from '@venizia/ardor';
-
-declare const dataProvider: IDataProvider;
-
-const networkService = dataProvider.getNetworkService();
-```
-
-## Common pitfalls
-
-- **Omitting `pagination` sends `limit: 0`.** `page` and `perPage` default to `0`, and `perPage >= 0` sets `limit`. Pass `filter: { noLimit: true }` when you really want everything.
-- **`filter.where` switches modes.** Once `where` is present the filter is sent verbatim. `include`, `fields` and other keys must then already be in their IGNIS positions; flat keys are no longer wrapped into `where`.
-- **`getOne` and `getMany` ignore `params.filter`.** They only read `params.meta.filter`, and only `meta.filter.params` becomes query keys. Top-level `meta` keys are not sent for these two calls.
-- **`send()` always targets `/{resource}`.** `params.id` is forwarded to `getRequestProps` but is not appended to the path. Put sub-paths into the resource string, for example `'products/export'`.
-- **`send()` without `method` throws.** There is no default verb.
-- **`updateMany` and `deleteMany` throw on an empty `ids` array.** Guard bulk actions in the UI.
-- **Bulk writes need body selectors on the server.** `updateMany` and `deleteMany` send `where` in the body. A backend route that only reads `where` from the query - including a hand-written override of the bulk handler - answers `400` without writing.
-- **`getMany` keeps its ids in the URL.** It is always a `GET` to the collection, the route a controller scopes, so a very long `ids` list can hit the request-line limit (`414`/`431`, about 400 UUIDs). IGNIS removed its body-filter `POST /{resource}/find` (#92): it bypassed a controller's overridden `find()`, a cross-tenant read.
-- **Extra truthy keys on list `params` leak into the filter.** Anything on `params` other than `pagination`, `sort`, `filter`, `meta` (and `target`/`id` for references) is copied into the filter as-is.
-- **`DefaultRestDataProvider` has no `total` of its own.** If your backend does not send `content-range`, use `CountRestDataProvider` or expose a `/count` endpoint.
-- **A failed request throws an `ApplicationError`.** Every method, `send()` and `CountRestDataProvider` included, rejects with the error described in [Network](../references/network#error-shape-on-non-2xx): `statusCode` is the HTTP status, `message` the server's text, `normalized.code` and `normalized.args` the server's, and the request id is in `error.extra.requestId`.
-- **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`, react-admin's positional signature. Only the latter is what react-admin and `useDataProvider` see.
-
-## Related
-
-- [Application](../references/application) - where the provider is registered and started
-- [Binding keys](../references/binding-keys) - `CoreBindings.REST_DATA_PROVIDER_OPTIONS`, `CoreBindings.APPLICATION_INFO`
-- [Network](../references/network) - `DefaultNetworkRequestService`, `getRequestProps`, `content-range`
-- [Auth provider](../references/auth-provider) - who supplies the token the network service attaches
-- [Auth recovery](../best-practices/auth-recovery) - the `refreshToken` hook and `createNetworkService()`
-- [Types](../references/types) - `IRestDataProviderOptions`, `ISendParams`, `ICustomParams`, request constants
-- [Migrating from ra-core-infra](../guides/migration/from-ra-core-infra)
+When the backend responds with an HTTP status outside the 200-299 range:
+1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` unwraps the response payload using the `'error'` root key (`HttpResponseReader.readError`).
+2. The service creates an application error via `getError` with:
+   - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
+   - `message`: `server.normalized?.text ?? server.message ?? \`HTTP ${response.status}\``. This provides the user-facing error message displayed by react-admin notifications.
+   - `messageCode`: Server error code from `server.normalized?.code` (for example, `ERR_NOT_FOUND`).
+   - `messageArgs`: Localization arguments from `server.normalized?.args`.
+   - `extra`: Dictionary containing `extra.requestId` (assigned from `server.requestId`, preserving any upstream request ID in `extra.upstreamRequestIds`), or `undefined` if empty.
+   - `cause`: Underlying server cause details from `server.details?.cause`.
+3. React-admin catches the thrown error and forwards it to `authProvider.checkError(error)`.
+4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it clears local session storage (`DefaultAuthService.cleanUp()`) and rejects with `{ redirectTo: this.loginPagePath }`, prompting react-admin to redirect the user to the login screen. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }`.

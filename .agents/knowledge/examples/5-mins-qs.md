@@ -35,7 +35,7 @@ app needs together:
 
 - **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 595 KB whole (188 KB gzipped), over Vite's 500 KB warning, and three chunks of 10, 219 and 364 KB leave no warning.
 
-The wiki quickstart (`guides/get-started/quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
+The wiki quickstart (`guides/get-started/5-minute-quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 
 Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.

@@ -44,4 +44,4 @@ A rejected singleton promise stays cached until the container is cleared, on pur
 - **Applications with two discovered classes of one name and no pinned `binding`.** `start()` now throws. Pin `binding` on one of them, or build with class names kept.
 - **Code that relied on a parent class not seeing a subclass's property `@inject`, or on `isOptional` being ignored for `{ target }`.** Both now behave as documented.
 
-See [Repositories](../references/repository#registering-a-repository) and [Application](../references/application#preconfigure).
+See [Repositories](../references/repository) and [Application](../references/application).
