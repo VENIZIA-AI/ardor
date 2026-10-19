@@ -30,4 +30,4 @@ packages: ['@venizia/ardor-admin']
 | `src/providers/auth.ts` | admin |
 | `src/__tests__/providers/auth.test.ts` | admin |
 
-See [Features and permissions](../references/features#permissions).
+See [Features and permissions](../references/permission).

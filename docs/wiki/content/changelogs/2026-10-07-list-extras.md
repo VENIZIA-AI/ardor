@@ -32,4 +32,4 @@ packages: ['@venizia/ardor']
 - **Code that passed `meta.extra` as a query parameter.** It is now the extras request. Rename the key.
 - **A cross-origin server.** It must allow `x-request-extra` and expose `x-response-extra`, or the browser drops them.
 
-See [the data provider](../references/data-provider#list-extras-meta-extra) and [repositories](../references/repository#list-extras).
+See [the data provider](../references/data-provider) and [repositories](../references/repository).

@@ -62,7 +62,7 @@ export class App extends BaseArdorApplication {
 
 Registration runs least explicit first, so the most explicit wins a shared key: stereotypes, then `bindingList()`, then `bindContext()`. `allowOverride: false` on a by-hand call refuses to replace an existing binding instead.
 
-An `HttpRepository` has no model, so it is declared `@repository({ type: RepositoryTypes.REMOTE, dataSource })`, and `@repository` injects the datasource into the first constructor parameter. The two ways mix: `@inject({ target })` on a datasource registered by hand works there too. See [Repositories](../references/repository#registering-a-repository).
+An `HttpRepository` has no model, so it is declared `@repository({ type: RepositoryTypes.REMOTE, dataSource })`, and `@repository` injects the datasource into the first constructor parameter. The two ways mix: `@inject({ target })` on a datasource registered by hand works there too. See [Repositories](../references/repository).
 
 ## Framework slots: `@configuration` + `@provide`
 
