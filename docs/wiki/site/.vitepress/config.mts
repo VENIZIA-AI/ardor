@@ -89,6 +89,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-19',
+        collapsed: true,
+        items: [
+          {
+            text: 'toDataUrl without withResolvers',
+            link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
+          },
+        ],
+      },
+      {
         text: '2026-10-18',
         collapsed: true,
         items: [
