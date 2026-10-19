@@ -5,35 +5,26 @@ description: Using HttpRepository and HttpDataSource in ARDOR, bridging credenti
 
 # Repositories
 
-Use `HttpRepository` (imported from `@venizia/ardor/repository`), backed by `HttpDataSource`. An HTTP repository reads and writes a remote backend resource through HTTP routes in the `@venizia/ignis-filter` query vocabulary.
+`HttpRepository` (from `@venizia/ardor/repository`) reads and writes remote backend resources over an `HttpDataSource` using IGNIS query filters.
 
 ```ts
-import { DefaultNetworkRequestService } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
 export interface Customer {
   id: string;
   name: string;
-  status: string;
 }
 
-export class CustomerRepository extends HttpRepository<Customer> {
-  constructor(dataSource: HttpDataSource) {
-    super({ dataSource, resource: 'customers' });
-  }
-}
-
-const customerDataSource = new HttpDataSource({
-  baseUrl: 'https://api.example.com',
-  authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
+const dataSource = new HttpDataSource({ baseUrl: 'https://api.example.com' });
+export const customerRepository = new HttpRepository<Customer>({
+  dataSource,
+  resource: 'customers',
 });
-
-export const customerRepository = new CustomerRepository(customerDataSource);
 ```
 
 ## Bridging credentials with getDataSourceAuth()
 
-To make an `HttpDataSource` send the exact same credentials, dynamic session headers, timezone settings, and 401 recovery as the REST data provider, spread `dataProvider.getDataSourceAuth()` into `HttpDataSource` constructor settings.
+To share credentials, session headers, timezone settings, and 401 recovery with the REST data provider, spread `dataProvider.getDataSourceAuth()` (returning `authTokenResolver`, `headersResolver`, `onUnauthorized`, and `errorRootKey`) into `HttpDataSource` constructor settings (see [Data provider](data-provider)):
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -57,16 +48,7 @@ export const createOrderRepository = (dataProvider: IDataProvider) => {
 };
 ```
 
-`getDataSourceAuth()` returns:
-
-- `authTokenResolver`: reads the active auth token from the network service, omitting it on paths that match `noAuthPaths` or `noAuthPathRegex`.
-- `headersResolver`: supplies session headers (configured via `setHeaders`), client timezone headers, request channel, and tracing id.
-- `onUnauthorized`: coordinates with the network service to refresh tokens upon a 401 response and retries the repository request once.
-- `errorRootKey`: instructs `HttpDataSource` to unwrap server errors under the `error` envelope key.
-
 ## Reading data and the Content-Range rule
-
-`HttpRepository` provides query methods:
 
 | Method | HTTP Request | Requires `Content-Range` |
 |---|---|---|
@@ -76,8 +58,6 @@ export const createOrderRepository = (dataProvider: IDataProvider) => {
 | `findById({ id })` | `GET /{resource}/{id}` | No |
 | `count({ where })` | `GET /{resource}?filter=...` (`limit: 1`) | Yes (unless `countPath` is configured) |
 | `existsWith({ where })` | `GET /{resource}?filter=...` (`limit: 1`) | No |
-
-The `Content-Range` rule:
 
 - `count({ where })` executes `GET /{resource}?filter={"where":...,"limit":1}` and reads the total count from the `Content-Range` response header.
 - The `Content-Range` header format must be `<unit> <start>-<end>/<total>` (for example, `records 0-0/42`) or `records */<total>` for an empty page.
@@ -118,8 +98,6 @@ export const countActiveArticles = () => {
 ```
 
 ## Writing data
-
-`HttpRepository` provides write methods:
 
 | Method | HTTP Request | Body payload |
 |---|---|---|
@@ -165,9 +143,7 @@ export const updateTaskWorkflow = async () => {
 
 ## Registering repositories
 
-Two ways to register repositories in an application:
-
-1. Automatic discovery with `@datasource()` and `@repository()`:
+Register repositories with `@datasource()` and `@repository()` for automatic discovery, or manually in `bindContext()` via `this.dataSource()` and `this.repository()` (see [Application](./application)):
 
 ```ts
 import {
@@ -204,52 +180,9 @@ export class InvoiceRepository extends HttpRepository<Invoice> {
 export const useInvoices = () => useRepository({ target: InvoiceRepository });
 ```
 
-2. Manual registration in `bindContext()`:
-
-```ts
-import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
-import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-
-export interface Invoice {
-  id: string;
-  amount: number;
-}
-
-export class ApiDataSource extends HttpDataSource {
-  constructor() {
-    super({ baseUrl: '/api' });
-  }
-}
-
-export class InvoiceRepository extends HttpRepository<Invoice> {
-  constructor(dataSource: ApiDataSource) {
-    super({ dataSource, resource: 'invoices' });
-  }
-}
-
-export class InvoiceApplication extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return {
-      name: 'invoice-app',
-      version: '1.0.0',
-      description: 'Invoice application',
-    };
-  }
-
-  bindContext(): void {
-    this.dataSource(ApiDataSource);
-    this.repository(InvoiceRepository);
-  }
-}
-```
-
-For a complete guide building an admin with resources and repositories, see [Build an admin](../guides/tutorials/build-an-admin).
-
 ## Related
 
 - [Build an admin](../guides/tutorials/build-an-admin) - step by step tutorial creating resources and repositories
 - [Data provider](data-provider) - data provider contract and options
-- [Network](network) - network service headers and error shapes
 - [Hooks](hooks) - `useRepository` reference
 - [Services and repositories](../best-practices/services) - design patterns for repositories and services
-- [Auth recovery](../best-practices/auth-recovery) - 401 recovery lifecycle across transports

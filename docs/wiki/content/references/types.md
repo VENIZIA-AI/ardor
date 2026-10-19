@@ -145,28 +145,6 @@ Source files: `packages/react/src/common/types.ts` and `packages/react/src/hooks
 | `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable` (`TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides`). |
 | `TUseInjectableOptions` | `type` | Options discriminated union (`key` or `target`) accepted by `useInjectable`. |
 
-```tsx
-import { useInjectable, type ISyncFC } from '@venizia/ardor';
-
-interface UserBadgeProps {
-  name: string;
-}
-
-export const UserBadge: ISyncFC<UserBadgeProps> = (props) => {
-  return <span>{props.name}</span>;
-};
-
-class GreetingService {
-  greet(name: string) {
-    return `Hello, ${name}`;
-  }
-}
-
-export const useGreeting = () => {
-  return useInjectable<GreetingService>({ target: GreetingService });
-};
-```
-
 ## @venizia/ardor-admin
 
 Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/features/feature.ts`.
@@ -182,26 +160,9 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. |
 
-```ts
-import { RequestMethods, type IDataProvider } from '@venizia/ardor';
-
-export const runCustomQuery = async (dataProvider: IDataProvider) => {
-  const response = await dataProvider.send<{ status: string }>({
-    resource: 'system/health',
-    params: { method: RequestMethods.GET },
-  });
-  return response.data.status;
-};
-```
-
 ## Related
 
 - [Binding keys](binding-keys) - container binding keys and storage keys
-- [Application](application) - application lifecycle and configuration
 - [Data provider](data-provider) - data provider contract and options
 - [Auth provider](auth-provider) - auth provider contract and options
-- [i18n](i18n) - i18n provider contract and options
-- [Network](network) - network service request types and headers
-- [Repository](repository) - repository classes and datasource settings
 - [Hooks](hooks) - React hooks and context types
-- [Module augmentation](../best-practices/module-augmentation) - augmenting `IUseInjectableKeysOverrides`

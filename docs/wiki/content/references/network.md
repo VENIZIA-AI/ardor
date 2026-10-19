@@ -7,173 +7,6 @@ description: DefaultNetworkRequestService - HTTP transport, headers, timeouts, 4
 
 ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps the platform `fetch` API. It builds headers, formats request bodies, parses responses, coordinates 401 token refresh, and shares authentication state with repository data sources.
 
-## What it does
-
-`DefaultNetworkRequestService` is the HTTP network engine of ARDOR. It converts data provider and repository operations into fetch requests, handles header assembly, formats request bodies, parses JSON or binary responses, and coordinates automatic 401 token refresh. The service uses standard Web platform APIs and provides protected hooks to customize authentication, tracing, and error handling.
-
-| Export | Kind | Purpose |
-|---|---|---|
-| `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `BaseNetworkRequest` | class | Base network helper linking a service instance to an underlying fetcher |
-| `NodeFetchNetworkRequest` | class | Transport helper wrapping `NodeFetcher` with default JSON headers |
-| `NodeFetcher` | class | HTTP transport executing standard `fetch` with timeout and abort support |
-| `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
-| `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
-| `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
-| `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
-| `RequestTypes` | class | React-admin and kernel request type constants |
-| `RequestCountData` | class | Flag constants for count responses (`DATA_ONLY`, `DATA_WITH_COUNT`) |
-| `RequestChannel` | class | Default channel constant (`WEB`) |
-| `LocalStorageKeys` | class | Local storage key constants including `KEY_AUTH_TOKEN` |
-| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`) |
-| `IDataSourceAuth` | interface | Authentication configuration shared with an `HttpDataSource` |
-| `IDataSourceRequestContext` | interface | Request path context passed to data source auth resolvers |
-| `INoAuthOptions` | interface | Options defining path strings and regex patterns that bypass authentication |
-| `IAuthRecoveryOptions` | interface | Authentication recovery configuration (`refreshTokenPath`) |
-| `IGetRequestPropsParams` | interface | Input parameters passed to `getRequestProps` |
-| `IGetRequestPropsResult` | interface | Normalized headers and body returned by `getRequestProps` |
-
-## How to provide it
-
-`DefaultNetworkRequestService` is not bound directly under its own container key. Instead, the REST data provider (`DefaultRestDataProvider`, bound under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`) instantiates it in its protected `createNetworkService()` method and caches it. Callers access the service via `dataProvider.getNetworkService()`.
-
-The data provider constructs the service using options injected from `CoreBindings.REST_DATA_PROVIDER_OPTIONS`:
-- `url` becomes `baseUrl`
-- `headers` becomes base headers
-- `noAuthPaths` and `noAuthPathRegex` configure unauthenticated endpoints
-- `authRecovery` configures token refresh exclusion paths
-
-To supply custom network behavior - such as handling token refresh or in-memory credentials - subclass `DefaultNetworkRequestService`, override `createNetworkService()` on a `DefaultRestDataProvider` subclass, and register both the options and the provider in a `@configuration()` class:
-
-```ts
-import {
-  type BaseArdorApplication as TArdorApplication,
-  configuration,
-  CoreBindings,
-  DefaultNetworkRequestService,
-  DefaultRestDataProvider,
-  type IAuthTokenRecord,
-  type IRestDataProviderOptions,
-  inject,
-  LocalStorageKeys,
-  provide,
-  RequestMethods,
-  RequestTypes,
-} from '@venizia/ardor';
-
-export class SecureNetworkService extends DefaultNetworkRequestService {
-  private inMemoryToken?: string;
-
-  setToken(token: string) {
-    this.inMemoryToken = token;
-  }
-
-  protected override resolveAuthToken(): IAuthTokenRecord | undefined {
-    if (this.inMemoryToken) {
-      return { value: this.inMemoryToken, type: 'Bearer', provider: 'api' };
-    }
-    return super.resolveAuthToken();
-  }
-
-  protected override async refreshToken(): Promise<boolean> {
-    try {
-      const response = await this.doRequest<{ token: string }>({
-        type: RequestTypes.SEND,
-        method: RequestMethods.POST,
-        paths: ['/auth/refresh'],
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-
-      if (response.data?.token) {
-        this.inMemoryToken = response.data.token;
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(
-            LocalStorageKeys.KEY_AUTH_TOKEN,
-            JSON.stringify({ value: response.data.token, type: 'Bearer' }),
-          );
-        }
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }
-
-  protected override async onAuthFailure(): Promise<void> {
-    this.inMemoryToken = undefined;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-    }
-  }
-}
-
-export class SecureRestDataProvider extends DefaultRestDataProvider {
-  protected override createNetworkService(): DefaultNetworkRequestService {
-    return new SecureNetworkService({
-      name: 'secure-network-service',
-      baseUrl: this.restDataProviderOptions.url,
-      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
-      noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
-      headers: this.restDataProviderOptions.headers,
-      authRecovery: this.restDataProviderOptions.authRecovery,
-    });
-  }
-}
-
-@configuration()
-export class NetworkConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions(): IRestDataProviderOptions {
-    return {
-      url: 'https://api.example.com',
-      headers: {
-        'x-client-name': 'admin-portal',
-      },
-      noAuthPaths: ['/auth/sign-in'],
-      authRecovery: {
-        refreshTokenPath: '/auth/refresh',
-      },
-    };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  dataProvider() {
-    return this.application.instantiate(SecureRestDataProvider).value(this.application);
-  }
-}
-```
-
-The configuration relies on the following defaults and container keys:
-- Default class: `DefaultNetworkRequestService`, instantiated by `DefaultRestDataProvider` in `packages/admin/src/providers/rest-data.ts`.
-- Options key: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (`@app/application/options/rest/data`).
-- Provider key: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` (`@app/application/data/rest/default`).
-
-## Options
-
-`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `name` | `string` | *(required)* | Identifier scope used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`. |
-| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`. |
-| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. Keys are converted to lowercase and merged with runtime headers. |
-| `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
-| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. |
-| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
-
-## Example
-
-The following example demonstrates an application service that accesses the network service from `dataProvider.getNetworkService()`, sets runtime headers, and executes a custom request via `doRequest`:
-
 ```ts
 import {
   CoreBindings,
@@ -224,9 +57,64 @@ export class AuditReportService {
 }
 ```
 
+## What it does
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
+| `BaseNetworkRequest` | class | Base network helper linking a service instance to an underlying fetcher |
+| `NodeFetchNetworkRequest` | class | Transport helper wrapping `NodeFetcher` with default JSON headers |
+| `NodeFetcher` | class | HTTP transport executing standard `fetch` with timeout and abort support |
+| `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
+| `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
+| `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
+| `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
+| `RequestTypes` | class | React-admin and kernel request type constants |
+| `RequestCountData` | class | Flag constants for count responses (`DATA_ONLY`, `DATA_WITH_COUNT`) |
+| `RequestChannel` | class | Default channel constant (`WEB`) |
+| `LocalStorageKeys` | class | Local storage key constants including `KEY_AUTH_TOKEN` |
+| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`) |
+| `IDataSourceAuth` | interface | Authentication configuration shared with an `HttpDataSource` |
+| `IDataSourceRequestContext` | interface | Request path context passed to data source auth resolvers |
+| `INoAuthOptions` | interface | Options defining path strings and regex patterns that bypass authentication |
+| `IAuthRecoveryOptions` | interface | Authentication recovery configuration (`refreshTokenPath`) |
+| `IGetRequestPropsParams` | interface | Input parameters passed to `getRequestProps` |
+| `IGetRequestPropsResult` | interface | Normalized headers and body returned by `getRequestProps` |
+
+## How to provide it
+
+`DefaultNetworkRequestService` is not bound directly under its own container key. Instead, the REST data provider (`DefaultRestDataProvider`, bound under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`) instantiates it in its protected `createNetworkService()` method and caches it. Callers access the service via `dataProvider.getNetworkService()`.
+
+The data provider constructs the service using options injected from `CoreBindings.REST_DATA_PROVIDER_OPTIONS`:
+- `url` becomes `baseUrl`
+- `headers` becomes base headers
+- `noAuthPaths` and `noAuthPathRegex` configure unauthenticated endpoints
+- `authRecovery` configures token refresh exclusion paths
+
+To supply custom network behavior - such as handling token refresh or in-memory credentials - subclass `DefaultNetworkRequestService` and override `createNetworkService()` on a `DefaultRestDataProvider` subclass (see [Auth recovery](../best-practices/auth-recovery) and [Data provider](./data-provider)).
+
+The configuration relies on the following defaults and container keys:
+- Default class: `DefaultNetworkRequestService`, instantiated by `DefaultRestDataProvider` in `packages/admin/src/providers/rest-data.ts`.
+- Options key: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (`@app/application/options/rest/data`).
+- Provider key: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` (`@app/application/data/rest/default`).
+
+## Options
+
+`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `name` | `string` | *(required)* | Identifier scope used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`. |
+| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`. |
+| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. Keys are converted to lowercase and merged with runtime headers. |
+| `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
+| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. |
+| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
+
 ## Fetch transport and timeout
 
-ARDOR uses standard platform `fetch` through `NodeFetchNetworkRequest` and `NodeFetcher`. `DefaultNetworkRequestService` holds a `NodeFetchNetworkRequest` (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) which delegates to `NodeFetcher`. The framework ships no external HTTP client libraries.
+ARDOR uses standard platform `fetch` through `NodeFetchNetworkRequest` and `NodeFetcher`. `DefaultNetworkRequestService` holds a `NodeFetchNetworkRequest` (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) which delegates to `NodeFetcher`.
 
 `BaseNetworkRequest` defines the common transport abstraction in `packages/kernel/src/helpers/networks/base-request.ts`. `NodeFetchNetworkRequest` extends it by configuring `fetch` as its underlying worker:
 - `getNetworkService()` returns the fetcher instance implementing `IFetchable`.

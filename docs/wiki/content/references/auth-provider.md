@@ -5,26 +5,7 @@ description: DefaultAuthProvider and DefaultAuthService - sign-in contract, stor
 
 # Auth provider
 
-`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. An application configures endpoint paths through `IAuthProviderOptions`, overrides protected hooks on `DefaultAuthProvider` for custom authentication protocols, or omits authentication entirely.
-
-## What it does
-
-`DefaultAuthProvider` handles authentication credentials, session persistence, and authorization checks for react-admin. On sign-in, it transmits credentials to the API, validates the resulting session token and identity, and persists the session to `localStorage`. On subsequent requests and page changes, it verifies token presence, evaluates error statuses, extracts user identity, and checks permissions.
-
-| Export | Kind | Purpose |
-| --- | --- | --- |
-| `DefaultAuthProvider` | class | react-admin auth provider implementing `IAuthProvider` |
-| `DefaultAuthService` | class | Service managing auth tokens, identity, and permissions in `localStorage` |
-| `IAuthProviderOptions` | interface | Configuration options for authentication routes under `paths` |
-| `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
-| `IReactAdminAuthProvider` | interface | Standard react-admin auth provider contract |
-| `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
-| `LocalStorageKeys` | class | `localStorage` key constants: `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` |
-| `CoreBindings` | class | Container keys: `DEFAULT_AUTH_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE` |
-
-## How to provide it
-
-The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON. As described in [The bind order](../guides/core-concepts/configuration), the three keys this page needs (`CoreBindings.AUTH_PROVIDER_OPTIONS`, `CoreBindings.DEFAULT_AUTH_SERVICE`, and `CoreBindings.DEFAULT_AUTH_PROVIDER`) are bound by `@provide` methods of the application's configuration class:
+`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. Bind `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE`, and `DEFAULT_AUTH_PROVIDER` in an application [configuration](../guides/core-concepts/configuration) class:
 
 ```ts
 import {
@@ -83,7 +64,18 @@ export class AuthConfiguration {
 }
 ```
 
-The default provider class is `DefaultAuthProvider` in `packages/admin/src/providers/auth.ts`. The default session storage service is `DefaultAuthService` in `packages/kernel/src/base/services/auth.ts`. The container binding keys defined in `packages/kernel/src/common/keys.ts` are `CoreBindings.AUTH_PROVIDER_OPTIONS`, `CoreBindings.DEFAULT_AUTH_SERVICE`, and `CoreBindings.DEFAULT_AUTH_PROVIDER`.
+## Exports
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DefaultAuthProvider` | class | react-admin auth provider implementing `IAuthProvider` in `packages/admin/src/providers/auth.ts` |
+| `DefaultAuthService` | class | Service managing auth tokens, identity, and permissions in `localStorage` in `packages/kernel/src/base/services/auth.ts` |
+| `IAuthProviderOptions` | interface | Configuration options for authentication routes under `paths` |
+| `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
+| `IReactAdminAuthProvider` | interface | Standard react-admin auth provider contract |
+| `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
+| `LocalStorageKeys` | class | `localStorage` key constants: `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` |
+| `CoreBindings` | class | Container keys: `DEFAULT_AUTH_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE` |
 
 ## Options
 
@@ -98,106 +90,6 @@ The default provider class is `DefaultAuthProvider` in `packages/admin/src/provi
 
 > [!NOTE]
 > The post-login redirect is `paths.afterLogin` inside `IAuthProviderOptions` (`CoreBindings.AUTH_PROVIDER_OPTIONS`), not a top-level option.
-
-```ts
-import { type IAuthProviderOptions } from '@venizia/ardor';
-
-export const authProviderOptions: IAuthProviderOptions = {
-  paths: {
-    signIn: '/auth/sign-in',
-    checkAuth: '/auth/whoami',
-    afterLogin: '/dashboard',
-  },
-};
-```
-
-## Example
-
-The following complete example demonstrates a custom auth provider subclass that accepts email credentials, enforces an admin role check before saving the session, and redirects to a custom sign-in route. It binds the subclass under `CoreBindings.DEFAULT_AUTH_PROVIDER` in a configuration class:
-
-```ts
-import {
-  type AnyType,
-  type BaseArdorApplication as TArdorApplication,
-  configuration,
-  CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultRestDataProvider,
-  type IAuthProviderOptions,
-  type IRestDataProviderOptions,
-  type ISignInSession,
-  inject,
-  provide,
-} from '@venizia/ardor';
-
-export class CustomAuthProvider extends DefaultAuthProvider {
-  protected override get loginPagePath(): string {
-    return '/signin';
-  }
-
-  protected override buildSignInBody(opts: { params: AnyType }): unknown {
-    return {
-      email: opts.params?.email,
-      password: opts.params?.password,
-    };
-  }
-
-  protected override resolveUsername(opts: { params: AnyType }): string {
-    return opts.params?.email ?? '';
-  }
-
-  protected override async beforeSaveSession(opts: {
-    session: ISignInSession;
-    params: AnyType;
-  }): Promise<void> {
-    if (!opts.session.roles.includes('admin')) {
-      throw new Error('[signIn] Only administrators may sign in');
-    }
-  }
-}
-
-@configuration()
-export class CustomAuthConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions(): IRestDataProviderOptions {
-    return {
-      url: 'https://api.example.com',
-      noAuthPaths: ['/auth/sign-in'],
-    };
-  }
-
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions(): IAuthProviderOptions {
-    return {
-      paths: {
-        signIn: '/auth/sign-in',
-        afterLogin: '/dashboard',
-      },
-    };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService(): DefaultAuthService {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(CustomAuthProvider).value(this.application);
-  }
-}
-```
 
 ## The sign-in contract
 
@@ -235,25 +127,6 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 
 `username` defaults to `params.username ?? ''`, while `provider` and `referenceId` default to empty strings. When `roles` is omitted in `saveAuth()`, as occurs during token refreshes, the existing stored permissions remain untouched.
 
-```ts
-import { DefaultAuthService, LocalStorageKeys } from '@venizia/ardor';
-
-const authService = new DefaultAuthService();
-
-authService.saveAuth({
-  userId: 'user-42',
-  username: 'alice',
-  token: { value: 'eyJhbGciOi...', type: 'Bearer' },
-  roles: ['admin', 'editor'],
-});
-
-const token = authService.getAuth();
-const identity = authService.getUser();
-const roles = authService.getRoles();
-
-const rawToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-```
-
 ## Auth provider methods
 
 `DefaultAuthProvider.value()` binds each method to the provider instance before handing it to react-admin:
@@ -272,7 +145,7 @@ const rawToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
 
 ## Overridable hooks
 
-`DefaultAuthProvider` in `packages/admin/src/providers/auth.ts` encapsulates behaviour in protected getters and methods. Subclasses can override any step of authentication while keeping the rest (see the complete subclass example under [Example](#example)):
+`DefaultAuthProvider` in `packages/admin/src/providers/auth.ts` encapsulates behaviour in protected getters and methods:
 
 | Hook / Property | Signature | Default Implementation | Purpose |
 | --- | --- | --- | --- |
@@ -287,6 +160,42 @@ const rawToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
 | `resolveUsername(opts)` | `opts: { params: AnyType } => string` | `opts.params?.username ?? ''` | Determines username string saved in user identity |
 | `beforeSaveSession(opts)` | `opts: { session: ISignInSession; params: AnyType } => Promise<void>` | `Promise.resolve()` | Validation hook before persistence; throwing rejects login and saves nothing |
 | `saveSession(opts)` | `opts: { session: ISignInSession; username: string } => void` | `authService.saveAuth(...)` | Saves token, identity, and permissions to `localStorage` |
+
+Subclasses can override any hook to customize authentication:
+
+```ts
+import {
+  type AnyType,
+  DefaultAuthProvider,
+  type ISignInSession,
+} from '@venizia/ardor';
+
+export class CustomAuthProvider extends DefaultAuthProvider {
+  protected override get loginPagePath(): string {
+    return '/signin';
+  }
+
+  protected override buildSignInBody(opts: { params: AnyType }): unknown {
+    return {
+      email: opts.params?.email,
+      password: opts.params?.password,
+    };
+  }
+
+  protected override resolveUsername(opts: { params: AnyType }): string {
+    return opts.params?.email ?? '';
+  }
+
+  protected override async beforeSaveSession(opts: {
+    session: ISignInSession;
+    params: AnyType;
+  }): Promise<void> {
+    if (!opts.session.roles.includes('admin')) {
+      throw new Error('[signIn] Only administrators may sign in');
+    }
+  }
+}
+```
 
 ## An application with no sign-in
 
@@ -331,11 +240,7 @@ export class PublicConfiguration {
 
 ## Related
 
-- [Add sign-in tutorial](../guides/tutorials/add-sign-in) - Step-by-step tutorial on adding authentication to an ARDOR admin
-- [Auth recovery best practices](../best-practices/auth-recovery) - Handling token refresh and 401 error recovery
-- [Application reference](./application) - Application lifecycle, container methods, and startup sequence
-- [Binding keys reference](./binding-keys) - Catalog of CoreBindings and LocalStorageKeys
-- [Data provider reference](./data-provider) - REST data provider options, send method, and data fetching
-- [Network reference](./network) - Network service options, error handling, and request headers
-- [Permission reference](./permission) - Role-based access control and permission providers
-- [5-minute quickstart](../guides/get-started/5-minute-quickstart) - Scaffold a complete ARDOR application
+- [Add sign-in](../guides/tutorials/add-sign-in) - Step-by-step tutorial on adding authentication to an ARDOR admin
+- [Auth recovery](../best-practices/auth-recovery) - Handling token refresh and 401 error recovery
+- [Permission provider](./permission) - Role-based access control and permission providers
+- [REST data provider](./data-provider) - REST data provider options, send method, and data fetching

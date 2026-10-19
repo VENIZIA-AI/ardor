@@ -1,15 +1,15 @@
 :root {
   /* Non-brand layout/component vars (brand/bg/text supplied by design-tokens.css) */
-  --vp-code-block-bg: #EEEEEE;
-  --vp-sidebar-bg-color: #EEEEEE;
-  --vp-c-bg-elv: #EEEEEE;
+  --vp-code-block-bg: #eef2f3;
+  --vp-sidebar-bg-color: #eef2f3;
+  --vp-c-bg-elv: #eef2f3;
 
   /* Brand button (active + hover-text not defined in design-tokens.css) */
   --vp-button-brand-active-bg: var(--ar-brand);
   --vp-button-brand-hover-text: #EEE2DE;
 
   /* Alt button */
-  --vp-button-alt-bg: #EEEEEE;
+  --vp-button-alt-bg: #eef2f3;
   --vp-button-alt-hover-bg: #D59572;
   --vp-button-alt-active-bg: var(--ar-aqua);
   --vp-button-alt-text: #111111;
@@ -24,9 +24,9 @@
 
 html.dark {
   /* Dark theme non-brand vars (brand/bg/text supplied by design-tokens.css .dark block) */
-  --vp-code-block-bg: #181818;
-  --vp-sidebar-bg-color: #181818;
-  --vp-c-bg-elv: #181818;
+  --vp-code-block-bg: #121820;
+  --vp-sidebar-bg-color: #121820;
+  --vp-c-bg-elv: #121820;
 }
 
 /* Content container */

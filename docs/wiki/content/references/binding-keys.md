@@ -19,7 +19,7 @@ export const useRestDataProvider = () => {
 
 ## CoreBindings
 
-`CoreBindings` (defined in `packages/kernel/src/common/keys.ts`) contains exactly eleven keys.
+`CoreBindings` is defined in `packages/kernel/src/common/keys.ts`.
 
 | Constant | Value | Bound by | Read by | Status |
 |---|---|---|---|---|
@@ -35,11 +35,7 @@ export const useRestDataProvider = () => {
 | `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
 | `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
 
-The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances. The application lifecycle binds each as a lazy singleton.
-
-An application with no sign-in leaves `DEFAULT_AUTH_PROVIDER` unbound; `ArdorApplication` then runs without an auth provider.
-
-`preConfigure()` binds `APPLICATION_INSTANCE`, `APPLICATION_INFO` and `FEATURES` itself; the others come from the application. For the exact sequence in which bindings take effect, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
+For binding order in the application lifecycle, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
 
 ## LocalStorageKeys
 
@@ -91,32 +87,9 @@ export const useUserService = () => {
 };
 ```
 
-Alternatively, resolve a class binding by `target` without augmenting keys:
-
-```tsx
-import { useInjectable } from '@venizia/ardor';
-
-class ReportService {
-  build() {
-    return 'report';
-  }
-}
-
-export const useReportService = () => {
-  return useInjectable<ReportService>({ target: ReportService });
-};
-```
-
 ## Related
 
 - [Configuration](../guides/core-concepts/configuration) - declaring `@configuration()` classes and `@provide` methods
 - [Application](application) - `preConfigure()`, `bindContext()`, and application lifecycle
-- [Data provider](data-provider) - `DEFAULT_REST_DATA_PROVIDER` and `REST_DATA_PROVIDER_OPTIONS`
-- [Auth provider](auth-provider) - `DEFAULT_AUTH_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, and `DEFAULT_AUTH_SERVICE`
-- [i18n](i18n) - `DEFAULT_I18N_PROVIDER` and `I18N_PROVIDER_OPTIONS`
-- [Permission](permission) - `PERMISSION_PROVIDER` contract
-- [Features](features) - `FEATURES` key and mounted packages
 - [Hooks](hooks) - `useInjectable` hook reference
-- [Types](types) - type definitions and helpers
 - [Module augmentation](../best-practices/module-augmentation) - augmenting `IUseInjectableKeysOverrides`
-- [Migrating from ra-core-infra](../guides/migrations/from-ra-core-infra) - migrating container bindings

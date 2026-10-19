@@ -5,31 +5,7 @@ description: Options, configuration, HTTP mapping, and error handling for Defaul
 
 # REST data provider
 
-`DefaultRestDataProvider` maps react-admin data queries (`getList`, `getOne`, `create`, `update`, `delete`, and their batch variants) to REST HTTP requests against an IGNIS backend. It encodes query filters into the IGNIS JSON filter syntax, sends bulk selectors in request bodies, extracts collection totals from `Content-Range` headers, and manages request authorization and token refresh.
-
-## What it does
-
-`DefaultRestDataProvider` is an inversion-of-control provider that instantiates and returns an `IDataProvider` instance. The returned provider implements react-admin's standard nine data methods using positional parameters `(resource, params)`, and adds three members for custom requests, network service access, and repository authentication. For backends that expose a separate count endpoint instead of `Content-Range`, `CountRestDataProvider` extends this class to fetch list counts in parallel (see [CountRestDataProvider](../extensions/count-provider)).
-
-| Export | Kind | Purpose |
-| --- | --- | --- |
-| `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that instantiates and configures the default REST `IDataProvider`. |
-| `CountRestDataProvider<TResource>` | class | Subclass of `DefaultRestDataProvider` that queries `/{resource}/count` for list totals. |
-| `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
-| `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
-| `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
-| `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
-| `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
-| `ISendResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
-| `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
-| `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
-| `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
-| `RequestBodyTypes` | class | Body serialization constants (`json`, `form-data`, `x-www-form-urlencoded`, `binary`, `none`). |
-| `RequestCountData` | class | Count request constants (`DATA_ONLY`, `DATA_WITH_COUNT`). |
-
-## How to provide it
-
-The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON. As described in [The bind order](../guides/core-concepts/configuration), the options and the provider on this page are bound by `@provide` methods of the application configuration class:
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON:
 
 ```ts
 import {
@@ -66,16 +42,29 @@ export class RestDataConfiguration {
 }
 ```
 
-The configuration relies on the following defaults and container keys:
-- Default class: `DefaultRestDataProvider`, defined in `packages/admin/src/providers/rest-data.ts`.
-- Options key: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (`@app/application/options/rest/data`).
-- Provider key: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` (`@app/application/data/rest/default`).
+## What it does
 
-The options are read through the constructor injection of `REST_DATA_PROVIDER_OPTIONS`, and the provider also needs `APPLICATION_INFO` (bound by `preConfigure()`). Calling `this.application.instantiate(DefaultRestDataProvider)` resolves both injections from the container. Calling `.value(this.application)` extracts the `IDataProvider` instance passed to react-admin.
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) instantiates the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that instantiates and configures the default REST `IDataProvider`. |
+| `CountRestDataProvider<TResource>` | class | Subclass of `DefaultRestDataProvider` that queries `/{resource}/count` for list totals. |
+| `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
+| `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
+| `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
+| `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
+| `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
+| `ISendResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
+| `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
+| `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
+| `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
+| `RequestBodyTypes` | class | Body serialization constants (`json`, `form-data`, `x-www-form-urlencoded`, `binary`, `none`). |
+| `RequestCountData` | class | Count request constants (`DATA_ONLY`, `DATA_WITH_COUNT`). |
 
 ## Options
 
-`IRestDataProviderOptions` extends `INoAuthOptions` to configure network connectivity, authentication exclusions, default headers, and token recovery.
+`IRestDataProviderOptions` extends `INoAuthOptions` to configure network connectivity, authentication exclusions, default headers, and token recovery. For custom token refresh workflows, see [Auth recovery](../best-practices/auth-recovery).
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -86,31 +75,7 @@ The options are read through the constructor injection of `REST_DATA_PROVIDER_OP
 | `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header. Defaults to `RequestChannel.WEB` (`'100_WEB'`). |
 | `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint to prevent recursive 401 recovery loops. |
 
-```ts
-import { type IRestDataProviderOptions } from '@venizia/ardor';
-
-export const restDataProviderOptions: IRestDataProviderOptions = {
-  url: 'https://api.example.com',
-  noAuthPaths: ['/auth/sign-in', '/health'],
-  noAuthPathRegex: [/^public\//],
-  headers: {
-    'x-client-id': 'admin-console',
-  },
-  requestTracingChannel: 'admin',
-  authRecovery: {
-    refreshTokenPath: '/auth/refresh',
-  },
-};
-```
-
-Path exclusion and auth recovery work through the underlying network service:
-- `noAuthPaths` checks exact equality against the requested resource name. Entries are compared exactly as written, so a path written without the leading slash does not match.
-- `noAuthPathRegex` compiles string patterns with `new RegExp(...)` and tests against both the resource string and the full joined URL path.
-- `authRecovery.refreshTokenPath` matches against joined request paths. If a 401 occurs on this path, or on any path matching `noAuthPaths` or `noAuthPathRegex`, automatic retry is skipped. See [Auth recovery](../best-practices/auth-recovery) for custom token refresh workflows.
-
 ## Example
-
-The following example demonstrates standard CRUD queries, pagination, and sorting using an injected `IDataProvider`:
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -153,8 +118,6 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 ## HTTP request and response mapping
 
-The table below outlines how each react-admin data method maps to HTTP verbs, request paths, payloads, and returned structures.
-
 | react-admin method | HTTP method | Path | Request body / query | Result conversion |
 | --- | --- | --- | --- | --- |
 | `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `offset`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
@@ -168,12 +131,11 @@ The table below outlines how each react-admin data method maps to HTTP verbs, re
 | `deleteMany` | `DELETE` | `/{resource}` | JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
 
 > [!NOTE]
-> `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string. Long lists of IDs in query parameters frequently exceed web server and proxy request-line limits (resulting in HTTP 414 or 431 errors). Backend endpoints handling bulk operations must support body-based selectors.
+> `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string to avoid HTTP 414 and 431 errors on long ID lists. Backend endpoints handling bulk operations must support body-based selectors.
 
 ## Filter and pagination encoding
 
 `getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })` in `packages/admin/src/providers/rest-data.ts`:
-
 - **Filter modes**: If `params.filter.where` is defined, the filter is treated as an explicit IGNIS filter and sent as `{ ...filterInput, where: { ...filterInput.where } }`. Otherwise, flat keys in `params.filter` become properties in `where`, except `include`, `fields`, `params`, and `noLimit`, which are lifted to the top level of the filter.
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
 - **Pagination**: By default, `limit` is set to `perPage`, and `skip` and `offset` are set to `(page - 1) * perPage`. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
@@ -183,9 +145,8 @@ The table below outlines how each react-admin data method maps to HTTP verbs, re
 
 ## Extended provider methods
 
-Beyond react-admin's nine standard operations, `IDataProvider` exposes three additional framework members:
-
-1. `send<ReturnType = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<ReturnType>>`: Issues arbitrary HTTP requests (custom verbs, non-CRUD paths, file uploads, binary downloads) through the configured network transport with automatic authorization, tracing, and 401 refresh.
+`IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
+1. `send<ReturnType = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<ReturnType>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
@@ -226,7 +187,6 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 ## Error handling
 
 When the backend responds with an HTTP status outside the 200-299 range:
-
 1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` unwraps the response payload using the `'error'` root key (`HttpResponseReader.readError`).
 2. The service creates an application error via `getError` with:
    - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
