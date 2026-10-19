@@ -22,6 +22,7 @@ import {
   toStringDecimal,
 } from '@/utilities/parse';
 import { parseQueryString, toQueryString } from '@/utilities/url';
+import { rejectionOf } from '@/__tests__/rejection';
 import { toDataUrl } from '@/utilities/file';
 
 describe('boolean utilities', () => {
@@ -251,11 +252,67 @@ describe('URL utilities', () => {
 });
 
 describe('file utilities', () => {
-  // SOURCE BUG: toDataUrl relies on FileReader which is not defined in Bun test environment
-  test.failing('toDataUrl resolves a data URL for a Blob', async () => {
-    const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
-    const dataUrl = await toDataUrl({ blob });
+  // Bun has no FileReader, so a stub stands in: it reports a result (or an error) on the next tick,
+  // like the browser's. The suite also removes Promise.withResolvers (ES2024), which a Chrome 101
+  // WebView lacks, to prove toDataUrl does not need it.
+  type TStubReaderOptions = { fail?: boolean; text: string };
 
-    expect(dataUrl).toMatch(/^data:text\/plain;base64,/);
+  const withStubReader = async (
+    opts: TStubReaderOptions,
+    run: () => Promise<void>,
+  ): Promise<void> => {
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const originalReader = globals.FileReader;
+    const originalWithResolvers = (Promise as unknown as Record<string, unknown>).withResolvers;
+
+    class StubFileReader {
+      result: string | null = null;
+      onloadend: (() => void) | null = null;
+      onerror: ((event: unknown) => void) | null = null;
+
+      readAsDataURL(blob: Blob) {
+        queueMicrotask(() => {
+          if (opts.fail) {
+            this.onerror?.(new Error('read failed'));
+            return;
+          }
+          this.result = `data:${blob.type};base64,${Buffer.from(opts.text).toString('base64')}`;
+          this.onloadend?.();
+        });
+      }
+    }
+
+    globals.FileReader = StubFileReader;
+    delete (Promise as unknown as Record<string, unknown>).withResolvers;
+
+    try {
+      await run();
+    } finally {
+      globals.FileReader = originalReader;
+      (Promise as unknown as Record<string, unknown>).withResolvers = originalWithResolvers;
+    }
+  };
+
+  test('toDataUrl resolves a data URL for a Blob, without Promise.withResolvers', async () => {
+    await withStubReader({ text: 'ARDOR test content' }, async () => {
+      expect(typeof (Promise as unknown as Record<string, unknown>).withResolvers).toBe(
+        'undefined',
+      );
+
+      const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
+      const dataUrl = await toDataUrl({ blob });
+
+      expect(dataUrl.startsWith('data:text/plain')).toBe(true);
+      expect(dataUrl.endsWith(`;base64,${btoa('ARDOR test content')}`)).toBe(true);
+    });
+  });
+
+  test('toDataUrl rejects when the reader fails', async () => {
+    await withStubReader({ fail: true, text: '' }, async () => {
+      const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
+      const error = await rejectionOf(toDataUrl({ blob }));
+
+      expect((error as Error).message).toBe('read failed');
+    });
   });
 });
