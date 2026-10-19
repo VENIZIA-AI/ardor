@@ -1,0 +1,85 @@
+# Package test suites, type-check, the browser-purity gate, the clean-install gate, the bundle and
+# layering gates, and the gate scripts' own tests.
+
+# Packages with no suite of their own; their `test-<pkg>` says so and passes.
+NO_TEST := ardor
+TEST_PACKAGES := $(filter-out $(NO_TEST),$(PACKAGES))
+
+# Packages with an entry claimed browser-pure (scripts/purity/manifest.ts) - all of them.
+PURE := $(PACKAGES)
+
+TEST_TARGETS := $(addprefix test-,$(PACKAGES))
+PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
+CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
+
+.PHONY: test test-all test-scripts purity purity-test clean-install layer-check cycles-check \
+        size-check $(TEST_TARGETS) $(PURITY_TARGETS) $(CLEAN_INSTALL_TARGETS)
+
+# ----------------------------------------------------------------------------
+# TEST TARGETS (Bun test runner only)
+# The one home of the test command: CI calls these targets, and so should you. `.env.test` carries
+# the test-only settings (B-08) and the preload installs each package's DOM or storage stub - there
+# is no bunfig.toml, so a bare `bun test` inside a package skips it and fails. BUN_TEST_FLAGS is an
+# optional pass-through (`--isolate`, `--parallel`). Needs a build first (B-05).
+# ----------------------------------------------------------------------------
+BUN_TEST_FLAGS ?=
+
+test: test-all
+
+test-all: $(addprefix test-,$(TEST_PACKAGES))
+
+$(addprefix test-,$(TEST_PACKAGES)): test-%:
+	@cd packages/$* && bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
+
+$(addprefix test-,$(NO_TEST)):
+	@echo "ℹ️  No test suite in this package - skipping."
+
+# The repository gate scripts' own regression tests - nothing else runs them.
+test-scripts:
+	@echo "🔍 Running the repository gate scripts' regression tests..."
+	@bun test scripts/__tests__
+
+# ----------------------------------------------------------------------------
+# PURITY TARGETS
+# Bundles each entry claimed browser-pure and fails on node builtins or globals.
+# Requires the package's dist - run the matching build target first.
+# ----------------------------------------------------------------------------
+purity:
+	@echo "🔍 Checking browser purity for all claimed entries..."
+	@bun scripts/purity/cli.ts
+
+# The probe's own regression tests. They live outside every package, so nothing else runs them.
+purity-test:
+	@echo "🔍 Running the purity probe's regression tests..."
+	@bun test scripts/purity/__tests__
+
+$(addprefix purity-,$(PURE)): purity-%:
+	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
+	@bun scripts/purity/cli.ts $*
+
+# ----------------------------------------------------------------------------
+# CLEAN-INSTALL TARGETS
+# Packs every package and loads each published entry from an empty project (Bun, Node ESM, browser
+# build). Run after a build; one package at a time takes its siblings from the registry.
+# ----------------------------------------------------------------------------
+clean-install:
+	@echo "🔍 Loading every published sub-path from a clean install..."
+	@bun scripts/clean-install/cli.ts
+
+$(CLEAN_INSTALL_TARGETS): clean-install-%:
+	@echo "🔍 Loading every published sub-path of $* from a clean install..."
+	@bun scripts/clean-install/cli.ts $*
+
+# ----------------------------------------------------------------------------
+# LAYERING AND BUNDLE GATES - run after a build.
+# ----------------------------------------------------------------------------
+layer-check:
+	@bun scripts/layer-boundaries.ts
+
+# `--max 0` is what makes this a gate; without it the script only reports.
+cycles-check:
+	@$(foreach p,$(PACKAGES),bun scripts/module-cycles.ts packages/$(p)/dist --max 0 &&) true
+
+# Bundle budgets, measured brotlied with every third-party peer external.
+size-check:
+	@$(foreach p,$(PACKAGES),$(MAKE) --no-print-directory -C packages/$(p) size &&) true

@@ -27,22 +27,18 @@ An ARDOR application with `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBin
 | `ISendParams` / `ISendResponse` | interfaces | Input and output of `send()` |
 | `ICustomParams` | interface | Extra `params` bag accepted by the read calls |
 | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData` | classes | Constants used in `send()` and internally |
-| `HeaderConsts` | class | Header names, including `CONTENT_RANGE` |
+| `HeaderConstants` | class | Header names, including `CONTENT_RANGE` |
 
 ## Options: `IRestDataProviderOptions`
 
 ```ts no-check
 interface IRestDataProviderOptions {
   url: string;
-  useAuth?: boolean;                 // default true
   noAuthPaths?: Array<string>;
   noAuthPathRegex?: string | RegExp | Array<string | RegExp>;
   headers?: HeadersInit;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
   requestTracingChannel?: string;
   authRecovery?: {
-    refreshToken?: () => Promise<unknown>;
-    onAuthFailure?: () => ValueOrPromise<unknown>;
     refreshTokenPath?: string;
   };
 }
@@ -51,33 +47,26 @@ interface IRestDataProviderOptions {
 | Option | Where it goes | Meaning |
 | --- | --- | --- |
 | `url` | `baseUrl` of the internal `DefaultNetworkRequestService` | Base URL every resource path is appended to |
-| `useAuth` | network service | Attach the authorization header by default. Set `false` for apps that only call public APIs |
 | `noAuthPaths` | network service | Exact resource paths requested without the authorization header |
-| `noAuthPathRegex` | network service | Pattern(s) of paths requested without the authorization header. Strings are compiled with `new RegExp(...)` |
+| `noAuthPathRegex` | network service | Pattern(s) of paths requested without the authorization header. Strings are compiled with `new RegExp(...)`. For an API with no sign-in, `/./` sends no token at all |
 | `headers` | network service | Default headers for every request |
-| `requestTracingId` | `getRequestProps` on each call | `true`, or a function that receives `{ applicationInfo }` and returns the id to send |
 | `requestTracingChannel` | `getRequestProps` on each call | Channel value to send alongside the tracing id |
-| `authRecovery` | network service | Hooks used when a request fails authentication |
+| `authRecovery` | network service | `refreshTokenPath` only: a request to this path never starts a refresh |
 
-The constructor builds one `DefaultNetworkRequestService` named `default-application-network-service` from `url`, `useAuth`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery`. The full options object, together with `applicationInfo`, is then passed to `networkService.getRequestProps(...)` on every call - that is how `requestTracingId` and `requestTracingChannel` reach the request. How the network service turns them into headers is covered in [Network](../references/network).
+The options hold data. Behaviour is in protected hooks of the network service, which you override in a subclass: `refreshToken` and `onAuthFailure` for a `401`, `resolveAuthToken` for the token, `isNoAuthPath` for a custom no-auth rule, `buildRequestTracingId({ applicationInfo })` for the tracing id (default `<application name>_<uuid>`). The subclass reaches the provider through `createNetworkService()`, below. See [Auth recovery](../best-practices/auth-recovery).
+
+`createNetworkService()` builds one `DefaultNetworkRequestService` named `default-application-network-service` from `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery`. The full options object, together with `applicationInfo`, is passed to `networkService.getRequestProps(...)` on every call - that is how `requestTracingChannel` reaches the request, next to the tracing id the service's `buildRequestTracingId` hook returns. How the network service turns them into headers is covered in [Network](../references/network).
 
 ```ts
 import { type IRestDataProviderOptions } from '@venizia/ardor';
 
 const restDataProviderOptions: IRestDataProviderOptions = {
   url: 'https://api.example.com',
-  useAuth: true,
   noAuthPaths: ['auth/sign-in', 'auth/sign-up'],
   noAuthPathRegex: [/^public\//, 'health'],
   headers: { 'x-client': 'shop-admin' },
-  requestTracingId: ({ applicationInfo }) => `${applicationInfo.name}-${Date.now()}`,
   requestTracingChannel: 'admin',
-  authRecovery: {
-    refreshTokenPath: 'auth/refresh',
-    onAuthFailure: () => {
-      window.location.assign('/login');
-    },
-  },
+  authRecovery: { refreshTokenPath: 'auth/refresh' },
 };
 ```
 
@@ -93,10 +82,24 @@ class DefaultRestDataProvider<TResource extends string = string>
 
   value(container: Container): IDataProvider<TResource>;
   getNetworkService(): DefaultNetworkRequestService;
+
+  protected createNetworkService(): DefaultNetworkRequestService;
+  protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
+    filter: Record<string, AnyType>;
+    queryKey: Record<string, AnyType>;
+    extra: Record<string, AnyType> | undefined;
+  };
 }
 ```
 
-The class methods take an options object: `getList({ resource, params })`. `value()` wraps them in the shape react-admin expects, where every method is positional: `getList(resource, params)`. `send` and `getNetworkService` keep their own shape on that object.
+The class methods take an options object: `getList({ resource, params })`. `value()` wraps them in the shape react-admin expects, where every method is positional: `getList(resource, params)`. That is the one documented exception to the options-object rule: the signatures on the object `value()` returns are react-admin's own, and they stay positional. `send` and `getNetworkService` keep their own shape on that object.
+
+### Protected hooks
+
+Two protected methods are the places to change behaviour in a subclass:
+
+- `createNetworkService(): DefaultNetworkRequestService` builds the network service the provider sends through. It is called once, on first use, so a subclass's own fields are set by then. Override it to return a subclass of the service that overrides its hooks (`refreshToken`, `onAuthFailure`, `resolveAuthToken`, ...), then bind the provider subclass under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. [Auth recovery](../best-practices/auth-recovery#wiring-the-refresh) has the full example.
+- `buildListFilter({ params }): { filter, queryKey, extra }` turns react-admin's list params into the IGNIS filter, the extra query keys and the list extras. `getList` and `getManyReference` both call it - the algorithm is in [`getList` and `getManyReference`](#getlist-and-getmanyreference-building-the-filter). Override it to change how a list is filtered for both calls at once.
 
 ```ts
 import {
@@ -143,9 +146,9 @@ const products = await dataProvider.getList('products', {
 | `getManyReference` | GET | `/{resource}` | Same as `getList`, plus `where[target] = id` |
 | `create` | POST | `/{resource}` | body = `params.data` |
 | `update` | PATCH | `/{resource}/{id}` | body = `params.data` |
-| `updateMany` | PATCH | `/{resource}` | `filter = { where: { id: { inq: ids } } }`; body = `params.data` |
+| `updateMany` | PATCH | `/{resource}` | body = `{ ...params.data, where: { id: { inq: ids } } }`; nothing in the query |
 | `delete` | DELETE | `/{resource}/{id}` | - |
-| `deleteMany` | DELETE | `/{resource}/{id}`, one request per id | - |
+| `deleteMany` | DELETE | `/{resource}`, one request | body = `{ where: { id: { inq: ids } } }`; nothing in the query |
 | `send` | `params.method` | `/{resource}` | `params.query` as-is; body from `params.body` / `bodyType` |
 | count (`CountRestDataProvider`, list calls only) | GET | `/{resource}/count` | `where = filter.where` + the same query keys |
 
@@ -153,7 +156,7 @@ Every call sends `requestCountData: RequestCountData.DATA_ONLY` (`'0'`). Every c
 
 ## `getList` and `getManyReference`: building the filter
 
-Both calls share one algorithm. The react-admin `filter` object is read in one of two ways:
+Both calls share one algorithm, the protected `buildListFilter({ params })`. The react-admin `filter` object is read in one of two ways:
 
 - If `filter.where` exists, the whole `filter` is taken as-is. You are writing the IGNIS filter yourself.
 - Otherwise every key of `filter` except `include`, `params`, `noLimit` and `fields` becomes `where`. Those four keys are lifted to the top level of the filter.
@@ -218,7 +221,7 @@ await dataProvider.getList('categories', {
 
 ### `filter.params` and `meta` as query keys
 
-Anything under `filter.params` and anything under `meta` is sent as a top-level query parameter next to `filter`, not inside it. `filter.params` is removed from the filter afterwards.
+Anything under `filter.params` and anything under `meta` except `meta.extra` is sent as a top-level query parameter next to `filter`, not inside it. `filter.params` is removed from the filter afterwards.
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -232,6 +235,30 @@ await dataProvider.getList('products', {
   meta: { view: 'compact' },
 });
 ```
+
+### List extras: `meta.extra`
+
+A route that declares list extras computes them beside the rows, such as facet counts for a filter sidebar. `getList` and `getManyReference` ask for them with `meta.extra`, a `TExtraRequest`: `true` asks for a plain extra, a list of keys asks a group for those keys, and `false` switches a default off. The request goes out in the `x-request-extra` header, never in the query. What the route answered comes back as the result's `meta.extra`:
+
+```ts
+import { type IDataProvider } from '@venizia/ardor';
+
+declare const dataProvider: IDataProvider;
+
+// GET /tickets?filter=... with x-request-extra: facets(status,tag)
+const { data, total, meta } = await dataProvider.getList('tickets', {
+  pagination: { page: 1, perPage: 20 },
+  sort: { field: 'id', order: 'ASC' },
+  filter: {},
+  meta: { extra: { facets: ['status', 'tag'] } },
+});
+// meta?.extra?.facets -> { status: { ... }, tag: { ... } }
+```
+
+Every entry may be absent: a route without extras, or an older server, answers none, and then the result has no `meta`. A route that declares a DEFAULT extra answers it to every request, asked or not; the data provider reads that too, marked by the `x-response-extra` header, so the rows and the total stay right. A body without that header is never read as extras, even when a row has its own `data` and `extra` columns.
+
+> [!NOTE]
+> A cross-origin server must allow `x-request-extra` and expose `x-response-extra` (IGNIS: `HTTP.CorsHeaders.ALLOW` and `EXPOSE`), or the browser drops them.
 
 ## `getOne` and `getMany`
 
@@ -259,9 +286,13 @@ await dataProvider.getMany('products', { ids: ['p-1', 'p-2'] });
 
 - `create`: `POST /{resource}` with `params.data` as body.
 - `update`: `PATCH /{resource}/{id}` with `params.data` as body. `previousData` is not sent.
-- `updateMany`: `PATCH /{resource}?filter={"where":{"id":{"inq":[...]}}}` with `params.data` as body. Throws `[updateMany] No IDs to execute update!` when `ids` is empty.
+- `updateMany`: `PATCH /{resource}` with `{ ...params.data, where: { id: { inq: [...] } } }` as body. The route reads `where` as the row selector and never writes it. Throws `[updateMany] No IDs to execute update!` when `ids` is empty, and refuses `params.data` that has its own `where` field - update those records with `update()`. The result is `{ data: [ids] }`, read from the rows the server reports as written - see below.
 - `delete`: `DELETE /{resource}/{id}`.
-- `deleteMany`: one `DELETE /{resource}/{id}` per id, run with `Promise.all`; the result is `{ data: [<each response's data>] }`. Throws `[deleteMany] No IDs to execute delete!` when `ids` is empty.
+- `deleteMany`: one `DELETE /{resource}` with `{ where: { id: { inq: [...] } } }` as body; the result is `{ data: [ids] }` read the same way. Throws `[deleteMany] No IDs to execute delete!` when `ids` is empty.
+
+The bulk selector travels in the body because an id list in the URL is capped by the request line: an IGNIS server answered `431` at 400 UUIDs, and a proxy with 8k header buffers refuses sooner. This needs a server whose bulk routes accept `where` in the body. A route that reads it only from the query answers `400` and writes nothing - treat that `400` as "this route does not support body selectors yet", never as a partial update.
+
+The ids in a bulk result are the ones the server reports touching - an IGNIS bulk route answers the affected rows - not the ids you asked for, so an id that no longer exists does not appear. When the body is not an array of rows, `data` is left out rather than filled with the requested ids.
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -284,7 +315,7 @@ await dataProvider.deleteMany('products', { ids: ['p-1', 'p-2'] });
 
 ## Totals
 
-`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConsts.CONTENT_RANGE`) in the form `unit start-end/total`; parsing is described in [Network](../references/network).
+`DefaultRestDataProvider` never computes `total` itself. Its `getListHelper` returns the network service's response for `GET /{resource}` unchanged, so `total` is whatever the network layer derives from the response. The backend is expected to send a `content-range` header (`HeaderConstants.CONTENT_RANGE`) in the form `unit start-end/total` (or `unit */total` for an empty page); without it, or with a malformed one such as `records 0-24/*`, `total` is the number of rows in the page. Parsing is described in [Network](../references/network).
 
 `CountRestDataProvider` overrides `getListHelper` so that `getList` and `getManyReference` issue two requests in parallel:
 
@@ -385,7 +416,7 @@ exported.data.url;
 
 ## `getNetworkService()`
 
-Returns the `DefaultNetworkRequestService` the provider built in its constructor. It is available both on the class and on the object returned by `value()`. Use it when a component or service needs the same base URL, auth rules and headers without going through react-admin's vocabulary. Its API is documented in [Network](../references/network).
+Returns the `DefaultNetworkRequestService` the provider built, through `createNetworkService()`, on first use. It is available both on the class and on the object returned by `value()`. Use it when a component or service needs the same base URL, auth rules and headers without going through react-admin's vocabulary. Its API is documented in [Network](../references/network).
 
 ```ts
 import { type IDataProvider } from '@venizia/ardor';
@@ -403,16 +434,19 @@ const networkService = dataProvider.getNetworkService();
 - **`send()` always targets `/{resource}`.** `params.id` is forwarded to `getRequestProps` but is not appended to the path. Put sub-paths into the resource string, for example `'products/export'`.
 - **`send()` without `method` throws.** There is no default verb.
 - **`updateMany` and `deleteMany` throw on an empty `ids` array.** Guard bulk actions in the UI.
-- **`deleteMany` is N requests.** It fans out one `DELETE` per id and waits for all of them.
+- **Bulk writes need body selectors on the server.** `updateMany` and `deleteMany` send `where` in the body. A backend route that only reads `where` from the query - including a hand-written override of the bulk handler - answers `400` without writing.
+- **`getMany` keeps its ids in the URL.** It is always a `GET` to the collection, the route a controller scopes, so a very long `ids` list can hit the request-line limit (`414`/`431`, about 400 UUIDs). IGNIS removed its body-filter `POST /{resource}/find` (#92): it bypassed a controller's overridden `find()`, a cross-tenant read.
 - **Extra truthy keys on list `params` leak into the filter.** Anything on `params` other than `pagination`, `sort`, `filter`, `meta` (and `target`/`id` for references) is copied into the filter as-is.
 - **`DefaultRestDataProvider` has no `total` of its own.** If your backend does not send `content-range`, use `CountRestDataProvider` or expose a `/count` endpoint.
-- **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`. Only the latter is what react-admin and `useDataProvider` see.
+- **A failed request throws an `ApplicationError`.** Every method, `send()` and `CountRestDataProvider` included, rejects with the error described in [Network](../references/network#error-shape-on-non-2xx): `statusCode` is the HTTP status, `message` the server's text, `normalized.code` and `normalized.args` the server's, and the request id is in `error.extra.requestId`.
+- **Two shapes, one class.** Class methods are `getList({ resource, params })`; the object from `value()` is `getList(resource, params)`, react-admin's positional signature. Only the latter is what react-admin and `useDataProvider` see.
 
 ## Related
 
 - [Application](../references/application) - where the provider is registered and started
 - [Binding keys](../references/binding-keys) - `CoreBindings.REST_DATA_PROVIDER_OPTIONS`, `CoreBindings.APPLICATION_INFO`
 - [Network](../references/network) - `DefaultNetworkRequestService`, `getRequestProps`, `content-range`
-- [Auth provider](../references/auth-provider) - who supplies the token that `useAuth` attaches
+- [Auth provider](../references/auth-provider) - who supplies the token the network service attaches
+- [Auth recovery](../best-practices/auth-recovery) - the `refreshToken` hook and `createNetworkService()`
 - [Types](../references/types) - `IRestDataProviderOptions`, `ISendParams`, `ICustomParams`, request constants
 - [Migrating from ra-core-infra](../guides/migration/from-ra-core-infra)

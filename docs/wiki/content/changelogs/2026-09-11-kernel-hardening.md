@@ -1,6 +1,7 @@
 ---
 title: One logger per scope, singleton services, and a kernel that owns its headers
 description: Logger.getInstance returns one instance per scope; service() and injectable() bind singletons; the application binds itself; per-call headers and x-www-form-urlencoded bodies are honoured.
+packages: ['@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-09-11

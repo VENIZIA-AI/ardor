@@ -1,10 +1,21 @@
 ---
-okf_version: "0.1"
-title: ARDOR knowledge bundle
-description: The curated, agent-facing source of truth for the ARDOR framework.
+okf_version: "0.2"
 ---
 
 # ARDOR knowledge
+
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [Start here](#start-here)
+- [Packages](#packages)
+- [Architecture](#architecture)
+- [Conventions](#conventions)
+- [Process](#process)
+- [Examples](#examples)
+- [Reference](#reference)
+- [Maintaining this bundle](#maintaining-this-bundle)
+<!-- okf:generated:contents end -->
 
 Curated knowledge about the ARDOR framework, for agents and for humans. Start here rather than
 re-deriving the project from the source each session.
@@ -28,7 +39,7 @@ Served over MCP by `ardor-atlas`, registered in `.mcp.json`: `search` with
 
 ## Packages
 
-The framework ships five packages, built in dependency order.
+The framework ships four packages, built in dependency order.
 
 | Package | Role |
 |---|---|
@@ -36,7 +47,6 @@ The framework ships five packages, built in dependency order.
 | [react](/packages/react.md) | The React bindings: application context, `useInjectable`, the UI hooks, typed Redux factories |
 | [admin](/packages/admin.md) | The react-admin adapter: REST data provider, auth and i18n providers, the ra-core hooks, message bundles |
 | [ardor](/packages/ardor.md) | The umbrella `@venizia/ardor` - one import over the three above |
-| [ui-kit](/packages/ui-kit.md) | The design system: Tailwind + Radix components and Figma-derived tokens |
 
 ## Architecture
 
@@ -46,12 +56,13 @@ How the pieces fit.
 - [DI in the browser](/architecture/di-in-the-browser.md) - the IGNIS container as the application, bindings, injection by key and by class
 - [Data provider pipeline](/architecture/data-provider-pipeline.md) - react-admin call to HTTP request and back, the IGNIS filter vocabulary
 - [Auth recovery](/architecture/auth-recovery.md) - one refresh per 401 burst, one retry, what is never recovered
-- [No-auth paths](/architecture/no-auth-paths.md) - `useAuth`, `noAuthPaths`, `noAuthPathRegex`
+- [No-auth paths](/architecture/no-auth-paths.md) - `noAuthPaths`, `noAuthPathRegex`, the `isNoAuthPath` hook
 - [Request header protocol](/architecture/header-protocol.md) - every header the data layer sends and reads
 - [Internationalization](/architecture/i18n.md) - the i18n provider, the bundles, typed translate keys
 - [Hooks and context](/architecture/hooks-and-context.md) - what each hook needs in the tree
 - [Module augmentation](/architecture/module-augmentation.md) - typing injectable and translate keys, and the any-widening trap
 - [Error flow](/architecture/error-flow.md) - from `getError` to `useNotifyError`
+- [Feature modules](/architecture/feature-modules.md) - `features()`, mounting resources and routes, `canAccess` from a permission provider, feature messages
 
 ## Conventions
 
@@ -67,6 +78,7 @@ How the code is written. Read before writing any.
 - [Testing conventions](/conventions/testing-conventions.md)
 - [Docs writing style](/conventions/docs-writing-style.md)
 - [Gotchas](/conventions/gotchas.md)
+- [File splitting](/conventions/file-splitting.md)
 
 ## Process
 
@@ -81,6 +93,7 @@ How the work gets done.
 - [Adding a hook](/process/adding-a-hook.md)
 - [Splitting a hub file by topic](/process/splitting-a-hub-file.md)
 - [Updating the wiki](/process/updating-the-wiki.md)
+- [Knowledge-sync area map](/process/knowledge-sync-areas.md)
 
 ## Examples
 

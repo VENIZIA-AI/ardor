@@ -58,7 +58,7 @@ html.dark {
   }
 }
 
-/* Use Ardor grid */
+/* Use the ARDOR grid */
 .use-ignis-grid {
   display: grid;
   grid-template-columns: 1fr;

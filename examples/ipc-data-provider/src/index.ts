@@ -1,13 +1,17 @@
 import 'reflect-metadata';
 
 import {
+  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
+  configuration,
   CoreBindings,
   DefaultRestDataProvider,
   type IApplicationInfo,
   type IDataProvider,
+  inject,
   type ISendParams,
   type ISendResponse,
+  provide,
   RequestMethods,
 } from '@venizia/ardor';
 
@@ -53,19 +57,32 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   }
 }
 
+// Discovered, never referenced by name: start() binds its @provide methods.
+@configuration()
+export class IpcConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
+    private readonly application: TArdorApplication,
+  ) {}
+
+  // The base class still needs its options; the URL is never used by the IPC send.
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: 'ipc://local', noAuthPathRegex: /./ };
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(IpcDataProvider).value(this.application);
+  }
+}
+
 class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'ipc-example', version: '0.0.0', description: 'ARDOR over an IPC transport' };
   }
 
-  bindContext(): void {
-    // The base class still needs its options; the URL is never used by the IPC send.
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
-      url: 'ipc://local',
-      useAuth: false,
-    });
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(IpcDataProvider);
-  }
+  bindContext(): void {}
 }
 
 const application = new Application();

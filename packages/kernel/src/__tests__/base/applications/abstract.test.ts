@@ -230,11 +230,12 @@ describe('BaseArdorApplication - injectable and service registration', () => {
 
   test('service() binds target class under services scope and is resolvable via container.get', () => {
     const app = new ContainerBindingApplication();
-    const injectableSpy = spyOn(app, 'injectable');
 
     app.service(LoggingService);
 
-    expect(injectableSpy).toHaveBeenCalledWith(InjectionScopes.SERVICES, LoggingService);
+    expect(app.getMetadataRegistry().getBindingKey({ target: LoggingService })).toBe(
+      `${InjectionScopes.SERVICES}.${LoggingService.name}`,
+    );
 
     const resolved = app.get<LoggingService>({
       key: `${InjectionScopes.SERVICES}.${LoggingService.name}`,

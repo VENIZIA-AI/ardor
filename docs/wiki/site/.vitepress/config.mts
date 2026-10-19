@@ -17,7 +17,9 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
   {
     text: 'Migration',
     collapsed: false,
-    items: [{ text: 'From @minimaltech/ra-core-infra', link: '/guides/migration/from-ra-core-infra' }],
+    items: [
+      { text: 'From @minimaltech/ra-core-infra', link: '/guides/migration/from-ra-core-infra' },
+    ],
   },
 ];
 
@@ -28,6 +30,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Application', link: '/references/application' },
+      { text: 'Features and permissions', link: '/references/features' },
       { text: 'Binding keys', link: '/references/binding-keys' },
       { text: 'Types and constants', link: '/references/types' },
     ],
@@ -38,6 +41,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'REST data provider', link: '/references/data-provider' },
       { text: 'Network layer', link: '/references/network' },
+      { text: 'Repositories', link: '/references/repository' },
       { text: 'Auth provider', link: '/references/auth-provider' },
       { text: 'Internationalization', link: '/references/i18n' },
     ],
@@ -51,7 +55,6 @@ const extensionsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'Packages and patterns',
     collapsed: false,
     items: [
-      { text: 'UI kit', link: '/extensions/ui-kit' },
       { text: 'Socket.IO client', link: '/extensions/socket-client' },
       { text: 'CountRestDataProvider', link: '/extensions/count-provider' },
       { text: 'Non-HTTP transport', link: '/extensions/custom-transport' },
@@ -66,8 +69,8 @@ const bestPracticesSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Module augmentation', link: '/best-practices/module-augmentation' },
-      { text: 'Binding keys and services', link: '/best-practices/binding-keys' },
-      { text: 'Writing services', link: '/best-practices/services' },
+      { text: 'Binding keys and registration', link: '/best-practices/binding-keys' },
+      { text: 'Writing services and repositories', link: '/best-practices/services' },
       { text: 'No-auth paths and recovery', link: '/best-practices/auth-recovery' },
     ],
   },
@@ -85,6 +88,258 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'History',
     collapsed: false,
     items: [
+      {
+        text: '2026-10-18',
+        collapsed: true,
+        items: [
+          {
+            text: 'Stable IGNIS 0.2.2',
+            link: '/changelogs/2026-10-18-stable-ignis-0-2-2',
+          },
+          {
+            text: 'Boot pins class names',
+            link: '/changelogs/2026-10-18-boot-pins-class-names',
+          },
+          {
+            text: 'Final pin and autoload',
+            link: '/changelogs/2026-10-18-final-pin-and-autoload',
+          },
+          {
+            text: 'start() names a module cycle',
+            link: '/changelogs/2026-10-18-artifact-cycle-error',
+          },
+          {
+            text: 'One copy of each package',
+            link: '/changelogs/2026-10-18-one-copy-of-each',
+          },
+          {
+            text: 'Exact sibling versions',
+            link: '/changelogs/2026-10-18-exact-sibling-versions',
+          },
+          {
+            text: 'TPaths stops at values',
+            link: '/changelogs/2026-10-18-tpaths-stops-at-values',
+          },
+          {
+            text: 'House style: types, hooks, utilities',
+            link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
+          },
+          {
+            text: 'Hooks, not flags',
+            link: '/changelogs/2026-10-18-hooks-not-flags',
+          },
+          {
+            text: 'Sign-in hooks, not options',
+            link: '/changelogs/2026-10-18-sign-in-hooks',
+          },
+          {
+            text: 'Release waits for the tarball',
+            link: '/changelogs/2026-10-18-release-waits-for-the-tarball',
+          },
+          {
+            text: 'IGNIS 0.2.2-12 chain',
+            link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
+          },
+          {
+            text: 'login stores roles',
+            link: '/changelogs/2026-10-18-login-roles-and-hooks',
+          },
+          {
+            text: 'Quickstart follows the example',
+            link: '/changelogs/2026-10-18-quickstart-follows-the-example',
+          },
+          {
+            text: 'IGNIS sign-in by default, optional auth',
+            link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
+          },
+          {
+            text: 'IGNIS 0.2.2-9 chain',
+            link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
+          },
+        ],
+      },
+      {
+        text: '2026-10-17',
+        collapsed: true,
+        items: [
+          {
+            text: 'VULCAN 0.2.0-3 and the source filter',
+            link: '/changelogs/2026-10-17-vulcan-0-2-0-3',
+          },
+          {
+            text: 'Type checking runs on bun check',
+            link: '/changelogs/2026-10-17-bun-check',
+          },
+          {
+            text: 'VULCAN 0.2.0-2 and the D rules',
+            link: '/changelogs/2026-10-17-vulcan-0-2-0-2',
+          },
+          {
+            text: 'Generated artifact index',
+            link: '/changelogs/2026-10-17-generated-artifact-index',
+          },
+          {
+            text: 'VULCAN 0.2.0-1',
+            link: '/changelogs/2026-10-17-vulcan-0-2-0',
+          },
+          {
+            text: 'Agent tooling is VULCAN',
+            link: '/changelogs/2026-10-17-agent-tooling-vulcan',
+          },
+          {
+            text: 'PATCH, log levels, getManyReference, count',
+            link: '/changelogs/2026-10-17-patch-log-levels-pagination-count',
+          },
+        ],
+      },
+      {
+        text: '2026-10-16',
+        collapsed: true,
+        items: [
+          {
+            text: 'Every package builds, lints and formats through make',
+            link: '/changelogs/2026-10-16-make-per-package',
+          },
+          {
+            text: 'ARDOR lints with oxlint and formats with oxfmt',
+            link: '/changelogs/2026-10-16-oxlint-oxfmt',
+          },
+        ],
+      },
+      {
+        text: '2026-10-15',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR 0.1.3, stable on the IGNIS 0.2.2 line',
+            link: '/changelogs/2026-10-15-ardor-0-1-3-stable',
+          },
+        ],
+      },
+      {
+        text: '2026-10-14',
+        collapsed: true,
+        items: [
+          {
+            text: 'canAccess from the container',
+            link: '/changelogs/2026-10-14-permission-provider-from-the-container',
+          },
+        ],
+      },
+      {
+        text: '2026-10-12',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR 0.1.2, stable on IGNIS 0.2.1',
+            link: '/changelogs/2026-10-12-ardor-0-1-2-stable',
+          },
+        ],
+      },
+      {
+        text: '2026-10-10',
+        collapsed: true,
+        items: [
+          {
+            text: 'useDocumentTitle cleanup guard',
+            link: '/changelogs/2026-10-10-document-title-cleanup-guard',
+          },
+          {
+            text: 'checkError reads statusCode',
+            link: '/changelogs/2026-10-10-check-error-reads-status-code',
+          },
+          {
+            text: 'Data provider errors and Content-Range',
+            link: '/changelogs/2026-10-10-data-provider-errors-through-response-reader',
+          },
+        ],
+      },
+      {
+        text: '2026-10-09',
+        collapsed: true,
+        items: [
+          {
+            text: 'Const-value types keep their literals',
+            link: '/changelogs/2026-10-09-const-value-types-keep-literals',
+          },
+          {
+            text: 'useDocumentTitle and useHtmlLang',
+            link: '/changelogs/2026-10-09-document-title-and-html-lang-hooks',
+          },
+        ],
+      },
+      {
+        text: '2026-10-07',
+        collapsed: true,
+        items: [
+          {
+            text: 'Feature modules and permissions',
+            link: '/changelogs/2026-10-07-feature-modules',
+          },
+          {
+            text: 'List extras',
+            link: '/changelogs/2026-10-07-list-extras',
+          },
+          {
+            text: 'Class identity and the container',
+            link: '/changelogs/2026-10-07-class-identity-and-container',
+          },
+        ],
+      },
+      {
+        text: '2026-10-06',
+        collapsed: true,
+        items: [
+          {
+            text: 'A repository sends the session',
+            link: '/changelogs/2026-10-06-repository-sends-the-session',
+          },
+        ],
+      },
+      {
+        text: '2026-10-02',
+        collapsed: true,
+        items: [
+          {
+            text: 'HttpRepository writes, shared auth',
+            link: '/changelogs/2026-10-02-repository-writes-and-ignis-0-2-1',
+          },
+        ],
+      },
+      {
+        text: '2026-09-24',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR 0.1.1, the first stable line',
+            link: '/changelogs/2026-09-24-ardor-0-1-1-stable',
+          },
+          {
+            text: 'Repositories by discovery, a relative baseUrl',
+            link: '/changelogs/2026-09-24-remote-repositories-and-relative-base-url',
+          },
+        ],
+      },
+      {
+        text: '2026-09-23',
+        collapsed: true,
+        items: [
+          {
+            text: 'Registration by hand, useRepository, clean-install gate',
+            link: '/changelogs/2026-09-23-registration-by-hand-and-clean-install',
+          },
+        ],
+      },
+      {
+        text: '2026-09-19',
+        collapsed: true,
+        items: [
+          {
+            text: 'IGNIS stereotypes and repositories, bulk writes in the body',
+            link: '/changelogs/2026-09-19-ignis-repository-and-bulk-writes',
+          },
+        ],
+      },
       {
         text: '2026-09-16',
         collapsed: true,
@@ -126,7 +381,8 @@ const config = defineConfig({
   outDir: './.vitepress/dist',
   srcExclude: ['**/template/**'],
   title: 'ARDOR',
-  description: "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
+  description:
+    "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
   head: [
     // Favicon + PWA
     ['link', { rel: 'icon', href: '/logo.svg' }],
@@ -144,7 +400,10 @@ const config = defineConfig({
     ],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" }],
+    [
+      'meta',
+      { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" },
+    ],
     [
       'meta',
       {
@@ -156,7 +415,13 @@ const config = defineConfig({
     ['meta', { property: 'og:url', content: 'https://ardor.venizia.ai/' }],
     // Twitter / X card
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: "ARDOR - react-admin's data contract on IGNIS's container" }],
+    [
+      'meta',
+      {
+        name: 'twitter:title',
+        content: "ARDOR - react-admin's data contract on IGNIS's container",
+      },
+    ],
     [
       'meta',
       {

@@ -4,12 +4,12 @@ import { type Container } from '@venizia/ignis-inversion';
 
 import { type Logger } from '@venizia/ardor-kernel';
 
-export const ApplicationContext = React.createContext<{
+export interface IApplicationContextValue {
   container: Container | null;
-  registry: Container | null;
   logger: Logger | null;
-}>({
+}
+
+export const ApplicationContext = React.createContext<IApplicationContextValue>({
   container: null,
-  registry: null,
   logger: null,
 });

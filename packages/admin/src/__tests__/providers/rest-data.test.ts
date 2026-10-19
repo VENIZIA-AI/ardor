@@ -2,12 +2,15 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'b
 import { Container } from '@venizia/ignis-inversion';
 import {
   RequestBodyTypes,
+  RequestChannel,
   RequestCountData,
   RequestMethods,
   RequestTypes,
   type IApplicationInfo,
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
+import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
+import { DefaultNetworkRequestService } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -44,7 +47,7 @@ const createProvider = (opts: { baseUrl: string }): DefaultRestDataProvider => {
   const { baseUrl } = opts;
   const restDataProviderOptions: IRestDataProviderOptions = {
     url: baseUrl,
-    useAuth: false,
+    noAuthPathRegex: /./,
   };
   const applicationInfo: IApplicationInfo = {
     name: 'ardor-admin-test',
@@ -115,6 +118,34 @@ beforeAll(() => {
       });
       const isCollectionGet = req.method === 'GET' && segments.length === 1;
 
+      // A bulk write on the collection answers the rows it touched, as an IGNIS bulk route does with
+      // `x-request-count: 0`. One row, whatever was asked, so a result built from the requested ids
+      // rather than the reported rows is caught.
+      const isCollectionWrite =
+        (req.method === 'PATCH' || req.method === 'DELETE') && segments.length === 1;
+
+      if (isCollectionWrite) {
+        return new Response(JSON.stringify([{ id: 1, status: 'archived' }]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      // A route with list extras answers them beside the rows, marked by `x-response-extra`.
+      if (isCollectionGet && req.headers.has('x-request-extra')) {
+        return new Response(
+          JSON.stringify({ data: [{ id: 1 }], extra: { facets: { status: { open: 3 } } } }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+              'content-range': 'items 0-0/42',
+              'x-response-extra': 'facets',
+            },
+          },
+        );
+      }
+
       if (isCollectionGet) {
         return new Response(JSON.stringify([{ id: 1 }]), {
           status: 200,
@@ -181,6 +212,32 @@ describe('getList behavior', () => {
     const req = recordedRequests[0];
     const filter = parseFilterQuery({ raw: req.query['filter'] });
     expect(filter['order']).toEqual(['name DESC']);
+  });
+
+  test('forwards an extra param whose value is falsy but meant', async () => {
+    const provider = createProvider({ baseUrl });
+    await provider.getList({
+      resource: 'posts',
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+        // Not pagination, sort, filter or meta - so these land in `rest` and are forwarded.
+        archived: false,
+        revision: 0,
+        note: '',
+        omitted: undefined,
+      } as never,
+    });
+
+    expect(recordedRequests.length).toBe(1);
+    const filter = parseFilterQuery({ raw: recordedRequests[0].query['filter'] });
+
+    // A falsy value is a value: dropping it sends a different query than the caller wrote.
+    expect(filter['archived']).toBe(false);
+    expect(filter['revision']).toBe(0);
+    expect(filter['note']).toBe('');
+    expect('omitted' in filter).toBe(false);
   });
 
   test('wraps filter without where into where and lifts include and fields to filter root', async () => {
@@ -333,6 +390,30 @@ describe('getMany behavior', () => {
     });
     expect(filter['params']).toBeUndefined();
   });
+
+  // A body-filter POST /<resource>/find reached the kernel's shared read and skipped a controller's
+  // overridden find(), so a tenant-scoped app read every tenant's rows (IGNIS #92). However long the
+  // id list, getMany stays on the collection GET, the route the controller scopes.
+  // The stub server refuses a request line this long (the 431 a real server answers), so the test
+  // reads what getMany hands the transport.
+  test('keeps a long id list on the collection GET, never a POST read route', async () => {
+    const provider = createProvider({ baseUrl });
+    const doRequest = spyOn(provider.getNetworkService(), 'doRequest').mockResolvedValue({
+      data: [],
+    });
+    const ids = Array.from({ length: 400 }, (_, index) => {
+      return `0190a1b2-c3d4-7e5f-8a9b-${String(index).padStart(12, '0')}`;
+    });
+
+    await provider.getMany({ resource: 'posts', params: { ids } });
+
+    expect(doRequest).toHaveBeenCalledTimes(1);
+    const sent = doRequest.mock.calls[0][0];
+    expect(sent.method).toBe(RequestMethods.GET);
+    expect(sent.paths).toEqual(['posts']);
+    expect(sent.body).toBeUndefined();
+    expect(sent.query.filter.where).toEqual({ id: { inq: ids } });
+  });
 });
 
 describe('getManyReference behavior', () => {
@@ -365,6 +446,25 @@ describe('getManyReference behavior', () => {
     expect(filter['skip']).toBe(10);
     expect(filter['offset']).toBe(10);
     expect(filter['order']).toEqual(['createdAt DESC']);
+  });
+
+  test('sends the reference filter without pagination instead of throwing, like getList', async () => {
+    const provider = createProvider({ baseUrl });
+    const params: Parameters<typeof provider.getManyReference>[0]['params'] = {
+      target: 'postId',
+      id: 7,
+      pagination: { page: 1, perPage: 10 },
+      sort: { field: 'id', order: 'ASC' },
+      filter: {},
+    };
+    // ra-core types pagination as required, but a JavaScript caller or a hand-built query omits it.
+    Reflect.deleteProperty(params, 'pagination');
+
+    await provider.getManyReference({ resource: 'comments', params });
+
+    expect(recordedRequests.length).toBe(1);
+    const filter = parseFilterQuery({ raw: recordedRequests[0].query['filter'] });
+    expect(filter['where']).toEqual({ postId: 7 });
   });
 });
 
@@ -403,7 +503,7 @@ describe('mutation operations behavior', () => {
     expect(req.body).toEqual({ title: 'Patched Title' });
   });
 
-  test('updateMany executes single bulk patch request with id inq filter', async () => {
+  test('updateMany sends one bulk patch with the id selector in the body', async () => {
     const provider = createProvider({ baseUrl });
     await provider.updateMany({
       resource: 'posts',
@@ -417,12 +517,63 @@ describe('mutation operations behavior', () => {
     const req = recordedRequests[0];
     expect(req.method).toBe('PATCH');
     expect(req.pathname).toBe('/posts');
-    expect(req.body).toEqual({ status: 'archived' });
+    expect(req.body).toEqual({ status: 'archived', where: { id: { inq: [11, 22, 33] } } });
+    // Never both: the route answers 400 when `where` arrives in the query AND the body.
+    expect(req.query).toEqual({});
+  });
 
-    const filter = parseFilterQuery({ raw: req.query['filter'] });
-    expect(filter['where']).toEqual({
-      id: { inq: [11, 22, 33] },
-    });
+  /**
+   * The reason the selector moved. In the query, 400 UUIDs drew a 431 from an IGNIS server and a
+   * proxy with 8k buffers refuses near 170; in the body the request line stays the resource path.
+   */
+  test('updateMany keeps a 2000-id selector off the request line', async () => {
+    const provider = createProvider({ baseUrl });
+    // UUID-shaped and deterministic: the length is what loads the request line.
+    const ids = Array.from(
+      { length: 2000 },
+      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    );
+
+    await provider.updateMany({ resource: 'posts', params: { ids, data: { status: 'archived' } } });
+
+    expect(recordedRequests.length).toBe(1);
+    expect(recordedRequests[0].query).toEqual({});
+    expect(recordedRequests[0].body).toMatchObject({ where: { id: { inq: ids } } });
+  });
+
+  /**
+   * react-admin's bulk results carry ids, and `data` may be absent. A body that is not a row array -
+   * a hand-written route answering `{ count }` - gives no ids to report, so none are claimed.
+   */
+  test('updateMany and deleteMany leave data out when the body is not a row array', async () => {
+    const counting = Bun.serve({ port: 0, fetch: () => Response.json({ count: 2 }) });
+
+    try {
+      const provider = createProvider({ baseUrl: `http://127.0.0.1:${counting.port}` });
+
+      const updated = await provider.updateMany({
+        resource: 'posts',
+        params: { ids: [1, 2], data: { status: 'archived' } },
+      });
+      const deleted = await provider.deleteMany({ resource: 'posts', params: { ids: [1, 2] } });
+
+      expect(updated).toEqual({ data: undefined });
+      expect(deleted).toEqual({ data: undefined });
+    } finally {
+      await counting.stop(true);
+    }
+  });
+
+  test('updateMany refuses data that carries its own where field', () => {
+    const provider = createProvider({ baseUrl });
+
+    expect(() => {
+      return provider.updateMany({
+        resource: 'posts',
+        params: { ids: [1], data: { where: 'north gate' } },
+      });
+    }).toThrow(/"where" field.*row selector/);
+    expect(recordedRequests.length).toBe(0);
   });
 
   test('updateMany throws error when ids array is empty', async () => {
@@ -453,7 +604,9 @@ describe('mutation operations behavior', () => {
     expect(req.pathname).toBe('/posts/555');
   });
 
-  test('deleteMany executes individual delete requests per id', async () => {
+  // One request, not one per id: the fan-out was not atomic, and a failure part-way reported one
+  // error after the other deletes had already landed.
+  test('deleteMany sends one bulk delete with the id selector in the body', async () => {
     const provider = createProvider({ baseUrl });
     await provider.deleteMany({
       resource: 'posts',
@@ -462,15 +615,12 @@ describe('mutation operations behavior', () => {
       },
     });
 
-    expect(recordedRequests.length).toBe(3);
-    const pathnames = recordedRequests.map((req) => {
-      return req.pathname;
-    });
-    expect(pathnames).toEqual(['/posts/201', '/posts/202', '/posts/203']);
-
-    for (const req of recordedRequests) {
-      expect(req.method).toBe('DELETE');
-    }
+    expect(recordedRequests.length).toBe(1);
+    const req = recordedRequests[0];
+    expect(req.method).toBe('DELETE');
+    expect(req.pathname).toBe('/posts');
+    expect(req.body).toEqual({ where: { id: { inq: [201, 202, 203] } } });
+    expect(req.query).toEqual({});
   });
 
   test('deleteMany throws error when ids array is empty', async () => {
@@ -545,6 +695,72 @@ describe('send behavior', () => {
   });
 });
 
+describe('list extras', () => {
+  const listParams = (meta?: Record<string, unknown>) => ({
+    pagination: { page: 1, perPage: 10 },
+    sort: { field: 'id', order: 'ASC' as const },
+    filter: {},
+    ...(meta ? { meta } : {}),
+  });
+
+  test('asks for meta.extra in x-request-extra and answers it in meta.extra', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getList({
+      resource: 'posts',
+      params: listParams({ extra: { facets: ['status'] }, tenant: 't-1' }),
+    });
+
+    const req = recordedRequests[0];
+    expect(req.headers.get('x-request-extra')).toBe(
+      HttpExtraRequest.toHeader({ extra: { facets: ['status'] } }) ?? null,
+    );
+    expect(req.query['extra']).toBeUndefined();
+    expect(req.query['tenant']).toBe('t-1');
+    expect(result.data).toEqual([{ id: 1 }]);
+    expect(result.total).toBe(42);
+    expect(result.meta).toEqual({ extra: { facets: { status: { open: 3 } } } });
+  });
+
+  test('asks for nothing and answers no meta without meta.extra', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getList({ resource: 'posts', params: listParams() });
+
+    expect(recordedRequests[0].headers.has('x-request-extra')).toBe(false);
+    expect(result.meta).toBeUndefined();
+  });
+
+  test('getManyReference asks and answers the same way', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const result = await provider.getManyReference({
+      resource: 'posts',
+      params: { ...listParams({ extra: { facets: ['status'] } }), target: 'authorId', id: 7 },
+    });
+
+    expect(recordedRequests[0].headers.has('x-request-extra')).toBe(true);
+    expect(result.meta).toEqual({ extra: { facets: { status: { open: 3 } } } });
+  });
+});
+
+describe('getDataSourceAuth', () => {
+  // A repository built on it sends the provider's channel and a tracing id named after the app.
+  test('hands an HttpDataSource the request channel and tracing id of this provider', async () => {
+    const dataProvider = createProvider({ baseUrl }).value(new Container());
+
+    const posts = new HttpRepository<{ id: number }>({
+      dataSource: new HttpDataSource({ baseUrl, ...dataProvider.getDataSourceAuth() }),
+      resource: 'posts',
+    });
+    await posts.find({ filter: {} });
+
+    expect(recordedRequests.length).toBe(1);
+    expect(recordedRequests[0].headers.get('x-request-channel')).toBe(RequestChannel.WEB);
+    expect(recordedRequests[0].headers.get('x-request-id')).toStartWith('ardor-admin-test_');
+  });
+});
+
 describe('react-admin provider adapter behavior', () => {
   test('returns adapter with positional react-admin signatures and matching network service', async () => {
     const provider = createProvider({ baseUrl });
@@ -580,13 +796,14 @@ describe('react-admin provider adapter behavior', () => {
       ids: [1, 2],
       data: { status: 'adapter-active' },
     });
-    expect<unknown>(updateManyResult.data).toEqual({ id: 1 });
+    // Asked for 1 and 2; the server reports touching 1. The result is what was written.
+    expect(updateManyResult.data).toEqual([1]);
 
     const deleteResult = await dataProvider.delete('posts', { id: 300 });
     expect(deleteResult.data).toEqual({ id: 1 });
 
     const deleteManyResult = await dataProvider.deleteMany('posts', { ids: [1, 2] });
-    expect(deleteManyResult.data).toEqual([{ id: 1 }, { id: 1 }]);
+    expect(deleteManyResult.data).toEqual([1]);
   });
 
   test('forwards send options object through provider adapter', async () => {
@@ -609,7 +826,7 @@ describe('network service header configuration behavior', () => {
   test('includes newly set headers on subsequent requests', async () => {
     const provider = createProvider({ baseUrl });
     provider.getNetworkService().setHeaders({
-      'x-tenant-id': 'tenant-ignis-001',
+      headers: { 'x-tenant-id': 'tenant-ignis-001' },
     });
 
     await provider.getOne({
@@ -620,5 +837,158 @@ describe('network service header configuration behavior', () => {
     expect(recordedRequests.length).toBe(1);
     const req = recordedRequests[0];
     expect(req.headers.get('x-tenant-id')).toBe('tenant-ignis-001');
+  });
+});
+
+describe('network service creation', () => {
+  const applicationInfo: IApplicationInfo = {
+    name: 'ardor-admin-test',
+    version: '1.0.0',
+    description: 'x',
+  };
+
+  test('createNetworkService is the one place the service is built, once, on first use', () => {
+    let built = 0;
+
+    class CountingProvider extends DefaultRestDataProvider {
+      protected override createNetworkService() {
+        built += 1;
+        return super.createNetworkService();
+      }
+    }
+
+    const provider = new CountingProvider({ url: baseUrl }, applicationInfo);
+    expect(built).toBe(0);
+
+    const service = provider.getNetworkService();
+    expect(provider.getNetworkService()).toBe(service);
+    expect(built).toBe(1);
+  });
+
+  test('a subclass can return a network service that overrides its hooks', async () => {
+    class TokenService extends DefaultNetworkRequestService {
+      protected override resolveAuthToken() {
+        return { value: 'from-the-override', type: 'Bearer' };
+      }
+    }
+
+    class TokenProvider extends DefaultRestDataProvider {
+      protected override createNetworkService() {
+        return new TokenService({
+          name: 'token-service',
+          baseUrl: this.restDataProviderOptions.url,
+        });
+      }
+    }
+
+    recordedRequests.length = 0;
+    await new TokenProvider({ url: baseUrl }, applicationInfo).getOne({
+      resource: 'posts',
+      params: { id: 1 },
+    });
+
+    expect(recordedRequests[0].headers.get('authorization')).toBe('Bearer from-the-override');
+  });
+});
+
+describe('buildListFilter', () => {
+  class ExposedProvider extends DefaultRestDataProvider {
+    public override buildListFilter(
+      opts: Parameters<DefaultRestDataProvider['buildListFilter']>[0],
+    ) {
+      return super.buildListFilter(opts);
+    }
+  }
+
+  const provider = new ExposedProvider(
+    { url: 'http://127.0.0.1:1', noAuthPathRegex: /./ },
+    { name: 'ardor-admin-test', version: '1.0.0', description: 'x' },
+  );
+
+  test('turns pagination, sort and plain filter keys into the IGNIS filter', () => {
+    const { filter, queryKey, extra } = provider.buildListFilter({
+      params: {
+        pagination: { page: 3, perPage: 20 },
+        sort: { field: 'name', order: 'DESC' },
+        filter: { status: 'open' },
+      },
+    });
+
+    expect(filter.where).toEqual({ status: 'open' });
+    expect(filter.order).toEqual(['name DESC']);
+    expect(filter.limit).toBe(20);
+    expect(filter.skip).toBe(40);
+    expect(queryKey).toEqual({});
+    expect(extra).toBeUndefined();
+  });
+
+  test('keeps a where the caller gave, and routes filter.params and meta into the query', () => {
+    const { filter, queryKey, extra } = provider.buildListFilter({
+      params: {
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: { where: { kind: 'a' }, params: { tenant: 't1' } },
+        meta: { locale: 'vi', extra: { total: true } },
+      },
+    });
+
+    expect(filter.where).toEqual({ kind: 'a' });
+    expect(queryKey).toEqual({ tenant: 't1', locale: 'vi' });
+    expect(extra).toEqual({ total: true });
+  });
+
+  test('noLimit lifts the limit and the skip', () => {
+    const { filter } = provider.buildListFilter({
+      params: {
+        pagination: { page: 2, perPage: 5 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: { noLimit: true },
+      },
+    });
+
+    expect(filter.limit).toBeUndefined();
+    expect(filter.skip).toBeUndefined();
+  });
+
+  test('getList and getManyReference send the same filter apart from the reference key', async () => {
+    const paging = {
+      pagination: { page: 2, perPage: 7 },
+      sort: { field: 'id', order: 'ASC' as const },
+      filter: { status: 'open' },
+    };
+    const sent = createProvider({ baseUrl });
+
+    recordedRequests.length = 0;
+    await sent.getList({ resource: 'posts', params: paging });
+    await sent.getManyReference({
+      resource: 'comments',
+      params: { ...paging, target: 'postId', id: 9 },
+    });
+
+    const listFilter = parseFilterQuery({ raw: recordedRequests[0].query.filter });
+    const referenceFilter = parseFilterQuery({ raw: recordedRequests[1].query.filter });
+
+    expect(referenceFilter).toEqual({
+      ...listFilter,
+      where: { ...(listFilter.where as object), postId: 9 },
+    });
+  });
+});
+
+describe('per-call headers', () => {
+  test('a header named in another case than the computed one replaces it', async () => {
+    const provider = createProvider({ baseUrl });
+    recordedRequests.length = 0;
+
+    await provider.send({
+      resource: 'echo',
+      params: {
+        method: RequestMethods.POST,
+        body: { a: 1 },
+        headers: { 'Content-Type': 'text/plain' },
+      },
+    });
+
+    expect(recordedRequests[0].headers.get('content-type')).toBe('text/plain');
   });
 });

@@ -8,13 +8,13 @@ tags: [hooks, context, react, ignis, ra-core]
 
 # Hooks and context
 
-ARDOR bridges the IGNIS dependency injection container into the React tree with a single plain context, `ApplicationContext`, defined at `packages/react/src/contexts/application.ts`. Its shape is:
+ARDOR bridges the IGNIS dependency injection container into the React tree with a single plain context, `ApplicationContext`, defined at `packages/react/src/contexts/application.ts`. Its value type is the exported `IApplicationContextValue`:
 
 ```ts
-{ container: Container | null, registry: Container | null, logger: Logger | null }
+{ container: Container | null, logger: Logger | null }
 ```
 
-All three fields default to `null`. The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
+Both fields default to `null`. There is no `registry` field: the container is its own metadata registry (`container.getMetadataRegistry()`). The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
 
 ## Core context hooks
 
@@ -36,10 +36,14 @@ type TUseInjectableOptions =
 Resolution rules:
 
 - `{ key }` calls `container.get({ key })` directly - `key` is typically a value from the const-class binding keys registry (see [Binding key namespaces](/conventions/binding-key-namespaces.md)).
-- `{ target }` looks the binding key up in the container's metadata registry first, then resolves it. The class must have been decorated or registered on the application - otherwise the hook throws.
-- If you pass an explicit `container`, that takes priority over the one in context. If there is neither an explicit container nor one in context, the hook throws.
+- `{ target }` reads the binding key recorded on the class from the container's metadata registry, then resolves it. A stereotype (`@service()`, `@component()`, ...) records that key, and so does registration by hand (`service(X)`, `repository(X)`, `dataSource(X)`, `component(X)`, `bindingList()`, `injectable()`). A class that went through neither throws; resolve it by `{ key }` or register it.
+- If you pass an explicit `container`, that takes priority over the one in context. The choice lives in `useInjectableContainer({ container? })`, which returns the explicit container, else `ApplicationContext.container`, and throws `[useInjectable] Failed to determine injectable container!` when there is neither.
 
 The type `TUseInjectableKeys` is the union of core binding key strings plus the keys of `IUseInjectableKeysOverrides`, an empty interface you augment for your own bindings. This is the same [module augmentation](/architecture/module-augmentation.md) pattern used elsewhere in ARDOR, and it keeps custom binding keys type-safe without ARDOR needing to know about them ahead of time. See also [Binding keys](/reference/binding-keys.md).
+
+## Per-stereotype hooks
+
+`useService`, `useProvider`, `useComponent` and `useConfiguration` (`packages/react/src/hooks/use-artifact.ts`) are built on `useInjectable` and need the same tree: a container on `ApplicationContext`, or an explicit `container` option. Each takes `{ target }` or `{ key }` in an options object, and `{ target }` carries the same stereotype requirement as above. With `{ target }` each hook infers the return type from the class and asserts that the class is bound under its own namespace; see the per-stereotype hooks section of [react](/packages/react.md) for the details.
 
 ## ra-core hooks
 
@@ -49,12 +53,15 @@ ARDOR wraps several ra-core hooks to add typing and safe fallbacks. These need r
 - `useNotifyError` - turns an `ApplicationError` into a react-admin notification, reading `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. Needs the ra-core notification context. See [Error flow](/architecture/error-flow.md).
 - `useRefreshToken` - needs the ra-core auth provider context and a TanStack `QueryClientProvider`. See [Auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - needs ra-core locale state plus `DEFAULT_REST_DATA_PROVIDER` bound in the container, so it can push the current locale onto outgoing request headers. See [Header protocol](/architecture/header-protocol.md) and [Data provider pipeline](/architecture/data-provider-pipeline.md).
+- `useHtmlLang` - needs ra-core locale state; it writes the locale to `document.documentElement.lang` on every change. Like `useRequestHeaderLocale`, nothing in ARDOR calls it - mount it once in a component that stays mounted.
 
 Each of these hooks will throw or degrade differently if its required provider is missing, so when adding a new hook of this kind, document its tree requirements explicitly - see [Adding a hook](/process/adding-a-hook.md).
 
 ## UI and browser-only hooks
 
 A second group of hooks needs nothing from React context at all - they only use browser APIs: `useDebounce`, `useAutosave`, `useConfirm`, `useCopyToClipboard`, `useBeforeUnload`, `useSizer`, and `useWindowDimensions`. These are safe to use anywhere, including outside an ARDOR application, and are documented alongside the rest of the hook surface in [Hooks and services](/reference/hooks-and-services.md).
+
+`useDocumentTitle` (in `packages/admin`, no provider needed) also belongs here. `useDocumentTitle({ title, appTitle, separator = ' · ', enabled = true })` sets the tab title to the non-empty `title` segments then `appTitle`, joined by `separator`, and restores the title it replaced when the title changes or the component unmounts, so no reset-on-navigation hook is needed. The restore runs only while `document.title` is still the hook's own title, so a later writer (a layout re-mounted by a locale change, a twin call React cleans up first) keeps its title. Limit: one titled component per screen - React runs child effects before parent effects, so a parent's call wins over a child's.
 
 ## Redux factories
 

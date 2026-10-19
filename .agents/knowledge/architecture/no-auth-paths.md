@@ -8,34 +8,38 @@ tags: [architecture, auth, network-request, no-auth-paths]
 
 # No-auth paths
 
-`DefaultNetworkRequestService` attaches an authorization header to every outgoing request unless the request's path is declared no-auth. This decision is made per-request by `isNoAuthPath`, and it is configured once at construction time through `INoAuthOptions`, not tuned reactively when something fails.
+`DefaultNetworkRequestService` attaches an authorization header to every outgoing request unless the request's path is declared no-auth. This decision is made per-request by the protected hook `isNoAuthPath`, and it is configured once at construction time through `INoAuthOptions` (data only), not tuned reactively when something fails.
 
-## The knobs
+## The data
 
-Three options passed into the constructor (`packages/kernel/src/base/services/network-request.ts`) control this:
+Two options passed into the constructor (`packages/kernel/src/base/services/network-request.ts`) control this:
 
-- `useAuth` (default `true`) - a global switch. When `false`, every request is treated as no-auth and no token is ever attached.
 - `noAuthPaths` - an array of exact resource strings. If the request's `resource` matches one of these strings exactly, no auth header is added.
-- `noAuthPathRegex` - a `TNoAuthPathRegex`: a string, a `RegExp`, or an array of either. Each string entry is compiled with `new RegExp(...)`; invalid patterns are logged via `console.error` and dropped rather than throwing. The normalized list is kept as `noAuthPathRegexes: RegExp[]`.
+- `noAuthPathRegex` - a `TNoAuthPathRegex`: a string, a `RegExp`, or an array of either. Each string entry is compiled with `new RegExp(...)`; invalid patterns are logged via `console.error` and dropped rather than throwing. The normalized list (`compileNoAuthPathRegex`) is kept as `noAuthPathRegexes: RegExp[]`. To send no token at all - an API with no sign-in - set `noAuthPathRegex: /./`; there is no `useAuth` switch.
 
 Regex patterns are tested against two candidates: `resource` and `paths.join('/')` when a `paths` array is supplied. `lastIndex` is reset before each `test` call so global regexes do not silently skip matches on repeated use.
+
+## What the header decision actually matches
+
+When building headers, `getRequestHeader` calls `isNoAuthPath({ resource })` only - no `paths`. So `noAuthPaths` and `noAuthPathRegex` are matched against `resource` alone: the react-admin resource name, or the exact string passed to `send()`, never an id-suffixed path. The `paths` candidate is used only by the recovery check (`canRecover`), which passes the joined request paths.
+
+A request that is not no-auth and has no token throws a `401` from `getRequestAuthorizationHeader` before it is ever sent. Any endpoint called before a token exists must therefore be declared no-auth - above all the sign-in path, which `DefaultAuthProvider` sends as the resource `paths.signIn ?? '/auth/sign-in'`. An entry in `noAuthPaths` must match that string exactly, leading slash included; the other way is an entry in `noAuthPathRegex` that matches it.
 
 ## isNoAuthPath
 
 ```ts
-isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
-  if (!this.useAuth) return true;
+protected isNoAuthPath(opts: { resource?: string; paths?: string[] }): boolean {
   if (resource && this.noAuthPaths?.includes(resource)) return true;
   if (!this.noAuthPathRegexes.length) return false;
   // test candidates against each regex...
 }
 ```
 
-The order matters: `useAuth` is checked first as a full bypass, then the exact-match list, then the regex list. Any one of them returning true is enough to skip auth for that request.
+The exact-match list is checked first, then the regex list. Either returning true is enough to skip auth for that request. It is a hook: a subclass of the service overrides it to decide with its own rule.
 
-## Runtime setters
+## No runtime setters
 
-The three options are not fixed for the service's lifetime. `setUseAuth`, `setNoAuthPaths`, and `setNoAuthPathRegex` replace the corresponding state at runtime (the regex setter re-normalizes through the same string/RegExp/array logic used at construction). This lets an application reconfigure no-auth behavior, for example after login flows change which endpoints are public, without recreating the service.
+The lists are fixed when the service is built: there is no `setUseAuth`, `setNoAuthPaths` or `setNoAuthPathRegex`. An application whose public endpoints change at runtime overrides `isNoAuthPath` in a subclass, which `DefaultRestDataProvider.createNetworkService()` returns.
 
 ## Why this is not the fix for a 401
 

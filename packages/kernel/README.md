@@ -15,15 +15,15 @@ which re-exports this package.
 | Area | Exports |
 |---|---|
 | Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()` and `service()` helpers |
-| Services | `BaseService`, `BaseApiService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
+| Services | `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
 | Providers | `BaseProvider` |
 | Decorators | `api()` - logs and rethrows a failing API method |
 | Bindings | `CoreBindings`, `LocalStorageKeys` |
-| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConsts`, `Environments`, `App` |
-| Network | `AxiosNetworkRequest`, `NodeFetchNetworkRequest`, `AxiosFetcher`, `NodeFetcher` |
+| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
+| Network | `BaseNetworkRequest`, `NodeFetchNetworkRequest`, `NodeFetcher` (fetch only) |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
-| Utilities | `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse` |
-| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, `ICrudService`, ... |
+| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `toDataUrl`, `toQueryString`, `parseQueryString` |
+| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License
 

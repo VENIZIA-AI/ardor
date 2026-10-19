@@ -4,69 +4,91 @@ title: Makefile targets
 description: Every make target, its prerequisites, and what it does (generated).
 resource: Makefile
 tags: [reference, make, build]
+generated:
+  by: process:okf-gen
 ---
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**58 targets.**
+**78 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
-| `make all` | `build` | - |
-| `make install` | - | Installing dependencies |
-| `make clean` | - | Cleaning all packages |
-| `make setup-hooks` | - | Setting up git hooks |
-| `make agent-setup` | - | - |
-| `make okf-check` | - | - |
-| `make okf-gen` | - | - |
-| `make okf-coverage` | - | - |
-| `make okf-viz` | - | - |
-| `make split-report` | - | - |
-| `make surface-gen` | - | - |
-| `make surface-check` | - | - |
-| `make wiki-links-check` | - | - |
-| `make symbols-gen` | - | - |
-| `make symbols-check` | - | - |
-| `make releases-gen` | - | - |
-| `make releases-check` | - | - |
-| `make atlas-smoke` | - | - |
-| `make catalog-check` | - | - |
-| `make purity` | - | Checking browser purity for all claimed entries |
-| `make layer-check` | - | - |
-| `make cycles-check` | - | - |
-| `make size-check` | - | - |
-| `make purity-test` | - | Running the purity probe's regression tests |
-| `make test-scripts` | - | Running the repository gate scripts' regression tests |
-| `make lint-scripts` | - | Linting scripts/ |
-| `make build` | `build-all` | - |
-| `make build-all` | `kernel react admin ardor ui-kit` | All packages rebuilt successfully. |
-| `make kernel` | - | Rebuilding @venizia/ardor-kernel |
-| `make react` | `kernel` | Rebuilding @venizia/ardor-react |
-| `make admin` | `react` | Rebuilding @venizia/ardor-admin |
-| `make ardor` | `admin` | Rebuilding @venizia/ardor |
-| `make ui-kit` | - | Rebuilding @venizia/ardor-ui-kit |
-| `make docs` | - | Rebuilding wiki (VitePress) |
-| `make test` | `test-all` | - |
-| `make test-all` | `test-kernel test-react test-admin` | - |
-| `make test-kernel` | - | - |
-| `make test-react` | - | - |
-| `make test-admin` | - | - |
-| `make typecheck` | `typecheck-all` | - |
-| `make typecheck-all` | - | Type-checking all packages |
-| `make update` | - | Moving every @venizia/* catalog entry to the highest published version |
-| `make update-all` | `update` | - |
-| `make update-kernel` | - | Force updating @venizia/ardor-kernel |
-| `make update-react` | - | Force updating @venizia/ardor-react |
-| `make update-admin` | - | Force updating @venizia/ardor-admin |
-| `make update-ardor` | - | Force updating @venizia/ardor |
-| `make update-ui-kit` | - | Force updating @venizia/ardor-ui-kit |
-| `make lint` | `lint-packages lint-examples` | Linting completed. |
-| `make lint-packages` | - | Linting all packages |
-| `make lint-examples` | - | Linting examples/ |
-| `make examples-check` | - | - |
-| `make lint-kernel` | - | Linting @venizia/ardor-kernel |
-| `make lint-react` | - | Linting @venizia/ardor-react |
-| `make lint-admin` | - | Linting @venizia/ardor-admin |
-| `make lint-ardor` | - | Linting @venizia/ardor |
-| `make lint-ui-kit` | - | Linting @venizia/ardor-ui-kit |
-| `make help` | - | Makefile for the ARDOR Monorepo |
+| `make admin` | `react` | Rebuild one package, after its dependencies. |
+| `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
+| `make all` | `build` | Rebuilds all packages (alias for 'build-all'). |
+| `make ardor` | `admin` | Rebuild one package, after its dependencies. |
+| `make atlas-releases` | - | Print the release table atlas computes from the tags. |
+| `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
+| `make atlas-symbols` | - | Print the symbols atlas reads from the built .d.ts. Needs a build. |
+| `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
+| `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
+| `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |
+| `make changelogs-migrate` | - | Write the packages: list into changelog entries that declare none. |
+| `make clean` | - | Clean build artifacts from all packages. |
+| `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
+| `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make clean-install-ardor` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make clean-install-kernel` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
+| `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
+| `make fmt` | `fmt-packages` | fmt-<pkg> for every package. |
+| `make fmt-admin` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make fmt-ardor` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make fmt-kernel` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make fmt-packages` | `fmt-kernel fmt-react fmt-admin fmt-ardor` | fmt-<pkg> for every package. |
+| `make fmt-react` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make fmt-wiki` | - | Apply the lint fixes and oxfmt to docs/wiki. |
+| `make help` | - | Show this help message (a bare 'make' does the same). |
+| `make install` | - | Install all dependencies with bun. |
+| `make kernel` | - | Rebuild one package, after its dependencies. |
+| `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
+| `make layer-check` | - | Gate: no package imports a layer above it. |
+| `make lint` | `lint-packages` | lint-<pkg> for every package. |
+| `make lint-admin` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts` | lint-packages, lint-wiki and lint-scripts. |
+| `make lint-ardor` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-kernel` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
+| `make lint-react` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
+| `make lint-wiki` | - | Lint docs/wiki and check its format. |
+| `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |
+| `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
+| `make okf-coverage` | - | Report bundle coverage against the source inventory. |
+| `make okf-gen` | - | Regenerate source-derived reference content. |
+| `make okf-viz` | - | Build the offline knowledge-graph explorer. |
+| `make purity` | - | Gate: every entry claimed browser-pure has no node builtin or global. |
+| `make purity-admin` | - | Gate: one package's browser-pure entries. Needs a build. |
+| `make purity-ardor` | - | Gate: one package's browser-pure entries. Needs a build. |
+| `make purity-kernel` | - | Gate: one package's browser-pure entries. Needs a build. |
+| `make purity-react` | - | Gate: one package's browser-pure entries. Needs a build. |
+| `make purity-test` | - | Run the purity probe's own regression tests. |
+| `make react` | `kernel` | Rebuild one package, after its dependencies. |
+| `make release` | - | Dispatch the release workflow per package, e.g. ARGS="--yes". |
+| `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
+| `make setup-hooks` | - | Configure git to use .githooks directory. |
+| `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |
+| `make split-report` | - | Report hub files, stray types, missing barrels, long files, cycles (informational). |
+| `make surface-check` | - | Gate: the public surface equals the snapshot. |
+| `make surface-gen` | - | Snapshot every exported symbol into .agents/knowledge/reference/public-surface.md. |
+| `make test` | `test-all` | test-<pkg> for every package with a suite. |
+| `make test-admin` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-all` | `test-kernel test-react test-admin` | test-<pkg> for every package with a suite. |
+| `make test-ardor` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-kernel` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-react` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-scripts` | - | Run the repository gate scripts' own regression tests. |
+| `make typecheck` | `typecheck-all` | Type-check every package (tests included) without emitting. |
+| `make typecheck-all` | - | Type-check every package (tests included) without emitting. |
+| `make update` | - | Move every @venizia/* catalog entry to the highest published version. |
+| `make update-admin` | - | Force update one package's dependencies from NPM. |
+| `make update-all` | `update` | Move every @venizia/* catalog entry to the highest published version. |
+| `make update-ardor` | - | Force update one package's dependencies from NPM. |
+| `make update-kernel` | - | Force update one package's dependencies from NPM. |
+| `make update-react` | - | Force update one package's dependencies from NPM. |
+| `make vulcan-doctor` | - | Gate: the project follows VULCAN (config, layout, rules, make, adapters, style). |
+| `make vulcan-sync` | - | Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links. |
+| `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |
+| `make wiki-links-check` | - | Gate: every source path the wiki and knowledge bundle name exists. |

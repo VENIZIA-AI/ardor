@@ -1,9 +1,8 @@
 /**
  * Proves the atlas MCP server answers over THIS repository's corpora, not IGNIS's.
  *
- * The version is pinned because the `latest` dist-tag of `@venizia/ignis-atlas` still points at
- * 0.1.0-1, which predates family-checkout support. `ARDOR_ATLAS_CLI` overrides the entry with a
- * local checkout's `packages/atlas/src/cli.ts`.
+ * The server is the atlas VULCAN pins (`vulcan x atlas mcp`), the same command `.mcp.json` runs.
+ * `ARDOR_ATLAS_CLI` overrides it with a local VULCAN checkout's atlas CLI.
  *
  * Usage: bun scripts/atlas-smoke.ts
  */
@@ -13,7 +12,7 @@ const REPO = resolve(import.meta.dir, '..');
 const cli = process.env.ARDOR_ATLAS_CLI;
 const command = cli
   ? ['bun', cli, 'mcp', '--root', REPO]
-  : ['bunx', '@venizia/ignis-atlas@0.1.0-13', 'mcp', '--root', REPO];
+  : ['bun', 'x', '--no-install', 'vulcan', 'x', 'atlas', 'mcp', '--root', REPO];
 
 const server = Bun.spawn(command, { cwd: REPO, stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' });
 const decoder = new TextDecoder();
@@ -72,18 +71,26 @@ const initialized = await call({
     clientInfo: { name: 'atlas-smoke', version: '0' },
   },
 });
-const serverInfo = (initialized.result as { serverInfo?: { name?: string } } | undefined)
-  ?.serverInfo;
+const initializedResult = initialized.result as
+  | { serverInfo?: { name?: string }; instructions?: string }
+  | undefined;
+const serverInfo = initializedResult?.serverInfo;
+// The name stays `ardor-atlas` when `atlas.sources` serves IGNIS beside this checkout.
 check('server names itself after this repository', serverInfo?.name === 'ardor-atlas', serverInfo);
+for (const line of (initializedResult?.instructions ?? '').split('\n')) {
+  if (line.startsWith('- ignis:')) {
+    console.log(`info | ${line.slice(0, 160)}`);
+  }
+}
 server.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
 
 const tools = await call({ method: 'tools/list' });
 const names = ((tools.result as { tools?: { name: string }[] } | undefined)?.tools ?? []).map(
-  tool => tool.name,
+  (tool) => tool.name,
 );
 check(
   'exposes search, get, symbol, version, changes',
-  ['search', 'get', 'symbol', 'version', 'changes'].every(name => names.includes(name)),
+  ['search', 'get', 'symbol', 'version', 'changes'].every((name) => names.includes(name)),
   names,
 );
 
@@ -126,6 +133,6 @@ if (failures.length > 0) {
   console.error(`atlas smoke FAILED:\n  ${failures.join('\n  ')}`);
   process.exit(1);
 }
-console.log('atlas smoke OK - ardor-atlas serves this checkout');
+console.log(`atlas smoke OK - ${serverInfo?.name} serves this checkout`);
 
 export {};

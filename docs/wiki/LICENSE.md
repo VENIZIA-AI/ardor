@@ -1,6 +1,7 @@
-# Ardor Framework License
+# ARDOR Documentation License
 
-Ardor is a TypeScript Server Infrastructure framework built on [Hono](https://hono.dev/).
+`@venizia/ardor-docs` is the documentation site of ARDOR, the frontend application framework of the
+VENIZIA family. It is not published to npm.
 
 ## MIT License
 
@@ -26,76 +27,19 @@ SOFTWARE.
 
 ---
 
-## Packages
-
-This monorepo contains the following packages, all licensed under MIT:
-
-| Package | Description |
-|---------|-------------|
-| `@venizia/ignis` | Core framework - controllers, services, decorators |
-| `@venizia/ignis-boot` | Application bootstrapping & artifact auto-discovery |
-| `@venizia/ignis-helpers` | Utility helpers - logging, cron, Redis, queues, storage |
-| `@venizia/ignis-inversion` | Dependency Injection & IoC container |
-| `@venizia/dev-configs` | Shared ESLint, Prettier, TypeScript configurations |
-| `@venizia/ardor-docs` | Documentation site content |
-
----
-
 ## Third-Party Dependencies
 
-Ardor uses the following open-source libraries. We are grateful to the authors and contributors of these projects.
-
-### Core Dependencies
-
-| Library | License | Description |
-|---------|---------|-------------|
-| [Hono](https://github.com/honojs/hono) | MIT | Ultrafast web framework |
-| [Zod](https://github.com/colinhacks/zod) | MIT | TypeScript-first schema validation |
-| [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm) | Apache-2.0 | TypeScript ORM |
-| [Jose](https://github.com/panva/jose) | MIT | JavaScript Object Signing and Encryption |
-
-### Helpers Dependencies
-
-| Library | License | Description |
-|---------|---------|-------------|
-| [Winston](https://github.com/winstonjs/winston) | MIT | Universal logging library |
-| [BullMQ](https://github.com/taskforcesh/bullmq) | MIT | Message queue and job scheduling |
-| [IORedis](https://github.com/redis/ioredis) | MIT | Redis client for Node.js |
-| [MinIO](https://github.com/minio/minio-js) | Apache-2.0 | S3-compatible object storage client |
-| [Axios](https://github.com/axios/axios) | MIT | HTTP client |
-| [Day.js](https://github.com/iamkun/dayjs) | MIT | Date manipulation library |
-| [Cron](https://github.com/kelektiv/node-cron) | MIT | Cron job scheduler |
-| [Socket.IO](https://github.com/socketio/socket.io) | MIT | Real-time bidirectional communication |
-| [MQTT.js](https://github.com/mqttjs/MQTT.js) | MIT | MQTT client |
-
-### Utility Dependencies
-
-| Library | License | Description |
-|---------|---------|-------------|
-| [Lodash](https://github.com/lodash/lodash) | MIT | Utility library |
-| [reflect-metadata](https://github.com/rbuckton/reflect-metadata) | Apache-2.0 | Metadata reflection API |
-
-### Documentation Dependencies
+The framework packages and their dependencies are listed in the repository's
+[LICENSE.md](../../LICENSE.md). The site itself is built with:
 
 | Library | License | Description |
 |---------|---------|-------------|
 | [VitePress](https://github.com/vuejs/vitepress) | MIT | Static site generator |
-
----
-
-## Acknowledgments
-
-Ardor Framework is inspired by and built upon the work of many open-source projects:
-
-- **[Hono](https://hono.dev/)** by Yusuke Wada - The ultrafast web framework that powers Ardor
-- **[LoopBack 4](https://loopback.io/)** by IBM/StrongLoop - Inspiration for the enterprise architecture patterns
-- **[NestJS](https://nestjs.com/)** by Kamil Mysliwiec - Inspiration for decorator-based controllers
-- **[InversifyJS](https://inversify.io/)** - Inspiration for the IoC container design
-
-We thank all the maintainers and contributors of these projects for their excellent work.
+| [Vue](https://github.com/vuejs/core) | MIT | The framework VitePress renders with |
+| [vitepress-plugin-mermaid](https://github.com/emersonbottero/vitepress-plugin-mermaid) | MIT | Mermaid diagrams in VitePress |
 
 ---
 
 ## Contributing
 
-By contributing to Ardor, you agree that your contributions will be licensed under the MIT License.
+By contributing to ARDOR, you agree that your contributions will be licensed under the MIT License.

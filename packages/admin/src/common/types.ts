@@ -34,6 +34,7 @@ import {
   type AnyType,
   type DefaultNetworkRequestService,
   type ICustomParams,
+  type IDataSourceAuth,
   type ISendParams,
   type ISendResponse,
 } from '@venizia/ardor-kernel';
@@ -97,6 +98,9 @@ export interface IDataProvider<
   }) => Promise<ISendResponse<ReturnType>>;
 
   getNetworkService(): DefaultNetworkRequestService;
+
+  /** Spread into an `HttpDataSource`: the repository then sends what this provider sends. */
+  getDataSourceAuth(): IDataSourceAuth;
 }
 
 export interface IReactAdminAuthProvider {
@@ -106,6 +110,13 @@ export interface IReactAdminAuthProvider {
   checkError: (error: AnyType) => Promise<void>;
   getIdentity?: (params?: QueryFunctionContext) => Promise<UserIdentity>;
   getPermissions: (params: AnyType & QueryFunctionContext) => Promise<AnyType>;
+  /** Present only when the application binds `CoreBindings.PERMISSION_PROVIDER`. */
+  canAccess?: (params: {
+    resource: string;
+    action: string;
+    record?: unknown;
+    signal?: AbortSignal;
+  }) => Promise<boolean>;
 }
 
 export interface IAuthProvider extends IReactAdminAuthProvider {
@@ -115,7 +126,7 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
 
 export interface II18nProviderOptions {
   i18nSources?: Record<string | symbol, AnyType>;
-  listLanguages?: Locale[];
+  languages?: Array<Locale>;
 }
 
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
@@ -125,8 +136,8 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   reduxStore: Store;
   suspense: ReactNode;
 
-  resources: Array<ResourceProps>;
-  customRoutes?: {
-    routes: Array<RouteProps>;
-  };
+  /** The application's own resources; each feature's are mounted after them. */
+  resources?: Array<ResourceProps>;
+  /** The application's own routes; each feature's are mounted after them. */
+  routes?: Array<RouteProps>;
 }

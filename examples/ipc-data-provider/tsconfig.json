@@ -1,30 +1,20 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "@venizia/dev-configs/tsconfig.browser.json",
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun"
-    ],
-    "strict": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["bun"],
     "noEmit": true,
-    "skipLibCheck": true,
+
+    // Restated, not inherited: Bun ignores an `extends` that names a package.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
+
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

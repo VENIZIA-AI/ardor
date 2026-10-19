@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { cleanup, renderHook } from '@testing-library/react';
 
 import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
-import { CoreBindings, HeaderConsts, Logger } from '@venizia/ardor-kernel';
+import { CoreBindings, HeaderConstants, Logger } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -27,7 +27,7 @@ interface ITestHarness {
 const createTestHarness = (opts: ICreateTestHarnessOptions): ITestHarness => {
   const expectedLocale = opts.expectedLocale ?? 'en';
   const container = new Container();
-  const setHeadersMock = mock((_headers: Record<string, string>) => {
+  const setHeadersMock = mock((_opts: { headers: Record<string, string> }) => {
     return undefined;
   });
 
@@ -61,7 +61,6 @@ const createTestHarness = (opts: ICreateTestHarnessOptions): ITestHarness => {
       {
         value: {
           container,
-          registry: container,
           logger: Logger.getInstance({ scope: 'test' }),
         },
       },
@@ -106,10 +105,10 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      [HeaderConsts.X_LOCALE]: harness.expectedLocale,
+      headers: { [HeaderConstants.X_LOCALE]: harness.expectedLocale },
     });
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      'x-locale': harness.expectedLocale,
+      headers: { 'x-locale': harness.expectedLocale },
     });
   });
 
@@ -127,7 +126,7 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      'x-locale': harness.expectedLocale,
+      headers: { 'x-locale': harness.expectedLocale },
     });
   });
 
@@ -145,10 +144,10 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      'x-custom-locale': harness.expectedLocale,
+      headers: { 'x-custom-locale': harness.expectedLocale },
     });
     expect(harness.setHeadersMock).not.toHaveBeenCalledWith({
-      'x-locale': harness.expectedLocale,
+      headers: { 'x-locale': harness.expectedLocale },
     });
   });
 
@@ -167,14 +166,14 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      'x-first-locale': harness.expectedLocale,
+      headers: { 'x-first-locale': harness.expectedLocale },
     });
 
     rerender({ key: 'x-second-locale' });
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(2);
     expect(harness.setHeadersMock).toHaveBeenLastCalledWith({
-      'x-second-locale': harness.expectedLocale,
+      headers: { 'x-second-locale': harness.expectedLocale },
     });
   });
 });

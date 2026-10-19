@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 import { api } from '@/base/decorators/api';
-import { BaseApiService } from '@/base/services/api';
+import { BaseService } from '@/base/services/base';
+import { rejectionOf } from '@/__tests__/rejection';
 
 interface ITestFetchPayload {
   id: string;
@@ -16,9 +17,12 @@ interface ITestFailingPayload {
   error: Error;
 }
 
-class TestApiService extends BaseApiService {
+class TestApiService extends BaseService {
+  protected resource: string;
+
   constructor(opts: { scope: string; resource: string }) {
-    super({ scope: opts.scope, resource: opts.resource });
+    super({ scope: opts.scope });
+    this.resource = opts.resource;
   }
 
   @api()
@@ -73,13 +77,39 @@ describe('api decorator', () => {
     activeSpy = errorSpy;
     const expectedError = getError({ message: 'ARDOR service failure' });
 
-    expect(service.failingMethod({ error: expectedError })).rejects.toBe(expectedError);
+    expect(await rejectionOf(service.failingMethod({ error: expectedError }))).toBe(expectedError);
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
       '[%s] resource: %s | error: %o',
       'failingMethod',
       'items',
+      expectedError,
+    );
+  });
+
+  test('logs "-" for a service with no resource', async () => {
+    class PlainService extends BaseService {
+      constructor() {
+        super({ scope: 'plain' });
+      }
+
+      @api()
+      async fail(opts: ITestFailingPayload): Promise<never> {
+        throw opts.error;
+      }
+    }
+
+    const service = new PlainService();
+    const errorSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    activeSpy = errorSpy;
+    const expectedError = getError({ message: 'no resource' });
+
+    expect(await rejectionOf(service.fail({ error: expectedError }))).toBe(expectedError);
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[%s] resource: %s | error: %o',
+      'fail',
+      '-',
       expectedError,
     );
   });

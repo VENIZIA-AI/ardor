@@ -11,6 +11,17 @@ export class Authentication {
 
   static readonly STRATEGY_BASIC = 'basic';
   static readonly STRATEGY_JWT = 'jwt';
+
+  static readonly SCHEME_SET = new Set([
+    this.TYPE_BASIC,
+    this.TYPE_BEARER,
+    this.STRATEGY_BASIC,
+    this.STRATEGY_JWT,
+  ]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
 }
 
 export class RequestMethods {
@@ -32,8 +43,8 @@ export class RequestMethods {
     this.DELETE,
   ]);
 
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 
@@ -64,8 +75,8 @@ export class RequestTypes {
     this.DELETE_MANY,
   ]);
 
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 
@@ -84,8 +95,8 @@ export class RequestBodyTypes {
     this.BINARY,
   ]);
 
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 
@@ -95,12 +106,12 @@ export class Environments {
 
   static readonly SCHEME_SET = new Set([this.DEVELOPMENT, this.PRODUCTION]);
 
-  static isValid(input: string): boolean {
-    return this.SCHEME_SET.has(input);
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
   }
 }
 
-export class HeaderConsts {
+export class HeaderConstants {
   static readonly CONTENT_TYPE = 'content-type';
 
   /**
@@ -118,8 +129,9 @@ export class HeaderConsts {
   static readonly X_AUTH_PROVIDER = 'x-auth-provider';
   static readonly X_LOCALE = 'x-locale';
 
-  static readonly TIMEZONE = 'Timezone';
-  static readonly TIMEZONE_OFFSET = 'Timezone-Offset';
+  // Lowercase: the service keys its header record by lowercased name.
+  static readonly TIMEZONE = 'timezone';
+  static readonly TIMEZONE_OFFSET = 'timezone-offset';
 
   static readonly REQUEST_TRACING_ID = 'x-request-id';
   static readonly REQUEST_DEVICE_INFO = 'x-device-info';
@@ -138,6 +150,12 @@ export class HeaderConsts {
 
 export class RequestChannel {
   static readonly WEB = '100_WEB';
+
+  static readonly SCHEME_SET = new Set([this.WEB]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
 }
 
 export class RequestCountData {
@@ -150,4 +168,10 @@ export class RequestCountData {
    * @description Both data and count are returned in the response body
    */
   static readonly DATA_WITH_COUNT = '1';
+
+  static readonly SCHEME_SET = new Set([this.DATA_ONLY, this.DATA_WITH_COUNT]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
 }

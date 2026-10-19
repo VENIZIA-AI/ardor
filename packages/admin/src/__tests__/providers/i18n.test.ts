@@ -33,7 +33,7 @@ describe('DefaultI18nProvider', () => {
           },
         },
       },
-      listLanguages: [{ locale: 'vi', name: 'Tieng Viet' }],
+      languages: [{ locale: 'vi', name: 'Tieng Viet' }],
     });
     const i18n = provider.value(container);
 
@@ -44,7 +44,7 @@ describe('DefaultI18nProvider', () => {
     expect(i18n.translate('ra.action.add')).toBe('Add');
   });
 
-  test('returns default listLanguages when options omit listLanguages', () => {
+  test('returns default languages when options omit languages', () => {
     const container = new Container();
     const provider = new DefaultI18nProvider({});
     const i18n = provider.value(container);
@@ -52,14 +52,73 @@ describe('DefaultI18nProvider', () => {
     expect(i18n.getLocales?.()).toEqual([{ locale: 'en', name: 'English' }]);
   });
 
-  test('returns listLanguages matching configured options', () => {
+  test('returns languages matching configured options', () => {
     const container = new Container();
-    const listLanguages = [{ locale: 'vi', name: 'Tieng Viet' }];
+    const languages = [{ locale: 'vi', name: 'Tieng Viet' }];
     const provider = new DefaultI18nProvider({
-      listLanguages,
+      languages,
     });
     const i18n = provider.value(container);
 
-    expect(i18n.getLocales?.()).toEqual(listLanguages);
+    expect(i18n.getLocales?.()).toEqual(languages);
+  });
+});
+
+describe('DefaultI18nProvider hooks', () => {
+  const setNavigatorLanguage = (language: string | undefined) => {
+    Object.defineProperty(navigator, 'language', { value: language, configurable: true });
+  };
+
+  test('reads navigator.language when the provider is built, not when the module is imported', () => {
+    const original = navigator.language;
+
+    try {
+      setNavigatorLanguage('vi-VN');
+      const i18n = new DefaultI18nProvider({
+        languages: [
+          { locale: 'en', name: 'English' },
+          { locale: 'vi', name: 'Tieng Viet' },
+        ],
+      }).value(new Container());
+      expect(i18n.getLocale()).toBe('vi');
+
+      setNavigatorLanguage('fr-FR');
+      const unlisted = new DefaultI18nProvider({
+        languages: [
+          { locale: 'en', name: 'English' },
+          { locale: 'vi', name: 'Tieng Viet' },
+        ],
+      }).value(new Container());
+      expect(unlisted.getLocale()).toBe('en');
+    } finally {
+      setNavigatorLanguage(original);
+    }
+  });
+
+  test('resolveInitialLocale decides the initial locale', () => {
+    class StoredLocaleProvider extends DefaultI18nProvider {
+      protected override resolveInitialLocale(opts: { locales: Array<string> }) {
+        return opts.locales.includes('vi') ? 'vi' : 'en';
+      }
+    }
+
+    const i18n = new StoredLocaleProvider({
+      languages: [{ locale: 'vi', name: 'Tieng Viet' }],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test('composeMessages decides the messages of a locale', () => {
+    class BrandedProvider extends DefaultI18nProvider {
+      protected override composeMessages(opts: { locale: string; messages: object }) {
+        return { ...super.composeMessages(opts), app: { brand: 'Ardor (branded)' } };
+      }
+    }
+
+    const i18n = new BrandedProvider({}).value(new Container());
+
+    expect(i18n.translate('app.brand')).toBe('Ardor (branded)');
+    expect(i18n.translate('ra.action.add')).toBe('Add');
   });
 });

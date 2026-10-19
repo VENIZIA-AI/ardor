@@ -37,7 +37,7 @@ interface IRecordedRequest {
 
 interface IRecordedSendCall {
   opts: IRequestOptions;
-  logger?: unknown;
+  argumentCount: number;
 }
 
 type TServer = ReturnType<typeof Bun.serve>;
@@ -55,14 +55,18 @@ class RecordingFetchableHelper extends AbstractNetworkFetchableHelper<
   IRequestOptions,
   Response
 > {
+  public get hasLogger(): boolean {
+    return typeof this.logger.info === 'function';
+  }
+
   public readonly recordedSendCalls: Array<IRecordedSendCall> = [];
 
   constructor(opts: { name: string }) {
     super({ name: opts.name, variant: 'node-fetch', worker: fetch });
   }
 
-  public override send = async (opts: IRequestOptions, logger?: unknown): Promise<Response> => {
-    this.recordedSendCalls.push({ opts, logger });
+  public override send = async (...args: [IRequestOptions]): Promise<Response> => {
+    this.recordedSendCalls.push({ opts: args[0], argumentCount: args.length });
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   };
 }
@@ -405,93 +409,80 @@ describe('NodeFetchNetworkRequest network service and NodeFetcher execution', ()
   });
 });
 
+// The Fetch standard upper-cases only GET, POST, PUT, DELETE, HEAD and OPTIONS: a browser sends a
+// lowercase `patch` as written and a strict router answers 405. Bun upper-cases it anyway, so a stub
+// server cannot show the bug - these tests pin the method the helper passes on.
 describe('AbstractNetworkFetchableHelper HTTP method delegation', () => {
-  test('get delegates to send with lowercase get method and forwards logger', async () => {
+  test('get delegates to send with the GET method and nothing else', async () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-get-helper' });
-    const dummyLogger = { info: () => {} };
 
-    await helper.get({ url: 'http://127.0.0.1:3000/users' }, dummyLogger);
+    await helper.get({ url: 'http://127.0.0.1:3000/users' });
 
     expect(helper.recordedSendCalls.length).toBe(1);
-    expect(helper.recordedSendCalls[0].opts.method).toBe('get');
+    expect(helper.recordedSendCalls[0].opts.method).toBe('GET');
     expect(helper.recordedSendCalls[0].opts.url).toBe('http://127.0.0.1:3000/users');
-    expect(helper.recordedSendCalls[0].logger).toBe(dummyLogger);
+    // The helper owns its logger: a call carries no logger argument.
+    expect(helper.recordedSendCalls[0].argumentCount).toBe(1);
   });
 
-  test('post delegates to send with lowercase post method and forwards logger', async () => {
+  test('post delegates to send with the POST method and the body', async () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-post-helper' });
-    const dummyLogger = { info: () => {} };
 
-    await helper.post(
-      {
-        url: 'http://127.0.0.1:3000/users',
-        body: { username: 'ardor-dev' },
-      },
-      dummyLogger,
-    );
+    await helper.post({ url: 'http://127.0.0.1:3000/users', body: { username: 'ardor-dev' } });
 
     expect(helper.recordedSendCalls.length).toBe(1);
-    expect(helper.recordedSendCalls[0].opts.method).toBe('post');
+    expect(helper.recordedSendCalls[0].opts.method).toBe('POST');
     expect(helper.recordedSendCalls[0].opts.url).toBe('http://127.0.0.1:3000/users');
     expect(helper.recordedSendCalls[0].opts.body).toEqual({ username: 'ardor-dev' });
-    expect(helper.recordedSendCalls[0].logger).toBe(dummyLogger);
+    expect(helper.recordedSendCalls[0].argumentCount).toBe(1);
   });
 
-  test('put delegates to send with lowercase put method and forwards logger', async () => {
+  test('put delegates to send with the PUT method and the body', async () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-put-helper' });
-    const dummyLogger = { info: () => {} };
 
-    await helper.put(
-      {
-        url: 'http://127.0.0.1:3000/users/42',
-        body: { role: 'admin' },
-      },
-      dummyLogger,
-    );
+    await helper.put({ url: 'http://127.0.0.1:3000/users/42', body: { role: 'admin' } });
 
     expect(helper.recordedSendCalls.length).toBe(1);
-    expect(helper.recordedSendCalls[0].opts.method).toBe('put');
+    expect(helper.recordedSendCalls[0].opts.method).toBe('PUT');
     expect(helper.recordedSendCalls[0].opts.url).toBe('http://127.0.0.1:3000/users/42');
     expect(helper.recordedSendCalls[0].opts.body).toEqual({ role: 'admin' });
-    expect(helper.recordedSendCalls[0].logger).toBe(dummyLogger);
+    expect(helper.recordedSendCalls[0].argumentCount).toBe(1);
   });
 
-  test('patch delegates to send with lowercase patch method and forwards logger', async () => {
+  test('patch delegates to send with the PATCH method and the body', async () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-patch-helper' });
-    const dummyLogger = { info: () => {} };
 
-    await helper.patch(
-      {
-        url: 'http://127.0.0.1:3000/users/42',
-        body: { active: false },
-      },
-      dummyLogger,
-    );
+    await helper.patch({ url: 'http://127.0.0.1:3000/users/42', body: { active: false } });
 
     expect(helper.recordedSendCalls.length).toBe(1);
-    expect(helper.recordedSendCalls[0].opts.method).toBe('patch');
+    expect(helper.recordedSendCalls[0].opts.method).toBe('PATCH');
     expect(helper.recordedSendCalls[0].opts.url).toBe('http://127.0.0.1:3000/users/42');
     expect(helper.recordedSendCalls[0].opts.body).toEqual({ active: false });
-    expect(helper.recordedSendCalls[0].logger).toBe(dummyLogger);
+    expect(helper.recordedSendCalls[0].argumentCount).toBe(1);
   });
 
-  test('delete delegates to send with lowercase delete method and forwards logger', async () => {
+  test('delete delegates to send with the DELETE method', async () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-delete-helper' });
-    const dummyLogger = { info: () => {} };
 
-    await helper.delete({ url: 'http://127.0.0.1:3000/users/42' }, dummyLogger);
+    await helper.delete({ url: 'http://127.0.0.1:3000/users/42' });
 
     expect(helper.recordedSendCalls.length).toBe(1);
-    expect(helper.recordedSendCalls[0].opts.method).toBe('delete');
+    expect(helper.recordedSendCalls[0].opts.method).toBe('DELETE');
     expect(helper.recordedSendCalls[0].opts.url).toBe('http://127.0.0.1:3000/users/42');
-    expect(helper.recordedSendCalls[0].logger).toBe(dummyLogger);
+    expect(helper.recordedSendCalls[0].argumentCount).toBe(1);
   });
 
-  test('getWorker and getProtocol return worker instance and correct protocol strings', () => {
+  test('getWorker returns the worker, and getProtocol takes an opts object', () => {
     const helper = new RecordingFetchableHelper({ name: 'ardor-worker-helper' });
 
     expect(helper.getWorker()).toBe(fetch);
-    expect(helper.getProtocol('http://127.0.0.1:3000/api')).toBe('http');
-    expect(helper.getProtocol('https://api.ardor.dev/api')).toBe('https');
+    expect(helper.getProtocol({ url: 'http://127.0.0.1:3000/api' })).toBe('http');
+    expect(helper.getProtocol({ url: 'https://api.ardor.dev/api' })).toBe('https');
+  });
+
+  test('the helper owns a logger named after it', () => {
+    const helper = new RecordingFetchableHelper({ name: 'ardor-logger-helper' });
+
+    expect(helper.hasLogger).toBe(true);
   });
 });

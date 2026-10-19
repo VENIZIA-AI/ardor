@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.1.1-1",
+  "version": "0.1.4",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "engines": {
-    "bun": ">=1.3"
+    "bun": ">=1.4"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -44,6 +44,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./repository": {
+      "types": "./dist/repository.d.ts",
+      "import": "./dist/repository.js",
+      "default": "./dist/repository.js"
     },
     "./socket-io": {
       "types": "./dist/socket-io.d.ts",
@@ -65,34 +70,37 @@
   },
   "scripts": {
     "force-update": "sh ./scripts/force-update.sh",
-    "build": "sh ./scripts/build.sh",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "clean": "sh ./scripts/clean.sh",
-    "eslint": "eslint --report-unused-disable-directives .",
-    "lint": "bun run eslint && bun run prettier:cli",
-    "lint:fix": "bun run eslint --fix && bun run prettier:fix",
-    "prettier:cli": "prettier \"**/*.{js,ts,tsx}\" -l",
-    "prettier:fix": "bun run prettier:cli --write",
-    "rebuild": "sh ./scripts/rebuild.sh no-version",
-    "prepublishOnly": "bun run rebuild",
-    "size": "size-limit"
+    "prepublishOnly": "make rebuild"
   },
   "dependencies": {
-    "@venizia/ardor-admin": "^0.1.1-1",
-    "@venizia/ardor-kernel": "^0.1.1-1",
-    "@venizia/ardor-react": "^0.1.1-1"
+    "@venizia/ardor-admin": "workspace:*",
+    "@venizia/ardor-kernel": "workspace:*",
+    "@venizia/ardor-react": "workspace:*"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.12.0",
     "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-filter": ">=0.2.0-7",
-    "@venizia/ignis-inversion": ">=0.2.0-7",
+    "@venizia/ignis-connectors": "^0.2.2",
+    "@venizia/ignis-filter": "^0.2.2",
+    "@venizia/ignis-helpers": "^0.2.2",
+    "@venizia/ignis-inversion": "^0.2.2",
+    "@venizia/ignis-kernel": "^0.2.2",
     "ra-core": ">=5.15.0",
+    "ra-i18n-polyglot": ">=5.15.0",
     "react": ">=18.0",
     "react-dom": ">=18.0",
     "react-redux": ">=9.3.0",
     "react-router-dom": ">=7.9.4",
-    "reflect-metadata": ">=0.2.2"
+    "reflect-metadata": ">=0.2.2",
+    "socket.io-client": ">=4.8.3"
+  },
+  "peerDependenciesMeta": {
+    "@venizia/ignis-connectors": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -102,10 +110,14 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-connectors": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-kernel": "catalog:",
     "eslint": "catalog:",
-    "prettier": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "ra-core": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -113,6 +125,7 @@
     "react-router-dom": "catalog:",
     "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
+    "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },

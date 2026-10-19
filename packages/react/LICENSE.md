@@ -37,7 +37,6 @@ This monorepo contains the following packages, all licensed under MIT:
 | `@venizia/ardor-kernel` | Isomorphic core - application base, services, network layer, utilities |
 | `@venizia/ardor-react` | React bindings - application context, injectable and UI hooks |
 | `@venizia/ardor-admin` | react-admin adapter - data, auth and i18n providers |
-| `@venizia/ardor-ui-kit` | Design system - Tailwind and Radix components, design tokens |
 
 ---
 

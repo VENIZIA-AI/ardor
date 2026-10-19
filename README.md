@@ -9,7 +9,7 @@
 [![Docs](https://img.shields.io/badge/Docs-ardor.venizia.ai-0369A1.svg?style=flat-square)](https://ardor.venizia.ai)
 [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837&label=@venizia/ardor)](https://www.npmjs.com/package/@venizia/ardor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg?style=flat-square)](LICENSE.md)
-[![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3-f472b6.svg?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
+[![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.4-f472b6.svg?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 [Documentation](https://ardor.venizia.ai) &#8226;
@@ -30,15 +30,17 @@ through hooks; the data layer speaks the IGNIS filter vocabulary to your API.
 ## Install
 
 ```bash
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter reflect-metadata
-bun add ra-core react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors reflect-metadata
+bun add ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
 bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 ```
 
 > [!IMPORTANT]
-> `experimentalDecorators` and `emitDecoratorMetadata` must be `true` in your `tsconfig.json`, declared
-> **inline** - a bundler does not resolve them through `extends`, and `@inject` is silently dropped without
-> them. Import `reflect-metadata` once, before the application class is defined.
+> `experimentalDecorators: true`, `emitDecoratorMetadata: true` and `useDefineForClassFields: false` must
+> be declared **inline** in your own `tsconfig.json`. Bun ignores an `extends` that names a package (a
+> preset such as `@venizia/dev-configs/tsconfig.common.json`), and a bundler may too, while `tsc` stays
+> green - so `@inject` is silently dropped. Import `reflect-metadata` once, before the application class
+> is defined.
 
 ## Hello world
 
@@ -46,26 +48,69 @@ bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
 import 'reflect-metadata';
 
 import {
-  api, BaseApiService, BaseArdorApplication, CoreBindings,
-  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultRestDataProvider,
-  type IApplicationInfo, type IDataProvider, type ISendParams, RequestMethods,
+  type BaseArdorApplication as TArdorApplication, BaseArdorApplication, configuration, CoreBindings, datasource,
+  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultNetworkRequestService, DefaultRestDataProvider,
+  repository, RepositoryTypes, type IApplicationInfo, inject, provide,
 } from '@venizia/ardor';
-import { inject } from '@venizia/ignis-inversion';
+import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
-class ProductApi extends BaseApiService {
-  constructor(@inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) protected dataProvider: IDataProvider) {
-    super({ scope: ProductApi.name, resource: 'products' });
-  }
-
-  @api()
-  async findAll(): Promise<{ id: number; name: string }[]> {
-    const params: ISendParams = { method: RequestMethods.GET };
-    return (await this.dataProvider.send<{ id: number; name: string }[]>({ resource: this.resource, params })).data;
+// Declared, as in IGNIS: start() discovers both classes and binds each as a singleton.
+@datasource()
+class ApiDataSource extends HttpDataSource {
+  constructor() {
+    super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
   }
 }
 
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides extends Record<keyof ReturnType<Application['bindingList']>, unknown> {}
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
+class ProductRepository extends HttpRepository<{ id: number; name: string }> {
+  constructor(dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'products' });
+  }
+}
+
+// Every framework binding, declared: start() binds each @provide method under its key, SINGLETON,
+// built on first use - react-admin, the auth provider and every hook share one data provider.
+@configuration()
+class AdminConfiguration {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
+  ) {}
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions() {
+    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+  }
+
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions() {
+    return { paths: { afterLogin: '/products' } };
+  }
+
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  i18nProviderOptions() {
+    return {};
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+  restDataProvider() {
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
+  authService() {
+    return this.application.instantiate(DefaultAuthService);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+  authProvider() {
+    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  }
+
+  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+  i18nProvider() {
+    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  }
 }
 
 class Application extends BaseArdorApplication {
@@ -73,29 +118,15 @@ class Application extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext(): void {
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/login'] });
-    this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ paths: { signIn: '/auth/login' }, endpoints: { afterLogin: '/products' } });
-    this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue({});
-
-    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(DefaultRestDataProvider);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
-    this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(DefaultI18nProvider);
-  }
-
-  // Literal keys survive a minifier and type `useInjectable` through the augmentation above.
-  override bindingList() {
-    return { 'services.ProductApi': ProductApi };
-  }
+  bindContext(): void {}
 }
 ```
 
 ```tsx
-import { ArdorApplication, useInjectable, useTranslate } from '@venizia/ardor';
+import { ArdorApplication, useRepository, useTranslate } from '@venizia/ardor';
 
 const ProductList = () => {
-  const productApi = useInjectable<ProductApi>({ key: 'services.ProductApi' });
+  const products = useRepository({ target: ProductRepository });
   const translate = useTranslate();
   // ...
 };
@@ -121,7 +152,6 @@ then the [references](https://ardor.venizia.ai/references/).
 | **i18n with typed keys** | English and Vietnamese bundles, `useTranslate` keys typed through module augmentation |
 | **Hooks** | `useDebounce`, `useAutosave`, `useConfirm`, `useNotifyError`, `useRefreshToken`, typed Redux hook factories |
 | **Browser-pure core** | `ardor-kernel` imports no Node builtin and no React; every package is gated for purity, layering, bundle size and a public-surface snapshot |
-| **A design system** | `ardor-ui-kit`: Tailwind + Radix components and Figma-derived tokens |
 
 [References](https://ardor.venizia.ai/references/) &#8226;
 [Extensions](https://ardor.venizia.ai/extensions/) &#8226;
@@ -131,18 +161,15 @@ then the [references](https://ardor.venizia.ai/references/).
 
 In release order - each builds on the ones above it.
 
-| Package | Role | Latest | Highest |
-| :--- | :--- | ---: | ---: |
-| [`@venizia/ardor-kernel`](packages/kernel/) | Isomorphic core: application base, services, network layer, constants and keys | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-kernel/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
-| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-react/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-react) |
-| [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-admin/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-admin) |
-| [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor) |
-| [`@venizia/ardor-ui-kit`](packages/ui-kit/) | Design system: Tailwind + Radix components, design tokens | [![npm](https://img.shields.io/npm/v/@venizia/ardor-ui-kit.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-ui-kit) | [![npm highest](https://img.shields.io/npm/v/@venizia/ardor-ui-kit/highest.svg?style=flat-square&color=0ea5e9)](https://www.npmjs.com/package/@venizia/ardor-ui-kit) |
+| Package | Role | Version |
+| :--- | :--- | ---: |
+| [`@venizia/ardor-kernel`](packages/kernel/) | Isomorphic core: application base, services, network layer, constants and keys | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
+| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) |
+| [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) |
+| [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) |
 
-**Latest** is the stable line. **Highest** is the newest published version, prerelease included, and
-it is the tag this repository releases to today. ARDOR tracks the **highest** published IGNIS line
-(`@venizia/ignis-inversion`, `@venizia/ignis-filter`, `@venizia/dev-configs`) - never `latest`. The
-documentation site lives in [`docs/wiki`](docs/wiki/) and is not published to npm.
+ARDOR 0.1.4 is on the npm `latest` tag. It is built on stable IGNIS: the workspace catalog pins `@venizia/ignis-*` 0.2.2, `@venizia/ignis-boot` 0.2.1 and `@venizia/dev-configs` 0.3.1, and every ARDOR package peers on `@venizia/ignis-*` `^0.2.2`. The documentation site lives in
+[`docs/wiki`](docs/wiki/) and is not published to npm.
 
 ## Is ARDOR for you?
 
@@ -184,22 +211,22 @@ bun run dev          # Vite on :5173
 ```bash
 git clone https://github.com/VENIZIA-AI/ardor.git && cd ardor
 bun install
-make build           # kernel -> react -> admin -> ardor -> ui-kit
-make test            # bun test, every package
-make lint
+make build           # kernel -> react -> admin -> ardor
+make test            # bun test, every package with a suite
+make lint-all
 make docs            # the wiki, with the sidebar and snippet gates
 ```
 
 Conventional Commits (`feat:`, `fix:`, `docs:`, ...), branches `feature/*` / `fix/*`, and **PRs target
 `develop`**. Bun only - never npm, yarn, or pnpm. See [CONTRIBUTING.md](CONTRIBUTING.md),
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md). Agents read
-[AGENTS.md](AGENTS.md); `make agent-setup` links the rules and the knowledge bundle into your tool.
+[AGENTS.md](AGENTS.md); `make vulcan-sync` sets up your agent through VULCAN (`@venizia/vulcan`).
 
 ## Migrating from `@minimaltech/ra-core-infra`
 
 ARDOR is that package, split and rebranded. See the
 [migration guide](https://ardor.venizia.ai/guides/migration/from-ra-core-infra) - four mechanical
-edits plus four symbol renames.
+edits, four symbol renames among them.
 
 ## Credits
 

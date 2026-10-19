@@ -1,0 +1,179 @@
+---
+type: Concept
+title: Artifact registration
+description: How a class gets from a stereotype decorator to a React component - declared with @service() and the rest, discovered at import time, bound by registerArtifacts() before bindingList() and bindContext(), resolved by useInjectable and the per-stereotype hooks.
+resource: packages/kernel/src/base/applications/abstract.ts
+tags: [architecture, dependency-injection, stereotypes, registration, hooks, ignis]
+---
+
+# Artifact registration
+
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [Declare](#declare)
+- [Discover](#discover)
+- [Bind](#bind)
+- [Resolve](#resolve)
+- [Reading a failed resolve](#reading-a-failed-resolve)
+- [Related](#related)
+<!-- okf:generated:contents end -->
+
+A class reaches a component in four steps, and each step lives in a different place: the stereotype
+**declares** it (IGNIS, `@venizia/ignis-kernel/metadata`), the import **discovers** it, the
+application **binds** it (`packages/kernel/src/base/applications/abstract.ts`), and a hook
+**resolves** it (`packages/react/src/hooks/use-injectable.ts` and `use-artifact.ts`). The container
+itself - what a binding is, scopes, `@inject` - is in [DI in the browser](/architecture/di-in-the-browser.md).
+
+## Declare
+
+`packages/kernel/src/base/metadata/index.ts` re-exports, name by name, from
+`@venizia/ignis-kernel/metadata`: the class stereotypes `service`, `component`, `configuration`,
+`model`, `repository`, `datasource` and the root `injectable({ type })` they all call; the `provide`
+method decorator and `inject`; the constants `BindingNamespaces`, `ArtifactNamespaces`,
+`ArtifactTypes`, `BindingKeys`; and the types `IArtifactMetadata`, `IArtifactRegistrationOptions`,
+`TBindingNamespace`, `TBindingScope`. Beside them, `RepositoryTypes` (and `TRepositoryType`) comes from
+`@venizia/ignis-kernel/repository`: `@repository({ type: RepositoryTypes.REMOTE, dataSource })` declares
+a repository with no model, such as an `HttpRepository`. ARDOR defines no stereotype of its own, so a class written for
+a worker and one written for a browser register the same way. They are legacy TypeScript decorators
+(`@inject` decorates constructor parameters), so an application compiles with
+`experimentalDecorators`, as every example does.
+
+The list is explicit rather than `export *` so that a name added upstream is published on purpose,
+and a collision with ARDOR's own surface is caught at that line. **`CoreBindings` is the collision
+that already happened**: IGNIS's and ARDOR's are different dictionaries sharing the member
+`APPLICATION_INSTANCE` with different values (`'@app/instance'` against
+`'@app/application/instance'`). Upstream dropped its own from `./metadata` for that reason, and only
+ARDOR's is reachable from ARDOR. `MetadataRegistry` and `pickRegistrationOptions` are left out too.
+
+At decoration time - which is import time - a stereotype:
+
+1. Checks an explicit `binding.namespace` with `BindingNamespaces.assertArtifactNamespace` - shape
+   only (one segment, no `.`, no whitespace) - and throws on the spot.
+2. Appends the class to the discovery list.
+3. Records a binding key on the class through `reflect-metadata`: `<namespace>.<key>` from an
+   explicit `binding: { namespace, key }`, else the kind's namespace from `ArtifactNamespaces`
+   (`services`, `components`, `configurations`, `models`, `repositories`, `datasources`) plus
+   `Class.name`. No stereotype maps to `providers`.
+4. `@repository` only: registers the datasource injection at constructor parameter 0, under
+   `datasources.<ClassName>` of the declared datasource. An explicit `@inject` there is validated now:
+   a keyed inject must be under `datasources.`, and an `@inject({ target })` whose class has no key
+   yet (a datasource registered by hand in `bindContext()`) is judged by its class. The latter needs
+   IGNIS kernel 0.2.0-47; earlier kernels threw at import.
+
+The key is read as the class's own metadata, never inherited: an undecorated subclass of a
+stereotyped class carries no key and is not discovered.
+
+## Discover
+
+There is no filesystem scan - a class exists at run time only because something imported it, which is
+why a browser bundle needs nothing extra. A file nobody imports registers nothing, and neither does an
+`import type`, which the compiler erases.
+
+An application can hold its classes by value instead of by side-effect import: `artifacts()` returns
+the indexes `ignis-artifacts generate` (`@venizia/ignis-boot`) emits, typed `IArtifactIndex` in
+`packages/kernel/src/common/types.ts` - one class list per kind, the same six fields as IGNIS's
+index. The index adds no binding; discovery still binds every stereotyped class.
+`registerArtifacts()` first throws `[artifacts] '<kind>' lists <Class>, which was never
+discovered` for a listed class with no stereotype, a stale index or a decorator lost upstream - the
+same check `features()` runs on its configurations. The check reads the six kinds by name, never every key. An entry that is not a function throws `[artifacts] '<kind>' lists an entry that is not a class (position N)` (IGNIS words its own check the same way) first: a module cycle (a decorated class in the module that imports `AutoArtifacts`) leaves `undefined` in the eager browser list. An IGNIS artifact group (`isArtifactGroup === true`, `@venizia/ignis-boot/auto`) is not an index: its kind fields are getters that throw on read, so the check reads only a flat index. A group with `content` (inlined by a bundler plugin) is checked as that index and not resolved. In a Vite build the group comes from `IgnisArtifactsVitePlugin` (`@venizia/ignis-boot/vite`, ignis-boot 0.2.1-10): the same eager `content`, the listed classes' names pinned with an injected `static { Object.defineProperty(this, 'name', ...) }` (binding keys are `Class.name`; 0.2.1-10 used `output.keepNames` for the whole build, which cost about 105 KB), Node-safe. From 0.2.1-12 it also scans the `src` of every package that defines a group the app can borrow (a shared kit), so borrowed classes are pinned too; a kit imports `ArtifactGroup` from `@venizia/ignis-kernel/metadata` (0.2.2-16), the browser-safe entry, never the kernel root. The scan runs once at dev-server start: adding or removing a decorated class or a group needs a `vite dev` restart. The group `IgnisArtifactsPlugin` builds for `AutoArtifacts` depends on the target (ignis-boot 0.2.1-6, `lazyIndex`): a server build carries only a `resolve` over the bundle's own imports and takes the resolve path; a browser build imports the list eagerly and carries it as `content`, so it takes the content path. `start()` awaits `resolve()` of every group without `content` before `preConfigure()`: resolving imports the group's modules, which decorates and discovers their classes, and the flat index it returns is checked like any other. `registerArtifacts()` itself stays synchronous and reads what `start()` resolved; called without `start()`, it falls back to `artifacts()` and skips an unresolved group. A group with neither `content` nor an own `resolve` function (what `ArtifactGroup.define()` and `application()` build) resolves in IGNIS only through a resolver ignis-boot installs in IGNIS's realm; ARDOR cannot call it (`ArtifactGroup` is exported only from the root of `@venizia/ignis-kernel`, which this package never imports, to stay browser-safe), so `start()` throws and names `AutoArtifacts` and `IgnisArtifactsPlugin` instead of binding none of its classes. ARDOR does not reuse IGNIS's `IArtifactIndex`:
+it lives in the server entry of `@venizia/ignis-kernel`, which a browser bundle never imports. The
+generator matches stereotypes by the module they are imported from, so a browser project passes
+`--source-module @venizia/ardor` (and `@venizia/ardor-kernel`); without it the index is empty.
+
+The list lives on ignis-kernel's `MetadataRegistry`, whose `getInstance()` anchors one instance on
+`globalThis` under a `Symbol.for` key, so every copy of `@venizia/ignis-kernel` in a realm shares it.
+It is process-wide, not per application: two applications in one process bind the same classes. A
+page never runs two; a test run does - see [testing](/process/testing.md) for isolating it. The
+container's own registry (`getMetadataRegistry()`, from `@venizia/ignis-inversion`) reads the key
+the stereotype wrote but has no discovery list, which is why the application base imports
+`MetadataRegistry` directly.
+
+## Bind
+
+`preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, then registers from least
+explicit to most explicit - a later `bind` on the same key replaces the earlier one:
+
+```
+registerArtifacts()  ->  bindingList()  ->  bindContext()
+```
+
+A stereotype is what a class declares about itself; `bindingList()` is what this application decided
+by hand for this build; a `this.bind(...)` in `bindContext()` overrides both. An override that lost to
+a decorator would be ignored with nothing to show it. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
+
+`registerArtifacts()` reads each discovered class's key, skips a class with none, and binds the rest
+`toClass()` under the scope the stereotype declares, `BindingScopes.SINGLETON` by default. It is not
+IGNIS's boot sequence. From `IArtifactRegistrationOptions` it honours **the key and the scope**;
+`when`, `order`, `after` and `allowOverride` are ignored. Each `@provide({ key })` method of a
+discovered class is also bound, under the key the decorator names, as a lazy provider with
+SINGLETON default and `scope` honoured - the same as IGNIS's `bindProvidedKeys`. That is how the
+framework keys in a `@configuration()` class get bound. For a transient, a conditional binding or
+anything else a decorator cannot express, bind by hand in `bindContext()`.
+
+The list is read once, inside `preConfigure()`. A class whose module is first imported after
+`start()` - a lazy route chunk - is never bound. Calling `registerArtifacts()` again is not the fix:
+it replaces every discovered binding, so the next resolve of each builds a second instance, and it
+overrides any `bindingList()` or `bindContext()` binding on the same key. Import the class before
+`start()`, or bind it by hand.
+
+Registration by hand is the second mode, as in IGNIS. Every path records the key on the class
+(`setBindingKey`), so `{ target }` resolves it like a stereotyped class:
+
+- `service(X)`, `repository(X)`, `dataSource(X)`, `component(X)` - bind under
+  `opts.binding` > the stereotype's `binding` > `<namespace>.<ClassName>`, with `scope` (default
+  singleton) and `allowOverride: false` to refuse an existing key. They return the `Binding`. Call
+  them inside `bindContext()`.
+
+- `bindingList()` - a record of literal key to class, bound as singletons. Literal keys survive a
+  minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
+  `IUseInjectableKeysOverrides`.
+- `injectable(scope, Class, tags?)` - binds `` `${scope}.${Class.name}` `` as a singleton with optional
+  tags. Prefer the per-kind methods.
+
+Singleton is the default on every path, unlike IGNIS's server: a hook resolves on every render, and a
+transient repository would hand each render a new instance. A class registered twice under different
+keys is bound twice, as two singletons, and `{ target }` reaches the key recorded last. How keys are named, and the minifier and same-name traps of a derived key, are in
+[binding key namespaces](/conventions/binding-key-namespaces.md).
+
+## Resolve
+
+`useInjectable` takes `{ key }` or `{ target }`, never both, plus an optional `container`. The
+container comes from `useInjectableContainer`: the option, else `ApplicationContext.container`.
+
+- **`{ key }`** calls `container.get({ key })`. The key is typed as `TUseInjectableKeys` - every
+  `CoreBindings` value plus the keys an application adds, see [module augmentation](/architecture/module-augmentation.md).
+- **`{ target }`** looks up the key recorded on the class with
+  `container.getMetadataRegistry().getBindingKey({ target })`, then resolves that key. It never
+  guesses a key from the class name.
+
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
+two shapes as an options object, never a positional class. With `{ target }` the return type is
+inferred from the class; with `{ key }` the caller supplies it. They are not aliases: for a `target`
+each asserts the recorded key starts with `services.`, `repositories.`, `providers.`,
+`components.` or `configurations.` and otherwise throws naming both. A `key` is not checked - its namespace is in the
+string, the caller's to get wrong - and a `target` with no recorded key skips the check and throws
+from `useInjectable`. The check reads the container through `useInjectableContainer` with the same
+inputs as the resolve, so the two can never disagree.
+
+Since no stereotype maps to `providers`, `useProvider({ target })` passes only for a class declaring
+`binding: { namespace: BindingNamespaces.PROVIDER, key }`. ARDOR's default providers sit under
+`CoreBindings` keys: `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`.
+
+## Reading a failed resolve
+
+| Error says | Cause | Fix |
+|---|---|---|
+| `Failed to resolve binding key for target` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
+| `is not bounded in context` | A key nobody bound: a typo, a module imported after `start()`, a `bindContext()` binding never made | Fix the key, import before `start()`, or bind it |
+| `is bound as "...", not under "..."` | The hook does not match the class's namespace | Use the hook for that namespace |
+| `Failed to determine injectable container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
+
+
+## Related
+
+- [DI in the browser](/architecture/di-in-the-browser.md)
+- [Application lifecycle](/architecture/application-lifecycle.md)
+- [Binding key namespaces](/conventions/binding-key-namespaces.md)
+- [Hooks and context](/architecture/hooks-and-context.md)
+- [kernel](/packages/kernel.md) and [react](/packages/react.md)

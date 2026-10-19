@@ -4,7 +4,7 @@ The React bindings of [ARDOR](https://github.com/VENIZIA-AI/ardor): the applicat
 hooks that resolve out of it, and the UI hooks. No react-admin.
 
 ```bash
-bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion
+bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
@@ -18,7 +18,7 @@ which re-exports this package.
 | Injection | `useInjectable` - resolve a binding by key or by class |
 | Redux | `createAppDispatch`, `createAppSelectors` - factories that bind your `RootState` and `AppDispatch` |
 | UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer`, `useWindowDimensions` |
-| Types | `SyncFC`, `TUseInjectableKeys` |
+| Types | `ISyncFC`, `TUseInjectableKeys` |
 
 ## Typing your own binding keys
 
@@ -28,7 +28,7 @@ into the module that declares it, never through a re-export:
 ```typescript
 declare module '@venizia/ardor-react' {
   interface IUseInjectableKeysOverrides {
-    'services.ProductApi': unknown;
+    'services.PricingService': unknown;
   }
 }
 ```

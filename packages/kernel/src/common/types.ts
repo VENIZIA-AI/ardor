@@ -1,12 +1,12 @@
-import { type TFilter, type TWhere } from '@venizia/ignis-filter';
 import { type TClass } from '@venizia/ignis-inversion';
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
-  Environments,
-  RequestBodyTypes,
-  RequestCountData,
-  RequestMethods,
-  RequestTypes,
+  type Environments,
+  type RequestBodyTypes,
+  type RequestCountData,
+  type RequestMethods,
+  type RequestTypes,
 } from './constants';
 
 export type NumberIdType = number;
@@ -23,24 +23,16 @@ export type ValueOf<T> = T[keyof T];
 export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
 
-export type ClassProps<T> = ValueOf<T>;
-
-export type ClassType<T> = Function & { prototype: T };
-
-export type TStatusFromClass<T extends ClassType<AnyObject>> = ValueOf<
-  Omit<T, 'prototype' | 'isValid' | 'SCHEME_SET' | 'TYPE_SET'>
->;
-
-export type TStringConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string>;
-export type TNumberConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, number>;
-export type TConstValue<T extends ClassType<any>> = Extract<ValueOf<T>, string | number>;
+// `& {}` turns the widening literals of `static readonly` members into regular ones, so a value
+// copied into an object literal or a `let` keeps its union instead of widening to string/number.
+export type TStringConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string> & {};
+export type TNumberConstValue<T extends TClass<any>> = Extract<ValueOf<T>, number> & {};
+export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
 
 export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 
-export type EntityRelationType = {};
-
-export type TRequestMethod = TStatusFromClass<typeof RequestMethods>;
-export type TEnvironment = TStatusFromClass<typeof Environments>;
+export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
+export type TEnvironment = TStringConstValue<typeof Environments>;
 
 export interface IRequestProps {
   headers?: { [key: string]: string | number };
@@ -66,8 +58,8 @@ export interface ISendResponse<T = AnyType> {
   [key: string]: any;
 }
 
-export type TRequestBodyType = Extract<ValueOf<typeof RequestBodyTypes>, string>;
-export type TRequestType = Extract<ValueOf<typeof RequestTypes>, string>;
+export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
+export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
 export interface IGetRequestPropsParams {
   resource: string;
@@ -76,6 +68,8 @@ export interface IGetRequestPropsParams {
   bodyType?: TRequestBodyType;
   restDataProviderOptions: IRestDataProviderOptions;
   applicationInfo: IApplicationInfo;
+  /** The list extras to ask the route for, sent in `x-request-extra`. */
+  extra?: TExtraRequest;
 }
 
 export interface IGetRequestPropsResult {
@@ -88,34 +82,37 @@ export interface ICustomParams {
   [key: string]: AnyType;
 }
 
+/** What `login` read from the sign-in response. `roles` are names. */
+export interface ISignInSession {
+  userId: number | string;
+  token: { value: string; type: string };
+  roles: Array<string>;
+}
+
+/** Data only: where the auth provider talks to. Behaviour is in `DefaultAuthProvider`'s protected hooks. */
 export interface IAuthProviderOptions {
-  endpoints?: {
-    afterLogin?: string;
-  };
   paths?: {
+    /** Where `login` posts. Default `/auth/sign-in`, the IGNIS auth controller's route. */
     signIn?: string;
-    signUp?: string;
+    /** Where `checkAuth` validates the stored token. Default: not called; the stored token is enough. */
     checkAuth?: string;
+    /** Where the admin goes once `login` resolves. Default `/`. */
+    afterLogin?: string;
   };
 }
 
 export interface IAuthRecoveryOptions {
-  refreshToken?: () => Promise<unknown>;
-  onAuthFailure?: () => ValueOrPromise<unknown>;
+  /** A request to this path never starts a refresh: it is the refresh. */
   refreshTokenPath?: string;
 }
 
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
+/**
+ * Data only. A request that matches goes without an `Authorization` header; to send none at all (an
+ * API with no sign-in) set `noAuthPathRegex: /./`.
+ */
 export interface INoAuthOptions {
-  /**
-   * Enable/disable attaching authorization header by default.
-   * Set to `false` for applications which only consume public (no auth) apis.
-   *
-   * @default true
-   */
-  useAuth?: boolean;
-
   /**
    * Exact resource paths which will be requested without authorization header.
    */
@@ -130,7 +127,7 @@ export interface INoAuthOptions {
 
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
-  requestTracingId?: boolean | ((opts: { applicationInfo: IApplicationInfo }) => string);
+  /** Sent in `x-request-channel`. Default `web`. */
   requestTracingChannel?: string;
 
   headers?: HeadersInit;
@@ -138,21 +135,39 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
   authRecovery?: IAuthRecoveryOptions;
 }
 
-export interface IService {}
+/**
+ * A feature package an application mounts: what it registers in the container. The admin package
+ * extends it with resources, routes and messages (`TFeature`); the kernel knows no UI.
+ */
+export interface IFeatureBase {
+  /** Unique within an application. */
+  name: string;
+  /**
+   * The feature's `@configuration()` classes, by value. Referencing them keeps a bundler from
+   * dropping a module nothing else imports, and `start()` checks each was discovered.
+   */
+  configurations?: Array<TClass<unknown>>;
+  /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
+  permissions?: Array<string>;
+}
 
-export interface ICrudService<
-  E extends { id: IdType; [extra: string | symbol]: any } = any,
-> extends IService {
-  find(filter: TFilter<E>): Promise<Array<E & EntityRelationType>>;
-  findById(id: IdType, filter: TFilter<E>): Promise<E & EntityRelationType>;
-  findOne(filter: TFilter<E>): Promise<(E & EntityRelationType) | null>;
-  count(where: TWhere<E>): Promise<{ count: number }>;
+/**
+ * The index `ignis-artifacts generate` (from `@venizia/ignis-boot`) emits: every stereotyped class,
+ * by value, per kind. Referencing them keeps a bundler from dropping a module nothing else imports,
+ * and `start()` checks each was discovered. `controllers` stays empty in a browser application.
+ */
+export interface IArtifactIndex {
+  configurations?: ReadonlyArray<TClass<unknown>>;
+  dataSources?: ReadonlyArray<TClass<unknown>>;
+  components?: ReadonlyArray<TClass<unknown>>;
+  repositories?: ReadonlyArray<TClass<unknown>>;
+  services?: ReadonlyArray<TClass<unknown>>;
+  controllers?: ReadonlyArray<TClass<unknown>>;
+}
 
-  create(data: Omit<E, 'id'>): Promise<E>;
-  updateAll(data: Partial<E>, where: TWhere<E>): Promise<{ count: number }>;
-  updateById(id: IdType, data: Partial<E>): Promise<E>;
-  replaceById(id: IdType, data: E): Promise<E>;
-  deleteById(id: IdType): Promise<{ id: IdType }>;
+/** Answers whether the current actor may act on a resource. Bound by the application under `CoreBindings.PERMISSION_PROVIDER`. */
+export interface IPermissionProvider {
+  canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
 
 export interface IArdorApplication {
@@ -160,27 +175,49 @@ export interface IArdorApplication {
   postConfigure(): ValueOrPromise<void>;
   bindContext(): ValueOrPromise<void>;
   bindingList(): Record<string, TClass<unknown>>;
+  features(): Array<IFeatureBase>;
+  artifacts(): Array<IArtifactIndex>;
 
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  service<T>(value: TClass<T>): void;
+  service<T>(value: TClass<T>): unknown;
+  repository<T>(value: TClass<T>): unknown;
+  dataSource<T>(value: TClass<T>): unknown;
+  component<T>(value: TClass<T>): unknown;
 
   start(): ValueOrPromise<void>;
 }
 
 type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+/** Values a path stops at: their members are not state. */
+type TPathLeaf =
+  | Date
+  | RegExp
+  | ReadonlySet<AnyType>
+  | ReadonlyMap<AnyType, AnyType>
+  | Promise<AnyType>
+  | ((...args: Array<AnyType>) => AnyType);
+
+type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
+
+/**
+ * The dotted paths of an object type, to `DeepLevel` levels (10 by default). An array, a `Date`, a
+ * `Set`, a `Map`, a `Promise`, a function and an `any` field are leaves: the path stops at them.
+ */
 export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
   ? never
-  : T extends Array<AnyType>
+  : T extends Array<AnyType> | TPathLeaf
     ? never
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
-            ? NonNullable<T[K]> extends Array<AnyType>
+            ? TIsAny<T[K]> extends true
               ? `${K}`
-              : NonNullable<T[K]> extends object
-                ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
-                : `${K}`
+              : NonNullable<T[K]> extends Array<AnyType> | TPathLeaf
+                ? `${K}`
+                : NonNullable<T[K]> extends object
+                  ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
+                  : `${K}`
             : never;
         }[keyof T]
       : never;

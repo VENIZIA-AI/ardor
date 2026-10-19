@@ -1,10 +1,22 @@
 ---
 type: Convention
 title: Binding key namespaces
-description: An ARDOR binding key is either a fixed CoreBindings constant or a `<scope>.<ClassName>` string built by injectable(); nothing validates the scope at runtime.
+description: An ARDOR binding key is either a fixed CoreBindings constant or a `<namespace>.<key>` string, built by a stereotype (discovery) or by the application's service/repository/dataSource/component methods (by hand); both record the key on the class, so both resolve by target.
 resource: packages/kernel/src/common/keys.ts
 tags: [conventions, di, bindings]
 ---
+
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [The two shapes](#the-two-shapes)
+- [Only the stereotype and the hooks check the namespace](#only-the-stereotype-and-the-hooks-check-the-namespace)
+- [Discovery: declare with a stereotype](#discovery-declare-with-a-stereotype)
+- [The minifier trap](#the-minifier-trap)
+- [How a key becomes a type](#how-a-key-becomes-a-type)
+- [Storage keys are the same idea, different registry](#storage-keys-are-the-same-idea-different-registry)
+- [Related](#related)
+<!-- okf:generated:contents end -->
 
 An ARDOR application is an IGNIS `Container`, so everything it owns is reachable by a string key.
 Those keys come in exactly two shapes, and knowing which one you are looking at tells you who bound
@@ -28,59 +40,127 @@ export class CoreBindings {
 }
 ```
 
-The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is the
-application's to bind inside `bindContext()`. Which is which is listed per key in
+The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is
+declared with `@provide` in the application's `@configuration()` class and bound by
+`registerArtifacts()`. Which is which is listed per key in
 [binding keys](/reference/binding-keys.md).
 
-**Per-artifact keys** are built from a scope and a class name by `injectable()` in
-`packages/kernel/src/base/applications/abstract.ts`:
+**Per-artifact keys** have the shape `<namespace>.<key>`, with the namespace from
+`BindingNamespaces` (`services`, `repositories`, `datasources`, `components`, `providers`,
+`configurations`, ...). Two registration modes build them, as in IGNIS:
+
+| Mode | How | Key |
+|---|---|---|
+| Discovery | a stereotype (`@service()`, `@repository(...)`, `@datasource()`, `@component()`) and `registerArtifacts()` in `preConfigure()` | the stereotype's `binding`, else `<namespace>.<ClassName>` |
+| By hand | `this.service(X)`, `this.repository(X)`, `this.dataSource(X)`, `this.component(X)` in `bindContext()` | `opts.binding` > the class's stereotype `binding` > `<namespace>.<ClassName>` |
+
+Both live in `packages/kernel/src/base/applications/abstract.ts`. The by-hand methods take
+`IArtifactRegistration { binding?, scope?, allowOverride? }` and return the `Binding`, so a caller
+can chain on it:
 
 ```typescript
-injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>) {
-  this.bind({ key: `${scope}.${value.name}` })
-    .toClass(value)
-    .setScope(BindingScopes.SINGLETON)
-    .setTags(...(tags ?? []));
-}
+this.dataSource(ApiDataSource);                        // datasources.ApiDataSource
+this.repository(ProductRepository);                    // repositories.ProductRepository
+this.service(AuditService, { binding: { namespace: 'services', key: 'audit' } }); // services.audit
+```
 
-service<T>(value: TClass<T>) {
-  this.injectable('services', value);
+`allowOverride: false` throws when the key is already bound instead of silently replacing it.
+
+Every kind defaults to `BindingScopes.SINGLETON`, discovery included. IGNIS's server defaults
+services and repositories to transient; ARDOR does not, because a React hook resolves on every
+render and a transient repository would hand each render a new instance (an effect keyed on it
+loops). `scope` overrides it per registration.
+
+The older `injectable(scope, X, tags?)` still binds `<scope>.<ClassName>` as a singleton and records
+the key; prefer the per-kind methods, whose namespace is a constant rather than a string you type.
+
+## Only the stereotype and the hooks check the namespace
+
+A stereotype that declares an explicit `binding.namespace` has it checked at decoration time by
+`BindingNamespaces.assertArtifactNamespace`, for shape (one segment, no `.`, no whitespace). On
+resolve, `useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` in
+`packages/react/src/hooks/use-artifact.ts` assert that a `{ target }` is bound under their
+namespace; a `{ key }` is the caller's to get right.
+
+`bindingList()` and `injectable()` check nothing. A typo there binds the class under a key nobody
+asks for, and the failure surfaces later as an unresolved binding inside `useInjectable`.
+
+## Discovery: declare with a stereotype
+
+A stereotype from `@venizia/ignis-kernel/metadata`, re-exported by
+`packages/kernel/src/base/metadata/index.ts`, marks the class and `preConfigure()` binds it. How the
+class gets discovered is in [DI in the browser](/architecture/di-in-the-browser.md).
+
+```typescript
+import { BaseService, service } from '@venizia/ardor';
+
+@service()
+export class PricingService extends BaseService {
+  constructor() {
+    super({ scope: 'PricingService' });
+  }
 }
 ```
 
-So `application.service(ProductApi)` binds `services.ProductApi`. `services` is the only scope the
-framework itself uses; an application passing its own scope to `injectable()` is inventing
-vocabulary, and should keep it to the artifact kind (`providers`, `configurations`) rather than a
-feature name.
+The constructor is not optional: the container passes nothing to an undecorated constructor, so a
+bare `class PricingService extends BaseService {}` registers fine and throws on first resolve.
 
-Both methods bind as `BindingScopes.SINGLETON`. That is a deliberate default: one instance per
-application is what every consumer set by hand before the default existed.
+An `HttpRepository` has no model, so it is declared
+`@repository({ type: RepositoryTypes.REMOTE, dataSource })` (IGNIS kernel 0.2.0-46 and later;
+`RepositoryTypes` is re-exported by ARDOR). `@repository` injects the datasource into constructor
+parameter 0 under `datasources.<ClassName>`. The two modes mix: an `@inject({ target })` there on a
+datasource registered by hand is accepted from kernel 0.2.0-47, which judges a class with no key
+yet by its class instead of throwing at import.
 
-## Nothing validates the scope
-
-ARDOR does **not** check the scope string. There is no `BindingNamespaces`, no `createNamespace`,
-no namespace assertion on registration - a typo in the scope binds the class under a key that
-simply nobody asks for. The failure surfaces later and elsewhere, as an unresolved binding inside
-`useInjectable`, never at the registration that caused it. Treat the scope as a literal you copy,
-not one you type from memory.
+`CoreBindings` is **not** re-exported from IGNIS, and that is deliberate on both sides: IGNIS's and
+ARDOR's are different dictionaries that share the member `APPLICATION_INSTANCE` with different
+values (`'@app/instance'` against `'@app/application/instance'`). Only ARDOR's is reachable from
+ARDOR.
 
 ## The minifier trap
 
-`injectable()` keys on `value.name`, and a production minifier rewrites class names. A bundle built
-with mangled names binds `t.ProductApi` -> `services.t` and resolves `services.ProductApi` to
-nothing, while the development build works perfectly. The build-proof form is `bindingList()`,
-which the application overrides with literal keys:
+A derived key is read off `Class.name`, and a production minifier rewrites class names. A bundle
+that renames `PricingService` to `t` binds `services.t`, while code asking for
+`'services.PricingService'` resolves nothing, and the development build works perfectly.
+
+Resolving by class removes the mismatch: both modes record the key on the class object
+(`setBindingKey`), and `@inject({ target })` and the `use*({ target })` hooks read it back from that
+same object, so a mangled name still agrees with itself:
 
 ```typescript
-override bindingList() {
-  return { 'services.ProductApi': ProductApi };
-}
+const products = useRepository({ target: ProductRepository });
 ```
 
-`preConfigure()` binds every entry of that record as a singleton before `bindContext()` runs, so a
-binding declared there is available to anything `bindContext()` constructs. The literal keys are
-also what types the hook: `keyof ReturnType<Application['bindingList']>` is the union an
-application feeds into `IUseInjectableKeysOverrides`.
+Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. The
+literal keys in `bindingList()` are what types `useInjectable({ key })`:
+`keyof ReturnType<Application['bindingList']>` is the union an application feeds into
+`IUseInjectableKeysOverrides`.
+
+One limit remains: **a derived key is still `<namespace>.<Class.name>`**, and the container stores
+bindings by that string. Two classes with the same name in one namespace share one binding, the last
+registered wins, and resolving the first by `target` returns the second. Two same-named classes in
+different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
+explicit `binding` avoids it.
+
+**`@repository` without `@inject` at parameter 0 resolves its datasource by class** from IGNIS
+kernel `0.2.1-3` with inversion `0.2.1-0`: it records `{ target, key: derived }`, and inversion
+reads the key recorded on the class first, the derived key only for a raw `bind().toClass()`. Kernel
+`0.2.1-2` read only `datasources.<DataSource.name>`, so a pinned datasource threw
+`Binding key: datasources.Zv is not bounded in context!` in a minified build. The pinned-`Zv` test
+in `remote-repository.test.ts`, a `test.failing` until 2026-10-07, now passes as a plain test. Both
+packages are needed: an older inversion reads the derived key first.
+
+**Two classes deriving one key throw at `start()`.** `registerArtifacts()` runs
+`ArtifactBindingKeys.assertNoDerivedCollision` over the discovered list before binding
+(`packages/kernel/src/base/applications/abstract.ts`), so a second class with the same derived key no
+longer silently replaces the first. A pinned `binding` is never counted, and a subclass discovered
+after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
+that re-evaluates a module is not an error. `service()`/`injectable()` derive through
+`ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
+BANA's `kits/admin` pins `binding` on all 122 of its decorated classes, so it cannot collide.
+
+A `useInjectable({ key })` miss names this cause in its error, after the container's own
+`Binding key: <key> is not bounded in context!`, which BANA matches with `/is not bounded/`.
 
 ## How a key becomes a type
 
@@ -94,7 +174,7 @@ export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectabl
 The first half is every `CoreBindings` value, free. The second half is empty until an application
 augments `IUseInjectableKeysOverrides` - see [module augmentation](/architecture/module-augmentation.md)
 for the declaration and for the `any`-widening trap that silently turns the union back into
-`string`.
+`string`. Resolving by `{ target }` needs no augmentation at all.
 
 ## Storage keys are the same idea, different registry
 

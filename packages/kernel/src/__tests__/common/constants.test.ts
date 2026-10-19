@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import {
   App,
+  Authentication,
   Environments,
-  HeaderConsts,
+  HeaderConstants,
   RequestBodyTypes,
+  RequestChannel,
+  RequestCountData,
   RequestMethods,
   RequestTypes,
 } from '@/common/constants';
@@ -151,34 +154,79 @@ describe('Environments scheme validation and members', () => {
   });
 });
 
-describe('HeaderConsts regular expressions', () => {
+describe('HeaderConstants regular expressions', () => {
   test('TEXTUAL_CONTENT_TYPE_RE matches textual types and rejects binary types', () => {
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('application/json')).toBe(true);
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('application/problem+json')).toBe(true);
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('text/html')).toBe(true);
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('application/x-www-form-urlencoded')).toBe(
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/json')).toBe(true);
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/problem+json')).toBe(true);
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('text/html')).toBe(true);
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/x-www-form-urlencoded')).toBe(
       true,
     );
 
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('image/png')).toBe(false);
-    expect(HeaderConsts.TEXTUAL_CONTENT_TYPE_RE.test('application/octet-stream')).toBe(false);
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('image/png')).toBe(false);
+    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/octet-stream')).toBe(false);
   });
 
   test('ATTACHMENT_CONTENT_DISPOSITION_RE matches attachment header case-insensitively and rejects inline', () => {
-    expect(HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test('attachment; filename=x')).toBe(
+    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('attachment; filename=x')).toBe(
       true,
     );
-    expect(HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test('ATTACHMENT; filename=x')).toBe(
+    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('ATTACHMENT; filename=x')).toBe(
       true,
     );
     expect(
-      HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test('Attachment; filename="doc.pdf"'),
+      HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('Attachment; filename="doc.pdf"'),
     ).toBe(true);
 
-    expect(HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test('inline')).toBe(false);
-    expect(HeaderConsts.ATTACHMENT_CONTENT_DISPOSITION_RE.test('form-data; name="field"')).toBe(
+    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('inline')).toBe(false);
+    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('form-data; name="field"')).toBe(
       false,
     );
+  });
+});
+
+describe('Authentication, RequestChannel, RequestCountData, and LocalStorageKeys scheme validation', () => {
+  test('Authentication.isValid and SCHEME_SET cover all declared schemes and strategies', () => {
+    const declared = [
+      Authentication.TYPE_BASIC,
+      Authentication.TYPE_BEARER,
+      Authentication.STRATEGY_BASIC,
+      Authentication.STRATEGY_JWT,
+    ];
+    expect(Authentication.SCHEME_SET.size).toBe(declared.length);
+    for (const entry of declared) {
+      expect(Authentication.isValid(entry)).toBe(true);
+    }
+    expect(Authentication.isValid('Digest')).toBe(false);
+    expect(Authentication.isValid('')).toBe(false);
+  });
+
+  test('RequestChannel.isValid and SCHEME_SET cover declared channels', () => {
+    expect(RequestChannel.SCHEME_SET.size).toBe(1);
+    expect(RequestChannel.isValid(RequestChannel.WEB)).toBe(true);
+    expect(RequestChannel.isValid('200_MOBILE')).toBe(false);
+  });
+
+  test('RequestCountData.isValid and SCHEME_SET cover declared modes', () => {
+    const declared = [RequestCountData.DATA_ONLY, RequestCountData.DATA_WITH_COUNT];
+    expect(RequestCountData.SCHEME_SET.size).toBe(declared.length);
+    for (const entry of declared) {
+      expect(RequestCountData.isValid(entry)).toBe(true);
+    }
+    expect(RequestCountData.isValid('2')).toBe(false);
+  });
+
+  test('LocalStorageKeys.isValid and SCHEME_SET cover declared keys', () => {
+    const declared = [
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      LocalStorageKeys.KEY_AUTH_PERMISSION,
+    ];
+    expect(LocalStorageKeys.SCHEME_SET.size).toBe(declared.length);
+    for (const entry of declared) {
+      expect(LocalStorageKeys.isValid(entry)).toBe(true);
+    }
+    expect(LocalStorageKeys.isValid('@app/auth/unknown')).toBe(false);
   });
 });
 
@@ -196,7 +244,7 @@ describe('CoreBindings and LocalStorageKeys prefixes and uniqueness', () => {
   });
 
   test('LocalStorageKeys keys all start with @app/auth/ and are unique', () => {
-    const storageValues = Object.values(LocalStorageKeys);
+    const storageValues = [...LocalStorageKeys.SCHEME_SET];
 
     expect(storageValues.length).toBeGreaterThan(0);
     for (const key of storageValues) {

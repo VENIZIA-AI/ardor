@@ -1,27 +1,27 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig",
-  "extends": "@venizia/dev-configs/tsconfig.common.json",
+  "extends": "@venizia/dev-configs/tsconfig.react.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
     "declarationDir": "dist",
 
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": false,
 
+    // Restated, not inherited: the base sets them, but Bun (1.4.2) ignores an `extends` that names a
+    // package, so `bun test` sees none of it. Without these lines it compiles TC39 decorators (every
+    // @provide/@inject breaks) and defines class fields unlike the `dist` that tsc emits.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
 
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": [],
-    "jsx": "react-jsx",
-
+    // The tests run on Bun; .configs/tsconfig.build.json drops these types again for dist.
+    "types": ["bun"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", ".prettierrc.*", "./*.config.*"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

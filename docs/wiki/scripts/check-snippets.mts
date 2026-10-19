@@ -31,7 +31,7 @@ const AMBIENT: Record<string, string> = {
     "import type { ReactNode as PreludeSpinnerNode } from 'react';\ndeclare const Spinner: () => PreludeSpinnerNode;",
   ProductList:
     "import type { ReactNode as PreludeListNode } from 'react';\ndeclare const ProductList: () => PreludeListNode;",
-  ProductApi: 'declare class ProductApi {\n  find(): Promise<unknown[]>;\n}',
+  PricingService: 'declare class PricingService {\n  quote(): Promise<number>;\n}',
   messages: 'declare const messages: { app: { products: { title: string; empty: string } } };',
   container:
     "import type { Container as PreludeContainer } from '@venizia/ignis-inversion';\ndeclare const container: PreludeContainer;",
@@ -91,7 +91,7 @@ const isExcerpt = (code: string): boolean => {
   // A declaration excerpt, decided by the parser rather than by a regex: every statement is a
   // type, an interface, a class or a variable/function signature with no body and no initializer.
   const source = ts.createSourceFile('excerpt.ts', trimmed, ts.ScriptTarget.ESNext, true);
-  return source.statements.every(statement => {
+  return source.statements.every((statement) => {
     if (
       ts.isInterfaceDeclaration(statement) ||
       ts.isTypeAliasDeclaration(statement) ||
@@ -100,28 +100,28 @@ const isExcerpt = (code: string): boolean => {
       return true;
     }
     if (ts.isClassDeclaration(statement)) {
-      return statement.members.every(member => !('body' in member) || member.body === undefined);
+      return statement.members.every((member) => !('body' in member) || member.body === undefined);
     }
     if (ts.isFunctionDeclaration(statement)) {
       return statement.body === undefined;
     }
     if (ts.isVariableStatement(statement)) {
       return statement.declarationList.declarations.every(
-        declaration => declaration.type !== undefined && declaration.initializer === undefined,
+        (declaration) => declaration.type !== undefined && declaration.initializer === undefined,
       );
     }
     return false;
   });
 };
 
-const abused = snippets.filter(snippet => snippet.noCheck && !isExcerpt(snippet.code));
+const abused = snippets.filter((snippet) => snippet.noCheck && !isExcerpt(snippet.code));
 if (abused.length > 0) {
   console.error(
-    `snippet check FAILED - ${abused.length} runnable snippet(s) marked no-check (only excerpts with \`...\` or declaration bodies may opt out):\n  ${abused.map(snippet => `${snippet.file}:${snippet.line}`).join('\n  ')}`,
+    `snippet check FAILED - ${abused.length} runnable snippet(s) marked no-check (only excerpts with \`...\` or declaration bodies may opt out):\n  ${abused.map((snippet) => `${snippet.file}:${snippet.line}`).join('\n  ')}`,
   );
   process.exit(1);
 }
-const checked = snippets.filter(snippet => !snippet.noCheck);
+const checked = snippets.filter((snippet) => !snippet.noCheck);
 const dir = mkdtempSync(join(tmpdir(), 'ardor-docs-snippets-'));
 // third-party types resolve from the admin package, which depends on everything the docs show
 Bun.spawnSync(['ln', '-s', join(REPO, 'packages/admin/node_modules'), join(dir, 'node_modules')]);
@@ -143,14 +143,17 @@ const compilerOptions: ts.CompilerOptions = {
   // would fail with TS2307 while the import resolves perfectly at runtime.
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
+    '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository.d.ts')],
     '@venizia/ardor/socket-io': [join(REPO, 'packages/ardor/dist/socket-io.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],
+    '@venizia/ardor-kernel/repository': [
+      join(REPO, 'packages/kernel/dist/base/repositories/index.d.ts'),
+    ],
     '@venizia/ardor-kernel/socket-io': [
       join(REPO, 'packages/kernel/dist/helpers/socket-io-client.d.ts'),
     ],
     '@venizia/ardor-react': [join(REPO, 'packages/react/dist/index.d.ts')],
     '@venizia/ardor-admin': [join(REPO, 'packages/admin/dist/index.d.ts')],
-    '@venizia/ardor-ui-kit': [join(REPO, 'packages/ui-kit/dist/index.d.ts')],
   },
   typeRoots: [join(REPO, 'packages/admin/node_modules/@types')],
 };
@@ -167,13 +170,13 @@ let previous: ts.Program | undefined;
 
 for (const [page, pageSnippets] of byPage) {
   const files = pageSnippets.map((snippet, index) => {
-    const name = join(dir, `${page.replace(/[\/.]/g, '_')}-${index}.${snippet.lang}`);
+    const name = join(dir, `${page.replace(/[/.]/g, '_')}-${index}.${snippet.lang}`);
     writeFileSync(name, `${preludeFor(snippet.code)}\n${snippet.code}`);
     return { name, snippet };
   });
 
   const program = ts.createProgram(
-    files.map(file => file.name),
+    files.map((file) => file.name),
     compilerOptions,
     undefined,
     previous,
@@ -186,7 +189,7 @@ for (const [page, pageSnippets] of byPage) {
       problems.push(`${page}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`);
       continue;
     }
-    const owner = files.find(entry => entry.name === file.fileName);
+    const owner = files.find((entry) => entry.name === file.fileName);
     const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
     const preludeLines = owner ? preludeFor(owner.snippet.code).split('\n').length : 0;
     const pageLine = owner ? owner.snippet.line + line + 1 - preludeLines : line + 1;

@@ -1,4 +1,4 @@
-import { TranslationMessages } from 'ra-core';
+import type { TranslationMessages } from 'ra-core';
 
 export const vietnameseMessages: TranslationMessages = {
   ra: {

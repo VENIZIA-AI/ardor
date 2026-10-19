@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
 
-export interface SyncFC<P = {}> {
-  (props: P): ReactNode;
+export interface ISyncFC<TProps = Record<string, unknown>> {
+  (props: TProps): ReactNode;
 }

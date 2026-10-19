@@ -1,29 +1,33 @@
 ---
 type: Package
 title: admin
-description: The react-admin adapter package that confines all ra-core usage behind ARDOR's providers, hooks and BaseCrudService.
+description: The react-admin adapter package that confines the framework's ra-core usage behind ARDOR's providers and hooks.
 resource: packages/admin/src/index.ts
 tags: [package, admin, react-admin, ra-core, i18n, data-provider]
 ---
 
-`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and nowhere else in the codebase imports `ra-core` directly. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md).
+`@venizia/ardor-admin` is the react-admin adapter of ARDOR. It is the single place in the framework that touches `ra-core` - every hook, provider and component that wraps react-admin lives here, and no other framework package (kernel, react, ardor) imports `ra-core`. Applications still import it directly for their own pages - the 5-mins-qs and vert-admin examples do. This confinement matters: if react-admin's API shifts, or a team ever wants to swap the admin layer, the blast radius is this one package. Consumers normally never install it directly - they pull in [`@venizia/ardor`](/packages/ardor.md), which re-exports it alongside [kernel](/packages/kernel.md) and [react](/packages/react.md). The exception is an application that adds translation keys: `declare module '@venizia/ardor-admin'` needs the package to resolve from the application, so it declares `@venizia/ardor-admin` as a dependency, as the 5-mins-qs and vert-admin examples do. Without it a fresh install fails with TS2664.
 
 ## What it exports
 
-The package barrel (`src/index.ts`) re-exports four areas: `common`, `components`, `hooks`, `providers`, `services`.
+The package barrel (`src/index.ts`) re-exports four areas: `common`, `components`, `hooks`, `providers`.
 
 Providers (`src/providers/index.ts`):
-- `DefaultRestDataProvider` and `CountRestDataProvider` - implementations of react-admin's data provider contract, translated into ARDOR's REST/filter vocabulary. React-admin's pagination, sort and filter parameters are mapped onto the `{ where, order, limit, skip, fields, include }` shape used by `@venizia/ignis-filter`. This is the concrete edge of the [data provider pipeline](/architecture/data-provider-pipeline.md).
-- `DefaultAuthProvider` - the react-admin auth provider, feeding into [auth recovery](/architecture/auth-recovery.md) and respecting [no-auth paths](/architecture/no-auth-paths.md).
-- `DefaultI18nProvider`, plus bundled `englishMessages` and `vietnameseMessages` - the concrete i18n provider for react-admin, part of the framework's [i18n](/architecture/i18n.md) story.
+- `DefaultRestDataProvider` and `CountRestDataProvider` - implementations of react-admin's data provider contract, translated into ARDOR's REST/filter vocabulary. React-admin's pagination, sort and filter parameters are mapped onto the `{ where, order, limit, skip, fields, include }` shape used by `@venizia/ignis-filter`. This is the concrete edge of the [data provider pipeline](/architecture/data-provider-pipeline.md). Its protected hooks: `createNetworkService()` (the one place the `DefaultNetworkRequestService` is built, once, on first use - return a subclass that overrides `refreshToken`, `onAuthFailure`, `resolveAuthToken`, `isNoAuthPath` or `buildRequestTracingId`), `buildListFilter({ params })` (shared by `getList` and `getManyReference`) and `toAffectedIds({ rows })`; `value()` keeps react-admin's positional signatures.
+- `DefaultAuthProvider` - the react-admin auth provider, feeding into [auth recovery](/architecture/auth-recovery.md) and respecting [no-auth paths](/architecture/no-auth-paths.md). The options are data (`paths.signIn`, `paths.checkAuth`, `paths.afterLogin`); the page paths are protected getters (`signInPath`, `afterLoginPath`, `loginPagePath`, `unauthorizedPagePath`), `login` keeps the 0.1.3 type `(params) => Promise<unknown>`, and `refreshToken()` calls the network service's `refresh()`. `login` posts to `paths.signIn` (default `/auth/sign-in`) and is a sequence of four protected hooks, each taking one `opts` object (IGNIS style; `IAuthProviderOptions` is data only - `endpoints`, `paths`): `buildSignInBody({ params })` (the IGNIS body `{ identifier: { scheme: 'username', value }, credential: { scheme: 'basic', value } }` from `params.username` and `params.password`; return `params` to post the form), the response read by `readSignInSession`, `beforeSaveSession({ session, params })` (awaited, a no-op by default; a throw or rejection rejects `login` and saves nothing), `saveSession({ session, username })` (default `authService.saveAuth`; a no-op override keeps the session elsewhere and `login` still resolves) with `resolveUsername({ params })` (default `params.username`). The response is `{ userId, token: { value, type } }` or the IGNIS auth component's `{ token: '<jwt>' }` (a Bearer token; the user id from the JWT's `userId`, else `sub` claim; no token or no user id rejects with `[login]`), with `roles` from the response, else the token's `roles` claim (strings, or objects named by `identifier`, else `name`) saved where `getRoles` reads them, replacing the last user's. `DefaultAuthService.saveAuth` takes `roles`, and leaves the stored roles alone when it gets none. `checkAuth` and `checkError` redirect to `/login`, absolute: a relative `login` looped on a nested route.
+- `DefaultI18nProvider`, plus bundled `englishMessages` and `vietnameseMessages` - the concrete i18n provider for react-admin, part of the framework's [i18n](/architecture/i18n.md) story. Its hooks are `resolveInitialLocale({ locales })` (reads `navigator.language` when the provider is built, never at import) and `composeMessages({ locale, messages })`.
 
 Hooks (`src/hooks/index.ts`):
 - `useTranslate` - a typed wrapper over react-admin's translate hook.
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
+- `useDocumentTitle` - sets the tab title to the screen title plus `appTitle` and restores the title it replaced on change or unmount, unless a newer title was written since.
+- `useHtmlLang` - keeps `document.documentElement.lang` on the ra-core locale, for screen readers.
 
-Also exported: `BaseCrudService`, a base class for building CRUD services on top of the data providers, and `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
+There is no CRUD service: a class that calls one REST resource is an `HttpRepository` from the kernel's `./repository` sub-path (see [kernel](/packages/kernel.md)). `BaseCrudService` and `ICrudService` were removed on 2026-10-02.
+
+The package also exports `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
 
 Types worth knowing: `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`.
 

@@ -27,7 +27,7 @@ import { join } from 'node:path';
 const BRANCH = 'develop';
 
 /** Dependency order, mirrored from `scripts/release.ts` - a package publishes after everything it depends on. */
-const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'] as const;
+const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 type TPackageName = (typeof RELEASE_ORDER)[number];
 
@@ -140,7 +140,7 @@ const assertBuildArtifacts = (opts: { path: string; name: string }): void => {
     }
   }
 
-  const missing = [...targets].filter(file => !existsSync(join(opts.path, file)));
+  const missing = [...targets].filter((file) => !existsSync(join(opts.path, file)));
 
   if (missing.length > 0) {
     fail(
@@ -307,7 +307,7 @@ const parseOptions = (): IOptions => {
 
   // Always dependency order, never the order they were typed.
   const packages =
-    named.length > 0 ? RELEASE_ORDER.filter(p => named.includes(p)) : [...RELEASE_ORDER];
+    named.length > 0 ? RELEASE_ORDER.filter((p) => named.includes(p)) : [...RELEASE_ORDER];
 
   return { packages: [...packages], mode, dryRun, skipPrompt };
 };
@@ -341,8 +341,8 @@ const main = async (): Promise<void> => {
   const repaired = (await $`git status --porcelain`.text())
     .trim()
     .split('\n')
-    .filter(line => line.endsWith('package.json'))
-    .map(line => line.slice(3));
+    .filter((line) => line.endsWith('package.json'))
+    .map((line) => line.slice(3));
 
   if (repaired.length > 0) {
     console.log(`      ⚠ force-update repaired ${repaired.length} stale range(s) - commit these:`);

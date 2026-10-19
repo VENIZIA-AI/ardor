@@ -1,16 +1,25 @@
 import { type AnyType } from '@/common';
-import { BaseApiService } from '../services';
+import { type Logger } from '@/helpers';
+import { type BaseService } from '../services';
 
-export function api() {
-  return function (_target: BaseApiService, propertyKey: string, descriptor: PropertyDescriptor) {
+/** Logs a failing method with its name, and its `resource` when the class has one, then rethrows. */
+export const api = () => {
+  return (_target: BaseService, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (this: BaseApiService, ...args: AnyType[]) {
+    descriptor.value = async function (
+      this: { logger: Logger; resource?: string },
+      ...args: AnyType[]
+    ) {
       try {
-        const result = await Reflect.apply(originalMethod, this, args);
-        return result;
+        return await Reflect.apply(originalMethod, this, args);
       } catch (error) {
-        this.logger.error('[%s] resource: %s | error: %o', propertyKey, this.resource, error);
+        this.logger.error(
+          '[%s] resource: %s | error: %o',
+          propertyKey,
+          this.resource ?? '-',
+          error,
+        );
 
         throw error;
       }
@@ -18,4 +27,4 @@ export function api() {
 
     return descriptor;
   };
-}
+};

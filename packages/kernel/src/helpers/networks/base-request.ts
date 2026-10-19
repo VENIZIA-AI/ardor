@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import isEmpty from 'lodash/isEmpty';
+import isEmpty from 'lodash/isEmpty.js';
 
 import { type AnyObject } from '@/common/types';
 import { BaseHelper } from '../base-helper';
@@ -7,7 +7,7 @@ import { type IFetchable, type IRequestOptions } from './fetchers';
 import { NodeFetcher } from './fetchers/node-fetch';
 import type { TFetcherResponse, TFetcherVariant } from './common/types';
 
-export interface IFetcherRequestOptions<T extends TFetcherVariant> {
+export interface IFetcherRequestOptions<TVariant extends TFetcherVariant> {
   name: string;
   variant: TFetcherVariant;
   networkOptions: {
@@ -16,18 +16,18 @@ export interface IFetcherRequestOptions<T extends TFetcherVariant> {
     timeout?: number;
     [extra: symbol | string]: any;
   };
-  fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
+  fetcher: IFetchable<TVariant, IRequestOptions, TFetcherResponse<TVariant>>;
 }
 
 export interface INodeFetchNetworkOptions extends IFetcherRequestOptions<'node-fetch'> {
   variant: 'node-fetch';
 }
 
-export class BaseNetworkRequest<T extends TFetcherVariant> extends BaseHelper {
+export class BaseNetworkRequest<TVariant extends TFetcherVariant> extends BaseHelper {
   protected baseUrl: string;
-  protected fetcher: IFetchable<T, IRequestOptions, TFetcherResponse<T>>;
+  protected fetcher: IFetchable<TVariant, IRequestOptions, TFetcherResponse<TVariant>>;
 
-  constructor(opts: IFetcherRequestOptions<T>) {
+  constructor(opts: IFetcherRequestOptions<TVariant>) {
     super({ scope: opts.name });
 
     const { networkOptions } = opts;

@@ -11,44 +11,45 @@
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
- *   bun scripts/release.ts kernel --no-tables   # release without refreshing the atlas tables
  *
- * Every chain ends by regenerating the symbol and release tables atlas serves. They are generated
- * FROM release commits, so the chain that just shipped is exactly what makes them stale: skip the
- * refresh and `version` reports a consumer as current while it is ahead of the table, and `changes`
- * answers "unknown version" for what just shipped. `--no-tables` opts out for a one-package fix.
+ * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
  *
- * ARDOR ships no atlas package - the MCP server is `@venizia/ignis-atlas` run against this checkout
- * - so this refresh is the whole of what used to be an "atlas tail" elsewhere in the family.
+ * Each package is also waited for until its TARBALL answers 200 (`release-wait.ts`), not only its
+ * dist-tag: the packument is listed minutes before the tarball, and the next package's clean-install
+ * gate installs the one before it.
  */
+
+import { countChangedSinceRelease, withDependents } from './release-scope';
+import { waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
 
-/** What `refreshGeneratedTables` regenerates and commits, relative to the repository root. */
-const TABLE_PATHS = [
-  '.agents/knowledge/reference/releases.json',
-  '.agents/knowledge/reference/symbols.json',
-];
-
 /**
  * Dependency order, not alphabetical. A package must publish after everything it depends on, or the
  * release's own registry-existence gate fails on a version that is not out yet.
- *
- * `ui-kit` depends on nothing in the chain, but still runs sequentially, because the workspace-wide
- * `force-update` is what cannot overlap.
  */
-const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor', 'ui-kit'] as const;
+const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 type TReleaseMode =
-  'patch' | 'minor' | 'major' | 'prepatch' | 'preminor' | 'premajor' | 'prerelease';
+  | 'patch'
+  | 'minor'
+  | 'major'
+  | 'prepatch'
+  | 'preminor'
+  | 'premajor'
+  | 'prerelease';
 
 interface IPackageState {
   name: string;
   packageName: string;
   localVersion: string;
   publishedVersion: string | null;
+  /** Every version on the registry before dispatch; a new one is the proof of a publish. */
+  publishedVersions: string[];
   changedFiles: number;
+  /** The `@venizia/*` workspace packages this one depends on, by package name. */
+  internalDependencies: string[];
 }
 
 const run = async (opts: {
@@ -81,56 +82,18 @@ const resolvePublishedVersion = async (opts: { packageName: string }): Promise<s
   return exitCode === 0 && stdout ? stdout : null;
 };
 
-/**
- * Source files changed since this package's own last release commit - which is what decides whether
- * it needs releasing, not whether the working tree is dirty.
- */
-const countChangedSinceRelease = async (opts: { name: string }): Promise<number> => {
-  const { stdout } = await run({
-    command: ['git', 'log', '--format=%H %s', '--', `packages/${opts.name}/package.json`],
+/** Every published version, whatever its dist-tag. */
+const listPublishedVersions = async (opts: { packageName: string }): Promise<string[]> => {
+  const { stdout, exitCode } = await run({
+    command: ['npm', 'view', opts.packageName, 'versions', '--json'],
+    allowFailure: true,
   });
-
-  const releaseCommit = stdout
-    .split('\n')
-    .find(line => line.includes('release v'))
-    ?.split(' ')[0];
-
-  if (!releaseCommit) {
-    return Number.POSITIVE_INFINITY;
+  if (exitCode !== 0 || !stdout) {
+    return [];
   }
 
-  const { stdout: committed } = await run({
-    command: [
-      'git',
-      'diff',
-      '--name-only',
-      `${releaseCommit}..HEAD`,
-      '--',
-      `packages/${opts.name}/src`,
-    ],
-  });
-
-  // UNCOMMITTED work counts too. Without this the plan reads "nothing to release" while the tree
-  // holds a whole feature - technically true of the remote, and exactly the wrong thing to tell
-  // someone asking whether they are ready. The clean-tree gate still refuses to dispatch.
-  const { stdout: pending } = await run({
-    command: ['git', 'status', '--porcelain', '--', `packages/${opts.name}/src`],
-  });
-
-  const files = new Set<string>();
-  for (const line of committed.split('\n')) {
-    if (line) {
-      files.add(line);
-    }
-  }
-  for (const line of pending.split('\n')) {
-    const path = line.slice(3).trim();
-    if (path) {
-      files.add(path);
-    }
-  }
-
-  return files.size;
+  const parsed = JSON.parse(stdout) as string | string[];
+  return Array.isArray(parsed) ? parsed : [parsed];
 };
 
 const collectState = async (opts: { names: readonly string[] }): Promise<IPackageState[]> => {
@@ -149,7 +112,11 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       packageName: manifest.name,
       localVersion: manifest.version,
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
-      changedFiles: await countChangedSinceRelease({ name }),
+      publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
+      changedFiles: countChangedSinceRelease({ name }),
+      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter((dep) =>
+        dep.startsWith('@venizia/ardor'),
+      ),
     });
   }
 
@@ -232,7 +199,7 @@ const resolveLatestRunId = async (): Promise<string> => {
   return runs[0] ? String(runs[0].databaseId) : '';
 };
 
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Polls until a run newer than `previousRunId` appears, so we watch OUR dispatch and not an older one. */
 const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> => {
@@ -269,20 +236,21 @@ const waitForCompletion = async (opts: { runId: string }): Promise<string> => {
  * reverse - a green run whose publish silently did nothing - is exactly what this catches.
  */
 const assertPublished = async (opts: { state: IPackageState }): Promise<string> => {
-  // Four minutes, not one: the `next` dist-tag can lag the publish by minutes. A window shorter
-  // than the registry's own propagation turns a healthy release into a false alarm.
+  // A version absent before dispatch, not a dist-tag: a stable release goes to `latest` and leaves
+  // `next` where it was. Four minutes, because the registry can lag the publish.
   for (let attempt = 0; attempt < 48; attempt += 1) {
-    const published = await resolvePublishedVersion({ packageName: opts.state.packageName });
+    const versions = await listPublishedVersions({ packageName: opts.state.packageName });
+    const fresh = versions.find((version) => !opts.state.publishedVersions.includes(version));
 
-    if (published && published !== opts.state.publishedVersion) {
-      return published;
+    if (fresh) {
+      return fresh;
     }
 
     await sleep(5_000);
   }
 
   throw new Error(
-    `${opts.state.packageName} still reads ${opts.state.publishedVersion ?? 'nothing'} on the registry after four minutes. Check \`npm view ${opts.state.packageName} versions\` before assuming it failed - the dist-tag may simply be lagging.`,
+    `${opts.state.packageName} shows no new version on the registry after four minutes. Check \`npm view ${opts.state.packageName} versions\` before assuming it failed - the registry may simply be lagging.`,
   );
 };
 
@@ -298,7 +266,7 @@ const releasePackage = async (opts: {
 
   // `--ref` is not optional: without it `gh` dispatches against the DEFAULT branch, and GitHub
   // validates the inputs against that branch's copy of the workflow. `main` still carries the
-  // pre-ARDOR dropdown, so every package but `ui-kit` comes back HTTP 422.
+  // pre-ARDOR dropdown, so the dispatch comes back HTTP 422.
   await run({
     command: [
       'gh',
@@ -325,52 +293,29 @@ const releasePackage = async (opts: {
   }
 
   const published = await assertPublished({ state });
-  console.log(`  published ${state.packageName}@${published}`);
+  console.log(`  published ${state.packageName}@${published} - waiting for its tarball...`);
+
+  // The next package installs this one. Its packument is listed before its tarball answers.
+  await waitForTarball({ packageName: state.packageName, version: published });
+  console.log('  tarball installable');
 
   // The workflow pushes its own release commit. Without this the next package reads a stale local
   // version and the operator reads a repo that disagrees with the registry.
   await run({ command: ['git', 'pull', '--ff-only', '--quiet', 'origin', BRANCH] });
 };
 
-/**
- * Regenerates the tables atlas serves and commits them when they moved. Runs after the chain, never
- * as a member of it: the tables are generated FROM release commits, so they are always stale by
- * exactly the chain that just shipped.
- */
-const refreshGeneratedTables = async (): Promise<void> => {
-  console.log('\n▶ refreshing the tables atlas ships');
-  await run({ command: ['make', 'releases-gen'] });
-  await run({ command: ['make', 'symbols-gen'] });
-
-  const { stdout: dirty } = await run({
-    command: ['git', 'status', '--porcelain', '--', TABLE_PATHS[0], TABLE_PATHS[1]],
-  });
-  if (dirty.trim().length === 0) {
-    console.log('  tables already current');
-    return;
-  }
-
-  await run({ command: ['git', 'add', ...TABLE_PATHS] });
-  await run({
-    command: ['git', 'commit', '-m', 'chore(atlas): refresh the generated tables for the release'],
-  });
-  await run({ command: ['git', 'push', 'origin', BRANCH] });
-  console.log('  tables committed and pushed');
-};
-
 const main = async (): Promise<void> => {
   const args = Bun.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
-  const skipTables = args.includes('--no-tables');
   const modeIndex = args.indexOf('--mode');
   const mode = (modeIndex >= 0 ? args[modeIndex + 1] : 'prerelease') as TReleaseMode;
 
-  const requested = args.filter(arg => !arg.startsWith('--') && arg !== mode);
+  const requested = args.filter((arg) => !arg.startsWith('--') && arg !== mode);
   const candidates =
-    requested.length > 0 ? RELEASE_ORDER.filter(n => requested.includes(n)) : RELEASE_ORDER;
+    requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
 
-  const unknown = requested.filter(name => !RELEASE_ORDER.includes(name as never));
+  const unknown = requested.filter((name) => !RELEASE_ORDER.includes(name as never));
   if (unknown.length > 0) {
     throw new Error(
       `Unknown package(s): ${unknown.join(', ')}. Known: ${RELEASE_ORDER.join(', ')}`,
@@ -380,11 +325,15 @@ const main = async (): Promise<void> => {
   await assertReleasable({ isDryRun });
 
   const states = await collectState({ names: candidates });
-  // An explicit request is honoured as given; a full sweep releases only what actually changed.
-  const plan = requested.length > 0 ? states : states.filter(state => state.changedFiles > 0);
+  // An explicit request is honoured as given; a full sweep releases what changed AND every package
+  // depending on one of those. A prerelease falls outside a dependent's caret range (`^0.1.1` does
+  // not admit `0.1.2-0`), so an unreleased dependent drags in a second copy of the old dependency.
+  const plan = requested.length > 0 ? states : withDependents({ states });
 
   if (plan.length === 0) {
-    console.log('Nothing to release - no package has source changes since its last release.');
+    console.log(
+      'Nothing to release - no package has changed its code, manifest or build config since its last release.',
+    );
     return;
   }
 
@@ -411,12 +360,6 @@ const main = async (): Promise<void> => {
 
   for (const state of plan) {
     await releasePackage({ state, mode });
-  }
-
-  // After the loop, not inside it: every release commit in this chain has to exist before the
-  // tables are generated from them. Hanging this off a tail entry is how it silently never ran.
-  if (!skipTables) {
-    await refreshGeneratedTables();
   }
 
   console.log(`\n✓ Released ${plan.length} package(s).`);

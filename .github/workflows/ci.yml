@@ -21,13 +21,13 @@ env:
 jobs:
   gates:
     name: Source gates
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3
         with:
-          # The atlas release table is generated from release commits; a shallow clone has none.
+          # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0
 
       - name: Setup Bun
@@ -43,23 +43,36 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make catalog-check
 
+      # A fresh checkout has no adapters; sync writes them, so doctor checks the project, not the runner.
+      - name: VULCAN doctor
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make vulcan-sync vulcan-doctor
+
       - name: Knowledge bundle
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: make okf-check
+        run: make okf-check-strict
 
       - name: Browser purity probe
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make purity-test
 
+      - name: Gate scripts' own tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make test-scripts
+
+      - name: Wiki source links
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make wiki-links-check
+
   build-and-test:
     name: Build, test and lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3
         with:
-          # The atlas release table is generated from release commits; a shallow clone has none.
+          # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0
 
       - name: Setup Bun
@@ -71,44 +84,73 @@ jobs:
         id: install
         run: bun install
 
+      # The clean-install gate loads every entry under Node's ESM loader as well as Bun's.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "24"
+
       - name: Build
         id: build
         run: make build-all
 
-      # The make targets own the test flags (BUN_TEST_FLAGS, default --parallel, implies --isolate),
-      # so CI and a developer's `make test-<pkg>` run the very same command.
+      # The make targets own the test command (make/test.mk: .env.test, the setup preload and the
+      # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.
       - name: Test - kernel
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-kernel
 
       - name: Test - react
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-react
 
       - name: Test - admin
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-admin
 
-      - name: Gate scripts - tests
-        run: make test-scripts
-
       - name: Layer boundaries
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make layer-check
 
       - name: Import cycles
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make cycles-check
 
       - name: Public surface
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make surface-check
 
       - name: Bundle budgets
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make size-check
 
+      # Compiles every ```ts fence of the wiki against the built packages, and fails on an orphan page.
+      - name: Docs build
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make docs
+
+      - name: Wiki anchors
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make wiki-anchors-check
+
+      # The examples are not driven by make: they carry their own package.json scripts.
       - name: Examples build
-        run: make examples-check
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: bun scripts/examples.ts build
 
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: make lint
+        run: make lint-all
+
+      - name: Lint - examples
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: bun scripts/examples.ts lint
 
       # One loop over the whole manifest, so this gate and a release read the same rows.
       - name: Browser purity
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make purity
+
+      - name: Clean install
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make clean-install

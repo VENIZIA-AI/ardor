@@ -1,7 +1,7 @@
 # 5-minute quickstart
 
-The smallest ARDOR application that does something real: one application class, one service
-bound by class, one resource page, sign-in through the auth provider, and a stub API to run it
+The smallest ARDOR application that does something real: one application class, one repository
+declared with `@repository`, one resource page, sign-in through the auth provider, and a stub API to run it
 against.
 
 ```bash
@@ -12,12 +12,15 @@ bun run dev                # Vite on :5173, proxying /api
 ```
 
 Open <http://localhost:5173>, sign in, and the product list loads through `DefaultRestDataProvider`
-with the total read from `content-range`; the "expensive products" count comes from `ProductApi`,
-resolved with `useInjectable`.
+with the total read from `content-range`; the "expensive products" count comes from `ProductRepository`,
+resolved with `useRepository`.
 
 | File | What it shows |
 | --- | --- |
-| `src/application.ts` | The application, the three default providers, a `BaseApiService` subclass, the key augmentations |
-| `src/pages/product-list.tsx` | `useListContext` + `useInjectable` + `useTranslate` in one component |
+| `src/application.ts` | The application alone: `artifacts()` returns `AutoArtifacts`, the list of decorated classes the build made |
+| `src/datasources/api.datasource.ts`, `src/repositories/product.repository.ts` | An `HttpDataSource` and an `HttpRepository`, one decorated class per file, found by the build and bound at start |
+| `src/configurations/admin.configuration.ts` | The three default providers and their options, as `@provide` methods |
+| `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
+| `vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |

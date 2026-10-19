@@ -4,7 +4,7 @@ title: Best Practices
 
 # Best Practices in ARDOR
 
-Welcome to the ARDOR best practices guide. ARDOR brings the VENIZIA inversion-of-control container from IGNIS into the React ecosystem, structuring complex admin applications around `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin`, and `@venizia/ardor-ui-kit`. 
+Welcome to the ARDOR best practices guide. ARDOR brings the VENIZIA inversion-of-control container from IGNIS into the React ecosystem, structuring complex admin applications around `@venizia/ardor-kernel`, `@venizia/ardor-react`, and `@venizia/ardor-admin`. 
 
 Writing maintainable frontends requires clear structural boundaries. When building admin dashboards, frontend state management often degrades into tangled hooks and scattered context providers. ARDOR resolves this by enforcing container-level dependency injection, standardized configuration objects, and explicit typing boundaries. 
 

@@ -218,18 +218,19 @@ export class TransportDataProvider<
 What still comes from the base:
 
 - The `BaseProvider<IDataProvider<TResource>>` contract. The container resolves your subclass exactly as it resolves `DefaultRestDataProvider`; you override nothing on the provider side.
-- The constructor, which reads `url`, `useAuth`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
+- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
 - `getRequestProps`, reached through `this.networkService`, which produces the `headers` and `body` for a request.
-- The filter mapping inside `getList`, `getMany` and `getManyReference`, as long as you override at the helper level or re-use the same mapping when you override a method.
+- The filter mapping: the protected `buildListFilter({ params })` is shared by `getList` and `getManyReference`, and `getMany` builds its own. Keep it when you override a method, or re-use the same mapping.
 
 ## Binding the subclass
 
 Two of the three injections are already bound by the application: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO`. You add a binding for `TRANSPORT_KEY` with your transport function, and register `TransportDataProvider` under the key the application uses for its data provider in place of `DefaultRestDataProvider`.
 
 ```ts no-check
-// In the application setup - see the binding keys reference for the exact calls.
+// In a @configuration() class - see the binding keys reference for the exact shape.
 // 1. bind TRANSPORT_KEY -> memoryTransport (or a Tauri / Worker bridge)
-// 2. bind the data provider key -> TransportDataProvider instead of DefaultRestDataProvider
+// 2. @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) returning
+//    application.instantiate(TransportDataProvider).value(application)
 // ...
 ```
 
@@ -237,7 +238,7 @@ The `IDataProvider` react-admin receives from the container is unchanged: positi
 
 ## Common pitfalls
 
-- **`url` is still required.** The base constructor passes `restDataProviderOptions.url` to `DefaultNetworkRequestService`. `IRestDataProviderOptions.url` is a required string, so bind options with a `url` even when no HTTP request is ever made.
+- **`url` is still required.** `createNetworkService()` passes `restDataProviderOptions.url` to `DefaultNetworkRequestService`. `IRestDataProviderOptions.url` is a required string, so bind options with a `url` even when no HTTP request is ever made.
 - **`getListHelper` only covers `getList`.** `getOne`, `getMany` and `getManyReference` call `this.networkService.doRequest` directly. If you override only the helper, those three still go to HTTP.
 - **`getMany` and `getManyReference` mutate `where`.** `getMany` sets `where.id = { inq: params.ids }`; `getManyReference` sets `where[target] = id`. Your transport has to understand a LoopBack-style filter (`where`, `include`, `fields`, `order`, `limit`, `skip`, `offset`), or you translate it inside the transport.
 - **`noLimit` clears pagination.** When `filter.noLimit` is truthy, `limit`, `skip` and `offset` are set to `undefined`. Do not fall back to a default page size in the transport unless you mean to.

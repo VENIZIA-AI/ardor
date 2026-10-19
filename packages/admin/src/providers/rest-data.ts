@@ -1,5 +1,5 @@
-import { Container, getError, inject } from '@venizia/ignis-inversion';
-import omit from 'lodash/omit';
+import { type Container, getError, inject } from '@venizia/ignis-inversion';
+import omit from 'lodash/omit.js';
 import {
   type CreateParams,
   type CreateResult,
@@ -32,6 +32,8 @@ import {
   type IApplicationInfo,
   type ICustomParams,
   type IRestDataProviderOptions,
+  isDefined,
+  NetworkHeaders,
   type ISendParams,
   type ISendResponse,
   RequestCountData,
@@ -42,21 +44,10 @@ import {
 } from '@venizia/ardor-kernel';
 import { type IDataProvider } from '@/common';
 
-/** `HeadersInit` admits a `Headers` instance and a tuple list; the network layer only ever builds a record. */
-const toHeaderRecord = (headers: HeadersInit | undefined): Record<string, string> => {
-  if (!headers) {
-    return {};
-  }
-  if (headers instanceof Headers) {
-    return Object.fromEntries(headers.entries());
-  }
-  return Array.isArray(headers) ? Object.fromEntries(headers) : headers;
-};
-
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
 > {
-  protected networkService: DefaultNetworkRequestService;
+  private cachedNetworkService?: DefaultNetworkRequestService;
 
   constructor(
     @inject({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
@@ -65,11 +56,17 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     protected applicationInfo: IApplicationInfo,
   ) {
     super({ scope: DefaultRestDataProvider.name });
+  }
 
-    this.networkService = new DefaultNetworkRequestService({
+  /**
+   * Builds the network service this provider sends through. Override it to return a subclass of
+   * `DefaultNetworkRequestService` that overrides its hooks (`refreshToken`, `resolveAuthToken`, ...).
+   * Called once, on first use, so a subclass's own fields are set by then.
+   */
+  protected createNetworkService(): DefaultNetworkRequestService {
+    return new DefaultNetworkRequestService({
       name: 'default-application-network-service',
       baseUrl: this.restDataProviderOptions.url,
-      useAuth: this.restDataProviderOptions.useAuth,
       noAuthPaths: this.restDataProviderOptions.noAuthPaths,
       noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
       headers: this.restDataProviderOptions.headers,
@@ -77,50 +74,54 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  protected get networkService(): DefaultNetworkRequestService {
+    this.cachedNetworkService ??= this.createNetworkService();
+    return this.cachedNetworkService;
+  }
+
   getNetworkService() {
     return this.networkService;
   }
 
-  getListHelper<RecordType extends RaRecord = AnyType>(opts: {
-    resource: TResource;
-    type: TRequestType;
-    queryKey: Record<string, AnyType>;
-    filter: Record<string, AnyType>;
-    requestProps: { headers?: HeadersInit; body?: AnyType; method: TRequestMethod };
-  }) {
-    const { type, resource, queryKey, filter, requestProps } = opts;
+  /**
+   * The ids a bulk write touched, read from the affected rows the server answers (not the ids asked
+   * for). A body that is not a row array leaves `data` out.
+   */
+  protected toAffectedIds(opts: { rows: unknown }): Array<Identifier> | undefined {
+    const { rows } = opts;
 
-    const paths = [resource];
-    const response = this.networkService.doRequest<RecordType[]>({
-      requestCountData: RequestCountData.DATA_ONLY,
-      type,
-      paths,
-      query: { ...queryKey, filter },
-      ...requestProps,
-    });
+    if (!Array.isArray(rows)) {
+      return undefined;
+    }
 
-    return response;
+    return rows.map((row: { id: Identifier }) => row.id);
   }
 
-  getList<RecordType extends RaRecord = AnyType>(opts: {
-    resource: TResource;
-    params: GetListParams & QueryFunctionContext & ICustomParams;
-  }): Promise<GetListResult<RecordType>> {
-    const { resource, params } = opts;
-    const { pagination, sort, filter: filterGetList, meta, ...rest } = params;
+  /**
+   * The filter, query and list extras a list request sends, from react-admin's list params:
+   * pagination into `limit`/`skip`/`offset`, sort into `order`, `noLimit` lifting both, the
+   * remaining params into the filter, `filter.params` and `meta` into the query, and `meta.extra`
+   * into the list extras (sent in a header). Shared by `getList` and `getManyReference`.
+   */
+  protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
+    filter: Record<string, AnyType>;
+    queryKey: Record<string, AnyType>;
+    extra: Record<string, AnyType> | undefined;
+  } {
+    const { pagination, sort, filter: filterInput, meta, ...rest } = opts.params;
 
     let filter: Record<string, AnyType> = {};
 
-    if (filterGetList?.where) {
-      filter = { ...filterGetList, where: filterGetList.where };
+    if (filterInput?.where) {
+      filter = { ...filterInput, where: { ...filterInput.where } };
     } else {
       filter['where'] = {
-        ...omit(filterGetList, ['include', 'params', 'noLimit', 'fields']),
+        ...omit(filterInput, ['include', 'params', 'noLimit', 'fields']),
       };
-      filter['include'] = filterGetList?.include;
-      filter['fields'] = filterGetList?.fields;
-      filter['params'] = filterGetList?.params;
-      filter['noLimit'] = filterGetList?.noLimit;
+      filter['include'] = filterInput?.include;
+      filter['fields'] = filterInput?.fields;
+      filter['params'] = filterInput?.params;
+      filter['noLimit'] = filterInput?.noLimit;
     }
 
     if (sort?.field) {
@@ -147,10 +148,12 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     for (const key in rest) {
-      if (!params[key]) {
+      // Skip only undefined and null: `false` and `0` are filters.
+      if (!isDefined(rest[key])) {
         continue;
       }
-      filter[key] = params[key];
+
+      filter[key] = rest[key];
     }
 
     const queryKey: Record<string, AnyType> = {};
@@ -162,17 +165,60 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['params'] = undefined;
     }
 
-    if (meta) {
-      for (const key in meta) {
-        queryKey[key] = meta[key];
-      }
+    // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
+    const { extra, ...queryMeta } = meta ?? {};
+    for (const key in queryMeta) {
+      queryKey[key] = queryMeta[key];
     }
+
+    return { filter, queryKey, extra };
+  }
+
+  /** `HttpDataSource` settings that send what this provider sends, channel and tracing id included. */
+  getDataSourceAuth() {
+    return this.networkService.getDataSourceAuth({
+      restDataProviderOptions: this.restDataProviderOptions,
+      applicationInfo: this.applicationInfo,
+    });
+  }
+
+  getListHelper<RecordType extends RaRecord = AnyType>(opts: {
+    resource: TResource;
+    type: TRequestType;
+    queryKey: Record<string, AnyType>;
+    filter: Record<string, AnyType>;
+    requestProps: { headers?: HeadersInit; body?: AnyType; method: TRequestMethod };
+  }) {
+    const { type, resource, queryKey, filter, requestProps } = opts;
+
+    const paths = [resource];
+    const response = this.networkService.doRequest<RecordType[]>({
+      requestCountData: RequestCountData.DATA_ONLY,
+      type,
+      paths,
+      query: { ...queryKey, filter },
+      ...requestProps,
+    });
+
+    // The list extras a route answered reach react-admin as the result's `meta.extra`.
+    return response.then(({ extra, ...rs }) => {
+      return extra ? { ...rs, meta: { extra } } : rs;
+    });
+  }
+
+  getList<RecordType extends RaRecord = AnyType>(opts: {
+    resource: TResource;
+    params: GetListParams & QueryFunctionContext & ICustomParams;
+  }): Promise<GetListResult<RecordType>> {
+    const { resource, params } = opts;
+    const { filter, queryKey, extra } = this.buildListFilter({ params });
 
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
+      extra,
     });
 
     const requestProps = {
@@ -230,12 +276,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<GetManyResult<RecordType>> {
     const { resource, params } = opts;
 
-    const request = this.networkService.getRequestProps({
-      requestCountData: RequestCountData.DATA_ONLY,
-      resource,
-      restDataProviderOptions: this.restDataProviderOptions,
-      applicationInfo: this.applicationInfo,
-    });
     const filter = params?.meta?.filter ?? {};
     const queryKey: Record<string, AnyType> = {};
 
@@ -245,7 +285,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       }
     }
 
-    const response = this.networkService.doRequest<RecordType[]>({
+    const request = this.networkService.getRequestProps({
+      requestCountData: RequestCountData.DATA_ONLY,
+      resource,
+      restDataProviderOptions: this.restDataProviderOptions,
+      applicationInfo: this.applicationInfo,
+    });
+
+    // Always the GET, under the controller's own `find()`: a body-filter POST route bypassed a
+    // controller's tenant scoping and was removed from IGNIS (#92). A very long id list answers 414/431.
+    return this.networkService.doRequest<RecordType[]>({
       requestCountData: RequestCountData.DATA_ONLY,
       type: RequestTypes.GET_MANY,
       method: RequestMethods.GET,
@@ -259,8 +308,6 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       paths: [resource],
       ...request,
     });
-
-    return response;
   }
 
   getManyReference<RecordType extends RaRecord = AnyType>(opts: {
@@ -269,74 +316,17 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<GetManyReferenceResult<RecordType>> {
     const { resource, params } = opts;
 
-    const { pagination, sort, filter: filterGetMany, meta, target, id, ...rest } = params;
-
-    let filter: Record<string, AnyType> = {};
-
-    if (filterGetMany?.where) {
-      filter = { ...filterGetMany, where: { ...filterGetMany.where } };
-    } else {
-      filter['where'] = {
-        ...omit(filterGetMany, ['include', 'params', 'noLimit', 'fields']),
-      };
-      filter['include'] = filterGetMany?.include;
-      filter['fields'] = filterGetMany?.fields;
-      filter['params'] = filterGetMany?.params;
-      filter['noLimit'] = filterGetMany?.noLimit;
-    }
+    const { target, id, ...listParams } = params;
+    const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 
     filter.where[target] = id;
-
-    if (sort?.field) {
-      filter['order'] = [`${sort.field} ${sort.order}`];
-    }
-
-    // Remove default limit and skip in react-admin
-    if (filter?.noLimit) {
-      filter['limit'] = undefined;
-      filter['skip'] = undefined;
-      filter['offset'] = undefined;
-      filter['noLimit'] = undefined;
-    } else {
-      const { page = 0, perPage = 0 } = pagination;
-
-      if (perPage >= 0) {
-        filter['limit'] = perPage;
-      }
-
-      if (perPage > 0 && page >= 0) {
-        filter['skip'] = (page - 1) * perPage;
-        filter['offset'] = (page - 1) * perPage;
-      }
-    }
-
-    for (const key in rest) {
-      if (!params[key]) {
-        continue;
-      }
-      filter[key] = params[key];
-    }
-
-    const queryKey: Record<string, AnyType> = {};
-
-    if (filter?.params) {
-      for (const key in filter.params) {
-        queryKey[key] = filter.params[key];
-      }
-      filter['params'] = undefined;
-    }
-
-    if (meta) {
-      for (const key in meta) {
-        queryKey[key] = meta[key];
-      }
-    }
 
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
+      extra,
     });
 
     const requestProps = {
@@ -391,24 +381,34 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[updateMany] No IDs to execute update!' });
     }
 
+    // The body's `where` is the row selector, so a `where` field in the data is refused.
+    if (isDefined(data) && Object.prototype.hasOwnProperty.call(data, 'where')) {
+      throw getError({
+        message:
+          '[updateMany] data carries a "where" field, which the bulk route reads as the row selector and never writes. Update those records with update() instead.',
+      });
+    }
+
+    // The selector goes in the body: an id list in the URL hits 431 at ~400 UUIDs.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
-      body: data,
+      body: { ...data, where: { id: { inq: ids } } },
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
 
-    const response = this.networkService.doRequest<RecordType['id'][]>({
-      requestCountData: RequestCountData.DATA_ONLY,
-      type: RequestTypes.UPDATE_MANY,
-      method: RequestMethods.PATCH,
-      paths: [resource],
-      query: { filter: { where: { id: { inq: ids } } } },
-      ...request,
-    });
-
-    return response;
+    return this.networkService
+      .doRequest<Array<RecordType>>({
+        requestCountData: RequestCountData.DATA_ONLY,
+        type: RequestTypes.UPDATE_MANY,
+        method: RequestMethods.PATCH,
+        paths: [resource],
+        ...request,
+      })
+      .then((rs) => {
+        return { data: this.toAffectedIds({ rows: rs.data }) };
+      });
   }
 
   create<
@@ -472,32 +472,26 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       throw getError({ message: '[deleteMany] No IDs to execute delete!' });
     }
 
+    // One atomic request with the selector in the body, as in `updateMany`.
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,
       resource,
+      body: { where: { id: { inq: ids } } },
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
 
-    const rs = Promise.all(
-      ids
-        .map((id) => [resource, `${id}`])
-        .map((paths) => {
-          return this.networkService.doRequest<RecordType['id']>({
-            requestCountData: RequestCountData.DATA_ONLY,
-            type: RequestTypes.DELETE_MANY,
-            method: RequestMethods.DELETE,
-            paths,
-            ...request,
-          });
-        }),
-    ).then((responses) => {
-      return {
-        data: responses.map((response) => response.data),
-      };
-    });
-
-    return rs;
+    return this.networkService
+      .doRequest<Array<RecordType>>({
+        requestCountData: RequestCountData.DATA_ONLY,
+        type: RequestTypes.DELETE_MANY,
+        method: RequestMethods.DELETE,
+        paths: [resource],
+        ...request,
+      })
+      .then((rs) => {
+        return { data: this.toAffectedIds({ rows: rs.data }) };
+      });
   }
 
   send<ReturnType = AnyType>(opts: {
@@ -524,10 +518,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
     // Per-call headers win over the computed ones: a caller that names a header means it.
     if (headers) {
-      request.headers = {
-        ...toHeaderRecord(request.headers),
-        ...Object.fromEntries(Object.entries(headers).map(([key, value]) => [key, String(value)])),
-      };
+      request.headers = NetworkHeaders.merge({ sources: [request.headers, headers] });
     }
 
     const response = this.networkService.doRequest<ReturnType>({
@@ -542,6 +533,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
+  /**
+   * react-admin's data provider contract takes positional arguments, `(resource, params)`: the one
+   * place this class does not take an `opts` object. Each method hands them to the `opts` method.
+   */
   override value(_container: Container): IDataProvider<TResource> {
     return {
       getList: (resource, params) => {
@@ -576,6 +571,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       },
       getNetworkService: () => {
         return this.getNetworkService();
+      },
+      getDataSourceAuth: () => {
+        return this.getDataSourceAuth();
       },
     };
   }

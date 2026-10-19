@@ -12,10 +12,25 @@ export class CoreBindings {
   static readonly REST_DATA_PROVIDER_OPTIONS = '@app/application/options/rest/data';
 
   static readonly I18N_PROVIDER_OPTIONS = '@app/application/options/i18n';
+
+  /** The `features()` an application mounts, bound by `preConfigure()`. */
+  static readonly FEATURES = '@app/application/features';
+  /** An `IPermissionProvider`, bound by the application; unbound means every check passes. */
+  static readonly PERMISSION_PROVIDER = '@app/application/permission/provider';
 }
 
 export class LocalStorageKeys {
   static readonly KEY_AUTH_TOKEN = '@app/auth/token';
   static readonly KEY_AUTH_IDENTITY = '@app/auth/identity';
   static readonly KEY_AUTH_PERMISSION = '@app/auth/permission';
+
+  static readonly SCHEME_SET = new Set([
+    this.KEY_AUTH_TOKEN,
+    this.KEY_AUTH_IDENTITY,
+    this.KEY_AUTH_PERMISSION,
+  ]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
 }

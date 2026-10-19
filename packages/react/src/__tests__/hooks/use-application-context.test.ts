@@ -4,15 +4,8 @@ import React from 'react';
 import { Container } from '@venizia/ignis-inversion';
 import { Logger } from '@venizia/ardor-kernel';
 
-import { ApplicationContext } from '@/contexts/application';
+import { ApplicationContext, type IApplicationContextValue } from '@/contexts/application';
 import { useApplicationContext, useApplicationLogger } from '@/hooks/use-application-context';
-
-interface IApplicationContextValue {
-  readonly container: Container | null;
-  readonly registry: Container | null;
-  readonly logger: Logger | null;
-}
-
 interface IRenderHookOptions<TReturn> {
   readonly hook: () => TReturn;
   readonly providerValue?: IApplicationContextValue;
@@ -41,7 +34,6 @@ const renderHookResult = <TReturn>({
       return (
         providerValue ?? {
           container: null,
-          registry: null,
           logger: null,
         }
       );
@@ -68,10 +60,9 @@ describe('useApplicationContext', () => {
     const container = new Container();
 
     const result = renderHookResult({
-      hook: () => useApplicationContext(),
+      hook: useApplicationContext,
       providerValue: {
         container,
-        registry: null,
         logger: null,
       },
     });
@@ -82,7 +73,7 @@ describe('useApplicationContext', () => {
   test('throws when used outside a provider', () => {
     expect(() => {
       renderHookResult({
-        hook: () => useApplicationContext(),
+        hook: useApplicationContext,
       });
     }).toThrow('[useApplicationContext] must be used within a ApplicationContextProvider');
   });
@@ -90,10 +81,9 @@ describe('useApplicationContext', () => {
   test('throws when the container is null inside a provider', () => {
     expect(() => {
       renderHookResult({
-        hook: () => useApplicationContext(),
+        hook: useApplicationContext,
         providerValue: {
           container: null,
-          registry: null,
           logger: null,
         },
       });
@@ -116,10 +106,9 @@ describe('useApplicationLogger', () => {
     const logger = Logger.getInstance({ scope: 'test' });
 
     const result = renderHookResult({
-      hook: () => useApplicationLogger(),
+      hook: useApplicationLogger,
       providerValue: {
         container: null,
-        registry: null,
         logger,
       },
     });
@@ -130,7 +119,7 @@ describe('useApplicationLogger', () => {
   test('throws when used outside a provider', () => {
     expect(() => {
       renderHookResult({
-        hook: () => useApplicationLogger(),
+        hook: useApplicationLogger,
       });
     }).toThrow('[useApplicationLogger] must be used within a ApplicationContextProvider');
   });
@@ -138,10 +127,9 @@ describe('useApplicationLogger', () => {
   test('throws when the logger is null inside a provider', () => {
     expect(() => {
       renderHookResult({
-        hook: () => useApplicationLogger(),
+        hook: useApplicationLogger,
         providerValue: {
           container: null,
-          registry: null,
           logger: null,
         },
       });

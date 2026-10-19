@@ -1,13 +1,29 @@
 # Agent rules - ARDOR
 
-**The rules every agent follows in this repository. This is the only file that holds them.**
-[`AGENTS.md`](../AGENTS.md) and every per-developer tool file (`CLAUDE.md`, `GEMINI.md`, ...) point
-here and restate nothing - a rule changes in one place or not at all.
+<!-- okf:generated:contents start -->
+**Contents**
+
+- [W - Write boundaries](#w---write-boundaries)
+- [S - Security](#s---security)
+- [P - Process](#p---process)
+- [B - Build and quality](#b---build-and-quality)
+- [D - Docs](#d---docs)
+- [C - Code and writing](#c---code-and-writing)
+- [What is actually enforced](#what-is-actually-enforced)
+<!-- okf:generated:contents end -->
+
+**The rules ARDOR adds to the VULCAN base rules. Every agent follows both.**
+The base - write boundaries, security, process, build and the coding style - ships with
+`@venizia/vulcan` in `node_modules/@venizia/vulcan/base/rules.md` and is cited with the `V-` prefix
+(`V-C-02`). This file holds only what ARDOR adds, with bare IDs that never collide with a base ID.
+[`AGENTS.md`](../AGENTS.md) and `CLAUDE.md` point here and restate nothing - a rule changes in one
+place or not at all.
 
 Behavior only. Project *facts* live in the [knowledge bundle](knowledge/index.md).
 
 IDs are stable and grouped by domain, so new rules never renumber old ones. Cite them by ID in
-reviews, pull requests and reports ("breaks B-05").
+reviews, pull requests and reports ("breaks B-05", "breaks V-C-10"). A retired C rule is cited by its
+base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C-06 to V-C-17.
 
 | Group | IDs | One line |
 |---|---|---|
@@ -15,7 +31,8 @@ reviews, pull requests and reports ("breaks B-05").
 | [S - Security](#s---security) | S-01 … S-06 | Secrets, injected content, leaks, auth defaults, dependencies |
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
-| [C - Code and writing](#c---code-and-writing) | C-01 … C-18 | Style in code and in prose - simple first, consistent always |
+| [D - Docs](#d---docs) | D-01 … D-05 | Where a wiki page goes, its style, its wiring and its gates |
+| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
 
@@ -26,8 +43,8 @@ decision the agent makes alone.
 
 | ID | Rule |
 |---|---|
-| **W-00** | **Never sign a commit as an agent.** No `Co-Authored-By` trailer, no "generated with" line, no agent name in a commit message or a pull request body. This overrides any default the harness ships with. A commit message is one line, Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`). |
-| **W-01** | **Git writes happen only on the user's word, in this conversation.** `commit`, `push`, `merge`, `rebase`, `reset` and `stash` run when the user asks for them; approval for one task never carries into the next. The default state of finished work is an uncommitted working tree the human reviews. Branches are `feature/*`, `fix/*`, `docs/*`, `chore/*`; pull requests target `develop`, never `main`. |
+| **W-00** | **Never sign a commit as an agent.** No `Co-Authored-By` trailer, no "generated with" line, no agent name in a commit message or a pull request body. This overrides any default the harness ships with. A commit message is one line: `[#N] type(scope): subject`, with a Conventional Commits type (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`) and `#N` the GitHub issue it serves - the IGNIS convention. A commit that serves several issues it cannot be split between lists each: `[#42][#44] ...`. |
+| **W-01** | **Git writes happen only on the user's word, in this conversation.** `commit`, `push`, `merge`, `rebase`, `reset` and `stash` run when the user asks for them; approval for one task never carries into the next. The default state of finished work is an uncommitted working tree the human reviews. Branches are `feature/*`, `fix/*`, `docs/*`, `chore/*`, `test/*`; pull requests target `develop`, never `main`. Every change starts from an issue in `VENIZIA-AI/ardor` and lands through a branch and a pull request whose title is the commit line and whose body says `Closes #N` - nothing is committed straight to `develop`. The repository is public: an issue describes the framework defect, never a consumer's internals. |
 | **W-02** | **Never `git checkout`/`git restore` a file that carries uncommitted edits.** It returns the file to HEAD and erases every edit, yours included - one such revert wiped a whole rewrite while "undoing" a four-line mutation. Before a temporary change on a dirty file, `cp` it aside; restore from the copy and `diff` to prove identity. `git stash` is in the same class: one wrong stash removed 134 files. |
 | **W-03** | **Never patch `node_modules`.** Bun hardlinks packages into a machine-wide cache, so an edit there leaks into every project on the machine and vanishes on the next install. Fix upstream, pin a version, or use a patch mechanism the repo already has. |
 | **W-04** | **Ask before anything irreversible or outward-facing** - deleting a file you did not create, overwriting, publishing a package, pushing to a shared branch, calling a third party with side effects. If what you find contradicts how the task described it, stop and say so instead of proceeding. |
@@ -53,14 +70,14 @@ ARDOR is infrastructure other products stand on. A shortcut here ships to every 
 |---|---|
 | **P-01** | **Read the knowledge bundle first.** Start at [`knowledge/index.md`](knowledge/index.md), open the concepts your task touches, then act. Query it with the `ardor-atlas` MCP (`search` with `corpus: "knowledge"`, `get`). The code is ground truth: a concept that disagrees with the code is a bug, fix it. |
 | **P-02** | **Design the surface before the body.** For a feature, propose the API first - decorators, signatures, types, options - and get a yes before implementing. ARDOR is react-admin's data contract on IGNIS's container: reason from how react-admin, LoopBack 4 and IGNIS solved the same problem, then pick what fits. Always weigh transaction support, type safety, DI integration and testability. Priorities, in order: simplicity > flexibility > completeness. |
-| **P-03** | **Keep the knowledge bundle true.** When code changes a fact, update the concept that documents it and append a line to `knowledge/log.md` in the same change. Generated content (`knowledge/reference/*`, `<!-- okf:generated:... -->` regions) is never hand-edited - run `make okf-gen`. `make okf-check` validates; it is not a commit gate. |
+| **P-03** | **Keep the knowledge bundle true.** When code changes a fact, update the concept that documents it and append a line to `knowledge/log.md` in the same change. Generated content is never hand-edited: `reference/{source-map,providers,hooks-and-services,binding-keys,makefile-targets}.md` and `<!-- okf:generated:... -->` regions come from `make okf-gen`; `public-surface.md` from `make surface-gen`; symbols and releases are computed by the atlas when asked, nothing is committed. The rest of `reference/` (glossary, key source files, external links, atlas MCP) is curated. `make okf-check-strict` validates; it is not a commit gate. |
 | **P-04** | **Done climbs a fixed ladder, in order:** tests written and green -> build green and lint at zero -> BANA usage crosschecked -> `docs/wiki` updated -> knowledge bundle updated. Lay the ladder out as the step list at the start of every framework change (P-09). A rung skipped is reported as skipped, never as done. |
 | **P-05** | **Crosscheck BANA before calling a framework change finished.** Every changed public symbol is grepped in the BANA repository for the symbol and for the call shape (read-only, W-06). Usage hot paths: `useTranslate` ~3 231 files, `IdType` ~1 172, `useInjectable` ~1 088, `TUseTranslateKeys` ~533, `CoreBindings` ~229, `IDataProvider` ~213 - a change to one of these breaks BANA repo-wide. |
 | **P-06** | **Public exports have consumers you cannot see.** "No usage in ARDOR or BANA" never justifies deleting or reshaping an exported symbol on its own - park it, or ask. Whether a change is breaking is decided by the tagged release, not by the working tree: `git merge-base --is-ancestor <sha> <pkg>-v<version>`. |
 | **P-07** | **Breaking changes ship batched, and the whole chain releases together.** Three separate "small" breaking notes hide the total from the downstream owner - gather them into one changelog entry. BANA pins exact versions through a Bun catalog, so releasing only the package that changed answers the wrong question. |
 | **P-08** | **Think from first principles - a partner, not a stenographer.** Verify against the code before asserting; never answer from memory of an earlier exploration. When a request, a spec or a prior decision looks wrong, say so with reasoning and a better option, then let the human decide. A decision is ratified only when the human said yes explicitly - never inferred from silence or from your own proposal having been sensible. |
 | **P-09** | **Carry the minimap in every status message.** Work runs against a step list, and every message that reports state - progress, a result, an answer to a question asked mid-task - opens with the full map and the current position marked, so the human catches a wrong turn immediately. The writer never decides the map is unnecessary this time. The map lives in the message, not in a file. Shape and rules: [The minimap](#the-minimap-p-09) below. |
-| **P-10** | **Report like a colleague who was away, not like a log.** Outcome first, reasons after. Say what was verified and how; say plainly what failed, was skipped or is unproven - hiding a failure costs more than the failure. Gloss every abbreviation on first use. A measurement carries its witness: a `file:line`, a command and its output. Chat is Vietnamese; code, comments, commits and docs are English (C-01). |
+| **P-10** | **Report like a colleague who was away, not like a log.** Outcome first, reasons after. Say what was verified and how; say plainly what failed, was skipped or is unproven - hiding a failure costs more than the failure. Gloss every abbreviation on first use. A measurement carries its witness: a `file:line`, a command and its output. Chat is Vietnamese; code, comments, commits and docs are English (V-C-01). |
 | **P-11** | **Work from lean, grounded context.** Re-read the artifact that owns a fact before acting on it; conversation memory and summaries drift. Orchestrate: hand bulk reading and bulk generation to subagents on the right tier - Haiku for mechanical work, Sonnet for standard work, Opus for architecture-critical work - and declare the model explicitly. Keep the main thread for decisions, and curate everything a subagent returns against ground truth before it enters a durable artifact. |
 | **P-12** | **Subagents never run a git command that changes state.** `log`, `diff`, `show`, `status`, `blame` only. The controller holds the working tree. |
 | **P-13** | **Read the code before you write about it.** Any statement about how ARDOR behaves - wiki page, concept, changelog, answer in chat - is written with the source open. When code and doc disagree, say which one you verified and when. |
@@ -96,37 +113,39 @@ Chặn: <what blocks, or "không có">
 
 | ID | Rule |
 |---|---|
-| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `bun run build` inside the package or `make <pkg>`; lint with `make lint-<pkg>` or `make lint-all`. |
+| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `make <pkg>` (or `make -C packages/<pkg> build`); lint with `make lint-<pkg>` or `make lint-all`, fix with `make fmt-<pkg>`. |
 | **B-02** | **Zero lint errors and zero warnings, build green, after every change.** Non-negotiable; nothing is complete until it passes. |
 | **B-03** | **Verify before claiming.** Run the command, read the output, then say it passes. Evidence before assertions. A step that failed or was skipped is reported as such. |
-| **B-04** | **Know the build trap.** `make <pkg>` runs `rebuild.sh`, which type-checks first and then cleans `dist/` before `build.sh` emits it; a downstream package (`react` -> `kernel`, `admin` -> `react` + `kernel`, `ardor` -> all three) resolves its siblings through `dist`, so build in dependency order and confirm the `DONE` line. Running `sh ./scripts/build.sh` directly dies at `tsc-alias: not found` - always `bun run build` or `make`. |
+| **B-04** | **Know the build trap.** `make <pkg>` runs the package's `rebuild` target (`make/project.mk`), which type-checks first and then cleans `dist/` before `build` emits it; a downstream package (`react` -> `kernel`, `admin` -> `react` + `kernel`, `ardor` -> all three) resolves its siblings through `dist`, so build in dependency order and confirm the `DONE` line. A bare `tsc` skips `tsc-alias` and leaves every `@/` import unrewritten in `dist` - always build through `make`. |
 | **B-05** | **A downstream suite tests `dist`, not `src`.** `bun test` resolves `@venizia/ardor-kernel` and `@venizia/ardor-react` through the `import` export condition to `dist/index.js`. A source change in one package is invisible to another package's tests until the changed package is rebuilt. Before trusting "I changed X and Y's suite is still green", rebuild X and prove what Y loads - `import.meta.resolve` from Y's directory, or a grep on `dist/esm`. |
-| **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `tsconfig.build.json` excludes them for exactly this reason. |
+| **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `.configs/tsconfig.build.json` excludes them for exactly this reason. |
 | **B-07** | **Agent scripting uses `bun`** (`bun -e '…'`, `bun file.ts`, `Bun.file()`), never Python. |
 | **B-08** | **Test-only concerns go through the committed `.env.test`,** never through a framework default or a source change made for a test's convenience. Tests run on the Bun test runner only - never Jest, Vitest or Mocha. |
 
-## C - Code and writing
+## D - Docs
+
+The wiki (`docs/wiki/`, package `@venizia/ardor-docs`) is what people read. VULCAN's `docs-update` skill
+reads its paths from the manifest and applies these rules. D-01 to D-04 mean the same as in IGNIS.
 
 | ID | Rule |
 |---|---|
-| **C-01** | **English only in code** - identifiers, comments, commit messages, logs, docs. Vietnamese belongs in chat. |
-| **C-02** | **Options objects everywhere:** `fn({ key, value })`, never `fn(key, value)`. **One parameter is not an exception** - `isValidName({ name })`, not `isValidName(name)`. A single positional parameter reads fine until the second one arrives, and by then the method is published and every call site pays. The cost is highest on an interface others implement: `IStorageHelper` carried three positional methods for exactly this reason and the migration touched 72 call sites. Mixing the two styles in one interface is itself the defect - a reader cannot tell which shape a method takes without opening it. |
+| **D-01** | **One page per topic, in its section.** Under `docs/wiki/content/`: a release-worthy change is a `changelogs/YYYY-MM-DD-slug.md` from `changelogs/template.md`, with the `packages:` it covers (`[]` for repository tooling); a changed API surface updates `references/<topic>.md`; an optional add-on (socket client, count provider, custom transport) updates `extensions/<name>.md`; a how-to, tutorial or migration is a `guides/<category>/` page; a rule people should follow is a `best-practices/` page. Edit the page that owns the topic before creating one. |
+| **D-02** | **House style, checked page by page.** The brand is **ARDOR**; a hyphen, never an em-dash; no abbreviated identifiers (`Repository`, not `Repo`); every code sample is TypeScript, compiles against the real source, and imports from `@venizia/ardor` (or a sub-package when the page is about one); native VitePress only, no custom components or CSS, alerts as `> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`; frontmatter `title` under 80 characters and `description` under 160; the first screen says what the page is and shows the first example. The full method is VULCAN's `docs-writing` skill. `make okf-check-strict` checks only the brand and the dash. |
+| **D-03** | **A new page is wired in twice:** the sidebar in `docs/wiki/site/.vitepress/config.mts`, and the `index.md` of its section when it has one. A changelog also gets a row at the top of `changelogs/index.md`. |
+| **D-04** | **Four docs gates, all green:** `make docs` (an orphan page or a dead sidebar link via `check-sidebar.mts`, a `ts` fence that does not compile via `check-snippets.mts`, then a dead link in the build), `make wiki-links-check` (a named source path that does not exist), `make wiki-anchors-check` (a `#fragment` that resolves nowhere; it reads the build), `make lint-wiki` (the wiki's own scripts). A red gate sends you back to the step that caused it; then re-run all four. |
+| **D-05** | **Build before the docs gates.** `check-snippets.mts` compiles every `ts` fence of a page as one program against the packages' `dist`, so run `make build-all` first; a stale `dist` passes or fails a fence for the wrong reason. Mark a deliberate fragment `ts no-check`. |
+
+## C - Code and writing
+
+The coding style is the base V-C rules. ARDOR keeps the two IGNIS rules the base retired (V-C-03,
+V-C-05) - ARDOR runs on IGNIS's container and errors - and states its own stack, which the base
+leaves to each project (V-C-18).
+
+| ID | Rule |
+|---|---|
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
-| **C-04** | **Never abbreviate identifiers:** `ProductRepository` not `ProductRepo`, `ProductDocument` not `ProductDoc`; type parameters too (`TDocument`, not `TDoc`). |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
-| **C-06** | **Never a silent catch - log it.** Always braces. Early return. `switch` with `default` over a long if-else chain. Strict TypeScript; no `any` where a type exists. |
-| **C-07** | **A function name opens with its verb** - `generate` `build` `to` `is` `has` `assert` `extract` `enrich` `get` `resolve`. `is*` returns a boolean and leaves the branch to the caller; `assert*` throws and returns `void`, so the code after it needs none - reach for `assert*` when every caller would throw on `false` anyway. `has*` is the ownership question (`hasBucket`, never `isBucketExists`). That list is for UTILITY functions; service methods lean on a wider set. **Arrow functions, not `function` declarations** (do not churn existing ones). State plus the operations on it live in a class with static members - the `LoggerFactory` shape - never module-level `let` plus exported arrows. |
-| **C-08** | **Enumerable strings are a const class plus `TConstValue`,** never a raw string-literal union. Every such class carries `static readonly SCHEME_SET = new Set([...])` over its values and `static isValid(value: string): boolean` reading it, so a runtime check exists wherever a value crosses a boundary (`IsolationLevels` in connectors is the model; a subclass redeclares `SCHEME_SET` with `...Parent.SCHEME_SET` first). The `T`/`I` prefix follows the declaration keyword: `type` gets `T`, `interface` gets `I`; an interface turned into a type alias is renamed, and no tool catches it - grep both directions. |
-| **C-09** | **Comments state only a constraint the code cannot show** - one to three lines; no history, no dates, no decision notes, no restating the code. Most code needs none. |
-| **C-10** | **No explicit cast in new code.** `as X`, `as any`, `as unknown as X` and `as never` assert nothing; they silence the compiler where the type is wrong. Fix the type instead: a generic on the setter, a narrower parameter, a typed helper, `satisfies`. A pre-existing cast is removed when the line is touched, never copied. Generic parameters are full words (`ApplicationType`, `TDocument`), never `App` or `TDoc` (C-04). |
-| **C-11** | **SIMPLE FIRST, in code and in prose.** Fewest concepts, plainest words, smallest surface. Complexity must buy correctness, speed or safety the simple version cannot, and the artifact says what it bought. Something a reader cannot follow in one pass is a defect even when it works. Fix the root cause with the smallest change; never layer an abstraction on a misdiagnosed problem. |
-| **C-12** | **Consistent, never self-invented.** Before writing anything new - a constant, file, binding key, error shape - find the nearest precedent in this repo and copy its shape. Binding keys are namespaced (`services.X`, `providers.X`). Every scope is one folder with nested `common/{types,constants}.ts` and an index barrel (`inversion` is the model). A second style for something that already has one is a defect. |
-| **C-13** | **Docs style: hyphen `-`, never an em-dash. The brand is always ARDOR, never "Ardor".** English prose. `docs/wiki` is the human-facing VitePress site and stays native VitePress - no custom components or theme CSS. The knowledge bundle is agent-facing; never conflate the two. |
-| **C-14** | **Our types are camelCase.** A snake_case wire name exists only at the mapper boundary, through a string-literal key - never through an eslint-disable. |
-| **C-15** | **One method with a mode option, not several specialized methods.** Payload variants are zod-per-variant with `z.infer`, discriminated. |
-| **C-16** | **One concept, one implementation.** When the same question is answered in several places, the bug lives at the seam and no tool catches it. Consolidate to one home before building on top. |
-| **C-17** | **A file is named by its role, never by repeating its folder:** `winston/logger.ts`, not `winston/winston-logger.ts`. |
-| **C-18** | **The hard stack, and derived types over duplicates.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Tailwind + Radix in `ui-kit` (never MUI); Zod only. Prefer compile-time types derived from definitions (`TFullPaths<typeof englishMessages>`) over hand-maintained copies. |
+| **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model). |
 
 ---
 
@@ -136,12 +155,15 @@ Most of these rules hold because agents read this file. Only these have tooling 
 
 | Rule | Enforced by | Actually blocks? |
 |---|---|---|
-| B-02 | `make lint-all`, `bun run build`, run by hand | No automatic gate |
-| P-03 | `make okf-check` when the bundle is touched; the `knowledge-sync` skill periodically | No, by decision - a per-commit check cannot tell whether prose is still true |
-| W group, P-09, P-10, B-03, B-05, P-05, P-15, W-02 | `.agents/plugin/claude/hooks/session-start.ts` prints them into every Claude session, extracted from this file at run time | Reminds, never blocks |
+| B-02 | `.githooks/pre-commit` runs `make lint-all` and `bun scripts/examples.ts check` (after `make setup-hooks`); `make build-all` and the tests run by hand | Lint blocks a commit; build and tests are not gated |
+| P-03 | `make okf-check-strict` when the bundle is touched; the `knowledge-sync` skill periodically | No, by decision - a per-commit check cannot tell whether prose is still true |
+| The base W rules, every rule in this file, the minimap shape | VULCAN's SessionStart hook prints the base W rules, every row of this file and the minimap block above - it reads the rule files at run time | Reminds, never blocks |
+| V-W-02, V-W-03 | VULCAN's `guard-writes` hook asks before a database write, a migration, a deploy or a mutating HTTP call | Asks |
+| The VULCAN layout | `make vulcan-doctor` in CI: one config, the rule namespaces, no shipped skill, hook or make target redefined, adapters in sync | Fails CI |
 | everything else | this file | No |
 
 Git is deliberately not blocked: W-01 is a rule about *when*, not a deny list. Treat the session
-hook as the ceiling of what tooling will do.
+hooks as the ceiling of what tooling will do.
 
-To change a rule, edit this file. Never fork the list into a tool-specific file.
+To change an ARDOR rule, edit this file; a base rule changes in VULCAN, never here. Never fork the
+list into a tool-specific file.

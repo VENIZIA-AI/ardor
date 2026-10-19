@@ -14,25 +14,32 @@ mandatory for every task, not optional background reading.
 
 ## Step 1: read the rules
 
-Open `.agents/rules.md` before touching anything. Two rules cost the most when skipped: every
+Open the VULCAN base rules (`node_modules/@venizia/vulcan/base/rules.md`, cited `V-...`) and
+ARDOR's own, `.agents/rules.md`, before touching anything. Two rules cost the most when skipped: every
 status message must open with the minimap (P-09), and a downstream test suite runs `dist`, not
 `src` (B-05). Keep the second one in your head for the build step below.
 
-## Step 2: run `make agent-setup`
+## Step 2: run `make vulcan-sync`
 
-This runs `bun .agents/plugin/setup.ts`, which creates the gitignored per-tool symlinks
-(`CLAUDE.md`, `GEMINI.md`, ...) pointing at `AGENTS.md`, and merges the shared Claude settings and
-session hook from `.agents/plugin/claude/` into your local `.claude/`. There are no per-package
-agent files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle
-instead. Re-run this target after any pull that touched `.agents/plugin/`.
+ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulcan.config.ts`).
+`make vulcan-sync` (alias `make agent-setup`) writes the gitignored adapters: `CLAUDE.md` as
+`@AGENTS.md`, the shared hooks merged into your `.claude/settings.json`, and the skill links under
+`.claude/skills/`. `make vulcan-doctor` then reports 0 violations. There are no per-package agent
+files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle instead.
+Re-run the sync after any pull that touched `.configs/` or `.agents/`.
+
+VULCAN 0.1.0-0 needs up to three syncs on a `settings.json` that already carries `$schema`
+first; run it until every line reads `unchanged`. A checkout set up before VULCAN keeps a
+SessionStart entry for the deleted session hook under `.agents/plugin/` - delete that
+entry from `.claude/settings.json` by hand.
 
 ## Step 3: build, in dependency order
 
 `make build` rebuilds every package in dependency order: kernel, then react and admin, then the
-ardor umbrella, then ui-kit as needed. This order is not cosmetic - a package type-checks against
+ardor umbrella. This order is not cosmetic - a package type-checks against
 the `dist` of its dependency, never its `src`. A change to the kernel is invisible to `admin` until
 the kernel is rebuilt. You can rebuild one package at a time with `make kernel`, `make react`, `make
-admin`, `make ardor`, `make ui-kit`. See [Build order and package
+admin`, `make ardor`. See [Build order and package
 targets](/process/build-system.md) and the full command list in [Makefile
 targets](/reference/makefile-targets.md).
 
@@ -44,8 +51,8 @@ suites](/process/testing.md) for the per-package targets and what each one check
 ## Step 5: read the knowledge bundle, in this order
 
 The bundle is Open Knowledge Format - one concept per markdown file, YAML frontmatter, links as the
-graph edges - served both as files under `.agents/knowledge/` and over MCP by `ardor-atlas`. Read
-in this order:
+graph edges - served both as files under `.agents/knowledge/` and over MCP by `ardor-atlas` (see
+[Atlas MCP server](/reference/atlas-mcp.md) for its tools and what backs them). Read in this order:
 
 1. [What is ARDOR](/overview/what-is-ardor.md) - the frontend framework, its role next to IGNIS,
    and the IoC-container mental model.
@@ -56,7 +63,7 @@ in this order:
 4. [Design decisions](/overview/design-decisions.md) - why the framework is shaped the way it is.
 5. The package concepts, in dependency order: [`ardor-kernel`](/packages/kernel.md),
    [`ardor-react`](/packages/react.md), [`ardor-admin`](/packages/admin.md),
-   [`ardor`](/packages/ardor.md) (the umbrella), [`ardor-ui-kit`](/packages/ui-kit.md).
+   [`ardor`](/packages/ardor.md) (the umbrella).
 6. Architecture: [application lifecycle](/architecture/application-lifecycle.md), [DI in the
    browser](/architecture/di-in-the-browser.md), [data provider
    pipeline](/architecture/data-provider-pipeline.md), [auth recovery](/architecture/auth-recovery.md),

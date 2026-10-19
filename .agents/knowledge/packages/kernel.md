@@ -14,28 +14,36 @@ The defining rule is the purity gate: kernel code must run in a browser or in a 
 
 ## What it exports
 
-The package root (`src/index.ts`) re-exports four areas, each with its own barrel:
+The package root (`src/index.ts`) re-exports four areas - base, common, helpers, utilities - each with its own barrel:
 
-- **base** (`src/base/index.ts`) - `applications`, `decorators`, `providers`, `services`. This is where `AbstractArdorApplication` and `BaseArdorApplication` live: the IGNIS inversion `Container` wrapper with `injectable()` and `service()` helpers that back [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). It also holds `BaseService`, `BaseApiService`, `DefaultAuthService`, `DefaultNetworkRequestService`, `BaseProvider`, and the `api()` decorator that logs and rethrows a failing API method.
-- **common** (`src/common/index.ts`) - `constants`, `keys`, `types`. Binding keys (`CoreBindings`, `LocalStorageKeys`, see [Binding key namespaces](/conventions/binding-key-namespaces.md)), request/environment constants (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `HeaderConsts`, `Environments`, `App`), and shared types (`IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, `ICrudService`, and more).
-- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, `SocketIOClientHelper`, and the network layer: `NodeFetchNetworkRequest`, `NodeFetcher` - the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md).
-- **utilities** - a flat set of type guards and small helpers: `isDefined`, `isString`, `isNumber`, `isBrowser`, `isValidDate`, `isEditableTarget`, `int`, `float`, `toBoolean`, `toStringDecimal`, `getUID`, `keysToCamel`, `blobToBase64`, `stringify`, `parse`.
+- **base** (`src/base/index.ts`) - `applications`, `decorators`, `metadata`, `providers`, `services`. This is where `AbstractArdorApplication` and `BaseArdorApplication` live: the IGNIS inversion `Container` wrapper with `registerArtifacts()` (binds every stereotype-marked class), `service()`/`repository()`/`dataSource()`/`component()` (registration by hand, recording the key on the class), `bindingList()` (literal key-to-class map) and `injectable()`, which back [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). It also holds `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService`, `BaseProvider`, and the `api()` decorator that logs and rethrows a failing API method.
+  - **metadata** (`src/base/metadata/index.ts`) - the stereotypes, re-exported name by name from
+    `@venizia/ignis-kernel/metadata`: `service`, `component`, `configuration`, `injectable`, `provide`,
+    `model`, `datasource`, `repository`, `inject`, plus `BindingNamespaces`, `ArtifactNamespaces`,
+    `ArtifactTypes`, `BindingKeys` and the types `IArtifactMetadata`, `IArtifactRegistrationOptions`,
+    `TBindingNamespace`, `TBindingScope`. ARDOR defines none of its own - one mechanism for the whole
+    family. `CoreBindings` is deliberately not among them; see
+    [binding key namespaces](/conventions/binding-key-namespaces.md). `MetadataRegistry` is not
+    re-exported either - the application base imports it straight from `@venizia/ignis-kernel/metadata`.
+- **common** (`src/common/index.ts`) - `constants`, `keys`, `types`. Binding keys (`CoreBindings`, `LocalStorageKeys`, see [Binding key namespaces](/conventions/binding-key-namespaces.md)), request/environment constants (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `HeaderConstants`, `Environments`, `App`), and shared types (`IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, and more).
+- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, and the network layer: `NodeFetchNetworkRequest`, `NodeFetcher` - the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md). `SocketIOClientHelper` sits in the same directory but outside this barrel - see Peer dependencies below.
+- **utilities** - type guards and small helpers. The type guards `isDefined(value)` and `isString(value)` stay positional so narrowing works; everything else takes one options object: `isNumber`, `isObject`, `isValidDate`, `isInteger`, `isFloat` (`{ value }`), `isEditableTarget` (`{ target }`), `toInteger`, `toFloat` (`{ value, digits }`), `toBoolean`, `toStringDecimal` (`{ value, digits, localeFormat }`), `getNumberValue` (`{ input, method }` with `NumberParseMethods`), `toCamelCase`, `keysToCamelCase`, `toDataUrl` (`{ blob }`), `toQueryString` (`{ params }`), `parseQueryString` (`{ search }`). Plus `isBrowser()`, `generateUniqueId()` and the `INTL_0_DIGITS_FORMATTER` / `INTL_2_DIGITS_FORMATTER` formatters.
 
 ## Layering rule
 
-Kernel sits below every other package in the [monorepo layout](/overview/monorepo-layout.md): [react](/packages/react.md), [admin](/packages/admin.md), [ui-kit](/packages/ui-kit.md), and [ardor](/packages/ardor.md) all depend on it, never the other way around. Anything that touches React hooks, context, or JSX belongs upstream in `react` or `admin`, not here - see [Hooks and context](/architecture/hooks-and-context.md) and [React hooks conventions](/conventions/react-hooks.md) for where that logic actually lives. If a change to kernel needs a Node builtin or a React import, it does not belong in kernel.
+Kernel sits below the other framework packages in the [monorepo layout](/overview/monorepo-layout.md): [react](/packages/react.md), [admin](/packages/admin.md), and [ardor](/packages/ardor.md) depend on it, never the other way around. Anything that touches React hooks, context, or JSX belongs upstream in `react` or `admin`, not here - see [Hooks and context](/architecture/hooks-and-context.md) and [React hooks conventions](/conventions/react-hooks.md) for where that logic actually lives. If a change to kernel needs a Node builtin or a React import, it does not belong in kernel.
 
 ## Peer dependencies
 
-Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has a single runtime dependency: `lodash`.
+Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has a single runtime dependency: `lodash`.
 
 ## Build, test, size
 
 Scripts follow the standard package layout described in [Build/run/test](/overview/build-run-test.md) and [the build system](/process/build-system.md):
 
-- `bun run build` - `sh ./scripts/build.sh`
-- `bun run typecheck` - `tsc --noEmit -p tsconfig.test.json`
-- `bun test` (with `NODE_ENV=test` and `.env.test`) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
-- `bun run size` - runs `size-limit`
+- `make kernel` - typecheck, clean, then `tsc -p .configs/tsconfig.build.json` and `tsc-alias`
+- `make -C packages/kernel typecheck` - `tsconfig.json` (src and tests), then the build program
+- `make test-kernel` (`bun test` with `.env.test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
+- `make -C packages/kernel size` - runs `size-limit`
 
 The package enforces a size budget via `size-limit`: `dist/index.js` (importing everything, with all peer/runtime deps ignored from the measurement) must stay under **7.7 KB**. This budget is a hard constraint on kernel growth - anything bulky belongs in a higher package, not in the isomorphic core.

@@ -2,12 +2,17 @@ import React from 'react';
 
 import { useLocaleState } from 'ra-core';
 
-import { DefaultRestDataProvider } from '@/providers/rest-data';
-import { CoreBindings, HeaderConsts } from '@venizia/ardor-kernel';
+import type { DefaultRestDataProvider } from '@/providers/rest-data';
+import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { useInjectable } from '@venizia/ardor-react';
 
-export const useRequestHeaderLocale = (params?: { key?: string }) => {
-  const key = params?.key?.length ? params.key : HeaderConsts.X_LOCALE;
+export interface IUseRequestHeaderLocaleOptions {
+  /** The header the locale is sent in. Default `x-locale`. */
+  key?: string;
+}
+
+export const useRequestHeaderLocale = (opts?: IUseRequestHeaderLocaleOptions) => {
+  const key = opts?.key?.length ? opts.key : HeaderConstants.X_LOCALE;
 
   const [locale] = useLocaleState();
 
@@ -16,7 +21,7 @@ export const useRequestHeaderLocale = (params?: { key?: string }) => {
   });
 
   React.useEffect(() => {
-    defaultRestDataProvider.getNetworkService().setHeaders({ [key]: locale });
+    defaultRestDataProvider.getNetworkService().setHeaders({ headers: { [key]: locale } });
 
     return () => {};
   }, [defaultRestDataProvider, key, locale]);

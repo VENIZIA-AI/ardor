@@ -10,11 +10,21 @@ Hooks in ARDOR follow a small set of consistent rules across the [react](/packag
 
 ## Naming
 
-Every hook is a function whose name starts with `use`, matching the file it lives in: `useAutosave` in `use-autosave.ts`, `useInjectable` in `use-injectable.ts`, `useRefreshToken` in `use-refresh-token.ts`. This is the standard React rule, enforced by lint, and it is what allows the rules-of-hooks linter and `renderHook` test helpers to recognize the function.
+Every hook name starts with `use`. This is the standard React rule, and it is what lets the rules-of-hooks linter and `renderHook` test helpers recognize the function. Lint enforces it in `react` and `admin` (`ReactOxlintConfigs` from `@venizia/dev-configs`): `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` are both errors, in `.ts` files too. A private helper that calls hooks is a hook and is named one (`useArtifactInNamespace` in `use-artifact.ts`). A test that drives a hook outside React passes the hook itself (`hook: useApplicationContext`), not a wrapper arrow, which the linter reads as a non-hook calling a hook.
+
+A file normally holds one hook named after it: `useAutosave` in `use-autosave.ts`, `useDebounce` in `use-debounce.ts`, `useRefreshToken` in `use-refresh-token.ts`. A file may also hold a companion hook next to its main one - `useInjectableContainer` sits beside `useInjectable` in `use-injectable.ts`, and `useApplicationLogger` sits beside `useApplicationContext` in `use-application-context.ts`. A family of thin variants over one implementation may share a file named for the family - `useService`, `useProvider`, `useComponent` and `useConfiguration` all live in `use-artifact.ts` (see [react](/packages/react.md)).
 
 ## Options object parameter
 
-Hooks that take more than a trivial single value accept one options object, following the same pattern as [Options objects](/conventions/options-objects.md). `useAutosave` takes an `IUseAutosaveParams<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `disabled`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
+A hook that takes any input accepts one options object, following rule V-C-02 and [Options objects](/conventions/options-objects.md) - a single value is not an exception: `useSizer` takes `{ containerId }` and `useInjectableContainer` takes `{ container }`. `useInjectable` takes a discriminated union options type, `TUseInjectableOptions`, so callers pass either `{ key }` or `{ target }` but never both - the type system prevents supplying both or neither at the type level, and the hook body still checks at runtime.
+
+One shape for every hook:
+
+- **One suffix.** The options interface is `IUse<Name>Options` (`IUseDebounceOptions`, `IUseAutosaveOptions`, `IUseBeforeUnloadOptions`, `IUseSizerOptions`); a returned object is `IUse<Name>Return`. Never `Params` or `Props`.
+- **One argument name.** The parameter is `opts`.
+- **One polarity.** A switch is `enabled?: boolean` with `@default true`, as IGNIS names state flags - never `disabled`. Pass the boolean itself, not a function returning one.
+
+`useAutosave` takes an `IUseAutosaveOptions<TData, TReturn>` with `data`, `onSave`, `interval`, `enableSaveOnUnmount`, `enabled`.
 
 Every field on the options interface carries a JSDoc comment describing what it does and, where relevant, its default (`@default 2000` on `interval`). Document each field this way; it is the primary API surface a consumer sees in their editor.
 

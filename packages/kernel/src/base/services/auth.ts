@@ -18,9 +18,14 @@ export class DefaultAuthService extends BaseService {
   }
 
   getAuth() {
+    // Nothing stored is not an error: it is every visitor who has not signed in.
+    const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+    if (stored === null) {
+      return null;
+    }
+
     try {
-      const encryptedToken = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN) ?? '';
-      return JSON.parse(encryptedToken);
+      return JSON.parse(stored);
     } catch (error) {
       this.logger.error('[getAuth] Failed to parse stored auth token | error: %s', error);
       return null;
@@ -35,8 +40,14 @@ export class DefaultAuthService extends BaseService {
     referenceId?: IdType;
 
     token: { value: string; type: string };
+
+    /**
+     * The user's roles, where `getRoles` reads them. Left alone when absent, so a token refresh
+     * that saves only the new token keeps the roles; `[]` says the user has none.
+     */
+    roles?: ReadonlyArray<string>;
   }) {
-    const { token, userId, username = '', provider = '', referenceId = '' } = opts;
+    const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
     localStorage.setItem(
       LocalStorageKeys.KEY_AUTH_TOKEN,
       JSON.stringify(Object.assign({}, token, { provider })),
@@ -45,6 +56,10 @@ export class DefaultAuthService extends BaseService {
       LocalStorageKeys.KEY_AUTH_IDENTITY,
       JSON.stringify({ userId, username, referenceId, provider }),
     );
+
+    if (roles) {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, JSON.stringify(roles));
+    }
   }
 
   cleanUp() {

@@ -1,6 +1,7 @@
 ---
 title: ARDOR Replaces @minimaltech/ra-core-infra
 description: The frontend framework splits into four ARDOR packages behind an umbrella import, with four symbol renames and updated dependency requirements.
+packages: ['@venizia/ardor-admin', '@venizia/ardor', '@venizia/ardor-kernel', '@venizia/ardor-react']
 ---
 
 # Changelog - 2026-09-11
