@@ -36,7 +36,7 @@ Types worth knowing: `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `
 `IUseTranslateKeysOverrides` is declared in this package specifically so that applications can extend the set of translation keys `useTranslate` knows about, following the framework's general [module augmentation](/architecture/module-augmentation.md) pattern used across [hooks and context](/architecture/hooks-and-context.md). An application augments it like this:
 
 ```typescript
-declare module '@venizia/ardor-admin' {
+declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, unknown> {}
 }
 ```

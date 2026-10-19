@@ -13,6 +13,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | Date | Title | Type |
 |------|-------|------|
 | 2026-10-19 | [toDataUrl no longer needs Promise.withResolvers](./2026-10-19-to-data-url-without-with-resolvers) | Bug Fix |
+| 2026-10-19 | [Augment @venizia/ardor, not the declaring packages](./2026-10-19-augment-the-umbrella) | Behavior Change |
 | 2026-10-18 | [ARDOR 0.1.4 on stable IGNIS 0.2.2 and VULCAN 0.2.0](./2026-10-18-stable-ignis-0-2-2) | Behavior Change |
 | 2026-10-18 | [The Vite plugin pins the listed class names, not every name in the bundle](./2026-10-18-boot-pins-class-names) | Enhancement |
 | 2026-10-18 | [The final IGNIS chain, and the examples autoload with the Vite plugin](./2026-10-18-final-pin-and-autoload) | Behavior Change |

@@ -14,7 +14,7 @@ import {
 import { VertPaths } from '@/constants/vert-paths';
 import { VertRestDataProvider } from '@/providers/vert-rest-data.provider';
 
-declare module '@venizia/ardor-admin' {
+declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides {
     'vert.configurations': unknown;
     'vert.signedInAs': unknown;

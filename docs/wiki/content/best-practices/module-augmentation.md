@@ -26,7 +26,7 @@ An ARDOR application that registers its own bindings and, if you use i18n, a mes
 | `TUseTranslateFn` | `@venizia/ardor-admin` | `(key: TUseTranslateKeys, options?) => string` |
 | `TFullPaths` | `@venizia/ardor-kernel` | Turns a nested object type into a union of dotted paths |
 
-All of these are re-exported from `@venizia/ardor`. The "Declared in" column matters for augmentation - read on.
+All of these are re-exported from `@venizia/ardor`, and that is the module to augment - read on.
 
 ## Know what the key types are
 
@@ -56,42 +56,31 @@ Treat a key compile error as a signal that the augmentation is missing, not that
 
 Do not cast the key (`key: 'x' as TUseInjectableKeys`). That hides a real typo and defeats the purpose of the union.
 
-## Augment the package that declares the interface
+## Augment the umbrella
 
-TypeScript merges interface declarations by module identity. `IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react`. `IUseTranslateKeysOverrides` is declared in `@venizia/ardor-admin`. The `@venizia/ardor` umbrella only re-exports them.
+TypeScript merges interface declarations by module identity. `IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react` and `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`; `@venizia/ardor` re-exports both with `export *`. TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into the real interfaces, and `TUseInjectableKeys` and `TUseTranslateKeys` see your keys.
 
-An augmentation aimed at `@venizia/ardor` creates a new, unrelated interface inside the umbrella module. It never merges with the original, and `TUseInjectableKeys` never sees your keys.
+Measured on `@venizia/ardor` 0.1.4-5 with TypeScript 6, under both of Bun's linkers (`hoisted` and `isolated`): a declared key is accepted and an undeclared one is rejected.
 
 ### Do
 
-Target the declaring package, even if the rest of your code imports from `@venizia/ardor`.
+Augment `@venizia/ardor`, the one package an application depends on.
 
 ```ts
 import type { TFullPaths } from '@venizia/ardor';
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
     'services.PricingService': true;
   }
-}
 
-declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
 }
 ```
 
 ### Do not
 
-Do not augment the umbrella. This compiles, does nothing, and the hooks still reject your keys.
-
-```ts
-// Wrong - a re-export does not merge.
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeysOverrides {
-    'services.PricingService': true;
-  }
-}
-```
+Do not augment `@venizia/ardor-react` or `@venizia/ardor-admin` unless the application lists that package in its own `package.json`. A linker that does not hoist (Bun's `isolated` linker, pnpm) leaves a package that only `@venizia/ardor` depends on out of the application's reach. The block then fails with `TS2664: Invalid module name in augmentation, module '@venizia/ardor-react' cannot be found`, and your keys are missing, so every `useInjectable` and `translate` call that uses one is a compile error. The same block compiles under a hoisting linker, which is how it goes unnoticed.
 
 ## Derive injectable keys from the application
 
@@ -109,7 +98,7 @@ export const ApplicationBindings = {
 
 type TApplicationBindingKey = (typeof ApplicationBindings)[keyof typeof ApplicationBindings];
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides extends Record<TApplicationBindingKey, true> {}
 }
 ```
@@ -139,7 +128,7 @@ export class Application extends BaseArdorApplication {
 
 type TApplicationBindingKey = keyof ReturnType<Application['bindingList']>;
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides extends Record<TApplicationBindingKey, true> {}
 }
 ```
@@ -167,7 +156,7 @@ Note that `useInjectable({ target: PricingService })` (and `useService`, `useRep
 ```ts
 import type { TFullPaths } from '@venizia/ardor';
 
-declare module '@venizia/ardor-admin' {
+declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
 }
 ```
@@ -194,13 +183,11 @@ In either case the file must be a module. A file with no top-level `import` or `
 ```ts
 import type { TFullPaths } from '@venizia/ardor';
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
     'services.PricingService': true;
   }
-}
 
-declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
 }
 
@@ -222,13 +209,11 @@ Keep a small check next to the augmentation. Both the augmentation and the check
 ```tsx
 import { useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
     'services.PricingService': true;
   }
-}
 
-declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides {
     'app.products.title': true;
   }
@@ -259,7 +244,7 @@ Do not verify by reading the hover tooltip in the editor. Editors can resolve a 
 
 ## Common pitfalls
 
-- **Augmenting `@venizia/ardor`.** The umbrella re-exports the interfaces; it does not declare them. Target `@venizia/ardor-react` for injectable keys and `@venizia/ardor-admin` for translation keys.
+- **Augmenting a declaring package the application does not depend on.** `declare module '@venizia/ardor-react'` or `'@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist, and the keys are missing. Augment `@venizia/ardor`.
 - **A `.d.ts` that is not a module.** Without an `import` or `export {}` the `declare module` block is an ambient declaration, not an augmentation.
 - **Augmentation file outside `tsconfig` `include`.** The editor may see it while the build does not. The `@ts-expect-error` check catches this.
 - **Message object typed too loosely.** `TFullPaths<Record<string, unknown>>` does not give you literal paths. Keep `messages` as a literal object.

@@ -29,13 +29,11 @@ bun add ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit re
 
 IGNIS is the backend framework in the VENIZIA family; ARDOR is its frontend sibling and a consumer of it. Inversion of control comes from `@venizia/ignis-inversion`, and the data layer speaks the query vocabulary of `@venizia/ignis-filter`. `@venizia/ignis-kernel` is a required runtime peer of `@venizia/ardor-kernel`: its `./metadata` sub-path supplies the artifact stereotypes and the `MetadataRegistry` that the application base reads, so even the root import needs it. `reflect-metadata` is required for decorator metadata used by the container - see [DI in the browser](/architecture/di-in-the-browser.md). The second line is the react-admin stack the umbrella declares as peers. Add `socket.io-client` only if the application uses the `./socket-io` sub-path.
 
-## Why an app augments the sub-packages, not the umbrella
+## Why an app augments the umbrella
 
-Two of the typed hooks - `useInjectable` from ardor-react and `useTranslate` from ardor-admin - accept a union of string-literal keys built from an empty override interface plus a default set (see [Module augmentation](/architecture/module-augmentation.md)). TypeScript merges interface declarations by module identity: `IUseInjectableKeysOverrides` is declared inside `@venizia/ardor-react`, and `IUseTranslateKeysOverrides` is declared inside `@venizia/ardor-admin`. The umbrella package only re-exports these interfaces - it does not declare them.
+Two of the typed hooks - `useInjectable` from ardor-react and `useTranslate` from ardor-admin - accept a union of string-literal keys built from an empty override interface plus a default set (see [Module augmentation](/architecture/module-augmentation.md)). `IUseInjectableKeysOverrides` is declared inside `@venizia/ardor-react` and `IUseTranslateKeysOverrides` inside `@venizia/ardor-admin`; the umbrella re-exports both with `export *`.
 
-Because of that, a `declare module '@venizia/ardor'` augmentation creates a brand new, unrelated interface inside the umbrella module. It never merges with the original declaration, so the typed key unions never pick up your keys and the augmentation silently does nothing.
-
-The rule that falls out of this: always target the package that declares the interface, even though the rest of the application code imports everything from `@venizia/ardor`. Augment `@venizia/ardor-react` for injectable keys and `@venizia/ardor-admin` for translation keys. The import path used at runtime and the module path used for augmentation are two different things, and only the second one has to match the declaring package.
+TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into both and the typed key unions pick up the keys. This is the target to use: an application depends on `@venizia/ardor` alone, and under a linker that does not hoist (Bun's `isolated` linker, pnpm) `declare module '@venizia/ardor-react'` fails with TS2664 because that package is not resolvable from the application.
 
 ## What this means day to day
 

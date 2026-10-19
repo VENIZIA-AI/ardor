@@ -177,7 +177,7 @@ To add your own keys, augment the interface once in a `.d.ts` or any module file
 ```tsx
 import { useInjectable } from '@venizia/ardor';
 
-declare module '@venizia/ardor-react' {
+declare module '@venizia/ardor' {
   interface IUseInjectableKeysOverrides {
     'services.UserService': unknown;
   }
