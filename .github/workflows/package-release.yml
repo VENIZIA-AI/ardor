@@ -141,6 +141,12 @@ jobs:
       - name: Clean-install gate
         run: make clean-install-$PACKAGE
 
+      # An app created from the packed preset, outside the repository, must be green before the preset
+      # ships. Only the umbrella carries one. VULCAN comes from the registry (`@venizia/vulcan@latest`).
+      - name: VULCAN preset smoke
+        if: ${{ env.PACKAGE == 'ardor' }}
+        run: make preset-smoke
+
       # =========================================================================
       # VERSION & GIT
       # =========================================================================
@@ -185,6 +191,12 @@ jobs:
             sleep $((attempt * 10))
           done
           exit 1
+
+      # The preset names the versions this release ships with, so it is written after the bump and after
+      # the sync that brings in the chain's earlier releases.
+      - name: Write the VULCAN preset
+        if: ${{ env.PACKAGE == 'ardor' }}
+        run: bun scripts/vulcan-preset.ts
 
       # =========================================================================
       # PUBLISH

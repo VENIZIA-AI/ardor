@@ -1,0 +1,56 @@
+{
+  "presetVersion": 1,
+  "side": "frontend",
+  "summary": "An ARDOR admin on Vite and React: one products resource with list, create and edit pages, REST data provider and i18n, no sign-in.",
+  "devPort": 5173,
+  "dependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@venizia/ardor": "workspace:*",
+    "@venizia/ignis-connectors": "catalog:",
+    "@venizia/ignis-filter": "catalog:",
+    "@venizia/ignis-helpers": "catalog:",
+    "@venizia/ignis-inversion": "catalog:",
+    "@venizia/ignis-kernel": "catalog:",
+    "ra-core": "catalog:",
+    "ra-i18n-polyglot": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-boot": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "peers": {
+    "@venizia/ignis-connectors": "peer:",
+    "@venizia/ignis-filter": "peer:",
+    "@venizia/ignis-helpers": "peer:",
+    "@venizia/ignis-inversion": "peer:",
+    "@venizia/ignis-kernel": "peer:"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint -c .configs/oxlint.config.mts --deny-warnings && eslint -c .configs/eslint.config.mjs . && oxfmt -c .configs/oxfmt.config.mts --check \"**/*.{js,mjs,ts,mts,tsx}\"",
+    "lint:fix": "oxlint -c .configs/oxlint.config.mts --fix && eslint -c .configs/eslint.config.mjs . --fix && oxfmt -c .configs/oxfmt.config.mts \"**/*.{js,mjs,ts,mts,tsx}\""
+  },
+  "checks": ["typecheck", "lint", "build"],
+  "files": "./files",
+  "atlas": [
+    { "name": "ardor", "repo": "VENIZIA-AI/ardor", "ref": "develop" },
+    { "name": "ignis", "repo": "VENIZIA-AI/ignis", "ref": "develop" }
+  ]
+}

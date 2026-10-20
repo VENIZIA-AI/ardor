@@ -58,6 +58,9 @@
     "./package.json": "./package.json"
   },
   "sideEffects": false,
+  "vulcan": {
+    "preset": "./dist/vulcan-preset/preset.json"
+  },
   "files": [
     "README.md",
     "LICENSE.md",

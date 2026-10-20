@@ -8,6 +8,10 @@ description: Getting started tutorials, core architecture concepts, and migratio
 Welcome to ARDOR - the browser framework of the VENIZIA ecosystem. ARDOR structures react-admin applications into an inversion-of-control container powered by IGNIS. These guides take you from installation and tutorials to core architecture concepts and migration workflows.
 
 <div class="guide-cards">
+<a href="./get-started/create-a-project" class="guide-card">
+  <h3>Create a Project</h3>
+  <p>Start a monorepo with an admin, or add one to a monorepo you have, with one VULCAN command</p>
+</a>
 <a href="./get-started/setup" class="guide-card">
   <h3>Setup</h3>
   <p>Install Bun, configure dependencies, and prepare your development environment</p>
@@ -63,7 +67,7 @@ Welcome to ARDOR - the browser framework of the VENIZIA ecosystem. ARDOR structu
 <div class="roadmap">
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">1</span><h4>First Steps</h4></div>
-  <p><a href="./get-started/setup">Setup</a> → <a href="./get-started/5-minute-quickstart">5-Minute Quickstart</a></p>
+  <p><a href="./get-started/create-a-project">Create a Project</a> or <a href="./get-started/setup">Setup</a> → <a href="./get-started/5-minute-quickstart">5-Minute Quickstart</a></p>
   <span class="stage-desc">Prepare your development environment and boot your first admin console</span>
 </div>
 <div class="roadmap-stage">
