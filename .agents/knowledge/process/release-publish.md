@@ -12,6 +12,7 @@ tags: [process, release, ci]
 - [What triggers it](#what-triggers-it)
 - [Driving a chain](#driving-a-chain)
 - [Release order](#release-order)
+- [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Build, lint, bump, tag, publish](#build-lint-bump-tag-publish)
 - [Consumer measurement](#consumer-measurement)
@@ -65,6 +66,12 @@ Because `admin` depends on `react`, `react` depends on `kernel`, and `ardor` bun
 release chain runs in dependency order: **kernel, then react, then admin, then ardor**. Releasing
 out of order means a downstream package builds against a stale floor for its own dependency, and the
 force-update step below cannot invent a published version that does not exist yet.
+
+## Version line
+
+ARDOR and IGNIS share a minor version (Phat's decision, 2026-10-20): ARDOR `X.Y.*` peers IGNIS `^X.Y.0`, so a new IGNIS minor means a new ARDOR minor of the same number, even when that skips one (ARDOR goes 0.1.5 to 0.3.0 with IGNIS 0.3.0, never through 0.2). Patches move independently on each side. `@venizia/vulcan` and `@venizia/dev-configs` version on their own lines. The four ARDOR packages release together on one version, so a minor release is `kernel`, `react`, `admin` and `ardor` at the same number.
+
+`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number needs an explicit version input, which the workflow, `scripts/release.ts` and `scripts/release-local.ts` do not take yet.
 
 ## Force-update the workspace before install
 
