@@ -4,7 +4,9 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const apiUrl = '{{apiUrl}}';
+  // The backend app `vulcan add --api` chose; empty when there is none, and then nothing is proxied.
+  const apiUrl: string = '{{apiUrl}}';
+  const proxy: Record<string, string> = apiUrl === '' ? {} : { '/api': apiUrl };
 
   return {
     // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
@@ -13,7 +15,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: Number(env.PORT ?? '{{devPort}}'),
       strictPort: true,
-      proxy: { '/api': apiUrl },
+      proxy,
     },
   };
 });
