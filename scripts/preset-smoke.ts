@@ -29,6 +29,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { chromium } from 'playwright-core';
+
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
 
 const ROOT = resolve(import.meta.dir, '..');
@@ -294,6 +296,62 @@ const freePort = (): number => {
   return port as number;
 };
 
+const PRODUCTS = [
+  { id: 1, name: 'Espresso', price: 30000 },
+  { id: 2, name: 'Latte', price: 45000 },
+];
+
+/**
+ * Opens the app in headless Chrome and checks the page really runs: the list renders the rows the
+ * page was given, the create form shows its inputs, and nothing throws or logs an error on the way.
+ * A dev server that answers 200 for every file proves none of that (a module that reads `process`
+ * at import time answers 200 and leaves the page blank). The API is answered by the browser, not by
+ * a server, so the check does not depend on the proxy target. `CHROME_BIN` names a Chrome or
+ * Chromium binary; without it the installed Google Chrome is used.
+ */
+const assertPageRenders = async (opts: { port: number }) => {
+  const executablePath = process.env.CHROME_BIN;
+  const browser = await chromium.launch({
+    executablePath,
+    channel: executablePath === undefined ? 'chrome' : undefined,
+  });
+  const problems: string[] = [];
+
+  try {
+    const page = await browser.newPage();
+
+    page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        problems.push(`console.error: ${message.text()}`);
+      }
+    });
+    await page.route('**/api/products*', (route) =>
+      route.fulfill({
+        json: PRODUCTS,
+        headers: { 'content-range': `products 0-${PRODUCTS.length - 1}/${PRODUCTS.length}` },
+      }),
+    );
+
+    await page.goto(`http://localhost:${opts.port}/`);
+    await page.getByRole('heading', { name: /Products/ }).waitFor({ timeout: 30_000 });
+    await page.getByRole('link', { name: 'Espresso' }).waitFor({ timeout: 10_000 });
+    await page.goto(`http://localhost:${opts.port}/#/products/create`);
+    await page.getByLabel('Name').waitFor({ timeout: 10_000 });
+  } catch (error) {
+    problems.push(
+      `the page did not render: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  } finally {
+    await browser.close();
+  }
+
+  assert({
+    condition: problems.length === 0,
+    message: `the page renders in a browser, with no uncaught error and no console error${problems.length === 0 ? '' : ` | ${problems.slice(0, 5).join(' | ').slice(0, 1500)}`}`,
+  });
+};
+
 /**
  * Starts the app's `dev` script on a free port, loads the page and its entry module, and checks
  * the server's output: the first run of a new project prints no warning.
@@ -354,6 +412,8 @@ const assertDevServer = async (opts: { cwd: string }) => {
         message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
       });
     }
+
+    await assertPageRenders({ port });
 
     // Dependency pre-bundling and reloads print on the first request, so wait for them.
     await Bun.sleep(2_000);
