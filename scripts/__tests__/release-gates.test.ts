@@ -12,6 +12,8 @@ import {
   parseChainReleased,
   TARBALL_LAG_DELAYS_SECONDS,
   unresolvedProtocols,
+  parsePublished,
+  withPublished,
   workspaceStrays,
 } from '../release-gates';
 
@@ -391,5 +393,98 @@ describe('isTarballLag: a 404 on a @venizia tarball just after a publish', () =>
     expect(
       TARBALL_LAG_DELAYS_SECONDS.reduce((sum, seconds) => sum + seconds, 0),
     ).toBeLessThanOrEqual(330);
+  });
+});
+
+describe('withPublished: the version just published beats a stale registry read', () => {
+  test('a stale registry latest loses to the published version', () => {
+    const packages = withPublished({
+      packages: [{ name: 'a', latest: '0.3.0', next: '0.3.0' }],
+      published: { name: 'a', version: '0.3.1', tag: 'latest' },
+    });
+    expect(packages).toEqual([{ name: 'a', latest: '0.3.1', next: '0.3.0' }]);
+    expect(nextTagsToHeal({ packages })).toEqual([{ name: 'a', latest: '0.3.1' }]);
+  });
+
+  test('a published prerelease on next leaves latest to the registry', () => {
+    const packages = withPublished({
+      packages: [{ name: 'a', latest: '0.3.0', next: '0.2.0' }],
+      published: { name: 'a', version: '0.4.0-0', tag: 'next' },
+    });
+    expect(packages).toEqual([{ name: 'a', latest: '0.3.0', next: '0.4.0-0' }]);
+    expect(nextTagsToHeal({ packages })).toEqual([]);
+  });
+
+  test('the other packages keep what the registry said', () => {
+    const packages = withPublished({
+      packages: [
+        { name: 'a', latest: '0.3.0', next: '0.3.0' },
+        { name: 'b', latest: '0.3.0', next: '0.1.4-5' },
+      ],
+      published: { name: 'a', version: '0.3.1', tag: 'latest' },
+    });
+    expect(packages[1]).toEqual({ name: 'b', latest: '0.3.0', next: '0.1.4-5' });
+    expect(nextTagsToHeal({ packages }).map((entry) => entry.name)).toEqual(['a', 'b']);
+  });
+
+  test('a published package the registry did not list is added', () => {
+    expect(
+      withPublished({ packages: [], published: { name: 'a', version: '0.3.1', tag: 'latest' } }),
+    ).toEqual([{ name: 'a', latest: '0.3.1' }]);
+  });
+
+  test('no published package changes nothing', () => {
+    const packages = [{ name: 'a', latest: '0.3.0', next: '0.1.0' }];
+    expect(withPublished({ packages })).toEqual(packages);
+  });
+});
+
+describe('parsePublished: --published <name>@<version> --tag <tag>', () => {
+  test('reads a scoped name, a version and a tag', () => {
+    expect(
+      parsePublished({ argv: ['--published', '@venizia/ardor@0.3.1', '--tag', 'latest'] }),
+    ).toEqual({ name: '@venizia/ardor', version: '0.3.1', tag: 'latest' });
+  });
+
+  test('neither flag means nothing was published', () => {
+    expect(parsePublished({ argv: ['--dry-run'] })).toBeUndefined();
+  });
+
+  test('a published without a tag, or an unknown tag, throws', () => {
+    expect(() => parsePublished({ argv: ['--published', '@venizia/ardor@0.3.1'] })).toThrow(
+      '--tag',
+    );
+    expect(() =>
+      parsePublished({ argv: ['--published', '@venizia/ardor@0.3.1', '--tag', 'beta'] }),
+    ).toThrow('beta');
+  });
+
+  test('a published that is not name@version throws', () => {
+    expect(() =>
+      parsePublished({ argv: ['--published', '@venizia/ardor', '--tag', 'latest'] }),
+    ).toThrow('@venizia/ardor');
+    expect(() => parsePublished({ argv: ['--published', 'a@x.y', '--tag', 'latest'] })).toThrow(
+      'x.y',
+    );
+  });
+});
+
+describe('the workflow passes what it published, and can heal alone', () => {
+  const workflow = readFileSync(join(ROOT, '.github/workflows/package-release.yml'), 'utf8');
+
+  test('the heal step is given the published package, version and tag', () => {
+    expect(workflow).toContain(
+      'release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"',
+    );
+  });
+
+  test('a heal_only dispatch runs only the heal job; a release skips it', () => {
+    expect(workflow).toMatch(/\n      heal_only:\n\s+type: boolean/);
+    expect(workflow).toMatch(
+      /\n  heal-next:\n\s+name: Heal next tags\n\s+if: \$\{\{ inputs.heal_only == true \}\}/,
+    );
+    expect(workflow).toMatch(
+      /\n  release:\n\s+name: NPM Release\n\s+if: \$\{\{ inputs.heal_only != true \}\}/,
+    );
   });
 });
