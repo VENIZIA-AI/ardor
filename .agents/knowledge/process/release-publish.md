@@ -15,6 +15,7 @@ tags: [process, release, ci]
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Build, lint, bump, tag, publish](#build-lint-bump-tag-publish)
+- [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
 - [Changelog entry required](#changelog-entry-required)
 <!-- okf:generated:contents end -->
@@ -130,6 +131,10 @@ After install, the job uses the Makefile dependency chain (see
 If any step fails, a rollback step deletes the tag if it was created, and hard-resets and
 force-pushes `develop` if the commit was pushed - but a package already published to npm is not
 un-published; the rollback step prints an `npm deprecate` reminder instead.
+
+## The VULCAN preset (ardor only)
+
+Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/vulcan-preset` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`), so it needs a VULCAN that has `init --preset`. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 
