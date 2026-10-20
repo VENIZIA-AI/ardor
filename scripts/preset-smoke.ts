@@ -218,10 +218,15 @@ const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) 
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
 };
 
+/** The app preset of a packed package: `dist/vulcan-preset/app/`, or `dist/vulcan-preset/` for a package released before the kinds got folders. */
+const appPresetPath = (opts: { presetRoot: string }): string => {
+  const named = join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json');
+
+  return existsSync(named) ? named : join(opts.presetRoot, 'dist/vulcan-preset/preset.json');
+};
+
 const checksOf = (opts: { presetRoot: string }): string[] => {
-  const { checks } = readJson({
-    path: join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json'),
-  });
+  const { checks } = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) });
 
   return Array.isArray(checks) ? checks.map(String) : [];
 };
@@ -647,7 +652,7 @@ const main = async () => {
         '--no-api',
       ],
     });
-    const peers = readJson({ path: join(presetRoot, 'dist/vulcan-preset/app/preset.json') }).peers;
+    const peers = readJson({ path: appPresetPath({ presetRoot }) }).peers;
     const range = isRecord(peers) ? String(peers['@venizia/ignis-kernel']) : '';
 
     assert({
