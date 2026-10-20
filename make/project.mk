@@ -18,6 +18,12 @@ BUILD_TSCONFIG := .configs/tsconfig.build.json
 
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
 
+# Paths a package keeps out of lint and format (relative to the package, `vulcan-preset/files/**`): the
+# template of a generated app is linted by that app's own checks, not by the package.
+LINT_IGNORE ?=
+IGNORE_FLAGS = $(foreach pattern,$(LINT_IGNORE),--ignore-pattern '$(pattern)')
+FMT_IGNORE = $(foreach pattern,$(LINT_IGNORE), "!$(pattern)")
+
 .PHONY: build typecheck clean rebuild lint fmt size
 
 # The build program too: it drops the Bun types, so a Bun global in src fails here, not in a consumer.
@@ -45,14 +51,14 @@ rebuild: typecheck clean
 	@$(MAKE) --no-print-directory build
 
 lint:
-	@$(BIN)/oxlint -c .configs/oxlint.config.mts --deny-warnings .
-	@$(BIN)/eslint -c .configs/eslint.config.mjs .
-	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts --check $(FMT_GLOB)
+	@$(BIN)/oxlint -c .configs/oxlint.config.mts --deny-warnings $(IGNORE_FLAGS) .
+	@$(BIN)/eslint -c .configs/eslint.config.mjs $(IGNORE_FLAGS) .
+	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts --check $(FMT_GLOB)$(FMT_IGNORE)
 
 fmt:
-	@$(BIN)/oxlint -c .configs/oxlint.config.mts --fix .
-	@$(BIN)/eslint -c .configs/eslint.config.mjs --fix .
-	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts $(FMT_GLOB)
+	@$(BIN)/oxlint -c .configs/oxlint.config.mts --fix $(IGNORE_FLAGS) .
+	@$(BIN)/eslint -c .configs/eslint.config.mjs --fix $(IGNORE_FLAGS) .
+	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts $(FMT_GLOB)$(FMT_IGNORE)
 
 # Bundle budget from the package.json "size-limit" block, brotlied, every third-party peer external.
 size:
