@@ -29,6 +29,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
+
 const ROOT = resolve(import.meta.dir, '..');
 const SCENARIOS = ['solo', 'refusal', 'pair'] as const;
 
@@ -59,13 +61,32 @@ const run = (opts: {
   expectFailure?: boolean;
 }): { code: number; output: string } => {
   step += 1;
-  const proc = Bun.spawnSync(opts.command, {
-    cwd: opts.cwd,
-    env: { ...process.env, ...opts.env },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  const output = `${proc.stdout.toString()}${proc.stderr.toString()}`;
+  const spawn = () => {
+    const spawned = Bun.spawnSync(opts.command, {
+      cwd: opts.cwd,
+      env: { ...process.env, ...opts.env },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    return { proc: spawned, output: `${spawned.stdout.toString()}${spawned.stderr.toString()}` };
+  };
+  let attempt = spawn();
+
+  // A fresh @venizia version resolves minutes before its tarball does: retry only that 404.
+  for (const seconds of TARBALL_LAG_DELAYS_SECONDS) {
+    if (attempt.proc.exitCode === 0 || !isTarballLag({ output: attempt.output })) {
+      break;
+    }
+
+    console.log(
+      `  ..  ${opts.command.join(' ')}: a @venizia tarball is not served yet (404), retrying in ${seconds}s`,
+    );
+    Bun.sleepSync(seconds * 1000);
+    attempt = spawn();
+  }
+
+  const { proc, output } = attempt;
   const label = `${String(step).padStart(2, '0')} ${opts.command.join(' ')}`;
 
   writeFileSync(
