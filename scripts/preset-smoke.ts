@@ -84,6 +84,23 @@ const run = (opts: {
   return { code: proc.exitCode, output };
 };
 
+/** A first run is silent: a line with `(!)` or "warning" is something a new user should never see. */
+const WARNING = /\(!\)|warning/i;
+// A CI runner colours the output (`localhost:\x1b[1m5173`), which would split a port from its colon.
+const ANSI = /\x1b\[[0-9;]*m/g;
+
+const assertNoWarnings = (opts: { output: string; label: string }) => {
+  const lines = opts.output
+    .replace(ANSI, '')
+    .split('\n')
+    .filter((line) => WARNING.test(line));
+
+  assert({
+    condition: lines.length === 0,
+    message: `${opts.label} prints no warning${lines.length === 0 ? '' : ` | ${lines.join(' | ')}`}`,
+  });
+};
+
 const assert = (opts: { condition: boolean; message: string }) => {
   if (!opts.condition) {
     throw new Error(`[preset-smoke] assertion failed | ${opts.message}`);
@@ -178,7 +195,91 @@ const checksOf = (opts: { presetRoot: string }): string[] => {
 };
 
 /** install, sync, each app's checks, then the project's own contract. */
-const install = (opts: { project: string; apps: Array<{ folder: string; checks: string[] }> }) => {
+const freePort = (): number => {
+  const server = Bun.serve({ port: 0, fetch: () => new Response('') });
+  const { port } = server;
+
+  void server.stop(true);
+
+  return port as number;
+};
+
+/**
+ * Starts the app's `dev` script on a free port, loads the page and its entry module, and checks
+ * the server's output: the first run of a new project prints no warning.
+ */
+const assertDevServer = async (opts: { cwd: string }) => {
+  step += 1;
+  const port = freePort();
+  const proc = Bun.spawn(['bun', 'run', 'dev'], {
+    cwd: opts.cwd,
+    env: { ...process.env, PORT: String(port), NO_COLOR: '1', FORCE_COLOR: '0' },
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  let output = '';
+  const decoder = new TextDecoder();
+  const collect = async (stream: ReadableStream<Uint8Array>) => {
+    for await (const chunk of stream) {
+      output += decoder.decode(chunk);
+    }
+  };
+
+  const plain = () => output.replace(ANSI, '');
+  const collected = [collect(proc.stdout), collect(proc.stderr)];
+
+  const deadline = Date.now() + 60_000;
+
+  // Vite listens on `localhost`, which a CI runner may resolve to ::1 only; ask every address.
+  const hosts = ['localhost', '127.0.0.1', '[::1]'];
+  const answer = async (path: string): Promise<Response | undefined> => {
+    for (const host of hosts) {
+      try {
+        return await fetch(`http://${host}:${port}${path}`);
+      } catch {
+        // not listening on this address (yet)
+      }
+    }
+
+    return undefined;
+  };
+
+  try {
+    for (const path of ['/', '/src/main.tsx']) {
+      let response = await answer(path);
+
+      while (response === undefined && Date.now() < deadline) {
+        await Bun.sleep(250);
+        response = await answer(path);
+      }
+
+      assert({
+        condition: response?.ok === true,
+        message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
+      });
+    }
+
+    // Dependency pre-bundling and reloads print on the first request, so wait for them.
+    await Bun.sleep(2_000);
+  } finally {
+    proc.kill();
+    await proc.exited;
+    // The streams end with the process; read them to the end before judging the output.
+    await Promise.all(collected);
+  }
+
+  writeFileSync(join(tempFolder, `step-${String(step).padStart(2, '0')}.log`), output);
+  assert({
+    condition: plain().includes(`:${port}`),
+    message: `the dev server listens on :${port}${plain().includes(`:${port}`) ? '' : ` | server output (${output.length} bytes): ${[...plain().split('\n').slice(0, 8), '...', ...plain().split('\n').slice(-6)].join(' | ').slice(0, 1800)}`}`,
+  });
+  assertNoWarnings({ output, label: 'bun run dev' });
+};
+
+const install = async (opts: {
+  project: string;
+  apps: Array<{ folder: string; checks: string[]; firstRun?: boolean }>;
+}) => {
   run({ cwd: opts.project, command: ['bun', 'install'] });
   run({
     cwd: opts.project,
@@ -187,7 +288,18 @@ const install = (opts: { project: string; apps: Array<{ folder: string; checks: 
 
   for (const app of opts.apps) {
     for (const check of app.checks) {
-      run({ cwd: join(opts.project, app.folder), command: ['bun', 'run', check] });
+      const { output } = run({
+        cwd: join(opts.project, app.folder),
+        command: ['bun', 'run', check],
+      });
+
+      if (app.firstRun === true && check === 'build') {
+        assertNoWarnings({ output, label: 'bun run build' });
+      }
+    }
+
+    if (app.firstRun === true) {
+      await assertDevServer({ cwd: join(opts.project, app.folder) });
     }
   }
 
@@ -268,7 +380,10 @@ const main = async () => {
     const project = join(work, 'demo');
 
     addOverrides({ project, tarballs: ownTarballs });
-    install({ project, apps: [{ folder: 'apps/admin', checks: ardorChecks }] });
+    await install({
+      project,
+      apps: [{ folder: 'apps/admin', checks: ardorChecks, firstRun: true }],
+    });
     assert({
       condition: !existsSync(join(project, 'apps/admin/_env.example')),
       message: '_env.example is renamed',
@@ -422,12 +537,12 @@ const main = async () => {
         ],
       });
       addOverrides({ project, tarballs: new Map([...ignisTarballs, ...ownTarballs]) });
-      install({
+      await install({
         project,
         apps: [
           { folder: 'services/core-api', checks: ignisChecks },
           { folder: 'services/billing-api', checks: ignisChecks },
-          { folder: 'apps/admin', checks: ardorChecks },
+          { folder: 'apps/admin', checks: ardorChecks, firstRun: true },
         ],
       });
       const port = readFileSync(join(project, 'services/billing-api/.env.example'), 'utf8').match(
@@ -436,10 +551,10 @@ const main = async () => {
 
       assert({ condition: port === '3001', message: 'the second backend took port 3001' });
       assert({
-        condition: readFileSync(join(project, 'apps/admin/vite.config.ts'), 'utf8').includes(
+        condition: readFileSync(join(project, 'apps/admin/vite.config.mts'), 'utf8').includes(
           `'http://localhost:${port}'`,
         ),
-        message: `apps/admin/vite.config.ts proxies /api to http://localhost:${port}`,
+        message: `apps/admin/vite.config.mts proxies /api to http://localhost:${port}`,
       });
     }
   }
