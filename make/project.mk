@@ -12,13 +12,13 @@
 # knowledge page "App script standard".
 #
 # Two programs per package. tsconfig.json type-checks src and the tests (Bun reads it too);
-# .configs/tsconfig.build.json emits dist without the tests - a dist that carries __tests__ makes
+# .configs/builders/tsconfig.build.json emits dist without the tests - a dist that carries __tests__ makes
 # `bun test` run every test twice.
 
 BIN := $(CURDIR)/node_modules/.bin
 TSC := $(BIN)/tsc
 TYPECHECK := bun check --no-pretty
-BUILD_TSCONFIG := .configs/tsconfig.build.json
+BUILD_TSCONFIG := .configs/builders/tsconfig.build.json
 
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
 
@@ -41,7 +41,7 @@ build:
 # A stale .tsbuildinfo next to a .configs/ tsconfig makes tsc think it is up to date and emit
 # nothing - a "DONE" build with an empty dist.
 clean:
-	@rm -rf dist *.tsbuildinfo .configs/*.tsbuildinfo
+	@rm -rf dist *.tsbuildinfo .configs/builders/*.tsbuildinfo
 
 # Type-check before cleaning: a failure after clean leaves an empty dist, which looks like a hundred
 # unrelated import failures downstream.
@@ -49,14 +49,14 @@ rebuild: typecheck clean
 	@$(MAKE) --no-print-directory build
 
 lint:
-	@$(BIN)/oxlint -c .configs/oxlint.config.mts --deny-warnings .
-	@$(BIN)/eslint -c .configs/eslint.config.mjs .
-	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts --check $(FMT_GLOB)
+	@$(BIN)/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings .
+	@$(BIN)/eslint -c .configs/lints/eslint.config.mjs .
+	@$(BIN)/oxfmt -c .configs/formatters/oxfmt.config.mts --check $(FMT_GLOB)
 
 lint-fix:
-	@$(BIN)/oxlint -c .configs/oxlint.config.mts --fix .
-	@$(BIN)/eslint -c .configs/eslint.config.mjs --fix .
-	@$(BIN)/oxfmt -c .configs/oxfmt.config.mts $(FMT_GLOB)
+	@$(BIN)/oxlint -c .configs/lints/oxlint.config.mts --fix .
+	@$(BIN)/eslint -c .configs/lints/eslint.config.mjs --fix .
+	@$(BIN)/oxfmt -c .configs/formatters/oxfmt.config.mts $(FMT_GLOB)
 
 # `.env.test` carries the test-only settings (B-08) and the preload installs the package's DOM or
 # storage stub: there is no bunfig.toml, so a bare `bun test` inside a package skips both and fails.

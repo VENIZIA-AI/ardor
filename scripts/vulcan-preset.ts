@@ -19,7 +19,7 @@ import { join, resolve } from 'node:path';
 const SECTIONS = ['dependencies', 'devDependencies', 'peers', 'peerDependencies'] as const;
 const KINDS = ['app', 'lib'] as const;
 /** What a lib shares with the app: the lint configs and the one lint.sh. A lib's own file of the same path wins. */
-const LIB_SHARED = ['.configs', 'scripts/lint.sh'];
+const LIB_SHARED = ['.configs/lints', '.configs/formatters', 'scripts/lint.sh'];
 const EXACT_SCOPE = '@venizia/';
 const RANGE_PREFIX = /^[\^~]/;
 

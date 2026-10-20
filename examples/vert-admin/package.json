@@ -8,7 +8,7 @@
     "bun": ">=1.4"
   },
   "scripts": {
-    "server:dev": "vite",
+    "server:dev": "vite --config .configs/builders/vite.config.ts",
     "compile": "sh scripts/compile.sh",
     "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "sh scripts/lint.sh",

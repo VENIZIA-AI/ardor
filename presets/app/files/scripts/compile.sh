@@ -3,4 +3,4 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-vite build
+vite build --config .configs/builders/vite.config.mts

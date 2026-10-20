@@ -41,7 +41,7 @@ Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/i
 
 Scripts follow the standard package layout described in [Build/run/test](/overview/build-run-test.md) and [the build system](/process/build-system.md):
 
-- `make kernel` - typecheck, clean, then `tsc -p .configs/tsconfig.build.json` and `tsc-alias`
+- `make kernel` - typecheck, clean, then `tsc -p .configs/builders/tsconfig.build.json` and `tsc-alias`
 - `make -C packages/kernel typecheck` - `tsconfig.json` (src and tests), then the build program
 - `make test-kernel` (`bun test` with `.env.test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
 - `make -C packages/kernel size` - runs `size-limit`

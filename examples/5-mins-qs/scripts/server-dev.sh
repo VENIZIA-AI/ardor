@@ -7,4 +7,4 @@ bun run api/server.ts &
 API=$!
 trap 'kill "$API" 2>/dev/null' EXIT INT TERM
 
-vite
+vite --config .configs/builders/vite.config.ts

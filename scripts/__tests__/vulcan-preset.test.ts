@@ -68,7 +68,7 @@ const repository = (opts: {
     }),
   );
   write(root, 'presets/app/files/_env.example', 'PORT={{devPort}}\n');
-  write(root, 'presets/app/files/.configs/lint.mts', 'export {};\n');
+  write(root, 'presets/app/files/.configs/lints/lint.mts', 'export {};\n');
   write(root, 'presets/app/files/scripts/lint.sh', '#!/usr/bin/env sh\n');
   write(root, 'presets/app/files/logo.bin', new Uint8Array([0, 255, 1, 2]));
 
@@ -187,7 +187,7 @@ describe('buildPreset', () => {
     build(root);
     const out = join(root, 'packages/umbrella/dist/vulcan-preset/app');
     expect(readFileSync(join(out, 'files/_env.example'), 'utf8')).toBe('PORT={{devPort}}\n');
-    expect(readFileSync(join(out, 'files/.configs/lint.mts'), 'utf8')).toBe('export {};\n');
+    expect(readFileSync(join(out, 'files/.configs/lints/lint.mts'), 'utf8')).toBe('export {};\n');
     expect([...readFileSync(join(out, 'files/logo.bin'))]).toEqual([0, 255, 1, 2]);
     expect(JSON.parse(readFileSync(join(out, 'preset.json'), 'utf8')).files).toBe('./files');
   });
@@ -248,7 +248,7 @@ describe('buildPreset, a library preset', () => {
     const root = repository({ lib });
     build(root);
 
-    expect(readFileSync(join(outLib(root), 'files/.configs/lint.mts'), 'utf8')).toBe(
+    expect(readFileSync(join(outLib(root), 'files/.configs/lints/lint.mts'), 'utf8')).toBe(
       'export {};\n',
     );
     expect(readFileSync(join(outLib(root), 'files/scripts/lint.sh'), 'utf8')).toBe(

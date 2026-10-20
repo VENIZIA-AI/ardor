@@ -7,11 +7,11 @@ FILES='**/*.{js,mjs,ts,mts}'
 ESLINT_CACHE='--cache --cache-location node_modules/.cache/eslint/'
 
 if [ "${1:-}" = "--fix" ]; then
-  oxlint -c .configs/oxlint.config.mts --fix
-  eslint -c .configs/eslint.config.mjs $ESLINT_CACHE --fix .
-  oxfmt -c .configs/oxfmt.config.mts "$FILES"
+  oxlint -c .configs/lints/oxlint.config.mts --fix
+  eslint -c .configs/lints/eslint.config.mjs $ESLINT_CACHE --fix .
+  oxfmt -c .configs/formatters/oxfmt.config.mts "$FILES"
 else
-  oxlint -c .configs/oxlint.config.mts --deny-warnings
-  eslint -c .configs/eslint.config.mjs $ESLINT_CACHE .
-  oxfmt -c .configs/oxfmt.config.mts --check "$FILES"
+  oxlint -c .configs/lints/oxlint.config.mts --deny-warnings
+  eslint -c .configs/lints/eslint.config.mjs $ESLINT_CACHE .
+  oxfmt -c .configs/formatters/oxfmt.config.mts --check "$FILES"
 fi

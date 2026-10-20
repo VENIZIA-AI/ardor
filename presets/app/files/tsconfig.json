@@ -13,5 +13,5 @@
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false
   },
-  "include": ["src", "vite.config.mts"]
+  "include": ["src", ".configs/builders/vite.config.mts"]
 }
