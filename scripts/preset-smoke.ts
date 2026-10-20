@@ -220,8 +220,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
     }
   };
 
-  void collect(proc.stdout);
-  void collect(proc.stderr);
+  const collected = [collect(proc.stdout), collect(proc.stderr)];
 
   const deadline = Date.now() + 60_000;
 
@@ -259,10 +258,15 @@ const assertDevServer = async (opts: { cwd: string }) => {
   } finally {
     proc.kill();
     await proc.exited;
+    // The streams end with the process; read them to the end before judging the output.
+    await Promise.all(collected);
   }
 
   writeFileSync(join(tempFolder, `step-${String(step).padStart(2, '0')}.log`), output);
-  assert({ condition: output.includes(`:${port}`), message: `the dev server listens on :${port}` });
+  assert({
+    condition: output.includes(`:${port}`),
+    message: `the dev server listens on :${port} | server output: ${output.split('\n').slice(-15).join(' | ')}`,
+  });
   assertNoWarnings({ output, label: 'bun run dev' });
 };
 
