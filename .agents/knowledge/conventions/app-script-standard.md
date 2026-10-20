@@ -2,7 +2,7 @@
 type: Convention
 title: App script standard
 description: Every app, backend or frontend, has the same package.json script names (server:dev, compile, typecheck, lint, lint:fix, test, clean) and keeps a script of more than one command in scripts/*.sh; a library package has the same targets in its Makefile instead.
-resource: packages/ardor/vulcan-preset/preset.json
+resource: presets/ardor/preset.json
 tags: [conventions, scripts, build]
 ---
 
@@ -32,7 +32,7 @@ api/server.ts` for the API alone.
 
 ## The preset
 
-`packages/ardor/vulcan-preset/` writes the standard into every generated admin: `preset.json` has the seven
+`presets/ardor/` writes the standard into every generated admin: `preset.json` has the seven
 scripts and `files/scripts/{lint,compile,clean}.sh`, with `src/application.test.ts` as the one test (it
 starts the container and checks that `AdminConfiguration` binds the REST data provider options). The
 preset's `checks` are `typecheck`, `lint`, `test` and `compile`. `scripts/preset-smoke.ts` runs `server:dev`

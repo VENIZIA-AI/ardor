@@ -36,6 +36,7 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | Path | What it is |
 |---|---|
 | `packages/` | The five packages above |
+| `presets/` | The VULCAN preset templates, a sibling of `packages/`: `presets/ardor/{preset.json,files/}`. The release writes the built copy into the published package (`packages/ardor/dist/vulcan-preset`), so the package's `vulcan` field and `--preset ardor` do not change |
 | `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist` - gated by `bun scripts/examples.ts` (`check`, `build`), not by make |
 | `docs/wiki/` | VitePress site `@venizia/ardor-docs` - `content/` pages, `site/` theme, `scripts/` gates (sidebar, snippet compile) |
 | `docs/migration/` | A pointer to the wiki migration guide, kept because the npm deprecation of `@minimaltech/ra-core-infra` links to it |
