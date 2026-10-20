@@ -16,7 +16,7 @@ packages: ['@venizia/ardor']
 
 - **A library kind.** `@venizia/ardor` now ships a library preset beside its app preset. The package it makes exports `.` from `./src/index.ts`, imports its own modules as `#src/...`, and takes its versions from the monorepo's catalog.
 - **Peers, not copies.** `@venizia/ardor`, `react`, `react-dom`, `react-router-dom` and `reflect-metadata` are peer dependencies, so each app decides the versions.
-- **A sample feature and its test.** `src/feature.ts` is `Features.define({ name })`, and `src/__tests__/feature.test.ts` mounts it in a small application and reads it back.
+- **A sample feature and its test.** `src/feature.ts` is `Features.define({ name })`, and `src/feature.test.ts` mounts it in a small application and reads it back.
 - **Five scripts.** `typecheck`, `lint`, `lint:fix`, `test` and `clean`: no bundler, no dev server, no `compile`.
 - **Same lint setup as the app.** `scripts/lint.sh`, and the oxlint, oxfmt and eslint configs of the app preset.
 

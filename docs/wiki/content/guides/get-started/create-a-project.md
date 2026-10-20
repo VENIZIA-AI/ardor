@@ -79,11 +79,11 @@ It creates `libs/merchant` as the package `@acme/merchant`:
 libs/merchant/
   package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
   tsconfig.json  README.md  scripts/{lint,clean}.sh  .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}
-  src/index.ts  src/feature.ts  src/__tests__/feature.test.ts
+  src/index.ts  src/feature.ts  src/feature.test.ts
 ```
 
 - `src/feature.ts` is `Features.define({ name: 'merchant' })`, empty until you add routes, resources and messages to it.
-- `src/__tests__/feature.test.ts` mounts it in a small application and reads it back, so the test runs from the first day.
+- `src/feature.test.ts` mounts it in a small application and reads it back, so the test runs from the first day.
 - The scripts are `typecheck`, `lint`, `lint:fix`, `test` and `clean`. There is no bundler and no dev server: an app that imports the package compiles its source.
 - `@venizia/ardor`, `react`, `react-dom`, `react-router-dom` and `reflect-metadata` are peer dependencies, so the app decides the versions.
 
