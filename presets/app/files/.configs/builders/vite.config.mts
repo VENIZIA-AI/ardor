@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import { IgnisArtifactsVitePlugin } from '@venizia/ignis-boot/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
@@ -10,7 +11,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
-    plugins: [IgnisArtifactsVitePlugin.create(), react()],
+    plugins: [IgnisArtifactsVitePlugin.create(), react(), tailwindcss()],
     server: {
       port: Number(env.PORT ?? '{{devPort}}'),
       strictPort: true,

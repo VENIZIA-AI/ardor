@@ -147,6 +147,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'The preset app imports its own modules with #src',
             link: '/changelogs/2026-10-20-preset-subpath-imports',
           },
+          {
+            text: 'The generated app is one styled page',
+            link: '/changelogs/2026-10-20-preset-ui',
+          },
           { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
         ],
       },

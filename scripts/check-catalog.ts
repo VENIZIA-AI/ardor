@@ -17,6 +17,8 @@ const WORKSPACE_GLOBS = [
   'packages/*/package.json',
   'examples/*/package.json',
   'docs/*/package.json',
+  // A preset's `dependencies` and `devDependencies` are a manifest too: `catalog:` there is resolved by the release.
+  'presets/*/preset.json',
 ];
 
 /** `peerDependencies` are compatibility statements for consumers and stay deliberately looser than the install range. */
@@ -67,8 +69,12 @@ for (const pattern of WORKSPACE_GLOBS) {
     }
 
     // A peer resolved from the catalog would collapse to the exact install range, losing the looseness that makes it a peer.
+    // A preset is not a published manifest: its markers are resolved by the release, and the library kind gives a
+    // name one catalog range (VULCAN's contract), so a lib's peer takes the same marker as its dev dependency.
+    const isPreset = file.startsWith('presets/');
+
     for (const [dep, range] of Object.entries(json.peerDependencies ?? {})) {
-      if (range !== 'catalog:') {
+      if (range !== 'catalog:' || isPreset) {
         continue;
       }
 
