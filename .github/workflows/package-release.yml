@@ -1,5 +1,5 @@
-name: 'NPM Release'
-run-name: 'NPM Release | package: ${{ inputs.package }} | release: ${{ inputs.version || inputs.build_mode }}'
+name: "NPM Release"
+run-name: "NPM Release | package: ${{ inputs.package }} | release: ${{ inputs.version || inputs.build_mode }}"
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
         required: true
       build_mode:
         type: choice
-        description: 'Version bump type (patch | minor | major | pre*)'
+        description: "Version bump type (patch | minor | major | pre*)"
         options:
           - patch
           - minor
@@ -25,14 +25,39 @@ on:
           - premajor
           - prerelease
         required: true
-        default: 'patch'
+        default: "patch"
       version:
         type: string
-        description: 'Explicit version (x.y.z or x.y.z-pre); when set it replaces the bump type'
+        description: "Explicit version (x.y.z or x.y.z-pre); when set it replaces the bump type"
         required: false
-        default: ''
+        default: ""
+      issue:
+        type: string
+        description: "Issue number the release commit serves (prefixes it with [#N])"
+        required: false
+        default: ""
+      chain_released:
+        type: string
+        description: "Comma-separated @venizia/* names published earlier in this chain - the registry gate trusts their workspace version"
+        required: false
+        default: ""
+
+# Build order comes from the Makefile chain (kernel -> react -> admin -> ardor). The umbrella `ardor`
+# depends on the other three by exact version, so all three must be published before it or the
+# registry-existence check fails. Every sibling is `workspace:*`, so `bun publish` writes its exact
+# version into the tarball.
+#
+# One release at a time, repository-wide. A release mutates a shared branch and the registry, and
+# the packages form a dependency chain, so two runs must never interleave. `cancel-in-progress: false`
+# makes a second dispatch WAIT rather than kill a run that is mid-publish. GitHub keeps only one run
+# pending per group: dispatch a third while one runs and one waits and the waiting one is cancelled -
+# acceptable here, because the chain has to be released in order anyway.
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PACKAGE: ${{ github.event.inputs.package }}
   BUILD_MODE: ${{ github.event.inputs.build_mode }}
   VERSION: ${{ github.event.inputs.version }}
@@ -43,55 +68,48 @@ jobs:
     runs-on: ubuntu-26.04
 
     steps:
-      # =========================================================================
+      # -------------------------------------------------------------------------
       # SETUP
-      # =========================================================================
+      # -------------------------------------------------------------------------
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.3'
+          bun-version: latest
 
       - name: Setup Git
         run: |
           git config user.name "venizia-ci"
           git config user.email "developer@venizia.ai"
 
-      # =========================================================================
+      # -------------------------------------------------------------------------
       # PREPARE
-      # =========================================================================
+      # -------------------------------------------------------------------------
       - name: Get package info
         run: |
           # Map package input to actual folder path
           case $PACKAGE in
-            *)         PACKAGE_PATH="packages/$PACKAGE" ;;
+            *) PACKAGE_PATH="packages/$PACKAGE" ;;
           esac
 
           PACKAGE_NAME=$(jq -r .name "$PACKAGE_PATH/package.json")
           CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
 
-          # Set dist directories for validation
-          case $PACKAGE in
-            *)               DIST_DIRS="dist" ;;
-          esac
-
           echo "PACKAGE_PATH=$PACKAGE_PATH" >> $GITHUB_ENV
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-          echo "DIST_DIRS=$DIST_DIRS" >> $GITHUB_ENV
 
           echo "┌─────────────────────────────────────────────────"
           echo "│ Package:     $PACKAGE_NAME"
           echo "│ Path:        $PACKAGE_PATH"
           echo "│ Version:     $CURRENT_VERSION → ${VERSION:-$BUILD_MODE}"
-          echo "│ Dist:        $DIST_DIRS"
           echo "└─────────────────────────────────────────────────"
 
       # What this release is released AS, decided in one tested place (scripts/release-version.ts): the
@@ -120,36 +138,80 @@ jobs:
       - name: Install
         run: bun install
 
-      # =========================================================================
+      # Every ARDOR sibling is a member of this workspace, so resolving one to a registry tarball is
+      # always wrong: the build would validate code that is not in this repository. The failure mode is
+      # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
+      - name: Assert internal dependencies link to the workspace
+        run: bun scripts/release-gates.ts links $PACKAGE_PATH
+
+      # -------------------------------------------------------------------------
       # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
-      # =========================================================================
+      # -------------------------------------------------------------------------
       - name: Build
         run: make $PACKAGE
 
       - name: Lint
         run: make lint-$PACKAGE
 
-      - name: Validate build artifacts
-        run: |
-          cd $PACKAGE_PATH
-          for dir in $DIST_DIRS; do
-            [ -f "$dir/index.js" ] && [ -f "$dir/index.d.ts" ] || { echo "ERROR: $dir missing files"; exit 1; }
-            echo "    ✓ $dir"
-          done
+      # The gate's own regression tests run first: a probe that silently stopped detecting anything
+      # would leave every `purity-*` target green for the wrong reason.
+      - name: Purity probe self-test
+        run: make purity-test
+
+      - name: Purity gate
+        run: make purity-$PACKAGE
 
       # Siblings come from the registry here, as a consumer installs them next to this release.
       - name: Clean-install gate
         run: make clean-install-$PACKAGE
 
-      # An app created from the packed preset, outside the repository, must be green before the preset
-      # ships. Only the umbrella carries one. VULCAN comes from the registry (`@venizia/vulcan@latest`).
+      # Derived from the package's own `exports` map, never a hand-written list: checking every
+      # PUBLISHED target is strictly stronger than checking one index - a sub-path whose file never got
+      # emitted fails here instead of at a consumer's first import.
+      - name: Validate build artifacts
+        run: bun scripts/release-gates.ts artifacts $PACKAGE_PATH
+
+      - name: Check dependency catalog
+        run: make catalog-check
+
+      # A policy assertion about THIS file, not about the package - so it stands on its own. Only
+      # `bun publish` resolves `catalog:` while packing; npm ships it verbatim and breaks every
+      # consumer, so the publish step below may never be switched to npm.
+      - name: Assert the publisher is bun
+        run: |
+          grep -q 'bun publish' "$GITHUB_WORKSPACE/.github/workflows/package-release.yml" \
+            || { echo "ERROR: the publish step must use 'bun publish' - npm ships catalog: verbatim"; exit 1; }
+
+          echo "    ✓ the publish step still uses bun"
+
+      # Packed once, read by every validator below: they all see the SAME manifest - the one npm
+      # receives, not the one in the working tree.
+      - name: Pack the release tarball
+        run: bun scripts/release-gates.ts pack $PACKAGE_PATH "$RUNNER_TEMP/packed-manifest.json"
+
+      - name: Validate packed manifest
+        run: bun scripts/release-gates.ts protocols "$RUNNER_TEMP/packed-manifest.json"
+
+      # The check above only rejects an *unresolved* protocol. A `workspace:*` on a package that was
+      # never published resolves cleanly to a literal version while packing, so the tarball would name
+      # a package the registry has never heard of and every `npm install` of the release would fail.
+      # In a release chain the previous package went out seconds ago and npm can take minutes to show
+      # it. Such a package - and only such a package, named in chain_released by the run that
+      # published it - is checked against its workspace version instead of the registry.
+      - name: Validate dependencies exist on the registry
+        env:
+          CHAIN_RELEASED: ${{ github.event.inputs.chain_released }}
+        run: bun scripts/release-gates.ts registry "$RUNNER_TEMP/packed-manifest.json" --chain-released "$CHAIN_RELEASED"
+
+      # An app created from the PACKED preset typechecks, lints, builds and starts without a warning.
+      # Before the bump and the publish: a preset that cannot create a working app must not ship.
       - name: VULCAN preset smoke
         if: ${{ env.PACKAGE == 'ardor' }}
         run: make preset-smoke
 
-      # =========================================================================
+      # -------------------------------------------------------------------------
       # VERSION & GIT
-      # =========================================================================
+      # -------------------------------------------------------------------------
       - name: Version bump
         run: |
           cd $PACKAGE_PATH
@@ -160,31 +222,105 @@ jobs:
           echo "TAG_NAME=$PACKAGE-v$NEW_VERSION" >> $GITHUB_ENV
           echo ">>> New version: $NEW_VERSION"
 
-      - name: Commit & Push
+      - name: Sync develop
+        run: git fetch origin && git checkout develop && git pull origin develop
+
+      # The preset names the versions this release ships with, so it is written after the bump and
+      # after the sync that brings in the chain's earlier releases.
+      - name: Write the VULCAN preset
+        if: ${{ env.PACKAGE == 'ardor' }}
+        run: bun scripts/vulcan-preset.ts
+
+      # -------------------------------------------------------------------------
+      # PUBLISH - deliberately ahead of every git write
+      # -------------------------------------------------------------------------
+      # The publish is the only step that cannot be undone, so it runs FIRST among the mutations.
+      # Publishing last meant the COMMON failure - a rejected publish - was repaired by force-pushing
+      # a shared branch back one commit, mid-release, while sibling releases were running. This way a
+      # failed publish leaves git untouched and there is nothing to roll back. The cost is the rarer
+      # inverse - the publish lands and the follow-up push fails - which is both safe and loud:
+      # develop keeps the old version, so the next release retries this one and the registry refuses
+      # it as a duplicate.
+      - name: Publish to NPM
         run: |
           cd $PACKAGE_PATH
-          git fetch origin && git checkout develop && git pull origin develop
 
+          # BEFORE the publish, not after: a publish that succeeds and loses its response leaves npm
+          # permanently holding the version while this step fails, and the failure reports would then
+          # say nothing about a release that is live. The flag means "a publish was attempted", which
+          # is exactly what those reports have to assume.
+          echo "IS_PUBLISHED=true" >> $GITHUB_ENV
+
+          # `bun`, not npm: bun resolves `catalog:`/`workspace:` while packing, npm ships them verbatim
+          # and breaks every consumer. --ignore-scripts skips the already-run prepublishOnly.
+          bun publish --access public --tag $NPM_TAG --ignore-scripts
+
+          echo "✓ Published $PACKAGE_NAME@$NEW_VERSION ($NPM_TAG)"
+        env:
+          # NPM_CONFIG_TOKEN, not NODE_AUTH_TOKEN: bun ignores the NPM_CONFIG_USERCONFIG path that
+          # actions/setup-node writes its .npmrc to, and does not read NODE_AUTH_TOKEN.
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+
+      - name: Tag highest version on NPM
+        run: |
+          # Publishes are monotonic, so the just-published version is always the highest (semver:
+          # x.y.z > x.y.z-N) - point `highest` at it for the README badge, non-fatal
+          npm dist-tag add "$PACKAGE_NAME@$NEW_VERSION" highest \
+            && echo "✓ Tagged $PACKAGE_NAME@$NEW_VERSION as 'highest'" \
+            || echo "⚠️  Could not set 'highest' dist-tag (non-fatal)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+
+      # The `next` tag is never below `latest`: a release that moves `latest` past it would leave
+      # `bun add pkg@next` installing an older version than a plain `bun add pkg`. Every ARDOR package
+      # is looked at, not only this one, so a package that was not released also heals. Non-fatal and loud.
+      - name: Keep the next tag at or above latest
+        continue-on-error: true
+        run: bun scripts/release-gates.ts heal-next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+
+      # -------------------------------------------------------------------------
+      # RECORD IN GIT
+      # -------------------------------------------------------------------------
+      - name: Commit release
+        run: |
           # The bump moves this workspace's entry in bun.lock. Re-lock in a scratch copy of HEAD so the
           # catalog refresh from "Force update workspace" never reaches the committed lockfile.
           SCRATCH=$(mktemp -d)
-          git -C "$GITHUB_WORKSPACE" archive HEAD | tar -x -C "$SCRATCH"
-          cp package.json "$SCRATCH/$PACKAGE_PATH/package.json"
+          git archive HEAD | tar -x -C "$SCRATCH"
+          cp "$PACKAGE_PATH/package.json" "$SCRATCH/$PACKAGE_PATH/package.json"
           (cd "$SCRATCH" && bun install --lockfile-only)
-          cp "$SCRATCH/bun.lock" "$GITHUB_WORKSPACE/bun.lock"
+          cp "$SCRATCH/bun.lock" bun.lock
 
-          git add package.json "$GITHUB_WORKSPACE/bun.lock"
-          git commit -m "chore($PACKAGE): release v$NEW_VERSION [$TARGET]"
-          git push origin develop
+          git add "$PACKAGE_PATH/package.json" bun.lock
+          SUBJECT="chore($PACKAGE): release v$NEW_VERSION [$TARGET]"
+          if [ -n "$RELEASE_ISSUE" ]; then
+            SUBJECT="[#$RELEASE_ISSUE] $SUBJECT"
+          fi
+          git commit -m "$SUBJECT"
+        env:
+          RELEASE_ISSUE: ${{ inputs.issue }}
+
+      # Separate from the commit above so the run tells you WHICH half failed: a rejected push is a
+      # race or a permissions problem, a failed commit is an empty diff or a hook.
+      - name: Push release
+        run: |
+          # develop can move between the sync and this push - a human merge, or the previous package
+          # of a release chain. The version is already on the registry by now, so rebase and retry
+          # once instead of leaving develop behind a release that really happened.
+          git push origin develop || {
+            git pull --rebase origin develop
+            git push origin develop
+          }
+
           echo "IS_PUSHED=true" >> $GITHUB_ENV
 
       - name: Create tag
         run: |
           git tag -a "$TAG_NAME" -m "$PACKAGE_NAME v$NEW_VERSION"
-          echo "IS_TAG_CREATED=true" >> $GITHUB_ENV
 
-          # GitHub can reject a tag push with a bare "(failed)" and no reason. Retry before failing,
-          # because a failure here rolls back the release commit already pushed to develop.
+          # GitHub can reject a tag push with a bare "(failed)" and no reason. Retry before failing.
           for attempt in 1 2 3; do
             git push origin "$TAG_NAME" && exit 0
             echo ">>> Tag push attempt $attempt failed"
@@ -192,52 +328,25 @@ jobs:
           done
           exit 1
 
-      # The preset names the versions this release ships with, so it is written after the bump and after
-      # the sync that brings in the chain's earlier releases.
-      - name: Write the VULCAN preset
-        if: ${{ env.PACKAGE == 'ardor' }}
-        run: bun scripts/vulcan-preset.ts
-
-      # =========================================================================
-      # PUBLISH
-      # =========================================================================
-      - name: Publish to NPM
+      # -------------------------------------------------------------------------
+      # FAILURE REPORTS
+      # -------------------------------------------------------------------------
+      # No rollback remains to perform. Nothing reaches the registry or the remote until the publish
+      # succeeds, so a failed run either touched neither, or it published and only bookkeeping is
+      # left undone. Both are REPORTED, never repaired: npm cannot un-publish, and force-pushing
+      # develop to chase a live version does more damage than the mismatch it would fix.
+      - name: Report - published, develop not updated
+        if: failure() && env.IS_PUBLISHED == 'true' && env.IS_PUSHED != 'true'
         run: |
-          cd $PACKAGE_PATH
+          echo "⚠️  $PACKAGE_NAME@$NEW_VERSION was published, but develop still records the old version"
+          echo "    confirm first:  npm view $PACKAGE_NAME versions"
+          echo "    if it IS live, bump develop by hand so the next release does not retry $NEW_VERSION:"
+          echo "      cd $PACKAGE_PATH && npm version $NEW_VERSION --no-git-tag-version --workspaces-update=false"
+          echo "    if it is NOT live, nothing to clean up - re-run this workflow"
 
-          # `bun`, never `npm`: npm ships `catalog:` and `workspace:` verbatim, and a consumer then
-          # fails to install with `lodash@catalog: failed to resolve`. Only bun resolves them while
-          # packing. `--ignore-scripts` skips prepublishOnly, since the build already ran.
-          bun publish --access public --tag $NPM_TAG --ignore-scripts
-
-          echo "IS_PUBLISHED=true" >> $GITHUB_ENV
-          echo "✓ Published $PACKAGE_NAME@$NEW_VERSION ($NPM_TAG)"
-        env:
-          # NODE_AUTH_TOKEN feeds the .npmrc setup-node wrote; NPM_CONFIG_TOKEN is what bun reads
-          # directly, so the publish does not depend on how bun parses that file.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
-
-      # =========================================================================
-      # ROLLBACK
-      # =========================================================================
-      - name: Rollback on failure
-        if: failure()
+      - name: Report - published and pushed, tag missing
+        if: failure() && env.IS_PUBLISHED == 'true' && env.IS_PUSHED == 'true'
         run: |
-          echo ">>> ROLLBACK STARTED"
-
-          [ "$IS_TAG_CREATED" == "true" ] && {
-            git push --delete origin "$TAG_NAME" 2>/dev/null || true
-            git tag -d "$TAG_NAME" 2>/dev/null || true
-          }
-
-          [ "$IS_PUSHED" == "true" ] && {
-            git checkout develop && git reset --hard HEAD~1 && git push --force origin develop
-          }
-
-          [ "$IS_MERGED" == "true" ] && {
-            git checkout main && git reset --hard HEAD~1 && git push --force origin main
-          }
-
-          echo ">>> ROLLBACK COMPLETED"
-          [ "$IS_PUBLISHED" == "true" ] && echo "⚠️  NPM package published - run: npm deprecate $PACKAGE_NAME@$NEW_VERSION 'Accidental release'"
+          echo "⚠️  $PACKAGE_NAME@$NEW_VERSION is published and develop is updated - only the git tag is missing"
+          echo "    create it by hand:"
+          echo "      git tag -a $TAG_NAME -m \"$PACKAGE_NAME v$NEW_VERSION\" && git push origin $TAG_NAME"

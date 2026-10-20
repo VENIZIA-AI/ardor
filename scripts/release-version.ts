@@ -10,6 +10,8 @@
  * The workflow calls the command line of this file:
  *
  *   bun scripts/release-version.ts target --version <x.y.z|''> --mode <mode> [--current <x.y.z>]
+ *
+ * `--issue <N>` rides along in the same argument list (release.ts and release-local.ts read it here).
  *   bun scripts/release-version.ts tag <mode|x.y.z>
  */
 
@@ -31,7 +33,7 @@ export type TReleaseTarget = string;
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/;
 const DEFAULT_MODE: TReleaseMode = 'prerelease';
-const VALUE_FLAGS = ['--mode', '--version', '--current'];
+const VALUE_FLAGS = ['--mode', '--version', '--current', '--issue'];
 
 export const isReleaseMode = (opts: { value: string }): opts is { value: TReleaseMode } =>
   (RELEASE_MODES as readonly string[]).includes(opts.value);
@@ -43,6 +45,8 @@ export interface IReleaseArgs {
   /** The package names, or any other argument that is neither a flag nor a flag's value. */
   positional: string[];
   current?: string;
+  /** The issue number the release commit serves; the commit subject is prefixed `[#N]`. */
+  issue?: string;
 }
 
 /** The value after `flag`; an empty one means the flag is unset. */
@@ -67,6 +71,7 @@ export const readReleaseArgs = (opts: { argv: string[] }): IReleaseArgs => {
   const mode = readValue({ argv, flag: '--mode' });
   const version = readValue({ argv, flag: '--version' });
   const current = readValue({ argv, flag: '--current' });
+  const issue = readValue({ argv, flag: '--issue' });
 
   if (mode !== undefined && !isReleaseMode({ value: mode })) {
     throw new Error(
@@ -80,11 +85,17 @@ export const readReleaseArgs = (opts: { argv: string[] }): IReleaseArgs => {
     );
   }
 
+  if (issue !== undefined && !/^\d+$/.test(issue)) {
+    throw new Error(
+      `[readReleaseArgs] --issue '${issue}' is not an issue number (digits only, no #)`,
+    );
+  }
+
   const positional = argv.filter(
     (arg, index) => !arg.startsWith('--') && !VALUE_FLAGS.includes(argv[index - 1] ?? ''),
   );
 
-  return { target: version ?? mode ?? DEFAULT_MODE, positional, current };
+  return { target: version ?? mode ?? DEFAULT_MODE, positional, current, issue };
 };
 
 /** `latest` for a stable release, `next` for a prerelease: a mode starting `pre`, or `x.y.z-pre`. */

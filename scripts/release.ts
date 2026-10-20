@@ -11,6 +11,7 @@
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
  *   bun scripts/release.ts --version 0.3.0      # an explicit version, for every package below it; overrides --mode
+ *   bun scripts/release.ts --issue 138          # the release commits say [#138]
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
  *
  * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
@@ -256,6 +257,9 @@ const assertPublished = async (opts: { state: IPackageState }): Promise<string> 
 const releasePackage = async (opts: {
   state: IPackageState;
   target: TReleaseTarget;
+  issue?: string;
+  /** The npm names this run published earlier; the workflow's registry gate trusts their workspace version. */
+  chainReleased: string[];
 }): Promise<void> => {
   const { state, target } = opts;
 
@@ -279,6 +283,12 @@ const releasePackage = async (opts: {
       '-f',
       // An explicit version rides its own input; the workflow lets it replace the bump type.
       isReleaseVersion({ value: target }) ? `version=${target}` : `build_mode=${target}`,
+      // The previous package is published but npm may not show it yet: name it, so the next run's
+      // registry gate checks its workspace version instead of waiting for the registry.
+      ...(opts.chainReleased.length > 0
+        ? ['-f', `chain_released=${opts.chainReleased.join(',')}`]
+        : []),
+      ...(opts.issue === undefined ? [] : ['-f', `issue=${opts.issue}`]),
     ],
   });
 
@@ -308,7 +318,7 @@ const main = async (): Promise<void> => {
   const args = Bun.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
-  const { target, positional: requested } = readReleaseArgs({ argv: args });
+  const { target, positional: requested, issue } = readReleaseArgs({ argv: args });
   const candidates =
     requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
 
@@ -365,8 +375,11 @@ const main = async (): Promise<void> => {
     return;
   }
 
+  const chainReleased: string[] = [];
+
   for (const state of plan) {
-    await releasePackage({ state, target });
+    await releasePackage({ state, target, issue, chainReleased });
+    chainReleased.push(state.packageName);
   }
 
   console.log(`\n✓ Released ${plan.length} package(s).`);
