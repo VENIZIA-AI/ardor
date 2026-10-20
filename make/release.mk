@@ -13,7 +13,7 @@ release-plan:
 release:
 	@bun scripts/release.ts $(ARGS)
 
-# Writes the VULCAN preset of @venizia/ardor with this release's versions (packages/ardor/dist/vulcan-preset).
+# Writes the VULCAN preset of @venizia/ardor with this release's versions (packages/ardor/dist/vulcan-preset/app).
 # Run it after the build: `make ardor` cleans dist first.
 preset-build:
 	@bun scripts/vulcan-preset.ts

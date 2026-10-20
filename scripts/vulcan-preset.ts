@@ -7,7 +7,7 @@
  *   catalog:     the range in the root catalog; a @venizia package is exact (a leading ^ or ~ is dropped)
  *   peer:        the range this package's own peerDependencies hold for that name
  *
- * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset)
+ * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset/app)
  */
 import { Glob } from 'bun';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -148,12 +148,12 @@ if (import.meta.main) {
   const { resolved } = buildPreset({
     root,
     packageDirectory: 'packages/ardor',
-    presetDirectory: 'presets/ardor',
-    outDirectory: join(root, 'packages/ardor/dist/vulcan-preset'),
+    presetDirectory: 'presets/app',
+    outDirectory: join(root, 'packages/ardor/dist/vulcan-preset/app'),
   });
 
   console.log(resolved.join('\n'));
   console.log(
-    `vulcan-preset: wrote packages/ardor/dist/vulcan-preset (${resolved.length} resolved)`,
+    `vulcan-preset: wrote packages/ardor/dist/vulcan-preset/app (${resolved.length} resolved)`,
   );
 }
