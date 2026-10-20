@@ -4,7 +4,7 @@ How to work in the ARDOR repository. **This file is routing only** - it holds no
 facts, it points to where both live.
 
 This is the **only tracked instruction file**. ARDOR's agent tooling is **VULCAN**
-(`@venizia/vulcan`, configured in `.configs/vulcan.config.ts`), which writes the gitignored
+(`@venizia/vulcan`, configured in `.configs/vulcan.config.mts`), which writes the gitignored
 per-developer adapters (`CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`):
 
 ```bash
@@ -67,7 +67,7 @@ periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-a
 .agents/
 ├── rules.md          # ARDOR's rules - W · S · P · B · D · C, cited by ID, on top of the VULCAN base
 ├── knowledge/        # THE knowledge bundle
-├── okf/              # ARDOR's okf renderers (providers, hooks-and-services) - named in .configs/vulcan.config.ts
+├── okf/              # ARDOR's okf renderers (providers, hooks-and-services) - named in .configs/vulcan.config.mts
 ├── vulcan.manifest.json # written by vulcan-sync; another project's atlas reads ARDOR through it
 └── plans/            # gitignored - saved specs and plans, local to each developer
 ```
@@ -81,6 +81,6 @@ skill, check the task is not already covered by one here, by VULCAN or by Claude
 
 This `AGENTS.md` is the single source. `make vulcan-sync` writes `CLAUDE.md` as one line,
 `@AGENTS.md`, never a copy. `.claude/` is gitignored, so what everyone shares is declared in
-`.configs/vulcan.config.ts` and merged into your `.claude/settings.json` by the same sync, over your
+`.configs/vulcan.config.mts` and merged into your `.claude/settings.json` by the same sync, over your
 personal keys: VULCAN's rules digest (with the minimap shape) and `guard-writes`, which asks before
 a database write, a deploy or a mutating HTTP call. Nothing else blocks a command.
