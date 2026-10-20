@@ -327,6 +327,22 @@ const install = async (opts: {
     }
 
     if (app.firstRun === true) {
+      // The sh lint script checks and fixes: a badly formatted file fails `lint`, `lint:fix` repairs it,
+      // and `lint` passes again.
+      const unformatted = join(opts.project, app.folder, 'src/unformatted.ts');
+
+      writeFileSync(unformatted, 'export const unformatted = {a:1,\n b:2};\n');
+
+      try {
+        const appDirectory = join(opts.project, app.folder);
+
+        run({ cwd: appDirectory, command: ['bun', 'run', 'lint'], expectFailure: true });
+        run({ cwd: appDirectory, command: ['bun', 'run', 'lint:fix'] });
+        run({ cwd: appDirectory, command: ['bun', 'run', 'lint'] });
+      } finally {
+        rmSync(unformatted, { force: true });
+      }
+
       // The typecheck must catch a type error: a planted one fails it, and it is removed again.
       const planted = join(opts.project, app.folder, 'src/planted.ts');
 

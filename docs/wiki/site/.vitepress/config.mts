@@ -130,6 +130,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'Silent first run for the ARDOR preset',
             link: '/changelogs/2026-10-20-preset-first-run',
           },
+          {
+            text: "The preset app's lint scripts are short",
+            link: '/changelogs/2026-10-20-preset-lint-script',
+          },
           { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
         ],
       },

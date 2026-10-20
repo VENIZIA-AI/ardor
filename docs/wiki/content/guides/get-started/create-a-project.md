@@ -37,7 +37,7 @@ demo/
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  index.html  vite.config.mts  .env.example  README.md
-    .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}
+    .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}  scripts/lint.sh
     src/main.tsx  src/application.ts
     src/configurations/admin.configuration.ts
     src/pages/{product-list,product-create,product-edit,product-form}.tsx
