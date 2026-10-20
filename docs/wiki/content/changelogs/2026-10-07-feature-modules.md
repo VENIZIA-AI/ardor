@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 
 ## Feature modules and permissions
 
-<Badge type="tip" text="Feature" />
+<Badge type="tip" text="New Feature" />
 
 **In one line.** An application lists the feature packages it mounts in `features()`, and ARDOR binds their configurations, mounts their resources and routes, and merges their messages; react-admin's `canAccess` is answered by an `IPermissionProvider` the application binds. Two shells can mount the same feature packages.
 

@@ -121,14 +121,12 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         text: '2026-10-20',
         collapsed: true,
         items: [
+          { text: 'ARDOR 0.3.0 Is Stable', link: '/changelogs/2026-10-20-ardor-0-3-0-stable' },
           {
             text: 'Silent first run for the ARDOR preset',
             link: '/changelogs/2026-10-20-preset-first-run',
           },
-          {
-            text: 'ARDOR ships a VULCAN preset',
-            link: '/changelogs/2026-10-20-vulcan-preset',
-          },
+          { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
         ],
       },
       {
@@ -136,16 +134,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'The wiki is rebuilt around the core of ARDOR',
-            link: '/changelogs/2026-10-19-wiki-rebuild',
+            text: 'Augment @venizia/ardor, not the declaring packages',
+            link: '/changelogs/2026-10-19-augment-the-umbrella',
           },
           {
-            text: 'toDataUrl without withResolvers',
+            text: 'toDataUrl no longer needs Promise.withResolvers',
             link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
           },
           {
-            text: 'Augment the umbrella',
-            link: '/changelogs/2026-10-19-augment-the-umbrella',
+            text: 'The wiki is rebuilt around the core of ARDOR',
+            link: '/changelogs/2026-10-19-wiki-rebuild',
           },
         ],
       },
@@ -154,68 +152,60 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'Stable IGNIS 0.2.2',
-            link: '/changelogs/2026-10-18-stable-ignis-0-2-2',
-          },
-          {
-            text: 'Boot pins class names',
-            link: '/changelogs/2026-10-18-boot-pins-class-names',
-          },
-          {
-            text: 'Final pin and autoload',
-            link: '/changelogs/2026-10-18-final-pin-and-autoload',
-          },
-          {
-            text: 'start() names a module cycle',
+            text: 'start() names a module cycle in the artifact index',
             link: '/changelogs/2026-10-18-artifact-cycle-error',
           },
           {
-            text: 'One copy of each package',
-            link: '/changelogs/2026-10-18-one-copy-of-each',
-          },
-          {
-            text: 'Exact sibling versions',
-            link: '/changelogs/2026-10-18-exact-sibling-versions',
-          },
-          {
-            text: 'TPaths stops at values',
-            link: '/changelogs/2026-10-18-tpaths-stops-at-values',
-          },
-          {
-            text: 'House style: types, hooks, utilities',
-            link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
-          },
-          {
-            text: 'Hooks, not flags',
-            link: '/changelogs/2026-10-18-hooks-not-flags',
-          },
-          {
-            text: 'Sign-in hooks, not options',
-            link: '/changelogs/2026-10-18-sign-in-hooks',
-          },
-          {
-            text: 'Release waits for the tarball',
-            link: '/changelogs/2026-10-18-release-waits-for-the-tarball',
-          },
-          {
-            text: 'IGNIS 0.2.2-12 chain',
-            link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
-          },
-          {
-            text: 'login stores roles',
-            link: '/changelogs/2026-10-18-login-roles-and-hooks',
-          },
-          {
-            text: 'Quickstart follows the example',
-            link: '/changelogs/2026-10-18-quickstart-follows-the-example',
-          },
-          {
-            text: 'IGNIS sign-in by default, optional auth',
+            text: "IGNIS's sign-in is the default, and an application can run with no sign-in",
             link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
           },
           {
-            text: 'IGNIS 0.2.2-9 chain',
+            text: 'ARDOR follows ignis-boot 0.2.1-11',
+            link: '/changelogs/2026-10-18-boot-pins-class-names',
+          },
+          {
+            text: 'A package depends on its siblings at the exact version released with it',
+            link: '/changelogs/2026-10-18-exact-sibling-versions',
+          },
+          {
+            text: 'The final IGNIS chain, and the examples autoload with the Vite plugin',
+            link: '/changelogs/2026-10-18-final-pin-and-autoload',
+          },
+          {
+            text: 'Options hold data, behaviour lives in protected hooks',
+            link: '/changelogs/2026-10-18-hooks-not-flags',
+          },
+          {
+            text: 'Types, hooks and utilities follow IGNIS house style',
+            link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
+          },
+          {
+            text: 'ARDOR builds on the IGNIS 0.2.2-12 chain',
+            link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
+          },
+          {
+            text: 'ARDOR builds on the IGNIS 0.2.2-9 chain',
             link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
+          },
+          {
+            text: 'One copy of each package that carries identity, owned by the application',
+            link: '/changelogs/2026-10-18-one-copy-of-each',
+          },
+          {
+            text: 'The release script waits for each tarball, and vert-admin splits its vendor chunks',
+            link: '/changelogs/2026-10-18-release-waits-for-the-tarball',
+          },
+          {
+            text: 'login stores roles, and the sign-in extension points are protected hooks',
+            link: '/changelogs/2026-10-18-sign-in-hooks',
+          },
+          {
+            text: 'ARDOR 0.1.4 on stable IGNIS 0.2.2 and VULCAN 0.2.0',
+            link: '/changelogs/2026-10-18-stable-ignis-0-2-2',
+          },
+          {
+            text: 'TPaths stops at a Date, a Set, a function and an any field',
+            link: '/changelogs/2026-10-18-tpaths-stops-at-values',
           },
         ],
       },
@@ -224,31 +214,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'VULCAN 0.2.0-3 and the source filter',
-            link: '/changelogs/2026-10-17-vulcan-0-2-0-3',
+            text: "ARDOR's agent tooling is VULCAN",
+            link: '/changelogs/2026-10-17-agent-tooling-vulcan',
           },
+          { text: 'Type checking runs on bun check', link: '/changelogs/2026-10-17-bun-check' },
           {
-            text: 'Type checking runs on bun check',
-            link: '/changelogs/2026-10-17-bun-check',
-          },
-          {
-            text: 'VULCAN 0.2.0-2 and the D rules',
-            link: '/changelogs/2026-10-17-vulcan-0-2-0-2',
-          },
-          {
-            text: 'Generated artifact index',
+            text: 'A generated artifact index for the application',
             link: '/changelogs/2026-10-17-generated-artifact-index',
           },
           {
-            text: 'VULCAN 0.2.0-1',
-            link: '/changelogs/2026-10-17-vulcan-0-2-0',
-          },
-          {
-            text: 'Agent tooling is VULCAN',
-            link: '/changelogs/2026-10-17-agent-tooling-vulcan',
-          },
-          {
-            text: 'PATCH, log levels, getManyReference, count',
+            text: 'PATCH in upper case, log levels, getManyReference without pagination, no NaN count',
             link: '/changelogs/2026-10-17-patch-log-levels-pagination-count',
           },
         ],
@@ -282,7 +257,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'canAccess from the container',
+            text: 'canAccess reaches an AuthProvider subclass without a fourth super argument',
             link: '/changelogs/2026-10-14-permission-provider-from-the-container',
           },
         ],
@@ -302,16 +277,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'useDocumentTitle cleanup guard',
-            link: '/changelogs/2026-10-10-document-title-cleanup-guard',
-          },
-          {
-            text: 'checkError reads statusCode',
+            text: 'checkError redirects on a 401 or 403 from the data provider',
             link: '/changelogs/2026-10-10-check-error-reads-status-code',
           },
           {
-            text: 'Data provider errors and Content-Range',
+            text: 'The data provider throws an ApplicationError, and reads Content-Range like IGNIS',
             link: '/changelogs/2026-10-10-data-provider-errors-through-response-reader',
+          },
+          {
+            text: 'useDocumentTitle no longer overwrites a newer title on unmount',
+            link: '/changelogs/2026-10-10-document-title-cleanup-guard',
           },
         ],
       },
@@ -320,7 +295,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'Const-value types keep their literals',
+            text: 'Const-value types keep their literals when copied',
             link: '/changelogs/2026-10-09-const-value-types-keep-literals',
           },
           {
@@ -334,16 +309,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Class identity survives a minifier',
+            link: '/changelogs/2026-10-07-class-identity-and-container',
+          },
+          {
             text: 'Feature modules and permissions',
             link: '/changelogs/2026-10-07-feature-modules',
           },
           {
-            text: 'List extras',
+            text: 'List extras on the data provider and the repository',
             link: '/changelogs/2026-10-07-list-extras',
-          },
-          {
-            text: 'Class identity and the container',
-            link: '/changelogs/2026-10-07-class-identity-and-container',
           },
         ],
       },
@@ -352,7 +327,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'A repository sends the session',
+            text: 'A repository sends what the data provider sends',
             link: '/changelogs/2026-10-06-repository-sends-the-session',
           },
         ],
@@ -362,7 +337,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'HttpRepository writes, shared auth',
+            text: "HttpRepository writes and shares the data provider's auth; BaseCrudService is gone",
             link: '/changelogs/2026-10-02-repository-writes-and-ignis-0-2-1',
           },
         ],
@@ -372,11 +347,11 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'ARDOR 0.1.1, the first stable line',
+            text: 'ARDOR 0.1.1, the first stable line on IGNIS 0.2.0',
             link: '/changelogs/2026-09-24-ardor-0-1-1-stable',
           },
           {
-            text: 'Repositories by discovery, a relative baseUrl',
+            text: 'Repositories by discovery, a relative baseUrl, and IGNIS 0.2.0 stable',
             link: '/changelogs/2026-09-24-remote-repositories-and-relative-base-url',
           },
         ],
@@ -386,7 +361,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'Registration by hand, useRepository, clean-install gate',
+            text: 'Registration by hand, useRepository, and a clean-install gate',
             link: '/changelogs/2026-09-23-registration-by-hand-and-clean-install',
           },
         ],
@@ -396,7 +371,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'IGNIS stereotypes and repositories, bulk writes in the body',
+            text: 'IGNIS stereotypes and repositories, bulk writes in the body, safer headers',
             link: '/changelogs/2026-09-19-ignis-repository-and-bulk-writes',
           },
         ],
@@ -416,12 +391,12 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
-            text: 'One logger per scope, singleton services, kernel headers',
-            link: '/changelogs/2026-09-11-kernel-hardening',
-          },
-          {
             text: 'ARDOR Replaces @minimaltech/ra-core-infra',
             link: '/changelogs/2026-09-11-ardor-from-ra-core-infra',
+          },
+          {
+            text: 'One logger per scope, singleton services, and a kernel that owns its headers',
+            link: '/changelogs/2026-09-11-kernel-hardening',
           },
         ],
       },

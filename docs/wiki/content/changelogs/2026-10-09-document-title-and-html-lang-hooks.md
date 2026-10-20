@@ -44,5 +44,3 @@ export function OrdersPage() {
 | `src/hooks/use-document-title.ts` | admin |
 | `src/hooks/use-html-lang.ts` | admin |
 | `src/hooks/index.ts` | admin |
-
-See [React hooks](../references/hooks#usedocumenttitle).

@@ -28,5 +28,3 @@ packages: ['@venizia/ardor-admin']
 |------|---------|
 | `src/hooks/use-document-title.ts` | admin |
 | `src/__tests__/hooks/use-document-title.test.ts` | admin |
-
-See [React hooks](../references/hooks#usedocumenttitle).
