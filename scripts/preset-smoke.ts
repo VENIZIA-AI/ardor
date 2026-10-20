@@ -86,9 +86,14 @@ const run = (opts: {
 
 /** A first run is silent: a line with `(!)` or "warning" is something a new user should never see. */
 const WARNING = /\(!\)|warning/i;
+// A CI runner colours the output (`localhost:\x1b[1m5173`), which would split a port from its colon.
+const ANSI = /\x1b\[[0-9;]*m/g;
 
 const assertNoWarnings = (opts: { output: string; label: string }) => {
-  const lines = opts.output.split('\n').filter((line) => WARNING.test(line));
+  const lines = opts.output
+    .replace(ANSI, '')
+    .split('\n')
+    .filter((line) => WARNING.test(line));
 
   assert({
     condition: lines.length === 0,
@@ -208,7 +213,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
   const port = freePort();
   const proc = Bun.spawn(['bun', 'run', 'dev'], {
     cwd: opts.cwd,
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, PORT: String(port), NO_COLOR: '1', FORCE_COLOR: '0' },
     stdout: 'pipe',
     stderr: 'pipe',
   });
@@ -220,6 +225,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
     }
   };
 
+  const plain = () => output.replace(ANSI, '');
   const collected = [collect(proc.stdout), collect(proc.stderr)];
 
   const deadline = Date.now() + 60_000;
@@ -264,8 +270,8 @@ const assertDevServer = async (opts: { cwd: string }) => {
 
   writeFileSync(join(tempFolder, `step-${String(step).padStart(2, '0')}.log`), output);
   assert({
-    condition: output.includes(`:${port}`),
-    message: `the dev server listens on :${port} | server output: ${output.split('\n').slice(-15).join(' | ')}`,
+    condition: plain().includes(`:${port}`),
+    message: `the dev server listens on :${port}${plain().includes(`:${port}`) ? '' : ` | server output (${output.length} bytes): ${[...plain().split('\n').slice(0, 8), '...', ...plain().split('\n').slice(-6)].join(' | ').slice(0, 1800)}`}`,
   });
   assertNoWarnings({ output, label: 'bun run dev' });
 };
