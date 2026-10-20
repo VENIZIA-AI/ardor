@@ -13,7 +13,8 @@
  * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair]   (default: every scenario that can run)
  * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@latest`; before VULCAN 0.3.0 is
  *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
- *        VULCAN_TGZ  a packed @venizia/vulcan, used instead of the registry's
+ *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
+ *                    used instead of the registry's
  *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed)
  */
 import {
@@ -129,6 +130,18 @@ const extract = (opts: { tarball: string; destination: string }): string => {
   return join(opts.destination, 'package');
 };
 
+/** The name in a tarball's package.json. */
+const packageNameOf = (opts: { tarball: string }): string => {
+  const proc = Bun.spawnSync(['tar', '-xOzf', opts.tarball, 'package/package.json']);
+  const { name } = JSON.parse(proc.stdout.toString());
+
+  if (typeof name !== 'string') {
+    throw new Error(`[preset-smoke] no package name in ${opts.tarball}`);
+  }
+
+  return name;
+};
+
 const vulcanCommand = (): string[] =>
   (process.env.VULCAN_CMD ?? 'bun x @venizia/vulcan@latest').split(/\s+/).filter(Boolean);
 
@@ -214,7 +227,7 @@ const main = async () => {
 
   const scenarios = SCENARIOS.filter((name) => requested === undefined || requested === name);
   const ignisDirectory = process.env.IGNIS_DIR;
-  const vulcanTarball = process.env.VULCAN_TGZ;
+  const vulcanTarballs = (process.env.VULCAN_TGZ ?? '').split(',').filter(Boolean);
 
   console.log('preset smoke: pack the packages and read the preset from the tarball');
   run({ cwd: ROOT, command: ['make', 'preset-build'] });
@@ -229,9 +242,7 @@ const main = async () => {
   const ardorChecks = checksOf({ presetRoot });
   const ownTarballs = new Map([
     ...tarballs,
-    ...(vulcanTarball === undefined
-      ? []
-      : [['@venizia/vulcan', vulcanTarball] as [string, string]]),
+    ...vulcanTarballs.map((tarball): [string, string] => [packageNameOf({ tarball }), tarball]),
   ]);
 
   if (scenarios.includes('solo')) {
