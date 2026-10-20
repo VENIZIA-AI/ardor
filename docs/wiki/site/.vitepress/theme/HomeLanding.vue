@@ -39,7 +39,7 @@
           <div class="ar-code-win__bar">
             <span class="ar-code-win__dot" style="background:var(--ar-brand)" />
             <span class="ar-code-win__dot" style="background:var(--ar-aqua)" />
-            <span class="ar-code-win__dot" style="background:var(--ar-teal)" />
+            <span class="ar-code-win__dot" style="background:var(--ar-brand-lt)" />
             <span class="ar-code-win__filename">application.tsx</span>
             <span class="ar-code-win__tag">live</span>
           </div>
@@ -191,10 +191,10 @@
           <div class="ar-pcard ar-pcard--good">
             <h3>&#x2736; Perfect for</h3>
             <ul>
-              <li><span class="ar-ic" style="color:var(--ar-aqua)">&#x2713;</span> Enterprise admin panels needing clean IoC architecture</li>
-              <li><span class="ar-ic" style="color:var(--ar-aqua)">&#x2713;</span> Applications pairing react-admin with IGNIS backends</li>
-              <li><span class="ar-ic" style="color:var(--ar-aqua)">&#x2713;</span> Teams wanting DI in React via useInjectable</li>
-              <li><span class="ar-ic" style="color:var(--ar-aqua)">&#x2713;</span> Typed REST data provider, token refresh, and i18n</li>
+              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Enterprise admin panels needing clean IoC architecture</li>
+              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Applications pairing react-admin with IGNIS backends</li>
+              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Teams wanting DI in React via useInjectable</li>
+              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Typed REST data provider, token refresh, and i18n</li>
             </ul>
           </div>
           <div class="ar-pcard ar-pcard--alt">
