@@ -42,6 +42,7 @@
     "vite": "catalog:"
   },
   "peers": {
+    "@venizia/dev-configs": "^0.3.4",
     "@venizia/ignis-connectors": "peer:",
     "@venizia/ignis-filter": "peer:",
     "@venizia/ignis-helpers": "peer:",

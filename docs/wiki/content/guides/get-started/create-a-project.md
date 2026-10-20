@@ -66,7 +66,7 @@ The app has no sign-in and expects one route of the backend: `GET /api/hello` an
 
 To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan init --preset ignis`), run `bun x @venizia/vulcan add --preset ardor` at its root. It asks the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app to proxy `/api` to (the backend apps of the monorepo, or none: flag `--api <app>` or `--no-api`). The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
-The monorepo's catalog keeps its IGNIS versions: a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.2 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
 
 ## Add a Feature Library
 
