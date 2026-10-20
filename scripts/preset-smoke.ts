@@ -219,7 +219,9 @@ const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) 
 };
 
 const checksOf = (opts: { presetRoot: string }): string[] => {
-  const { checks } = readJson({ path: join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json') });
+  const { checks } = readJson({
+    path: join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json'),
+  });
 
   return Array.isArray(checks) ? checks.map(String) : [];
 };
