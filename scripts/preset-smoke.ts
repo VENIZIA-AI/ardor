@@ -105,8 +105,12 @@ const run = (opts: {
   return { code: proc.exitCode, output };
 };
 
-/** A first run is silent: a line with `(!)` or "warning" is something a new user should never see. */
-const WARNING = /\(!\)|warning/i;
+/**
+ * A first run is silent: a line with `(!)`, "warning" or "Sourcemap for" (a package shipping sourcemaps
+ * that point at files it does not ship, which Vite reports once per file) is something a new user should
+ * never see.
+ */
+const WARNING = /\(!\)|warning|Sourcemap for/i;
 // A CI runner colours the output (`localhost:\x1b[1m5173`), which would split a port from its colon.
 const ANSI = /\x1b\[[0-9;]*m/g;
 
