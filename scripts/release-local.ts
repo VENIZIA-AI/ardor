@@ -237,6 +237,12 @@ const releasePackage = async (opts: {
   assertPackedManifest({ manifest: packed, name });
   await assertDependenciesExist({ manifest: packed, name });
 
+  // Only the umbrella carries a VULCAN preset: an app made from the packed one must be green first.
+  if (name === 'ardor') {
+    await $`make preset-smoke`.quiet();
+    console.log('      ✓ preset smoke');
+  }
+
   if (dryRun) {
     console.log('      ⊘ dry run - stopping before the version bump');
     return;
@@ -245,6 +251,12 @@ const releasePackage = async (opts: {
   await $`npm version ${target} --no-git-tag-version --workspaces-update=false`.cwd(path).quiet();
   const nextVersion = readManifest(path).version as string;
   console.log(`      ✓ version ${nextVersion}`);
+
+  // After the bump, so the preset names the version it ships in.
+  if (name === 'ardor') {
+    await $`bun scripts/vulcan-preset.ts`.quiet();
+    console.log('      ✓ preset written');
+  }
 
   const npmTag = npmTagFor({ target });
 
