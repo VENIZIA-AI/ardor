@@ -59,12 +59,15 @@ const run = (opts: {
   command: string[];
   env?: Record<string, string>;
   expectFailure?: boolean;
+  /** Written to the command's stdin; none by default. */
+  input?: string;
 }): { code: number; output: string } => {
   step += 1;
   const spawn = () => {
     const spawned = Bun.spawnSync(opts.command, {
       cwd: opts.cwd,
       env: { ...process.env, ...opts.env },
+      stdin: opts.input === undefined ? undefined : Buffer.from(opts.input),
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -576,6 +579,43 @@ const main = async () => {
           'billing-api',
         ],
       });
+      // The interactive path: a terminal asks the three names in order and the answers come from the
+      // keyboard. `script` gives the command a pseudo-terminal, so VULCAN sees a TTY, and the answers
+      // are piped in: the frontend folder (empty takes the one chosen before), the app, the backend.
+      const prompted = run({
+        cwd: project,
+        env: NO_INSTALL,
+        command: [
+          'script',
+          '-qec',
+          [...vulcanCommand(), 'add', '--preset', `file:${presetRoot}`].join(' '),
+          '/dev/null',
+        ],
+        input: '\nportal\ncore-api\n',
+      });
+      const order = [
+        'Frontend folder',
+        'Name of this frontend app',
+        'Backend app to proxy /api to',
+      ].map((question) => prompted.output.indexOf(question));
+
+      assert({
+        condition: order.every((index, position) => index > (order[position - 1] ?? -1)),
+        message: 'add asks the frontend folder, the app and the backend, in that order',
+      });
+      assert({
+        condition: readFileSync(join(project, 'apps/portal/vite.config.mts'), 'utf8').includes(
+          "'http://localhost:3000'",
+        ),
+        message: 'the app added by answering the prompts proxies /api to http://localhost:3000',
+      });
+      assert({
+        condition: readFileSync(join(project, 'apps/portal/.env.example'), 'utf8').includes(
+          'PORT=5174',
+        ),
+        message: 'the second frontend took port 5174',
+      });
+
       addOverrides({ project, tarballs: new Map([...ignisTarballs, ...ownTarballs]) });
       await install({
         project,
@@ -583,6 +623,7 @@ const main = async () => {
           { folder: 'services/core-api', checks: ignisChecks },
           { folder: 'services/billing-api', checks: ignisChecks },
           { folder: 'apps/admin', checks: ardorChecks, firstRun: true },
+          { folder: 'apps/portal', checks: ardorChecks },
         ],
       });
       const port = readFileSync(join(project, 'services/billing-api/.env.example'), 'utf8').match(
