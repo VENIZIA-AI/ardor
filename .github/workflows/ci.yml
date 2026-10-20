@@ -94,6 +94,12 @@ jobs:
         id: build
         run: make build-all
 
+      # Packs the packages and creates an app from the packed preset outside the repository: a preset
+      # that does not build a green app blocks the release. Needs VULCAN with `init --preset`.
+      - name: VULCAN preset smoke
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make preset-smoke
+
       # The make targets own the test command (make/test.mk: .env.test, the setup preload and the
       # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.
       - name: Test - kernel

@@ -10,6 +10,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     text: 'Get started',
     collapsed: false,
     items: [
+      { text: 'Create a project', link: '/guides/get-started/create-a-project' },
       { text: 'Setup', link: '/guides/get-started/setup' },
       { text: '5-minute quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
@@ -116,6 +117,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'History',
     collapsed: false,
     items: [
+      {
+        text: '2026-10-20',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR ships a VULCAN preset',
+            link: '/changelogs/2026-10-20-vulcan-preset',
+          },
+        ],
+      },
       {
         text: '2026-10-19',
         collapsed: true,
