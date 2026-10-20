@@ -59,7 +59,8 @@
   },
   "sideEffects": false,
   "vulcan": {
-    "preset": "./dist/vulcan-preset/app/preset.json"
+    "preset": "./dist/vulcan-preset/app/preset.json",
+    "lib": "./dist/vulcan-preset/lib/preset.json"
   },
   "files": [
     "README.md",

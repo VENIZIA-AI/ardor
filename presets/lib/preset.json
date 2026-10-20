@@ -1,0 +1,40 @@
+{
+  "presetVersion": 1,
+  "summary": "An ARDOR feature package: one Features.define, a test that mounts it in a probe application, typecheck, lint and test. No bundler and no dev server.",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@venizia/ardor": "workspace:^",
+    "@venizia/dev-configs": "catalog:",
+    "eslint": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@venizia/ardor": "workspace:^",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "scripts": {
+    "typecheck": "bun check --no-pretty -p tsconfig.json",
+    "lint": "sh scripts/lint.sh",
+    "lint:fix": "sh scripts/lint.sh --fix",
+    "test": "bun test",
+    "clean": "sh scripts/clean.sh"
+  },
+  "checks": ["typecheck", "lint", "test"],
+  "imports": { "#src/*.json": "./src/*.json", "#src/*": "./src/*.js" },
+  "exports": { ".": "./src/index.ts" },
+  "packageFields": { "type": "module", "sideEffects": false, "engines": { "bun": ">=1.4" } },
+  "files": "./files",
+  "atlas": []
+}

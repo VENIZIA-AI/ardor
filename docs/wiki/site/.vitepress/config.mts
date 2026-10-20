@@ -118,6 +118,11 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-21',
+        collapsed: true,
+        items: [{ text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' }],
+      },
+      {
         text: '2026-10-20',
         collapsed: true,
         items: [
