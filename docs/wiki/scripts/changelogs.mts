@@ -19,6 +19,11 @@ const CONFIG = `${WIKI}site/.vitepress/config.mts`;
 const SIDEBAR_START = 'const changelogsSidebar: DefaultTheme.SidebarItem[] = [';
 const TABLE_HEADER = '| Date | Title | Type |\n|------|-------|------|\n';
 
+const fail = (opts: { message: string }): never => {
+  console.error(opts.message);
+  process.exit(1);
+};
+
 interface IEntry {
   slug: string;
   date: string;
@@ -46,7 +51,7 @@ const readEntries = async (): Promise<IEntry[]> => {
     const type = /<Badge type="[a-z]+" text="([^"]+)"/.exec(text)?.[1];
 
     if (title === undefined || type === undefined) {
-      throw new Error(`[changelogs] ${file} needs a frontmatter title and a <Badge>`);
+      return fail({ message: `[changelogs] ${file} needs a frontmatter title and a <Badge>` });
     }
 
     entries.push({ slug, date, title, type });
@@ -100,9 +105,9 @@ const main = async () => {
   const tableStart = indexText.indexOf(TABLE_HEADER);
 
   if (tableStart === -1) {
-    throw new Error(
-      `[changelogs] index.md has no table with the header ${JSON.stringify(TABLE_HEADER)}`,
-    );
+    return fail({
+      message: `[changelogs] index.md has no table with the header ${JSON.stringify(TABLE_HEADER)}`,
+    });
   }
 
   const nextIndex = `${indexText.slice(0, tableStart)}${TABLE_HEADER}${renderTable({ entries })}\n`;
@@ -111,7 +116,7 @@ const main = async () => {
   const sidebarEnd = configText.indexOf('\n];\n', sidebarStart);
 
   if (sidebarStart === -1 || sidebarEnd === -1) {
-    throw new Error('[changelogs] config.mts has no `changelogsSidebar` constant');
+    return fail({ message: '[changelogs] config.mts has no `changelogsSidebar` constant' });
   }
 
   const sidebar = renderSidebar({ entries });
