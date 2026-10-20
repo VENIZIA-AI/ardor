@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => {
   return {
     // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
     plugins: [IgnisArtifactsVitePlugin.create(), react()],
-    resolve: { alias: { '@': '/src' } },
     server: {
       port: Number(env.PORT ?? '{{devPort}}'),
       strictPort: true,

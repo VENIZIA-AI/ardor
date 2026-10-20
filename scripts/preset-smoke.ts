@@ -223,6 +223,49 @@ const checksOf = (opts: { presetRoot: string }): string[] => {
 };
 
 /** install, sync, each app's checks, then the project's own contract. */
+/**
+ * The app resolves its own modules through package.json `imports` (`#src/*`), not an alias: no `@/`
+ * import, no alias in the Vite config, no `paths` in the tsconfig, the field written by VULCAN, and the
+ * class the Ignis artifacts plugin finds (`AdminConfiguration`) is in the built bundle.
+ */
+const assertSubpathImports = (opts: { directory: string }) => {
+  const manifest = readJson({ path: join(opts.directory, 'package.json') });
+
+  assert({
+    condition:
+      JSON.stringify(manifest.imports) ===
+      JSON.stringify({ '#src/*.json': './src/*.json', '#src/*': './src/*.js' }),
+    message: 'package.json imports #src/*.json and #src/*',
+  });
+
+  const sources = readdirSync(join(opts.directory, 'src'), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => readFileSync(join(entry.parentPath, entry.name), 'utf8'));
+
+  assert({
+    condition:
+      sources.every((source) => !source.includes("from '@/")) &&
+      sources.some((source) => source.includes("from '#src/")),
+    message: 'every import of the app reads #src/..., none reads @/...',
+  });
+  assert({
+    condition:
+      !readFileSync(join(opts.directory, 'vite.config.mts'), 'utf8').includes('alias') &&
+      !readFileSync(join(opts.directory, 'tsconfig.json'), 'utf8').includes('"paths"'),
+    message: 'no Vite alias and no tsconfig paths',
+  });
+
+  const bundle = readdirSync(join(opts.directory, 'dist/assets'))
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => readFileSync(join(opts.directory, 'dist/assets', file), 'utf8'))
+    .join('\n');
+
+  assert({
+    condition: bundle.includes('AdminConfiguration'),
+    message: 'the Ignis artifacts plugin found AdminConfiguration: it is in the built bundle',
+  });
+};
+
 const freePort = (): number => {
   const server = Bun.serve({ port: 0, fetch: () => new Response('') });
   const { port } = server;
@@ -273,7 +316,13 @@ const assertDevServer = async (opts: { cwd: string }) => {
   };
 
   try {
-    for (const path of ['/', '/src/main.tsx']) {
+    // The entry and two modules reached through `#src/...` imports: Vite resolves them to .ts and .tsx.
+    for (const path of [
+      '/',
+      '/src/main.tsx',
+      '/src/application.ts',
+      '/src/pages/product-list.tsx',
+    ]) {
       let response = await answer(path);
 
       while (response === undefined && Date.now() < deadline) {
@@ -323,6 +372,7 @@ const install = async (opts: {
 
       if (app.firstRun === true && check === 'build') {
         assertNoWarnings({ output, label: 'bun run build' });
+        assertSubpathImports({ directory: join(opts.project, app.folder) });
       }
     }
 

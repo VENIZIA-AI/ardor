@@ -134,6 +134,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: "The preset app's lint scripts are short",
             link: '/changelogs/2026-10-20-preset-lint-script',
           },
+          {
+            text: 'The preset app imports its own modules with #src',
+            link: '/changelogs/2026-10-20-preset-subpath-imports',
+          },
           { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
         ],
       },

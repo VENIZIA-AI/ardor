@@ -11,11 +11,7 @@
     // Restated, not inherited: Bun ignores an `extends` that names a package.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false,
-
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "useDefineForClassFields": false
   },
   "include": ["src", "vite.config.mts"]
 }
