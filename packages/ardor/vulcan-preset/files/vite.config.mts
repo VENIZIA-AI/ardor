@@ -17,5 +17,20 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy,
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          // React, react-admin and the router weigh about 500 KB before any application code. Two
+          // vendor chunks keep the application's own chunk small, cacheable across a deploy, and
+          // under Vite's 500 KB warning.
+          codeSplitting: {
+            groups: [
+              { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+              { name: 'vendor', test: /node_modules/ },
+            ],
+          },
+        },
+      },
+    },
   };
 });

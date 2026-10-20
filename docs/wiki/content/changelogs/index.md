@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-20 | [Silent first run for the ARDOR preset](./2026-10-20-preset-first-run) | Bug Fix |
 | 2026-10-20 | [ARDOR ships a VULCAN preset](./2026-10-20-vulcan-preset) | New Feature |
 | 2026-10-19 | [The wiki is rebuilt around the core of ARDOR](./2026-10-19-wiki-rebuild) | Enhancement |
 | 2026-10-19 | [toDataUrl no longer needs Promise.withResolvers](./2026-10-19-to-data-url-without-with-resolvers) | Bug Fix |

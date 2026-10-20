@@ -3,6 +3,7 @@
   "side": "frontend",
   "summary": "An ARDOR admin on Vite and React: one products resource with list, create and edit pages, REST data provider and i18n, no sign-in.",
   "devPort": 5173,
+  "urls": ["/"],
   "dependencies": {
     "@reduxjs/toolkit": "catalog:",
     "@tanstack/react-query": "catalog:",

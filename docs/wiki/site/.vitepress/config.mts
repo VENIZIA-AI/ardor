@@ -122,6 +122,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Silent first run for the ARDOR preset',
+            link: '/changelogs/2026-10-20-preset-first-run',
+          },
+          {
             text: 'ARDOR ships a VULCAN preset',
             link: '/changelogs/2026-10-20-vulcan-preset',
           },
