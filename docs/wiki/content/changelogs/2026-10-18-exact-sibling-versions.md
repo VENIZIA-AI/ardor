@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor-admin', '@venizia/ardor']
 
 ## A package depends on its siblings at the exact version released with it
 
-<Badge type="danger" text="Bug Fix" />
+<Badge type="info" text="Bug Fix" />
 
 **In one line.** `@venizia/ardor` X now needs `@venizia/ardor-kernel`, `-react` and `-admin` at exactly X, not at `^X` (issue #85).
 

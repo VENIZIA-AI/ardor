@@ -8,9 +8,9 @@ packages: ['@venizia/ardor-kernel']
 
 ## toDataUrl no longer needs Promise.withResolvers
 
-<Badge type="tip" text="Bug Fix" />
+<Badge type="info" text="Bug Fix" />
 
-**In one line.** `toDataUrl({ blob })` used `Promise.withResolvers` (ES2024, Chrome 119), so it threw on an older WebView; it builds the promise with `new Promise` now (issue #103, reported by BANA, whose POS WebView is Chrome 101).
+**In one line.** `toDataUrl({ blob })` used `Promise.withResolvers` (ES2024, Chrome 119), so it threw on an older WebView; it builds the promise with `new Promise` now (issue #103, found on a WebView at Chrome 101).
 
 ```ts no-check
 // ... `blob` is any Blob. Same call, same result: a `data:` URL for it.

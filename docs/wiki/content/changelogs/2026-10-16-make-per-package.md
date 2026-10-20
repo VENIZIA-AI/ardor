@@ -21,7 +21,7 @@ include ../../make/project.mk
 
 - **One include per package.** `make/project.mk` holds `build`, `typecheck`, `clean`, `rebuild`, `lint`, `fmt` and `size`. Every tool runs from the package's `node_modules/.bin` by absolute path. A package `package.json` keeps only `force-update` and `prepublishOnly` (`make rebuild`). `scripts/build.sh`, `clean.sh` and `rebuild.sh` are gone.
 - **The root Makefile is split.** `make/build.mk`, `knowledge.mk`, `release.mk`, `lint.mk`, `test.mk` and `help.mk` each hold one job. `lint-<pkg>`, `fmt-<pkg>`, `test-<pkg>`, `purity-<pkg>` (new), `clean-install-<pkg>` and `update-<pkg>` are generated from `PACKAGES := kernel react admin ardor`. A bare `make` prints the target list.
-- **Two tsconfigs per package.** The root `tsconfig.json` type-checks `src` and the tests, with the Bun types. `.configs/tsconfig.build.json` emits `dist` without them. `tsconfig.test.json` and the root `tsconfig.build.json` are gone. The four `dist` trees are byte-identical to the previous build.
+- **Two tsconfigs per package.** The root `tsconfig.json` type-checks `src` and the tests, with the Bun types. `.configs/tsconfig.build.json` emits `dist` without them. `tsconfig.test.json` and the root `tsconfig.build.json` are gone.
 - **The test command lives in make.** `make test-<pkg>` runs `bun test` with `.env.test` and the setup preload. No package has a `test` script any more.
 - **Examples run outside make.** `bun scripts/examples.ts check` lints and type-checks every example; `build` builds them. The pre-commit hook runs `make lint-all` and then `examples.ts check`.
 
@@ -32,7 +32,7 @@ include ../../make/project.mk
   - `bun run lint:fix` becomes `make fmt` (or `make fmt-<pkg>`).
   - `bun run build` inside a package becomes `make <pkg>`.
   - `bun run test` becomes `make test-<pkg>`.
-  - `make lint-all` now also lints `docs/wiki`.
+  - `make lint-all` is new: it lints the packages and `docs/wiki` (`make lint-wiki` lints the wiki alone).
 
 ## Details
 

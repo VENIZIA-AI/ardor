@@ -66,7 +66,7 @@ class AppRestDataProvider extends DefaultRestDataProvider {
 - **Fetchers.** `send(opts)` carries no logger (the helper owns `this.logger`), `getProtocol({ url })` takes an object, and the generics are `TRequest` and `TResponse`.
 - **i18n.** The provider no longer reads `navigator` when the module is imported: `resolveInitialLocale({ locales })` and `composeMessages({ locale, messages })` are protected hooks, and nothing is read outside a browser.
 
-## Migration table
+### Migration table
 
 | 0.1.4-4 | Now |
 |---|---|

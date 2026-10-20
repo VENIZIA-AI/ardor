@@ -18,7 +18,7 @@ packages: ['@venizia/ardor-kernel']
 
 ## What changed
 
-- **The check.** `registerArtifacts()` looks at each entry of each kind of each `artifacts()` index, and of the `content` of a group, before it reads anything from it. An entry that is not a function (`undefined`, `null`, a string, a number) throws the message above, worded as IGNIS's own check is.
+- **The check.** `registerArtifacts()` looks at each entry of each kind of each `artifacts()` index, and of the `content` of a group, before it reads anything from it. An entry that is not a function (`undefined`, `null`, a string, a number) throws the message above.
 - **Why it happens.** In a browser build, the plugin's class list is eager: it imports the module of every decorated class. When the module that imports `@venizia/ignis-boot/auto` also holds a decorated class, or is imported by one, the list is built while that module is still evaluating and the slot is `undefined`. Keep each decorated class in a file of its own and import `AutoArtifacts` from the application module that holds no class.
 
 ## Who is affected

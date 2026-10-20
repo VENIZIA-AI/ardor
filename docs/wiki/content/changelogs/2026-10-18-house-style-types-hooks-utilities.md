@@ -30,7 +30,9 @@ export const useSearchTerm = (opts: { search: string; ready: boolean }) => {
 
 Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaults to `true`.
 
-## Kernel (`@venizia/ardor-kernel`)
+## What changed
+
+### Kernel (`@venizia/ardor-kernel`)
 
 | Old | New |
 |---|---|
@@ -54,7 +56,7 @@ Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaul
 | `blobToBase64(blob)` | `toDataUrl({ blob })` |
 | `stringify(params)`, `parse(search)` | `toQueryString({ params })`, `parseQueryString({ search })` |
 
-## React (`@venizia/ardor-react`)
+### React (`@venizia/ardor-react`)
 
 | Old | New |
 |---|---|
@@ -66,7 +68,7 @@ Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaul
 | `ApplicationContext` value `{ container, registry, logger }` | `IApplicationContextValue { container, logger }` (exported); `registry` was the same container as `container`, drop it |
 | generics `D`, `S`, `T` in `createAppDispatch`, `createAppSelectors`, `useInjectable`, `useArtifact` | `TDispatch`, `TState`, `TSelected`, `TInstance` (type-level only) |
 
-## Admin (`@venizia/ardor-admin`)
+### Admin (`@venizia/ardor-admin`)
 
 | Old | New |
 |---|---|
@@ -87,9 +89,9 @@ Internally, the `api` decorator is now an arrow function; its use is unchanged.
 - **An application that builds the `ApplicationContext` value by hand**, in a provider or a test wrapper. Drop `registry`: it held the same container as `container`, and an object literal that keeps it no longer type-checks.
 - **An application that types a component with `SyncFC`.** Rename it to `ISyncFC`.
 
-## Not in this change
+## Details
 
-`isDefined`, `isString` and `isBrowser` stay positional. They are type guards, and an options object loses the narrowing on the caller's variable.
+`isDefined`, `isString` and `isBrowser` stay as they were and are not part of this change. `isDefined` and `isString` are type guards, and an options object would lose the narrowing on the caller's variable; `isBrowser()` takes no argument and returns a boolean.
 
 | File | Package |
 |------|---------|

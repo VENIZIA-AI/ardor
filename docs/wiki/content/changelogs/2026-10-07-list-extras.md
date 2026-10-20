@@ -1,14 +1,14 @@
 ---
 title: List extras on the data provider and the repository
 description: ARDOR adopts IGNIS list extras - getList asks with meta.extra and answers meta.extra, and reads a route's default extras unasked.
-packages: ['@venizia/ardor']
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-10-07
 
 ## List extras on the data provider and the repository
 
-<Badge type="tip" text="Feature" />
+<Badge type="tip" text="New Feature" />
 
 **In one line.** An IGNIS route can compute extras beside the rows, such as facet counts. ARDOR's data provider asks for them with `meta.extra` and answers them in the result's `meta.extra`, and it reads the `{ data, extra }` body a route with a default extra sends to every client, which it used to mistake for one row.
 

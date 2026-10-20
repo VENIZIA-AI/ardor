@@ -43,7 +43,7 @@ This entry covers everything since `0.1.1-2`.
 ## Breaking changes
 
 > [!WARNING]
-> `updateMany` and `deleteMany` now need a backend whose bulk routes read `where` from the body. IGNIS generated routes do from `@venizia/ignis` `0.2.0-46`. A route that reads only the query answers `400` and writes nothing. That includes a hand-written override of the bulk handler.
+> `updateMany` and `deleteMany` now need a backend whose bulk routes read `where` from the body. A route that reads only the query answers `400` and writes nothing. That includes a hand-written override of the bulk handler.
 
 **Before:**
 
@@ -61,7 +61,7 @@ PATCH  /products   body: { "status": "ARCHIVED", "where": { "id": { "inq": [...]
 DELETE /products   body: { "where": { "id": { "inq": [...] } } }
 ```
 
-- An id list in the URL is capped by the request line. An IGNIS server answered `431` at 400 UUIDs, and a proxy with 8k header buffers refuses sooner.
+- An id list in the URL is capped by the request line.
 - The old `deleteMany` fired one `DELETE` per id. If one failed, the rest had already been deleted and the screen reported a single error.
 - Both calls now return `{ data: ids }`, taken from the rows the server reports as written. They used to return the raw rows. An id that no longer exists is not reported.
 - `updateMany` refuses `data` that has its own `where` field, because the route reads that key as the row selector. Update those records one by one with `update()`.

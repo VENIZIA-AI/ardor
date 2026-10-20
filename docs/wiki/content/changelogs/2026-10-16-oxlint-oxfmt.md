@@ -26,7 +26,7 @@ export default defineConfig(ReactOxlintConfigs.create());
 - **ESLint stays for one rule.** `@typescript-eslint/naming-convention` has no oxlint port, so ESLint runs it alone.
 - **oxfmt replaces Prettier.** The output keeps ARDOR's style: parentheses on every arrow parameter, and the closing `>` of a JSX tag on its last attribute line.
 - **Every project owns a `.configs/` folder** with `oxlint.config.mts`, `oxfmt.config.mts` and `eslint.config.mjs`. The ESLint config is plain JavaScript, so ESLint loads it without `jiti`. `tsconfig.json` stays at the project root.
-- **ARDOR keeps no lint rule of its own.** `scripts/eslint/react.mjs` and `scripts/eslint/secure-context.mjs` are gone: the React preset in `@venizia/dev-configs` is now as strict as ARDOR's was, and the `crypto.randomUUID` ban lives there as `NoRestrictedPropertiesRule`.
+- **ARDOR keeps no lint rule of its own.** `scripts/eslint/react.mjs` and `scripts/eslint/secure-context.mjs` are gone: the `crypto.randomUUID` ban lives in `@venizia/dev-configs` as `NoRestrictedPropertiesRule`.
 - **A warning fails lint.** oxlint runs with `--deny-warnings`.
 
 ## Who is affected

@@ -43,7 +43,7 @@ export class ApiDataSource extends HttpDataSource {
 
 `getNetworkService().getDataSourceAuth()` still works and sends everything except the channel and the tracing id.
 
-- **IGNIS connectors `0.2.1-4`.** The peer floor moves from `>=0.2.1-3` to `>=0.2.1-4 <0.3.0`: on `0.2.1-3` the new settings would be ignored. `@venizia/ardor/repository` also re-exports what `0.2.1-4` adds: `HttpResponseReader`, `IHttpRequestContext`, `THttpHeadersResolver`, `IHttpCallOptions` (per-call `headers` and `signal` on every verb) and `THttpRepositoryOptions`. A `baseUrl` must now be absolute or start with `/`; anything else throws when the datasource is built.
+- **IGNIS connectors `0.2.1-4`.** The peer floor moves from `>=0.2.1-3` to `>=0.2.1-4 <0.3.0`: on `0.2.1-3` the new settings would be ignored.
 - **A clearer error from `useInjectable({ key })`.** A key that is not bound now says why that happens in a minified build, and what to do: resolve by `{ target }`, or pin the key with `binding`. The message still starts with `Binding key: <key> is not bounded in context!`.
 
 ## Who is affected
