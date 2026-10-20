@@ -8,7 +8,7 @@ packages: ['@venizia/ardor']
 
 ## HttpRepository writes and shares the data provider's auth; BaseCrudService is gone
 
-<Badge type="danger" text="Breaking" />
+<Badge type="warning" text="Breaking Change" />
 
 **In one line.** `HttpRepository` from `@venizia/ardor/repository` now writes as well as reads. It shares the data provider's token and its single 401 refresh, and it replaces `BaseCrudService`, which is removed. ARDOR builds on the IGNIS `0.2.1` prerelease line (`next`).
 
@@ -50,7 +50,7 @@ packages: ['@venizia/ardor']
 
 ### Removed
 
-- **`BaseCrudService`, `ICrudServiceOptions`, `ICrudService`, `IService` and `EntityRelationType`.** `BaseCrudService` took positional arguments (`findById(id, filter)`), and its `updateAll` sent `where` in the query string, which an IGNIS bulk route answers with a `400`. Nothing in ARDOR or BANA used it. Use an `HttpRepository`.
+- **`BaseCrudService`, `ICrudServiceOptions`, `ICrudService`, `IService` and `EntityRelationType`.** `BaseCrudService` took positional arguments (`findById(id, filter)`), and its `updateAll` sent `where` in the query string, which an IGNIS bulk route answers with a `400`. Nothing in ARDOR used it. Use an `HttpRepository`.
 
 ## Who is affected
 

@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-kernel']
 
 ## Const-value types keep their literals when copied
 
-<Badge type="warning" text="Behavior Change" />
+<Badge type="warning" text="Behavior Change" /> <Badge type="warning" text="Breaking Change" />
 
 **In one line.** A value typed with `TConstValue` and its siblings now keeps its literal union when you copy it into an object literal or a `let`, instead of widening to `string` or `number`.
 

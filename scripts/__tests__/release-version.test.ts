@@ -50,6 +50,21 @@ describe('readReleaseArgs', () => {
     expect(positional).toEqual(['kernel', 'react']);
   });
 
+  test('--issue is read, and its value is never a package name', () => {
+    const read = readReleaseArgs({ argv: ['kernel', '--issue', '138', '--version', '0.3.1'] });
+    expect(read.issue).toBe('138');
+    expect(read.positional).toEqual(['kernel']);
+  });
+
+  test('no --issue, or an empty one, is unset', () => {
+    expect(readReleaseArgs({ argv: [] }).issue).toBeUndefined();
+    expect(readReleaseArgs({ argv: ['--issue', ''] }).issue).toBeUndefined();
+  });
+
+  test('an --issue that is not a number throws, naming it', () => {
+    expect(() => readReleaseArgs({ argv: ['--issue', '#138'] })).toThrow('#138');
+  });
+
   test('an unknown mode throws, naming it', () => {
     expect(() => readReleaseArgs({ argv: ['--mode', 'bogus'] })).toThrow('bogus');
   });

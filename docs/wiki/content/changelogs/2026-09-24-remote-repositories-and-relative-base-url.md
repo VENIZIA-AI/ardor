@@ -73,7 +73,7 @@ this.dataSource(ApiDataSource); // in bindContext()
 
 - The quickstart, the root README and `examples/5-mins-qs` declare their datasource and repository this way. The example's production bundle renames both classes and still resolves them, because the key goes with the class, not with its name.
 - `RepositoryTypes` comes from `@venizia/ignis-kernel/repository`, IGNIS's browser-weight entry. It adds 0.01 kB to the kernel (6.55 kB of a 7.7 kB budget).
-- IGNIS 0.2.0 is the same code as its last prereleases (kernel 0.2.0-47, connectors 0.2.0-46, helpers 0.2.0-41, inversion 0.2.0-24, filter 0.2.0-23); ARDOR compared the published tarballs. Nothing else in that line reaches ARDOR: ARDOR has no generated client, no worker bundle and no `strictPath`, and its application has no `stop()`.
+- Nothing else in that line reaches ARDOR: ARDOR has no generated client, no worker bundle and no `strictPath`, and its application has no `stop()`.
 
 | File | Package |
 |------|---------|

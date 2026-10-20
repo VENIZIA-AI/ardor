@@ -36,7 +36,9 @@ tags: [process, git, contributing]
 7. Push the branch and open a Pull Request that targets `develop`. Never target `main` - `main`
    only accepts merges FROM `develop`, and releases off it are tagged in git (see
    [release and publish](/process/release-publish.md) for the actual per-package release
-   mechanism, which is separate from `main`/`develop` merges).
+   mechanism, which is separate from `main`/`develop` merges). The wiki deploys on a push to
+   `develop` that touches `docs/wiki/**` (`.github/workflows/deploy-docs.yml`), so a docs change goes
+   live when its pull request merges; no develop-to-main publish pull request is needed for it.
 8. PR title should also follow Conventional Commits format (e.g. `feat: add data provider retry
    logic`). Include what and why in the description, link related issues, and clearly call out
    breaking changes - especially anything that touches `RequestMethods`/`RequestTypes` in

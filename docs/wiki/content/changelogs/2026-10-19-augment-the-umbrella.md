@@ -8,7 +8,7 @@ packages: []
 
 ## Augment @venizia/ardor, not the declaring packages
 
-<Badge type="warning" text="Behavior Change" />
+<Badge type="info" text="Bug Fix" />
 
 **In one line.** The docs told an application to augment `@venizia/ardor-react` and `@venizia/ardor-admin` and said an umbrella block never merges; it is the other way round (issue #98).
 

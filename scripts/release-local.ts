@@ -8,6 +8,7 @@
  *   bun scripts/release-local.ts --dry-run            # run every gate, publish and write nothing
  *   bun scripts/release-local.ts --mode patch         # default is prerelease
  *   bun scripts/release-local.ts --version 0.3.0      # an explicit version; overrides --mode
+ *   bun scripts/release-local.ts --issue 138          # the release commit says [#138]
  *   bun scripts/release-local.ts --yes                # skip the confirmation prompt
  *
  * CI checks out a clean tree from the pushed ref; this does not, so it is deliberately STRICTER: it
@@ -22,9 +23,18 @@
  */
 
 import { $ } from 'bun';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import {
+  exportTargets,
+  fetchPackument,
+  missingExportTargets,
+  missingFromRegistry,
+  readWorkspaceVersions,
+  unresolvedProtocols,
+  workspaceStrays,
+} from './release-gates';
 import { assertAbove, isReleaseVersion, npmTagFor, readReleaseArgs } from './release-version';
 
 const BRANCH = 'develop';
@@ -39,6 +49,7 @@ type TReleaseTarget = string;
 interface IOptions {
   packages: TPackageName[];
   target: TReleaseTarget;
+  issue?: string;
   dryRun: boolean;
   skipPrompt: boolean;
 }
@@ -114,34 +125,35 @@ const assertPublisherIsBun = (): void => {
 
 /** Every file the `exports` map names must exist. Derived from the manifest, never a hand-written list. */
 const assertBuildArtifacts = (opts: { path: string; name: string }): void => {
-  const manifest = readManifest(opts.path);
-  const exportsMap = manifest.exports as Record<string, unknown> | undefined;
+  const exportsMap = readManifest(opts.path).exports;
 
-  if (!exportsMap) {
-    fail(`[${opts.name}] no \`exports\` map - there is nothing to validate against`);
-  }
+  try {
+    const targets = exportTargets({ exportsMap });
+    const missing = missingExportTargets({ directory: opts.path, exportsMap });
 
-  const targets = new Set<string>();
-  for (const target of Object.values(exportsMap ?? {})) {
-    if (typeof target === 'string') {
-      targets.add(target);
-      continue;
+    if (missing.length > 0) {
+      fail(
+        `[${opts.name}] \`exports\` names files the build did not emit:\n    ${missing.join('\n    ')}`,
+      );
     }
 
-    for (const file of Object.values(target as Record<string, string>)) {
-      targets.add(file);
-    }
+    console.log(`      ✓ all ${targets.size} published entries exist`);
+  } catch (error) {
+    fail(`[${opts.name}] ${error instanceof Error ? error.message : String(error)}`);
   }
+};
 
-  const missing = [...targets].filter((file) => !existsSync(join(opts.path, file)));
+/** Every ARDOR sibling must resolve to this workspace, not to a registry tarball. */
+const assertWorkspaceLinks = (opts: { path: string; name: string }): void => {
+  const strays = workspaceStrays({ root: process.cwd(), directory: opts.path });
 
-  if (missing.length > 0) {
+  if (strays.length > 0) {
     fail(
-      `[${opts.name}] \`exports\` names files the build did not emit:\n    ${missing.join('\n    ')}`,
+      `[${opts.name}] internal dependencies resolved to the registry:\n    ${strays.join('\n    ')}`,
     );
   }
 
-  console.log(`      ✓ all ${targets.size} published entries exist`);
+  console.log('      ✓ every ARDOR sibling links to the workspace');
 };
 
 /**
@@ -166,10 +178,12 @@ const readPackedManifest = async (opts: { path: string }): Promise<Record<string
 };
 
 const assertPackedManifest = (opts: { manifest: Record<string, unknown>; name: string }): void => {
-  const serialized = JSON.stringify(opts.manifest);
+  const found = unresolvedProtocols({ manifest: opts.manifest });
 
-  if (/"(catalog|workspace):/.test(serialized)) {
-    fail(`[${opts.name}] unresolved workspace protocol survives into the published manifest`);
+  if (found.length > 0) {
+    fail(
+      `[${opts.name}] unresolved workspace protocol survives into the published manifest: ${found.join(', ')}`,
+    );
   }
 
   console.log('      ✓ the packed manifest resolves every protocol');
@@ -177,25 +191,33 @@ const assertPackedManifest = (opts: { manifest: Record<string, unknown>; name: s
 
 /**
  * A `workspace:*` on a never-published package resolves to a literal version while packing, so the
- * tarball names a package the registry has never heard of. Only the registry can answer this.
+ * tarball names a package the registry has never heard of. Only the registry can answer this; a
+ * package this run published a moment ago is checked against its workspace version instead.
  */
 const assertDependenciesExist = async (opts: {
   manifest: Record<string, unknown>;
   name: string;
+  chainReleased: string[];
 }): Promise<void> => {
-  const dependencies = (opts.manifest.dependencies ?? {}) as Record<string, string>;
-  const internal = Object.entries(dependencies).filter(([dep]) => dep.startsWith('@venizia/'));
+  const dependencies = Object.fromEntries(
+    Object.entries((opts.manifest.dependencies ?? {}) as Record<string, string>),
+  );
+  const missing = await missingFromRegistry({
+    dependencies,
+    chainReleased: opts.chainReleased,
+    workspaceVersions: readWorkspaceVersions({ root: process.cwd() }),
+    fetchPackument,
+  });
 
-  for (const [dependency, range] of internal) {
-    const version = range.replace(/^[\^~>=<\s]+/, '');
-    const found = await $`npm view ${`${dependency}@${version}`} version`.quiet().nothrow();
-
-    if (found.exitCode !== 0) {
-      fail(`[${opts.name}] dependency not on the registry: ${dependency}@${version}`);
-    }
+  if (missing.length > 0) {
+    fail(
+      `[${opts.name}] the packed manifest depends on something the registry cannot serve:\n    ${missing.join('\n    ')}`,
+    );
   }
 
-  console.log(`      ✓ all ${internal.length} internal dependencies are on the registry`);
+  console.log(
+    `      ✓ all ${Object.keys(dependencies).length} runtime dependencies resolve on the registry`,
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -205,6 +227,8 @@ const assertDependenciesExist = async (opts: {
 const releasePackage = async (opts: {
   name: TPackageName;
   target: TReleaseTarget;
+  issue?: string;
+  chainReleased: string[];
   dryRun: boolean;
 }): Promise<void> => {
   const { name, target, dryRun } = opts;
@@ -217,6 +241,8 @@ const releasePackage = async (opts: {
   if (isReleaseVersion({ value: target })) {
     assertAbove({ version: target, current: manifest.version as string });
   }
+
+  assertWorkspaceLinks({ path, name });
 
   await $`make ${name}`.quiet();
   console.log('      ✓ build');
@@ -235,7 +261,7 @@ const releasePackage = async (opts: {
 
   const packed = await readPackedManifest({ path });
   assertPackedManifest({ manifest: packed, name });
-  await assertDependenciesExist({ manifest: packed, name });
+  await assertDependenciesExist({ manifest: packed, name, chainReleased: opts.chainReleased });
 
   // Only the umbrella carries a VULCAN preset: an app made from the packed one must be green first.
   if (name === 'ardor') {
@@ -269,8 +295,20 @@ const releasePackage = async (opts: {
   // Non-fatal: a tagging hiccup must never look like a failed release.
   await $`npm dist-tag add ${`${packageName}@${nextVersion}`} highest`.quiet().nothrow();
 
+  // `next` is never below `latest`, for every ARDOR package. Non-fatal and loud.
+  // The package just published is passed in: npm can serve the old tags for minutes after a publish.
+  console.log(
+    (
+      await $`bun scripts/release-gates.ts heal-next --published ${`${packageName}@${nextVersion}`} --tag ${npmTag}`
+        .nothrow()
+        .text()
+    ).trimEnd(),
+  );
+
   await $`git add ${join(path, 'package.json')}`;
-  await $`git commit -m ${`chore(${name}): release v${nextVersion} [${target}]`}`.quiet();
+  const subject = `chore(${name}): release v${nextVersion} [${target}]`;
+
+  await $`git commit -m ${opts.issue === undefined ? subject : `[#${opts.issue}] ${subject}`}`.quiet();
 
   // `develop` can move between the preflight and here - a teammate's merge, or nothing at all. The
   // version is already on the registry by now, so rebase and retry once rather than leave the
@@ -299,12 +337,14 @@ const parseOptions = (): IOptions => {
 
   let target: TReleaseTarget;
   let named: TPackageName[];
+  let issue: string | undefined;
 
   try {
     const read = readReleaseArgs({ argv });
 
     target = read.target;
     named = read.positional as TPackageName[];
+    issue = read.issue;
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
   }
@@ -319,11 +359,11 @@ const parseOptions = (): IOptions => {
   const packages =
     named.length > 0 ? RELEASE_ORDER.filter((p) => named.includes(p)) : [...RELEASE_ORDER];
 
-  return { packages: [...packages], target, dryRun, skipPrompt };
+  return { packages: [...packages], target, issue, dryRun, skipPrompt };
 };
 
 const main = async (): Promise<void> => {
-  const { packages, target, dryRun, skipPrompt } = parseOptions();
+  const { packages, target, issue, dryRun, skipPrompt } = parseOptions();
 
   console.log('\n  Preflight');
   assertPublisherIsBun();
@@ -375,8 +415,16 @@ const main = async (): Promise<void> => {
     }
   }
 
+  // The packages this run published: the next one's registry gate trusts their workspace version
+  // while npm is still catching up (the workflow's `chain_released`).
+  const chainReleased: string[] = [];
+
   for (const name of packages) {
-    await releasePackage({ name, target, dryRun });
+    await releasePackage({ name, target, issue, chainReleased, dryRun });
+
+    if (!dryRun) {
+      chainReleased.push(readManifest(resolvePackagePath(name)).name as string);
+    }
   }
 
   console.log(`\n  ✓ ${dryRun ? 'Dry run complete' : 'Release complete'}\n`);

@@ -14,7 +14,7 @@ tags: [process, release, ci]
 - [Release order](#release-order)
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
-- [Build, lint, bump, tag, publish](#build-lint-bump-tag-publish)
+- [Gates, bump, publish, record](#gates-bump-publish-record)
 - [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
 - [Changelog entry required](#changelog-entry-required)
@@ -31,6 +31,8 @@ it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh wo
   `prerelease` (default `patch`).
 - `version` (optional): an explicit version, `x.y.z` or `x.y.z-pre`. When set it replaces `build_mode`
   (see [Version line](#version-line)).
+- `issue` (optional): the issue number the release commit serves; the commit subject is prefixed `[#N]`.
+- `chain_released` (optional): comma-separated npm names this chain published earlier; the registry gate trusts their workspace version (`scripts/release.ts` fills it).
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
@@ -102,39 +104,61 @@ bun run --filter "@venizia/*" force-update highest
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
 
-## Build, lint, bump, tag, publish
+## Gates, bump, publish, record
 
-After install, the job uses the Makefile dependency chain (see
-[Build system](/process/build-system.md) and [Makefile targets](/reference/makefile-targets.md)):
+The workflow follows IGNIS's release workflow, step for step: gates first, then the bump, then the
+publish, and only then any git write. The gates are in `scripts/release-gates.ts` (tested in
+`scripts/__tests__/release-gates.test.ts`); the workflow calls its command line and
+`release-local.ts` imports the same functions, so the two cannot drift.
 
-1. `make $PACKAGE` - build.
-2. `make lint-$PACKAGE` - lint.
-3. Validate that `dist/index.js` and `dist/index.d.ts` exist for the package.
+Before the bump, after the install (see [Build system](/process/build-system.md) and
+[Makefile targets](/reference/makefile-targets.md)):
+
+1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball.
+2. `make $PACKAGE` and `make lint-$PACKAGE` - build and lint.
+3. `make purity-test` and `make purity-$PACKAGE` - the browser-purity probe's own tests, then the probe.
 4. `make clean-install-$PACKAGE` - pack the package, install it into empty sandboxes (hoisted and
    isolated) with its siblings from the registry, and import every entry with Bun, Node ESM and a
    browser build. A consumer-side packaging bug fails here, before anything is published.
-5. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package
-   folder - version bump without touching other workspace manifests.
-6. Commit `package.json` AND `bun.lock` on `develop` with message `chore(<package>): release
-   v<version> [<target>]`, push. The lockfile is re-synced in a scratch copy of HEAD
-   (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
-   force-updated ranges of the build leaking into the commit.
-7. Create and push an annotated tag `<package>-v<version>`. The push is tried up to three times, 10 s
-   and 20 s apart: GitHub has rejected a tag push with a bare `(failed)` and no reason, and without the
-   retry that one error rolls back a release commit already on `develop`.
-8. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
-   `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or version. Scripts are skipped on publish because
-   the build already ran in an earlier step. Never `npm publish`: npm packs `catalog:` and
-   `workspace:` specifiers verbatim and the package cannot be installed; only bun resolves them
-   while packing.
+5. `release-gates.ts artifacts` - every file the package's `exports` map names exists (derived from the map, never a hand-written list).
+6. `make catalog-check`, and an assertion that the workflow still publishes with `bun publish`.
+7. `release-gates.ts pack`, `protocols` and `registry` - the tarball is packed once; its manifest has no
+   `catalog:` or `workspace:` left; and every runtime dependency can be installed (some published
+   version satisfies its range). A sibling this chain published seconds ago is named in the
+   `chain_released` input and checked against its workspace version, because npm can take minutes to list it.
+8. `make preset-smoke` for `ardor` (below).
 
-If any step fails, a rollback step deletes the tag if it was created, and hard-resets and
-force-pushes `develop` if the commit was pushed - but a package already published to npm is not
-un-published; the rollback step prints an `npm deprecate` reminder instead.
+Then the mutations, in this order:
+
+9. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package folder, then
+   `git pull` of `develop`, then (ardor) `bun scripts/vulcan-preset.ts`.
+10. **Publish first.** `bun publish --access public --tag $NPM_TAG --ignore-scripts`, where `NPM_TAG` is
+    `latest` for `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or
+    version (`scripts/release-version.ts tag`). `IS_PUBLISHED` is set before the call, because a publish
+    that succeeds and loses its response still leaves npm holding the version. Never `npm publish`: npm
+    packs `catalog:` and `workspace:` specifiers verbatim and the package cannot be installed.
+11. `npm dist-tag add <package>@<version> highest` (non-fatal), then **the `next` tag is kept at or above
+    `latest`** for every `@venizia/ardor*` package, not only the one released (`release-gates.ts heal-next --published <name>@<version> --tag <tag>`;
+    a missing or semver-lower `next` is moved to `latest`; non-fatal and loud). The package just published is passed
+    in and counts as the current value of its tag: npm can serve the old tags for minutes after a publish, and the
+    first live release (ardor 0.3.1) moved `next` to the stale `latest` it read back. The other packages are read from the registry. Phat's rule: `bun add pkg@next`
+    never installs something older than `bun add pkg`.
+12. Commit `package.json` AND `bun.lock` on `develop` with `chore(<package>): release v<version> [<target>]`
+    (prefixed `[#N]` when the `issue` input is set). The lockfile is re-synced in a scratch copy of HEAD
+    (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
+    force-updated ranges of the build leaking into the commit. Push; if `develop` moved, rebase and push once more.
+13. Create and push an annotated tag `<package>-v<version>`, tried three times, 10 s and 20 s apart.
+
+If a step after the publish fails, nothing is repaired: two report steps say what is left (develop still
+records the old version, or only the tag is missing) and how to finish it by hand. The workflow never
+force-pushes `develop`; a failure before the publish touched neither the registry nor git.
+Only one release runs at a time (`concurrency: npm-release`). A dispatch with the `heal_only` input runs just the
+heal (a second job, `Heal next tags`): it publishes nothing, ignores the other inputs (pick any package), and is how
+a stale `next` is fixed by hand.
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/vulcan-preset` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`), so it needs a VULCAN that has `init --preset`. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/vulcan-preset` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 

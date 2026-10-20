@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 
 ## PATCH in upper case, log levels, getManyReference without pagination, no NaN count
 
-<Badge type="danger" text="Bug Fix" />
+<Badge type="info" text="Bug Fix" />
 
 **In one line.** Four defects found in the IGNIS alignment audit (issue #27) are fixed. None of them changes a public signature.
 

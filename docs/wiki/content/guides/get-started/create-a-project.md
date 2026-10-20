@@ -36,7 +36,7 @@ demo/
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
-    package.json  tsconfig.json  index.html  vite.config.ts  .env.example  README.md
+    package.json  tsconfig.json  index.html  vite.config.mts  .env.example  README.md
     .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}
     src/main.tsx  src/application.ts
     src/configurations/admin.configuration.ts
@@ -49,7 +49,7 @@ The application is small:
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
 - `src/pages/*` are the list, create and edit pages of `products`.
-- `vite.config.ts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
+- `vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
 
 ### Expected API
 

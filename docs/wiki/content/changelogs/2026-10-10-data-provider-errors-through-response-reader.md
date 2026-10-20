@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-kernel']
 
 ## The data provider throws an ApplicationError, and reads Content-Range like IGNIS
 
-<Badge type="warning" text="Behavior Change" />
+<Badge type="warning" text="Behavior Change" /> <Badge type="warning" text="Breaking Change" />
 
 **In one line.** On a non-2xx response `DefaultRestDataProvider`, `CountRestDataProvider` and `send` now reject with an `ApplicationError` built from the server's error envelope, where they used to rethrow the parsed body; the list total comes from the same IGNIS reader.
 
@@ -18,7 +18,7 @@ packages: ['@venizia/ardor-kernel']
 - **What the fields hold.**
   - `statusCode` is the HTTP status, always set.
   - `message` and `normalized.text` are the server's `normalized.text`, else its `message`, else `HTTP <status>`. Unlike `HttpDataSource`, `message` is the server's text and not a log line, because react-admin shows `error.message`.
-  - `normalized.code` is the server's code, lower-cased, or `core.system_error` when it sent none. `normalized.args` is the server's `args` or `{}`.
+  - `normalized.code` is the server's code, or `core.system_error` when it sent none. `normalized.args` is the server's `args` or `{}`.
   - `extra` is the server's `extra` plus `requestId`, and `undefined` when both are empty. A relaying server's earlier `extra.requestId` moves to `extra.upstreamRequestIds`, nearest first.
   - `cause` is the server's `details.cause`, such as a `422`'s per-field issues.
 - **What is dropped.** Any other key of the body (`type`, `path`, `url`, the rest of `details`, ad hoc fields such as `field`), and the top-level `requestId`, which is in `extra.requestId` now.
@@ -83,7 +83,7 @@ try {
 }
 ```
 
-## Migration guide
+### Migration guide
 
 1. Replace `error.requestId` with `error.extra?.requestId`.
 2. Replace a read of `error.details.cause` with `error.cause`. The other `details` keys, `type`, `path` and `url` are not on the error.

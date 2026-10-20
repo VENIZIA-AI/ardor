@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-kernel']
 
 ## TPaths stops at a Date, a Set, a function and an any field
 
-<Badge type="tip" text="Bug Fix" />
+<Badge type="info" text="Bug Fix" />
 
 **In one line.** `TPaths` treated every object type as a tree, so the members of a value type passed as paths; it now stops at those values (issue #92).
 
