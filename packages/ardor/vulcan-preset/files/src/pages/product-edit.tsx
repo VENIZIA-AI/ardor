@@ -1,6 +1,6 @@
 import { EditBase } from 'ra-core';
 
-import { ProductForm } from '@/pages/product-form';
+import { ProductForm } from '#src/pages/product-form';
 
 export const ProductEdit = () => (
   <EditBase resource="products" redirect="list">

@@ -4,10 +4,10 @@ import { configureStore } from '@reduxjs/toolkit';
 import { ArdorApplication } from '@venizia/ardor';
 import { createRoot } from 'react-dom/client';
 
-import { Application } from '@/application';
-import { ProductCreate } from '@/pages/product-create';
-import { ProductEdit } from '@/pages/product-edit';
-import { ProductList } from '@/pages/product-list';
+import { Application } from '#src/application';
+import { ProductCreate } from '#src/pages/product-create';
+import { ProductEdit } from '#src/pages/product-edit';
+import { ProductList } from '#src/pages/product-list';
 
 const application = new Application();
 const store = configureStore({
