@@ -23,11 +23,13 @@ tags: [process, release, ci]
 
 The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workflow_dispatch` only -
 it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
-`scripts/release.ts` (below), with two required inputs:
+`scripts/release.ts` (below), with these inputs:
 
 - `package`: one of `kernel`, `react`, `admin`, or `ardor`.
 - `build_mode`: the semver bump - `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, or
   `prerelease` (default `patch`).
+- `version` (optional): an explicit version, `x.y.z` or `x.y.z-pre`. When set it replaces `build_mode`
+  (see [Version line](#version-line)).
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
@@ -71,7 +73,7 @@ force-update step below cannot invent a published version that does not exist ye
 
 ARDOR and IGNIS share a minor version (Phat's decision, 2026-10-20): ARDOR `X.Y.*` peers IGNIS `^X.Y.0`, so a new IGNIS minor means a new ARDOR minor of the same number, even when that skips one (ARDOR goes 0.1.5 to 0.3.0 with IGNIS 0.3.0, never through 0.2). Patches move independently on each side. `@venizia/vulcan` and `@venizia/dev-configs` version on their own lines. The four ARDOR packages release together on one version, so a minor release is `kernel`, `react`, `admin` and `ardor` at the same number.
 
-`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number needs an explicit version input, which the workflow, `scripts/release.ts` and `scripts/release-local.ts` do not take yet.
+`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release.ts --version 0.3.0` or `bun scripts/release-local.ts --version 0.3.0`. `--version` overrides `--mode`. A sweep with `--version` releases every package still below that version, changed or not, in dependency order; a package already at it is skipped, so a chain that stopped half way runs again. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release-version.ts`, which the workflow calls (`scripts/release-version.ts target` and `tag`) and the two scripts import; `scripts/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. The workflow resolves both in a `Resolve release target` step before the install, so a malformed or too-low version fails before anything is built.
 
 ## Force-update the workspace before install
 
@@ -110,17 +112,17 @@ After install, the job uses the Makefile dependency chain (see
 4. `make clean-install-$PACKAGE` - pack the package, install it into empty sandboxes (hoisted and
    isolated) with its siblings from the registry, and import every entry with Bun, Node ESM and a
    browser build. A consumer-side packaging bug fails here, before anything is published.
-5. `npm version $BUILD_MODE --no-git-tag-version --workspaces-update=false` inside the package
+5. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package
    folder - version bump without touching other workspace manifests.
 6. Commit `package.json` AND `bun.lock` on `develop` with message `chore(<package>): release
-   v<version> [<build_mode>]`, push. The lockfile is re-synced in a scratch copy of HEAD
+   v<version> [<target>]`, push. The lockfile is re-synced in a scratch copy of HEAD
    (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
    force-updated ranges of the build leaking into the commit.
 7. Create and push an annotated tag `<package>-v<version>`. The push is tried up to three times, 10 s
    and 20 s apart: GitHub has rejected a tag push with a bare `(failed)` and no reason, and without the
    retry that one error rolls back a release commit already on `develop`.
 8. `bun publish --access public --tag <npm_tag> --ignore-scripts` where `npm_tag` is `latest` for
-   `patch|minor|major` and `next` for any pre-release mode. Scripts are skipped on publish because
+   `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or version. Scripts are skipped on publish because
    the build already ran in an earlier step. Never `npm publish`: npm packs `catalog:` and
    `workspace:` specifiers verbatim and the package cannot be installed; only bun resolves them
    while packing.

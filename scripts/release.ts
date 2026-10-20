@@ -10,6 +10,7 @@
  *   bun scripts/release.ts kernel react         # just these, still ordered and still sequential
  *   bun scripts/release.ts --dry-run            # print the plan, dispatch nothing
  *   bun scripts/release.ts --mode patch         # default is prerelease
+ *   bun scripts/release.ts --version 0.3.0      # an explicit version, for every package below it; overrides --mode
  *   bun scripts/release.ts --yes                # skip the confirmation prompt
  *
  * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
@@ -20,6 +21,13 @@
  */
 
 import { countChangedSinceRelease, withDependents } from './release-scope';
+import {
+  assertAbove,
+  isReleaseVersion,
+  packagesForVersion,
+  readReleaseArgs,
+  type TReleaseTarget,
+} from './release-version';
 import { waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
@@ -30,15 +38,6 @@ const BRANCH = 'develop';
  * release's own registry-existence gate fails on a version that is not out yet.
  */
 const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
-
-type TReleaseMode =
-  | 'patch'
-  | 'minor'
-  | 'major'
-  | 'prepatch'
-  | 'preminor'
-  | 'premajor'
-  | 'prerelease';
 
 interface IPackageState {
   name: string;
@@ -256,11 +255,11 @@ const assertPublished = async (opts: { state: IPackageState }): Promise<string> 
 
 const releasePackage = async (opts: {
   state: IPackageState;
-  mode: TReleaseMode;
+  target: TReleaseTarget;
 }): Promise<void> => {
-  const { state, mode } = opts;
+  const { state, target } = opts;
 
-  console.log(`\n▶ ${state.name} (${state.localVersion} -> ${mode})`);
+  console.log(`\n▶ ${state.name} (${state.localVersion} -> ${target})`);
 
   const previousRunId = await resolveLatestRunId();
 
@@ -278,7 +277,8 @@ const releasePackage = async (opts: {
       '-f',
       `package=${state.name}`,
       '-f',
-      `build_mode=${mode}`,
+      // An explicit version rides its own input; the workflow lets it replace the bump type.
+      isReleaseVersion({ value: target }) ? `version=${target}` : `build_mode=${target}`,
     ],
   });
 
@@ -308,10 +308,7 @@ const main = async (): Promise<void> => {
   const args = Bun.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
-  const modeIndex = args.indexOf('--mode');
-  const mode = (modeIndex >= 0 ? args[modeIndex + 1] : 'prerelease') as TReleaseMode;
-
-  const requested = args.filter((arg) => !arg.startsWith('--') && arg !== mode);
+  const { target, positional: requested } = readReleaseArgs({ argv: args });
   const candidates =
     requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
 
@@ -328,7 +325,17 @@ const main = async (): Promise<void> => {
   // An explicit request is honoured as given; a full sweep releases what changed AND every package
   // depending on one of those. A prerelease falls outside a dependent's caret range (`^0.1.1` does
   // not admit `0.1.2-0`), so an unreleased dependent drags in a second copy of the old dependency.
-  const plan = requested.length > 0 ? states : withDependents({ states });
+  // An explicit version is shared by every package, so a sweep takes each package still below it,
+  // changed or not; a named package must be below it too.
+  let plan = requested.length > 0 ? states : withDependents({ states });
+
+  if (isReleaseVersion({ value: target })) {
+    plan = requested.length > 0 ? states : packagesForVersion({ states, version: target });
+
+    for (const state of plan) {
+      assertAbove({ version: target, current: state.localVersion });
+    }
+  }
 
   if (plan.length === 0) {
     console.log(
@@ -337,7 +344,7 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  console.log(`Release plan (${mode}), in dependency order:\n`);
+  console.log(`Release plan (${target}), in dependency order:\n`);
   for (const state of plan) {
     const changed =
       state.changedFiles === Number.POSITIVE_INFINITY
@@ -359,7 +366,7 @@ const main = async (): Promise<void> => {
   }
 
   for (const state of plan) {
-    await releasePackage({ state, mode });
+    await releasePackage({ state, target });
   }
 
   console.log(`\n✓ Released ${plan.length} package(s).`);
