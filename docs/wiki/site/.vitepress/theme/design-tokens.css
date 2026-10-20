@@ -17,14 +17,14 @@
 
 :root {
   /* ---- Brand ramp (theme-agnostic primitives) ------------------------------ */
-  /* Palette: devglow Tide ("still water") - sea-glass, slate and fog over deep water. */
-  --ar-brand:     #2B6B6A;   /* primary brand - deep sea-glass, Tide TEAL darkened. fills + large accents */
-  --ar-brand-lt:  #6FB0AE;   /* 8.07:1 on dark - link / accent text (dark theme), Tide TEAL */
-  --ar-brand-deep:#1F4E4D;   /* 9.31:1 white-on - extra-safe button bg */
-  --ar-teal:      #7FB0A6;   /* 8.23:1 on dark - eyebrow, code decorators, Tide GREEN (sea-glass) */
-  --ar-aqua:      #88A8C2;   /* 8.00:1 on dark - accent, code keywords, gradient end, Tide SKY */
-  --ar-gradient:  linear-gradient(115deg, #2B6B6A 0%, #7FB0A6 55%, #88A8C2 100%);
-  --ar-glow:      radial-gradient(720px 440px at 18% -2%, rgba(43,107,106,.32), transparent 60%),
+  /* Palette: devglow Tide without teal - blues over deep water, the colours of the icon (#0091EA, #7DF3FF). */
+  --ar-brand:     #0277BD;   /* primary brand - button fill + large accents. 4.80:1 white-on, 4.80:1 on white */
+  --ar-brand-lt:  #38BDF8;   /* 9.31:1 on dark - link / accent text (dark theme) */
+  --ar-brand-deep:#01579B;   /* 7.40:1 white-on - hover / extra-safe button bg */
+  --ar-aqua:      #7DF3FF;   /* 15.32:1 on dark - code keywords, gradient end (dark surfaces only) */
+  --ar-accent:    var(--ar-brand); /* accent text: eyebrow, labels, decorators. Theme-dependent, see .dark */
+  --ar-gradient:  linear-gradient(115deg, #0091EA 0%, #38BDF8 55%, #7DF3FF 100%);
+  --ar-glow:      radial-gradient(720px 440px at 18% -2%, rgba(2,119,189,.32), transparent 60%),
                   radial-gradient(680px 420px at 92% 6%, rgba(208,188,136,.12), transparent 62%);
 
   /* ---- Typography : scale = 16 × 1.25^n ------------------------------------ */
@@ -70,19 +70,19 @@
 
   /* ===========================================================================
    * SEMANTIC - LIGHT THEME (VitePress default :root)
-   * On #ffffff: text 18.89:1 · text-2 11.74:1 · text-3 7.16:1 · brand(link) 6.15:1 (AA).
-   * Light-theme accent text MUST use --ar-brand (teal/aqua are too light → large only).
+   * On #ffffff: text 18.89:1 · text-2 11.74:1 · text-3 7.16:1 · brand(link) 4.80:1 (AA).
+   * Light-theme accent text MUST use --ar-brand (brand-lt/aqua are too light → large only).
    * ========================================================================= */
   --ar-bg:      #ffffff;
-  --ar-surface: #f3f6f7;          /* text-3 6.59:1 · link 5.66:1 on it - AA */
+  --ar-surface: #f3f6f7;          /* text-3 6.59:1 · link 4.42:1 on it - below AA 4.5 */
   --ar-border:  rgba(11, 18, 21, .10);
   --ar-text:    #0b1215;
   --ar-text-2:  #2c3a41;
   --ar-text-3:  #4a5a63;
   --ar-faint:   #8a979e;          /* 3.00:1 - large/decorative only */
-  --ar-link:    var(--ar-brand);  /* 6.15:1 on white - AA  */
+  --ar-link:    var(--ar-brand);  /* 4.80:1 on white - AA  */
   --ar-primary: var(--ar-brand);
-  --ar-on-primary: #ffffff;       /* 6.15:1 on brand - AA  */
+  --ar-on-primary: #ffffff;       /* 4.80:1 on brand - AA  */
 
   /* ---- VitePress mapping --------------------------------------------------- */
   --vp-c-brand-1: var(--ar-link);
@@ -104,18 +104,19 @@
 
 /* ===========================================================================
  * SEMANTIC - DARK THEME
- * On #07090b: text 14.58:1 · text-2 10.71:1 · text-3 7.06:1 · brand-lt(link) 8.07:1.
- * Dark-theme accent text MUST use --ar-brand-lt (brand #2b6b6a is 3.24:1 → fill/large only).
+ * On #07090b: text 14.58:1 · text-2 10.71:1 · text-3 7.06:1 · brand-lt(link) 9.31:1.
+ * Dark-theme accent text MUST use --ar-brand-lt (brand #0277bd is 4.16:1 → fill/large only).
  * ========================================================================= */
 .dark {
   --ar-bg:      #07090b;
-  --ar-surface: #121820;            /* text-3 6.32:1 · link 7.22:1 on it - AA */
+  --ar-surface: #121820;            /* text-3 6.32:1 · link 8.33:1 on it - AA */
   --ar-border:  rgba(213, 222, 224, .09);
   --ar-text:    #d5dee0;
   --ar-text-2:  #b4c0c4;
   --ar-text-3:  #8e9ca3;
   --ar-faint:   #66727c;            /* 4.05:1 - large/decorative only */
-  --ar-link:    var(--ar-brand-lt); /* 8.07:1 on dark - AAA           */
+  --ar-link:    var(--ar-brand-lt); /* 9.31:1 on dark - AAA           */
+  --ar-accent:  var(--ar-brand-lt);
   --ar-primary: var(--ar-brand);
-  --ar-on-primary: #ffffff;         /* 6.15:1 on brand - AA           */
+  --ar-on-primary: #ffffff;         /* 4.80:1 on brand - AA           */
 }
