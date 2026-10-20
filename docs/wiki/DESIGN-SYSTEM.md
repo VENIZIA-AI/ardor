@@ -46,12 +46,12 @@ background `#07090b` (Tide BACKGROUND).
 | `text-2` | `#b4c0c4` | 10.71:1 | AAA | Secondary body, lede |
 | `text-3` | `#8e9ca3` | 7.06:1 | AAA | Smallest readable muted |
 | `faint` | `#66727c` | 4.05:1 | ⚠️ large-only | ≥24px / decorative **only** (Tide DARK_04) |
-| **brand** | `#0277bd` | 4.16:1 | ⚠️ fill/large | Button fills, large accents; light-theme links |
-| brand-deep | `#01579b` | - | - | Button hover (7.40:1 with white text) |
+| **brand** | `#0277bd` | 4.16:1 | ⚠️ fill/large | Button fills, large accents |
+| brand-deep | `#01579b` | - | - | **Links / accent text (light)** (7.40:1 on white), button hover |
 | brand-lt | `#38bdf8` | 9.31:1 | AAA | **Links / accent text (dark)**, code decorators |
 | aqua | `#7df3ff` | 15.32:1 | AAA | Code keywords, gradient end (dark surfaces only) |
 
-`--ar-accent` is the accent text colour (eyebrow, labels, tip title): `brand` in the light theme,
+`--ar-accent` is the accent text colour (eyebrow, labels, tip title): `brand-deep` in the light theme,
 `brand-lt` in the dark one. There is no teal token. The display gradient runs
 `#0091EA -> #38bdf8 -> #7df3ff`. The glow adds a faint Tide GOLD `#d0bc88` at the top right.
 
@@ -60,8 +60,9 @@ background `#07090b` (Tide BACKGROUND).
 1. **Primary button** = `--ar-primary` (`#0277bd`) with **white** text → 4.80:1 AA.
    Dark text on brand fails.
 2. **Accent text** is theme-dependent: dark theme → `brand-lt #38bdf8` (9.31:1);
-   light theme → `brand #0277bd` (4.80:1 on white, 4.42:1 on the `#f3f6f7` surface; `brand-lt` is
-   only 2.14:1 on white - fails, and `aqua` 1.30:1).
+   light theme → `brand-deep #01579b` (7.40:1 on white, 6.81:1 on the `#f3f6f7` surface; `brand`
+   is 4.80:1 on white but 4.42:1 on the surface - fails AA there; `brand-lt` is only 2.14:1 on
+   white and `aqua` 1.30:1).
 3. **`#0277bd` is never small body text on dark** (4.16:1). Fills & large accents only.
 4. **`faint` is never essential body text** - large or decorative only.
 5. **Prose width caps at `--ar-measure` (70ch)**; lede at 62ch.

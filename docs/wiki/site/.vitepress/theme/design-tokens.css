@@ -20,9 +20,9 @@
   /* Palette: devglow Tide without teal - blues over deep water, the colours of the icon (#0091EA, #7DF3FF). */
   --ar-brand:     #0277BD;   /* primary brand - button fill + large accents. 4.80:1 white-on, 4.80:1 on white */
   --ar-brand-lt:  #38BDF8;   /* 9.31:1 on dark - link / accent text (dark theme) */
-  --ar-brand-deep:#01579B;   /* 7.40:1 white-on - hover / extra-safe button bg */
+  --ar-brand-deep:#01579B;   /* 7.40:1 on white, 6.81:1 on the light surface - light-theme link and accent text; button hover */
   --ar-aqua:      #7DF3FF;   /* 15.32:1 on dark - code keywords, gradient end (dark surfaces only) */
-  --ar-accent:    var(--ar-brand); /* accent text: eyebrow, labels, decorators. Theme-dependent, see .dark */
+  --ar-accent:    var(--ar-brand-deep); /* accent text: eyebrow, labels, decorators. Theme-dependent, see .dark */
   --ar-gradient:  linear-gradient(115deg, #0091EA 0%, #38BDF8 55%, #7DF3FF 100%);
   --ar-glow:      radial-gradient(720px 440px at 18% -2%, rgba(2,119,189,.32), transparent 60%),
                   radial-gradient(680px 420px at 92% 6%, rgba(208,188,136,.12), transparent 62%);
@@ -70,23 +70,24 @@
 
   /* ===========================================================================
    * SEMANTIC - LIGHT THEME (VitePress default :root)
-   * On #ffffff: text 18.89:1 · text-2 11.74:1 · text-3 7.16:1 · brand(link) 4.80:1 (AA).
-   * Light-theme accent text MUST use --ar-brand (brand-lt/aqua are too light → large only).
+   * On #ffffff: text 18.89:1 · text-2 11.74:1 · text-3 7.16:1 · brand-deep(link) 7.40:1 (AAA).
+   * Light-theme link and accent text MUST use --ar-brand-deep: --ar-brand is 4.80:1 on white but 4.42:1 on
+   * the surface (below AA), and brand-lt/aqua are too light → large only. --ar-brand is for fills.
    * ========================================================================= */
   --ar-bg:      #ffffff;
-  --ar-surface: #f3f6f7;          /* text-3 6.59:1 · link 4.42:1 on it - below AA 4.5 */
+  --ar-surface: #f3f6f7;          /* text-3 6.59:1 · link 6.81:1 on it - AA */
   --ar-border:  rgba(11, 18, 21, .10);
   --ar-text:    #0b1215;
   --ar-text-2:  #2c3a41;
   --ar-text-3:  #4a5a63;
   --ar-faint:   #8a979e;          /* 3.00:1 - large/decorative only */
-  --ar-link:    var(--ar-brand);  /* 4.80:1 on white - AA  */
+  --ar-link:    var(--ar-brand-deep); /* 7.40:1 on white - AAA */
   --ar-primary: var(--ar-brand);
   --ar-on-primary: #ffffff;       /* 4.80:1 on brand - AA  */
 
   /* ---- VitePress mapping --------------------------------------------------- */
   --vp-c-brand-1: var(--ar-link);
-  --vp-c-brand-2: var(--ar-brand-deep);
+  --vp-c-brand-2: var(--ar-brand);   /* link hover: lighter than the link (dark theme: see .dark) */
   --vp-c-brand-3: var(--ar-primary);
   --vp-c-bg:      var(--ar-bg);
   --vp-c-bg-alt:  var(--ar-surface);
@@ -117,6 +118,7 @@
   --ar-faint:   #66727c;            /* 4.05:1 - large/decorative only */
   --ar-link:    var(--ar-brand-lt); /* 9.31:1 on dark - AAA           */
   --ar-accent:  var(--ar-brand-lt);
+  --vp-c-brand-2: var(--ar-brand-deep);
   --ar-primary: var(--ar-brand);
   --ar-on-primary: #ffffff;         /* 4.80:1 on brand - AA           */
 }
