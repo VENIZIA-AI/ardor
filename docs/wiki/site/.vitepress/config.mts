@@ -123,6 +123,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         items: [
           { text: 'ARDOR 0.3.0 Is Stable', link: '/changelogs/2026-10-20-ardor-0-3-0-stable' },
           {
+            text: "The preset's typecheck runs bun check",
+            link: '/changelogs/2026-10-20-preset-bun-check',
+          },
+          {
             text: 'Silent first run for the ARDOR preset',
             link: '/changelogs/2026-10-20-preset-first-run',
           },

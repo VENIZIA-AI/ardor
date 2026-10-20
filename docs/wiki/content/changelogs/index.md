@@ -13,6 +13,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | Date | Title | Type |
 |------|-------|------|
 | 2026-10-20 | [ARDOR 0.3.0 Is Stable](./2026-10-20-ardor-0-3-0-stable) | Enhancement |
+| 2026-10-20 | [The preset's typecheck runs bun check](./2026-10-20-preset-bun-check) | Enhancement |
 | 2026-10-20 | [Silent first run for the ARDOR preset](./2026-10-20-preset-first-run) | Bug Fix |
 | 2026-10-20 | [ARDOR ships a VULCAN preset](./2026-10-20-vulcan-preset) | New Feature |
 | 2026-10-19 | [Augment @venizia/ardor, not the declaring packages](./2026-10-19-augment-the-umbrella) | Bug Fix |

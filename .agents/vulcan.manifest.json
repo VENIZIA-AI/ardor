@@ -1,4 +1,5 @@
 {
+  "$generated": "by vulcan sync from .configs/vulcan.config.* - do not edit",
   "schemaVersion": 1,
   "name": "ardor",
   "packages": [
