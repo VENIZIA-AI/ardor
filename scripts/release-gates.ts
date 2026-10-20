@@ -9,10 +9,12 @@
  *   bun scripts/release-gates.ts protocols <manifest.json>      no catalog: or workspace: survives packing
  *   bun scripts/release-gates.ts registry <manifest.json> [--chain-released a,b]
  *                                                               every runtime dependency can be installed
- *   bun scripts/release-gates.ts heal-next [--dry-run]          `next` is never below `latest`, for every ARDOR package
+ *   bun scripts/release-gates.ts heal-next [--published <name>@<version> --tag <tag>] [--dry-run]          `next` is never below `latest`, for every ARDOR package
  */
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
+
+import { isReleaseVersion } from './release-version';
 
 const SIBLING_PREFIX = '@venizia/ardor';
 const PROTOCOL = /^(catalog|workspace):/;
@@ -173,6 +175,71 @@ export interface IDistTags {
   latest?: string;
   next?: string;
 }
+
+export interface IPublished {
+  name: string;
+  version: string;
+  tag: 'latest' | 'next';
+}
+
+/**
+ * The package a run just published is known better than the registry: npm can serve the old tags for
+ * minutes after a publish, and a heal that read them moved `next` to a stale `latest`. The published
+ * version is the current value of its tag for that package; every other package keeps what the
+ * registry said.
+ */
+export const withPublished = (opts: {
+  packages: IDistTags[];
+  published?: IPublished;
+}): IDistTags[] => {
+  const { published } = opts;
+
+  if (published === undefined) {
+    return opts.packages;
+  }
+
+  const known = opts.packages.some((entry) => entry.name === published.name);
+  const updated = opts.packages.map((entry) =>
+    entry.name === published.name ? { ...entry, [published.tag]: published.version } : entry,
+  );
+
+  return known
+    ? updated
+    : [...updated, { name: published.name, [published.tag]: published.version }];
+};
+
+const readFlag = (opts: { argv: string[]; flag: string }): string | undefined => {
+  const index = opts.argv.indexOf(opts.flag);
+
+  return index === -1 ? undefined : opts.argv[index + 1];
+};
+
+/** `--published @venizia/ardor@0.3.1 --tag latest`: what the run published, or undefined when nothing. */
+export const parsePublished = (opts: { argv: string[] }): IPublished | undefined => {
+  const value = readFlag({ argv: opts.argv, flag: '--published' });
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const at = value.lastIndexOf('@');
+  const name = at > 0 ? value.slice(0, at) : '';
+  const version = at > 0 ? value.slice(at + 1) : '';
+
+  if (name === '' || !isReleaseVersion({ value: version })) {
+    throw new Error(
+      `[parsePublished] --published '${value}' is not <name>@<version> with a semver version`,
+    );
+  }
+
+  const tag = readFlag({ argv: opts.argv, flag: '--tag' });
+
+  if (tag !== 'latest' && tag !== 'next') {
+    throw new Error(`[parsePublished] --published needs --tag latest or next, got '${tag ?? ''}'`);
+  }
+
+  return { name, version, tag };
+};
 
 /**
  * The rule: the `next` dist-tag is never below `latest`. `next` may hold a prerelease of a later
@@ -394,11 +461,14 @@ const main = async (): Promise<void> => {
   }
 
   if (command === 'heal-next') {
-    const dryRun = [first, second, ...rest].includes('--dry-run');
+    const args = Bun.argv.slice(3);
+    const dryRun = args.includes('--dry-run');
+    const published = parsePublished({ argv: args });
     const names = [...readWorkspaceVersions({ root }).keys()]
       .filter((name) => name.startsWith(SIBLING_PREFIX))
       .sort();
-    const packages = await Promise.all(names.map((name) => fetchDistTags({ name })));
+    const registry = await Promise.all(names.map((name) => fetchDistTags({ name })));
+    const packages = withPublished({ packages: registry, published });
     const healed = nextTagsToHeal({ packages });
 
     for (const entry of packages) {

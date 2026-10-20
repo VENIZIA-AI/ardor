@@ -138,8 +138,10 @@ Then the mutations, in this order:
     that succeeds and loses its response still leaves npm holding the version. Never `npm publish`: npm
     packs `catalog:` and `workspace:` specifiers verbatim and the package cannot be installed.
 11. `npm dist-tag add <package>@<version> highest` (non-fatal), then **the `next` tag is kept at or above
-    `latest`** for every `@venizia/ardor*` package, not only the one released (`release-gates.ts heal-next`;
-    a missing or semver-lower `next` is moved to `latest`; non-fatal and loud). Phat's rule: `bun add pkg@next`
+    `latest`** for every `@venizia/ardor*` package, not only the one released (`release-gates.ts heal-next --published <name>@<version> --tag <tag>`;
+    a missing or semver-lower `next` is moved to `latest`; non-fatal and loud). The package just published is passed
+    in and counts as the current value of its tag: npm can serve the old tags for minutes after a publish, and the
+    first live release (ardor 0.3.1) moved `next` to the stale `latest` it read back. The other packages are read from the registry. Phat's rule: `bun add pkg@next`
     never installs something older than `bun add pkg`.
 12. Commit `package.json` AND `bun.lock` on `develop` with `chore(<package>): release v<version> [<target>]`
     (prefixed `[#N]` when the `issue` input is set). The lockfile is re-synced in a scratch copy of HEAD
@@ -150,7 +152,9 @@ Then the mutations, in this order:
 If a step after the publish fails, nothing is repaired: two report steps say what is left (develop still
 records the old version, or only the tag is missing) and how to finish it by hand. The workflow never
 force-pushes `develop`; a failure before the publish touched neither the registry nor git.
-Only one release runs at a time (`concurrency: npm-release`).
+Only one release runs at a time (`concurrency: npm-release`). A dispatch with the `heal_only` input runs just the
+heal (a second job, `Heal next tags`): it publishes nothing, ignores the other inputs (pick any package), and is how
+a stale `next` is fixed by hand.
 
 ## The VULCAN preset (ardor only)
 

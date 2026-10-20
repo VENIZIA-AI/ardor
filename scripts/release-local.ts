@@ -296,7 +296,14 @@ const releasePackage = async (opts: {
   await $`npm dist-tag add ${`${packageName}@${nextVersion}`} highest`.quiet().nothrow();
 
   // `next` is never below `latest`, for every ARDOR package. Non-fatal and loud.
-  console.log((await $`bun scripts/release-gates.ts heal-next`.nothrow().text()).trimEnd());
+  // The package just published is passed in: npm can serve the old tags for minutes after a publish.
+  console.log(
+    (
+      await $`bun scripts/release-gates.ts heal-next --published ${`${packageName}@${nextVersion}`} --tag ${npmTag}`
+        .nothrow()
+        .text()
+    ).trimEnd(),
+  );
 
   await $`git add ${join(path, 'package.json')}`;
   const subject = `chore(${name}): release v${nextVersion} [${target}]`;

@@ -1,5 +1,5 @@
 name: "NPM Release"
-run-name: "NPM Release | package: ${{ inputs.package }} | release: ${{ inputs.version || inputs.build_mode }}"
+run-name: "NPM Release | ${{ inputs.heal_only && 'heal the next tags' || format('package: {0} | release: {1}', inputs.package, inputs.version || inputs.build_mode) }}"
 
 on:
   workflow_dispatch:
@@ -36,6 +36,11 @@ on:
         description: "Issue number the release commit serves (prefixes it with [#N])"
         required: false
         default: ""
+      heal_only:
+        type: boolean
+        description: "Only move the next tag to latest for every ARDOR package: publishes nothing, ignores the other inputs (pick any package)"
+        required: false
+        default: false
       chain_released:
         type: string
         description: "Comma-separated @venizia/* names published earlier in this chain - the registry gate trusts their workspace version"
@@ -65,6 +70,7 @@ env:
 jobs:
   release:
     name: NPM Release
+    if: ${{ inputs.heal_only != true }}
     runs-on: ubuntu-26.04
 
     steps:
@@ -271,12 +277,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
+      # The package just published is passed in: npm can serve the old tags for minutes after a publish,
+      # and a heal that read them moved `next` to a stale `latest`.
+      #
       # The `next` tag is never below `latest`: a release that moves `latest` past it would leave
       # `bun add pkg@next` installing an older version than a plain `bun add pkg`. Every ARDOR package
       # is looked at, not only this one, so a package that was not released also heals. Non-fatal and loud.
       - name: Keep the next tag at or above latest
         continue-on-error: true
-        run: bun scripts/release-gates.ts heal-next
+        run: bun scripts/release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
@@ -350,3 +359,30 @@ jobs:
           echo "⚠️  $PACKAGE_NAME@$NEW_VERSION is published and develop is updated - only the git tag is missing"
           echo "    create it by hand:"
           echo "      git tag -a $TAG_NAME -m \"$PACKAGE_NAME v$NEW_VERSION\" && git push origin $TAG_NAME"
+
+  # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
+  # ARDOR package without publishing anything (the same step a release runs after its publish).
+  heal-next:
+    name: Heal next tags
+    if: ${{ inputs.heal_only == true }}
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Move next to latest where it is below
+        run: bun scripts/release-gates.ts heal-next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
