@@ -95,7 +95,7 @@ the next until that package is rebuilt too. See [Monorepo layout](/overview/mono
 
 **Surface snapshot** - a tracked record of a package's public exports, used to catch accidental
 additions or removals to what a package exposes. VULCAN's atlas generates it (`make surface-gen`,
-verified by `make surface-check`) from the built `.d.ts` of the packages `.configs/vulcan.config.ts`
+verified by `make surface-check`) from the built `.d.ts` of the packages `.configs/vulcan.config.mts`
 lists - the same tool IGNIS uses for its own packages. The snapshot is
 [Public surface](/reference/public-surface.md).
 

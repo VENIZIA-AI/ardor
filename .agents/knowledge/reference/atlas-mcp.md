@@ -32,11 +32,11 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
   fetching the unrelated unscoped `vulcan` package before `bun install` ran.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
-  nothing else of the project: it never imports `.configs/vulcan.config.ts`. `make vulcan-sync`
+  nothing else of the project: it never imports `.configs/vulcan.config.mts`. `make vulcan-sync`
   writes the manifest from that config, so a changed `packages` list, `knowledge` path or
   `atlas.sources` entry reaches atlas only after a sync, and the manifest is committed so another
   project's `atlas.sources` can read ARDOR.
-- **IGNIS is served beside ARDOR.** `atlas.sources` in `.configs/vulcan.config.ts` lists IGNIS
+- **IGNIS is served beside ARDOR.** `atlas.sources` in `.configs/vulcan.config.mts` lists IGNIS
   (`VENIZIA-AI/ignis` at `develop`), so one server answers over both projects and every hit names
   its `source`. atlas fetches a source with git into `$XDG_CACHE_HOME/vulcan/atlas/v1/` and asks the
   remote for the ref's commit and tags on each start. An unreachable source is reported
@@ -91,7 +91,7 @@ its scope, then directory, then alias, case-blind, and every answer carries the 
 Neither has a file in `reference/`. Both are derived from the repository when atlas needs them, and
 `make atlas-symbols` and `make atlas-releases` print exactly what atlas reads.
 
-**Symbols** come from the `.d.ts` of the live `packages` in `.configs/vulcan.config.ts`: every
+**Symbols** come from the `.d.ts` of the live `packages` in `.configs/vulcan.config.mts`: every
 exported symbol of every `.d.ts` entry in their `exports` maps, with the kind the
 [public surface](/reference/public-surface.md) records, a one-line signature capped at 300
 characters, and the `src/` file and line recovered through the `.d.ts.map` declaration maps. A symbol
