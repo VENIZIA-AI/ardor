@@ -225,17 +225,32 @@ const assertDevServer = async (opts: { cwd: string }) => {
 
   const deadline = Date.now() + 60_000;
 
-  while (!output.includes(`:${port}`) && Date.now() < deadline) {
-    await Bun.sleep(200);
-  }
+  // Vite listens on `localhost`, which a CI runner may resolve to ::1 only; ask every address.
+  const hosts = ['localhost', '127.0.0.1', '[::1]'];
+  const answer = async (path: string): Promise<Response | undefined> => {
+    for (const host of hosts) {
+      try {
+        return await fetch(`http://${host}:${port}${path}`);
+      } catch {
+        // not listening on this address (yet)
+      }
+    }
+
+    return undefined;
+  };
 
   try {
     for (const path of ['/', '/src/main.tsx']) {
-      const response = await fetch(`http://127.0.0.1:${port}${path}`);
+      let response = await answer(path);
+
+      while (response === undefined && Date.now() < deadline) {
+        await Bun.sleep(250);
+        response = await answer(path);
+      }
 
       assert({
-        condition: response.ok,
-        message: `the dev server answers ${path} (${response.status})`,
+        condition: response?.ok === true,
+        message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
       });
     }
 
