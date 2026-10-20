@@ -140,9 +140,9 @@ jobs:
         run: make wiki-anchors-check
 
       # The examples are not driven by make: they carry their own package.json scripts.
-      - name: Examples build
+      - name: Examples compile
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: bun scripts/examples.ts build
+        run: bun scripts/examples.ts compile
 
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

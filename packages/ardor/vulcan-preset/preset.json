@@ -23,6 +23,7 @@
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {
+    "@types/bun": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
@@ -43,13 +44,15 @@
     "@venizia/ignis-kernel": "peer:"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "server:dev": "vite",
+    "compile": "sh scripts/compile.sh",
     "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "sh scripts/lint.sh",
-    "lint:fix": "sh scripts/lint.sh --fix"
+    "lint:fix": "sh scripts/lint.sh --fix",
+    "test": "bun test",
+    "clean": "sh scripts/clean.sh"
   },
-  "checks": ["typecheck", "lint", "build"],
+  "checks": ["typecheck", "lint", "test", "compile"],
   "files": "./files",
   "atlas": [
     { "name": "ardor", "repo": "VENIZIA-AI/ardor", "ref": "develop" },

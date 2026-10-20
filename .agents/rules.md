@@ -113,7 +113,7 @@ Chặn: <what blocks, or "không có">
 
 | ID | Rule |
 |---|---|
-| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `make <pkg>` (or `make -C packages/<pkg> build`); lint with `make lint-<pkg>` or `make lint-all`, fix with `make fmt-<pkg>`. |
+| **B-01** | **Bun only, and the repo's own scripts.** Never npm, yarn or pnpm. TypeScript compiles with `tsc` directly - never `npx`, `bunx` or `bun x` for compilation. Build with `make <pkg>` (or `make -C packages/<pkg> build`); lint with `make lint-<pkg>` or `make lint-all`, fix with `make lint-fix-<pkg>`. |
 | **B-02** | **Zero lint errors and zero warnings, build green, after every change.** Non-negotiable; nothing is complete until it passes. |
 | **B-03** | **Verify before claiming.** Run the command, read the output, then say it passes. Evidence before assertions. A step that failed or was skipped is reported as such. |
 | **B-04** | **Know the build trap.** `make <pkg>` runs the package's `rebuild` target (`make/project.mk`), which type-checks first and then cleans `dist/` before `build` emits it; a downstream package (`react` -> `kernel`, `admin` -> `react` + `kernel`, `ardor` -> all three) resolves its siblings through `dist`, so build in dependency order and confirm the `DONE` line. A bare `tsc` skips `tsc-alias` and leaves every `@/` import unrewritten in `dist` - always build through `make`. |

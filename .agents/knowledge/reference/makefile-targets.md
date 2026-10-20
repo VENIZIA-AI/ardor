@@ -33,13 +33,6 @@ generated:
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
-| `make fmt` | `fmt-packages` | fmt-<pkg> for every package. |
-| `make fmt-admin` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make fmt-ardor` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make fmt-kernel` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make fmt-packages` | `fmt-kernel fmt-react fmt-admin fmt-ardor` | fmt-<pkg> for every package. |
-| `make fmt-react` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make fmt-wiki` | - | Apply the lint fixes and oxfmt to docs/wiki. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
@@ -49,6 +42,13 @@ generated:
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
 | `make lint-all` | `lint-packages lint-wiki lint-scripts` | lint-packages, lint-wiki and lint-scripts. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-fix` | `lint-fix-packages` | lint-fix-<pkg> for every package. |
+| `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make lint-fix-ardor` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make lint-fix-packages` | `lint-fix-kernel lint-fix-react lint-fix-admin lint-fix-ardor` | lint-fix-<pkg> for every package. |
+| `make lint-fix-react` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make lint-fix-wiki` | - | Apply the lint fixes and oxfmt to docs/wiki. |
 | `make lint-kernel` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
@@ -75,9 +75,9 @@ generated:
 | `make split-report` | - | Report hub files, stray types, missing barrels, long files, cycles (informational). |
 | `make surface-check` | - | Gate: the public surface equals the snapshot. |
 | `make surface-gen` | - | Snapshot every exported symbol into .agents/knowledge/reference/public-surface.md. |
-| `make test` | `test-all` | test-<pkg> for every package with a suite. |
+| `make test` | `test-all` | test-<pkg> for every package; one with no suite says so and passes. |
 | `make test-admin` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
-| `make test-all` | `test-kernel test-react test-admin` | test-<pkg> for every package with a suite. |
+| `make test-all` | `test-kernel test-react test-admin test-ardor` | test-<pkg> for every package; one with no suite says so and passes. |
 | `make test-ardor` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-kernel` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-react` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |

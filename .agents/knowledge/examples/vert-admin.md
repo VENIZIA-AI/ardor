@@ -38,7 +38,7 @@ cp .env.example .env.development
 bun install && bun run migrate:dev && bun run server:dev
 ```
 
-Then start the console itself with `bun run dev` from `examples/vert-admin`. Vite proxies `/api`,
+Then start the console itself with `bun run server:dev` from `examples/vert-admin`. Vite proxies `/api`,
 unrewritten, to `127.0.0.1:3000` - but vert's `.env.example` sets `APP_ENV_SERVER_PORT=1190` and
 `APP_ENV_SERVER_BASE_PATH=/v1/api` (port 3000 is only vert's fallback when the variable is unset or blank). Set
 those to `3000` and `/api` in vert's env file, or point the proxy at vert's real port and base path,

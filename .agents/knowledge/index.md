@@ -76,6 +76,7 @@ How the code is written. Read before writing any.
 - [Binding key namespaces](/conventions/binding-key-namespaces.md)
 - [React hooks](/conventions/react-hooks.md)
 - [Testing conventions](/conventions/testing-conventions.md)
+- [App script standard](/conventions/app-script-standard.md)
 - [Docs writing style](/conventions/docs-writing-style.md)
 - [Gotchas](/conventions/gotchas.md)
 - [File splitting](/conventions/file-splitting.md)

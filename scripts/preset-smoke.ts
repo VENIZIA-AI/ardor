@@ -266,6 +266,25 @@ const assertSubpathImports = (opts: { directory: string }) => {
   });
 };
 
+/** The script names every app has, and the ones no app has (Phat's standard, backend and frontend alike). */
+const APP_SCRIPTS = ['server:dev', 'compile', 'typecheck', 'lint', 'lint:fix', 'test', 'clean'];
+const FORBIDDEN_SCRIPTS = ['dev', 'start', 'build', 'rebuild', 'preview', 'api', 'server:prod'];
+
+const assertScriptStandard = (opts: { directory: string }) => {
+  const scripts = Object.keys(
+    (readJson({ path: join(opts.directory, 'package.json') }).scripts ?? {}) as TRecord,
+  );
+
+  assert({
+    condition: APP_SCRIPTS.every((name) => scripts.includes(name)),
+    message: `package.json has the standard scripts: ${APP_SCRIPTS.join(', ')}`,
+  });
+  assert({
+    condition: !scripts.some((name) => FORBIDDEN_SCRIPTS.includes(name)),
+    message: `package.json has none of: ${FORBIDDEN_SCRIPTS.join(', ')}`,
+  });
+};
+
 const freePort = (): number => {
   const server = Bun.serve({ port: 0, fetch: () => new Response('') });
   const { port } = server;
@@ -282,7 +301,7 @@ const freePort = (): number => {
 const assertDevServer = async (opts: { cwd: string }) => {
   step += 1;
   const port = freePort();
-  const proc = Bun.spawn(['bun', 'run', 'dev'], {
+  const proc = Bun.spawn(['bun', 'run', 'server:dev'], {
     cwd: opts.cwd,
     env: { ...process.env, PORT: String(port), NO_COLOR: '1', FORCE_COLOR: '0' },
     stdout: 'pipe',
@@ -350,7 +369,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
     condition: plain().includes(`:${port}`),
     message: `the dev server listens on :${port}${plain().includes(`:${port}`) ? '' : ` | server output (${output.length} bytes): ${[...plain().split('\n').slice(0, 8), '...', ...plain().split('\n').slice(-6)].join(' | ').slice(0, 1800)}`}`,
   });
-  assertNoWarnings({ output, label: 'bun run dev' });
+  assertNoWarnings({ output, label: 'bun run server:dev' });
 };
 
 const install = async (opts: {
@@ -370,8 +389,12 @@ const install = async (opts: {
         command: ['bun', 'run', check],
       });
 
-      if (app.firstRun === true && check === 'build') {
-        assertNoWarnings({ output, label: 'bun run build' });
+      if (app.firstRun === true && check === 'compile') {
+        assertNoWarnings({ output, label: 'bun run compile' });
+        assert({
+          condition: existsSync(join(opts.project, app.folder, 'dist/index.html')),
+          message: 'bun run compile wrote dist/index.html',
+        });
         assertSubpathImports({ directory: join(opts.project, app.folder) });
       }
     }
@@ -408,7 +431,15 @@ const install = async (opts: {
         rmSync(planted, { force: true });
       }
 
+      assertScriptStandard({ directory: join(opts.project, app.folder) });
       await assertDevServer({ cwd: join(opts.project, app.folder) });
+
+      // `clean` removes what `compile` wrote.
+      run({ cwd: join(opts.project, app.folder), command: ['bun', 'run', 'clean'] });
+      assert({
+        condition: !existsSync(join(opts.project, app.folder, 'dist')),
+        message: 'bun run clean removed dist',
+      });
     }
   }
 
@@ -505,10 +536,6 @@ const main = async () => {
     assert({
       condition: unsubstituted({ folder: join(project, 'apps/admin') }).length === 0,
       message: 'no file of the app still holds a {{ token',
-    });
-    assert({
-      condition: existsSync(join(project, 'apps/admin/dist/index.html')),
-      message: 'vite build wrote dist/index.html',
     });
   }
 

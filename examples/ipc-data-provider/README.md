@@ -6,7 +6,7 @@ shell (Tauri's `invoke`, an Electron bridge, a Worker port) uses while keeping t
 
 ```bash
 cd examples/ipc-data-provider
-bun run start
+bun run server:dev
 ```
 
 Only `send()` is replaced. Filter mapping, `value()` and the react-admin methods still come from
