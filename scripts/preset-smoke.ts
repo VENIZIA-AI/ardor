@@ -324,6 +324,21 @@ const install = async (opts: {
     }
 
     if (app.firstRun === true) {
+      // The typecheck must catch a type error: a planted one fails it, and it is removed again.
+      const planted = join(opts.project, app.folder, 'src/planted.ts');
+
+      writeFileSync(planted, "export const planted: number = 'not a number';\n");
+
+      try {
+        run({
+          cwd: join(opts.project, app.folder),
+          command: ['bun', 'run', 'typecheck'],
+          expectFailure: true,
+        });
+      } finally {
+        rmSync(planted, { force: true });
+      }
+
       await assertDevServer({ cwd: join(opts.project, app.folder) });
     }
   }
