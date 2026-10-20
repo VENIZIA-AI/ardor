@@ -18,7 +18,7 @@ packages: ['@venizia/ardor']
 - **Peers, not copies.** `@venizia/ardor`, `react`, `react-dom`, `react-router-dom` and `reflect-metadata` are peer dependencies, so each app decides the versions.
 - **A sample feature and its test.** `src/feature.ts` is `Features.define({ name })`, and `src/feature.test.ts` mounts it in a small application and reads it back.
 - **Five scripts.** `typecheck`, `lint`, `lint:fix`, `test` and `clean`: no bundler, no dev server, no `compile`.
-- **Same lint setup as the app.** `scripts/lint.sh`, and the oxlint, oxfmt and eslint configs of the app preset.
+- **Same lint setup as the app.** `dev-configs lint`, and the oxlint, oxfmt and eslint configs of the app preset.
 
 ## Who is affected
 

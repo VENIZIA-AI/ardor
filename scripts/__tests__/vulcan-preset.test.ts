@@ -69,7 +69,6 @@ const repository = (opts: {
   );
   write(root, 'presets/app/files/_env.example', 'PORT={{devPort}}\n');
   write(root, 'presets/app/files/.configs/lints/lint.mts', 'export {};\n');
-  write(root, 'presets/app/files/scripts/lint.sh', '#!/usr/bin/env sh\n');
   write(root, 'presets/app/files/logo.bin', new Uint8Array([0, 255, 1, 2]));
 
   if (opts.lib) {
@@ -244,16 +243,14 @@ describe('buildPreset, a library preset', () => {
     expect(existsSync(join(outLib(root), 'files/_gitignore'))).toBe(true);
   });
 
-  test('the lib shares the lint configs and lint.sh of the app, and keeps its own clean.sh', () => {
+  test('the lib shares the lint and format configs of the app, and keeps its own clean.sh', () => {
     const root = repository({ lib });
     build(root);
 
     expect(readFileSync(join(outLib(root), 'files/.configs/lints/lint.mts'), 'utf8')).toBe(
       'export {};\n',
     );
-    expect(readFileSync(join(outLib(root), 'files/scripts/lint.sh'), 'utf8')).toBe(
-      '#!/usr/bin/env sh\n',
-    );
+    expect(existsSync(join(outLib(root), 'files/scripts/lint.sh'))).toBe(false);
     expect(readFileSync(join(outLib(root), 'files/scripts/clean.sh'), 'utf8')).toBe(
       'rm -rf cache\n',
     );

@@ -2,7 +2,7 @@
  * Writes the publishable copy of a package's VULCAN presets. The templates in `presets/app/` and
  * `presets/lib/` (a sibling of `packages/`, each `preset.json` and `files/`) mark what a release must
  * fill in; the copies in the package's `dist/vulcan-preset/app/` and `lib/` carry the real versions, so a
- * preset always describes the release it ships in. The lib also gets the app's lint configs and lint.sh.
+ * preset always describes the release it ships in. The lib also gets the app's lint and format configs.
  *
  *   workspace:*  the exact version of that workspace package, read from its package.json now
  *   workspace:^  the same version behind a caret, for a peer range
@@ -18,8 +18,8 @@ import { join, resolve } from 'node:path';
 /** The blocks of a template that name packages; a block a template does not have is not written. */
 const SECTIONS = ['dependencies', 'devDependencies', 'peers', 'peerDependencies'] as const;
 const KINDS = ['app', 'lib'] as const;
-/** What a lib shares with the app: the lint configs and the one lint.sh. A lib's own file of the same path wins. */
-const LIB_SHARED = ['.configs/lints', '.configs/formatters', 'scripts/lint.sh'];
+/** What a lib shares with the app: the lint and format configs. A lib's own file of the same path wins. */
+const LIB_SHARED = ['.configs/lints', '.configs/formatters'];
 const EXACT_SCOPE = '@venizia/';
 const RANGE_PREFIX = /^[\^~]/;
 

@@ -38,7 +38,7 @@ demo/
   apps/admin/
     package.json  tsconfig.json  index.html  .env.example  README.md
     .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
-    .configs/builders/vite.config.mts  scripts/{lint,compile,clean}.sh
+    .configs/builders/vite.config.mts  scripts/{compile,clean}.sh
     src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
     src/pages/{product-list,product-create,product-edit,product-form}.tsx
@@ -51,7 +51,7 @@ The application is small:
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
 - `src/pages/*` are the list, create and edit pages of `products`.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
-- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`sh scripts/lint.sh`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
+- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`dev-configs lint`, the bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
 - `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
 
 ### Expected API
@@ -79,7 +79,7 @@ It creates `libs/merchant` as the package `@acme/merchant`:
 ```text
 libs/merchant/
   package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
-  tsconfig.json  README.md  scripts/{lint,clean}.sh
+  tsconfig.json  README.md  scripts/clean.sh
   .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
   src/index.ts  src/feature.ts  src/feature.test.ts
 ```

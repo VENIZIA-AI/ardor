@@ -14,7 +14,7 @@ packages: ['@venizia/ardor']
 
 ## What changed
 
-- **One set of names.** Every app, backend or frontend, has `server:dev`, `compile`, `typecheck`, `lint`, `lint:fix`, `test` and `clean`. `server:dev` runs Vite, `compile` runs `sh scripts/compile.sh` (which runs `vite build` into `dist/`), `typecheck` runs `bun check`, `lint` and `lint:fix` run `sh scripts/lint.sh`, `test` runs `bun test` and `clean` runs `sh scripts/clean.sh` (which removes `dist/`).
+- **One set of names.** Every app, backend or frontend, has `server:dev`, `compile`, `typecheck`, `lint`, `lint:fix`, `test` and `clean`. `server:dev` runs Vite, `compile` runs `sh scripts/compile.sh` (which runs `vite build` into `dist/`), `typecheck` runs `bun check`, `lint` and `lint:fix` run `dev-configs lint`, `test` runs `bun test` and `clean` runs `sh scripts/clean.sh` (which removes `dist/`).
 - **No other names.** `dev`, `start`, `build`, `rebuild`, `preview`, `api` and `server:prod` are not scripts of an app any more.
 - **The preset ships a test.** A generated admin has `src/application.test.ts`, which starts the container and checks that the configuration binds the REST data provider options, so `bun run test` runs a real test from the first day. The first-run checks are now `typecheck`, `lint`, `test` and `compile`.
 - **The examples follow the same names.** `bun run server:dev` in `examples/5-mins-qs` starts the stub API on :3100 together with Vite, and stops the API when Vite stops. `examples/ipc-data-provider` compiles with `bun build` into `dist/`.
