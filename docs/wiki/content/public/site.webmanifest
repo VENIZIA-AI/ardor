@@ -1,7 +1,7 @@
 {
   "name": "ARDOR",
   "short_name": "ARDOR",
-  "theme_color": "#2b6b6a",
+  "theme_color": "#0277bd",
   "background_color": "#07090b",
   "display": "standalone",
   "icons": [

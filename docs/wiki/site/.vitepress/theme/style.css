@@ -225,7 +225,7 @@ html.dark {
   margin: 1.5rem 0 2rem;
   padding: 1.5rem;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, #7FB0A6 100%);
+  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, #38BDF8 100%);
 }
 
 .philosophy-hero .hero-content {
@@ -289,11 +289,11 @@ html.dark .landscape-card:hover {
 
 .landscape-card.balanced {
   border-color: var(--vp-c-brand-1);
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
 }
 
 html.dark .landscape-card.balanced {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 .landscape-card .card-header {
@@ -408,11 +408,11 @@ html.dark .trait-warn {
 }
 
 .comparison-table th.highlight-col {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 html.dark .comparison-table th.highlight-col {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.25) 0%, rgba(127, 176, 166, 0.25) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%);
 }
 
 .comparison-table tbody tr {
@@ -439,11 +439,11 @@ html.dark .comparison-table th.highlight-col {
 }
 
 .comparison-table td.highlight-col {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
 }
 
 html.dark .comparison-table td.highlight-col {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.12) 0%, rgba(127, 176, 166, 0.12) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.12) 0%, rgba(56, 189, 248, 0.12) 100%);
 }
 
 .comparison-table tbody tr:last-child td {
@@ -471,7 +471,7 @@ html.dark .comparison-table td.highlight-col {
 }
 
 .status-best {
-  background: rgba(43, 107, 106, 0.15);
+  background: rgba(2, 119, 189, 0.15);
   color: var(--vp-c-brand-1);
   font-weight: 600;
 }
@@ -487,7 +487,7 @@ html.dark .status-good {
 }
 
 html.dark .status-best {
-  background: rgba(43, 107, 106, 0.25);
+  background: rgba(2, 119, 189, 0.25);
   color: #e5a8a8;
 }
 
@@ -521,12 +521,12 @@ html.dark .status-best {
 }
 
 .perf-row.highlight {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.1) 0%, rgba(127, 176, 166, 0.1) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.1) 0%, rgba(56, 189, 248, 0.1) 100%);
   border: 1px solid var(--vp-c-brand-1);
 }
 
 html.dark .perf-row.highlight {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.2) 0%, rgba(127, 176, 166, 0.2) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.2) 0%, rgba(56, 189, 248, 0.2) 100%);
 }
 
 .perf-info {
@@ -564,7 +564,7 @@ html.dark .perf-row.highlight {
 }
 
 .perf-bar.hono { background: linear-gradient(90deg, #e36002 0%, #ff8534 100%); }
-.perf-bar.ignis { background: linear-gradient(90deg, var(--vp-c-brand-1) 0%, #7FB0A6 100%); }
+.perf-bar.ignis { background: linear-gradient(90deg, var(--vp-c-brand-1) 0%, #38BDF8 100%); }
 .perf-bar.fastify { background: linear-gradient(90deg, #333 0%, #555 100%); }
 .perf-bar.nestjs { background: linear-gradient(90deg, #e0234e 0%, #ff5577 100%); }
 .perf-bar.loopback { background: linear-gradient(90deg, #3f5dff 0%, #6b84ff 100%); }
@@ -651,12 +651,12 @@ html.dark .perf-row.highlight {
 }
 
 .comparison-item.highlight {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.1) 0%, rgba(127, 176, 166, 0.1) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.1) 0%, rgba(56, 189, 248, 0.1) 100%);
   border: 1px solid var(--vp-c-brand-1);
 }
 
 html.dark .comparison-item.highlight {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.2) 0%, rgba(127, 176, 166, 0.2) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.2) 0%, rgba(56, 189, 248, 0.2) 100%);
 }
 
 .comparison-item .value {
@@ -742,13 +742,13 @@ html.dark .comparison-item .value.medium { background: rgba(234, 179, 8, 0.2); c
 }
 
 .val-best {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
   color: var(--vp-c-brand-1);
   border: 1px solid var(--vp-c-brand-1);
 }
 
 html.dark .val-yes { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-html.dark .val-best { background: linear-gradient(90deg, rgba(43, 107, 106, 0.25) 0%, rgba(127, 176, 166, 0.25) 100%); }
+html.dark .val-best { background: linear-gradient(90deg, rgba(2, 119, 189, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%); }
 
 /* Ecosystem Grid */
 .ecosystem-grid {
@@ -773,11 +773,11 @@ html.dark .val-best { background: linear-gradient(90deg, rgba(43, 107, 106, 0.25
 
 .eco-card.highlight {
   border-color: var(--vp-c-brand-1);
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
 }
 
 html.dark .eco-card.highlight {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 .eco-card h4 {
@@ -837,12 +837,12 @@ html.dark .eco-card.highlight {
 }
 
 .synthesis-box.result {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
   border: 2px solid var(--vp-c-brand-1);
 }
 
 html.dark .synthesis-box.result {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.25) 0%, rgba(127, 176, 166, 0.25) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%);
 }
 
 .synthesis-box .synthesis-icon {
@@ -898,11 +898,11 @@ html.dark .synthesis-box.result {
 
 .excel-card.ignis {
   border-color: var(--vp-c-brand-1);
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
 }
 
 html.dark .excel-card.ignis {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 .excel-card h3 {
@@ -1091,11 +1091,11 @@ html.dark .decision-row.maybe .decision-verdict { background: rgba(234, 179, 8, 
 
 .choose-card.highlight {
   border-color: var(--vp-c-brand-1);
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
 }
 
 html.dark .choose-card.highlight {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 .choose-card h3 {
@@ -1182,12 +1182,12 @@ html.dark .tradeoff.cost {
   margin: 1.5rem 0;
   padding: 1.5rem;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.08) 0%, rgba(127, 176, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.08) 0%, rgba(56, 189, 248, 0.08) 100%);
   border: 2px solid var(--vp-c-brand-1);
 }
 
 html.dark .honest-box {
-  background: linear-gradient(135deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 .honest-box h4 {
@@ -1225,7 +1225,7 @@ html.dark .honest-box {
   margin: 1.5rem 0 2rem;
   padding: 1.5rem;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, #7FB0A6 100%);
+  background: linear-gradient(135deg, var(--vp-c-brand-1) 0%, #38BDF8 100%);
 }
 
 .cta-card .cta-icon {
@@ -1279,7 +1279,7 @@ html.dark .honest-box {
 }
 
 .migration-path .to {
-  background: linear-gradient(90deg, rgba(43, 107, 106, 0.15) 0%, rgba(127, 176, 166, 0.15) 100%);
+  background: linear-gradient(90deg, rgba(2, 119, 189, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
   color: var(--vp-c-brand-1);
 }
 
@@ -1418,7 +1418,7 @@ html.dark .honest-box {
 /* Active nav link: coral underline tab */
 .VPNavBarMenuLink.active {
   color: var(--ar-text) !important;
-  border-bottom: 2px solid var(--ar-teal) !important;
+  border-bottom: 2px solid var(--ar-accent) !important;
 }
 
 /* ─── Task B: Sidebar ───────────────────────────────────────────────────── */
@@ -1429,7 +1429,7 @@ html.dark .honest-box {
   margin: 1px 0;
 }
 .VPSidebarItem.is-active > .item .link {
-  background: rgba(43, 107, 106, 0.11) !important;
+  background: rgba(2, 119, 189, 0.11) !important;
   border-radius: 8px;
   /* breathing room: taller pill, inset from the container edges; the left
      padding + equal negative margin keeps the text aligned with sibling items
@@ -1476,7 +1476,7 @@ html.dark .honest-box {
 }
 
 .custom-block.tip .custom-block-title {
-  color: var(--ar-teal) !important;
+  color: var(--ar-accent) !important;
 }
 
 /* WARNING - gold accent */
@@ -1485,16 +1485,16 @@ html.dark .honest-box {
 }
 
 .custom-block.warning .custom-block-title {
-  color: var(--ar-aqua) !important;
+  color: var(--ar-accent) !important;
 }
 
 /* DANGER - rose accent */
 .custom-block.danger {
-  background: rgba(43, 107, 106, 0.08) !important;
+  background: rgba(2, 119, 189, 0.08) !important;
 }
 
 .custom-block.danger .custom-block-title {
-  color: var(--ar-brand-lt) !important;
+  color: var(--ar-accent) !important;
 }
 
 /* INFO - neutral text-3 accent */
@@ -1531,7 +1531,7 @@ div[class*='language-'] button.copy {
 }
 
 div[class*='language-'] button.copy:hover {
-  color: var(--ar-teal) !important;
+  color: var(--ar-accent) !important;
 }
 
 /* ============================================================================
@@ -1621,7 +1621,7 @@ div[class*='language-'] button.copy:hover {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ar-teal);
+  color: var(--ar-accent);
   margin-bottom: var(--ar-s3);
 }
 
@@ -1659,7 +1659,7 @@ div[class*='language-'] button.copy:hover {
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--ar-teal);
+  color: var(--ar-accent);
   background: rgba(217, 142, 106, 0.08);
   border: 1px solid rgba(217, 142, 106, 0.2);
   border-radius: var(--ar-r-pill);
@@ -1671,8 +1671,8 @@ div[class*='language-'] button.copy:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ar-teal);
-  box-shadow: 0 0 10px var(--ar-teal);
+  background: var(--ar-accent);
+  box-shadow: 0 0 10px var(--ar-accent);
   flex-shrink: 0;
 }
 
@@ -1727,7 +1727,7 @@ div[class*='language-'] button.copy:hover {
 .ar-btn--primary {
   background: var(--ar-primary);
   color: var(--ar-on-primary) !important;
-  box-shadow: 0 10px 30px -8px rgba(43, 107, 106, 0.55);
+  box-shadow: 0 10px 30px -8px rgba(2, 119, 189, 0.55);
 }
 
 .ar-btn--primary:hover {
@@ -1811,7 +1811,7 @@ html:not(.dark) .ar-btn--secondary:hover {
 .ar-code-win__tag {
   margin-left: auto;
   font: 600 var(--ar-fs-caption) var(--ar-font-mono);
-  color: var(--ar-teal);
+  color: var(--ar-accent);
   background: rgba(217, 142, 106, 0.1);
   padding: 2px 8px;
   border-radius: 6px;
@@ -1831,7 +1831,7 @@ html:not(.dark) .ar-btn--secondary:hover {
 
 /* Syntax highlight spans - scoped to code window only */
 .ar-k { color: var(--ar-aqua); }
-.ar-d { color: var(--ar-teal); }
+.ar-d { color: var(--ar-brand-lt); }
 .ar-s { color: #9DBF8E; }    /* sage - no token equivalent */
 .ar-c { color: var(--ar-brand-lt); }
 .ar-p { color: #c8b8be; }    /* muted param - no token equivalent */
@@ -1852,9 +1852,9 @@ html:not(.dark) .ar-btn--secondary:hover {
 }
 
 .ar-fcard:hover {
-  border-color: rgba(43, 107, 106, 0.4);
+  border-color: rgba(2, 119, 189, 0.4);
   transform: translateY(-4px);
-  box-shadow: 0 24px 50px -30px rgba(43, 107, 106, 0.5);
+  box-shadow: 0 24px 50px -30px rgba(2, 119, 189, 0.5);
 }
 
 .ar-fcard__icon {
@@ -1865,8 +1865,8 @@ html:not(.dark) .ar-btn--secondary:hover {
   place-items: center;
   font-size: 22px;
   margin-bottom: var(--ar-s4);
-  background: rgba(43, 107, 106, 0.12);
-  border: 1px solid rgba(43, 107, 106, 0.25);
+  background: rgba(2, 119, 189, 0.12);
+  border: 1px solid rgba(2, 119, 189, 0.25);
 }
 
 .ar-fcard h3 {
@@ -1885,7 +1885,7 @@ html:not(.dark) .ar-btn--secondary:hover {
 
 .ar-fcard code {
   font: 500 var(--ar-fs-caption) var(--ar-font-mono);
-  color: var(--ar-brand-lt);
+  color: var(--ar-accent);
   background: transparent;
   padding: 0;
   border: none;
@@ -2002,8 +2002,8 @@ html:not(.dark) .ar-fill--muted {
 }
 
 .ar-pcard--good {
-  background: linear-gradient(180deg, rgba(43, 107, 106, 0.07), transparent);
-  border-color: rgba(43, 107, 106, 0.3);
+  background: linear-gradient(180deg, rgba(2, 119, 189, 0.07), transparent);
+  border-color: rgba(2, 119, 189, 0.3);
 }
 
 .ar-pcard h3 {
@@ -2085,7 +2085,7 @@ html:not(.dark) .ar-fill--muted {
   padding: var(--ar-s8) var(--ar-s7);
   margin: var(--ar-s5) 0 var(--ar-s9);
   background:
-    radial-gradient(600px 300px at 50% 0%, rgba(43, 107, 106, 0.14), transparent 70%),
+    radial-gradient(600px 300px at 50% 0%, rgba(2, 119, 189, 0.14), transparent 70%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
 }
 
