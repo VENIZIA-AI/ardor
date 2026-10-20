@@ -7,6 +7,7 @@
  *   bun scripts/release-local.ts kernel react         # just these, still ordered, still sequential
  *   bun scripts/release-local.ts --dry-run            # run every gate, publish and write nothing
  *   bun scripts/release-local.ts --mode patch         # default is prerelease
+ *   bun scripts/release-local.ts --version 0.3.0      # an explicit version; overrides --mode
  *   bun scripts/release-local.ts --yes                # skip the confirmation prompt
  *
  * CI checks out a clean tree from the pushed ref; this does not, so it is deliberately STRICTER: it
@@ -24,6 +25,8 @@ import { $ } from 'bun';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { assertAbove, isReleaseVersion, npmTagFor, readReleaseArgs } from './release-version';
+
 const BRANCH = 'develop';
 
 /** Dependency order, mirrored from `scripts/release.ts` - a package publishes after everything it depends on. */
@@ -31,21 +34,11 @@ const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 type TPackageName = (typeof RELEASE_ORDER)[number];
 
-const RELEASE_MODES = [
-  'patch',
-  'minor',
-  'major',
-  'prepatch',
-  'preminor',
-  'premajor',
-  'prerelease',
-] as const;
-
-type TReleaseMode = (typeof RELEASE_MODES)[number];
+type TReleaseTarget = string;
 
 interface IOptions {
   packages: TPackageName[];
-  mode: TReleaseMode;
+  target: TReleaseTarget;
   dryRun: boolean;
   skipPrompt: boolean;
 }
@@ -211,15 +204,19 @@ const assertDependenciesExist = async (opts: {
 
 const releasePackage = async (opts: {
   name: TPackageName;
-  mode: TReleaseMode;
+  target: TReleaseTarget;
   dryRun: boolean;
 }): Promise<void> => {
-  const { name, mode, dryRun } = opts;
+  const { name, target, dryRun } = opts;
   const path = resolvePackagePath(name);
   const manifest = readManifest(path);
   const packageName = manifest.name as string;
 
-  console.log(`\n  ── ${packageName} (${manifest.version} → ${mode})`);
+  console.log(`\n  ── ${packageName} (${manifest.version} → ${target})`);
+
+  if (isReleaseVersion({ value: target })) {
+    assertAbove({ version: target, current: manifest.version as string });
+  }
 
   await $`make ${name}`.quiet();
   console.log('      ✓ build');
@@ -245,11 +242,11 @@ const releasePackage = async (opts: {
     return;
   }
 
-  await $`npm version ${mode} --no-git-tag-version --workspaces-update=false`.cwd(path).quiet();
+  await $`npm version ${target} --no-git-tag-version --workspaces-update=false`.cwd(path).quiet();
   const nextVersion = readManifest(path).version as string;
   console.log(`      ✓ version ${nextVersion}`);
 
-  const npmTag = mode.startsWith('pre') ? 'next' : 'latest';
+  const npmTag = npmTagFor({ target });
 
   // FIRST among the mutations, ahead of every git write. The publish is the only step that cannot
   // be undone, so a rejected one must leave git untouched - there is then nothing to roll back.
@@ -261,7 +258,7 @@ const releasePackage = async (opts: {
   await $`npm dist-tag add ${`${packageName}@${nextVersion}`} highest`.quiet().nothrow();
 
   await $`git add ${join(path, 'package.json')}`;
-  await $`git commit -m ${`chore(${name}): release v${nextVersion} [${mode}]`}`.quiet();
+  await $`git commit -m ${`chore(${name}): release v${nextVersion} [${target}]`}`.quiet();
 
   // `develop` can move between the preflight and here - a teammate's merge, or nothing at all. The
   // version is already on the registry by now, so rebase and retry once rather than leave the
@@ -288,16 +285,17 @@ const parseOptions = (): IOptions => {
   const dryRun = argv.includes('--dry-run');
   const skipPrompt = argv.includes('--yes');
 
-  const modeIndex = argv.indexOf('--mode');
-  const mode = (modeIndex === -1 ? 'prerelease' : argv[modeIndex + 1]) as TReleaseMode;
+  let target: TReleaseTarget;
+  let named: TPackageName[];
 
-  if (!RELEASE_MODES.includes(mode)) {
-    fail(`Unknown --mode '${mode}'. Expected one of: ${RELEASE_MODES.join(', ')}`);
+  try {
+    const read = readReleaseArgs({ argv });
+
+    target = read.target;
+    named = read.positional as TPackageName[];
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
   }
-
-  const named = argv.filter(
-    (arg, index) => !arg.startsWith('--') && argv[index - 1] !== '--mode',
-  ) as TPackageName[];
 
   for (const name of named) {
     if (!RELEASE_ORDER.includes(name)) {
@@ -309,11 +307,11 @@ const parseOptions = (): IOptions => {
   const packages =
     named.length > 0 ? RELEASE_ORDER.filter((p) => named.includes(p)) : [...RELEASE_ORDER];
 
-  return { packages: [...packages], mode, dryRun, skipPrompt };
+  return { packages: [...packages], target, dryRun, skipPrompt };
 };
 
 const main = async (): Promise<void> => {
-  const { packages, mode, dryRun, skipPrompt } = parseOptions();
+  const { packages, target, dryRun, skipPrompt } = parseOptions();
 
   console.log('\n  Preflight');
   assertPublisherIsBun();
@@ -352,7 +350,7 @@ const main = async (): Promise<void> => {
   }
 
   console.log(
-    `\n  Releasing ${packages.length} package(s) as '${mode}'${dryRun ? ' [DRY RUN]' : ''}:\n    ${packages.join(' → ')}`,
+    `\n  Releasing ${packages.length} package(s) as '${target}'${dryRun ? ' [DRY RUN]' : ''}:\n    ${packages.join(' → ')}`,
   );
 
   if (!skipPrompt && !dryRun) {
@@ -366,7 +364,7 @@ const main = async (): Promise<void> => {
   }
 
   for (const name of packages) {
-    await releasePackage({ name, mode, dryRun });
+    await releasePackage({ name, target, dryRun });
   }
 
   console.log(`\n  ✓ ${dryRun ? 'Dry run complete' : 'Release complete'}\n`);

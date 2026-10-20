@@ -1,5 +1,5 @@
 name: 'NPM Release'
-run-name: 'NPM Release | package: ${{ inputs.package }} | build_mode: ${{ inputs.build_mode }}'
+run-name: 'NPM Release | package: ${{ inputs.package }} | release: ${{ inputs.version || inputs.build_mode }}'
 
 on:
   workflow_dispatch:
@@ -26,10 +26,16 @@ on:
           - prerelease
         required: true
         default: 'patch'
+      version:
+        type: string
+        description: 'Explicit version (x.y.z or x.y.z-pre); when set it replaces the bump type'
+        required: false
+        default: ''
 
 env:
   PACKAGE: ${{ github.event.inputs.package }}
   BUILD_MODE: ${{ github.event.inputs.build_mode }}
+  VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   release:
@@ -84,9 +90,22 @@ jobs:
           echo "┌─────────────────────────────────────────────────"
           echo "│ Package:     $PACKAGE_NAME"
           echo "│ Path:        $PACKAGE_PATH"
-          echo "│ Version:     $CURRENT_VERSION → $BUILD_MODE"
+          echo "│ Version:     $CURRENT_VERSION → ${VERSION:-$BUILD_MODE}"
           echo "│ Dist:        $DIST_DIRS"
           echo "└─────────────────────────────────────────────────"
+
+      # What this release is released AS, decided in one tested place (scripts/release-version.ts): the
+      # explicit version when one is given, else the bump type. A version that is malformed or not above
+      # the current one fails here, before any build. A stable target publishes to latest, a prerelease
+      # to next.
+      - name: Resolve release target
+        run: |
+          CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
+          TARGET=$(bun scripts/release-version.ts target --version "$VERSION" --mode "$BUILD_MODE" --current "$CURRENT_VERSION")
+          NPM_TAG=$(bun scripts/release-version.ts tag "$TARGET")
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
+          echo ">>> $CURRENT_VERSION -> $TARGET (npm tag: $NPM_TAG)"
 
       # BEFORE the install, and across the WHOLE workspace - not just the package being released.
       # `force-update` rewrites version ranges; an install that ran first has already resolved the
@@ -128,7 +147,7 @@ jobs:
       - name: Version bump
         run: |
           cd $PACKAGE_PATH
-          npm version $BUILD_MODE --no-git-tag-version --workspaces-update=false
+          npm version $TARGET --no-git-tag-version --workspaces-update=false
 
           NEW_VERSION=$(jq -r .version package.json)
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
@@ -149,7 +168,7 @@ jobs:
           cp "$SCRATCH/bun.lock" "$GITHUB_WORKSPACE/bun.lock"
 
           git add package.json "$GITHUB_WORKSPACE/bun.lock"
-          git commit -m "chore($PACKAGE): release v$NEW_VERSION [$BUILD_MODE]"
+          git commit -m "chore($PACKAGE): release v$NEW_VERSION [$TARGET]"
           git push origin develop
           echo "IS_PUSHED=true" >> $GITHUB_ENV
 
@@ -173,11 +192,6 @@ jobs:
       - name: Publish to NPM
         run: |
           cd $PACKAGE_PATH
-
-          case $BUILD_MODE in
-            patch|minor|major) NPM_TAG="latest" ;;
-            *)                 NPM_TAG="next" ;;
-          esac
 
           # `bun`, never `npm`: npm ships `catalog:` and `workspace:` verbatim, and a consumer then
           # fails to install with `lodash@catalog: failed to resolve`. Only bun resolves them while
