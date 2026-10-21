@@ -121,6 +121,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         text: '2026-10-21',
         collapsed: true,
         items: [
+          {
+            text: 'An .env.example that matches the app, ignore files, and a sturdier image',
+            link: '/changelogs/2026-10-21-preset-env-ignore-image',
+          },
           { text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' },
           {
             text: 'A tidy app root and a Dockerfile in the preset',

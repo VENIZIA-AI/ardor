@@ -5,8 +5,9 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  // The backend app `vulcan add --api` chose; empty when there is none, and then nothing is proxied.
-  const apiUrl: string = '{{apiUrl}}';
+  // The backend app `vulcan add --api` chose, unless .env sets API_URL; empty when there is none, and
+  // then nothing is proxied.
+  const apiUrl: string = env.API_URL || '{{apiUrl}}';
   const proxy: Record<string, string> = apiUrl === '' ? {} : { '/api': apiUrl };
 
   return {
@@ -17,7 +18,7 @@ export default defineConfig(({ mode }) => {
     // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
     plugins: [IgnisArtifactsVitePlugin.create({ root: 'src' }), react(), tailwindcss()],
     server: {
-      port: Number(env.PORT ?? '{{devPort}}'),
+      port: Number(env.PORT || '{{devPort}}'),
       strictPort: true,
       proxy,
     },
