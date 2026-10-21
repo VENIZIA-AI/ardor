@@ -10,10 +10,15 @@
  *   lib       `vulcan add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
+ *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
+ *             without APP_BUILD_COMMIT stops, the image carries the commit as its revision label, and nginx
+ *             serves the page, the SPA fallback, the hashed assets and `/api` through `API_UPSTREAM`. Runs
+ *             where `docker` is installed (it is skipped elsewhere); the project's unreleased packages are
+ *             copied into it (vendor/) because a Docker context cannot reach tarballs outside the project.
  *
  * Needs `make build-all` first (a package is packed with its dist).
  *
- * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair|lib]   (default: every scenario that can run)
+ * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair|lib|docker]   (default: every scenario that can run)
  * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@latest`; before VULCAN 0.3.0 is
  *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
@@ -38,7 +43,7 @@ import { chromium } from 'playwright-core';
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
 
 const ROOT = resolve(import.meta.dir, '..');
-const SCENARIOS = ['solo', 'refusal', 'pair', 'lib'] as const;
+const SCENARIOS = ['solo', 'refusal', 'pair', 'lib', 'docker'] as const;
 
 type TScenario = (typeof SCENARIOS)[number];
 type TRecord = Record<string, unknown>;
@@ -232,11 +237,26 @@ const peerRange = (opts: { presetRoot: string; name: string }): string => {
 };
 
 /** Root `overrides`: bun applies a `file:` override to a transitive dependency too. */
-const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) => {
+const addOverrides = (opts: {
+  project: string;
+  tarballs: Map<string, string>;
+  /** Copy each tarball into `<project>/vendor/` and point at it with a relative path. */
+  vendor?: boolean;
+}) => {
   const path = join(opts.project, 'package.json');
   const manifest = readJson({ path });
+  const place = (tarball: string): string => {
+    if (opts.vendor !== true) {
+      return `file:${tarball}`;
+    }
+
+    mkdirSync(join(opts.project, 'vendor'), { recursive: true });
+    cpSync(tarball, join(opts.project, 'vendor', basename(tarball)));
+
+    return `file:./vendor/${basename(tarball)}`;
+  };
   const overrides = Object.fromEntries(
-    [...opts.tarballs].map(([name, tarball]) => [name, `file:${tarball}`]),
+    [...opts.tarballs].map(([name, tarball]) => [name, place(tarball)]),
   );
 
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
@@ -622,9 +642,18 @@ const main = async () => {
   }
 
   // `lib` needs a VULCAN with `add --lib`: it is not in the default run until that is the published one.
-  const scenarios = SCENARIOS.filter((name) =>
-    requested === undefined ? name !== 'lib' || process.env.VULCAN_LIB === '1' : requested === name,
-  );
+  const hasDocker =
+    Bun.spawnSync(['docker', 'version', '--format', '{{.Server.Version}}'], {
+      stdout: 'ignore',
+      stderr: 'ignore',
+    }).exitCode === 0;
+  const scenarios = SCENARIOS.filter((name) => {
+    if (requested !== undefined) {
+      return requested === name;
+    }
+
+    return name === 'docker' ? hasDocker : name !== 'lib' || process.env.VULCAN_LIB === '1';
+  });
   const ignisDirectory = process.env.IGNIS_DIR;
   const vulcanTarballs = (process.env.VULCAN_TGZ ?? '').split(',').filter(Boolean);
 
@@ -876,6 +905,167 @@ const main = async () => {
         { folder: 'libs/merchant', checks: libChecks },
       ],
     });
+  }
+
+  if (scenarios.includes('docker')) {
+    console.log('\nscenario docker: build and run the app image next to a stub backend');
+    const work = join(tempFolder, 'docker');
+
+    mkdirSync(work, { recursive: true });
+
+    if (!hasDocker) {
+      throw new Error('[preset-smoke] scenario docker needs docker, which is not installed here');
+    }
+
+    vulcan({
+      cwd: work,
+      env: NO_INSTALL,
+      args: [
+        'init',
+        '--preset',
+        `file:${presetRoot}`,
+        '--project',
+        'demo',
+        '--frontend-dir',
+        'apps',
+        '--app',
+        'web',
+      ],
+    });
+    const project = join(work, 'demo');
+
+    addOverrides({ project, tarballs: ownTarballs, vendor: true });
+    run({ cwd: project, command: ['bun', 'install'] });
+    assert({
+      condition: !readFileSync(join(project, 'bun.lock'), 'utf8').includes(`file:${tempFolder}`),
+      message: 'the lockfile points at vendor/, not at a path outside the project',
+    });
+    assert({
+      condition: existsSync(join(project, '.dockerignore')),
+      message: 'the project has a .dockerignore',
+    });
+
+    const dockerfile = 'apps/web/.configs/builders/Dockerfile';
+    const suffix = String(process.pid);
+    const image = `ardor-smoke-web-${suffix}`;
+    const network = `ardor-smoke-${suffix}`;
+    const containers = [`ardor-smoke-api-${suffix}`, `ardor-smoke-web-${suffix}`];
+    const commit = '0123456789abcdef0123456789abcdef01234567';
+    const docker = (args: string[], failure = false) =>
+      run({ cwd: project, command: ['docker', ...args], expectFailure: failure });
+
+    try {
+      const unstamped = docker(['build', '-f', dockerfile, '-t', image, '.'], true);
+
+      assert({
+        condition: unstamped.output.includes('APP_BUILD_COMMIT'),
+        message: 'a build without APP_BUILD_COMMIT stops and says to pass it',
+      });
+      docker([
+        'build',
+        '-f',
+        dockerfile,
+        '-t',
+        image,
+        '--build-arg',
+        `APP_BUILD_COMMIT=${commit}`,
+        '--build-arg',
+        'APP_BUILD_BRANCH=smoke',
+        '.',
+      ]);
+      const label = docker([
+        'image',
+        'inspect',
+        image,
+        '--format',
+        '{{index .Config.Labels "org.opencontainers.image.revision"}}',
+      ]);
+
+      assert({
+        condition: label.output.trim() === commit,
+        message: 'the image carries the commit as org.opencontainers.image.revision',
+      });
+
+      docker(['network', 'create', network]);
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[0]!,
+        '--network',
+        network,
+        '--network-alias',
+        'api',
+        'docker.io/oven/bun:1.4.3-alpine',
+        'bun',
+        '-e',
+        `Bun.serve({ port: 3000, fetch: (request) => new URL(request.url).pathname === '/api/hello' ? Response.json({ message: 'Hello from IGNIS!' }) : new Response('not found', { status: 404 }) })`,
+      ]);
+      const port = freePort();
+
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[1]!,
+        '--network',
+        network,
+        '-p',
+        `${port}:8080`,
+        '-e',
+        'API_UPSTREAM=http://api:3000',
+        image,
+      ]);
+      const get = async (path: string): Promise<Response> => {
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+          try {
+            return await fetch(`http://localhost:${port}${path}`);
+          } catch {
+            await Bun.sleep(500);
+          }
+        }
+
+        throw new Error(`[preset-smoke] the container did not answer ${path}`);
+      };
+
+      const index = await get('/');
+
+      assert({
+        condition: index.ok && (index.headers.get('content-type') ?? '').includes('text/html'),
+        message: 'nginx serves the built index.html at /',
+      });
+      const html = await index.text();
+      const asset = /\/assets\/[^"]+\.js/.exec(html)?.[0] ?? '';
+      const hello = await get('/api/hello');
+
+      assert({
+        condition: hello.ok && (await hello.text()).includes('Hello from IGNIS!'),
+        message: '/api/hello reaches the backend through nginx',
+      });
+      const route = await get('/anything/not/a/file');
+
+      assert({
+        condition: route.ok && (await route.text()) === html,
+        message: 'a route that is not a file answers with index.html',
+      });
+      const script = await get(asset);
+
+      assert({
+        condition: script.ok && (script.headers.get('cache-control') ?? '').includes('immutable'),
+        message: 'a hashed asset is cached for good',
+      });
+      assert({
+        condition: (await get('/assets/missing.js')).status === 404,
+        message: 'a missing asset is a 404, not the page',
+      });
+      const user = docker(['exec', containers[1]!, 'id', '-u']);
+
+      assert({ condition: user.output.trim() !== '0', message: 'nginx does not run as root' });
+    } finally {
+      Bun.spawnSync(['docker', 'rm', '-f', ...containers], { stdout: 'ignore', stderr: 'ignore' });
+      Bun.spawnSync(['docker', 'network', 'rm', network], { stdout: 'ignore', stderr: 'ignore' });
+      Bun.spawnSync(['docker', 'image', 'rm', '-f', image], { stdout: 'ignore', stderr: 'ignore' });
+    }
   }
 
   if (scenarios.includes('pair')) {
