@@ -1405,9 +1405,10 @@ const main = async () => {
       // The interactive path: a terminal asks the three names in order and the answers come from the
       // keyboard. `script` gives the command a pseudo-terminal, so VULCAN sees a TTY, and the answers
       // are piped in: the kind (a preset with a lib asks app or lib first), the frontend folder (empty takes the one chosen before), the app, the backend.
+      // TERM=dumb keeps VULCAN 0.3.9's cursor menus off, so the answers stay plain lines.
       const prompted = run({
         cwd: project,
-        env: NO_INSTALL,
+        env: { ...NO_INSTALL, TERM: 'dumb' },
         command: [
           'script',
           '-qec',
