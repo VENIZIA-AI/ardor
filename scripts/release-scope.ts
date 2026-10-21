@@ -11,7 +11,7 @@ export const releaseScopePaths = (opts: { name: string }): string[] => [
   `packages/${opts.name}/src`,
   `packages/${opts.name}/package.json`,
   `packages/${opts.name}/tsconfig.json`,
-  `packages/${opts.name}/.configs/tsconfig.build.json`,
+  `packages/${opts.name}/.configs/builders/tsconfig.build.json`,
 ];
 
 const git = (opts: { cwd: string; args: string[] }): string => {

@@ -21,5 +21,5 @@ resolved with `useRepository`.
 | `src/configurations/admin.configuration.ts` | The three default providers and their options, as `@provide` methods |
 | `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
-| `vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
+| `.configs/builders/vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |

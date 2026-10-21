@@ -265,8 +265,9 @@ const assertSubpathImports = (opts: { directory: string }) => {
   });
   assert({
     condition:
-      !readFileSync(join(opts.directory, 'vite.config.mts'), 'utf8').includes('alias') &&
-      !readFileSync(join(opts.directory, 'tsconfig.json'), 'utf8').includes('"paths"'),
+      !readFileSync(join(opts.directory, '.configs/builders/vite.config.mts'), 'utf8').includes(
+        'alias',
+      ) && !readFileSync(join(opts.directory, 'tsconfig.json'), 'utf8').includes('"paths"'),
     message: 'no Vite alias and no tsconfig paths',
   });
 
@@ -793,10 +794,10 @@ const main = async () => {
       message: `the scripts are exactly typecheck, lint, lint:fix, test and clean (found ${scripts.join(', ')})`,
     });
     assert({
-      condition: ['vite.config.mts', 'index.html', '.env.example'].every(
+      condition: ['.configs/builders', 'index.html', '.env.example'].every(
         (file) => !existsSync(join(lib, file)),
       ),
-      message: 'the library has no vite config, no html and no dev port',
+      message: 'the library has no builders folder (no vite config), no html and no dev port',
     });
     assert({
       condition: unsubstituted({ folder: lib }).length === 0,
@@ -910,9 +911,10 @@ const main = async () => {
         message: 'add asks the frontend folder, the app and the backend, in that order',
       });
       assert({
-        condition: readFileSync(join(project, 'apps/portal/vite.config.mts'), 'utf8').includes(
-          "'http://localhost:3000'",
-        ),
+        condition: readFileSync(
+          join(project, 'apps/portal/.configs/builders/vite.config.mts'),
+          'utf8',
+        ).includes("'http://localhost:3000'"),
         message: 'the app added by answering the prompts proxies /api to http://localhost:3000',
       });
       assert({
@@ -938,10 +940,11 @@ const main = async () => {
 
       assert({ condition: port === '3001', message: 'the second backend took port 3001' });
       assert({
-        condition: readFileSync(join(project, 'apps/admin/vite.config.mts'), 'utf8').includes(
-          `'http://localhost:${port}'`,
-        ),
-        message: `apps/admin/vite.config.mts proxies /api to http://localhost:${port}`,
+        condition: readFileSync(
+          join(project, 'apps/admin/.configs/builders/vite.config.mts'),
+          'utf8',
+        ).includes(`'http://localhost:${port}'`),
+        message: `apps/admin/.configs/builders/vite.config.mts proxies /api to http://localhost:${port}`,
       });
     }
   }

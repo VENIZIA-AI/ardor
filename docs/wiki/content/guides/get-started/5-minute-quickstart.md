@@ -73,11 +73,11 @@ Create `src/main.tsx`:
 
 ## 7. Configure Vite
 
-Create `vite.config.ts`:
+Create `.configs/builders/vite.config.ts` (the examples keep their Vite config there and start Vite with `vite --config .configs/builders/vite.config.ts`):
 
-<<< @/../../../examples/5-mins-qs/vite.config.ts{ts}
+<<< @/../../../examples/5-mins-qs/.configs/builders/vite.config.ts{ts}
 
-`vite.config.ts` configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias, sets up proxy forwarding for `/api` to the backend server, and configures vendor code splitting.
+This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias, sets up proxy forwarding for `/api` to the backend server, and configures vendor code splitting.
 
 ## 8. Run it
 

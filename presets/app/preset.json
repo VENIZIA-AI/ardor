@@ -44,11 +44,11 @@
     "@venizia/ignis-kernel": "peer:"
   },
   "scripts": {
-    "server:dev": "vite",
+    "server:dev": "vite --config .configs/builders/vite.config.mts",
     "compile": "sh scripts/compile.sh",
     "typecheck": "bun check --no-pretty -p tsconfig.json",
-    "lint": "sh scripts/lint.sh",
-    "lint:fix": "sh scripts/lint.sh --fix",
+    "lint": "devz lint",
+    "lint:fix": "devz lint --fix",
     "test": "bun test",
     "clean": "sh scripts/clean.sh"
   },

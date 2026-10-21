@@ -20,7 +20,7 @@ app needs together:
   [Auth recovery](/architecture/auth-recovery.md) and [I18n](/architecture/i18n.md).
 - **Discovery by `AutoArtifacts`** - `ApiDataSource extends HttpDataSource` (`src/datasources/`), declared `@datasource()` with the relative
   `baseUrl: '/api'`, and `ProductRepository extends HttpRepository<IProduct>` (`src/repositories/`), declared
-  `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`, each in a file of its own. `IgnisArtifactsVitePlugin` (in `vite.config.ts`) lists every decorated class under `src/` in the bundle; `Application.artifacts()` returns `AutoArtifacts`; the module that imports it holds no decorated class and is imported by none. `start()` binds each class as a
+  `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })`, each in a file of its own. `IgnisArtifactsVitePlugin` (in `.configs/builders/vite.config.ts`) lists every decorated class under `src/` in the bundle; `Application.artifacts()` returns `AutoArtifacts`; the module that imports it holds no decorated class and is imported by none. `start()` binds each class as a
   singleton, `@repository` injects the datasource, and `useRepository({ target })` resolves by
   class, which survives a minifier because the plugin pins the name of each class it lists (ignis-boot 0.2.1-11; -10 used `keepNames` for the whole build): the production bundle keeps those names, renames the rest, and works. This ties into [DI in the browser](/architecture/di-in-the-browser.md) and
   [Binding key namespaces](/conventions/binding-key-namespaces.md).
@@ -33,9 +33,9 @@ app needs together:
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
   `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
-- **Vendor chunks** - `vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 595 KB whole (188 KB gzipped), over Vite's 500 KB warning, and three chunks of 10, 219 and 364 KB leave no warning.
+- **Vendor chunks** - `.configs/builders/vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 595 KB whole (188 KB gzipped), over Vite's 500 KB warning, and three chunks of 10, 219 and 364 KB leave no warning.
 
-The wiki quickstart (`guides/get-started/5-minute-quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
+The wiki quickstart (`guides/get-started/5-minute-quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `.configs/builders/vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 
 Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.
