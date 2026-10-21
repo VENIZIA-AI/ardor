@@ -25,6 +25,10 @@ WORKDIR /home/bun/app
 USER bun
 
 COPY --chown=bun . .
+# An environment file in the context would stay in the COPY layer, whatever is deleted afterwards: stop
+# here, and keep them out with the root .dockerignore (`**/.env`, `**/.env.*`, `!**/.env.example`).
+RUN leaked="$(find . -name '.env*' ! -name '.env.example' -not -path '*/node_modules/*')"; \
+    if [ -n "$leaked" ]; then echo "Secrets in the build context: $leaked - add **/.env and **/.env.* to the root .dockerignore" >&2; exit 1; fi
 RUN bun install --frozen-lockfile --ignore-scripts
 
 # -------------------------------------------------------------------------------
@@ -40,8 +44,6 @@ ARG APP_BUILD_VERSION=
 RUN test -n "$APP_BUILD_COMMIT" || { echo "Pass --build-arg APP_BUILD_COMMIT=\$(git rev-parse HEAD)" >&2; exit 1; }
 
 WORKDIR /home/bun/app/{{appPath}}
-# The build reads no environment file: what differs per environment is set when the container runs.
-RUN rm -f .env .env.*
 RUN bun run compile
 
 # -------------------------------------------------------------------------------

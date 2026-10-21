@@ -958,6 +958,36 @@ const main = async () => {
       run({ cwd: project, command: ['docker', ...args], expectFailure: failure });
 
     try {
+      // An environment file in the app must never reach the image: the Dockerfile stops a build whose
+      // context holds one, and the .dockerignore VULCAN writes keeps it out of the context.
+      writeFileSync(join(project, 'apps/web/.env'), 'SECRET=leak-me\n');
+      const ignorePath = join(project, '.dockerignore');
+      const generatedIgnore = readFileSync(ignorePath, 'utf8');
+
+      writeFileSync(
+        ignorePath,
+        generatedIgnore
+          .split('\n')
+          .filter((line) => !line.includes('.env'))
+          .join('\n'),
+      );
+      const leaking = docker(
+        ['build', '-f', dockerfile, '-t', image, '--build-arg', `APP_BUILD_COMMIT=${commit}`, '.'],
+        true,
+      );
+
+      assert({
+        condition: leaking.output.includes('Secrets in the build context'),
+        message:
+          'a build whose context holds a .env stops, naming it (a .dockerignore without the env lines)',
+      });
+      writeFileSync(ignorePath, generatedIgnore);
+      assert({
+        condition:
+          generatedIgnore.includes('**/.env') && generatedIgnore.includes('!**/.env.example'),
+        message: 'the .dockerignore of the project keeps .env files out and .env.example in',
+      });
+
       const unstamped = docker(['build', '-f', dockerfile, '-t', image, '.'], true);
 
       assert({
@@ -987,6 +1017,33 @@ const main = async () => {
       assert({
         condition: label.output.trim() === commit,
         message: 'the image carries the commit as org.opencontainers.image.revision',
+      });
+
+      // The builder layers hold no trace of the planted secret.
+      docker([
+        'build',
+        '-f',
+        dockerfile,
+        '--target',
+        'builder',
+        '-t',
+        `${image}-builder`,
+        '--build-arg',
+        `APP_BUILD_COMMIT=${commit}`,
+        '.',
+      ]);
+      const searched = docker([
+        'run',
+        '--rm',
+        `${image}-builder`,
+        'sh',
+        '-c',
+        'grep -r leak-me . || true',
+      ]);
+
+      assert({
+        condition: !searched.output.includes('leak-me'),
+        message: 'the builder stage holds no copy of the planted .env',
       });
 
       docker(['network', 'create', network]);
@@ -1067,7 +1124,10 @@ const main = async () => {
     } finally {
       Bun.spawnSync(['docker', 'rm', '-f', ...containers], { stdout: 'ignore', stderr: 'ignore' });
       Bun.spawnSync(['docker', 'network', 'rm', network], { stdout: 'ignore', stderr: 'ignore' });
-      Bun.spawnSync(['docker', 'image', 'rm', '-f', image], { stdout: 'ignore', stderr: 'ignore' });
+      Bun.spawnSync(['docker', 'image', 'rm', '-f', image, `${image}-builder`], {
+        stdout: 'ignore',
+        stderr: 'ignore',
+      });
     }
   }
 
