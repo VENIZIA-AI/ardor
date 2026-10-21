@@ -10,7 +10,7 @@
   "scripts": {
     "server:dev": "sh scripts/server-dev.sh",
     "compile": "sh scripts/compile.sh",
-    "typecheck": "sh scripts/typecheck.sh",
+    "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "devz lint",
     "lint:fix": "devz lint --fix",
     "test": "bun test --pass-with-no-tests",

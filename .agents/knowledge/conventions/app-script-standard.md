@@ -16,7 +16,7 @@ same thing in a backend, in the generated admin and in an example. The standard 
 |---|---|---|
 | `server:dev` | the dev server | Vite for a frontend; `bun run src/index.ts` for a Bun script |
 | `compile` | `sh scripts/compile.sh` | a frontend runs `vite build` into `dist/`; the ipc example bundles with `bun build` |
-| `typecheck` | `bun check --no-pretty -p tsconfig.json` | `5-mins-qs` checks two programs, so its `typecheck` is `sh scripts/typecheck.sh` |
+| `typecheck` | `bun check --no-pretty -p tsconfig.json` | `tsconfig.json` is the only tsconfig at a project root; a project with more than one program (`5-mins-qs`: the app and its stub API) keeps a solution `tsconfig.json` (`"files": []` and `references`) and the programs in `.configs/builders/`, and `bun check` follows the references |
 | `lint`, `lint:fix` | `devz lint`, `devz lint --fix` | the `devz` bin of `@venizia/dev-configs` (0.3.4 and later): oxlint, eslint with a cache, oxfmt, from `.configs/lints/` and `.configs/formatters/`; `devz lint [--fix] <files>` handles only those files |
 | `test` | `bun test` | an example with no test passes with `--pass-with-no-tests`; the preset ships one test |
 | `clean` | `sh scripts/clean.sh` | removes `dist` and `*.tsbuildinfo` |
