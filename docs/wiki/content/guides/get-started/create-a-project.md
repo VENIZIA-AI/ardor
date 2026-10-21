@@ -63,6 +63,32 @@ To add an admin to a monorepo that already exists (for example one created with 
 
 The monorepo's catalog keeps its IGNIS versions: a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
 
+## Add a Feature Library
+
+A feature is a package of routes, resources and messages that more than one app mounts. To add one to the monorepo, run this at its root:
+
+```bash
+bun x @venizia/vulcan add --preset ardor --lib merchant --dir libs
+```
+
+`--dir` is the folder of the libraries (without it, VULCAN uses the folder of the libraries the monorepo already has), and `--scope @acme` sets the package scope. It needs the VULCAN release that supports library presets. Without `--lib` or `--app` it asks, and with no terminal it stops.
+
+It creates `libs/merchant` as the package `@acme/merchant`:
+
+```text
+libs/merchant/
+  package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
+  tsconfig.json  README.md  scripts/{lint,clean}.sh  .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}
+  src/index.ts  src/feature.ts  src/feature.test.ts
+```
+
+- `src/feature.ts` is `Features.define({ name: 'merchant' })`, empty until you add routes, resources and messages to it.
+- `src/feature.test.ts` mounts it in a small application and reads it back, so the test runs from the first day.
+- The scripts are `typecheck`, `lint`, `lint:fix`, `test` and `clean`. There is no bundler and no dev server: an app that imports the package compiles its source.
+- `@venizia/ardor`, `react`, `react-dom`, `react-router-dom` and `reflect-metadata` are peer dependencies, so the app decides the versions.
+
+An app mounts the feature by listing it in `features()`: `import { feature } from '@acme/merchant'`.
+
 ## Next Steps
 
 After `init` or `add`: `cd <project>`, `bun run server:dev` in `apps/admin` (or `make dev` at the root) serves the admin.

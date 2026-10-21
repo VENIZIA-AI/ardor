@@ -7,10 +7,13 @@
  *   refusal   `vulcan add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
  *   pair      IGNIS backends from `IGNIS_DIR`, then `vulcan add --preset ardor --api <backend>`; the
  *             proxy targets that backend's port. Skipped when IGNIS_DIR is not set.
+ *   lib       `vulcan add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
+ *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
+ *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
  *
  * Needs `make build-all` first (a package is packed with its dist).
  *
- * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair]   (default: every scenario that can run)
+ * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair|lib]   (default: every scenario that can run)
  * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@latest`; before VULCAN 0.3.0 is
  *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
@@ -18,6 +21,7 @@
  *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed)
  */
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -34,7 +38,7 @@ import { chromium } from 'playwright-core';
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
 
 const ROOT = resolve(import.meta.dir, '..');
-const SCENARIOS = ['solo', 'refusal', 'pair'] as const;
+const SCENARIOS = ['solo', 'refusal', 'pair', 'lib'] as const;
 
 type TScenario = (typeof SCENARIOS)[number];
 type TRecord = Record<string, unknown>;
@@ -222,8 +226,13 @@ const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) 
 const appPresetPath = (opts: { presetRoot: string }): string =>
   join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json');
 
-const checksOf = (opts: { presetRoot: string }): string[] => {
-  const { checks } = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) });
+const checksOf = (opts: { presetRoot: string; kind?: 'lib' }): string[] => {
+  const { checks } = readJson({
+    path:
+      opts.kind === 'lib'
+        ? join(opts.presetRoot, 'dist/vulcan-preset/lib/preset.json')
+        : appPresetPath({ presetRoot: opts.presetRoot }),
+  });
 
   return Array.isArray(checks) ? checks.map(String) : [];
 };
@@ -541,7 +550,10 @@ const main = async () => {
     );
   }
 
-  const scenarios = SCENARIOS.filter((name) => requested === undefined || requested === name);
+  // `lib` needs a VULCAN with `add --lib`: it is not in the default run until that is the published one.
+  const scenarios = SCENARIOS.filter((name) =>
+    requested === undefined ? name !== 'lib' || process.env.VULCAN_LIB === '1' : requested === name,
+  );
   const ignisDirectory = process.env.IGNIS_DIR;
   const vulcanTarballs = (process.env.VULCAN_TGZ ?? '').split(',').filter(Boolean);
 
@@ -663,6 +675,143 @@ const main = async () => {
     assert({
       condition: !existsSync(join(project, 'apps/second')),
       message: 'the refused add wrote nothing',
+    });
+  }
+
+  if (scenarios.includes('lib')) {
+    console.log('\nscenario lib: vulcan add --preset ardor --lib merchant');
+    const work = join(tempFolder, 'lib');
+
+    mkdirSync(work, { recursive: true });
+    vulcan({
+      cwd: work,
+      env: NO_INSTALL,
+      args: [
+        'init',
+        '--preset',
+        `file:${presetRoot}`,
+        '--project',
+        'demo',
+        '--frontend-dir',
+        'apps',
+        '--app',
+        'admin',
+      ],
+    });
+    const project = join(work, 'demo');
+
+    // Neither flag and no terminal: refused, and nothing is written.
+    const before = readdirSync(project).sort().join(',');
+    const bare = vulcan({
+      cwd: project,
+      env: NO_INSTALL,
+      expectFailure: true,
+      args: ['add', '--preset', `file:${presetRoot}`],
+    });
+
+    assert({
+      condition: bare.code === 1 && readdirSync(project).sort().join(',') === before,
+      message:
+        'add with neither --app nor --lib and no terminal is refused (exit 1) and writes nothing',
+    });
+
+    // `--lib` on a preset that carries no lib: refused, and nothing is written.
+    const withoutLib = join(tempFolder, 'preset-without-lib');
+
+    cpSync(presetRoot, withoutLib, { recursive: true });
+    const manifestPath = join(withoutLib, 'package.json');
+    const manifest = readJson({ path: manifestPath });
+    const { lib: _lib, ...vulcanField } = isRecord(manifest.vulcan) ? manifest.vulcan : {};
+
+    writeFileSync(
+      manifestPath,
+      `${JSON.stringify({ ...manifest, vulcan: vulcanField }, null, 2)}\n`,
+    );
+    const refused = vulcan({
+      cwd: project,
+      env: NO_INSTALL,
+      expectFailure: true,
+      args: ['add', '--preset', `file:${withoutLib}`, '--lib', 'merchant', '--dir', 'libs'],
+    });
+
+    assert({
+      condition: refused.code === 1 && !existsSync(join(project, 'libs')),
+      message: 'add --lib on a preset without a lib is refused (exit 1) and writes nothing',
+    });
+
+    vulcan({
+      cwd: project,
+      env: NO_INSTALL,
+      args: [
+        'add',
+        '--preset',
+        `file:${presetRoot}`,
+        '--lib',
+        'merchant',
+        '--dir',
+        'libs',
+        '--scope',
+        '@acme',
+      ],
+    });
+    const lib = join(project, 'libs/merchant');
+    const manifestOfLib = readJson({ path: join(lib, 'package.json') });
+    const scripts = isRecord(manifestOfLib.scripts)
+      ? Object.keys(manifestOfLib.scripts).sort()
+      : [];
+    const peerNames = isRecord(manifestOfLib.peerDependencies)
+      ? Object.keys(manifestOfLib.peerDependencies)
+      : [];
+    const importsOfLib = isRecord(manifestOfLib.imports) ? Object.keys(manifestOfLib.imports) : [];
+    const exportsOfLib = isRecord(manifestOfLib.exports) ? manifestOfLib.exports : {};
+
+    assert({
+      condition: manifestOfLib.name === '@acme/merchant',
+      message: 'the package is named @acme/merchant',
+    });
+    assert({
+      condition: exportsOfLib['.'] === './src/index.ts',
+      message: 'exports "." is ./src/index.ts',
+    });
+    assert({
+      condition: importsOfLib.includes('#src/*'),
+      message: 'imports has #src/*',
+    });
+    assert({
+      condition: [
+        '@venizia/ardor',
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'reflect-metadata',
+      ].every((name) => peerNames.includes(name)),
+      message:
+        '@venizia/ardor, react, react-dom, react-router-dom and reflect-metadata are peer dependencies',
+    });
+    assert({
+      condition: scripts.join(',') === ['clean', 'lint', 'lint:fix', 'test', 'typecheck'].join(','),
+      message: `the scripts are exactly typecheck, lint, lint:fix, test and clean (found ${scripts.join(', ')})`,
+    });
+    assert({
+      condition: ['vite.config.mts', 'index.html', '.env.example'].every(
+        (file) => !existsSync(join(lib, file)),
+      ),
+      message: 'the library has no vite config, no html and no dev port',
+    });
+    assert({
+      condition: unsubstituted({ folder: lib }).length === 0,
+      message: 'no file of the library still holds a {{ token',
+    });
+
+    const libChecks = checksOf({ presetRoot, kind: 'lib' });
+
+    addOverrides({ project, tarballs: ownTarballs });
+    await install({
+      project,
+      apps: [
+        { folder: 'apps/admin', checks: ardorChecks },
+        { folder: 'libs/merchant', checks: libChecks },
+      ],
     });
   }
 
