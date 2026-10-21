@@ -22,8 +22,7 @@ same thing in a backend, in the generated admin and in an example. The standard 
 | `clean` | `devz clean` | the `devz` bin of `@venizia/dev-configs`: removes `dist` and the tool caches |
 
 No app has `dev`, `start`, `build`, `rebuild`, `preview`, `api` or `server:prod`. The presets keep nothing at the
-app root but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example` (and `components.json`, which the
-shadcn CLI looks for there): every script is one command (`vite`, `vite build --config ...`, `bun check`, `devz lint`,
+app root but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`: every script is one command (`vite`, `vite build --config ...`, `bun check`, `devz lint`,
 `bun test`, `devz clean`), so there is no `scripts/` folder. An example whose script is more than one command still
 has `scripts/<name>.sh` (POSIX `sh`, `set -eu`, `cd "$(dirname "$0")/.."`) and the `package.json` entry
 `sh scripts/<name>.sh`.

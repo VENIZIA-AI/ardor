@@ -313,7 +313,6 @@ const FORBIDDEN_SCRIPTS = ['dev', 'start', 'build', 'rebuild', 'preview', 'api',
 const APP_ROOT = [
   '.configs',
   '.env.example',
-  'components.json', // the shadcn CLI looks for it at the root
   'dist',
   'node_modules',
   'package.json',
