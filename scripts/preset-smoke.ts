@@ -211,6 +211,26 @@ const vulcan = (opts: {
 
 const NO_INSTALL = { VULCAN_NO_INSTALL: '1' };
 
+/** Pins one package of the root catalog, the way a user moves the catalog first. */
+const setCatalog = (opts: { project: string; name: string; version: string }) => {
+  const path = join(opts.project, 'package.json');
+  const manifest = readJson({ path });
+  const workspaces = isRecord(manifest.workspaces) ? manifest.workspaces : {};
+  const catalog = isRecord(workspaces.catalog) ? workspaces.catalog : {};
+
+  writeFileSync(
+    path,
+    `${JSON.stringify({ ...manifest, workspaces: { ...workspaces, catalog: { ...catalog, [opts.name]: opts.version } } }, null, 2)}\n`,
+  );
+};
+
+/** The range the built preset asks of `name` (its `peers`). */
+const peerRange = (opts: { presetRoot: string; name: string }): string => {
+  const peers = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) }).peers;
+
+  return isRecord(peers) ? String(peers[opts.name]) : '';
+};
+
 /** Root `overrides`: bun applies a `file:` override to a transitive dependency too. */
 const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) => {
   const path = join(opts.project, 'package.json');
@@ -655,15 +675,8 @@ const main = async () => {
       ],
     });
     const project = join(work, 'demo');
-    const manifestPath = join(project, 'package.json');
-    const manifest = readJson({ path: manifestPath });
-    const workspaces = isRecord(manifest.workspaces) ? manifest.workspaces : {};
-    const catalog = isRecord(workspaces.catalog) ? workspaces.catalog : {};
 
-    writeFileSync(
-      manifestPath,
-      `${JSON.stringify({ ...manifest, workspaces: { ...workspaces, catalog: { ...catalog, '@venizia/ignis-kernel': '0.1.0' } } }, null, 2)}\n`,
-    );
+    setCatalog({ project, name: '@venizia/ignis-kernel', version: '0.1.0' });
 
     const { output } = vulcan({
       cwd: project,
@@ -680,8 +693,7 @@ const main = async () => {
         '--no-api',
       ],
     });
-    const peers = readJson({ path: appPresetPath({ presetRoot }) }).peers;
-    const range = isRecord(peers) ? String(peers['@venizia/ignis-kernel']) : '';
+    const range = peerRange({ presetRoot, name: '@venizia/ignis-kernel' });
 
     assert({
       condition:
@@ -889,6 +901,45 @@ const main = async () => {
           'billing-api',
         ],
       });
+      // The preset's oxlint config imports a dev-configs subpath that 0.3.2 introduced, so it asks
+      // for dev-configs ^0.3.2 and refuses a catalog that pins an older one. An IGNIS preset that
+      // still pins an older dev-configs hits that refusal: the catalog moves first, as the message says.
+      const devConfigs = '@venizia/dev-configs';
+      const devConfigsRange = peerRange({ presetRoot, name: devConfigs });
+      const pinned = String(
+        (
+          (readJson({ path: join(project, 'package.json') }).workspaces as TRecord | undefined)
+            ?.catalog as TRecord | undefined
+        )?.[devConfigs] ?? '',
+      );
+
+      if (!Bun.semver.satisfies(pinned.replace(/^[\^~]/, ''), devConfigsRange)) {
+        const { output } = vulcan({
+          cwd: project,
+          env: NO_INSTALL,
+          expectFailure: true,
+          args: [
+            'add',
+            '--preset',
+            `file:${presetRoot}`,
+            '--frontend-dir',
+            'apps',
+            '--app',
+            'admin',
+            '--no-api',
+          ],
+        });
+
+        assert({
+          condition:
+            output.includes(devConfigs) &&
+            output.includes(pinned) &&
+            output.includes(devConfigsRange),
+          message: `add refuses a catalog pinning ${devConfigs} ${pinned}, naming the preset's ${devConfigsRange}`,
+        });
+        setCatalog({ project, name: devConfigs, version: devConfigsRange.replace(/^\^/, '') });
+      }
+
       vulcan({
         cwd: project,
         env: NO_INSTALL,
