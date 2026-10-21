@@ -51,7 +51,7 @@ The application is small:
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
 - `src/pages/*` are the list, create and edit pages of `products`.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
-- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`dev-configs lint`, the bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
+- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
 - `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
 
 ### Expected API

@@ -11,8 +11,8 @@
     "server:dev": "sh scripts/server-dev.sh",
     "compile": "sh scripts/compile.sh",
     "typecheck": "sh scripts/typecheck.sh",
-    "lint": "dev-configs lint",
-    "lint:fix": "dev-configs lint --fix",
+    "lint": "devz lint",
+    "lint:fix": "devz lint --fix",
     "test": "bun test --pass-with-no-tests",
     "clean": "sh scripts/clean.sh"
   },
