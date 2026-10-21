@@ -5,8 +5,8 @@
  *
  *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left
  *   refusal   `vulcan add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
- *   pair      IGNIS backends from `IGNIS_DIR`, then `vulcan add --preset ardor --api <backend>`; the
- *             proxy targets that backend's port. Skipped when IGNIS_DIR is not set.
+ *   pair      IGNIS backends, then `vulcan add --preset ardor --api <backend>`; the proxy targets that
+ *             backend's port. The IGNIS preset is the one released on npm, or the one packed from `IGNIS_DIR`.
  *   lib       `vulcan add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
@@ -23,7 +23,8 @@
  *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
  *                    used instead of the registry's
- *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed)
+ *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed), for the pair scenario; without it
+ *                    the pair scenario takes the latest @venizia/ignis from the registry
  */
 import {
   cpSync,
@@ -196,6 +197,28 @@ const packageNameOf = (opts: { tarball: string }): string => {
   }
 
   return name;
+};
+
+/** The latest release of a package, downloaded from the registry as a tarball. */
+const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
+  const metadata: unknown = await (
+    await fetch(`https://registry.npmjs.org/${opts.name}/latest`)
+  ).json();
+  const dist = isRecord(metadata) && isRecord(metadata.dist) ? metadata.dist : {};
+
+  if (typeof dist.tarball !== 'string') {
+    throw new Error(`[preset-smoke] no tarball for ${opts.name} in the registry`);
+  }
+
+  mkdirSync(opts.destination, { recursive: true });
+  const path = join(
+    opts.destination,
+    `${opts.name.replace(/^@/, '').replace('/', '-')}-latest.tgz`,
+  );
+
+  writeFileSync(path, new Uint8Array(await (await fetch(dist.tarball)).arrayBuffer()));
+
+  return path;
 };
 
 const vulcanCommand = (): string[] =>
@@ -639,11 +662,19 @@ const main = async () => {
   }
 
   // `lib` needs a VULCAN with `add --lib`: it is not in the default run until that is the published one.
-  const hasDocker =
-    Bun.spawnSync(['docker', 'version', '--format', '{{.Server.Version}}'], {
-      stdout: 'ignore',
-      stderr: 'ignore',
-    }).exitCode === 0;
+  // Bun throws when the executable is not there at all.
+  const hasDocker = ((): boolean => {
+    try {
+      return (
+        Bun.spawnSync(['docker', 'version', '--format', '{{.Server.Version}}'], {
+          stdout: 'ignore',
+          stderr: 'ignore',
+        }).exitCode === 0
+      );
+    } catch {
+      return false;
+    }
+  })();
   const scenarios = SCENARIOS.filter((name) => {
     if (requested !== undefined) {
       return requested === name;
@@ -1132,17 +1163,21 @@ const main = async () => {
   }
 
   if (scenarios.includes('pair')) {
-    if (ignisDirectory === undefined) {
-      console.log('\nscenario pair: skipped, IGNIS_DIR is not set');
-    } else {
+    {
       console.log(
         '\nscenario pair: IGNIS backends, then vulcan add --preset ardor --api <backend>',
       );
-      const ignisTarballs = packAll({
-        directory: ignisDirectory,
-        destination: join(tempFolder, 'ignis-tgz'),
-      });
-      const ignisTarball = ignisTarballs.get('@venizia/ignis');
+      const ignisTarballs =
+        ignisDirectory === undefined
+          ? new Map<string, string>()
+          : packAll({ directory: ignisDirectory, destination: join(tempFolder, 'ignis-tgz') });
+      const ignisTarball =
+        ignisDirectory === undefined
+          ? await downloadLatest({
+              name: '@venizia/ignis',
+              destination: join(tempFolder, 'ignis-tgz'),
+            })
+          : ignisTarballs.get('@venizia/ignis');
 
       if (ignisTarball === undefined) {
         throw new Error('[preset-smoke] @venizia/ignis was not packed from IGNIS_DIR');
@@ -1242,7 +1277,7 @@ const main = async () => {
       });
       // The interactive path: a terminal asks the three names in order and the answers come from the
       // keyboard. `script` gives the command a pseudo-terminal, so VULCAN sees a TTY, and the answers
-      // are piped in: the frontend folder (empty takes the one chosen before), the app, the backend.
+      // are piped in: the kind (a preset with a lib asks app or lib first), the frontend folder (empty takes the one chosen before), the app, the backend.
       const prompted = run({
         cwd: project,
         env: NO_INSTALL,
@@ -1252,7 +1287,7 @@ const main = async () => {
           [...vulcanCommand(), 'add', '--preset', `file:${presetRoot}`].join(' '),
           '/dev/null',
         ],
-        input: '\nportal\ncore-api\n',
+        input: 'app\n\nportal\ncore-api\n',
       });
       const order = [
         'Frontend folder',
