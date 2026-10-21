@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Atlas MCP server
-description: What the ardor-atlas MCP server is - VULCAN's atlas run against this checkout, and against IGNIS beside it - its tools and corpora, where symbol, version and changes get their answers, and when those answers go stale.
+description: What the atlas MCP server (registered as `atlas`, naming itself ardor-atlas) is - VULCAN's atlas run against this checkout, and against IGNIS beside it - its tools and corpora, where symbol, version and changes get their answers, and when those answers go stale.
 resource: .mcp.json
 tags: [reference, atlas, mcp, tooling]
 ---
@@ -17,7 +17,7 @@ tags: [reference, atlas, mcp, tooling]
 - [Related](#related)
 <!-- okf:generated:contents end -->
 
-`ardor-atlas` is the MCP server agents query for this bundle, the wiki and the changelogs (rule
+`atlas` (registered in `.mcp.json` under that key, the name `vulcan init` writes) is the MCP server agents query for this bundle, the wiki and the changelogs (rule
 P-01). ARDOR ships no atlas package of its own: the server is VULCAN's atlas (`@venizia/vulcan-atlas`,
 pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live.
 Nothing behind `symbol`, `version` and `changes` is committed any more: atlas reads symbols from the
@@ -42,7 +42,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
   remote for the ref's commit and tags on each start. An unreachable source is reported
   `UNAVAILABLE` in the `initialize` reply and the server still serves the rest; with the remote
   down but a cache present it serves the last commit and says `OFFLINE`.
-- **The server is `ardor-atlas`** whether or not a source is served beside this checkout.
+- **The server introduces itself as `ardor-atlas`**, and is registered as `atlas`, whether or not a source is served beside this checkout.
 - **Changing the server itself.** `.mcp.local.example.json` runs the atlas CLI of a VULCAN checkout
   beside this one; copy it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally.
   `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
