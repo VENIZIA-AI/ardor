@@ -935,6 +935,12 @@ const main = async () => {
     const project = join(work, 'demo');
 
     addOverrides({ project, tarballs: ownTarballs, vendor: true });
+    // A preset read from a file leaves the catalog pointing at the extracted package: make it the vendored one.
+    setCatalog({
+      project,
+      name: '@venizia/ardor',
+      version: `file:./vendor/${basename(ardorTarball)}`,
+    });
     run({ cwd: project, command: ['bun', 'install'] });
     assert({
       condition: !readFileSync(join(project, 'bun.lock'), 'utf8').includes(`file:${tempFolder}`),
