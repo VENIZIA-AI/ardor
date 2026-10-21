@@ -118,7 +118,10 @@ check(
 
 const wiki = await call({
   method: 'tools/call',
-  params: { name: 'search', arguments: { query: 'content-range total', corpus: 'wiki', source: 'ardor' } },
+  params: {
+    name: 'search',
+    arguments: { query: 'content-range total', corpus: 'wiki', source: 'ardor' },
+  },
 });
 const wikiText = JSON.stringify(wiki.result ?? wiki.error);
 check(
