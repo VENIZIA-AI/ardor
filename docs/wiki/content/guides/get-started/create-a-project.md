@@ -72,10 +72,10 @@ git add . && git commit -m "First commit"
 docker build -f apps/admin/.configs/builders/Dockerfile -t admin \
   --build-arg APP_BUILD_COMMIT="$(git rev-parse HEAD)" \
   --build-arg APP_BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" .
-docker run --rm -p 8080:8080 --add-host api:host-gateway -e API_UPSTREAM=http://api:3000 admin
+docker run --rm --network host -e API_UPSTREAM=http://127.0.0.1:3000 admin
 ```
 
-Open `http://localhost:8080`. `--add-host api:host-gateway` points `api` at the machine that runs Docker, where `make dev` serves your backend on port 3000. In compose or a cluster, the service name does this job and the flag is not needed. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
+Open `http://localhost:8080`. On Linux, `--network host` lets the container reach the backend that `make dev` serves on port 3000 of your machine, so there is no `-p`. In compose or a cluster, `API_UPSTREAM` is the service name (`http://api:3000`) and the container needs no special flag. nginx resolves the name with DNS, not with `/etc/hosts`, so a name added with `--add-host` does not work; an IP address does. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
 
 What the image does:
 
