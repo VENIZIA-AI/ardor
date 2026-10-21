@@ -5,9 +5,9 @@ import { ArdorApplication } from '@venizia/ardor';
 import { createRoot } from 'react-dom/client';
 
 import { Application } from '#src/application';
-import { ProductCreate } from '#src/pages/product-create';
-import { ProductEdit } from '#src/pages/product-edit';
-import { ProductList } from '#src/pages/product-list';
+import { Home } from '#src/pages/home';
+
+import './themes/index.css';
 
 const application = new Application();
 const store = configureStore({
@@ -21,6 +21,6 @@ createRoot(document.getElementById('root')!).render(
     container={application}
     reduxStore={store}
     suspense={<p>Loading</p>}
-    resources={[{ name: 'products', list: ProductList, create: ProductCreate, edit: ProductEdit }]}
+    dashboard={Home}
   />,
 );

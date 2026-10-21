@@ -36,27 +36,31 @@ demo/
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
-    package.json  tsconfig.json  index.html  .env.example  README.md
+    package.json  tsconfig.json  index.html  components.json  .env.example  README.md
     .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
     .configs/builders/vite.config.mts  scripts/{compile,clean}.sh
     src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
-    src/pages/{product-list,product-create,product-edit,product-form}.tsx
+    src/pages/home.tsx
+    src/components/shadcn/{button,card}.tsx
+    src/themes/index.css  src/utilities/tw.utility.ts
 ```
 
 The application is small:
 
-- `src/main.tsx` renders `ArdorApplication` with the `products` resource.
+- `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
-- `src/pages/*` are the list, create and edit pages of `products`.
+- `src/pages/home.tsx` is the one page: the ARDOR logo, the app name and the message the backend answers to `GET /api/hello`, in a card on a soft wash of the brand gradient. It shows a placeholder while it loads, and when the backend is down it says so and shows `bun run server:dev`, the command that starts it, with a button to try again. The call goes through the data provider's `send`, not a raw `fetch`. Replace the page with your own.
+- `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them; `components.json` is the shadcn configuration, so `bunx shadcn add <component>` adds more, with the `#src/...` imports.
+- `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
 - `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
 
 ### Expected API
 
-The app has no sign-in and expects an API with a `products` resource: `GET /api/products` returning a JSON array with a `Content-Range` header, `POST /api/products`, `PATCH /api/products/:id`. To use another resource, rename `products` in `src/main.tsx` and the pages. For sign-in, see [Add sign-in](../tutorials/add-sign-in).
+The app has no sign-in and expects one route of the backend: `GET /api/hello` answering `{ "message": "..." }`, which an IGNIS app made from its preset has. To use your own resources, add them in `src/main.tsx` (`resources`). For sign-in, see [Add sign-in](../tutorials/add-sign-in).
 
 ## Add an Admin to an Existing Monorepo
 

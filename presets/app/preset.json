@@ -1,7 +1,7 @@
 {
   "presetVersion": 1,
   "side": "frontend",
-  "summary": "An ARDOR admin on Vite and React: one products resource with list, create and edit pages, REST data provider and i18n, no sign-in.",
+  "summary": "An ARDOR app on Vite and React: the app name and the message of GET /api/hello, styled with Tailwind CSS and shadcn components, REST data provider and i18n, no sign-in.",
   "devPort": 5173,
   "imports": { "#src/*.json": "./src/*.json", "#src/*": "./src/*.js" },
   "urls": ["/"],
@@ -14,15 +14,19 @@
     "@venizia/ignis-helpers": "catalog:",
     "@venizia/ignis-inversion": "catalog:",
     "@venizia/ignis-kernel": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
     "ra-core": "catalog:",
     "ra-i18n-polyglot": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-redux": "catalog:",
     "react-router-dom": "catalog:",
-    "reflect-metadata": "catalog:"
+    "reflect-metadata": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
     "@types/bun": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -33,6 +37,7 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
+    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
   },

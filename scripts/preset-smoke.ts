@@ -31,7 +31,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 
 import { chromium } from 'playwright-core';
 
@@ -310,20 +310,19 @@ const freePort = (): number => {
   return port as number;
 };
 
-const PRODUCTS = [
-  { id: 1, name: 'Espresso', price: 30000 },
-  { id: 2, name: 'Latte', price: 45000 },
-];
+const HELLO = { message: 'Hello from IGNIS!' };
 
 /**
- * Opens the app in headless Chrome and checks the page really runs: the list renders the rows the
- * page was given, the create form shows its inputs, and nothing throws or logs an error on the way.
+ * Opens the app in headless Chrome and checks the page really runs: the app's name and the message of
+ * `GET /api/hello` render, the stylesheet applies and follows the system's light and dark preference, nothing
+ * throws or logs an error on the way, and when `/api/hello` fails the page says the backend is not reachable
+ * and shows the command that starts it.
  * A dev server that answers 200 for every file proves none of that (a module that reads `process`
  * at import time answers 200 and leaves the page blank). The API is answered by the browser, not by
  * a server, so the check does not depend on the proxy target. `CHROME_BIN` names a Chrome or
  * Chromium binary; without it the installed Google Chrome is used.
  */
-const assertPageRenders = async (opts: { port: number }) => {
+const assertPageRenders = async (opts: { port: number; name: string }) => {
   const executablePath = process.env.CHROME_BIN;
   const browser = await chromium.launch({
     executablePath,
@@ -340,18 +339,37 @@ const assertPageRenders = async (opts: { port: number }) => {
         problems.push(`console.error: ${message.text()}`);
       }
     });
-    await page.route('**/api/products*', (route) =>
-      route.fulfill({
-        json: PRODUCTS,
-        headers: { 'content-range': `products 0-${PRODUCTS.length - 1}/${PRODUCTS.length}` },
-      }),
-    );
+    await page.route('**/api/hello', (route) => route.fulfill({ json: HELLO }));
 
     await page.goto(`http://localhost:${opts.port}/`);
-    await page.getByRole('heading', { name: /Products/ }).waitFor({ timeout: 30_000 });
-    await page.getByRole('link', { name: 'Espresso' }).waitFor({ timeout: 10_000 });
-    await page.goto(`http://localhost:${opts.port}/#/products/create`);
-    await page.getByLabel('Name').waitFor({ timeout: 10_000 });
+    await page.getByRole('heading', { name: opts.name }).waitFor({ timeout: 30_000 });
+    await page.getByText(HELLO.message).waitFor({ timeout: 10_000 });
+
+    // Tailwind ran (the page background is a token, not the browser's transparent) and dark differs from light.
+    const background = (): Promise<string> =>
+      page.evaluate<string>('getComputedStyle(document.body).backgroundColor');
+
+    await page.emulateMedia({ colorScheme: 'light' });
+    const light = await background();
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+    const dark = await background();
+
+    if (light === 'rgba(0, 0, 0, 0)' || light === dark) {
+      problems.push(`the stylesheet does not apply: background ${light} in light, ${dark} in dark`);
+    }
+
+    // The backend is down: one friendly line and the command, not an error screen. (The failed request
+    // is logged by the browser itself, so this page is not held to "no console error".)
+    const down = await browser.newPage();
+
+    down.on('pageerror', (error) => problems.push(`uncaught (backend down): ${error.message}`));
+    await down.route('**/api/hello', (route) =>
+      route.fulfill({ status: 502, body: 'Bad Gateway' }),
+    );
+    await down.goto(`http://localhost:${opts.port}/`);
+    await down.getByText(/not reachable/).waitFor({ timeout: 15_000 });
+    await down.getByText('bun run server:dev').waitFor({ timeout: 5_000 });
   } catch (error) {
     problems.push(
       `the page did not render: ${error instanceof Error ? error.message : String(error)}`,
@@ -427,7 +445,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
       });
     }
 
-    await assertPageRenders({ port });
+    await assertPageRenders({ port, name: basename(opts.cwd) });
 
     // Dependency pre-bundling and reloads print on the first request, so wait for them.
     await Bun.sleep(2_000);

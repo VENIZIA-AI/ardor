@@ -19,6 +19,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | 2026-10-20 | [Silent first run for the ARDOR preset](./2026-10-20-preset-first-run) | Bug Fix |
 | 2026-10-20 | [The preset app's lint scripts are short](./2026-10-20-preset-lint-script) | Enhancement |
 | 2026-10-20 | [The preset app imports its own modules with #src](./2026-10-20-preset-subpath-imports) | Enhancement |
+| 2026-10-20 | [The generated app is one styled page](./2026-10-20-preset-ui) | Enhancement |
 | 2026-10-20 | [ARDOR ships a VULCAN preset](./2026-10-20-vulcan-preset) | New Feature |
 | 2026-10-19 | [Augment @venizia/ardor, not the declaring packages](./2026-10-19-augment-the-umbrella) | Bug Fix |
 | 2026-10-19 | [toDataUrl no longer needs Promise.withResolvers](./2026-10-19-to-data-url-without-with-resolvers) | Bug Fix |
