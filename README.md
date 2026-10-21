@@ -202,8 +202,7 @@ react-admin is lighter.
 
 ```bash
 cd examples/5-mins-qs
-bun run api          # stub API on :3100 - sign in with admin / admin
-bun run dev          # Vite on :5173
+bun run server:dev    # the stub API on :3100 (sign in with admin / admin) and Vite on :5173
 ```
 
 ## Contributing

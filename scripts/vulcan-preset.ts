@@ -1,19 +1,18 @@
 /**
- * Writes the publishable copy of a package's VULCAN preset. The template in `vulcan-preset/` marks
- * what a release must fill in; the copy in `dist/vulcan-preset/` carries the real versions, so a
- * preset always describes the release it ships in.
+ * Writes the publishable copy of a package's VULCAN preset. The template in `presets/<name>/` (a
+ * sibling of `packages/`) marks what a release must fill in; the copy in the package's
+ * `dist/vulcan-preset/` carries the real versions, so a preset always describes the release it ships in.
  *
  *   workspace:*  the exact version of that workspace package, read from its package.json now
  *   catalog:     the range in the root catalog; a @venizia package is exact (a leading ^ or ~ is dropped)
  *   peer:        the range this package's own peerDependencies hold for that name
  *
- * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset)
+ * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset/app)
  */
 import { Glob } from 'bun';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const PRESET_DIRECTORY = 'vulcan-preset';
 const SECTIONS = ['dependencies', 'devDependencies', 'peers'] as const;
 const EXACT_SCOPE = '@venizia/';
 const RANGE_PREFIX = /^[\^~]/;
@@ -79,13 +78,15 @@ export interface IBuildPresetResult {
 
 export const buildPreset = (opts: {
   root: string;
-  /** The preset package, relative to `root`. */
+  /** The package the preset is published in, relative to `root`: its peerDependencies fill `peer:`. */
   packageDirectory: string;
+  /** The preset template (`preset.json` and `files/`), relative to `root`. */
+  presetDirectory: string;
   outDirectory: string;
 }): IBuildPresetResult => {
   const { root, outDirectory } = opts;
   const packageRoot = join(root, opts.packageDirectory);
-  const presetRoot = join(packageRoot, PRESET_DIRECTORY);
+  const presetRoot = join(root, opts.presetDirectory);
   const manifest = readJson({ path: join(root, 'package.json') });
   const catalog = readCatalog({ manifest });
   const versions = readWorkspaceVersions({ root, manifest });
@@ -147,11 +148,12 @@ if (import.meta.main) {
   const { resolved } = buildPreset({
     root,
     packageDirectory: 'packages/ardor',
-    outDirectory: join(root, 'packages/ardor/dist/vulcan-preset'),
+    presetDirectory: 'presets/app',
+    outDirectory: join(root, 'packages/ardor/dist/vulcan-preset/app'),
   });
 
   console.log(resolved.join('\n'));
   console.log(
-    `vulcan-preset: wrote packages/ardor/dist/vulcan-preset (${resolved.length} resolved)`,
+    `vulcan-preset: wrote packages/ardor/dist/vulcan-preset/app (${resolved.length} resolved)`,
   );
 }

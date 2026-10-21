@@ -1,10 +1,6 @@
 # Package test suites, type-check, the browser-purity gate, the clean-install gate, the bundle and
 # layering gates, and the gate scripts' own tests.
 
-# Packages with no suite of their own; their `test-<pkg>` says so and passes.
-NO_TEST := ardor
-TEST_PACKAGES := $(filter-out $(NO_TEST),$(PACKAGES))
-
 # Packages with an entry claimed browser-pure (scripts/purity/manifest.ts) - all of them.
 PURE := $(PACKAGES)
 
@@ -17,22 +13,18 @@ CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 
 # ----------------------------------------------------------------------------
 # TEST TARGETS (Bun test runner only)
-# The one home of the test command: CI calls these targets, and so should you. `.env.test` carries
-# the test-only settings (B-08) and the preload installs each package's DOM or storage stub - there
-# is no bunfig.toml, so a bare `bun test` inside a package skips it and fails. BUN_TEST_FLAGS is an
-# optional pass-through (`--isolate`, `--parallel`). Needs a build first (B-05).
+# The one home of the test command is the package's `make test` (make/project.mk): CI calls these
+# targets, and so should you. BUN_TEST_FLAGS is an optional pass-through (`--isolate`,
+# `--parallel`). Needs a build first (B-05). A package with no suite says so and passes.
 # ----------------------------------------------------------------------------
-BUN_TEST_FLAGS ?=
+export BUN_TEST_FLAGS
 
 test: test-all
 
-test-all: $(addprefix test-,$(TEST_PACKAGES))
+test-all: $(TEST_TARGETS)
 
-$(addprefix test-,$(TEST_PACKAGES)): test-%:
-	@cd packages/$* && bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
-
-$(addprefix test-,$(NO_TEST)):
-	@echo "ℹ️  No test suite in this package - skipping."
+$(TEST_TARGETS): test-%:
+	@$(MAKE) --no-print-directory -C packages/$* test
 
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:

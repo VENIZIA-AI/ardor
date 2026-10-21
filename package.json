@@ -52,13 +52,13 @@
       "@types/lodash": "^4.17.24",
       "@types/react": "^19",
       "@types/react-dom": "^19",
-      "@venizia/dev-configs": "0.3.1",
-      "@venizia/ignis-boot": "0.3.2",
-      "@venizia/ignis-connectors": "0.3.2",
-      "@venizia/ignis-filter": "0.3.2",
-      "@venizia/ignis-helpers": "0.3.2",
-      "@venizia/ignis-inversion": "0.3.2",
-      "@venizia/ignis-kernel": "0.3.2",
+      "@venizia/dev-configs": "0.3.4",
+      "@venizia/ignis-boot": "0.3.4",
+      "@venizia/ignis-connectors": "0.3.4",
+      "@venizia/ignis-filter": "0.3.4",
+      "@venizia/ignis-helpers": "0.3.4",
+      "@venizia/ignis-inversion": "0.3.5",
+      "@venizia/ignis-kernel": "0.3.4",
       "@vitejs/plugin-react": "^6.1.1",
       "eslint": "^10.10.0",
       "lodash": "^4.18.1",
@@ -82,8 +82,9 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.3.3",
+    "@venizia/vulcan": "0.3.7",
     "oxfmt": "catalog:",
+    "playwright-core": "1.64.1",
     "typescript": "catalog:"
   }
 }

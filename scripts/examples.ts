@@ -6,7 +6,8 @@
  *   bun scripts/examples.ts check       lint and typecheck - the pre-commit gate
  *   bun scripts/examples.ts lint        every example's `lint` script
  *   bun scripts/examples.ts typecheck   every example's `typecheck` script
- *   bun scripts/examples.ts build       every example's `build` script (typecheck, then vite build) - CI
+ *   bun scripts/examples.ts compile     typecheck, then every example's `compile` script - CI
+ *   bun scripts/examples.ts test        every example's `test` script
  */
 
 /** Runs one command with the terminal attached; resolves to its exit code. */
@@ -26,9 +27,17 @@ const typecheck = async (): Promise<number> => {
   return run({ command: ['bun', 'run', '--filter', './examples/*', 'typecheck'] });
 };
 
-const build = async (): Promise<number> => {
-  console.log('🔍 Building all examples against the built packages...');
-  return run({ command: ['bun', 'run', '--filter', './examples/*', 'build'] });
+const compile = async (): Promise<number> => {
+  console.log('🔍 Compiling all examples against the built packages...');
+  return series([
+    typecheck,
+    () => run({ command: ['bun', 'run', '--filter', './examples/*', 'compile'] }),
+  ]);
+};
+
+const test = async (): Promise<number> => {
+  console.log('🔍 Testing all examples...');
+  return run({ command: ['bun', 'run', '--filter', './examples/*', 'test'] });
 };
 
 /** Runs each step in order and stops at the first that fails. */
@@ -46,7 +55,8 @@ const COMMANDS: Record<string, () => Promise<number>> = {
   check: () => series([lint, typecheck]),
   lint,
   typecheck,
-  build,
+  compile,
+  test,
 };
 
 const name = process.argv[2] ?? '';

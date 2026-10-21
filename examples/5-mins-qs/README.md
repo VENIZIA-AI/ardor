@@ -7,8 +7,7 @@ against.
 ```bash
 bun install                # from the repository root
 cd examples/5-mins-qs
-bun run api                # the stub API on :3100 - sign in with admin / admin
-bun run dev                # Vite on :5173, proxying /api
+bun run server:dev          # the stub API on :3100 (sign in with admin / admin) and Vite on :5173, proxying /api
 ```
 
 Open <http://localhost:5173>, sign in, and the product list loads through `DefaultRestDataProvider`

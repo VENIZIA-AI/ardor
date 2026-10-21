@@ -59,7 +59,7 @@
   },
   "sideEffects": false,
   "vulcan": {
-    "preset": "./dist/vulcan-preset/preset.json"
+    "preset": "./dist/vulcan-preset/app/preset.json"
   },
   "files": [
     "README.md",

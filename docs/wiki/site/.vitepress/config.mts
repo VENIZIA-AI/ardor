@@ -121,6 +121,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         text: '2026-10-20',
         collapsed: true,
         items: [
+          {
+            text: 'Every app has the same scripts',
+            link: '/changelogs/2026-10-20-app-script-standard',
+          },
           { text: 'ARDOR 0.3.0 Is Stable', link: '/changelogs/2026-10-20-ardor-0-3-0-stable' },
           {
             text: "The preset's typecheck runs bun check",

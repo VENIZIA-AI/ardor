@@ -44,7 +44,7 @@ const repository = (opts: { template?: TTemplate; catalog?: Record<string, strin
   );
   write(
     root,
-    'packages/umbrella/vulcan-preset/preset.json',
+    'presets/umbrella/preset.json',
     JSON.stringify({
       presetVersion: 1,
       side: 'frontend',
@@ -57,9 +57,9 @@ const repository = (opts: { template?: TTemplate; catalog?: Record<string, strin
       ...opts.template,
     }),
   );
-  write(root, 'packages/umbrella/vulcan-preset/files/_env.example', 'PORT={{devPort}}\n');
-  write(root, 'packages/umbrella/vulcan-preset/files/.configs/lint.mts', 'export {};\n');
-  write(root, 'packages/umbrella/vulcan-preset/files/logo.bin', new Uint8Array([0, 255, 1, 2]));
+  write(root, 'presets/umbrella/files/_env.example', 'PORT={{devPort}}\n');
+  write(root, 'presets/umbrella/files/.configs/lint.mts', 'export {};\n');
+  write(root, 'presets/umbrella/files/logo.bin', new Uint8Array([0, 255, 1, 2]));
 
   return root;
 };
@@ -68,6 +68,7 @@ const build = (root: string) =>
   buildPreset({
     root,
     packageDirectory: 'packages/umbrella',
+    presetDirectory: 'presets/umbrella',
     outDirectory: join(root, 'packages/umbrella/dist/vulcan-preset'),
   });
 

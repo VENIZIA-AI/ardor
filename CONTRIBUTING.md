@@ -150,7 +150,7 @@ git commit -m "[#45] chore: upgrade the IGNIS chain"
 
 ```bash
 # Lint fixes and format
-make fmt
+make lint-fix
 
 # Build packages
 make build
@@ -176,7 +176,7 @@ We use oxlint, ESLint (naming only) and oxfmt, all configured from `@venizia/dev
 make lint-all
 
 # Auto-fix issues
-make fmt
+make lint-fix
 
 # The examples carry their own scripts
 bun scripts/examples.ts check

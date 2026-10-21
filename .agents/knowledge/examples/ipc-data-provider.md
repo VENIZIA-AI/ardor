@@ -105,7 +105,7 @@ see [No-auth paths](/architecture/no-auth-paths.md) - since this example has no 
 
 ```bash
 cd examples/ipc-data-provider
-bun run start
+bun run server:dev
 ```
 
 The script builds a minimal `BaseArdorApplication`, starts it (triggering the normal

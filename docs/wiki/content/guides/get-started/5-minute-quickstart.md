@@ -81,12 +81,12 @@ Create `vite.config.ts`:
 
 ## 8. Run it
 
-The stub API is part of the ARDOR repository: from a clone, `cd examples/5-mins-qs && bun run api` (listens on :3100, sign in with admin / admin - see `examples/5-mins-qs/package.json` and `api/server.ts`), and a reader with their own IGNIS API skips it and points the Vite proxy (see `vite.config.ts`) at that API.
+The stub API is part of the ARDOR repository: from a clone, `cd examples/5-mins-qs && bun run api/server.ts` (listens on :3100, sign in with admin / admin - see `api/server.ts`; in the example itself `bun run server:dev` starts it together with Vite), and a reader with their own IGNIS API skips it and points the Vite proxy (see `vite.config.ts`) at that API.
 
 Start the backend stub API in one terminal:
 
 ```bash
-cd examples/5-mins-qs && bun run api
+cd examples/5-mins-qs && bun run api/server.ts
 ```
 
 Start the Vite development server in another terminal:

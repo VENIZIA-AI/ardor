@@ -7,8 +7,9 @@
       "devDependencies": {
         "@types/bun": "catalog:",
         "@venizia/dev-configs": "catalog:",
-        "@venizia/vulcan": "0.3.3",
+        "@venizia/vulcan": "0.3.7",
         "oxfmt": "catalog:",
+        "playwright-core": "1.64.1",
         "typescript": "catalog:",
       },
     },
@@ -332,13 +333,13 @@
     "@types/lodash": "^4.17.24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@venizia/dev-configs": "0.3.1",
-    "@venizia/ignis-boot": "0.3.2",
-    "@venizia/ignis-connectors": "0.3.2",
-    "@venizia/ignis-filter": "0.3.2",
-    "@venizia/ignis-helpers": "0.3.2",
-    "@venizia/ignis-inversion": "0.3.2",
-    "@venizia/ignis-kernel": "0.3.2",
+    "@venizia/dev-configs": "0.3.4",
+    "@venizia/ignis-boot": "0.3.4",
+    "@venizia/ignis-connectors": "0.3.4",
+    "@venizia/ignis-filter": "0.3.4",
+    "@venizia/ignis-helpers": "0.3.4",
+    "@venizia/ignis-inversion": "0.3.5",
+    "@venizia/ignis-kernel": "0.3.4",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^10.10.0",
     "lodash": "^4.18.1",
@@ -879,25 +880,25 @@
 
     "@venizia/ardor-react": ["@venizia/ardor-react@workspace:packages/react"],
 
-    "@venizia/dev-configs": ["@venizia/dev-configs@0.3.1", "", { "dependencies": { "@eslint/js": "^10.0.1", "eslint-config-prettier": "^10.1.8", "eslint-plugin-n": "^18.2.1", "eslint-plugin-prettier": "^5.5.6", "eslint-plugin-unicorn": "^74.0.0", "typescript-eslint": "^8.71.2" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxfmt": ">=0.73.0", "oxlint": ">=1.88.0", "oxlint-tsgolint": ">=7.0.2004", "prettier": "^3.0.0", "typescript": "^5.0.0 || ^6.0.0" }, "optionalPeers": ["eslint", "oxfmt", "oxlint", "oxlint-tsgolint", "prettier", "typescript"] }, "sha512-A1arpKketRIMMQ97y5tXxz65bl4deDPxr6TvfaJCk876UVllpkFfAmJL0Fwc2X5DDWDf10eYfr6ODT/0k2DiNA=="],
+    "@venizia/dev-configs": ["@venizia/dev-configs@0.3.4", "", { "dependencies": { "@eslint/js": "^10.0.1", "eslint-config-prettier": "^10.1.8", "eslint-plugin-n": "^18.2.1", "eslint-plugin-prettier": "^5.5.6", "eslint-plugin-unicorn": "^74.0.0", "typescript-eslint": "^8.71.2" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxfmt": ">=0.73.0", "oxlint": ">=1.88.0", "oxlint-tsgolint": ">=7.0.2004", "prettier": "^3.0.0", "typescript": "^5.0.0 || ^6.0.0" }, "optionalPeers": ["eslint", "oxfmt", "oxlint", "oxlint-tsgolint", "prettier", "typescript"], "bin": { "devz": "dist/cli/index.js" } }, "sha512-z3gnK+NhSkJoUXDGFevZXxEUFZIbIzSPOkjtwI4W2PSLASdgWsHnEjxqs54lstFuiuTrnb+ZszwB5Yj69/sOmg=="],
 
-    "@venizia/ignis-boot": ["@venizia/ignis-boot@0.3.2", "", { "dependencies": { "@venizia/ignis-helpers": "0.3.2", "@venizia/ignis-inversion": "0.3.2" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/cjs/clis/artifacts.js", "ignis-build-info": "dist/cjs/clis/build-info.js" } }, "sha512-KJQz/2E5Sn/CGfixHO0Mqi6Ajdp540I1WNhejnMM5l1WDWAuY+ZKxIQWluVdoxI/IvI1YYTbWl/RfWPSJlb/aA=="],
+    "@venizia/ignis-boot": ["@venizia/ignis-boot@0.3.4", "", { "dependencies": { "@venizia/ignis-helpers": "0.3.4", "@venizia/ignis-inversion": "0.3.5" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/cjs/clis/artifacts.js" } }, "sha512-aqjWhnyLWPvqnCvPKpHXAMzE0r1+GCfN3/s04l5oz8ILY/7wXN+YCmPMT8GF74rvs97GfK5kPLeJH8NTEdolCg=="],
 
-    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.3.2", "", { "dependencies": { "@venizia/ignis-filter": "0.3.2", "@venizia/ignis-helpers": "0.3.2", "@venizia/ignis-inversion": "0.3.2", "@venizia/ignis-kernel": "0.3.2", "zod": "^4.5.4" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.4", "@hono/zod-openapi": "^1.5.1", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.2", "drizzle-zod": "^0.8.3", "hono": "^4.12.30", "meilisearch": "^0.59.0 || ^0.60.0", "pg": "^8.21.0", "postgres": "^3.4.0", "typesense": "^3.0.3" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-8H+tbxaDC6IoNtVBux3qoA2nTgK4yOHpQjQ+UdAcZb8btGwRTLaUSflb1y+Y1OPomZlqqnSsiN1W+B3IKY4u0w=="],
+    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.3.4", "", { "dependencies": { "@venizia/ignis-filter": "0.3.4", "@venizia/ignis-helpers": "0.3.4", "@venizia/ignis-inversion": "0.3.5", "@venizia/ignis-kernel": "0.3.4", "zod": "^4.5.4" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.4", "@hono/zod-openapi": "^1.5.1", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.2", "drizzle-zod": "^0.8.3", "hono": "^4.12.30", "meilisearch": "^0.59.0 || ^0.60.0", "pg": "^8.21.0", "postgres": "^3.4.0", "typesense": "^3.0.3" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-t3+TwRzbhFRjh2LagcGf/BKaOQfr44ZoM9xCF123JUCzY5CEDCxT7xFaT7Ht7nY+R7cIlTAVriKJ9BNXO/v1kg=="],
 
-    "@venizia/ignis-filter": ["@venizia/ignis-filter@0.3.2", "", { "dependencies": { "@venizia/ignis-inversion": "0.3.2", "zod": "^4.5.4" } }, "sha512-IPnuNwND+HhlFzXqG7jkFSgttRGB3zNMmfVmqY1LJrZ39lkQTtWOywITsj2hOd2PWJbYq5yJ6vFdlusdaod33Q=="],
+    "@venizia/ignis-filter": ["@venizia/ignis-filter@0.3.4", "", { "dependencies": { "@venizia/ignis-inversion": "0.3.5", "zod": "^4.5.4" } }, "sha512-oOUAIJnU+4OTCg26aCji1Zb5Ykoze+XprVsR/OGbO2FGxLPvaojus5mHyKd3iP8ZK1tyKfmXHigrtv6OMYXkfg=="],
 
-    "@venizia/ignis-helpers": ["@venizia/ignis-helpers@0.3.2", "", { "dependencies": { "@venizia/ignis-inversion": "0.3.2", "reflect-metadata": "^0.2.2", "zod": "^4.5.4" }, "peerDependencies": { "@dotenvx/dotenvx": "^2.14.0", "@platformatic/kafka": "^2.6.1", "@socket.io/redis-adapter": "^8.3.0", "@socket.io/redis-emitter": "^5.1.0", "axios": "^1.16.1", "bullmq": "^5.80.8", "cron": "^4.3.3", "hono": "^4.12.30", "ioredis": "^5.11.1", "minio": "^8.0.6", "mqtt": "^5.15.2", "node-vault": "^0.12.0", "pino": "^10.3.1", "pino-pretty": "^13.1.3", "pino-roll": "^4.0.0", "socket.io": "^4.8.1", "socket.io-client": "^4.8.1", "winston": "^3.17.0", "winston-daily-rotate-file": "^5.0.0", "winston-transport": "^4.9.0" }, "optionalPeers": ["@dotenvx/dotenvx", "@platformatic/kafka", "@socket.io/redis-adapter", "@socket.io/redis-emitter", "axios", "bullmq", "cron", "hono", "ioredis", "minio", "mqtt", "node-vault", "pino", "pino-pretty", "pino-roll", "socket.io", "socket.io-client", "winston", "winston-daily-rotate-file", "winston-transport"] }, "sha512-gU9blbw2SC69mFXf4o/ZRgA24erZ7wOhBnLgYdW8ENkBYK9oyT1hTeoEdSbOEcoZZRo8i/8tn098L2fosK0p1w=="],
+    "@venizia/ignis-helpers": ["@venizia/ignis-helpers@0.3.4", "", { "dependencies": { "@venizia/ignis-inversion": "0.3.5", "reflect-metadata": "^0.2.2", "zod": "^4.5.4" }, "peerDependencies": { "@dotenvx/dotenvx": "^2.14.0", "@platformatic/kafka": "^2.6.1", "@socket.io/redis-adapter": "^8.3.0", "@socket.io/redis-emitter": "^5.1.0", "axios": "^1.16.1", "bullmq": "^5.80.8", "cron": "^4.3.3", "hono": "^4.12.30", "ioredis": "^5.11.1", "minio": "^8.0.6", "mqtt": "^5.15.2", "node-vault": "^0.12.0", "pino": "^10.3.1", "pino-pretty": "^13.1.3", "pino-roll": "^4.0.0", "socket.io": "^4.8.1", "socket.io-client": "^4.8.1", "winston": "^3.17.0", "winston-daily-rotate-file": "^5.0.0", "winston-transport": "^4.9.0" }, "optionalPeers": ["@dotenvx/dotenvx", "@platformatic/kafka", "@socket.io/redis-adapter", "@socket.io/redis-emitter", "axios", "bullmq", "cron", "hono", "ioredis", "minio", "mqtt", "node-vault", "pino", "pino-pretty", "pino-roll", "socket.io", "socket.io-client", "winston", "winston-daily-rotate-file", "winston-transport"] }, "sha512-DhIs1mInZ38rJAXhhpxk54zLk4QAh2uKcders2RHF6LtfPlW1RDC0ohC+MTr3nx2DIZ2apPKXRFEpwwkQK4hzw=="],
 
-    "@venizia/ignis-inversion": ["@venizia/ignis-inversion@0.3.2", "", { "dependencies": { "reflect-metadata": "^0.2.2" } }, "sha512-6GaJGfTy+xJdCrZ6tdtrkoFlFDjZ7sLTSrrgdP7LhWMkP27FOnJCHlWyJhAsVsXalK0hOD27pb/3I6pZVG+zsg=="],
+    "@venizia/ignis-inversion": ["@venizia/ignis-inversion@0.3.5", "", { "dependencies": { "reflect-metadata": "^0.2.2" } }, "sha512-3knzOpJ09k64RC6IbK8QtT8SgIo2By30Z3L/D2It6DlfSC3GS+bMdxcj9tm70GlAaWBbTq29DbMlvAXU9HY2kA=="],
 
-    "@venizia/ignis-kernel": ["@venizia/ignis-kernel@0.3.2", "", { "dependencies": { "@venizia/ignis-filter": "0.3.2", "@venizia/ignis-helpers": "0.3.2", "@venizia/ignis-inversion": "0.3.2", "reflect-metadata": "^0.2.2" }, "peerDependencies": { "@hono/zod-openapi": "^1.5.1", "casbin": "^5.51.1", "drizzle-orm": "^0.45.2", "hono": "^4.12.30", "jose": "^6.2.3" }, "optionalPeers": ["@hono/zod-openapi", "casbin", "drizzle-orm", "hono", "jose"] }, "sha512-/LdiT4yjuBkVDkEgUKuAYQmEs9kwa7bcVynoDgf8A8qnFS/vPTHSqGwyJM3H7G0U9SCcl5YgclwkCpmkiLDN8w=="],
+    "@venizia/ignis-kernel": ["@venizia/ignis-kernel@0.3.4", "", { "dependencies": { "@venizia/ignis-filter": "0.3.4", "@venizia/ignis-helpers": "0.3.4", "@venizia/ignis-inversion": "0.3.5", "reflect-metadata": "^0.2.2" }, "peerDependencies": { "@hono/zod-openapi": "^1.5.1", "casbin": "^5.51.1", "drizzle-orm": "^0.45.2", "hono": "^4.12.30", "jose": "^6.2.3" }, "optionalPeers": ["@hono/zod-openapi", "casbin", "drizzle-orm", "hono", "jose"] }, "sha512-uz+lWHNgWvg6bmyKL4DD7V7Fe1yEJ3rcv/6RmvCLUVhhcyDz/kPEkQgBGrVoGXJmuDNmQnal5kL8DjNYUlr37w=="],
 
-    "@venizia/vulcan": ["@venizia/vulcan@0.3.3", "", { "dependencies": { "@venizia/vulcan-atlas": "0.3.3", "@venizia/vulcan-okf": "0.3.3", "zod": "^4.5.4" }, "bin": { "vulcan": "src/cli.ts" } }, "sha512-gMr17hrIG7xiQb5MFmYuhybyen/HheRldx4bPymVQx0ntrVzGzXTlVUc+DPB0iligBFn0JNl2PF4Jr8TyYYqeA=="],
+    "@venizia/vulcan": ["@venizia/vulcan@0.3.7", "", { "dependencies": { "@venizia/vulcan-atlas": "0.3.7", "@venizia/vulcan-okf": "0.3.7", "zod": "^4.5.4" }, "bin": { "vulcan": "src/cli.ts" } }, "sha512-Uh7BP4zvstALReYZITTL4iIhEdWwyHQvBHnRGp4mYX/5mxbq2CM/NBWgp6hdtl0oshoPQxdPwWAajR+d5xwLgQ=="],
 
-    "@venizia/vulcan-atlas": ["@venizia/vulcan-atlas@0.3.3", "", { "dependencies": { "typescript": "^6.0.3", "zod": "^4.5.4" }, "bin": { "vulcan-atlas": "dist/cjs/cli.js" } }, "sha512-nBEMrCipjmCCTO5DrkGL6iogHfpApUjksJosMHbCIzeetxznwYXHNxve9IVbgj8aFvuJuQK7OvNGJH90HScd4Q=="],
+    "@venizia/vulcan-atlas": ["@venizia/vulcan-atlas@0.3.7", "", { "dependencies": { "typescript": "^6.0.3", "zod": "^4.5.4" }, "bin": { "vulcan-atlas": "dist/cjs/cli.js" } }, "sha512-wRzeFk6F/BHeXiSQTVprOvwiEtNnV3AsEY2UqBmP/ZjLYHBtapUv+RSzeXmS6w3JoXioDT0ViaQ69mM2wW5VnA=="],
 
-    "@venizia/vulcan-okf": ["@venizia/vulcan-okf@0.3.3", "", { "dependencies": { "cytoscape": "^3.34.4", "cytoscape-fcose": "^2.2.0" }, "bin": { "vulcan-okf": "src/cli.ts" } }, "sha512-2XzUf2r+ePrakOplYa4WQYAK56R0LojLp4666fqr+byhrLfUVX+tMZvQgrJiulozO3u9CtniC/39bHBhivLY4A=="],
+    "@venizia/vulcan-okf": ["@venizia/vulcan-okf@0.3.7", "", { "dependencies": { "cytoscape": "^3.34.4", "cytoscape-fcose": "^2.2.0" }, "bin": { "vulcan-okf": "src/cli.ts" } }, "sha512-BLN/KzesiGcJyU7/RaYo/trIYIjQoHzVjq/zQxy0dPwrKBp3JYq4CJQJpdvmUHr3OGTjYmlrJrdw/mr2ppW4PQ=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.1.2", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0", "babel-plugin-react-compiler": "^1.0.0", "oxc-transform-react": "^0.152.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler", "oxc-transform-react"] }, "sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw=="],
 
@@ -1438,6 +1439,8 @@
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
     "picomatch": ["picomatch@4.0.7", "", {}, "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA=="],
+
+    "playwright-core": ["playwright-core@1.64.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ=="],
 
     "plimit-lit": ["plimit-lit@1.6.1", "", { "dependencies": { "queue-lit": "^1.5.1" } }, "sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA=="],
 

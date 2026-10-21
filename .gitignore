@@ -115,3 +115,4 @@ docs/temp
 docs/generate
 *.bun-build
 .*.bun-build
+.agents/vulcan.local.json

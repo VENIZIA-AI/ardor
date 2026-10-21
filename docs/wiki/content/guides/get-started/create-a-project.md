@@ -17,7 +17,7 @@ In a terminal, `init` asks four questions with nothing pre-filled: project name 
 bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
 ```
 
-It prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's three checks (`bun run typecheck`, `bun run lint`, `bun run build`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
+It prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
 
 ```text
 Done. Next:
@@ -37,8 +37,8 @@ demo/
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  index.html  vite.config.mts  .env.example  README.md
-    .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}  scripts/lint.sh
-    src/main.tsx  src/application.ts
+    .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}  scripts/{lint,compile,clean}.sh
+    src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
     src/pages/{product-list,product-create,product-edit,product-form}.tsx
 ```
@@ -49,6 +49,8 @@ The application is small:
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
 - `src/pages/*` are the list, create and edit pages of `products`.
+- `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
+- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`sh scripts/lint.sh`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
 - `vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
 
 ### Expected API
@@ -63,7 +65,7 @@ The monorepo's catalog keeps its IGNIS versions: a version already in the catalo
 
 ## Next Steps
 
-After `init` or `add`: `cd <project>`, `bun run dev` in `apps/admin` (or `make dev` at the root) serves the admin.
+After `init` or `add`: `cd <project>`, `bun run server:dev` in `apps/admin` (or `make dev` at the root) serves the admin.
 
 - Already have a Vite project? See [Set up your environment](./setup) for the manual way.
 - For a guided walk through the code, see [5-minute quickstart](./5-minute-quickstart).

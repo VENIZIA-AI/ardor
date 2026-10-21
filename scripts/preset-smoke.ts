@@ -29,6 +29,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { chromium } from 'playwright-core';
+
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
 
 const ROOT = resolve(import.meta.dir, '..');
@@ -216,8 +218,12 @@ const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) 
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
 };
 
+/** The app preset of a packed package: `dist/vulcan-preset/app/preset.json`. */
+const appPresetPath = (opts: { presetRoot: string }): string =>
+  join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json');
+
 const checksOf = (opts: { presetRoot: string }): string[] => {
-  const { checks } = readJson({ path: join(opts.presetRoot, 'dist/vulcan-preset/preset.json') });
+  const { checks } = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) });
 
   return Array.isArray(checks) ? checks.map(String) : [];
 };
@@ -266,6 +272,25 @@ const assertSubpathImports = (opts: { directory: string }) => {
   });
 };
 
+/** The script names every app has, and the ones no app has (Phat's standard, backend and frontend alike). */
+const APP_SCRIPTS = ['server:dev', 'compile', 'typecheck', 'lint', 'lint:fix', 'test', 'clean'];
+const FORBIDDEN_SCRIPTS = ['dev', 'start', 'build', 'rebuild', 'preview', 'api', 'server:prod'];
+
+const assertScriptStandard = (opts: { directory: string }) => {
+  const scripts = Object.keys(
+    (readJson({ path: join(opts.directory, 'package.json') }).scripts ?? {}) as TRecord,
+  );
+
+  assert({
+    condition: APP_SCRIPTS.every((name) => scripts.includes(name)),
+    message: `package.json has the standard scripts: ${APP_SCRIPTS.join(', ')}`,
+  });
+  assert({
+    condition: !scripts.some((name) => FORBIDDEN_SCRIPTS.includes(name)),
+    message: `package.json has none of: ${FORBIDDEN_SCRIPTS.join(', ')}`,
+  });
+};
+
 const freePort = (): number => {
   const server = Bun.serve({ port: 0, fetch: () => new Response('') });
   const { port } = server;
@@ -275,6 +300,62 @@ const freePort = (): number => {
   return port as number;
 };
 
+const PRODUCTS = [
+  { id: 1, name: 'Espresso', price: 30000 },
+  { id: 2, name: 'Latte', price: 45000 },
+];
+
+/**
+ * Opens the app in headless Chrome and checks the page really runs: the list renders the rows the
+ * page was given, the create form shows its inputs, and nothing throws or logs an error on the way.
+ * A dev server that answers 200 for every file proves none of that (a module that reads `process`
+ * at import time answers 200 and leaves the page blank). The API is answered by the browser, not by
+ * a server, so the check does not depend on the proxy target. `CHROME_BIN` names a Chrome or
+ * Chromium binary; without it the installed Google Chrome is used.
+ */
+const assertPageRenders = async (opts: { port: number }) => {
+  const executablePath = process.env.CHROME_BIN;
+  const browser = await chromium.launch({
+    executablePath,
+    channel: executablePath === undefined ? 'chrome' : undefined,
+  });
+  const problems: string[] = [];
+
+  try {
+    const page = await browser.newPage();
+
+    page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        problems.push(`console.error: ${message.text()}`);
+      }
+    });
+    await page.route('**/api/products*', (route) =>
+      route.fulfill({
+        json: PRODUCTS,
+        headers: { 'content-range': `products 0-${PRODUCTS.length - 1}/${PRODUCTS.length}` },
+      }),
+    );
+
+    await page.goto(`http://localhost:${opts.port}/`);
+    await page.getByRole('heading', { name: /Products/ }).waitFor({ timeout: 30_000 });
+    await page.getByRole('link', { name: 'Espresso' }).waitFor({ timeout: 10_000 });
+    await page.goto(`http://localhost:${opts.port}/#/products/create`);
+    await page.getByLabel('Name').waitFor({ timeout: 10_000 });
+  } catch (error) {
+    problems.push(
+      `the page did not render: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  } finally {
+    await browser.close();
+  }
+
+  assert({
+    condition: problems.length === 0,
+    message: `the page renders in a browser, with no uncaught error and no console error${problems.length === 0 ? '' : ` | ${problems.slice(0, 5).join(' | ').slice(0, 1500)}`}`,
+  });
+};
+
 /**
  * Starts the app's `dev` script on a free port, loads the page and its entry module, and checks
  * the server's output: the first run of a new project prints no warning.
@@ -282,7 +363,7 @@ const freePort = (): number => {
 const assertDevServer = async (opts: { cwd: string }) => {
   step += 1;
   const port = freePort();
-  const proc = Bun.spawn(['bun', 'run', 'dev'], {
+  const proc = Bun.spawn(['bun', 'run', 'server:dev'], {
     cwd: opts.cwd,
     env: { ...process.env, PORT: String(port), NO_COLOR: '1', FORCE_COLOR: '0' },
     stdout: 'pipe',
@@ -336,6 +417,8 @@ const assertDevServer = async (opts: { cwd: string }) => {
       });
     }
 
+    await assertPageRenders({ port });
+
     // Dependency pre-bundling and reloads print on the first request, so wait for them.
     await Bun.sleep(2_000);
   } finally {
@@ -350,7 +433,7 @@ const assertDevServer = async (opts: { cwd: string }) => {
     condition: plain().includes(`:${port}`),
     message: `the dev server listens on :${port}${plain().includes(`:${port}`) ? '' : ` | server output (${output.length} bytes): ${[...plain().split('\n').slice(0, 8), '...', ...plain().split('\n').slice(-6)].join(' | ').slice(0, 1800)}`}`,
   });
-  assertNoWarnings({ output, label: 'bun run dev' });
+  assertNoWarnings({ output, label: 'bun run server:dev' });
 };
 
 const install = async (opts: {
@@ -370,8 +453,12 @@ const install = async (opts: {
         command: ['bun', 'run', check],
       });
 
-      if (app.firstRun === true && check === 'build') {
-        assertNoWarnings({ output, label: 'bun run build' });
+      if (app.firstRun === true && check === 'compile') {
+        assertNoWarnings({ output, label: 'bun run compile' });
+        assert({
+          condition: existsSync(join(opts.project, app.folder, 'dist/index.html')),
+          message: 'bun run compile wrote dist/index.html',
+        });
         assertSubpathImports({ directory: join(opts.project, app.folder) });
       }
     }
@@ -408,7 +495,15 @@ const install = async (opts: {
         rmSync(planted, { force: true });
       }
 
+      assertScriptStandard({ directory: join(opts.project, app.folder) });
       await assertDevServer({ cwd: join(opts.project, app.folder) });
+
+      // `clean` removes what `compile` wrote.
+      run({ cwd: join(opts.project, app.folder), command: ['bun', 'run', 'clean'] });
+      assert({
+        condition: !existsSync(join(opts.project, app.folder, 'dist')),
+        message: 'bun run clean removed dist',
+      });
     }
   }
 
@@ -506,10 +601,6 @@ const main = async () => {
       condition: unsubstituted({ folder: join(project, 'apps/admin') }).length === 0,
       message: 'no file of the app still holds a {{ token',
     });
-    assert({
-      condition: existsSync(join(project, 'apps/admin/dist/index.html')),
-      message: 'vite build wrote dist/index.html',
-    });
   }
 
   if (scenarios.includes('refusal')) {
@@ -558,7 +649,7 @@ const main = async () => {
         '--no-api',
       ],
     });
-    const peers = readJson({ path: join(presetRoot, 'dist/vulcan-preset/preset.json') }).peers;
+    const peers = readJson({ path: appPresetPath({ presetRoot }) }).peers;
     const range = isRecord(peers) ? String(peers['@venizia/ignis-kernel']) : '';
 
     assert({
