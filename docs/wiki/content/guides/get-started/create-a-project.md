@@ -36,10 +36,10 @@ demo/
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
-    package.json  tsconfig.json  index.html  components.json  .env.example  README.md
+    package.json  tsconfig.json  components.json  .env.example
     .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
-    .configs/builders/vite.config.mts  scripts/{compile,clean}.sh
-    src/main.tsx  src/application.ts  src/application.test.ts
+    .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
+    src/index.html  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
     src/pages/home.tsx
     src/components/shadcn/{button,card}.tsx
@@ -55,8 +55,20 @@ The application is small:
 - `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them; `components.json` is the shadcn configuration, so `bunx shadcn add <component>` adds more, with the `#src/...` imports.
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
-- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` (Vite), `compile` (`sh scripts/compile.sh`, which runs `vite build` into `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`sh scripts/clean.sh`, which removes `dist/`). There is no `dev` and no `build`.
-- `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
+- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
+- `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example` (and `components.json`, which the shadcn CLI looks for there).
+- `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
+
+### An image of the app
+
+The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context:
+
+```bash
+docker build -f apps/admin/.configs/builders/Dockerfile -t admin .
+docker run --rm -p 8080:8080 -e API_UPSTREAM=http://api:3000 admin
+```
+
+The image has three stages: `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`, with every route that is not a file answered by `index.html`. `/api` goes to `API_UPSTREAM` (default `http://api:3000`), which nginx must be able to resolve when it starts. `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from a private registry. The preset cannot know which workspace packages the app needs, so the build copies the whole context (the `.dockerignore` at the root filters it); a project can list the packages by hand, copying each `package.json` first, so that a change in a source file does not redo the install.
 
 ### Expected API
 
@@ -83,7 +95,7 @@ It creates `libs/merchant` as the package `@acme/merchant`:
 ```text
 libs/merchant/
   package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
-  tsconfig.json  README.md  scripts/clean.sh
+  tsconfig.json
   .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
   src/index.ts  src/feature.ts  src/feature.test.ts
 ```

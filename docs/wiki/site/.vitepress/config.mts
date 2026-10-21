@@ -120,7 +120,13 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
       {
         text: '2026-10-21',
         collapsed: true,
-        items: [{ text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' }],
+        items: [
+          { text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' },
+          {
+            text: 'A tidy app root and a Dockerfile in the preset',
+            link: '/changelogs/2026-10-21-preset-root-and-image',
+          },
+        ],
       },
       {
         text: '2026-10-20',

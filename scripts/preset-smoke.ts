@@ -309,6 +309,37 @@ const assertSubpathImports = (opts: { directory: string }) => {
 const APP_SCRIPTS = ['server:dev', 'compile', 'typecheck', 'lint', 'lint:fix', 'test', 'clean'];
 const FORBIDDEN_SCRIPTS = ['dev', 'start', 'build', 'rebuild', 'preview', 'api', 'server:prod'];
 
+/** What may be at the root of an app: its own files, and what a tool writes there. */
+const APP_ROOT = [
+  '.configs',
+  '.env.example',
+  'components.json', // the shadcn CLI looks for it at the root
+  'dist',
+  'node_modules',
+  'package.json',
+  'src',
+  'tsconfig.json',
+];
+
+const assertRootLayout = (opts: { directory: string }) => {
+  const extra = readdirSync(opts.directory).filter((name) => !APP_ROOT.includes(name));
+
+  assert({
+    condition: extra.length === 0,
+    message: `nothing at the app root but .configs, src, package.json, tsconfig.json and .env.example (found also: ${extra.join(', ') || 'nothing'})`,
+  });
+  assert({
+    condition: ['index.html'].every((file) => existsSync(join(opts.directory, 'src', file))),
+    message: 'index.html is in src/',
+  });
+  assert({
+    condition: ['Dockerfile', 'nginx.conf.template'].every((file) =>
+      existsSync(join(opts.directory, '.configs/builders', file)),
+    ),
+    message: 'the Dockerfile and its nginx template are in .configs/builders/',
+  });
+};
+
 const assertScriptStandard = (opts: { directory: string }) => {
   const scripts = Object.keys(
     (readJson({ path: join(opts.directory, 'package.json') }).scripts ?? {}) as TRecord,
@@ -448,13 +479,9 @@ const assertDevServer = async (opts: { cwd: string }) => {
   };
 
   try {
-    // The entry and two modules reached through `#src/...` imports: Vite resolves them to .ts and .tsx.
-    for (const path of [
-      '/',
-      '/src/main.tsx',
-      '/src/application.ts',
-      '/src/pages/product-list.tsx',
-    ]) {
+    // The page, and modules under the Vite root (src/): Vite resolves them to .ts and .tsx. Vite answers an
+    // unknown path with the page (200), so a module must come back as JavaScript.
+    for (const path of ['/', '/main.tsx', '/application.ts', '/pages/home.tsx']) {
       let response = await answer(path);
 
       while (response === undefined && Date.now() < deadline) {
@@ -463,7 +490,9 @@ const assertDevServer = async (opts: { cwd: string }) => {
       }
 
       assert({
-        condition: response?.ok === true,
+        condition:
+          response?.ok === true &&
+          (path === '/' || (response.headers.get('content-type') ?? '').includes('javascript')),
         message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
       });
     }
@@ -547,6 +576,7 @@ const install = async (opts: {
       }
 
       assertScriptStandard({ directory: join(opts.project, app.folder) });
+      assertRootLayout({ directory: join(opts.project, app.folder) });
       await assertDevServer({ cwd: join(opts.project, app.folder) });
 
       // `clean` removes what `compile` wrote.

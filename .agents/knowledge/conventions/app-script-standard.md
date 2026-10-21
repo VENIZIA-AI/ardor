@@ -15,16 +15,18 @@ same thing in a backend, in the generated admin and in an example. The standard 
 | Script | Runs | Notes |
 |---|---|---|
 | `server:dev` | the dev server | Vite for a frontend; `bun run src/index.ts` for a Bun script |
-| `compile` | `sh scripts/compile.sh` | a frontend runs `vite build` into `dist/`; the ipc example bundles with `bun build` |
+| `compile` | `vite build --config .configs/builders/vite.config.mts` | a frontend builds into `dist/`; the ipc example bundles with `bun build` |
 | `typecheck` | `bun check --no-pretty -p tsconfig.json` | `tsconfig.json` is the only tsconfig at a project root; a project with more than one program (`5-mins-qs`: the app and its stub API) keeps a solution `tsconfig.json` (`"files": []` and `references`) and the programs in `.configs/builders/`, and `bun check` follows the references |
 | `lint`, `lint:fix` | `devz lint`, `devz lint --fix` | the `devz` bin of `@venizia/dev-configs` (0.3.4 and later): oxlint, eslint with a cache, oxfmt, from `.configs/lints/` and `.configs/formatters/`; `devz lint [--fix] <files>` handles only those files |
 | `test` | `bun test` | an example with no test passes with `--pass-with-no-tests`; the preset ships one test |
-| `clean` | `sh scripts/clean.sh` | removes `dist` and `*.tsbuildinfo` |
+| `clean` | `devz clean` | the `devz` bin of `@venizia/dev-configs`: removes `dist` and the tool caches |
 
-No app has `dev`, `start`, `build`, `rebuild`, `preview`, `api` or `server:prod`. A script that is more than
-one command lives in `scripts/<name>.sh` (POSIX `sh`, `set -eu`, `cd "$(dirname "$0")/.."`) and the
-`package.json` entry is `sh scripts/<name>.sh`; a one-command script (`vite`, `bun check`, `bun test`)
-stays inline.
+No app has `dev`, `start`, `build`, `rebuild`, `preview`, `api` or `server:prod`. The presets keep nothing at the
+app root but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example` (and `components.json`, which the
+shadcn CLI looks for there): every script is one command (`vite`, `vite build --config ...`, `bun check`, `devz lint`,
+`bun test`, `devz clean`), so there is no `scripts/` folder. An example whose script is more than one command still
+has `scripts/<name>.sh` (POSIX `sh`, `set -eu`, `cd "$(dirname "$0")/.."`) and the `package.json` entry
+`sh scripts/<name>.sh`.
 
 `examples/5-mins-qs` has a script `scripts/server-dev.sh` that starts its stub API (`api/server.ts`, :3100)
 next to Vite and stops the API when Vite stops; there is no separate `api` script, run `bun run
