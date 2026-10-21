@@ -7,22 +7,24 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-Both commands need VULCAN 0.3.0 or newer.
+Both commands need VULCAN 0.3.7 or newer. `bun x` fetches the latest release, so you have it unless you pinned an older one.
 
 ## Initialize a New Monorepo
 
-In a terminal, `init` asks four questions with nothing pre-filled: project name (the monorepo folder), frontend folder (holds every frontend app), the app name, and shared code folder (empty to skip). Without a terminal, pass each answer as a flag: `--project`, `--frontend-dir`, `--app`, and `--shared-dir` (leave the last one out to skip it). A name is lowercase letters, digits and `-`:
+Pass each answer as a flag, and `init` asks nothing: `--project` (the monorepo folder), `--frontend-dir` (holds every frontend app), `--app` (the app name) and `--shared-dir` (shared code; leave it out to skip). A name is lowercase letters, digits and `-`:
 
 ```bash
 bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
 ```
 
-It prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
+In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled. Then `vulcan sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan sync --agents claude,omp (or none)` for choosing later.
+
+The command prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
 
 ```text
 Done. Next:
   cd demo && make dev
-  open http://localhost:5173
+  open http://localhost:5173/
 ```
 
 ### What it Created
@@ -32,12 +34,12 @@ The command generates the project folder `demo/`:
 ```text
 demo/
   package.json            workspaces, one catalog with every version
-  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore
+  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore
   .configs/vulcan.config.mts
-  .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
+  .agents/rules.md  .agents/vulcan.manifest.json  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  .env.example
-    .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/{oxfmt.config.mts,.ignore}
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
     src/index.html  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
@@ -46,7 +48,7 @@ demo/
     src/themes/index.css  src/utilities/tw.utility.ts
 ```
 
-The application is small:
+`vulcan sync` also writes your agent files (`CLAUDE.md`, `.claude/`), which `.gitignore` keeps out of git. The compile check leaves `apps/admin/dist/`. The application is small:
 
 - `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
@@ -56,21 +58,34 @@ The application is small:
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
-- `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
+- `.env.example` lists the two variables the dev server reads: `PORT` (default 5173) and `API_URL`, the backend that `/api` is forwarded to. An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image. The built page reads no environment variable.
+- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for the formatter, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
+- `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
 
 ### An image of the app
 
-The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context:
+The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context. `init` leaves the repository without a commit, and until you make one `git rev-parse HEAD` prints the word `HEAD`, which the build refuses, so commit first:
 
 ```bash
+git add . && git commit -m "First commit"
 docker build -f apps/admin/.configs/builders/Dockerfile -t admin \
   --build-arg APP_BUILD_COMMIT="$(git rev-parse HEAD)" \
   --build-arg APP_BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" .
-docker run --rm -p 8080:8080 -e API_UPSTREAM=http://api:3000 admin
+docker run --rm -p 8080:8080 --add-host api:host-gateway -e API_UPSTREAM=http://api:3000 admin
 ```
 
-The image has three stages: `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`, with every route that is not a file answered by `index.html`. `/api` goes to `API_UPSTREAM` (default `http://api:3000`), a compose service name, a cluster service or an address. `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from a private registry. An environment file in the build context would stay in the image's layers, so the `deps` stage stops when the context holds one (the root `.dockerignore` keeps `.env` and `.env.*` out and `.env.example` in). The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops, and the commit is the `org.opencontainers.image.revision` label of the image. The preset cannot know which workspace packages the app needs, so the build copies the whole context (the `.dockerignore` at the root filters it); a project can list the packages by hand, copying each `package.json` first, so that a change in a source file does not redo the install.
+Open `http://localhost:8080`. `--add-host api:host-gateway` points `api` at the machine that runs Docker, where `make dev` serves your backend on port 3000. In compose or a cluster, the service name does this job and the flag is not needed. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
+
+What the image does:
+
+- **Three stages.** `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`. Every route that is not a file answers with `index.html`.
+- **`/api` proxy.** `/api` goes to `API_UPSTREAM` (default `http://api:3000`): a compose service name, a cluster service or an address.
+- **No secrets.** An environment file in the build context would stay in the image's layers, so the `deps` stage stops when the context holds one. The root `.dockerignore` keeps `.env` and `.env.*` out and `.env.example` in.
+- **The commit.** The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops, and so does a value that is not a sha of at least seven lowercase hex digits (`Pass --build-arg APP_BUILD_COMMIT=$(git rev-parse HEAD) after a first commit; got: HEAD`). The commit becomes the `org.opencontainers.image.revision` label of the image.
+- **A private registry.** `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from one.
+
+The preset cannot know which workspace packages the app needs, so the build copies the whole context (the root `.dockerignore` filters it). To keep a change in a source file from redoing the install, list the packages by hand and copy each `package.json` first.
 
 ### Expected API
 
@@ -78,7 +93,13 @@ The app has no sign-in and expects one route of the backend: `GET /api/hello` an
 
 ## Add an Admin to an Existing Monorepo
 
-To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan init --preset ignis`), run `bun x @venizia/vulcan add --preset ardor` at its root. It asks the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app to proxy `/api` to (the backend apps of the monorepo, or none: flag `--api <app>` or `--no-api`). The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
+To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan init --preset ignis`), run this at its root:
+
+```bash
+bun x @venizia/vulcan add --preset ardor --app web --frontend-dir apps --api api
+```
+
+`--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
 The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.2 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
 
@@ -87,10 +108,10 @@ The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia
 A feature is a package of routes, resources and messages that more than one app mounts. To add one to the monorepo, run this at its root:
 
 ```bash
-bun x @venizia/vulcan add --preset ardor --lib merchant --dir libs
+bun x @venizia/vulcan add --preset ardor --lib merchant --dir libs --scope @acme
 ```
 
-`--dir` is the folder of the libraries (without it, VULCAN uses the folder of the libraries the monorepo already has), and `--scope @acme` sets the package scope. It needs the VULCAN release that supports library presets. Without `--lib` or `--app` it asks, and with no terminal it stops.
+`--dir` is the folder of the libraries (without it, VULCAN uses the folder of the libraries the monorepo already has), and `--scope` sets the package scope (without it the package is named `merchant`). Without `--lib` or `--app`, the command asks in a terminal and stops without one.
 
 It creates `libs/merchant` as the package `@acme/merchant`:
 
@@ -111,7 +132,7 @@ An app mounts the feature by listing it in `features()`: `import { feature } fro
 
 ## Next Steps
 
-After `init` or `add`: `cd <project>`, `bun run server:dev` in `apps/admin` (or `make dev` at the root) serves the admin.
+After `init` or `add`: `cd <project>`, then `make dev` at the root (or `bun run server:dev` in `apps/admin`) serves the admin on `http://localhost:5173/`. In a library, `bun run test` runs the feature's test.
 
 - Already have a Vite project? See [Set up your environment](./setup) for the manual way.
 - For a guided walk through the code, see [5-minute quickstart](./5-minute-quickstart).

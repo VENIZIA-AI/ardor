@@ -37,11 +37,16 @@ RUN bun install --frozen-lockfile --ignore-scripts
 FROM deps AS builder
 
 # The image has no .git (the .dockerignore drops it), so the commit comes in as a build argument. A build
-# without it stops here: an image must always say which commit it runs.
+# without a commit sha stops here: an image must always say which commit it runs. Before a first commit
+# `git rev-parse HEAD` prints the word HEAD, which is not a sha either.
 ARG APP_BUILD_COMMIT=
 ARG APP_BUILD_BRANCH=
 ARG APP_BUILD_VERSION=
-RUN test -n "$APP_BUILD_COMMIT" || { echo "Pass --build-arg APP_BUILD_COMMIT=\$(git rev-parse HEAD)" >&2; exit 1; }
+RUN case "$APP_BUILD_COMMIT" in \
+      '' | *[!0-9a-f]* | ? | ?? | ??? | ???? | ????? | ??????) \
+        echo "Pass --build-arg APP_BUILD_COMMIT=\$(git rev-parse HEAD) after a first commit; got: $APP_BUILD_COMMIT" >&2; \
+        exit 1 ;; \
+    esac
 
 WORKDIR /home/bun/app/{{appPath}}
 RUN bun run compile
@@ -59,8 +64,12 @@ LABEL org.opencontainers.image.revision="${APP_BUILD_COMMIT}"
 COPY --from=builder /home/bun/app/{{appPath}}/.configs/builders/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder --chown=101:101 /home/bun/app/{{appPath}}/dist /usr/share/nginx/html
 
-# Where /api goes: a compose service name, a cluster service, an address.
+# Where /api goes: a compose service name, a cluster service, an address (an origin, with no path).
 ENV API_UPSTREAM=http://api:3000
+
+# The base image reads the DNS servers of /etc/resolv.conf into ${NGINX_LOCAL_RESOLVERS}, which the template
+# gives to `resolver`: nginx looks the upstream up per request, so the container starts without it.
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 # No ENTRYPOINT on purpose: the base image's /docker-entrypoint.sh renders the templates.
 EXPOSE 8080

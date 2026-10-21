@@ -52,7 +52,7 @@ Everything after `@venizia/ardor` is a peer dependency so your application contr
 
 ## Step 4: Configure TypeScript for Decorators
 
-ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires legacy decorators and metadata reflection. Merge these options into the `compilerOptions` of your `tsconfig.app.json`:
+ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires legacy decorators and metadata reflection. Merge these options into the `compilerOptions` of your `tsconfig.app.json`. The `react-ts` template sets `erasableSyntaxOnly: true`, which rejects the constructor parameter properties ARDOR classes use (`TS1294`), so the last option turns it off:
 
 ```json
 {
@@ -65,7 +65,8 @@ ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires l
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
+    "erasableSyntaxOnly": false
   }
 }
 ```
