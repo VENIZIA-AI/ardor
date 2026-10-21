@@ -73,20 +73,20 @@ Create `src/main.tsx`:
 
 ## 7. Configure Vite
 
-Create `.configs/builders/vite.config.ts` (the examples keep their Vite config there and start Vite with `vite --config .configs/builders/vite.config.ts`):
+Replace the template's `vite.config.ts` at the project root with this one. `bun run dev` and `bun run build` read that file, so a config kept anywhere else never runs, and Vite cannot resolve the decorated classes:
 
 <<< @/../../../examples/5-mins-qs/.configs/builders/vite.config.ts{ts}
 
-This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias, sets up proxy forwarding for `/api` to the backend server, and configures vendor code splitting.
+This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias, sets up proxy forwarding for `/api` to the stub API on port 3100, and configures vendor code splitting. Point the proxy at your own backend when you have one.
 
 ## 8. Run it
 
-The stub API is part of the ARDOR repository: from a clone, `cd examples/5-mins-qs && bun run api/server.ts` (listens on :3100, sign in with admin / admin - see `api/server.ts`; in the example itself `bun run server:dev` starts it together with Vite), and a reader with their own IGNIS API skips it and points the Vite proxy (see `vite.config.ts`) at that API.
-
-Start the backend stub API in one terminal:
+The quickstart talks to a stub API that lives in the ARDOR repository. Download it into your project and start it in one terminal (it listens on port 3100):
 
 ```bash
-cd examples/5-mins-qs && bun run api/server.ts
+mkdir api
+curl -fsSL https://raw.githubusercontent.com/VENIZIA-AI/ardor/main/examples/5-mins-qs/api/server.ts -o api/server.ts
+bun run api/server.ts
 ```
 
 Start the Vite development server in another terminal:
@@ -96,6 +96,8 @@ bun run dev
 ```
 
 Open `http://localhost:5173` in your browser. Sign in with username `admin` and password `admin` to view the product list.
+
+If you have your own IGNIS API, skip the stub and point the proxy in `vite.config.ts` at that API.
 
 ## Your API is not this one
 

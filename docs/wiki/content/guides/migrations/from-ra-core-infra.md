@@ -82,7 +82,7 @@ Three removals and one requirement:
   application depends on that package itself: under a linker that does not hoist (Bun's
   `isolated` linker, pnpm) it fails with TS2664 and the keys are missing.
 
-- **`@venizia/ignis-inversion` must be `^0.2.2`.** ARDOR resolves a binding from a class through
+- **`@venizia/ignis-inversion` must be `^0.3.0`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
 
 One logger change worth knowing about, because it changes the call:
@@ -97,7 +97,7 @@ gap. They are mechanical, but the last one is the reason this is a reviewed pass
 search-and-replace.
 
 1. **The dependency.** Swap `@minimaltech/ra-core-infra` for `@venizia/ardor` in every
-   `package.json`, and pin `@venizia/ignis-inversion` to `^0.2.2` (a Bun catalog entry, or
+   `package.json`, and pin `@venizia/ignis-inversion` to `^0.3.0` (a Bun catalog entry, or
    each manifest).
 2. **The import specifier.** `@minimaltech/ra-core-infra` -> `@venizia/ardor` in every `import`
    and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three
