@@ -6,14 +6,14 @@
 # Paths are ignored through .gitignore: `ignorePatterns` resolve against .configs/, not the project.
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
 # $(1) project dir; $(2) what oxlint and ESLint lint (default .); $(3) what oxfmt checks.
-LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/eslint.config.mjs $(or $(2),.) && node_modules/.bin/oxfmt -c .configs/oxfmt.config.mts --check $(or $(3),$(FMT_GLOB))
-FMT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/eslint.config.mjs --fix $(or $(2),.) && node_modules/.bin/oxfmt -c .configs/oxfmt.config.mts $(or $(3),$(FMT_GLOB))
+LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs $(or $(2),.) && node_modules/.bin/oxfmt -c .configs/formatters/oxfmt.config.mts --check $(or $(3),$(FMT_GLOB))
+FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs --fix $(or $(2),.) && node_modules/.bin/oxfmt -c .configs/formatters/oxfmt.config.mts $(or $(3),$(FMT_GLOB))
 
 LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
-FMT_PKG_TARGETS := $(addprefix fmt-,$(PACKAGES))
+FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
-.PHONY: lint lint-all lint-packages lint-wiki lint-scripts fmt fmt-packages fmt-wiki \
-        $(LINT_PKG_TARGETS) $(FMT_PKG_TARGETS)
+.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-fix lint-fix-packages lint-fix-wiki \
+        $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages
 	@echo "✅ Linting completed."
@@ -23,9 +23,9 @@ lint-all: lint-packages lint-wiki lint-scripts
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-fmt: fmt-packages
+lint-fix: lint-fix-packages
 
-fmt-packages: $(FMT_PKG_TARGETS)
+lint-fix-packages: $(FIX_PKG_TARGETS)
 
 # Static pattern rules: make skips implicit-rule search for .PHONY targets, so a plain `lint-%`
 # would never match. The release workflow calls `make lint-<package dir>`.
@@ -33,20 +33,20 @@ $(LINT_PKG_TARGETS): lint-%:
 	@echo "🔍 Linting packages/$*..."
 	@$(MAKE) --no-print-directory -C packages/$* lint
 
-$(FMT_PKG_TARGETS): fmt-%:
-	@$(MAKE) --no-print-directory -C packages/$* fmt
+$(FIX_PKG_TARGETS): lint-fix-%:
+	@$(MAKE) --no-print-directory -C packages/$* lint-fix
 
 # The wiki ESLint config skips site/ (the VitePress theme API spells `Layout` and `enhanceApp`).
 lint-wiki:
 	@echo "🔍 Linting docs/wiki..."
 	@$(call LINT_PROJECT,docs/wiki)
 
-fmt-wiki:
-	@$(call FMT_PROJECT,docs/wiki)
+lint-fix-wiki:
+	@$(call FIX_PROJECT,docs/wiki)
 
 # `scripts/` is not a workspace member: oxfmt resolves from the root package.json, and bun check
 # reads scripts/tsconfig.json.
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
-	@node_modules/.bin/oxfmt -c scripts/.configs/oxfmt.config.mts --check "scripts/**/*.{ts,mts}"
+	@node_modules/.bin/oxfmt -c scripts/.configs/formatters/oxfmt.config.mts --check "scripts/**/*.{ts,mts}"
 	@bun check --no-pretty -p scripts/tsconfig.json

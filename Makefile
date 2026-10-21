@@ -9,7 +9,7 @@
 all: build
 
 # Every package directory under packages/, in dependency order. Each per-package target (`<pkg>`,
-# `update-<pkg>`, `lint-<pkg>`, `fmt-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`)
+# `update-<pkg>`, `lint-<pkg>`, `lint-fix-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`)
 # is generated from this list - add a package here and every target exists for it.
 PACKAGES := kernel react admin ardor
 

@@ -17,7 +17,7 @@ In a terminal, `init` asks four questions with nothing pre-filled: project name 
 bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
 ```
 
-It prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's three checks (`bun run typecheck`, `bun run lint`, `bun run build`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
+It prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
 
 ```text
 Done. Next:
@@ -36,34 +36,82 @@ demo/
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
-    package.json  tsconfig.json  index.html  vite.config.mts  .env.example  README.md
-    .configs/{oxlint.config.mts,oxfmt.config.mts,eslint.config.mjs}
-    src/main.tsx  src/application.ts
+    package.json  tsconfig.json  .env.example
+    .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+    .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
+    src/index.html  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
-    src/pages/{product-list,product-create,product-edit,product-form}.tsx
+    src/pages/home.tsx
+    src/components/shadcn/{button,card}.tsx
+    src/themes/index.css  src/utilities/tw.utility.ts
 ```
 
 The application is small:
 
-- `src/main.tsx` renders `ArdorApplication` with the `products` resource.
+- `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
-- `src/pages/*` are the list, create and edit pages of `products`.
-- `vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy.
+- `src/pages/home.tsx` is the one page: the ARDOR logo, the app name and the message the backend answers to `GET /api/hello`, in a card on a soft wash of the brand gradient. It shows a placeholder while it loads, and when the backend is down it says so and shows `bun run server:dev`, the command that starts it, with a button to try again. The call goes through the data provider's `send`, not a raw `fetch`. Replace the page with your own.
+- `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them. There is no `components.json` (the app root holds nothing else): to add more with the shadcn CLI, run `bunx shadcn init` first, which writes its own.
+- `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
+- `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
+- `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
+- `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
+- `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
+
+### An image of the app
+
+The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context:
+
+```bash
+docker build -f apps/admin/.configs/builders/Dockerfile -t admin \
+  --build-arg APP_BUILD_COMMIT="$(git rev-parse HEAD)" \
+  --build-arg APP_BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" .
+docker run --rm -p 8080:8080 -e API_UPSTREAM=http://api:3000 admin
+```
+
+The image has three stages: `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`, with every route that is not a file answered by `index.html`. `/api` goes to `API_UPSTREAM` (default `http://api:3000`), a compose service name, a cluster service or an address. `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from a private registry. An environment file in the build context would stay in the image's layers, so the `deps` stage stops when the context holds one (the root `.dockerignore` keeps `.env` and `.env.*` out and `.env.example` in). The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops, and the commit is the `org.opencontainers.image.revision` label of the image. The preset cannot know which workspace packages the app needs, so the build copies the whole context (the `.dockerignore` at the root filters it); a project can list the packages by hand, copying each `package.json` first, so that a change in a source file does not redo the install.
 
 ### Expected API
 
-The app has no sign-in and expects an API with a `products` resource: `GET /api/products` returning a JSON array with a `Content-Range` header, `POST /api/products`, `PATCH /api/products/:id`. To use another resource, rename `products` in `src/main.tsx` and the pages. For sign-in, see [Add sign-in](../tutorials/add-sign-in).
+The app has no sign-in and expects one route of the backend: `GET /api/hello` answering `{ "message": "..." }`, which an IGNIS app made from its preset has. To use your own resources, add them in `src/main.tsx` (`resources`). For sign-in, see [Add sign-in](../tutorials/add-sign-in).
 
 ## Add an Admin to an Existing Monorepo
 
 To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan init --preset ignis`), run `bun x @venizia/vulcan add --preset ardor` at its root. It asks the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app to proxy `/api` to (the backend apps of the monorepo, or none: flag `--api <app>` or `--no-api`). The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
-The monorepo's catalog keeps its IGNIS versions: a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.2 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+
+## Add a Feature Library
+
+A feature is a package of routes, resources and messages that more than one app mounts. To add one to the monorepo, run this at its root:
+
+```bash
+bun x @venizia/vulcan add --preset ardor --lib merchant --dir libs
+```
+
+`--dir` is the folder of the libraries (without it, VULCAN uses the folder of the libraries the monorepo already has), and `--scope @acme` sets the package scope. It needs the VULCAN release that supports library presets. Without `--lib` or `--app` it asks, and with no terminal it stops.
+
+It creates `libs/merchant` as the package `@acme/merchant`:
+
+```text
+libs/merchant/
+  package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
+  tsconfig.json
+  .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+  src/index.ts  src/feature.ts  src/feature.test.ts
+```
+
+- `src/feature.ts` is `Features.define({ name: 'merchant' })`, empty until you add routes, resources and messages to it.
+- `src/feature.test.ts` mounts it in a small application and reads it back, so the test runs from the first day.
+- The scripts are `typecheck`, `lint`, `lint:fix`, `test` and `clean`. There is no bundler and no dev server: an app that imports the package compiles its source.
+- `@venizia/ardor`, `react`, `react-dom`, `react-router-dom` and `reflect-metadata` are peer dependencies, so the app decides the versions.
+
+An app mounts the feature by listing it in `features()`: `import { feature } from '@acme/merchant'`.
 
 ## Next Steps
 
-After `init` or `add`: `cd <project>`, `bun run dev` in `apps/admin` (or `make dev` at the root) serves the admin.
+After `init` or `add`: `cd <project>`, `bun run server:dev` in `apps/admin` (or `make dev` at the root) serves the admin.
 
 - Already have a Vite project? See [Set up your environment](./setup) for the manual way.
 - For a guided walk through the code, see [5-minute quickstart](./5-minute-quickstart).

@@ -10,7 +10,7 @@ tags: [process, docs, wiki]
 
 1. Know the difference: `docs/wiki/` is the human-facing documentation site, a VitePress site built
    from markdown under `content/`. It lives at top-level `docs/wiki/` (sibling of `packages/`,
-   package name `@venizia/ardor-docs`), not inside `packages/`. The `ardor-atlas` MCP server reads
+   package name `@venizia/ardor-docs`), not inside `packages/`. The `atlas` MCP server reads
    this same content live from the checkout - see [Atlas MCP server](/reference/atlas-mcp.md). This
    `.agents/knowledge/` bundle (what this file is part of) is a separate, agent-facing artifact -
    editing one does not update the other.
@@ -18,7 +18,7 @@ tags: [process, docs, wiki]
    in subfolders), `references/` (one page per API area - application, providers, binding keys,
    hooks, network, types), `extensions/` (one flat page per optional add-on such as the
    socket client), `best-practices/` (architectural conventions), `changelogs/` (feature
-   announcements - indexed by `ardor-atlas` as their own `changelog` corpus). A new dated changelog
+   announcements - indexed by `atlas` as their own `changelog` corpus). A new dated changelog
    page is searchable at once, but the atlas release table behind `changes` only lists it once
    regenerated - `scripts/release.ts` does that after the next release chain. The index table and the
    changelog sidebar (Overview, then History with one collapsible group per date) are generated from

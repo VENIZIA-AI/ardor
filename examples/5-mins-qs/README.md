@@ -7,8 +7,7 @@ against.
 ```bash
 bun install                # from the repository root
 cd examples/5-mins-qs
-bun run api                # the stub API on :3100 - sign in with admin / admin
-bun run dev                # Vite on :5173, proxying /api
+bun run server:dev          # the stub API on :3100 (sign in with admin / admin) and Vite on :5173, proxying /api
 ```
 
 Open <http://localhost:5173>, sign in, and the product list loads through `DefaultRestDataProvider`
@@ -22,5 +21,5 @@ resolved with `useRepository`.
 | `src/configurations/admin.configuration.ts` | The three default providers and their options, as `@provide` methods |
 | `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
-| `vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
+| `.configs/builders/vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |

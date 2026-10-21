@@ -118,9 +118,24 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-21',
+        collapsed: true,
+        items: [
+          { text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' },
+          {
+            text: 'A tidy app root and a Dockerfile in the preset',
+            link: '/changelogs/2026-10-21-preset-root-and-image',
+          },
+        ],
+      },
+      {
         text: '2026-10-20',
         collapsed: true,
         items: [
+          {
+            text: 'Every app has the same scripts',
+            link: '/changelogs/2026-10-20-app-script-standard',
+          },
           { text: 'ARDOR 0.3.0 Is Stable', link: '/changelogs/2026-10-20-ardor-0-3-0-stable' },
           {
             text: "The preset's typecheck runs bun check",
@@ -129,6 +144,18 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
           {
             text: 'Silent first run for the ARDOR preset',
             link: '/changelogs/2026-10-20-preset-first-run',
+          },
+          {
+            text: "The preset app's lint scripts are short",
+            link: '/changelogs/2026-10-20-preset-lint-script',
+          },
+          {
+            text: 'The preset app imports its own modules with #src',
+            link: '/changelogs/2026-10-20-preset-subpath-imports',
+          },
+          {
+            text: 'The generated app is one styled page',
+            link: '/changelogs/2026-10-20-preset-ui',
           },
           { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
         ],

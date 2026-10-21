@@ -20,7 +20,7 @@ Then this console:
 
 ```bash
 cd examples/vert-admin
-bun run dev                          # Vite on :5173, proxying /api to :3000
+bun run server:dev                    # Vite on :5173, proxying /api to :3000
 ```
 
 Sign in with a user seeded in `vert` (`bun run seed:authz` there creates test accounts).

@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+
+/* Dark follows the system preference: no class and no toggle. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/* ARDOR's Tide palette (blues over deep water, no teal), as shadcn tokens. The primary is white-on-blue
+   AA (4.8:1); accent text is the deep blue on light and the light blue on dark, never #0277bd as small text
+   on dark. Components read the tokens, so a new theme is this block and nothing else. */
+:root {
+  color-scheme: light dark;
+  --background: #f4f7f8;
+  --foreground: #0b1418;
+  --card: #ffffff;
+  --card-foreground: #0b1418;
+  --muted: #e8eff2;
+  --muted-foreground: #4b5b63;
+  --border: #d8e2e6;
+  --input: #c4d1d7;
+  --primary: #0277bd;
+  --primary-foreground: #ffffff;
+  --accent: #e0f2fc;
+  --accent-foreground: #01579b;
+  --ring: #38bdf8;
+  --radius: 0.75rem;
+  /* The brand gradient: the wash behind the card, nothing else. */
+  --brand-gradient: linear-gradient(90deg, #0091ea, #38bdf8, #7df3ff);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #07090b;
+    --foreground: #d5dee0;
+    --card: #0d1317;
+    --card-foreground: #d5dee0;
+    --muted: #131b20;
+    --muted-foreground: #8e9ca3;
+    --border: #1d2830;
+    --input: #2a3841;
+    --accent: #0c2433;
+    --accent-foreground: #38bdf8;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}

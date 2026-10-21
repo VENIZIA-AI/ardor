@@ -23,7 +23,7 @@ re-deriving the project from the source each session.
 **The code is ground truth.** These concepts are curated prose over the code. When the two disagree,
 the code wins and the concept is a bug - fix it and note it in [log](/log.md).
 
-Served over MCP by `ardor-atlas`, registered in `.mcp.json`: `search` with
+Served over MCP by `atlas`, registered in `.mcp.json`: `search` with
 `corpus: "knowledge"` finds a concept, `get` reads one by the id a search hit returned.
 
 ## Start here
@@ -76,6 +76,7 @@ How the code is written. Read before writing any.
 - [Binding key namespaces](/conventions/binding-key-namespaces.md)
 - [React hooks](/conventions/react-hooks.md)
 - [Testing conventions](/conventions/testing-conventions.md)
+- [App script standard](/conventions/app-script-standard.md)
 - [Docs writing style](/conventions/docs-writing-style.md)
 - [Gotchas](/conventions/gotchas.md)
 - [File splitting](/conventions/file-splitting.md)

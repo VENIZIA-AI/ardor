@@ -1,20 +1,25 @@
 /**
- * Writes the publishable copy of a package's VULCAN preset. The template in `vulcan-preset/` marks
- * what a release must fill in; the copy in `dist/vulcan-preset/` carries the real versions, so a
- * preset always describes the release it ships in.
+ * Writes the publishable copy of a package's VULCAN presets. The templates in `presets/app/` and
+ * `presets/lib/` (a sibling of `packages/`, each `preset.json` and `files/`) mark what a release must
+ * fill in; the copies in the package's `dist/vulcan-preset/app/` and `lib/` carry the real versions, so a
+ * preset always describes the release it ships in. The lib also gets the app's lint and format configs.
  *
  *   workspace:*  the exact version of that workspace package, read from its package.json now
+ *   workspace:^  the same version behind a caret, for a peer range
  *   catalog:     the range in the root catalog; a @venizia package is exact (a leading ^ or ~ is dropped)
  *   peer:        the range this package's own peerDependencies hold for that name
  *
- * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset)
+ * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset/{app,lib})
  */
 import { Glob } from 'bun';
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const PRESET_DIRECTORY = 'vulcan-preset';
-const SECTIONS = ['dependencies', 'devDependencies', 'peers'] as const;
+/** The blocks of a template that name packages; a block a template does not have is not written. */
+const SECTIONS = ['dependencies', 'devDependencies', 'peers', 'peerDependencies'] as const;
+const KINDS = ['app', 'lib'] as const;
+/** What a lib shares with the app: the lint and format configs. A lib's own file of the same path wins. */
+const LIB_SHARED = ['.configs/lints', '.configs/formatters'];
 const EXACT_SCOPE = '@venizia/';
 const RANGE_PREFIX = /^[\^~]/;
 
@@ -79,20 +84,22 @@ export interface IBuildPresetResult {
 
 export const buildPreset = (opts: {
   root: string;
-  /** The preset package, relative to `root`. */
+  /** The package the preset is published in, relative to `root`: its peerDependencies fill `peer:`. */
   packageDirectory: string;
+  /** The folder of the templates, relative to `root`: `app/` and `lib/`, each `preset.json` and `files/`. */
+  presetsDirectory: string;
+  /** Where `app/` and `lib/` are written. */
   outDirectory: string;
 }): IBuildPresetResult => {
   const { root, outDirectory } = opts;
   const packageRoot = join(root, opts.packageDirectory);
-  const presetRoot = join(packageRoot, PRESET_DIRECTORY);
+  const presetsRoot = join(root, opts.presetsDirectory);
   const manifest = readJson({ path: join(root, 'package.json') });
   const catalog = readCatalog({ manifest });
   const versions = readWorkspaceVersions({ root, manifest });
   const peers = toStringRecord({
     value: readJson({ path: join(packageRoot, 'package.json') }).peerDependencies,
   });
-  const template = readJson({ path: join(presetRoot, 'preset.json') });
   const resolved = new Set<string>();
 
   const resolveRange = (entry: { name: string; range: string }): string => {
@@ -101,6 +108,10 @@ export const buildPreset = (opts: {
 
     if (range === 'workspace:*') {
       value = versions.get(name);
+    } else if (range === 'workspace:^') {
+      const version = versions.get(name);
+
+      value = version === undefined ? undefined : `^${version}`;
     } else if (range === 'catalog:') {
       const pinned = catalog[name];
 
@@ -115,7 +126,7 @@ export const buildPreset = (opts: {
     }
 
     if (value === undefined) {
-      throw new Error(`[buildPreset] ${name} | cannot resolve "${range}" in ${presetRoot}`);
+      throw new Error(`[buildPreset] ${name} | cannot resolve "${range}" in ${presetsRoot}`);
     }
 
     resolved.add(`${name} -> ${value}`);
@@ -123,21 +134,48 @@ export const buildPreset = (opts: {
     return value;
   };
 
-  const output: TRecord = { ...template, files: './files' };
-
-  for (const section of SECTIONS) {
-    output[section] = Object.fromEntries(
-      Object.entries(toStringRecord({ value: template[section] })).map(([name, range]) => [
-        name,
-        resolveRange({ name, range }),
-      ]),
-    );
-  }
-
   rmSync(outDirectory, { recursive: true, force: true });
-  mkdirSync(outDirectory, { recursive: true });
-  cpSync(join(presetRoot, 'files'), join(outDirectory, 'files'), { recursive: true });
-  writeFileSync(join(outDirectory, 'preset.json'), `${JSON.stringify(output, null, 2)}\n`);
+
+  for (const kind of KINDS) {
+    const kindRoot = join(presetsRoot, kind);
+
+    if (!existsSync(join(kindRoot, 'preset.json'))) {
+      continue;
+    }
+
+    const template = readJson({ path: join(kindRoot, 'preset.json') });
+    const output: TRecord = { ...template, files: './files' };
+
+    for (const section of SECTIONS) {
+      if (template[section] === undefined && !(kind === 'app' && section !== 'peerDependencies')) {
+        continue;
+      }
+
+      output[section] = Object.fromEntries(
+        Object.entries(toStringRecord({ value: template[section] })).map(([name, range]) => [
+          name,
+          resolveRange({ name, range }),
+        ]),
+      );
+    }
+
+    const kindOut = join(outDirectory, kind);
+
+    mkdirSync(kindOut, { recursive: true });
+
+    if (kind === 'lib') {
+      for (const path of LIB_SHARED) {
+        const source = join(presetsRoot, 'app', 'files', path);
+
+        if (existsSync(source)) {
+          cpSync(source, join(kindOut, 'files', path), { recursive: true });
+        }
+      }
+    }
+
+    cpSync(join(kindRoot, 'files'), join(kindOut, 'files'), { recursive: true });
+    writeFileSync(join(kindOut, 'preset.json'), `${JSON.stringify(output, null, 2)}\n`);
+  }
 
   return { resolved: [...resolved].sort() };
 };
@@ -147,6 +185,7 @@ if (import.meta.main) {
   const { resolved } = buildPreset({
     root,
     packageDirectory: 'packages/ardor',
+    presetsDirectory: 'presets',
     outDirectory: join(root, 'packages/ardor/dist/vulcan-preset'),
   });
 

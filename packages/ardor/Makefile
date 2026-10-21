@@ -1,3 +1,3 @@
-LINT_IGNORE += vulcan-preset/files/**
+HAS_TESTS := no
 
 include ../../make/project.mk

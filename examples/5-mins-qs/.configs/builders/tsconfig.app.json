@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "@venizia/dev-configs/tsconfig.react.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "noEmit": true,
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "isolatedModules": true,
+
+    // Restated, not inherited: Bun ignores an `extends` that names a package.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+
+    "paths": {
+      "@/*": ["../../src/*"]
+    }
+  },
+  "include": ["../../src", "./vite.config.ts"],
+  "exclude": ["../../node_modules", "../../dist"]
+}

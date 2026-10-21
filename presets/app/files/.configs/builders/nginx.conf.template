@@ -1,0 +1,31 @@
+# The nginx configuration of {{app}}, rendered by the base image at start: ${API_UPSTREAM} is the
+# only variable replaced; $uri and $host are nginx's own.
+server {
+  listen 8080;
+  server_name _;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # The backend. The path is kept: /api/hello reaches ${API_UPSTREAM}/api/hello.
+  location /api/ {
+    proxy_pass ${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # The built files carry a content hash in their name, so a browser may keep them for good.
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    try_files $uri =404;
+  }
+
+  # A route of the app, opened or reloaded directly, is served by the app.
+  location / {
+    add_header Cache-Control "no-cache";
+    try_files $uri $uri/ /index.html;
+  }
+}
