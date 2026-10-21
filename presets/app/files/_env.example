@@ -1,1 +1,8 @@
+# Copy to .env for a local run: bun loads it on start. Never commit .env.
+# Every key is optional; an empty value falls back to the framework default.
+
+# The port of the dev server (`bun run server:dev`).
 PORT={{devPort}}
+
+# The backend the dev server forwards /api to. Empty: the one chosen when the app was added (none, if it had no backend).
+API_URL={{apiUrl}}

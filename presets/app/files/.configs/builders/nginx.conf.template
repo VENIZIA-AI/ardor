@@ -1,5 +1,5 @@
-# The nginx configuration of {{app}}, rendered by the base image at start: ${API_UPSTREAM} is the
-# only variable replaced; $uri and $host are nginx's own.
+# The nginx configuration of {{app}}, rendered by the base image at start: ${API_UPSTREAM} and
+# ${NGINX_LOCAL_RESOLVERS} are the variables replaced; $uri and $host are nginx's own.
 server {
   listen 8080;
   server_name _;
@@ -7,9 +7,13 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
-  # The backend. The path is kept: /api/hello reaches ${API_UPSTREAM}/api/hello.
+  # The backend. The path is kept: /api/hello reaches ${API_UPSTREAM}/api/hello. The upstream is a
+  # variable that a resolver looks up per request, so nginx starts when the host does not resolve yet
+  # and only /api answers 502 until it does.
   location /api/ {
-    proxy_pass ${API_UPSTREAM};
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+    set $api_upstream ${API_UPSTREAM};
+    proxy_pass $api_upstream;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

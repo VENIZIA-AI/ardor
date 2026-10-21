@@ -39,7 +39,7 @@ demo/
   .agents/rules.md  .agents/vulcan.manifest.json  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  .env.example
-    .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/{oxfmt.config.mts,.ignore}
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
     src/index.html  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
@@ -58,12 +58,14 @@ demo/
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
-- `.configs/builders/vite.config.mts` has the dev port from `.env.example` (PORT, default 5173) and the `/api` proxy. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
+- `.env.example` lists the two variables the dev server reads: `PORT` (default 5173) and `API_URL`, the backend that `/api` is forwarded to. An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image. The built page reads no environment variable.
+- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for the formatter, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
+- `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
 
 ### An image of the app
 
-The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context. `init` leaves the repository without a commit, and until you make one `git rev-parse HEAD` prints the word `HEAD`, so commit first:
+The Dockerfile builds the app and serves it with nginx. Build it from the monorepo root, so the workspace packages and the lockfile are in the context. `init` leaves the repository without a commit, and until you make one `git rev-parse HEAD` prints the word `HEAD`, which the build refuses, so commit first:
 
 ```bash
 git add . && git commit -m "First commit"
@@ -73,14 +75,14 @@ docker build -f apps/admin/.configs/builders/Dockerfile -t admin \
 docker run --rm -p 8080:8080 --add-host api:host-gateway -e API_UPSTREAM=http://api:3000 admin
 ```
 
-Open `http://localhost:8080`. nginx looks up the `API_UPSTREAM` host when it starts, and stops with `host not found in upstream` when the name does not exist. `--add-host api:host-gateway` points `api` at the machine that runs Docker, where `make dev` serves your backend on port 3000. In compose or a cluster, the service name does this job and the flag is not needed.
+Open `http://localhost:8080`. `--add-host api:host-gateway` points `api` at the machine that runs Docker, where `make dev` serves your backend on port 3000. In compose or a cluster, the service name does this job and the flag is not needed. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
 
 What the image does:
 
 - **Three stages.** `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`. Every route that is not a file answers with `index.html`.
 - **`/api` proxy.** `/api` goes to `API_UPSTREAM` (default `http://api:3000`): a compose service name, a cluster service or an address.
 - **No secrets.** An environment file in the build context would stay in the image's layers, so the `deps` stage stops when the context holds one. The root `.dockerignore` keeps `.env` and `.env.*` out and `.env.example` in.
-- **The commit.** The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops. The commit becomes the `org.opencontainers.image.revision` label of the image.
+- **The commit.** The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops, and so does a value that is not a sha of at least seven lowercase hex digits (`Pass --build-arg APP_BUILD_COMMIT=$(git rev-parse HEAD) after a first commit; got: HEAD`). The commit becomes the `org.opencontainers.image.revision` label of the image.
 - **A private registry.** `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from one.
 
 The preset cannot know which workspace packages the app needs, so the build copies the whole context (the root `.dockerignore` filters it). To keep a change in a source file from redoing the install, list the packages by hand and copy each `package.json` first.

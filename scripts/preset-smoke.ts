@@ -3,7 +3,8 @@
  * every package is packed, the preset is read from the extracted tarball, and the app is created,
  * installed and checked in a temp folder, so nothing works only because this repo hoists it.
  *
- *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left
+ *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
+ *             .env copied from .env.example it passes them again and the dev server reads PORT and API_URL
  *   refusal   `vulcan add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
  *   pair      IGNIS backends, then `vulcan add --preset ardor --api <backend>`; the proxy targets that
  *             backend's port. The IGNIS preset is the one released on npm, or the one packed from `IGNIS_DIR`.
@@ -11,8 +12,9 @@
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
  *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
- *             without APP_BUILD_COMMIT stops, the image carries the commit as its revision label, and nginx
- *             serves the page, the SPA fallback, the hashed assets and `/api` through `API_UPSTREAM`. Runs
+ *             without a commit sha (none, HEAD, too short, not hex) stops, the image carries the commit as its
+ *             revision label, and nginx serves the page, the SPA fallback, the hashed assets and `/api` through
+ *             `API_UPSTREAM`; with an upstream that does not resolve it still starts and only `/api` is a 502. Runs
  *             where `docker` is installed (it is skipped elsewhere); the project's unreleased packages are
  *             copied into it (vendor/) because a Docker context cannot reach tarballs outside the project.
  *
@@ -27,6 +29,7 @@
  *                    the pair scenario takes the latest @venizia/ignis from the registry
  */
 import {
+  copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -481,12 +484,34 @@ const assertPageRenders = async (opts: { port: number; name: string }) => {
  * Starts the app's `dev` script on a free port, loads the page and its entry module, and checks
  * the server's output: the first run of a new project prints no warning.
  */
-const assertDevServer = async (opts: { cwd: string }) => {
+const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
   step += 1;
   const port = freePort();
+  const environment: Record<string, string | undefined> = {
+    ...process.env,
+    PORT: String(port),
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+  };
+  // With `envFile`, the port and the backend come from a .env copied from .env.example, not from the
+  // process environment: the dev server must read the file, and forward /api to API_URL.
+  const stub =
+    opts.envFile === true ? Bun.serve({ port: 0, fetch: () => Response.json(HELLO) }) : undefined;
+  const envPath = join(opts.cwd, '.env');
+
+  if (stub !== undefined) {
+    delete environment.PORT;
+    writeFileSync(
+      envPath,
+      readFileSync(join(opts.cwd, '.env.example'), 'utf8')
+        .replace(/^PORT=.*$/m, `PORT=${port}`)
+        .replace(/^API_URL=.*$/m, `API_URL=http://127.0.0.1:${stub.port}`),
+    );
+  }
+
   const proc = Bun.spawn(['bun', 'run', 'server:dev'], {
     cwd: opts.cwd,
-    env: { ...process.env, PORT: String(port), NO_COLOR: '1', FORCE_COLOR: '0' },
+    env: environment,
     stdout: 'pipe',
     stderr: 'pipe',
   });
@@ -536,6 +561,15 @@ const assertDevServer = async (opts: { cwd: string }) => {
       });
     }
 
+    if (stub !== undefined) {
+      const forwarded = await answer('/api/hello');
+
+      assert({
+        condition: forwarded?.ok === true && (await forwarded.text()).includes(HELLO.message),
+        message: 'the dev server read PORT and API_URL from .env and forwards /api to API_URL',
+      });
+    }
+
     await assertPageRenders({ port, name: basename(opts.cwd) });
 
     // Dependency pre-bundling and reloads print on the first request, so wait for them.
@@ -543,6 +577,8 @@ const assertDevServer = async (opts: { cwd: string }) => {
   } finally {
     proc.kill();
     await proc.exited;
+    stub?.stop(true);
+    rmSync(envPath, { force: true });
     // The streams end with the process; read them to the end before judging the output.
     await Promise.all(collected);
   }
@@ -732,11 +768,44 @@ const main = async () => {
       condition: !existsSync(join(project, 'apps/admin/_env.example')),
       message: '_env.example is renamed',
     });
+    const appFolder = join(project, 'apps/admin');
+    const envExample = readFileSync(join(appFolder, '.env.example'), 'utf8');
+    const viteConfig = readFileSync(join(appFolder, '.configs/builders/vite.config.mts'), 'utf8');
+    const envKeys = [...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]!);
+
     assert({
-      condition:
-        readFileSync(join(project, 'apps/admin/.env.example'), 'utf8').trim() === 'PORT=5173',
-      message: '.env.example holds PORT=5173',
+      condition: /^PORT=5173$/m.test(envExample) && envKeys.includes('API_URL'),
+      message: '.env.example holds PORT=5173 and API_URL',
     });
+    assert({
+      condition: envKeys.every((key) => viteConfig.includes(`env.${key}`)),
+      message: `every key of .env.example is read by the app (${envKeys.join(', ')})`,
+    });
+    assert({
+      condition: ['lints', 'formatters'].every((folder) => {
+        const lines = readFileSync(join(appFolder, '.configs', folder, '.ignore'), 'utf8')
+          .split('\n')
+          .filter((line) => line.trim() !== '');
+
+        return lines.length > 0 && lines.every((line) => line.startsWith('#'));
+      }),
+      message: '.configs/lints/.ignore and .configs/formatters/.ignore hold only comment lines',
+    });
+
+    // The same checks and the dev server with a .env copied from .env.example (removed again afterwards,
+    // as the docker build refuses an app folder that holds one).
+    copyFileSync(join(appFolder, '.env.example'), join(appFolder, '.env'));
+
+    try {
+      for (const check of ardorChecks) {
+        run({ cwd: appFolder, command: ['bun', 'run', check] });
+      }
+    } finally {
+      rmSync(join(appFolder, '.env'), { force: true });
+    }
+
+    await assertDevServer({ cwd: appFolder, envFile: true });
+    assert({ condition: !existsSync(join(appFolder, '.env')), message: 'the smoke left no .env' });
     assert({
       condition: unsubstituted({ folder: join(project, 'apps/admin') }).length === 0,
       message: 'no file of the app still holds a {{ token',
@@ -919,6 +988,12 @@ const main = async () => {
       message: 'the library has no builders folder (no vite config), no html and no dev port',
     });
     assert({
+      condition: ['lints', 'formatters'].every((folder) =>
+        existsSync(join(lib, '.configs', folder, '.ignore')),
+      ),
+      message: "the library shares the app's lint and formatter ignore files",
+    });
+    assert({
       condition: unsubstituted({ folder: lib }).length === 0,
       message: 'no file of the library still holds a {{ token',
     });
@@ -983,7 +1058,11 @@ const main = async () => {
     const suffix = String(process.pid);
     const image = `ardor-smoke-web-${suffix}`;
     const network = `ardor-smoke-${suffix}`;
-    const containers = [`ardor-smoke-api-${suffix}`, `ardor-smoke-web-${suffix}`];
+    const containers = [
+      `ardor-smoke-api-${suffix}`,
+      `ardor-smoke-web-${suffix}`,
+      `ardor-smoke-orphan-${suffix}`,
+    ];
     const commit = '0123456789abcdef0123456789abcdef01234567';
     const docker = (args: string[], failure = false) =>
       run({ cwd: project, command: ['docker', ...args], expectFailure: failure });
@@ -1025,6 +1104,17 @@ const main = async () => {
         condition: unstamped.output.includes('APP_BUILD_COMMIT'),
         message: 'a build without APP_BUILD_COMMIT stops and says to pass it',
       });
+      for (const value of ['HEAD', 'abc123', 'ABCDEF1234', '0123456789abcdeg']) {
+        const rejected = docker(
+          ['build', '-f', dockerfile, '-t', image, '--build-arg', `APP_BUILD_COMMIT=${value}`, '.'],
+          true,
+        );
+
+        assert({
+          condition: rejected.output.includes(`after a first commit; got: ${value}`),
+          message: `a build whose commit is "${value}" (not a sha of 7 or more hex digits) stops`,
+        });
+      }
       docker([
         'build',
         '-f',
@@ -1149,6 +1239,43 @@ const main = async () => {
         condition: (await get('/assets/missing.js')).status === 404,
         message: 'a missing asset is a 404, not the page',
       });
+      // The upstream does not resolve: the container still starts, the page answers, only /api is a 502.
+      const orphanPort = freePort();
+
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[2]!,
+        '--network',
+        network,
+        '-p',
+        `${orphanPort}:8080`,
+        '-e',
+        'API_UPSTREAM=http://no-such-host.invalid:3000',
+        image,
+      ]);
+      const orphan = async (path: string): Promise<Response> => {
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+          try {
+            return await fetch(`http://localhost:${orphanPort}${path}`);
+          } catch {
+            await Bun.sleep(500);
+          }
+        }
+
+        throw new Error(`[preset-smoke] the container without an upstream did not answer ${path}`);
+      };
+
+      assert({
+        condition: (await orphan('/')).status === 200,
+        message: 'with an upstream that does not resolve, nginx starts and serves the page',
+      });
+      assert({
+        condition: (await orphan('/api/hello')).status === 502,
+        message: 'with an upstream that does not resolve, only /api answers 502',
+      });
+
       const user = docker(['exec', containers[1]!, 'id', '-u']);
 
       assert({ condition: user.output.trim() !== '0', message: 'nginx does not run as root' });
