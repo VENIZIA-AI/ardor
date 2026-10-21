@@ -51,12 +51,12 @@
   },
   "scripts": {
     "server:dev": "vite --config .configs/builders/vite.config.mts",
-    "compile": "sh scripts/compile.sh",
+    "compile": "vite build --config .configs/builders/vite.config.mts",
     "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "devz lint",
     "lint:fix": "devz lint --fix",
     "test": "bun test",
-    "clean": "sh scripts/clean.sh"
+    "clean": "devz clean"
   },
   "checks": ["typecheck", "lint", "test", "compile"],
   "files": "./files",

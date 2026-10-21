@@ -5,20 +5,26 @@
  *
  *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left
  *   refusal   `vulcan add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
- *   pair      IGNIS backends from `IGNIS_DIR`, then `vulcan add --preset ardor --api <backend>`; the
- *             proxy targets that backend's port. Skipped when IGNIS_DIR is not set.
+ *   pair      IGNIS backends, then `vulcan add --preset ardor --api <backend>`; the proxy targets that
+ *             backend's port. The IGNIS preset is the one released on npm, or the one packed from `IGNIS_DIR`.
  *   lib       `vulcan add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
+ *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
+ *             without APP_BUILD_COMMIT stops, the image carries the commit as its revision label, and nginx
+ *             serves the page, the SPA fallback, the hashed assets and `/api` through `API_UPSTREAM`. Runs
+ *             where `docker` is installed (it is skipped elsewhere); the project's unreleased packages are
+ *             copied into it (vendor/) because a Docker context cannot reach tarballs outside the project.
  *
  * Needs `make build-all` first (a package is packed with its dist).
  *
- * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair|lib]   (default: every scenario that can run)
+ * Usage: bun scripts/preset-smoke.ts [solo|refusal|pair|lib|docker]   (default: every scenario that can run)
  * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@latest`; before VULCAN 0.3.0 is
  *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
  *                    used instead of the registry's
- *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed)
+ *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed), for the pair scenario; without it
+ *                    the pair scenario takes the latest @venizia/ignis from the registry
  */
 import {
   cpSync,
@@ -38,7 +44,7 @@ import { chromium } from 'playwright-core';
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from './release-gates';
 
 const ROOT = resolve(import.meta.dir, '..');
-const SCENARIOS = ['solo', 'refusal', 'pair', 'lib'] as const;
+const SCENARIOS = ['solo', 'refusal', 'pair', 'lib', 'docker'] as const;
 
 type TScenario = (typeof SCENARIOS)[number];
 type TRecord = Record<string, unknown>;
@@ -193,6 +199,28 @@ const packageNameOf = (opts: { tarball: string }): string => {
   return name;
 };
 
+/** The latest release of a package, downloaded from the registry as a tarball. */
+const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
+  const metadata: unknown = await (
+    await fetch(`https://registry.npmjs.org/${opts.name}/latest`)
+  ).json();
+  const dist = isRecord(metadata) && isRecord(metadata.dist) ? metadata.dist : {};
+
+  if (typeof dist.tarball !== 'string') {
+    throw new Error(`[preset-smoke] no tarball for ${opts.name} in the registry`);
+  }
+
+  mkdirSync(opts.destination, { recursive: true });
+  const path = join(
+    opts.destination,
+    `${opts.name.replace(/^@/, '').replace('/', '-')}-latest.tgz`,
+  );
+
+  writeFileSync(path, new Uint8Array(await (await fetch(dist.tarball)).arrayBuffer()));
+
+  return path;
+};
+
 const vulcanCommand = (): string[] =>
   (process.env.VULCAN_CMD ?? 'bun x @venizia/vulcan@latest').split(/\s+/).filter(Boolean);
 
@@ -232,11 +260,26 @@ const peerRange = (opts: { presetRoot: string; name: string }): string => {
 };
 
 /** Root `overrides`: bun applies a `file:` override to a transitive dependency too. */
-const addOverrides = (opts: { project: string; tarballs: Map<string, string> }) => {
+const addOverrides = (opts: {
+  project: string;
+  tarballs: Map<string, string>;
+  /** Copy each tarball into `<project>/vendor/` and point at it with a relative path. */
+  vendor?: boolean;
+}) => {
   const path = join(opts.project, 'package.json');
   const manifest = readJson({ path });
+  const place = (tarball: string): string => {
+    if (opts.vendor !== true) {
+      return `file:${tarball}`;
+    }
+
+    mkdirSync(join(opts.project, 'vendor'), { recursive: true });
+    cpSync(tarball, join(opts.project, 'vendor', basename(tarball)));
+
+    return `file:./vendor/${basename(tarball)}`;
+  };
   const overrides = Object.fromEntries(
-    [...opts.tarballs].map(([name, tarball]) => [name, `file:${tarball}`]),
+    [...opts.tarballs].map(([name, tarball]) => [name, place(tarball)]),
   );
 
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
@@ -305,6 +348,36 @@ const assertSubpathImports = (opts: { directory: string }) => {
 /** The script names every app has, and the ones no app has (Phat's standard, backend and frontend alike). */
 const APP_SCRIPTS = ['server:dev', 'compile', 'typecheck', 'lint', 'lint:fix', 'test', 'clean'];
 const FORBIDDEN_SCRIPTS = ['dev', 'start', 'build', 'rebuild', 'preview', 'api', 'server:prod'];
+
+/** What may be at the root of an app: its own files, and what a tool writes there. */
+const APP_ROOT = [
+  '.configs',
+  '.env.example',
+  'dist',
+  'node_modules',
+  'package.json',
+  'src',
+  'tsconfig.json',
+];
+
+const assertRootLayout = (opts: { directory: string }) => {
+  const extra = readdirSync(opts.directory).filter((name) => !APP_ROOT.includes(name));
+
+  assert({
+    condition: extra.length === 0,
+    message: `nothing at the app root but .configs, src, package.json, tsconfig.json and .env.example (found also: ${extra.join(', ') || 'nothing'})`,
+  });
+  assert({
+    condition: ['index.html'].every((file) => existsSync(join(opts.directory, 'src', file))),
+    message: 'index.html is in src/',
+  });
+  assert({
+    condition: ['Dockerfile', 'nginx.conf.template'].every((file) =>
+      existsSync(join(opts.directory, '.configs/builders', file)),
+    ),
+    message: 'the Dockerfile and its nginx template are in .configs/builders/',
+  });
+};
 
 const assertScriptStandard = (opts: { directory: string }) => {
   const scripts = Object.keys(
@@ -445,13 +518,9 @@ const assertDevServer = async (opts: { cwd: string }) => {
   };
 
   try {
-    // The entry and two modules reached through `#src/...` imports: Vite resolves them to .ts and .tsx.
-    for (const path of [
-      '/',
-      '/src/main.tsx',
-      '/src/application.ts',
-      '/src/pages/product-list.tsx',
-    ]) {
+    // The page, and modules under the Vite root (src/): Vite resolves them to .ts and .tsx. Vite answers an
+    // unknown path with the page (200), so a module must come back as JavaScript.
+    for (const path of ['/', '/main.tsx', '/application.ts', '/pages/home.tsx']) {
       let response = await answer(path);
 
       while (response === undefined && Date.now() < deadline) {
@@ -460,7 +529,9 @@ const assertDevServer = async (opts: { cwd: string }) => {
       }
 
       assert({
-        condition: response?.ok === true,
+        condition:
+          response?.ok === true &&
+          (path === '/' || (response.headers.get('content-type') ?? '').includes('javascript')),
         message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
       });
     }
@@ -544,6 +615,7 @@ const install = async (opts: {
       }
 
       assertScriptStandard({ directory: join(opts.project, app.folder) });
+      assertRootLayout({ directory: join(opts.project, app.folder) });
       await assertDevServer({ cwd: join(opts.project, app.folder) });
 
       // `clean` removes what `compile` wrote.
@@ -590,9 +662,26 @@ const main = async () => {
   }
 
   // `lib` needs a VULCAN with `add --lib`: it is not in the default run until that is the published one.
-  const scenarios = SCENARIOS.filter((name) =>
-    requested === undefined ? name !== 'lib' || process.env.VULCAN_LIB === '1' : requested === name,
-  );
+  // Bun throws when the executable is not there at all.
+  const hasDocker = ((): boolean => {
+    try {
+      return (
+        Bun.spawnSync(['docker', 'version', '--format', '{{.Server.Version}}'], {
+          stdout: 'ignore',
+          stderr: 'ignore',
+        }).exitCode === 0
+      );
+    } catch {
+      return false;
+    }
+  })();
+  const scenarios = SCENARIOS.filter((name) => {
+    if (requested !== undefined) {
+      return requested === name;
+    }
+
+    return name === 'docker' ? hasDocker : name !== 'lib' || process.env.VULCAN_LIB === '1';
+  });
   const ignisDirectory = process.env.IGNIS_DIR;
   const vulcanTarballs = (process.env.VULCAN_TGZ ?? '').split(',').filter(Boolean);
 
@@ -846,18 +935,249 @@ const main = async () => {
     });
   }
 
+  if (scenarios.includes('docker')) {
+    console.log('\nscenario docker: build and run the app image next to a stub backend');
+    const work = join(tempFolder, 'docker');
+
+    mkdirSync(work, { recursive: true });
+
+    if (!hasDocker) {
+      throw new Error('[preset-smoke] scenario docker needs docker, which is not installed here');
+    }
+
+    vulcan({
+      cwd: work,
+      env: NO_INSTALL,
+      args: [
+        'init',
+        '--preset',
+        `file:${presetRoot}`,
+        '--project',
+        'demo',
+        '--frontend-dir',
+        'apps',
+        '--app',
+        'web',
+      ],
+    });
+    const project = join(work, 'demo');
+
+    addOverrides({ project, tarballs: ownTarballs, vendor: true });
+    // A preset read from a file leaves the catalog pointing at the extracted package: make it the vendored one.
+    setCatalog({
+      project,
+      name: '@venizia/ardor',
+      version: `file:./vendor/${basename(ardorTarball)}`,
+    });
+    run({ cwd: project, command: ['bun', 'install'] });
+    assert({
+      condition: !readFileSync(join(project, 'bun.lock'), 'utf8').includes(`file:${tempFolder}`),
+      message: 'the lockfile points at vendor/, not at a path outside the project',
+    });
+    assert({
+      condition: existsSync(join(project, '.dockerignore')),
+      message: 'the project has a .dockerignore',
+    });
+
+    const dockerfile = 'apps/web/.configs/builders/Dockerfile';
+    const suffix = String(process.pid);
+    const image = `ardor-smoke-web-${suffix}`;
+    const network = `ardor-smoke-${suffix}`;
+    const containers = [`ardor-smoke-api-${suffix}`, `ardor-smoke-web-${suffix}`];
+    const commit = '0123456789abcdef0123456789abcdef01234567';
+    const docker = (args: string[], failure = false) =>
+      run({ cwd: project, command: ['docker', ...args], expectFailure: failure });
+
+    try {
+      // An environment file in the app must never reach the image: the Dockerfile stops a build whose
+      // context holds one, and the .dockerignore VULCAN writes keeps it out of the context.
+      writeFileSync(join(project, 'apps/web/.env'), 'SECRET=leak-me\n');
+      const ignorePath = join(project, '.dockerignore');
+      const generatedIgnore = readFileSync(ignorePath, 'utf8');
+
+      writeFileSync(
+        ignorePath,
+        generatedIgnore
+          .split('\n')
+          .filter((line) => !line.includes('.env'))
+          .join('\n'),
+      );
+      const leaking = docker(
+        ['build', '-f', dockerfile, '-t', image, '--build-arg', `APP_BUILD_COMMIT=${commit}`, '.'],
+        true,
+      );
+
+      assert({
+        condition: leaking.output.includes('Secrets in the build context'),
+        message:
+          'a build whose context holds a .env stops, naming it (a .dockerignore without the env lines)',
+      });
+      writeFileSync(ignorePath, generatedIgnore);
+      assert({
+        condition:
+          generatedIgnore.includes('**/.env') && generatedIgnore.includes('!**/.env.example'),
+        message: 'the .dockerignore of the project keeps .env files out and .env.example in',
+      });
+
+      const unstamped = docker(['build', '-f', dockerfile, '-t', image, '.'], true);
+
+      assert({
+        condition: unstamped.output.includes('APP_BUILD_COMMIT'),
+        message: 'a build without APP_BUILD_COMMIT stops and says to pass it',
+      });
+      docker([
+        'build',
+        '-f',
+        dockerfile,
+        '-t',
+        image,
+        '--build-arg',
+        `APP_BUILD_COMMIT=${commit}`,
+        '--build-arg',
+        'APP_BUILD_BRANCH=smoke',
+        '.',
+      ]);
+      const label = docker([
+        'image',
+        'inspect',
+        image,
+        '--format',
+        '{{index .Config.Labels "org.opencontainers.image.revision"}}',
+      ]);
+
+      assert({
+        condition: label.output.trim() === commit,
+        message: 'the image carries the commit as org.opencontainers.image.revision',
+      });
+
+      // The builder layers hold no trace of the planted secret.
+      docker([
+        'build',
+        '-f',
+        dockerfile,
+        '--target',
+        'builder',
+        '-t',
+        `${image}-builder`,
+        '--build-arg',
+        `APP_BUILD_COMMIT=${commit}`,
+        '.',
+      ]);
+      const searched = docker([
+        'run',
+        '--rm',
+        `${image}-builder`,
+        'sh',
+        '-c',
+        'grep -r leak-me . || true',
+      ]);
+
+      assert({
+        condition: !searched.output.includes('leak-me'),
+        message: 'the builder stage holds no copy of the planted .env',
+      });
+
+      docker(['network', 'create', network]);
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[0]!,
+        '--network',
+        network,
+        '--network-alias',
+        'api',
+        'docker.io/oven/bun:1.4.3-alpine',
+        'bun',
+        '-e',
+        `Bun.serve({ port: 3000, fetch: (request) => new URL(request.url).pathname === '/api/hello' ? Response.json({ message: 'Hello from IGNIS!' }) : new Response('not found', { status: 404 }) })`,
+      ]);
+      const port = freePort();
+
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[1]!,
+        '--network',
+        network,
+        '-p',
+        `${port}:8080`,
+        '-e',
+        'API_UPSTREAM=http://api:3000',
+        image,
+      ]);
+      const get = async (path: string): Promise<Response> => {
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+          try {
+            return await fetch(`http://localhost:${port}${path}`);
+          } catch {
+            await Bun.sleep(500);
+          }
+        }
+
+        throw new Error(`[preset-smoke] the container did not answer ${path}`);
+      };
+
+      const index = await get('/');
+
+      assert({
+        condition: index.ok && (index.headers.get('content-type') ?? '').includes('text/html'),
+        message: 'nginx serves the built index.html at /',
+      });
+      const html = await index.text();
+      const asset = /\/assets\/[^"]+\.js/.exec(html)?.[0] ?? '';
+      const hello = await get('/api/hello');
+
+      assert({
+        condition: hello.ok && (await hello.text()).includes('Hello from IGNIS!'),
+        message: '/api/hello reaches the backend through nginx',
+      });
+      const route = await get('/anything/not/a/file');
+
+      assert({
+        condition: route.ok && (await route.text()) === html,
+        message: 'a route that is not a file answers with index.html',
+      });
+      const script = await get(asset);
+
+      assert({
+        condition: script.ok && (script.headers.get('cache-control') ?? '').includes('immutable'),
+        message: 'a hashed asset is cached for good',
+      });
+      assert({
+        condition: (await get('/assets/missing.js')).status === 404,
+        message: 'a missing asset is a 404, not the page',
+      });
+      const user = docker(['exec', containers[1]!, 'id', '-u']);
+
+      assert({ condition: user.output.trim() !== '0', message: 'nginx does not run as root' });
+    } finally {
+      Bun.spawnSync(['docker', 'rm', '-f', ...containers], { stdout: 'ignore', stderr: 'ignore' });
+      Bun.spawnSync(['docker', 'network', 'rm', network], { stdout: 'ignore', stderr: 'ignore' });
+      Bun.spawnSync(['docker', 'image', 'rm', '-f', image, `${image}-builder`], {
+        stdout: 'ignore',
+        stderr: 'ignore',
+      });
+    }
+  }
+
   if (scenarios.includes('pair')) {
-    if (ignisDirectory === undefined) {
-      console.log('\nscenario pair: skipped, IGNIS_DIR is not set');
-    } else {
+    {
       console.log(
         '\nscenario pair: IGNIS backends, then vulcan add --preset ardor --api <backend>',
       );
-      const ignisTarballs = packAll({
-        directory: ignisDirectory,
-        destination: join(tempFolder, 'ignis-tgz'),
-      });
-      const ignisTarball = ignisTarballs.get('@venizia/ignis');
+      const ignisTarballs =
+        ignisDirectory === undefined
+          ? new Map<string, string>()
+          : packAll({ directory: ignisDirectory, destination: join(tempFolder, 'ignis-tgz') });
+      const ignisTarball =
+        ignisDirectory === undefined
+          ? await downloadLatest({
+              name: '@venizia/ignis',
+              destination: join(tempFolder, 'ignis-tgz'),
+            })
+          : ignisTarballs.get('@venizia/ignis');
 
       if (ignisTarball === undefined) {
         throw new Error('[preset-smoke] @venizia/ignis was not packed from IGNIS_DIR');
@@ -957,7 +1277,7 @@ const main = async () => {
       });
       // The interactive path: a terminal asks the three names in order and the answers come from the
       // keyboard. `script` gives the command a pseudo-terminal, so VULCAN sees a TTY, and the answers
-      // are piped in: the frontend folder (empty takes the one chosen before), the app, the backend.
+      // are piped in: the kind (a preset with a lib asks app or lib first), the frontend folder (empty takes the one chosen before), the app, the backend.
       const prompted = run({
         cwd: project,
         env: NO_INSTALL,
@@ -967,7 +1287,7 @@ const main = async () => {
           [...vulcanCommand(), 'add', '--preset', `file:${presetRoot}`].join(' '),
           '/dev/null',
         ],
-        input: '\nportal\ncore-api\n',
+        input: 'app\n\nportal\ncore-api\n',
       });
       const order = [
         'Frontend folder',

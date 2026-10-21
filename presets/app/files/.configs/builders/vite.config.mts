@@ -10,14 +10,20 @@ export default defineConfig(({ mode }) => {
   const proxy: Record<string, string> = apiUrl === '' ? {} : { '/api': apiUrl };
 
   return {
+    // The app's own files are in src/, index.html included, so nothing but .configs/, src/, package.json,
+    // tsconfig.json and .env.example sits at the app root; `.env` files are read from that root.
+    root: 'src',
+    envDir: '..',
     // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
-    plugins: [IgnisArtifactsVitePlugin.create(), react(), tailwindcss()],
+    plugins: [IgnisArtifactsVitePlugin.create({ root: 'src' }), react(), tailwindcss()],
     server: {
       port: Number(env.PORT ?? '{{devPort}}'),
       strictPort: true,
       proxy,
     },
     build: {
+      outDir: '../dist',
+      emptyOutDir: true,
       rolldownOptions: {
         output: {
           // React, react-admin and the router weigh about 500 KB before any application code. Two

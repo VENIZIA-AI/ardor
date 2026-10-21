@@ -13,6 +13,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | Date | Title | Type |
 |------|-------|------|
 | 2026-10-21 | [A feature library preset](./2026-10-21-preset-lib) | New Feature |
+| 2026-10-21 | [A tidy app root and a Dockerfile in the preset](./2026-10-21-preset-root-and-image) | Enhancement |
 | 2026-10-20 | [Every app has the same scripts](./2026-10-20-app-script-standard) | Breaking Change |
 | 2026-10-20 | [ARDOR 0.3.0 Is Stable](./2026-10-20-ardor-0-3-0-stable) | Enhancement |
 | 2026-10-20 | [The preset's typecheck runs bun check](./2026-10-20-preset-bun-check) | Enhancement |
