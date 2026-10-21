@@ -106,7 +106,6 @@ CLAUDE.md
 CLAUDE.*.md
 **/*/CLAUDE.md
 GEMINI.md
-.mcp.json
 .mcp.local.json
 
 # Generated or scratch output
