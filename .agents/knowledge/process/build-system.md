@@ -19,7 +19,7 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 - `clean` - removes `dist` and every `.tsbuildinfo`, `.configs/builders/*.tsbuildinfo` included: a stale one makes tsc believe it is up to date and emit nothing behind a `DONE` line.
 - `typecheck` - `bun check --no-pretty` over `tsconfig.json` (src and tests), then over the build program, which drops the Bun types, so a Bun global in `src` fails there and not in a consumer.
 - `lint` / `lint-fix` - see [Lint presets](#lint-presets).
-- `test` - `bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package. A package with no suite sets `HAS_TESTS := no` (`ardor`): its `make test` says so and passes.
+- `test` - `NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package. A package with no suite sets `HAS_TESTS := no` (`ardor`): its `make test` says so and passes.
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `socket.io-client`) and the runtime dependencies (like `lodash`) from the measurement, so the budget measures only the package's own code.
 - `force-update` (a `package.json` script) - runs the one root `scripts/force-update.sh` (a package carries no copy), which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 
