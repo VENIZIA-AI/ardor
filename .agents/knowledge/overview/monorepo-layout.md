@@ -46,6 +46,7 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | `.mcp.json` (gitignored) | Registers the `atlas` MCP server (VULCAN's atlas run against this checkout); `vulcan sync` writes it on each machine - see [Atlas MCP server](/reference/atlas-mcp.md) |
 | `.githooks/` | `pre-commit` runs `make lint-all` and `bun scripts/examples.ts check`; enabled by `make setup-hooks` |
 | `.github/workflows/` | `ci.yml` (gates, build, tests, lint), `package-release.yml` (dispatch per package), `deploy-docs.yml` |
+| `bunfig.toml` | Bun's config for commands run at the root: only `telemetry = false`. Bun reads it only from the directory a command runs in, and no `minimumReleaseAge`: it would refuse the young versions that the floors at the latest need |
 | `Makefile`, `make/` | Every entry point; one job per `make/*.mk` file, `make/project.mk` is the per-package include; a bare `make` lists them |
 
 ## Dependency versions
