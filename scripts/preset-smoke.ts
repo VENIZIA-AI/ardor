@@ -957,11 +957,12 @@ const main = async () => {
     cpSync(presetRoot, withoutLib, { recursive: true });
     const manifestPath = join(withoutLib, 'package.json');
     const manifest = readJson({ path: manifestPath });
-    const { lib: _lib, ...vulcanField } = isRecord(manifest.vulcan) ? manifest.vulcan : {};
+    const declared = isRecord(manifest.vulcan) ? manifest.vulcan : {};
+    const { lib: _lib, ...presetsField } = isRecord(declared.presets) ? declared.presets : {};
 
     writeFileSync(
       manifestPath,
-      `${JSON.stringify({ ...manifest, vulcan: vulcanField }, null, 2)}\n`,
+      `${JSON.stringify({ ...manifest, vulcan: { ...declared, presets: presetsField } }, null, 2)}\n`,
     );
     const refused = vulcan({
       cwd: project,
