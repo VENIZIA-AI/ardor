@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { type ApplicationError } from '@venizia/ignis-inversion';
+import type { ApplicationError } from '@venizia/ignis-inversion';
 import type { NotificationOptions, NotificationType } from 'ra-core';
 import { useNotify } from 'ra-core';
 

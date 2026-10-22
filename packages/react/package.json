@@ -57,7 +57,7 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ./scripts/force-update.sh",
+    "force-update": "sh ../../scripts/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
@@ -65,12 +65,12 @@
     "lodash": "catalog:"
   },
   "peerDependencies": {
-    "@reduxjs/toolkit": ">=2.12.0",
-    "@venizia/ignis-filter": "^0.3.0",
-    "@venizia/ignis-helpers": "^0.3.0",
-    "@venizia/ignis-inversion": "^0.3.0",
-    "@venizia/ignis-kernel": "^0.3.0",
-    "react": ">=18.0",
+    "@reduxjs/toolkit": ">=2.13.0",
+    "@venizia/ignis-filter": "^0.3.6",
+    "@venizia/ignis-helpers": "^0.3.6",
+    "@venizia/ignis-inversion": "^0.3.7",
+    "@venizia/ignis-kernel": "^0.3.6",
+    "react": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "reflect-metadata": ">=0.2.2"
   },
@@ -83,12 +83,10 @@
     "@happy-dom/global-registrator": "catalog:",
     "@reduxjs/toolkit": "catalog:",
     "@size-limit/preset-small-lib": "catalog:",
-    "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/bun": "catalog:",
     "@types/lodash": "catalog:",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-helpers": "catalog:",

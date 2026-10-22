@@ -97,18 +97,14 @@ const build = (root: string) =>
     root,
     packageDirectory: 'packages/umbrella',
     presetsDirectory: 'presets',
-    outDirectory: join(root, 'packages/umbrella/dist/vulcan-preset'),
+    outDirectory: join(root, 'packages/umbrella/dist/presets'),
   });
 
 const output = (root: string): Record<string, Record<string, string>> =>
-  JSON.parse(
-    readFileSync(join(root, 'packages/umbrella/dist/vulcan-preset/app/preset.json'), 'utf8'),
-  );
+  JSON.parse(readFileSync(join(root, 'packages/umbrella/dist/presets/app/preset.json'), 'utf8'));
 
 const libOutput = (root: string): Record<string, unknown> =>
-  JSON.parse(
-    readFileSync(join(root, 'packages/umbrella/dist/vulcan-preset/lib/preset.json'), 'utf8'),
-  );
+  JSON.parse(readFileSync(join(root, 'packages/umbrella/dist/presets/lib/preset.json'), 'utf8'));
 
 afterAll(() => {
   for (const root of roots) {
@@ -184,7 +180,7 @@ describe('buildPreset', () => {
   test('files are copied byte-identical, dotfile folders included, and preset.json points at them', () => {
     const root = repository({});
     build(root);
-    const out = join(root, 'packages/umbrella/dist/vulcan-preset/app');
+    const out = join(root, 'packages/umbrella/dist/presets/app');
     expect(readFileSync(join(out, 'files/_env.example'), 'utf8')).toBe('PORT={{devPort}}\n');
     expect(readFileSync(join(out, 'files/.configs/lints/lint.mts'), 'utf8')).toBe('export {};\n');
     expect([...readFileSync(join(out, 'files/logo.bin'))]).toEqual([0, 255, 1, 2]);
@@ -193,8 +189,8 @@ describe('buildPreset', () => {
 
   test('the output folder is replaced, not merged', () => {
     const root = repository({});
-    const stale = join(root, 'packages/umbrella/dist/vulcan-preset/app/files/stale.txt');
-    write(root, 'packages/umbrella/dist/vulcan-preset/app/files/stale.txt', 'old');
+    const stale = join(root, 'packages/umbrella/dist/presets/app/files/stale.txt');
+    write(root, 'packages/umbrella/dist/presets/app/files/stale.txt', 'old');
     build(root);
     expect(existsSync(stale)).toBe(false);
   });
@@ -217,7 +213,7 @@ describe('buildPreset, a library preset', () => {
       react: 'catalog:',
     },
   };
-  const outLib = (root: string) => join(root, 'packages/umbrella/dist/vulcan-preset/lib');
+  const outLib = (root: string) => join(root, 'packages/umbrella/dist/presets/lib');
 
   test('lib/preset.json is written with every marker of the three dependency sections resolved', () => {
     const root = repository({ lib });

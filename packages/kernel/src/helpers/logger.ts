@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import { type AnyType, type TConstValue } from '@/common';
+import type { AnyType, TConstValue } from '@/common';
 
 export class LogLevels {
   static readonly DEBUG = 'debug';

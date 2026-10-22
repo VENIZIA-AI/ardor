@@ -1,9 +1,9 @@
 import { getError } from '@venizia/ignis-inversion';
 import isEmpty from 'lodash/isEmpty.js';
 
-import { type AnyObject } from '@/common/types';
+import type { AnyObject } from '@/common/types';
 import { BaseHelper } from '../base-helper';
-import { type IFetchable, type IRequestOptions } from './fetchers';
+import type { IFetchable, IRequestOptions } from './fetchers';
 import { NodeFetcher } from './fetchers/node-fetch';
 import type { TFetcherResponse, TFetcherVariant } from './common/types';
 

@@ -34,7 +34,7 @@ bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --a
 cd demo && make dev    # the admin on http://localhost:5173/
 ```
 
-This creates a monorepo with one admin, runs its checks, and needs VULCAN 0.3.7 or newer. See [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project) for every step, the Dockerfile and the library preset.
+This creates a monorepo with one admin, runs its checks, and needs VULCAN 0.3.10 or newer. See [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project) for every step, the Dockerfile and the library preset.
 
 ## Install into an existing Vite project
 
@@ -178,7 +178,7 @@ In release order - each builds on the ones above it.
 | [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) |
 | [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) |
 
-ARDOR is built on IGNIS 0.3: every ARDOR package peers on `@venizia/ignis-*` `^0.3.0`, and the workspace catalog pins the exact versions. The documentation site lives in
+ARDOR is built on IGNIS 0.3: every ARDOR package peers on `@venizia/ignis-*` `^0.3.6` (`ignis-inversion` `^0.3.7`), and the workspace catalog pins the exact versions. The documentation site lives in
 [`docs/wiki`](docs/wiki/) and is not published to npm.
 
 ## Is ARDOR for you?

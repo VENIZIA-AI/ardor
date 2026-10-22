@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
-import { type IApplicationInfo, type IRestDataProviderOptions } from '@venizia/ardor-kernel';
+import type { IApplicationInfo, IRestDataProviderOptions } from '@venizia/ardor-kernel';
 import { getError } from '@venizia/ignis-inversion';
-import { type RaRecord } from 'ra-core';
+import type { RaRecord } from 'ra-core';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
 
 class TestResources {

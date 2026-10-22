@@ -1,42 +1,42 @@
-import { type Store } from '@reduxjs/toolkit';
-import { type Container } from '@venizia/ignis-inversion';
-import {
-  type CoreAdminProps,
-  type CreateParams,
-  type CreateResult,
-  type DeleteManyParams,
-  type DeleteManyResult,
-  type DeleteParams,
-  type DeleteResult,
-  type GetListParams,
-  type GetListResult,
-  type GetManyParams,
-  type GetManyReferenceParams,
-  type GetManyReferenceResult,
-  type GetManyResult,
-  type GetOneParams,
-  type GetOneResult,
-  type Identifier,
-  type Locale,
-  type QueryFunctionContext,
-  type RaRecord,
-  type ResourceProps,
-  type UpdateManyParams,
-  type UpdateManyResult,
-  type UpdateParams,
-  type UpdateResult,
-  type UserIdentity,
+import type { Store } from '@reduxjs/toolkit';
+import type { Container } from '@venizia/ignis-inversion';
+import type {
+  CoreAdminProps,
+  CreateParams,
+  CreateResult,
+  DeleteManyParams,
+  DeleteManyResult,
+  DeleteParams,
+  DeleteResult,
+  GetListParams,
+  GetListResult,
+  GetManyParams,
+  GetManyReferenceParams,
+  GetManyReferenceResult,
+  GetManyResult,
+  GetOneParams,
+  GetOneResult,
+  Identifier,
+  Locale,
+  QueryFunctionContext,
+  RaRecord,
+  ResourceProps,
+  UpdateManyParams,
+  UpdateManyResult,
+  UpdateParams,
+  UpdateResult,
+  UserIdentity,
 } from 'ra-core';
-import { type ReactNode } from 'react';
-import { type RouteProps } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import type { RouteProps } from 'react-router-dom';
 
-import {
-  type AnyType,
-  type DefaultNetworkRequestService,
-  type ICustomParams,
-  type IDataSourceAuth,
-  type ISendParams,
-  type ISendResponse,
+import type {
+  AnyType,
+  DefaultNetworkRequestService,
+  ICustomParams,
+  IDataSourceAuth,
+  ISendParams,
+  ISendResponse,
 } from '@venizia/ardor-kernel';
 
 export interface IReactAdminDataProvider<TResource extends string = string> {

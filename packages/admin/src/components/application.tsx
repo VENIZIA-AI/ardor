@@ -1,17 +1,17 @@
 import React from 'react';
 
-import { type Store } from '@reduxjs/toolkit';
+import type { Store } from '@reduxjs/toolkit';
 import type { Container } from '@venizia/ignis-inversion';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';
 
 import { CoreBindings, Logger } from '@venizia/ardor-kernel';
-import { type IAuthProvider, type IDataProvider } from '@/common';
+import type { IAuthProvider, IDataProvider } from '@/common';
 import { type TFeature, Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { ApplicationContext } from '@venizia/ardor-react';
-import { type IApplication } from '../common/types';
+import type { IApplication } from '../common/types';
 
 const Wrapper: React.FC<{
   applicationName?: string;

@@ -1,7 +1,7 @@
 /**
  * Writes the publishable copy of a package's VULCAN presets. The templates in `presets/app/` and
  * `presets/lib/` (a sibling of `packages/`, each `preset.json` and `files/`) mark what a release must
- * fill in; the copies in the package's `dist/vulcan-preset/app/` and `lib/` carry the real versions, so a
+ * fill in; the copies in the package's `dist/presets/app/` and `lib/` carry the real versions, so a
  * preset always describes the release it ships in. The lib also gets the app's lint and format configs.
  *
  *   workspace:*  the exact version of that workspace package, read from its package.json now
@@ -9,7 +9,7 @@
  *   catalog:     the range in the root catalog; a @venizia package is exact (a leading ^ or ~ is dropped)
  *   peer:        the range this package's own peerDependencies hold for that name
  *
- * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/vulcan-preset/{app,lib})
+ * Usage: bun scripts/vulcan-preset.ts   (writes packages/ardor/dist/presets/{app,lib})
  */
 import { Glob } from 'bun';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -186,11 +186,9 @@ if (import.meta.main) {
     root,
     packageDirectory: 'packages/ardor',
     presetsDirectory: 'presets',
-    outDirectory: join(root, 'packages/ardor/dist/vulcan-preset'),
+    outDirectory: join(root, 'packages/ardor/dist/presets'),
   });
 
   console.log(resolved.join('\n'));
-  console.log(
-    `vulcan-preset: wrote packages/ardor/dist/vulcan-preset (${resolved.length} resolved)`,
-  );
+  console.log(`vulcan-preset: wrote packages/ardor/dist/presets (${resolved.length} resolved)`);
 }

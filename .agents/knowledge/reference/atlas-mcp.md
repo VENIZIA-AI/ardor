@@ -2,7 +2,7 @@
 type: Reference
 title: Atlas MCP server
 description: What the atlas MCP server (registered as `atlas`, naming itself ardor-atlas) is - VULCAN's atlas run against this checkout, and against IGNIS beside it - its tools and corpora, where symbol, version and changes get their answers, and when those answers go stale.
-resource: .mcp.json
+resource: .agents/vulcan.manifest.json
 tags: [reference, atlas, mcp, tooling]
 ---
 
@@ -17,7 +17,7 @@ tags: [reference, atlas, mcp, tooling]
 - [Related](#related)
 <!-- okf:generated:contents end -->
 
-`atlas` (registered in `.mcp.json` under that key, the name `vulcan init` writes) is the MCP server agents query for this bundle, the wiki and the changelogs (rule
+`atlas` (registered under that key in `.mcp.json`, a per-machine file that `vulcan sync` writes and git ignores) is the MCP server agents query for this bundle, the wiki and the changelogs (rule
 P-01). ARDOR ships no atlas package of its own: the server is VULCAN's atlas (`@venizia/vulcan-atlas`,
 pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live.
 Nothing behind `symbol`, `version` and `changes` is committed any more: atlas reads symbols from the
@@ -25,7 +25,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 
 ## How it runs
 
-`.mcp.json` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
+`vulcan sync` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
   `package.json`; `scripts/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
@@ -43,8 +43,8 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
   `UNAVAILABLE` in the `initialize` reply and the server still serves the rest; with the remote
   down but a cache present it serves the last commit and says `OFFLINE`.
 - **The server introduces itself as `ardor-atlas`**, and is registered as `atlas`, whether or not a source is served beside this checkout.
-- **Changing the server itself.** `.mcp.local.example.json` runs the atlas CLI of a VULCAN checkout
-  beside this one; copy it to the gitignored `.mcp.local.json` or edit `.mcp.json` locally.
+- **Changing the server itself.** Edit the gitignored `.mcp.json` locally to run the atlas CLI of a VULCAN checkout
+  beside this one; the next `vulcan sync` rewrites it.
   `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
 
 ## Corpora

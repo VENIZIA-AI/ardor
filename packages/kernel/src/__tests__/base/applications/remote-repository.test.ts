@@ -6,7 +6,7 @@ import { inject } from '@venizia/ignis-inversion';
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { datasource, repository, RepositoryTypes } from '@/base/metadata';
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
-import { type IApplicationInfo } from '@/common';
+import type { IApplicationInfo } from '@/common';
 
 @datasource()
 class CatalogDataSource extends HttpDataSource {

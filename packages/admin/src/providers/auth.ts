@@ -11,7 +11,7 @@ import {
   type IPermissionProvider,
   RequestMethods,
 } from '@venizia/ardor-kernel';
-import { type IAuthProvider, type IDataProvider } from '@/common';
+import type { IAuthProvider, IDataProvider } from '@/common';
 
 /**
  * The options hold data (`paths`); behaviour is in the protected hooks, each taking one `opts`
