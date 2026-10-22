@@ -198,7 +198,7 @@
     },
     "packages/kernel": {
       "name": "@venizia/ardor-kernel",
-      "version": "0.3.0",
+      "version": "0.3.6",
       "dependencies": {
         "lodash": "catalog:",
       },
