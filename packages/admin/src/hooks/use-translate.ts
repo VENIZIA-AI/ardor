@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useI18nProvider } from 'ra-core';
 
-import { type AnyType, type TFullPaths } from '@venizia/ardor-kernel';
+import type { AnyType, TFullPaths } from '@venizia/ardor-kernel';
 import type { englishMessages } from '@/common/locales';
 
 export interface IUseTranslateKeysOverrides {}

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
-import { type IAuthProvider, type IDataProvider } from '@/common';
+import type { IAuthProvider, IDataProvider } from '@/common';
 import { DefaultAuthProvider } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 import {

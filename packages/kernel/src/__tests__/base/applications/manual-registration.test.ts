@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { BindingScopes, inject } from '@venizia/ignis-inversion';
 
 import { BaseArdorApplication } from '@/base/applications/abstract';
-import { type IApplicationInfo } from '@/common';
+import type { IApplicationInfo } from '@/common';
 
 class ApiClient {
   readonly baseUrl = 'https://api.example.com';

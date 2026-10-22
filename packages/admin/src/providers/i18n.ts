@@ -1,12 +1,12 @@
 import { type Container, inject } from '@venizia/ignis-inversion';
 import merge from 'lodash/merge.js';
-import { type I18nProvider, type TranslationMessages } from 'ra-core';
+import type { I18nProvider, TranslationMessages } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';
 
 import { BaseProvider, CoreBindings } from '@venizia/ardor-kernel';
-import { type II18nProviderOptions } from '@/common';
+import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { type TFeature } from '@/features/feature';
+import type { TFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 
 /**

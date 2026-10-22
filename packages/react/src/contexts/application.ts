@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { type Container } from '@venizia/ignis-inversion';
+import type { Container } from '@venizia/ignis-inversion';
 
-import { type Logger } from '@venizia/ardor-kernel';
+import type { Logger } from '@venizia/ardor-kernel';
 
 export interface IApplicationContextValue {
   container: Container | null;

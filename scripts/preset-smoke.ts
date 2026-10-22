@@ -202,11 +202,51 @@ const packageNameOf = (opts: { tarball: string }): string => {
   return name;
 };
 
+/**
+ * A registry answer, tried again: the registry now and then answers a request with an HTML error page
+ * or drops the connection, which would stop the whole smoke for a reason that is not the preset's.
+ */
+const fetchRegistry = async (opts: {
+  url: string;
+  accept: (body: Uint8Array) => boolean;
+}): Promise<Uint8Array> => {
+  let failure = 'no answer';
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const response = await fetch(opts.url);
+      const body = new Uint8Array(await response.arrayBuffer());
+
+      if (response.ok && opts.accept(body)) {
+        return body;
+      }
+
+      failure = `HTTP ${response.status}`;
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+    }
+
+    await Bun.sleep(5_000 * (attempt + 1));
+  }
+
+  throw new Error(`[preset-smoke] the registry did not answer ${opts.url} | ${failure}`);
+};
+
 /** The latest release of a package, downloaded from the registry as a tarball. */
 const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
-  const metadata: unknown = await (
-    await fetch(`https://registry.npmjs.org/${opts.name}/latest`)
-  ).json();
+  const answer = await fetchRegistry({
+    url: `https://registry.npmjs.org/${opts.name}/latest`,
+    accept: (body) => {
+      try {
+        JSON.parse(new TextDecoder().decode(body));
+
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  });
+  const metadata: unknown = JSON.parse(new TextDecoder().decode(answer));
   const dist = isRecord(metadata) && isRecord(metadata.dist) ? metadata.dist : {};
 
   if (typeof dist.tarball !== 'string') {
@@ -219,7 +259,7 @@ const downloadLatest = async (opts: { name: string; destination: string }): Prom
     `${opts.name.replace(/^@/, '').replace('/', '-')}-latest.tgz`,
   );
 
-  writeFileSync(path, new Uint8Array(await (await fetch(dist.tarball)).arrayBuffer()));
+  writeFileSync(path, await fetchRegistry({ url: dist.tarball, accept: () => true }));
 
   return path;
 };
