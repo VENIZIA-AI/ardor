@@ -328,16 +328,23 @@ const addOverrides = (opts: {
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
 };
 
-/** The app preset of a packed package: `dist/vulcan-preset/app/preset.json`. */
+/**
+ * The preset file of a packed package: `dist/presets/<kind>/preset.json`. The IGNIS release the pair
+ * scenario takes from the registry may still use its former folder, `dist/vulcan-preset`.
+ */
+const presetPath = (opts: { presetRoot: string; kind: 'app' | 'lib' }): string => {
+  const current = join(opts.presetRoot, `dist/presets/${opts.kind}/preset.json`);
+  const former = join(opts.presetRoot, `dist/vulcan-preset/${opts.kind}/preset.json`);
+
+  return !existsSync(current) && existsSync(former) ? former : current;
+};
+
 const appPresetPath = (opts: { presetRoot: string }): string =>
-  join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json');
+  presetPath({ presetRoot: opts.presetRoot, kind: 'app' });
 
 const checksOf = (opts: { presetRoot: string; kind?: 'lib' }): string[] => {
   const { checks } = readJson({
-    path:
-      opts.kind === 'lib'
-        ? join(opts.presetRoot, 'dist/vulcan-preset/lib/preset.json')
-        : appPresetPath({ presetRoot: opts.presetRoot }),
+    path: presetPath({ presetRoot: opts.presetRoot, kind: opts.kind ?? 'app' }),
   });
 
   return Array.isArray(checks) ? checks.map(String) : [];
