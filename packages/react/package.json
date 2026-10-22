@@ -66,10 +66,10 @@
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
-    "@venizia/ignis-filter": "^0.3.0",
-    "@venizia/ignis-helpers": "^0.3.0",
-    "@venizia/ignis-inversion": "^0.3.0",
-    "@venizia/ignis-kernel": "^0.3.0",
+    "@venizia/ignis-filter": "^0.3.6",
+    "@venizia/ignis-helpers": "^0.3.6",
+    "@venizia/ignis-inversion": "^0.3.7",
+    "@venizia/ignis-kernel": "^0.3.6",
     "react": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "reflect-metadata": ">=0.2.2"

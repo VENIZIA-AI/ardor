@@ -7,7 +7,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-Both commands need VULCAN 0.3.7 or newer. `bun x` fetches the latest release, so you have it unless you pinned an older one.
+Both commands need VULCAN 0.3.10 or newer. `bun x` fetches the latest release, so you have it unless you pinned an older one.
 
 ## Initialize a New Monorepo
 
@@ -101,7 +101,7 @@ bun x @venizia/vulcan add --preset ardor --app web --frontend-dir apps --api api
 
 `--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
-The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.2 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.6 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
 
 ## Add a Feature Library
 

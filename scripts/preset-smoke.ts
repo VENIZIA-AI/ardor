@@ -328,16 +328,9 @@ const addOverrides = (opts: {
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
 };
 
-/**
- * The preset file of a packed package: `dist/presets/<kind>/preset.json`. The IGNIS release the pair
- * scenario takes from the registry may still use its former folder, `dist/vulcan-preset`.
- */
-const presetPath = (opts: { presetRoot: string; kind: 'app' | 'lib' }): string => {
-  const current = join(opts.presetRoot, `dist/presets/${opts.kind}/preset.json`);
-  const former = join(opts.presetRoot, `dist/vulcan-preset/${opts.kind}/preset.json`);
-
-  return !existsSync(current) && existsSync(former) ? former : current;
-};
+/** The preset file of a packed package: `dist/presets/<kind>/preset.json`. */
+const presetPath = (opts: { presetRoot: string; kind: 'app' | 'lib' }): string =>
+  join(opts.presetRoot, `dist/presets/${opts.kind}/preset.json`);
 
 const appPresetPath = (opts: { presetRoot: string }): string =>
   presetPath({ presetRoot: opts.presetRoot, kind: 'app' });
