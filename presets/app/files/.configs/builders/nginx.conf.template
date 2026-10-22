@@ -20,6 +20,12 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
   }
 
+  # The runtime config is written when the container starts and has no hash in its name: never cached.
+  location = /config.js {
+    add_header Cache-Control "no-store";
+    try_files $uri =404;
+  }
+
   # The built files carry a content hash in their name, so a browser may keep them for good.
   location /assets/ {
     expires 1y;

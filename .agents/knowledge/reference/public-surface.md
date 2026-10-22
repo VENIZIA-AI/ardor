@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (122)
+### `@venizia/ardor-kernel` (124)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -40,6 +40,7 @@ generated:
 - `Environments` class
 - `generateUniqueId` const
 - `getNumberValue` const
+- `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
@@ -103,6 +104,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `RUNTIME_CONFIG_GLOBAL` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -243,7 +245,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (186)
+### `@venizia/ardor` (188)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -281,6 +283,7 @@ generated:
 - `Features` class
 - `generateUniqueId` const
 - `getNumberValue` const
+- `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationContextValue` interface
@@ -366,6 +369,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `RUNTIME_CONFIG_GLOBAL` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
