@@ -120,7 +120,7 @@ Chặn: <what blocks, or "không có">
 | **B-05** | **A downstream suite tests `dist`, not `src`.** `bun test` resolves `@venizia/ardor-kernel` and `@venizia/ardor-react` through the `import` export condition to `dist/index.js`. A source change in one package is invisible to another package's tests until the changed package is rebuilt. Before trusting "I changed X and Y's suite is still green", rebuild X and prove what Y loads - `import.meta.resolve` from Y's directory, or a grep on `dist/esm`. |
 | **B-06** | **Do not trust an exit code or a green summary alone.** Read the output for `error TS`, for the test counts, and for what actually ran. A stale `tsbuildinfo` replays ghost diagnostics after an exports change - purge it before trusting `tsc`. A build that emits `__tests__` into `dist` makes `bun test` run every test twice - `.configs/tsconfig.build.json` excludes them for exactly this reason. |
 | **B-07** | **Agent scripting uses `bun`** (`bun -e '…'`, `bun file.ts`, `Bun.file()`), never Python. |
-| **B-08** | **Test-only concerns go through the committed `.env.test`,** never through a framework default or a source change made for a test's convenience. Tests run on the Bun test runner only - never Jest, Vitest or Mocha. |
+| **B-08** | **Test-only concerns are set in the `test` target of `make/project.mk`** (`NODE_ENV=test`, the setup preload), never in a committed env file, a framework default or a source change made for a test's convenience. Tests run on the Bun test runner only - never Jest, Vitest or Mocha. |
 
 ## D - Docs
 

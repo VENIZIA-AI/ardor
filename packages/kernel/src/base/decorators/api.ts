@@ -1,6 +1,6 @@
-import { type AnyType } from '@/common';
-import { type Logger } from '@/helpers';
-import { type BaseService } from '../services';
+import type { AnyType } from '@/common';
+import type { Logger } from '@/helpers';
+import type { BaseService } from '../services';
 
 /** Logs a failing method with its name, and its `resource` when the class has one, then rethrows. */
 export const api = () => {

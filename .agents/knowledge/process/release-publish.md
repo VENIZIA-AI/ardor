@@ -158,7 +158,7 @@ a stale `next` is fixed by hand.
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/vulcan-preset` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 

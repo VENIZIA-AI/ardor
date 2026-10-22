@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { component, configuration, service } from '@/base/metadata';
-import { type IApplicationInfo, type IArtifactIndex } from '@/common';
+import type { IApplicationInfo, IArtifactIndex } from '@/common';
 import { rejectionOf } from '@/__tests__/rejection';
 
 @service()

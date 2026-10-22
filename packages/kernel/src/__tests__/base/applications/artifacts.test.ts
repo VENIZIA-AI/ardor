@@ -11,7 +11,7 @@ import {
   service,
 } from '@venizia/ignis-kernel/metadata';
 import { BindingScopes } from '@venizia/ignis-inversion';
-import { type IApplicationInfo } from '@/common';
+import type { IApplicationInfo } from '@/common';
 import { rejectionOf } from '@/__tests__/rejection';
 
 class TestApplication extends BaseArdorApplication {

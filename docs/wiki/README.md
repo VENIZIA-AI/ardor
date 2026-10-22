@@ -44,7 +44,7 @@ fails the build on an orphan page or a dead link, and `scripts/check-snippets.mt
 
 ## MCP
 
-The repository's `.mcp.json` registers `atlas`: VULCAN's atlas (`vulcan x atlas mcp`) run
+`vulcan sync` registers `atlas` in your `.mcp.json` (a per-machine file, ignored by git): VULCAN's atlas (`vulcan x atlas mcp`) run
 against this checkout, which searches this site, its changelogs and the agent knowledge bundle.
 
 ## License

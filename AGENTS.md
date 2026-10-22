@@ -31,6 +31,7 @@ The `atlas` MCP server holds the real code and docs of: ardor (this repository),
 Look facts up there before you answer or write from memory (V-P-07):
 `symbol` before you use an export (signature, import path, source line); `search`, then `get`, for how something works or which convention applies; `version` or `changes` for a release or an upgrade.
 A new app or package: ask `presets` which preset and which `vulcan add` command, run it, and never hand-write package.json, tsconfig or scripts.
+How to build something here (a feature, a controller, a service, a repository): `search` first, then `get`, before you answer; a plan never says "check atlas" for a step you have not done.
 <!-- vulcan:atlas:end -->
 
 ## Two homes for everything
@@ -51,7 +52,7 @@ in the knowledge bundle instead.
 Canonical, tool-neutral facts for ARDOR, in Open Knowledge Format (markdown + YAML frontmatter, one
 concept per file, links are the graph edges). Start at `.agents/knowledge/index.md`.
 
-It is also served over MCP by **`atlas`** (registered in `.mcp.json`): VULCAN's atlas
+It is also served over MCP by **`atlas`** (registered per machine by `vulcan sync`): VULCAN's atlas
 (`vulcan x atlas mcp`) run against this checkout, answering over the
 wiki, the changelogs and this bundle:
 

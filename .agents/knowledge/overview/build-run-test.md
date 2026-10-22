@@ -22,7 +22,7 @@ Each package's `make <pkg>` target runs `make -C packages/<pkg> rebuild` (`make/
 
 ## Test, lint, typecheck targets
 
-- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each running `bun test` with `.env.test` and the setup preload inside the package directory. `make test-ardor` says there is no suite and passes.
+- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each running `bun test` with `NODE_ENV=test` and the setup preload inside the package directory. `make test-ardor` says there is no suite and passes.
 - `make lint` runs `lint-packages` (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`); `make lint-all` adds `lint-wiki` and `lint-scripts`, and `make fmt-<pkg>` applies the fixes. The examples run through `bun scripts/examples.ts check` (lint and typecheck) and `build`. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.

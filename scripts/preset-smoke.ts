@@ -202,11 +202,51 @@ const packageNameOf = (opts: { tarball: string }): string => {
   return name;
 };
 
+/**
+ * A registry answer, tried again: the registry now and then answers a request with an HTML error page
+ * or drops the connection, which would stop the whole smoke for a reason that is not the preset's.
+ */
+const fetchRegistry = async (opts: {
+  url: string;
+  accept: (body: Uint8Array) => boolean;
+}): Promise<Uint8Array> => {
+  let failure = 'no answer';
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const response = await fetch(opts.url);
+      const body = new Uint8Array(await response.arrayBuffer());
+
+      if (response.ok && opts.accept(body)) {
+        return body;
+      }
+
+      failure = `HTTP ${response.status}`;
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+    }
+
+    await Bun.sleep(5_000 * (attempt + 1));
+  }
+
+  throw new Error(`[preset-smoke] the registry did not answer ${opts.url} | ${failure}`);
+};
+
 /** The latest release of a package, downloaded from the registry as a tarball. */
 const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
-  const metadata: unknown = await (
-    await fetch(`https://registry.npmjs.org/${opts.name}/latest`)
-  ).json();
+  const answer = await fetchRegistry({
+    url: `https://registry.npmjs.org/${opts.name}/latest`,
+    accept: (body) => {
+      try {
+        JSON.parse(new TextDecoder().decode(body));
+
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  });
+  const metadata: unknown = JSON.parse(new TextDecoder().decode(answer));
   const dist = isRecord(metadata) && isRecord(metadata.dist) ? metadata.dist : {};
 
   if (typeof dist.tarball !== 'string') {
@@ -219,7 +259,7 @@ const downloadLatest = async (opts: { name: string; destination: string }): Prom
     `${opts.name.replace(/^@/, '').replace('/', '-')}-latest.tgz`,
   );
 
-  writeFileSync(path, new Uint8Array(await (await fetch(dist.tarball)).arrayBuffer()));
+  writeFileSync(path, await fetchRegistry({ url: dist.tarball, accept: () => true }));
 
   return path;
 };
@@ -288,16 +328,16 @@ const addOverrides = (opts: {
   writeFileSync(path, `${JSON.stringify({ ...manifest, overrides }, null, 2)}\n`);
 };
 
-/** The app preset of a packed package: `dist/vulcan-preset/app/preset.json`. */
+/** The preset file of a packed package: `dist/presets/<kind>/preset.json`. */
+const presetPath = (opts: { presetRoot: string; kind: 'app' | 'lib' }): string =>
+  join(opts.presetRoot, `dist/presets/${opts.kind}/preset.json`);
+
 const appPresetPath = (opts: { presetRoot: string }): string =>
-  join(opts.presetRoot, 'dist/vulcan-preset/app/preset.json');
+  presetPath({ presetRoot: opts.presetRoot, kind: 'app' });
 
 const checksOf = (opts: { presetRoot: string; kind?: 'lib' }): string[] => {
   const { checks } = readJson({
-    path:
-      opts.kind === 'lib'
-        ? join(opts.presetRoot, 'dist/vulcan-preset/lib/preset.json')
-        : appPresetPath({ presetRoot: opts.presetRoot }),
+    path: presetPath({ presetRoot: opts.presetRoot, kind: opts.kind ?? 'app' }),
   });
 
   return Array.isArray(checks) ? checks.map(String) : [];
@@ -910,11 +950,12 @@ const main = async () => {
     cpSync(presetRoot, withoutLib, { recursive: true });
     const manifestPath = join(withoutLib, 'package.json');
     const manifest = readJson({ path: manifestPath });
-    const { lib: _lib, ...vulcanField } = isRecord(manifest.vulcan) ? manifest.vulcan : {};
+    const declared = isRecord(manifest.vulcan) ? manifest.vulcan : {};
+    const { lib: _lib, ...presetsField } = isRecord(declared.presets) ? declared.presets : {};
 
     writeFileSync(
       manifestPath,
-      `${JSON.stringify({ ...manifest, vulcan: vulcanField }, null, 2)}\n`,
+      `${JSON.stringify({ ...manifest, vulcan: { ...declared, presets: presetsField } }, null, 2)}\n`,
     );
     const refused = vulcan({
       cwd: project,
@@ -1405,9 +1446,10 @@ const main = async () => {
       // The interactive path: a terminal asks the three names in order and the answers come from the
       // keyboard. `script` gives the command a pseudo-terminal, so VULCAN sees a TTY, and the answers
       // are piped in: the kind (a preset with a lib asks app or lib first), the frontend folder (empty takes the one chosen before), the app, the backend.
+      // TERM=dumb keeps VULCAN 0.3.9's cursor menus off, so the answers stay plain lines.
       const prompted = run({
         cwd: project,
-        env: NO_INSTALL,
+        env: { ...NO_INSTALL, TERM: 'dumb' },
         command: [
           'script',
           '-qec',

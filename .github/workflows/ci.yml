@@ -100,7 +100,7 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make preset-smoke
 
-      # The make targets own the test command (make/test.mk: .env.test, the setup preload and the
+      # The make targets own the test command (make/project.mk: NODE_ENV=test, the setup preload and the
       # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.
       - name: Test - kernel
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

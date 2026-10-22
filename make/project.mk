@@ -58,8 +58,8 @@ lint-fix:
 	@$(BIN)/eslint -c .configs/lints/eslint.config.mjs --fix .
 	@$(BIN)/oxfmt -c .configs/formatters/oxfmt.config.mts $(FMT_GLOB)
 
-# `.env.test` carries the test-only settings (B-08) and the preload installs the package's DOM or
-# storage stub: there is no bunfig.toml, so a bare `bun test` inside a package skips both and fails.
+# The test-only settings (B-08) are set here, in the test command, and the preload installs the package's DOM or
+# storage stub: a bare `bun test` inside a package skips both and may fail.
 # BUN_TEST_FLAGS is an optional pass-through (`--isolate`, `--parallel`). Needs a build first (B-05).
 # A package with no suite sets `HAS_TESTS := no` before the include.
 HAS_TESTS ?= yes
@@ -67,7 +67,7 @@ BUN_TEST_FLAGS ?=
 
 test:
 ifeq ($(HAS_TESTS),yes)
-	@bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
+	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
 else
 	@echo "ℹ️  No test suite in this package - skipping."
 endif

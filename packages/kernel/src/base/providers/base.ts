@@ -1,4 +1,4 @@
-import { type Container, type IProvider } from '@venizia/ignis-inversion';
+import type { Container, IProvider } from '@venizia/ignis-inversion';
 
 import { BaseHelper } from '@/helpers/base-helper';
 

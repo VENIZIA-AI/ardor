@@ -1,27 +1,27 @@
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import omit from 'lodash/omit.js';
-import {
-  type CreateParams,
-  type CreateResult,
-  type DeleteManyParams,
-  type DeleteManyResult,
-  type DeleteParams,
-  type DeleteResult,
-  type GetListParams,
-  type GetListResult,
-  type GetManyParams,
-  type GetManyReferenceParams,
-  type GetManyReferenceResult,
-  type GetManyResult,
-  type GetOneParams,
-  type GetOneResult,
-  type Identifier,
-  type QueryFunctionContext,
-  type RaRecord,
-  type UpdateManyParams,
-  type UpdateManyResult,
-  type UpdateParams,
-  type UpdateResult,
+import type {
+  CreateParams,
+  CreateResult,
+  DeleteManyParams,
+  DeleteManyResult,
+  DeleteParams,
+  DeleteResult,
+  GetListParams,
+  GetListResult,
+  GetManyParams,
+  GetManyReferenceParams,
+  GetManyReferenceResult,
+  GetManyResult,
+  GetOneParams,
+  GetOneResult,
+  Identifier,
+  QueryFunctionContext,
+  RaRecord,
+  UpdateManyParams,
+  UpdateManyResult,
+  UpdateParams,
+  UpdateResult,
 } from 'ra-core';
 
 import {
@@ -42,7 +42,7 @@ import {
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor-kernel';
-import { type IDataProvider } from '@/common';
+import type { IDataProvider } from '@/common';
 
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>

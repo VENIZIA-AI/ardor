@@ -1,7 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 import { io, type Socket, type SocketOptions } from 'socket.io-client';
 
-import { type AnyType } from '@/common/types';
+import type { AnyType } from '@/common/types';
 import { BaseHelper } from './base-helper';
 
 export type TSocketIOEventHandler = (client: Socket, ...props: AnyType[]) => void;

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./force-update.sh [latest|next|highest]
+# Usage, from a package folder: sh ../../scripts/force-update.sh [latest|next|highest]
 # Default: latest
 # - latest/next: Use npm dist-tag to resolve version
 # - highest: Use the highest released version (sorted by semver)

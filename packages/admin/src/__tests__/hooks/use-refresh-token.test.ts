@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { AuthContext } from 'ra-core';
 import React, { type ReactNode } from 'react';
 
-import { type IAuthProvider } from '@/common';
+import type { IAuthProvider } from '@/common';
 import { useRefreshToken } from '@/hooks/use-refresh-token';
 
 interface ICreateMockAuthProviderOptions {

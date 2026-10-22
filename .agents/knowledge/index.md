@@ -23,7 +23,7 @@ re-deriving the project from the source each session.
 **The code is ground truth.** These concepts are curated prose over the code. When the two disagree,
 the code wins and the concept is a bug - fix it and note it in [log](/log.md).
 
-Served over MCP by `atlas`, registered in `.mcp.json`: `search` with
+Served over MCP by `atlas`, registered per machine by `vulcan sync`: `search` with
 `corpus: "knowledge"` finds a concept, `get` reads one by the id a search hit returned.
 
 ## Start here

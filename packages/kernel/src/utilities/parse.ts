@@ -1,6 +1,6 @@
 import round from 'lodash/round.js';
 
-import { type AnyType, type TConstValue } from '@/common';
+import type { AnyType, TConstValue } from '@/common';
 
 export class NumberParseMethods {
   static readonly INT = 'int';

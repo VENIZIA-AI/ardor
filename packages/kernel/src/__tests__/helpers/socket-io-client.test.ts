@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { type Socket } from 'socket.io-client';
-import { type AnyType } from '@/common';
+import type { Socket } from 'socket.io-client';
+import type { AnyType } from '@/common';
 import { SocketIOClientHelper } from '@/helpers/socket-io-client';
 
 class FakeSocket {

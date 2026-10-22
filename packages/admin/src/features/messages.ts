@@ -2,7 +2,7 @@ import { getError } from '@venizia/ignis-inversion';
 import isPlainObject from 'lodash/isPlainObject.js';
 import merge from 'lodash/merge.js';
 
-import { type TFeature } from './feature';
+import type { TFeature } from './feature';
 
 interface IFeatureBundle {
   feature: string;

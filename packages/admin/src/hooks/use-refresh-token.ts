@@ -3,8 +3,8 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthProvider } from 'ra-core';
 
-import { type AnyType } from '@venizia/ardor-kernel';
-import { type IAuthProvider } from '@/common';
+import type { AnyType } from '@venizia/ardor-kernel';
+import type { IAuthProvider } from '@/common';
 
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();

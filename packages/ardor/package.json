@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -59,8 +59,10 @@
   },
   "sideEffects": false,
   "vulcan": {
-    "preset": "./dist/vulcan-preset/app/preset.json",
-    "lib": "./dist/vulcan-preset/lib/preset.json"
+    "presets": {
+      "app": "./dist/presets/app/preset.json",
+      "lib": "./dist/presets/lib/preset.json"
+    }
   },
   "files": [
     "README.md",
@@ -73,7 +75,7 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ./scripts/force-update.sh",
+    "force-update": "sh ../../scripts/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
@@ -82,21 +84,21 @@
     "@venizia/ardor-react": "workspace:*"
   },
   "peerDependencies": {
-    "@reduxjs/toolkit": ">=2.12.0",
-    "@tanstack/react-query": ">=5.101.2",
-    "@venizia/ignis-connectors": "^0.3.0",
-    "@venizia/ignis-filter": "^0.3.0",
-    "@venizia/ignis-helpers": "^0.3.0",
-    "@venizia/ignis-inversion": "^0.3.0",
-    "@venizia/ignis-kernel": "^0.3.0",
-    "ra-core": ">=5.15.0",
-    "ra-i18n-polyglot": ">=5.15.0",
-    "react": ">=18.0",
-    "react-dom": ">=18.0",
+    "@reduxjs/toolkit": ">=2.13.0",
+    "@tanstack/react-query": ">=5.104.5",
+    "@venizia/ignis-connectors": "^0.3.6",
+    "@venizia/ignis-filter": "^0.3.6",
+    "@venizia/ignis-helpers": "^0.3.6",
+    "@venizia/ignis-inversion": "^0.3.7",
+    "@venizia/ignis-kernel": "^0.3.6",
+    "ra-core": ">=5.15.5",
+    "ra-i18n-polyglot": ">=5.15.5",
+    "react": ">=19.3.1",
+    "react-dom": ">=19.3.1",
     "react-redux": ">=9.3.0",
-    "react-router-dom": ">=7.9.4",
+    "react-router-dom": ">=7.18.4",
     "reflect-metadata": ">=0.2.2",
-    "socket.io-client": ">=4.8.3"
+    "socket.io-client": ">=4.8.4"
   },
   "peerDependenciesMeta": {
     "@venizia/ignis-connectors": {
@@ -107,29 +109,13 @@
     }
   },
   "devDependencies": {
-    "@reduxjs/toolkit": "catalog:",
     "@size-limit/preset-small-lib": "catalog:",
-    "@tanstack/react-query": "catalog:",
-    "@types/bun": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/ignis-connectors": "catalog:",
-    "@venizia/ignis-filter": "catalog:",
-    "@venizia/ignis-inversion": "catalog:",
-    "@venizia/ignis-kernel": "catalog:",
     "eslint": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
-    "ra-core": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "react-redux": "catalog:",
-    "react-router-dom": "catalog:",
-    "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
-    "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
@@ -152,7 +138,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "250 B"
+      "limit": "350 B"
     }
   ]
 }
