@@ -5,6 +5,7 @@ import {
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
+  getRuntimeConfig,
   inject,
   provide,
 } from '@venizia/ardor';
@@ -20,8 +21,16 @@ export class AdminConfiguration {
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    // No sign-in: no request carries an Authorization header.
-    return { url: '/api', noAuthPathRegex: /./ };
+    // No sign-in: no request carries an Authorization header. The API is `/api` (the image's nginx
+    // forwards it to API_UPSTREAM) unless VITE_API_URL says otherwise: set in .env in dev, or written to
+    // config.js when the container starts, so one built image serves every environment.
+    const url = getRuntimeConfig({
+      key: 'VITE_API_URL',
+      buildTimeEnv: import.meta.env,
+      defaultValue: '/api',
+    });
+
+    return { url, noAuthPathRegex: /./ };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })

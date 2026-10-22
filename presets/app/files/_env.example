@@ -6,3 +6,8 @@ PORT={{devPort}}
 
 # The backend the dev server forwards /api to. Empty: the one chosen when the app was added (none, if it had no backend).
 API_URL={{apiUrl}}
+
+# The API the app calls. Empty: /api. In dev the app reads it as import.meta.env.VITE_API_URL; in the image it
+# is the VITE_API_URL given to `docker run -e`, which config.js carries to the browser when the container starts.
+# Every VITE_ variable is public: anything published is readable by every visitor. Never put a secret in one.
+VITE_API_URL=

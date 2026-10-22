@@ -5,7 +5,7 @@
 #   docker build -f {{appPath}}/.configs/builders/Dockerfile -t {{app}} \
 #     --build-arg APP_BUILD_COMMIT="$(git rev-parse HEAD)" \
 #     --build-arg APP_BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" .
-#   docker run --rm -p 8080:8080 -e API_UPSTREAM=http://api:3000 {{app}}
+#   docker run --rm -p 8080:8080 -e API_UPSTREAM=http://api:3000 -e VITE_API_URL=/api {{app}}
 #
 # The preset cannot know which workspace packages this app needs, so the whole context is copied (the
 # .dockerignore at the root filters it), then installed and built. A project can list the packages by
@@ -64,6 +64,11 @@ LABEL org.opencontainers.image.revision="${APP_BUILD_COMMIT}"
 COPY --from=builder /home/bun/app/{{appPath}}/.configs/builders/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder --chown=101:101 /home/bun/app/{{appPath}}/dist /usr/share/nginx/html
 
+# The runtime config: this script writes /usr/share/nginx/html/config.js from the VITE_ environment variables
+# when the container starts. 0755 because the base entrypoint skips a script without the executable bit; the
+# file it rewrites is the one the build copied from src/public, owned by 101 above.
+COPY --from=builder --chmod=0755 /home/bun/app/{{appPath}}/.configs/builders/docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
+
 # Where /api goes: a compose service name, a cluster service, an address (an origin, with no path).
 ENV API_UPSTREAM=http://api:3000
 
@@ -71,7 +76,8 @@ ENV API_UPSTREAM=http://api:3000
 # gives to `resolver`: nginx looks the upstream up per request, so the container starts without it.
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
-# No ENTRYPOINT on purpose: the base image's /docker-entrypoint.sh renders the templates.
+# No ENTRYPOINT on purpose: the base image's /docker-entrypoint.sh renders the templates and runs the
+# scripts of /docker-entrypoint.d/ (a custom ENTRYPOINT would replace it and skip both).
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

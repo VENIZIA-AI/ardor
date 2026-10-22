@@ -14,7 +14,8 @@
  *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
  *             without a commit sha (none, HEAD, too short, not hex) stops, the image carries the commit as its
  *             revision label, and nginx serves the page, the SPA fallback, the hashed assets and `/api` through
- *             `API_UPSTREAM`; with an upstream that does not resolve it still starts and only `/api` is a 502. Runs
+ *             `API_UPSTREAM`; with an upstream that does not resolve it still starts and only `/api` is a 502; and
+ *             `config.js` carries exactly the container's VITE_ variables, escaped, and never a secret. Runs
  *             where `docker` is installed (it is skipped elsewhere); the project's unreleased packages are
  *             copied into it (vendor/) because a Docker context cannot reach tarballs outside the project.
  *
@@ -41,6 +42,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { runInNewContext } from 'node:vm';
 
 import { chromium } from 'playwright-core';
 
@@ -585,7 +587,7 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
   try {
     // The page, and modules under the Vite root (src/): Vite resolves them to .ts and .tsx. Vite answers an
     // unknown path with the page (200), so a module must come back as JavaScript.
-    for (const path of ['/', '/main.tsx', '/application.ts', '/pages/home.tsx']) {
+    for (const path of ['/', '/main.tsx', '/application.ts', '/pages/home.tsx', '/config.js']) {
       let response = await answer(path);
 
       while (response === undefined && Date.now() < deadline) {
@@ -811,14 +813,26 @@ const main = async () => {
     const appFolder = join(project, 'apps/admin');
     const envExample = readFileSync(join(appFolder, '.env.example'), 'utf8');
     const viteConfig = readFileSync(join(appFolder, '.configs/builders/vite.config.mts'), 'utf8');
+    const appSource = readdirSync(join(appFolder, 'src'), { recursive: true, withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isFile() && /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.test.ts'),
+      )
+      .map((entry) => readFileSync(join(entry.parentPath, entry.name), 'utf8'))
+      .join('\n');
     const envKeys = [...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]!);
 
     assert({
-      condition: /^PORT=5173$/m.test(envExample) && envKeys.includes('API_URL'),
-      message: '.env.example holds PORT=5173 and API_URL',
+      condition:
+        /^PORT=5173$/m.test(envExample) &&
+        envKeys.includes('API_URL') &&
+        envKeys.includes('VITE_API_URL'),
+      message: '.env.example holds PORT=5173, API_URL and VITE_API_URL',
     });
     assert({
-      condition: envKeys.every((key) => viteConfig.includes(`env.${key}`)),
+      condition: envKeys.every(
+        (key) => viteConfig.includes(`env.${key}`) || appSource.includes(`'${key}'`),
+      ),
       message: `every key of .env.example is read by the app (${envKeys.join(', ')})`,
     });
     assert({
@@ -1103,6 +1117,7 @@ const main = async () => {
       `ardor-smoke-api-${suffix}`,
       `ardor-smoke-web-${suffix}`,
       `ardor-smoke-orphan-${suffix}`,
+      `ardor-smoke-config-${suffix}`,
     ];
     const commit = '0123456789abcdef0123456789abcdef01234567';
     const docker = (args: string[], failure = false) =>
@@ -1256,7 +1271,37 @@ const main = async () => {
         condition: index.ok && (index.headers.get('content-type') ?? '').includes('text/html'),
         message: 'nginx serves the built index.html at /',
       });
+      // The runtime config: with no VITE_ variable, config.js is an empty frozen object and is never cached.
+      const bare = await get('/config.js');
+      const evaluateConfig = (source: string): { config: unknown; frozen: boolean } => {
+        const sandbox: { window: Record<string, unknown> } = { window: {} };
+
+        runInNewContext(source, sandbox);
+
+        return {
+          config: sandbox.window.__APP_CONFIG__,
+          frozen: Object.isFrozen(sandbox.window.__APP_CONFIG__),
+        };
+      };
+      const bareConfig = evaluateConfig(await bare.text());
+
+      assert({
+        condition:
+          bare.ok &&
+          (bare.headers.get('cache-control') ?? '').includes('no-store') &&
+          JSON.stringify(bareConfig.config) === '{}' &&
+          bareConfig.frozen,
+        message: 'config.js is an empty frozen object without VITE_ variables, and never cached',
+      });
       const html = await index.text();
+
+      // A classic script without async or defer runs while the page is parsed, before any module (which is
+      // deferred), wherever the build put the module's tag.
+      assert({
+        condition: html.includes('<script src="/config.js"></script>'),
+        message:
+          'index.html loads config.js as a plain classic script, which runs before the deferred module',
+      });
       const asset = /\/assets\/[^"]+\.js/.exec(html)?.[0] ?? '';
       const hello = await get('/api/hello');
 
@@ -1315,6 +1360,70 @@ const main = async () => {
       assert({
         condition: (await orphan('/api/hello')).status === 502,
         message: 'with an upstream that does not resolve, only /api answers 502',
+      });
+
+      // The VITE_ variables of the container reach the browser, escaped; nothing else does.
+      const configuredPort = freePort();
+      const hostile = '"; window.pwned = true; "\\ </script> \n end';
+
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[3]!,
+        '--network',
+        network,
+        '-p',
+        `${configuredPort}:8080`,
+        '-e',
+        'API_UPSTREAM=http://api:3000',
+        '-e',
+        'VITE_API_URL=https://api.example.com',
+        '-e',
+        `VITE_HOSTILE=${hostile}`,
+        '-e',
+        'SECRET_TOKEN=do-not-publish',
+        '-e',
+        'DATABASE_URL=postgres://user:do-not-publish@db/app',
+        image,
+      ]);
+      let configured: Response | undefined;
+
+      for (let attempt = 0; attempt < 40 && configured === undefined; attempt += 1) {
+        try {
+          configured = await fetch(`http://localhost:${configuredPort}/config.js`);
+        } catch {
+          await Bun.sleep(500);
+        }
+      }
+
+      const configuredText = (await configured?.text()) ?? '';
+      const published = evaluateConfig(configuredText);
+
+      assert({
+        condition:
+          JSON.stringify(published.config) ===
+            JSON.stringify({ VITE_API_URL: 'https://api.example.com', VITE_HOSTILE: hostile }) &&
+          published.frozen,
+        message:
+          'config.js carries the VITE_ variables of the container, every value exactly as set',
+      });
+      assert({
+        condition:
+          !configuredText.includes('do-not-publish') && !configuredText.includes('SECRET_TOKEN'),
+        message: 'config.js carries no variable outside the VITE_ prefix',
+      });
+      assert({
+        condition: (configured?.headers.get('cache-control') ?? '').includes('no-store'),
+        message: 'the written config.js is never cached either',
+      });
+      const refused = docker(['run', '--rm', '-e', 'VITE_DB_PASSWORD=do-not-publish', image], true);
+
+      assert({
+        condition:
+          refused.output.includes('VITE_DB_PASSWORD') && !refused.output.includes('do-not-publish'),
+        message:
+          'a VITE_ variable named like a secret stops the container, naming it and not its value',
       });
 
       const user = docker(['exec', containers[1]!, 'id', '-u']);
