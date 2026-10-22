@@ -21,7 +21,7 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 - `lint` / `lint-fix` - see [Lint presets](#lint-presets).
 - `test` - `bun test --env-file=.env.test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package. A package with no suite sets `HAS_TESTS := no` (`ardor`): its `make test` says so and passes.
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `socket.io-client`) and the runtime dependencies (like `lodash`) from the measurement, so the budget measures only the package's own code.
-- `force-update` (a `package.json` script) - runs `scripts/force-update.sh`, which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
+- `force-update` (a `package.json` script) - runs the one root `scripts/force-update.sh` (a package carries no copy), which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 
 The root `make test-<pkg>` (`make/test.mk`) calls the package's `make test`. There is no `bunfig.toml` and no package `test` script, so a bare `bun test` inside a package skips the setup and fails.
 
