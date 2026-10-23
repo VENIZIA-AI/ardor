@@ -1,4 +1,4 @@
-# Bun reads this file only from the directory a command runs in: `bun fmt` runs from here, with a glob.
+# `bun fmt` finds this file from the folder it runs in or from any parent, so a package picks up [fmt].
 telemetry = false
 
 # One style for every file, the node style of IGNIS. `flavor` keeps oxfmt's output: without it Bun
