@@ -18,7 +18,7 @@ tags: [process, git, contributing]
 3. Commit using Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`.
 4. Before committing, run `make build` and fix lint to catch style and type issues early - the
    pre-commit hook (below) will block a commit that fails lint anyway. `make lint-fix` applies the lint
-   fixes and oxfmt to every package (`make lint-fix-<pkg>` for one, `make lint-fix-wiki` for the wiki); an
+   fixes and the formatter (`bun fmt`) to every package (`make lint-fix-<pkg>` for one, `make lint-fix-wiki` for the wiki); an
    example keeps its own `lint:fix` script.
 5. If git hooks aren't wired up yet, run `make setup-hooks` once - it runs `git config
    core.hooksPath .githooks`, pointing git at the repo's `.githooks/` directory instead of
