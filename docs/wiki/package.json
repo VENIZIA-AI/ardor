@@ -1,6 +1,7 @@
 {
   "name": "@venizia/ardor-docs",
   "version": "0.1.0",
+  "private": true,
   "description": "Interactive documentation site for the ARDOR Framework. Includes a VitePress-powered documentation site with guides, API references, and best practices.",
   "keywords": [
     "api-docs",
@@ -23,22 +24,19 @@
     "wiki"
   ],
   "homepage": "https://ardor.venizia.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
-    "directory": "docs/wiki"
-  },
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "VENIZIA AI Developer",
     "email": "developer@venizia.ai",
     "url": "https://venizia.ai"
   },
-  "license": "MIT",
-  "engines": {
-    "bun": ">=1.4"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "docs/wiki"
   },
   "scripts": {
     "docs:build": "sh ./scripts/docs-build.sh",
@@ -59,5 +57,7 @@
     "vitepress-plugin-mermaid": "^2.0.17",
     "vue": "^3.5.44"
   },
-  "private": true
+  "engines": {
+    "bun": ">=1.4"
+  }
 }
