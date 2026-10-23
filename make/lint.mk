@@ -7,7 +7,7 @@
 # A bare `bun fmt` also formats md and json, so the glob is always given. It names package.json too: bun fmt sorts
 # its keys, and a release keeps them sorted (`npm version` and force-update.sh change values in place).
 # Paths are ignored through .gitignore: `ignorePatterns` resolve against .configs/, not the project.
-FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}" "package.json"
+FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}" "**/package.json"
 # $(1) project dir; $(2) what oxlint and ESLint lint (default .); $(3) what bun fmt checks.
 LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs $(or $(2),.) && bun fmt --no-script --check $(or $(3),$(FMT_GLOB))
 FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs --fix $(or $(2),.) && bun fmt --no-script $(or $(3),$(FMT_GLOB))
@@ -15,19 +15,19 @@ FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.confi
 LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
-.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-root lint-fix lint-fix-packages lint-fix-wiki \
-        lint-fix-root \
+.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-manifests lint-fix lint-fix-packages lint-fix-wiki \
+        fmt-manifests \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages
 	@echo "✅ Linting completed."
 
-lint-all: lint-packages lint-wiki lint-scripts lint-root
+lint-all: lint-packages lint-wiki lint-scripts lint-manifests
 	@echo "✅ All linting completed."
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-lint-fix: lint-fix-packages
+lint-fix: lint-fix-packages fmt-manifests
 
 lint-fix-packages: $(FIX_PKG_TARGETS)
 
@@ -48,13 +48,14 @@ lint-wiki:
 lint-fix-wiki:
 	@$(call FIX_PROJECT,docs/wiki)
 
-# The root package.json belongs to no project: its keys are checked here, with the same bunfig.toml.
-lint-root:
-	@echo "🔍 Linting package.json..."
-	@bun fmt --no-script --check package.json
+# The package.json files outside the projects make lints (the packages and the wiki format their own): the root one, and
+# the examples', which make does not drive. bun fmt sorts their keys, with the same bunfig.toml.
+lint-manifests:
+	@echo "🔍 Linting the root and example package.json..."
+	@bun fmt --no-script --check "package.json" "examples/*/package.json"
 
-lint-fix-root:
-	@bun fmt --no-script package.json
+fmt-manifests:
+	@bun fmt --no-script "package.json" "examples/*/package.json"
 
 # `scripts/` is not a workspace member: bun fmt takes the root bunfig.toml like the other projects, and
 # bun check reads scripts/tsconfig.json.

@@ -15,7 +15,7 @@ packages: []
 ## What changed
 
 - **Sorted once.** The root, the four packages, the wiki and the three examples were sorted in a commit of their own. Nothing but the order moved: the data, the order of `exports` and the contents of every array stay the same, apart from `keywords`, which is now alphabetical.
-- **Checked by lint.** The glob of `make lint` and `make lint-fix` names `package.json` next to the code, and `make lint-root` (part of `make lint-all`) checks the root manifest. `make lint-fix` sorts what is out of order.
+- **Checked by lint.** The glob of `make lint` and `make lint-fix` names `package.json` next to the code, and `make lint-manifests` (part of `make lint-all`) checks the root manifest and the examples'. `make lint-fix` sorts what is out of order.
 - **A release keeps it.** The version bump changes only the `version` line, and the range refresh rewrites ranges in place, so a release leaves the keys where they are.
 
 ## Who is affected
