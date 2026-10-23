@@ -43,9 +43,9 @@ describe('waitForTarball', () => {
     });
 
     expect(calls).toHaveLength(3);
-    expect(
-      calls.every((call) => call.url.endsWith('/ardor-kernel/-/ardor-kernel-0.1.4-4.tgz')),
-    ).toBe(true);
+    expect(calls.every(call => call.url.endsWith('/ardor-kernel/-/ardor-kernel-0.1.4-4.tgz'))).toBe(
+      true,
+    );
   });
 
   test('a network error is not an answer: it polls again', async () => {
@@ -65,7 +65,7 @@ describe('waitForTarball', () => {
       version: '1.0.0',
       fetchFn,
       intervalMs: 7,
-      sleepFn: async (ms) => {
+      sleepFn: async ms => {
         slept.push(ms);
       },
     });

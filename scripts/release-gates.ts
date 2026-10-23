@@ -68,7 +68,7 @@ export const exportTargets = (opts: { exportsMap: unknown }): Set<string> => {
 
 export const missingExportTargets = (opts: { directory: string; exportsMap: unknown }): string[] =>
   [...exportTargets({ exportsMap: opts.exportsMap })].filter(
-    (file) => !existsSync(join(opts.directory, file)),
+    file => !existsSync(join(opts.directory, file)),
   );
 
 /** A `catalog:` or `workspace:` value in the packed manifest breaks every consumer's install. */
@@ -98,7 +98,7 @@ export const unresolvedProtocols = (opts: { manifest: unknown }): string[] => {
 export const parseChainReleased = (opts: { value: string }): string[] =>
   opts.value
     .split(',')
-    .map((name) => name.trim())
+    .map(name => name.trim())
     .filter(Boolean);
 
 /**
@@ -162,7 +162,7 @@ export const missingFromRegistry = async (opts: {
       continue;
     }
 
-    if (!(packument.versions ?? []).some((version) => Bun.semver.satisfies(version, range))) {
+    if (!(packument.versions ?? []).some(version => Bun.semver.satisfies(version, range))) {
       missing.push(`${name}@${range} - no published version satisfies this range`);
     }
   }
@@ -198,8 +198,8 @@ export const withPublished = (opts: {
     return opts.packages;
   }
 
-  const known = opts.packages.some((entry) => entry.name === published.name);
-  const updated = opts.packages.map((entry) =>
+  const known = opts.packages.some(entry => entry.name === published.name);
+  const updated = opts.packages.map(entry =>
     entry.name === published.name ? { ...entry, [published.tag]: published.version } : entry,
   );
 
@@ -249,7 +249,7 @@ export const parsePublished = (opts: { argv: string[] }): IPublished | undefined
 export const nextTagsToHeal = (opts: {
   packages: IDistTags[];
 }): Array<{ name: string; latest: string }> =>
-  opts.packages.flatMap((entry) =>
+  opts.packages.flatMap(entry =>
     entry.latest !== undefined &&
     (entry.next === undefined || Bun.semver.order(entry.next, entry.latest) < 0)
       ? [{ name: entry.name, latest: entry.latest }]
@@ -272,7 +272,7 @@ export const workspaceStrays = (opts: {
     ...toStringRecord(manifest.dependencies),
     ...toStringRecord(manifest.devDependencies),
   })
-    .filter((name) => name.startsWith(prefix))
+    .filter(name => name.startsWith(prefix))
     .sort();
   const strays: string[] = [];
 
@@ -280,7 +280,7 @@ export const workspaceStrays = (opts: {
     const found = [
       join(opts.root, opts.directory, 'node_modules', name),
       join(opts.root, 'node_modules', name),
-    ].find((path) => existsSync(path));
+    ].find(path => existsSync(path));
 
     if (found === undefined) {
       strays.push(`${name} - declared but not installed`);
@@ -362,7 +362,7 @@ const main = async (): Promise<void> => {
       fail({
         lines: [
           'ERROR: `exports` names files the build did not emit:',
-          ...missing.map((file) => `  ${file}`),
+          ...missing.map(file => `  ${file}`),
         ],
       });
     }
@@ -378,7 +378,7 @@ const main = async (): Promise<void> => {
       fail({
         lines: [
           'ERROR: internal dependencies resolved to the registry, not this workspace:',
-          ...strays.map((stray) => `  ${stray}`),
+          ...strays.map(stray => `  ${stray}`),
           'Raise the range so it covers the version in packages/, then re-run.',
         ],
       });
@@ -424,7 +424,7 @@ const main = async (): Promise<void> => {
       fail({
         lines: [
           'ERROR: unresolved workspace protocol survives into the published manifest:',
-          ...found.map((entry) => `  ${entry}`),
+          ...found.map(entry => `  ${entry}`),
         ],
       });
     }
@@ -449,7 +449,7 @@ const main = async (): Promise<void> => {
       fail({
         lines: [
           'ERROR: the packed manifest depends on something the registry cannot serve:',
-          ...missing.map((entry) => `  - ${entry}`),
+          ...missing.map(entry => `  - ${entry}`),
         ],
       });
     }
@@ -465,9 +465,9 @@ const main = async (): Promise<void> => {
     const dryRun = args.includes('--dry-run');
     const published = parsePublished({ argv: args });
     const names = [...readWorkspaceVersions({ root }).keys()]
-      .filter((name) => name.startsWith(SIBLING_PREFIX))
+      .filter(name => name.startsWith(SIBLING_PREFIX))
       .sort();
-    const registry = await Promise.all(names.map((name) => fetchDistTags({ name })));
+    const registry = await Promise.all(names.map(name => fetchDistTags({ name })));
     const packages = withPublished({ packages: registry, published });
     const healed = nextTagsToHeal({ packages });
 

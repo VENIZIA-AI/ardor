@@ -28,7 +28,7 @@ const FORBIDDEN_BY_PACKAGE: Record<string, string[]> = {
 };
 
 const listJavaScript = (directory: string): string[] => {
-  return readdirSync(directory).flatMap((name) => {
+  return readdirSync(directory).flatMap(name => {
     const path = join(directory, name);
     if (statSync(path).isDirectory()) {
       return listJavaScript(path);
@@ -39,7 +39,7 @@ const listJavaScript = (directory: string): string[] => {
 
 const isForbidden = (opts: { specifier: string; forbidden: string[] }): boolean => {
   return opts.forbidden.some(
-    (name) => opts.specifier === name || opts.specifier.startsWith(`${name}/`),
+    name => opts.specifier === name || opts.specifier.startsWith(`${name}/`),
   );
 };
 

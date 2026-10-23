@@ -105,7 +105,6 @@
     "@venizia/ignis-inversion": "catalog:",
     "@venizia/ignis-kernel": "catalog:",
     "eslint": "catalog:",
-    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "reflect-metadata": "catalog:",

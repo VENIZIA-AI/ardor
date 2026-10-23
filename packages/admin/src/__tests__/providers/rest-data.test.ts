@@ -64,7 +64,7 @@ const recordedRequests: IRecordedRequest[] = [];
 beforeAll(() => {
   server = Bun.serve({
     port: 0,
-    fetch: async (req) => {
+    fetch: async req => {
       const url = new URL(req.url);
       let body: unknown = undefined;
       const contentType = req.headers.get('content-type') ?? '';
@@ -113,7 +113,7 @@ beforeAll(() => {
         body,
       });
 
-      const segments = url.pathname.split('/').filter((segment) => {
+      const segments = url.pathname.split('/').filter(segment => {
         return segment.length > 0;
       });
       const isCollectionGet = req.method === 'GET' && segments.length === 1;

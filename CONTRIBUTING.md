@@ -169,7 +169,7 @@ make build
 
 ### Code Style
 
-We use oxlint, ESLint (naming only) and `bun fmt` (with the oxfmt config), all configured from `@venizia/dev-configs`:
+We use oxlint, ESLint (naming only) and `bun fmt` (the style is the `[fmt]` section of the root `bunfig.toml`):
 
 ```bash
 # Check code style: packages, wiki and scripts/

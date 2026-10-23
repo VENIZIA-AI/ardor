@@ -34,7 +34,7 @@ const waitForTarball = async (opts: {
     packageName,
     version,
     fetchFn = fetch,
-    sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    sleepFn = ms => new Promise<void>(resolve => setTimeout(resolve, ms)),
     intervalMs = 5_000,
     attempts = 180,
   } = opts;

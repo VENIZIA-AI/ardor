@@ -126,6 +126,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-23-format-with-bun-fmt',
           },
           {
+            text: 'One code style, set in one bunfig.toml',
+            link: '/changelogs/2026-10-23-one-code-style',
+          },
+          {
             text: 'A container stops when a required variable is missing',
             link: '/changelogs/2026-10-23-runtime-config-required-env',
           },
@@ -539,7 +543,7 @@ const config = defineConfig({
       chunkSizeWarningLimit: 3500,
       rollupOptions: {
         output: {
-          manualChunks: (id) => {
+          manualChunks: id => {
             if (id.includes('node_modules')) {
               // Isolate mermaid (+ its heavy deps) - large and only needed on pages with diagrams.
               if (

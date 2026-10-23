@@ -174,7 +174,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
 
   test.each(['VITE_API_SECRET', 'VITE_DB_PASSWORD', 'VITE_AUTH_TOKEN', 'VITE_X_TOKEN_Y'])(
     '%s stops the container and writes nothing',
-    (name) => {
+    name => {
       const { code, stderr, target } = run({
         path,
         env: { VITE_API_URL: 'https://api.example.com', [name]: 'do-not-publish' },
@@ -205,7 +205,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     const { target } = run({
       path,
       env: { VITE_NEW: 'new' },
-      prepare: (file) => writeFileSync(file, 'window.__APP_CONFIG__ = { VITE_OLD: "old" };\n'),
+      prepare: file => writeFileSync(file, 'window.__APP_CONFIG__ = { VITE_OLD: "old" };\n'),
     });
 
     expect(evaluate(target).config).toEqual({ VITE_NEW: 'new' });
@@ -216,7 +216,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     const { code, target } = run({
       path,
       env: { VITE_API_URL: 'https://api.example.com' },
-      prepare: (file) => {
+      prepare: file => {
         writeFileSync(file, original);
         chmodSync(file, 0o444);
       },
@@ -348,7 +348,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
       'VITE_*',
       'A B',
       '$(touch /tmp/runtime-config-required-pwned)',
-    ])('a malformed entry (%s) stops the container without echoing it', (entry) => {
+    ])('a malformed entry (%s) stops the container without echoing it', entry => {
       const { code, stderr, target } = run({
         path,
         env: { APP_REQUIRED_ENV: `VITE_A,${entry}`, VITE_A: 'one' },
@@ -389,7 +389,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
       const { code, target } = run({
         path,
         env: { APP_REQUIRED_ENV: 'VITE_NEW' },
-        prepare: (file) => writeFileSync(file, original),
+        prepare: file => writeFileSync(file, original),
       });
 
       expect(code).toBe(1);
@@ -403,7 +403,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
         const { code, target } = run({
           path,
           env: { APP_REQUIRED_ENV: 'VITE_API_URL' },
-          prepare: (file) => {
+          prepare: file => {
             writeFileSync(file, original);
             chmodSync(file, 0o444);
           },

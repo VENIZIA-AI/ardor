@@ -147,8 +147,8 @@ export class DefaultNetworkRequestService extends BaseService {
       return false;
     }
 
-    return this.noAuthPathRegexes.some((regex) => {
-      return candidates.some((candidate) => {
+    return this.noAuthPathRegexes.some(regex => {
+      return candidates.some(candidate => {
         regex.lastIndex = 0;
         return regex.test(candidate);
       });
@@ -493,7 +493,7 @@ export class DefaultNetworkRequestService extends BaseService {
           const val = body[key];
 
           if (Array.isArray(val) || this.isFileList({ value: val })) {
-            Array.from(val as ArrayLike<unknown>).forEach((item) => {
+            Array.from(val as ArrayLike<unknown>).forEach(item => {
               this.appendFormDataValue({ formData, key, value: item });
             });
             continue;

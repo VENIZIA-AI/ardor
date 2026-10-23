@@ -187,13 +187,13 @@ describe('CountRestDataProvider getList', () => {
     expect(recordedRequests.length).toBe(2);
 
     const dataRequest = ensureFound({
-      value: recordedRequests.find((entry) => {
+      value: recordedRequests.find(entry => {
         return entry.pathname === `/${TestResources.BOOKS}`;
       }),
       message: 'Expected data request to be recorded',
     });
     const countRequest = ensureFound({
-      value: recordedRequests.find((entry) => {
+      value: recordedRequests.find(entry => {
         return entry.pathname === `/${TestResources.BOOKS}/count`;
       }),
       message: 'Expected count request to be recorded',
@@ -237,7 +237,7 @@ describe('CountRestDataProvider getList', () => {
     expect(recordedRequests.length).toBe(2);
 
     const countRequest = ensureFound({
-      value: recordedRequests.find((entry) => {
+      value: recordedRequests.find(entry => {
         return entry.pathname === `/${TestResources.ARTICLES}/count`;
       }),
       message: 'Expected count request to be recorded',
@@ -264,7 +264,7 @@ describe('CountRestDataProvider getList', () => {
     expect(result.total).toBe(42);
 
     const countRequest = ensureFound({
-      value: recordedRequests.find((entry) => {
+      value: recordedRequests.find(entry => {
         return entry.pathname === `/${TestResources.MAGAZINES}/count`;
       }),
       message: 'Expected count request to be recorded',

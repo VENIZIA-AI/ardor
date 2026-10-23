@@ -154,7 +154,7 @@ const createRestDataProviderOptions = (opts: ICreateRestOptions = {}): IRestData
 
 const delay = (opts: { milliseconds: number }): Promise<void> => {
   const { milliseconds } = opts;
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, milliseconds);
   });
 };
@@ -538,7 +538,7 @@ describe('DefaultNetworkRequestService', () => {
 
     test('uses requestTracingChannel, and the tracing id buildRequestTracingId builds', () => {
       const service = createService({ isOpen: true });
-      service.setTracingId((opts) => `custom-trace-${opts.applicationInfo.name}`);
+      service.setTracingId(opts => `custom-trace-${opts.applicationInfo.name}`);
       const applicationInfo = createApplicationInfo({ name: 'custom-app' });
       const restDataProviderOptions = createRestDataProviderOptions({
         requestTracingChannel: '200_MOBILE',
@@ -1067,7 +1067,7 @@ describe('DefaultNetworkRequestService', () => {
         body: { notSent: 'drop me' },
       });
 
-      const getReq = recordedRequests.find((req) => req.pathname === '/get-no-body-test');
+      const getReq = recordedRequests.find(req => req.pathname === '/get-no-body-test');
       expect(getReq).toBeDefined();
       expect(getReq?.method).toBe('GET');
       expect(getReq?.jsonBody).toBeUndefined();
@@ -1089,7 +1089,7 @@ describe('DefaultNetworkRequestService', () => {
         query: { filter: 'active', limit: '10' },
       });
 
-      const req = recordedRequests.find((r) => r.pathname === '/search-test');
+      const req = recordedRequests.find(r => r.pathname === '/search-test');
       expect(req).toBeDefined();
       expect(req?.search).toContain('filter=active');
       expect(req?.search).toContain('limit=10');

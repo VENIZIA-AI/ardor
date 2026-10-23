@@ -239,7 +239,7 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
     'Pack the release tarball',
     'Validate packed manifest',
     'Validate dependencies exist on the registry',
-  ])('it has the gate "%s"', (name) => {
+  ])('it has the gate "%s"', name => {
     expect(at(name)).toBeGreaterThan(-1);
   });
 
@@ -345,7 +345,7 @@ describe('nextTagsToHeal: `next` is never below `latest`', () => {
         { name: 'c', latest: '0.3.1', next: '0.3.1-0' },
       ],
     });
-    expect(healed.map((entry) => entry.name)).toEqual(['a', 'c']);
+    expect(healed.map(entry => entry.name)).toEqual(['a', 'c']);
   });
 });
 
@@ -424,7 +424,7 @@ describe('withPublished: the version just published beats a stale registry read'
       published: { name: 'a', version: '0.3.1', tag: 'latest' },
     });
     expect(packages[1]).toEqual({ name: 'b', latest: '0.3.0', next: '0.1.4-5' });
-    expect(nextTagsToHeal({ packages }).map((entry) => entry.name)).toEqual(['a', 'b']);
+    expect(nextTagsToHeal({ packages }).map(entry => entry.name)).toEqual(['a', 'b']);
   });
 
   test('a published package the registry did not list is added', () => {

@@ -357,7 +357,7 @@ const parseOptions = (): IOptions => {
 
   // Always dependency order, never the order they were typed.
   const packages =
-    named.length > 0 ? RELEASE_ORDER.filter((p) => named.includes(p)) : [...RELEASE_ORDER];
+    named.length > 0 ? RELEASE_ORDER.filter(p => named.includes(p)) : [...RELEASE_ORDER];
 
   return { packages: [...packages], target, issue, dryRun, skipPrompt };
 };
@@ -391,8 +391,8 @@ const main = async (): Promise<void> => {
   const repaired = (await $`git status --porcelain`.text())
     .trim()
     .split('\n')
-    .filter((line) => line.endsWith('package.json'))
-    .map((line) => line.slice(3));
+    .filter(line => line.endsWith('package.json'))
+    .map(line => line.slice(3));
 
   if (repaired.length > 0) {
     console.log(`      ⚠ force-update repaired ${repaired.length} stale range(s) - commit these:`);
