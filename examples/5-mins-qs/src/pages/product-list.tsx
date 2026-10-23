@@ -35,7 +35,7 @@ export const ProductList = () => {
         Log out
       </button>
       <ul data-testid="products">
-        {(data ?? []).map((product) => (
+        {(data ?? []).map(product => (
           <li key={product.id}>
             {product.name} - {product.price}
           </li>
