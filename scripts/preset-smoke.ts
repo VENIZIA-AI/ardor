@@ -1385,6 +1385,8 @@ const main = async () => {
         'SECRET_TOKEN=do-not-publish',
         '-e',
         'DATABASE_URL=postgres://user:do-not-publish@db/app',
+        '-e',
+        'APP_REQUIRED_ENV=VITE_API_URL,VITE_HOSTILE,API_UPSTREAM',
         image,
       ]);
       let configured: Response | undefined;
@@ -1424,6 +1426,30 @@ const main = async () => {
           refused.output.includes('VITE_DB_PASSWORD') && !refused.output.includes('do-not-publish'),
         message:
           'a VITE_ variable named like a secret stops the container, naming it and not its value',
+      });
+
+      // Required variables: with all of them set the container above started and published only the
+      // VITE_ ones; with one missing it must stop, name that one, and not print the others' values.
+      const unmet = docker(
+        [
+          'run',
+          '--rm',
+          '-e',
+          'APP_REQUIRED_ENV=VITE_API_URL,VITE_X',
+          '-e',
+          'VITE_X=do-not-print',
+          image,
+        ],
+        true,
+      );
+
+      assert({
+        condition:
+          unmet.output.includes('required variable(s) missing or empty: VITE_API_URL') &&
+          !unmet.output.includes('VITE_X,') &&
+          !unmet.output.includes('do-not-print'),
+        message:
+          'a variable listed in APP_REQUIRED_ENV and missing stops the container, naming it and no value',
       });
 
       const user = docker(['exec', containers[1]!, 'id', '-u']);

@@ -14,6 +14,13 @@
 # is fine: public keys are normal). Values are escaped as JavaScript string content, so no value can
 # end its string or the file.
 #
+# Required variables: APP_REQUIRED_ENV lists, comma separated, the variables the app cannot run without,
+# for example `ENV APP_REQUIRED_ENV="VITE_API_URL,API_UPSTREAM"` in the app's Dockerfile (an operator
+# overrides it with `-e`). A listed variable that is unset or empty stops the container with exit 1, and
+# the message names every missing one - never a value. Any variable name can be listed, not only VITE_
+# ones; a spaces-only or empty entry is skipped, and an entry that is not a variable name is an error.
+# Nothing listed checks nothing. A mounted config.js is kept before any check, as the operator supplied it.
+#
 # RUNTIME_CONFIG_TARGET names another file, for the tests; it is not a VITE_ name, so it is never published.
 set -eu
 
@@ -49,6 +56,35 @@ BEGIN {
 
   count = 0
   failed = 0
+
+  # Names only, in the order declared; a value never reaches a message.
+  entries = split(ENVIRON["APP_REQUIRED_ENV"], declared, ",")
+  missing = ""
+  for (position = 1; position <= entries; position++) {
+    entry = declared[position]
+    gsub(/^[ \t]+/, "", entry)
+    gsub(/[ \t]+$/, "", entry)
+    if (entry == "") {
+      continue
+    }
+    if (entry !~ /^[A-Za-z_][A-Za-z0-9_]*$/) {
+      print "[runtime-config] FATAL: APP_REQUIRED_ENV entry " position " is not a variable name (letters, digits and _, not starting with a digit)" > "/dev/stderr"
+      failed = 1
+      continue
+    }
+    if (entry in seen) {
+      continue
+    }
+    seen[entry] = 1
+    if (!(entry in ENVIRON) || ENVIRON[entry] == "") {
+      missing = missing (missing == "" ? "" : ", ") entry
+    }
+  }
+  if (missing != "") {
+    print "[runtime-config] FATAL: required variable(s) missing or empty: " missing > "/dev/stderr"
+    failed = 1
+  }
+
   for (name in ENVIRON) {
     if (name !~ /^VITE_[A-Z0-9_]+$/) {
       continue

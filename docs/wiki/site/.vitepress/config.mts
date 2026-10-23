@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-23',
+        collapsed: true,
+        items: [
+          {
+            text: 'A container stops when a required variable is missing',
+            link: '/changelogs/2026-10-23-runtime-config-required-env',
+          },
+        ],
+      },
+      {
         text: '2026-10-22',
         collapsed: true,
         items: [

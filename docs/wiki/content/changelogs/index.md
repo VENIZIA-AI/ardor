@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-23 | [A container stops when a required variable is missing](./2026-10-23-runtime-config-required-env) | New Feature |
 | 2026-10-22 | [Runtime config in the app preset, one image for every environment](./2026-10-22-preset-runtime-config) | New Feature |
 | 2026-10-21 | [An .env.example that matches the app, ignore files, and a sturdier image](./2026-10-21-preset-env-ignore-image) | Enhancement |
 | 2026-10-21 | [A feature library preset](./2026-10-21-preset-lib) | New Feature |
