@@ -34,7 +34,7 @@ bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --a
 cd demo && make dev    # the admin on http://localhost:5173/
 ```
 
-This creates a monorepo with one admin, runs its checks, and needs VULCAN 0.3.10 or newer. See [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project) for every step, the Dockerfile and the library preset.
+This creates a monorepo with one admin, runs its checks, and needs VULCAN 0.3.12 or newer. See [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project) for every step, the Dockerfile and the library preset.
 
 ## Install into an existing Vite project
 

@@ -7,7 +7,7 @@
       "devDependencies": {
         "@types/bun": "catalog:",
         "@venizia/dev-configs": "catalog:",
-        "@venizia/vulcan": "0.3.11",
+        "@venizia/vulcan": "0.3.12",
         "playwright-core": "1.64.1",
         "typescript": "catalog:",
       },
@@ -814,11 +814,11 @@
 
     "@venizia/ignis-kernel": ["@venizia/ignis-kernel@0.3.6", "", { "dependencies": { "@venizia/ignis-filter": "0.3.6", "@venizia/ignis-helpers": "0.3.6", "@venizia/ignis-inversion": "0.3.7", "reflect-metadata": "^0.2.2" }, "peerDependencies": { "@hono/zod-openapi": "^1.6.3", "casbin": "^5.51.1", "drizzle-orm": "^0.45.4", "hono": "^4.13.13", "jose": "^6.2.13" }, "optionalPeers": ["@hono/zod-openapi", "casbin", "drizzle-orm", "hono", "jose"] }, "sha512-oZezu9U2wAVehH1mzyylEsTeBcJi+/JOP7LWz5Qg4tiJBrjIu3glvZX5tRAmLHRR/EtmNk9xgGoNaCm8NYOuVg=="],
 
-    "@venizia/vulcan": ["@venizia/vulcan@0.3.11", "", { "dependencies": { "@clack/prompts": "1.8.1", "@venizia/vulcan-atlas": "0.3.11", "@venizia/vulcan-okf": "0.3.11", "zod": "^4.6.7" }, "bin": { "vulcan": "src/cli.ts" } }, "sha512-iG2lSfVcLINknHxqgCcqqvodEFFZ1qZ8lm2oVaRPSR7QMqKKP1LvmxQ/Xs8CSBYPCG4iu0dKufiv+ZZj9OzSnA=="],
+    "@venizia/vulcan": ["@venizia/vulcan@0.3.12", "", { "dependencies": { "@clack/prompts": "1.8.1", "@venizia/vulcan-atlas": "0.3.12", "@venizia/vulcan-okf": "0.3.12", "zod": "^4.6.7" }, "bin": { "vulcan": "src/cli.ts" } }, "sha512-PudcB/l3nD9EguS+tyCGSeraXreD+KNKBPTVr8628t959MZ6nRVCQE6x8GyU6/aHR0KaKV8Oxcs4TTFUSmK+vw=="],
 
-    "@venizia/vulcan-atlas": ["@venizia/vulcan-atlas@0.3.11", "", { "dependencies": { "typescript": "^6.0.3", "zod": "^4.6.7" }, "bin": { "vulcan-atlas": "dist/cjs/cli.js" } }, "sha512-BMmgiqaI7WyBw4d6Y1xqgKrU1GPfw3w/JZeE+SkSkam79KO8puQBzehvkz5xbVhduCTA9035yaOzQ0Dv1bbKxA=="],
+    "@venizia/vulcan-atlas": ["@venizia/vulcan-atlas@0.3.12", "", { "dependencies": { "typescript": "^6.0.3", "zod": "^4.6.7" }, "bin": { "vulcan-atlas": "dist/cjs/cli.js" } }, "sha512-EcwPnBNe8BJ1ISqLBLryDK2U+dG4S9oaudbWktWR0orzm7NCBVYYsTk6sY2fLFvNMuondJoglupfXIKJ0x/ocw=="],
 
-    "@venizia/vulcan-okf": ["@venizia/vulcan-okf@0.3.11", "", { "dependencies": { "cytoscape": "^3.34.4", "cytoscape-fcose": "^2.2.0" }, "bin": { "vulcan-okf": "src/cli.ts" } }, "sha512-trZ1NYqCbgy7FD7nZqa/+CVjWMZIhOoIuOpYIzJjcgq6GET6cZwwt/lhwaHeuwiTQJZs3onxOfpviMcgMii51g=="],
+    "@venizia/vulcan-okf": ["@venizia/vulcan-okf@0.3.12", "", { "dependencies": { "cytoscape": "^3.34.4", "cytoscape-fcose": "^2.2.0" }, "bin": { "vulcan-okf": "src/cli.ts" } }, "sha512-uDJn6nssaepYHOwOvUZvsvWZ9LqsSTiAXwCi/z78uQXQ4WhAFrguSfOyeHajsvVBRohb1pXPYut1QVgMG5yWbQ=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.1.2", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0", "babel-plugin-react-compiler": "^1.0.0", "oxc-transform-react": "^0.152.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler", "oxc-transform-react"] }, "sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw=="],
 

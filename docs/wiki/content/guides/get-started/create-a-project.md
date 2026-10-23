@@ -7,7 +7,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-Both commands need VULCAN 0.3.10 or newer, and `--scope` for an app needs 0.3.11. `bun x` fetches the latest release, so you have it unless you pinned an older one.
+Both commands need VULCAN 0.3.12 or newer: it writes the `bunfig.toml` that sets the format and sorts the `package.json` it generates (`--scope` for an app arrived in 0.3.11). `bun x` fetches the latest release, so you have it unless you pinned an older one.
 
 ## Initialize a New Monorepo
 

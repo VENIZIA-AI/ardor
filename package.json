@@ -82,7 +82,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.3.11",
+    "@venizia/vulcan": "0.3.12",
     "playwright-core": "1.64.1",
     "typescript": "catalog:"
   },
