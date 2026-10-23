@@ -26,7 +26,7 @@ const directories = readdirSync(PACKAGES_DIR);
 const manifestOf = (directory: string): TManifest => {
   return JSON.parse(readFileSync(join(PACKAGES_DIR, directory, 'package.json'), 'utf8'));
 };
-const manifests = directories.map((directory) => ({ directory, manifest: manifestOf(directory) }));
+const manifests = directories.map(directory => ({ directory, manifest: manifestOf(directory) }));
 
 /** The package names a source file imports from, by `from '...'`. */
 const importedPackages = (opts: { directory: string }): Set<string> => {
@@ -51,8 +51,8 @@ describe('peer dependencies of the ARDOR packages', () => {
   test('no identity-sensitive package is a dependency', () => {
     const offenders = manifests.flatMap(({ manifest }) => {
       return Object.keys(manifest.dependencies ?? {})
-        .filter((name) => isIdentityPeer({ name }))
-        .map((name) => `${manifest.name} depends on ${name}`);
+        .filter(name => isIdentityPeer({ name }))
+        .map(name => `${manifest.name} depends on ${name}`);
     });
 
     expect(offenders).toEqual([]);

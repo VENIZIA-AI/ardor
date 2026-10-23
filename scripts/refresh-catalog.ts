@@ -26,7 +26,7 @@ const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8')) as TManifest;
 const catalog = manifest.workspaces.catalog;
 const changes: string[] = [];
 
-for (const name of Object.keys(catalog).filter((key) => key.startsWith('@venizia/'))) {
+for (const name of Object.keys(catalog).filter(key => key.startsWith('@venizia/'))) {
   const proc = Bun.spawnSync(['npm', 'view', name, `dist-tags.${TAG}`], {
     stdout: 'pipe',
     stderr: 'pipe',

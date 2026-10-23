@@ -65,14 +65,14 @@ const readEntries = async (): Promise<IEntry[]> => {
 const quote = (value: string): string => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
 const renderTable = (opts: { entries: IEntry[] }): string =>
-  opts.entries.map((e) => `| ${e.date} | [${e.title}](./${e.slug}) | ${e.type} |`).join('\n');
+  opts.entries.map(e => `| ${e.date} | [${e.title}](./${e.slug}) | ${e.type} |`).join('\n');
 
 const renderSidebar = (opts: { entries: IEntry[] }): string => {
-  const dates = [...new Set(opts.entries.map((e) => e.date))];
-  const groups = dates.map((date) => {
+  const dates = [...new Set(opts.entries.map(e => e.date))];
+  const groups = dates.map(date => {
     const items = opts.entries
-      .filter((e) => e.date === date)
-      .map((e) => `          { text: ${quote(e.title)}, link: ${quote(`/changelogs/${e.slug}`)} },`)
+      .filter(e => e.date === date)
+      .map(e => `          { text: ${quote(e.title)}, link: ${quote(`/changelogs/${e.slug}`)} },`)
       .join('\n');
 
     return `      {\n        text: '${date}',\n        collapsed: true,\n        items: [\n${items}\n        ],\n      },`;

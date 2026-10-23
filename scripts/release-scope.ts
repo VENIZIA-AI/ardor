@@ -37,7 +37,7 @@ export const countChangedSinceRelease = (opts: { name: string; cwd?: string }): 
     args: ['log', '--format=%H %s', '--', `packages/${opts.name}/package.json`],
   })
     .split('\n')
-    .find((line) => line.includes('release v'))
+    .find(line => line.includes('release v'))
     ?.split(' ')[0];
 
   if (!releaseCommit) {
@@ -77,9 +77,9 @@ export const withDependents = <
 }): T[] => {
   const released = new Set<string>();
 
-  return opts.states.filter((state) => {
+  return opts.states.filter(state => {
     const isReleased =
-      state.changedFiles > 0 || state.internalDependencies.some((dep) => released.has(dep));
+      state.changedFiles > 0 || state.internalDependencies.some(dep => released.has(dep));
     if (isReleased) {
       released.add(state.packageName);
     }

@@ -93,7 +93,7 @@ class AsyncLifecycleApplication extends BaseArdorApplication {
 
   async bindContext(): Promise<void> {
     this.executionLog.push(LifecycleSteps.BIND_CONTEXT_START);
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       setTimeout(() => {
         this.executionLog.push(LifecycleSteps.BIND_CONTEXT_END);
         resolve();
@@ -157,7 +157,7 @@ class AsyncPostConfigureApplication extends BaseArdorApplication {
   bindContext(): void {}
 
   override async postConfigure(): Promise<void> {
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       setTimeout(() => {
         this.postConfigureCompleted = true;
         resolve();

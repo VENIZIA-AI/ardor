@@ -138,7 +138,7 @@ const assertNoWarnings = (opts: { output: string; label: string }) => {
   const lines = opts.output
     .replace(ANSI, '')
     .split('\n')
-    .filter((line) => WARNING.test(line));
+    .filter(line => WARNING.test(line));
 
   assert({
     condition: lines.length === 0,
@@ -238,7 +238,7 @@ const fetchRegistry = async (opts: {
 const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
   const answer = await fetchRegistry({
     url: `https://registry.npmjs.org/${opts.name}/latest`,
-    accept: (body) => {
+    accept: body => {
       try {
         JSON.parse(new TextDecoder().decode(body));
 
@@ -362,13 +362,13 @@ const assertSubpathImports = (opts: { directory: string }) => {
   });
 
   const sources = readdirSync(join(opts.directory, 'src'), { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => readFileSync(join(entry.parentPath, entry.name), 'utf8'));
+    .filter(entry => entry.isFile())
+    .map(entry => readFileSync(join(entry.parentPath, entry.name), 'utf8'));
 
   assert({
     condition:
-      sources.every((source) => !source.includes("from '@/")) &&
-      sources.some((source) => source.includes("from '#src/")),
+      sources.every(source => !source.includes("from '@/")) &&
+      sources.some(source => source.includes("from '#src/")),
     message: 'every import of the app reads #src/..., none reads @/...',
   });
   assert({
@@ -380,8 +380,8 @@ const assertSubpathImports = (opts: { directory: string }) => {
   });
 
   const bundle = readdirSync(join(opts.directory, 'dist/assets'))
-    .filter((file) => file.endsWith('.js'))
-    .map((file) => readFileSync(join(opts.directory, 'dist/assets', file), 'utf8'))
+    .filter(file => file.endsWith('.js'))
+    .map(file => readFileSync(join(opts.directory, 'dist/assets', file), 'utf8'))
     .join('\n');
 
   assert({
@@ -406,18 +406,18 @@ const APP_ROOT = [
 ];
 
 const assertRootLayout = (opts: { directory: string }) => {
-  const extra = readdirSync(opts.directory).filter((name) => !APP_ROOT.includes(name));
+  const extra = readdirSync(opts.directory).filter(name => !APP_ROOT.includes(name));
 
   assert({
     condition: extra.length === 0,
     message: `nothing at the app root but .configs, src, package.json, tsconfig.json and .env.example (found also: ${extra.join(', ') || 'nothing'})`,
   });
   assert({
-    condition: ['index.html'].every((file) => existsSync(join(opts.directory, 'src', file))),
+    condition: ['index.html'].every(file => existsSync(join(opts.directory, 'src', file))),
     message: 'index.html is in src/',
   });
   assert({
-    condition: ['Dockerfile', 'nginx.conf.template'].every((file) =>
+    condition: ['Dockerfile', 'nginx.conf.template'].every(file =>
       existsSync(join(opts.directory, '.configs/builders', file)),
     ),
     message: 'the Dockerfile and its nginx template are in .configs/builders/',
@@ -430,11 +430,11 @@ const assertScriptStandard = (opts: { directory: string }) => {
   );
 
   assert({
-    condition: APP_SCRIPTS.every((name) => scripts.includes(name)),
+    condition: APP_SCRIPTS.every(name => scripts.includes(name)),
     message: `package.json has the standard scripts: ${APP_SCRIPTS.join(', ')}`,
   });
   assert({
-    condition: !scripts.some((name) => FORBIDDEN_SCRIPTS.includes(name)),
+    condition: !scripts.some(name => FORBIDDEN_SCRIPTS.includes(name)),
     message: `package.json has none of: ${FORBIDDEN_SCRIPTS.join(', ')}`,
   });
 };
@@ -471,13 +471,13 @@ const assertPageRenders = async (opts: { port: number; name: string }) => {
   try {
     const page = await browser.newPage();
 
-    page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
-    page.on('console', (message) => {
+    page.on('pageerror', error => problems.push(`uncaught: ${error.message}`));
+    page.on('console', message => {
       if (message.type() === 'error') {
         problems.push(`console.error: ${message.text()}`);
       }
     });
-    await page.route('**/api/hello', (route) => route.fulfill({ json: HELLO }));
+    await page.route('**/api/hello', route => route.fulfill({ json: HELLO }));
 
     await page.goto(`http://localhost:${opts.port}/`);
     await page.getByRole('heading', { name: opts.name }).waitFor({ timeout: 30_000 });
@@ -501,10 +501,8 @@ const assertPageRenders = async (opts: { port: number; name: string }) => {
     // is logged by the browser itself, so this page is not held to "no console error".)
     const down = await browser.newPage();
 
-    down.on('pageerror', (error) => problems.push(`uncaught (backend down): ${error.message}`));
-    await down.route('**/api/hello', (route) =>
-      route.fulfill({ status: 502, body: 'Bad Gateway' }),
-    );
+    down.on('pageerror', error => problems.push(`uncaught (backend down): ${error.message}`));
+    await down.route('**/api/hello', route => route.fulfill({ status: 502, body: 'Bad Gateway' }));
     await down.goto(`http://localhost:${opts.port}/`);
     await down.getByText(/not reachable/).waitFor({ timeout: 15_000 });
     await down.getByText('bun run server:dev').waitFor({ timeout: 5_000 });
@@ -725,10 +723,10 @@ const install = async (opts: {
 /** Every file under `folder` (node_modules and dist left out) that still holds a `{{` token. */
 const unsubstituted = (opts: { folder: string }): string[] =>
   readdirSync(opts.folder, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => join(entry.parentPath, entry.name))
-    .filter((path) => !/[\\/](node_modules|dist)[\\/]/.test(path))
-    .filter((path) => readFileSync(path, 'utf8').includes('{{'));
+    .filter(entry => entry.isFile())
+    .map(entry => join(entry.parentPath, entry.name))
+    .filter(path => !/[\\/](node_modules|dist)[\\/]/.test(path))
+    .filter(path => readFileSync(path, 'utf8').includes('{{'));
 
 const main = async () => {
   const requested = process.argv[2];
@@ -753,7 +751,7 @@ const main = async () => {
       return false;
     }
   })();
-  const scenarios = SCENARIOS.filter((name) => {
+  const scenarios = SCENARIOS.filter(name => {
     if (requested !== undefined) {
       return requested === name;
     }
@@ -815,12 +813,12 @@ const main = async () => {
     const viteConfig = readFileSync(join(appFolder, '.configs/builders/vite.config.mts'), 'utf8');
     const appSource = readdirSync(join(appFolder, 'src'), { recursive: true, withFileTypes: true })
       .filter(
-        (entry) =>
+        entry =>
           entry.isFile() && /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.test.ts'),
       )
-      .map((entry) => readFileSync(join(entry.parentPath, entry.name), 'utf8'))
+      .map(entry => readFileSync(join(entry.parentPath, entry.name), 'utf8'))
       .join('\n');
-    const envKeys = [...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]!);
+    const envKeys = [...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map(match => match[1]!);
 
     assert({
       condition:
@@ -831,17 +829,17 @@ const main = async () => {
     });
     assert({
       condition: envKeys.every(
-        (key) => viteConfig.includes(`env.${key}`) || appSource.includes(`'${key}'`),
+        key => viteConfig.includes(`env.${key}`) || appSource.includes(`'${key}'`),
       ),
       message: `every key of .env.example is read by the app (${envKeys.join(', ')})`,
     });
     assert({
-      condition: ['lints', 'formatters'].every((folder) => {
+      condition: ['lints', 'formatters'].every(folder => {
         const lines = readFileSync(join(appFolder, '.configs', folder, '.ignore'), 'utf8')
           .split('\n')
-          .filter((line) => line.trim() !== '');
+          .filter(line => line.trim() !== '');
 
-        return lines.length > 0 && lines.every((line) => line.startsWith('#'));
+        return lines.length > 0 && lines.every(line => line.startsWith('#'));
       }),
       message: '.configs/lints/.ignore and .configs/formatters/.ignore hold only comment lines',
     });
@@ -1028,7 +1026,7 @@ const main = async () => {
         'react-dom',
         'react-router-dom',
         'reflect-metadata',
-      ].every((name) => peerNames.includes(name)),
+      ].every(name => peerNames.includes(name)),
       message:
         '@venizia/ardor, react, react-dom, react-router-dom and reflect-metadata are peer dependencies',
     });
@@ -1038,12 +1036,12 @@ const main = async () => {
     });
     assert({
       condition: ['.configs/builders', 'index.html', '.env.example'].every(
-        (file) => !existsSync(join(lib, file)),
+        file => !existsSync(join(lib, file)),
       ),
       message: 'the library has no builders folder (no vite config), no html and no dev port',
     });
     assert({
-      condition: ['lints', 'formatters'].every((folder) =>
+      condition: ['lints', 'formatters'].every(folder =>
         existsSync(join(lib, '.configs', folder, '.ignore')),
       ),
       message: "the library shares the app's lint and formatter ignore files",
@@ -1134,7 +1132,7 @@ const main = async () => {
         ignorePath,
         generatedIgnore
           .split('\n')
-          .filter((line) => !line.includes('.env'))
+          .filter(line => !line.includes('.env'))
           .join('\n'),
       );
       const leaking = docker(
@@ -1597,7 +1595,7 @@ const main = async () => {
         'Frontend folder',
         'Name of this frontend app',
         'Backend app to proxy /api to',
-      ].map((question) => prompted.output.indexOf(question));
+      ].map(question => prompted.output.indexOf(question));
 
       assert({
         condition: order.every((index, position) => index > (order[position - 1] ?? -1)),
