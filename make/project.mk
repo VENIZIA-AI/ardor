@@ -21,9 +21,9 @@ TYPECHECK := bun check --no-pretty
 BUILD_TSCONFIG := .configs/builders/tsconfig.build.json
 
 # The style is the [fmt] section of the root bunfig.toml: bun fmt finds it from this folder up. A bare `bun fmt`
-# also formats md and json, so the glob is always given. --no-script runs the formatter even if a package has an
-# `fmt` script.
-FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
+# also formats md and json, so the glob is always given, and it names package.json: bun fmt sorts its keys.
+# --no-script runs the formatter even if a package has an `fmt` script.
+FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}" "package.json"
 BUN_FMT := bun fmt --no-script
 
 .PHONY: build typecheck clean rebuild lint lint-fix test size

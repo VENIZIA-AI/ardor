@@ -130,6 +130,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-23-one-code-style',
           },
           {
+            text: 'The keys of package.json are sorted and checked',
+            link: '/changelogs/2026-10-23-package-json-sorted',
+          },
+          {
             text: 'A container stops when a required variable is missing',
             link: '/changelogs/2026-10-23-runtime-config-required-env',
           },

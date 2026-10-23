@@ -48,6 +48,8 @@ help:
 	@$(HELP_ROW) "lint-scripts" "Format check + bun check type-check of scripts/."
 	@$(HELP_ROW) "lint-wiki" "Lint docs/wiki and check its format."
 	@$(HELP_ROW) "lint-fix-wiki" "Apply the lint fixes and bun fmt to docs/wiki."
+	@$(HELP_ROW) "lint-root" "Check the keys of the root package.json (bun fmt sorts them)."
+	@$(HELP_ROW) "lint-fix-root" "Sort the keys of the root package.json."
 	@$(HELP_ROW) "test-scripts" "Run the repository gate scripts' own regression tests."
 	@$(HELP_ROW) "purity-test" "Run the purity probe's own regression tests."
 	@echo ""

@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**80 targets.**
+**82 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -40,7 +40,7 @@ generated:
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts` | lint-packages, lint-wiki and lint-scripts. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-root` | lint-packages, lint-wiki and lint-scripts. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-fix` | `lint-fix-packages` | lint-fix-<pkg> for every package. |
 | `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
@@ -48,10 +48,12 @@ generated:
 | `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-packages` | `lint-fix-kernel lint-fix-react lint-fix-admin lint-fix-ardor` | lint-fix-<pkg> for every package. |
 | `make lint-fix-react` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
+| `make lint-fix-root` | - | Sort the keys of the root package.json. |
 | `make lint-fix-wiki` | - | Apply the lint fixes and bun fmt to docs/wiki. |
 | `make lint-kernel` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
+| `make lint-root` | - | Check the keys of the root package.json (bun fmt sorts them). |
 | `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
 | `make lint-wiki` | - | Lint docs/wiki and check its format. |
 | `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |
