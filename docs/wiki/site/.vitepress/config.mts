@@ -126,6 +126,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-23-format-with-bun-fmt',
           },
           {
+            text: 'No project keeps a formatter config any more',
+            link: '/changelogs/2026-10-23-no-formatter-config',
+          },
+          {
             text: 'One code style, set in one bunfig.toml',
             link: '/changelogs/2026-10-23-one-code-style',
           },

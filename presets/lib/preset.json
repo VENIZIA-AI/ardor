@@ -8,7 +8,6 @@
     "@venizia/ardor": "workspace:^",
     "@venizia/dev-configs": "catalog:",
     "eslint": "catalog:",
-    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "react": "catalog:",

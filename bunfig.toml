@@ -1,8 +1,7 @@
 # `bun fmt` finds this file from the folder it runs in or from any parent, so a package picks up [fmt].
 telemetry = false
 
-# One style for every file, the node style of IGNIS. `flavor` keeps oxfmt's output: without it Bun
-# picks the flavor from package.json and switches to Prettier's when `oxfmt` is not listed.
+# One style for every file, the node style of IGNIS. `flavor` pins the output: without it Bun may change it.
 [fmt]
 printWidth = 100
 singleQuote = true

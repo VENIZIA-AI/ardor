@@ -36,12 +36,12 @@ The command generates the project folder `demo/`:
 ```text
 demo/
   package.json            workspaces, one catalog with every version
-  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore
+  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore  bunfig.toml
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/vulcan.manifest.json  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  .env.example
-    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/{oxfmt.config.mts,.ignore}
+    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/.ignore
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
     .configs/builders/docker-entrypoint.d/40-runtime-config.sh
     src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts
@@ -62,7 +62,8 @@ demo/
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
 - `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
-- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for the formatter, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
+- `bunfig.toml` at the root of the monorepo holds the format of every file: its `[fmt]` section sets the print width, single quotes and arrow parentheses, and `devz lint` formats with `bun fmt`, which reads it from the app's folder up. There is no formatter config in the app.
+- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for `bun fmt`, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
 - `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
 
@@ -169,7 +170,7 @@ It creates `libs/merchant` as the package `@acme/merchant`:
 libs/merchant/
   package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
   tsconfig.json
-  .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+  .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/.ignore
   src/index.ts  src/feature.ts  src/feature.test.ts
 ```
 

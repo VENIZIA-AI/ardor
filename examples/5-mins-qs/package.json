@@ -29,7 +29,6 @@
     "@venizia/ignis-boot": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
-    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
