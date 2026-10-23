@@ -1,2 +1,10 @@
-# Bun reads this file only from the directory a command runs in.
+# Bun reads this file only from the directory a command runs in: `bun fmt` runs from here, with a glob.
 telemetry = false
+
+# One style for every file, the node style of IGNIS. `flavor` keeps oxfmt's output: without it Bun
+# picks the flavor from package.json and switches to Prettier's when `oxfmt` is not listed.
+[fmt]
+printWidth = 100
+singleQuote = true
+arrowParens = "avoid"
+flavor = "oxfmt"
