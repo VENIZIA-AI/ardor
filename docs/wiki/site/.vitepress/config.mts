@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-22',
+        collapsed: true,
+        items: [
+          {
+            text: 'Runtime config in the app preset, one image for every environment',
+            link: '/changelogs/2026-10-22-preset-runtime-config',
+          },
+        ],
+      },
+      {
         text: '2026-10-21',
         collapsed: true,
         items: [

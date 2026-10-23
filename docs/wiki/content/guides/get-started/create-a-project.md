@@ -41,7 +41,8 @@ demo/
     package.json  tsconfig.json  .env.example
     .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/{oxfmt.config.mts,.ignore}
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
-    src/index.html  src/main.tsx  src/application.ts  src/application.test.ts
+    .configs/builders/docker-entrypoint.d/40-runtime-config.sh
+    src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
     src/pages/home.tsx
     src/components/shadcn/{button,card}.tsx
@@ -58,7 +59,7 @@ demo/
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
-- `.env.example` lists the two variables the dev server reads: `PORT` (default 5173) and `API_URL`, the backend that `/api` is forwarded to. An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image. The built page reads no environment variable.
+- `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
 - `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for the formatter, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
 - `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
@@ -86,6 +87,30 @@ What the image does:
 - **A private registry.** `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from one.
 
 The preset cannot know which workspace packages the app needs, so the build copies the whole context (the root `.dockerignore` filters it). To keep a change in a source file from redoing the install, list the packages by hand and copy each `package.json` first.
+
+### One image for every environment
+
+A value like the API address is usually fixed when you run `vite build`, so each environment needs its own image. The image of the preset reads it when the container starts instead:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e API_UPSTREAM=http://api:3000 \
+  -e VITE_API_URL=https://api.example.com \
+  admin
+```
+
+At start the image writes `/config.js` from the container's `VITE_` variables, and `index.html` loads it before the app. The app reads a value with `getRuntimeConfig`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. The preset uses it once, for `VITE_API_URL`, in `src/configurations/admin.configuration.ts`.
+
+| Rule | What it means |
+|---|---|
+| Only `VITE_` variables are published | The name must be `VITE_` followed by capitals, digits and underscores. `DATABASE_URL`, `API_UPSTREAM` and every other variable stay in the container. |
+| A published value is public | Every visitor can read `/config.js`. Never put a secret in a `VITE_` variable. |
+| Secret-looking names stop the container | A `VITE_` name with `SECRET`, `PASSWORD` or `TOKEN` in it makes the container exit and name the variable, so a mistake shows at deploy. A name with `KEY` is fine: public keys are normal. |
+| Values are escaped | Quotes, backslashes, newlines and `<` cannot end the string or the file. |
+| `config.js` is never cached | nginx answers it with `Cache-Control: no-store`. |
+| A mounted `config.js` wins | If you mount a read-only file over it, the container keeps your file. |
+
+In dev and in `vite build`, `config.js` is the empty `src/public/config.js`, so the app falls back to `.env`.
 
 ### Expected API
 
