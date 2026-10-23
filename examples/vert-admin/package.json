@@ -4,9 +4,6 @@
   "private": true,
   "description": "The family reference: an ARDOR admin console over IGNIS's `examples/vert` API - sign-in through the IGNIS auth component, token refresh, RBAC-gated pages, CRUD on configurations",
   "type": "module",
-  "engines": {
-    "bun": ">=1.4"
-  },
   "scripts": {
     "server:dev": "vite --config .configs/builders/vite.config.ts",
     "compile": "sh scripts/compile.sh",
@@ -38,5 +35,8 @@
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
+  },
+  "engines": {
+    "bun": ">=1.4"
   }
 }

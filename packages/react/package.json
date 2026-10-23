@@ -16,24 +16,29 @@
     "venizia"
   ],
   "homepage": "https://ardor.venizia.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
-    "directory": "packages/react"
-  },
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "VENIZIA AI Developer",
     "email": "developer@venizia.ai",
     "url": "https://venizia.ai"
   },
-  "license": "MIT",
-  "engines": {
-    "bun": ">=1.4"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/react"
   },
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,14 +50,6 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "dist",
-    "!/**/__tests__",
-    "!**/*.tsbuildinfo"
-  ],
   "publishConfig": {
     "access": "public"
   },
@@ -63,21 +60,6 @@
   "dependencies": {
     "@venizia/ardor-kernel": "workspace:*",
     "lodash": "catalog:"
-  },
-  "peerDependencies": {
-    "@reduxjs/toolkit": ">=2.13.0",
-    "@venizia/ignis-filter": "^0.3.6",
-    "@venizia/ignis-helpers": "^0.3.6",
-    "@venizia/ignis-inversion": "^0.3.7",
-    "@venizia/ignis-kernel": "^0.3.6",
-    "react": ">=19.3.1",
-    "react-redux": ">=9.3.0",
-    "reflect-metadata": ">=0.2.2"
-  },
-  "peerDependenciesMeta": {
-    "@reduxjs/toolkit": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "catalog:",
@@ -102,6 +84,21 @@
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
+  "peerDependencies": {
+    "@reduxjs/toolkit": ">=2.13.0",
+    "@venizia/ignis-filter": "^0.3.6",
+    "@venizia/ignis-helpers": "^0.3.6",
+    "@venizia/ignis-inversion": "^0.3.7",
+    "@venizia/ignis-kernel": "^0.3.6",
+    "react": ">=19.3.1",
+    "react-redux": ">=9.3.0",
+    "reflect-metadata": ">=0.2.2"
+  },
+  "peerDependenciesMeta": {
+    "@reduxjs/toolkit": {
+      "optional": true
+    }
+  },
   "size-limit": [
     {
       "path": "dist/index.js",
@@ -116,5 +113,8 @@
       ],
       "limit": "2.5 KB"
     }
-  ]
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  }
 }

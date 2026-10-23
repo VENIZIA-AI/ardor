@@ -4,9 +4,6 @@
   "private": true,
   "description": "5-minute quickstart: one ARDOR application, one service, one resource page, and a stub API to run it against",
   "type": "module",
-  "engines": {
-    "bun": ">=1.4"
-  },
   "scripts": {
     "server:dev": "sh scripts/server-dev.sh",
     "compile": "sh scripts/compile.sh",
@@ -37,5 +34,8 @@
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
+  },
+  "engines": {
+    "bun": ">=1.4"
   }
 }

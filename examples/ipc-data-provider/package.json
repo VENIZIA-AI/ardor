@@ -4,9 +4,6 @@
   "private": true,
   "description": "DefaultRestDataProvider.send overridden for a non-HTTP transport - the pattern a desktop (Tauri) shell uses - run as a Bun script with no server",
   "type": "module",
-  "engines": {
-    "bun": ">=1.4"
-  },
   "scripts": {
     "server:dev": "bun run src/index.ts",
     "compile": "sh scripts/compile.sh",
@@ -31,5 +28,8 @@
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "bun": ">=1.4"
   }
 }

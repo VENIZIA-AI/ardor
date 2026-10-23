@@ -20,24 +20,29 @@
     "venizia"
   ],
   "homepage": "https://ardor.venizia.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
-    "directory": "packages/kernel"
-  },
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "VENIZIA AI Developer",
     "email": "developer@venizia.ai",
     "url": "https://venizia.ai"
   },
-  "license": "MIT",
-  "engines": {
-    "bun": ">=1.4"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/kernel"
   },
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -59,14 +64,6 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "dist",
-    "!/**/__tests__",
-    "!**/*.tsbuildinfo"
-  ],
   "publishConfig": {
     "access": "public"
   },
@@ -76,23 +73,6 @@
   },
   "dependencies": {
     "lodash": "catalog:"
-  },
-  "peerDependencies": {
-    "@venizia/ignis-connectors": "^0.3.6",
-    "@venizia/ignis-filter": "^0.3.6",
-    "@venizia/ignis-helpers": "^0.3.6",
-    "@venizia/ignis-inversion": "^0.3.7",
-    "@venizia/ignis-kernel": "^0.3.6",
-    "reflect-metadata": ">=0.2.2",
-    "socket.io-client": ">=4.8.4"
-  },
-  "peerDependenciesMeta": {
-    "@venizia/ignis-connectors": {
-      "optional": true
-    },
-    "socket.io-client": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "catalog:",
@@ -113,6 +93,23 @@
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
+  "peerDependencies": {
+    "@venizia/ignis-connectors": "^0.3.6",
+    "@venizia/ignis-filter": "^0.3.6",
+    "@venizia/ignis-helpers": "^0.3.6",
+    "@venizia/ignis-inversion": "^0.3.7",
+    "@venizia/ignis-kernel": "^0.3.6",
+    "reflect-metadata": ">=0.2.2",
+    "socket.io-client": ">=4.8.4"
+  },
+  "peerDependenciesMeta": {
+    "@venizia/ignis-connectors": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
+  },
   "size-limit": [
     {
       "path": "dist/index.js",
@@ -126,5 +123,8 @@
       ],
       "limit": "7.8 KB"
     }
-  ]
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  }
 }
