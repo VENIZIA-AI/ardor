@@ -72,6 +72,11 @@ COPY --from=builder --chmod=0755 /home/bun/app/{{appPath}}/.configs/builders/doc
 # Where /api goes: a compose service name, a cluster service, an address (an origin, with no path).
 ENV API_UPSTREAM=http://api:3000
 
+# The variables the app cannot run without, comma separated. A container that starts without one of them,
+# or with it empty, stops and names it instead of falling back to a build-time value. Any name works, not
+# only VITE_ ones; `-e APP_REQUIRED_ENV=...` overrides the list for one environment. Uncomment and list yours:
+# ENV APP_REQUIRED_ENV=VITE_API_URL
+
 # The base image reads the DNS servers of /etc/resolv.conf into ${NGINX_LOCAL_RESOLVERS}, which the template
 # gives to `resolver`: nginx looks the upstream up per request, so the container starts without it.
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1

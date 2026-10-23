@@ -114,6 +114,29 @@ At start the image writes `/config.js` from the container's `VITE_` variables, a
 
 In dev and in `vite build`, `config.js` is the empty `src/public/config.js`, so the app falls back to `.env`.
 
+#### Require variables
+
+By default a container starts whatever its environment holds, and an app with a missing value falls back to its build-time one. To refuse to start instead, list the variables the app cannot run without in `APP_REQUIRED_ENV`, in the app's Dockerfile:
+
+```dockerfile
+ENV APP_REQUIRED_ENV="VITE_API_URL,API_UPSTREAM"
+```
+
+```bash
+docker run --rm -e API_UPSTREAM=http://api:3000 admin
+# [runtime-config] FATAL: required variable(s) missing or empty: VITE_API_URL
+```
+
+| Rule | What it means |
+|---|---|
+| A comma-separated list | `VITE_API_URL,API_UPSTREAM`. Spaces around a name and empty entries are ignored. |
+| Unset or empty is missing | The container exits with code 1 and names every missing variable, in the order listed, once each. No `config.js` is written. |
+| Any variable name | The list is not limited to `VITE_` names, so `API_UPSTREAM` can be required. A name outside `VITE_` is still not published. |
+| No value is printed | Only names reach the message, so a secret cannot leak through a failed start. |
+| A bad entry stops the container | An entry that is not a variable name (letters, digits and `_`, not starting with a digit) exits with code 1 and gives its position in the list. |
+| Nothing listed, nothing checked | An unset or empty `APP_REQUIRED_ENV` keeps the start as it was. `-e APP_REQUIRED_ENV=...` overrides the list for one environment. |
+| A mounted `config.js` is not checked | A read-only file mounted over `config.js` is kept as supplied, and the variables are not checked. |
+
 ### Expected API
 
 The app has no sign-in and expects one route of the backend: `GET /api/hello` answering `{ "message": "..." }`, which an IGNIS app made from its preset has. To use your own resources, add them in `src/main.tsx` (`resources`). For sign-in, see [Add sign-in](../tutorials/add-sign-in).
