@@ -16,6 +16,7 @@ packages: ['@venizia/ardor']
 
 - **No `oxfmt.config.mts`.** The app preset no longer ships `.configs/formatters/oxfmt.config.mts`, the three examples lost theirs, and no `package.json` or catalog lists a formatter package. `.configs/formatters/.ignore` stays: its patterns still go to `bun fmt` as paths to skip.
 - **One style.** The examples and every generated app follow the root `bunfig.toml`: single quotes, a print width of 100, and no parentheses around a single arrow parameter. The examples were reformatted once, in a commit of their own (arrow parentheses and the closing `>` of JSX elements).
+- **More than code.** `bun fmt` also covers json, yaml, css, html and vue, markdown excepted: the lint of ARDOR's own projects checks them, and the tracked files outside any project (the CI and release workflows, the agent files, the presets) are checked by two new targets, `make lint-files` and `make fmt-files`. A one-time reformat touched eleven files; the workflows only changed their quotes, and their parsed content is identical.
 - **Smaller installs.** The lockfile drops `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier` and the `oxfmt` bindings.
 
 ## Who is affected
