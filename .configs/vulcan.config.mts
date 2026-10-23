@@ -34,8 +34,7 @@ export default {
         options: {
           source: 'packages/kernel/src/common/keys.ts',
           description: 'Every dependency-injection binding key declared in the kernel (generated).',
-          seeAlso:
-            'Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).',
+          seeAlso: 'Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).',
         },
       },
       'makefile-targets',
@@ -44,7 +43,15 @@ export default {
       { id: 'packages-table', file: 'overview/monorepo-layout.md', renderer: 'packages-table' },
     ],
     sections: {
-      order: ['overview', 'architecture', 'packages', 'conventions', 'process', 'examples', 'reference'],
+      order: [
+        'overview',
+        'architecture',
+        'packages',
+        'conventions',
+        'process',
+        'examples',
+        'reference',
+      ],
     },
     coverage: [
       { name: 'packages', path: 'packages/*' },
