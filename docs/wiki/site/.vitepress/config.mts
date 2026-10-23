@@ -122,6 +122,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'The repository formats with bun fmt',
+            link: '/changelogs/2026-10-23-format-with-bun-fmt',
+          },
+          {
             text: 'A container stops when a required variable is missing',
             link: '/changelogs/2026-10-23-runtime-config-required-env',
           },
