@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-24 | [ARDOR 0.4.0 follows IGNIS 0.4.0](./2026-10-24-ardor-0-4-0) | Breaking Change |
 | 2026-10-23 | [The repository formats with bun fmt](./2026-10-23-format-with-bun-fmt) | Enhancement |
 | 2026-10-23 | [No project keeps a formatter config any more](./2026-10-23-no-formatter-config) | Enhancement |
 | 2026-10-23 | [One code style, set in one bunfig.toml](./2026-10-23-one-code-style) | Enhancement |
