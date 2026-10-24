@@ -43,7 +43,7 @@ class CountRestDataProvider<TResource extends string = string>
 }
 ```
 
-`getList` in the base class builds `filter` (with `where`, `order`, `limit`, `skip`, `offset`, `include`, `fields`) and `queryKey` (from `filter.params` and `meta`), then delegates to `getListHelper`. The override receives exactly those arguments.
+`getList` in the base class builds `filter` (with `where`, `order`, `limit`, `skip`, `include`, `fields`) and `queryKey` (from `filter.params` and `meta`), then delegates to `getListHelper`. The override receives exactly those arguments.
 
 ## The two requests
 
@@ -54,7 +54,7 @@ The override fires two requests in parallel through the inherited `networkServic
 
 Both spread the same `requestProps` - so they share the method (`GET`, set by `getList`), headers, and body.
 
-Only `filter.where` reaches the count endpoint. `order`, `limit`, `skip`, `offset`, `include`, and `fields` are not sent, so the count reflects every record matching the filter, not just the current page.
+Only `filter.where` reaches the count endpoint. `order`, `limit`, `skip`, `include`, and `fields` are not sent, so the count reflects every record matching the filter, not just the current page.
 
 ```ts
 import {

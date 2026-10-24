@@ -33,7 +33,7 @@ The `resources` prop registers hash routes: `list` at `#/products`, `create` at 
 
 | Operation | react-admin method | HTTP verb | Path | Body or query | Total count source |
 | --- | --- | --- | --- | --- | --- |
-| Load list page | `getList` | GET | `/api/products` | Query: `filter` JSON string (`order`, `limit`, `skip`, `offset`) | `Content-Range` header |
+| Load list page | `getList` | GET | `/api/products` | Query: `filter` JSON string (`order`, `limit`, `skip`) | `Content-Range` header |
 | Open edit page | `getOne` | GET | `/api/products/:id` | Query: `filter` JSON string from `meta.filter` | N/A |
 | Submit create form | `create` | POST | `/api/products` | Body: JSON object with record data | N/A |
 | Submit edit form | `update` | PATCH | `/api/products/:id` | Body: JSON object with updated fields | N/A |

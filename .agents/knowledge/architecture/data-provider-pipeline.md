@@ -18,7 +18,7 @@ ARDOR has no controllers, repositories or datasources. Instead, all data access 
    - If `filter.where` already exists, the whole filter is used as-is - the caller is writing raw IGNIS filter.
    - Otherwise every key of `filter` except `include`, `params`, `noLimit`, `fields` becomes `where`; those four are lifted to the top level.
    - `sort.field`/`sort.order` become `order: ["<field> <ASC|DESC>"]`.
-   - `pagination` becomes `limit = perPage`, `skip = offset = (page - 1) * perPage`, unless `noLimit` is set, in which case limit/skip/offset are all cleared. A missing `pagination` counts as `{}` in both methods (ra-core types it as required, but a JavaScript caller can omit it).
+   - `pagination` becomes `limit = perPage` and `skip = (page - 1) * perPage` (`skip` only: IGNIS reads `offset` as its alias), with the page defaulting to 1 and a page below 1 read as page 1. No `perPage`, a `perPage` of 0 or below, or a missing `pagination` (ra-core types it as required, but a JavaScript caller can omit it) sends no limit and no skip. `noLimit` clears limit, skip and offset.
    - Every other top-level `params` key (beyond `pagination`, `sort`, `filter`, `meta`, and `target`/`id` for `getManyReference`) is then copied onto the top level of the filter object, after sort and pagination, so a same-named key wins. Only `undefined` and `null` are skipped.
    - `filter.params` is pulled out into top-level query keys (not part of the filter object), and every key of `meta` except `meta.extra` also becomes a query key. `meta.extra` (a `TExtraRequest`) asks for list extras: it goes to `getRequestProps({ extra })`, which sends it in `x-request-extra`.
    - `getManyReference` additionally sets `where[target] = id`.

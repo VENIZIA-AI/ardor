@@ -99,7 +99,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
   /**
    * The filter, query and list extras a list request sends, from react-admin's list params:
-   * pagination into `limit`/`skip`/`offset`, sort into `order`, `noLimit` lifting both, the
+   * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, the
    * remaining params into the filter, `filter.params` and `meta` into the query, and `meta.extra`
    * into the list extras (sent in a header). Shared by `getList` and `getManyReference`.
    */
@@ -135,15 +135,12 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       filter['offset'] = undefined;
       filter['noLimit'] = undefined;
     } else {
-      const { page = 0, perPage = 0 } = pagination ?? {};
+      const { page = 1, perPage = 0 } = pagination ?? {};
 
-      if (perPage >= 0) {
+      // No `perPage` is no limit. `skip` is IGNIS's offset (`offset` is its alias): one is enough.
+      if (perPage > 0) {
         filter['limit'] = perPage;
-      }
-
-      if (perPage > 0 && page >= 0) {
-        filter['skip'] = (page - 1) * perPage;
-        filter['offset'] = (page - 1) * perPage;
+        filter['skip'] = (Math.max(page, 1) - 1) * perPage;
       }
     }
 

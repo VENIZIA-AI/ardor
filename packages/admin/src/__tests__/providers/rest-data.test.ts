@@ -176,7 +176,7 @@ afterEach(() => {
 });
 
 describe('getList behavior', () => {
-  test('sends filter.limit, filter.skip, and filter.offset based on pagination', async () => {
+  test('sends filter.limit and filter.skip, and no filter.offset, based on pagination', async () => {
     const provider = createProvider({ baseUrl });
     await provider.getList({
       resource: 'posts',
@@ -194,7 +194,7 @@ describe('getList behavior', () => {
     const filter = parseFilterQuery({ raw: req.query['filter'] });
     expect(filter['limit']).toBe(10);
     expect(filter['skip']).toBe(10);
-    expect(filter['offset']).toBe(10);
+    expect(filter['offset']).toBeUndefined();
   });
 
   test('sends filter.order as array based on sort params', async () => {
@@ -444,7 +444,7 @@ describe('getManyReference behavior', () => {
     });
     expect(filter['limit']).toBe(5);
     expect(filter['skip']).toBe(10);
-    expect(filter['offset']).toBe(10);
+    expect(filter['offset']).toBeUndefined();
     expect(filter['order']).toEqual(['createdAt DESC']);
   });
 
@@ -920,6 +920,32 @@ describe('buildListFilter', () => {
     expect(filter.skip).toBe(40);
     expect(queryKey).toEqual({});
     expect(extra).toBeUndefined();
+  });
+
+  test.each([
+    ['no page: page 1', { perPage: 10 }, { limit: 10, skip: 0 }],
+    ['page 0: page 1', { page: 0, perPage: 10 }, { limit: 10, skip: 0 }],
+    ['a negative page: page 1', { page: -3, perPage: 10 }, { limit: 10, skip: 0 }],
+    ['page 3', { page: 3, perPage: 10 }, { limit: 10, skip: 20 }],
+    ['perPage 0: no limit', { page: 2, perPage: 0 }, { limit: undefined, skip: undefined }],
+    [
+      'a negative perPage: no limit',
+      { page: 2, perPage: -5 },
+      { limit: undefined, skip: undefined },
+    ],
+    ['no pagination at all: no limit', undefined, { limit: undefined, skip: undefined }],
+  ])('pagination %s', (_name, pagination, expected) => {
+    const { filter } = provider.buildListFilter({
+      params: {
+        pagination: pagination as never,
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      },
+    });
+
+    expect(filter.limit).toBe(expected.limit);
+    expect(filter.skip).toBe(expected.skip);
+    expect(filter.offset).toBeUndefined();
   });
 
   test('keeps a where the caller gave, and routes filter.params and meta into the query', () => {
