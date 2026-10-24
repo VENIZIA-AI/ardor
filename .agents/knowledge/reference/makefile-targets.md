@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**81 targets.**
+**79 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -33,7 +33,6 @@ generated:
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
-| `make fmt-manifests` | - | Sort the keys of the root and example package.json (part of lint-fix). |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
@@ -41,10 +40,10 @@ generated:
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-manifests lint-files` | lint-packages, lint-wiki, lint-scripts, lint-manifests and lint-files. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-files` | - | Format check of the files outside the projects: workflows, .agents, .configs, the presets. |
-| `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-manifests fmt-files` | lint-fix-<pkg> for every package. |
+| `make lint-files` | - | Format check of the files outside the projects: the root package.json, workflows, .agents, .configs, the presets, the examples. |
+| `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-files` | lint-fix-<pkg> for every package. |
 | `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-ardor` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
@@ -52,7 +51,6 @@ generated:
 | `make lint-fix-react` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-wiki` | - | Apply the lint fixes and bun fmt to docs/wiki. |
 | `make lint-kernel` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-manifests` | - | Check the keys of the root and example package.json (bun fmt sorts them). |
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
 | `make lint-react` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
