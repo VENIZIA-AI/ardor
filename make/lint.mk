@@ -1,5 +1,5 @@
-# Lint and format the packages, the wiki and scripts/. The examples carry their own package.json
-# scripts, so make does not drive them: `bun scripts/examples.ts check` does.
+# Lint and format the packages, the wiki and scripts/. The examples have no lint script of their own
+# to run here: their files are format-checked by `lint-files` below.
 
 # Each project lints itself, from its own .configs/ and with its own tools (its node_modules/.bin).
 # oxlint owns the rules, ESLint runs only naming-convention (oxlint has no port yet), bun fmt formats.
@@ -10,8 +10,8 @@
 # Paths are ignored through .gitignore: `ignorePatterns` resolve against .configs/, not the project.
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs,json,jsonc,yml,yaml,css,html,vue}"
 # The tracked files that belong to no project make lints: CI and release workflows, the agent and VULCAN files, the
-# presets (templates and preset.json). The examples are not here: they carry their own lint script.
-FILES_GLOBS := ".github/**/*.{ts,mts,json,yml,yaml}" ".agents/**/*.{ts,mts,json}" ".configs/*.{ts,mts,json}" "presets/**/*.{ts,tsx,mts,js,mjs,json,css,html}"
+# presets (templates and preset.json), and the examples.
+FILES_GLOBS := ".github/**/*.{ts,mts,json,yml,yaml}" ".agents/**/*.{ts,mts,json}" ".configs/*.{ts,mts,json}" "presets/**/*.{ts,tsx,mts,js,mjs,json,css,html}" "examples/**/*.{ts,mts,tsx,js,mjs,json,yml,yaml,css,html,vue}"
 # $(1) project dir; $(2) what oxlint and ESLint lint (default .); $(3) what bun fmt checks.
 LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs $(or $(2),.) && bun fmt --no-script --check $(or $(3),$(FMT_GLOB))
 FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs --fix $(or $(2),.) && bun fmt --no-script $(or $(3),$(FMT_GLOB))
@@ -31,7 +31,7 @@ lint-all: lint-packages lint-wiki lint-scripts lint-manifests lint-files
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-lint-fix: lint-fix-packages fmt-manifests fmt-files
+lint-fix: lint-fix-packages lint-fix-wiki fmt-manifests fmt-files
 
 lint-fix-packages: $(FIX_PKG_TARGETS)
 
@@ -53,7 +53,7 @@ lint-fix-wiki:
 	@$(call FIX_PROJECT,docs/wiki)
 
 # The package.json files outside the projects make lints (the packages and the wiki format their own): the root one, and
-# the examples', which make does not drive. bun fmt sorts their keys, with the same bunfig.toml.
+# the examples'. bun fmt sorts their keys, with the same bunfig.toml.
 lint-manifests:
 	@echo "🔍 Linting the root and example package.json..."
 	@bun fmt --no-script --check "package.json" "examples/*/package.json"

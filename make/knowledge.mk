@@ -5,15 +5,15 @@
 .PHONY: split-report wiki-links-check wiki-anchors-check atlas-smoke
 
 split-report:
-	@bun scripts/split-report.ts
+	@bun scripts/checks/split-report.ts
 
 wiki-links-check:
-	@bun scripts/wiki-source-links.ts
+	@bun scripts/wiki/wiki-source-links.ts
 
 # Dead `#fragment` links. Reads the emitted ids, so it needs a build - run `make docs` first.
 wiki-anchors-check:
-	@bun scripts/wiki-anchors.ts
+	@bun scripts/wiki/wiki-anchors.ts
 
 # Proves VULCAN's atlas serves this checkout over MCP.
 atlas-smoke:
-	@bun scripts/atlas-smoke.ts
+	@bun scripts/checks/atlas-smoke.ts

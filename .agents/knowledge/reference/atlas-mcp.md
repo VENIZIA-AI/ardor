@@ -28,7 +28,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 `vulcan sync` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
-  `package.json`; `scripts/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
+  `package.json`; `scripts/checks/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
   fetching the unrelated unscoped `vulcan` package before `bun install` ran.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
@@ -58,8 +58,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 Only `.md` files are indexed, split into H2 and H3 chunks. Before every call the server fingerprints
 the markdown (file count, newest modification time, total bytes) and rebuilds the index when it
 moved, so an edited concept or wiki page is searchable on the next call - no restart, no generation
-step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page, and
-`log.md` lower still. IGNIS's index is built once per commit. `search` takes a `source` (`ardor` or
+step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page. IGNIS's index is built once per commit. `search` takes a `source` (`ardor` or
 `ignis`) to narrow a query to one project, and `get` takes one only when two sources hold the same id.
 
 ## Tools
@@ -118,7 +117,7 @@ frontmatter:
 - **The tags move.** The release table is built when the server starts, so a tag pushed or fetched
   afterwards is invisible to this repository's `version` and `changes` until the MCP client
   restarts the server. A shallow clone has no history: the tools answer that no release was found,
-  hence `fetch-depth: 0` in CI. A release chain leaves nothing to refresh - `scripts/release.ts`
+  hence `fetch-depth: 0` in CI. A release chain leaves nothing to refresh - `scripts/release/release.ts`
   and the workflow push the tags and that is all.
 - **A stale local `dist`.** Symbols are read from the built declarations, which atlas fingerprints
   before each question and reloads when they moved (`declarationsFingerprintOf`), so a rebuild is

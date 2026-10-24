@@ -24,7 +24,7 @@ tags: [process, release, ci]
 
 The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workflow_dispatch` only -
 it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
-`scripts/release.ts` (below), with these inputs:
+`scripts/release/release.ts` (below), with these inputs:
 
 - `package`: one of `kernel`, `react`, `admin`, or `ardor`.
 - `build_mode`: the semver bump - `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, or
@@ -32,12 +32,12 @@ it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh wo
 - `version` (optional): an explicit version, `x.y.z` or `x.y.z-pre`. When set it replaces `build_mode`
   (see [Version line](#version-line)).
 - `issue` (optional): the issue number the release commit serves; the commit subject is prefixed `[#N]`.
-- `chain_released` (optional): comma-separated npm names this chain published earlier; the registry gate trusts their workspace version (`scripts/release.ts` fills it).
+- `chain_released` (optional): comma-separated npm names this chain published earlier; the registry gate trusts their workspace version (`scripts/release/release.ts` fills it).
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
 defaults to the DEFAULT branch, `main`, so an unpinned run builds `main` even though its bump commit
-lands on `develop`. `scripts/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
+lands on `develop`. `scripts/release/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
 too.
 
 There is no fan-out step that releases every package in one dispatch: each package is released with
@@ -47,23 +47,17 @@ folders, and [packages/kernel](/packages/kernel.md), [packages/react](/packages/
 
 ## Driving a chain
 
-`bun scripts/release.ts [pkg...]` dispatches `package-release.yml` for one package at a time, in
+`bun scripts/release/release.ts [pkg...]` dispatches `package-release.yml` for one package at a time, in
 dependency order, and waits for each run to finish before the next - the workspace-wide
 force-update below cannot overlap. With no package names it releases every package that needs one.
 `--mode` defaults to `prerelease`. There is no prompt: without `--yes` the script prints the plan and
-dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushed tree. A package counts as changed when its `src`, `package.json`, `tsconfig.json` or `.configs/tsconfig.build.json` changed since its last release commit (`scripts/release-scope.ts`), so a manifest-only change such as the umbrella's peers is released too. After each run the script waits for a version that was not on the registry before dispatch, so a stable release to `latest` verifies the same way as a prerelease to `next`. The chain ends there: it refreshes and commits no table. atlas computes its release table from the
+dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushed tree. A package counts as changed when its `src`, `package.json`, `tsconfig.json` or `.configs/tsconfig.build.json` changed since its last release commit (`scripts/release/release-scope.ts`), so a manifest-only change such as the umbrella's peers is released too. After each run the script waits for a version that was not on the registry before dispatch, so a stable release to `latest` verifies the same way as a prerelease to `next`. The chain ends there: it refreshes and commits no table. atlas computes its release table from the
 `<package>-v<version>` tags the workflow pushes, so there is nothing to regenerate (see
 [Atlas MCP server](/reference/atlas-mcp.md)).
 
-After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
+After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
 
-`bun scripts/release-local.ts` publishes from the machine instead, without Actions minutes. It runs
-the workflow's force-update, build, lint, version bump and `bun publish`, but not
-`refresh-catalog.ts`, and it checks the files the `exports` map names rather than `dist/index.js`.
-It adds gates CI lacks - `make catalog-check`, no `catalog:`/`workspace:` left in the packed
-manifest, every internal dependency on the registry - and a `Continue? [y/N]` prompt that `--yes`
-skips. It is stricter than CI: it refuses a dirty tree or a HEAD that is not `origin/develop`, and
-it publishes before any git write, so a rejected publish leaves nothing to roll back.
+A release always goes through this script and the workflow: there is no way to publish from a developer machine.
 
 ## Release order
 
@@ -76,7 +70,7 @@ force-update step below cannot invent a published version that does not exist ye
 
 ARDOR and IGNIS share a minor version (Phat's decision, 2026-10-20): ARDOR `X.Y.*` peers IGNIS `^X.Y.0`, so a new IGNIS minor means a new ARDOR minor of the same number, even when that skips one (ARDOR goes 0.1.5 to 0.3.0 with IGNIS 0.3.0, never through 0.2). Patches move independently on each side. `@venizia/vulcan` and `@venizia/dev-configs` version on their own lines. The four ARDOR packages release together on one version, so a minor release is `kernel`, `react`, `admin` and `ardor` at the same number.
 
-`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release.ts --version 0.3.0` or `bun scripts/release-local.ts --version 0.3.0`. `--version` overrides `--mode`. A sweep with `--version` releases every package still below that version, changed or not, in dependency order; a package already at it is skipped, so a chain that stopped half way runs again. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release-version.ts`, which the workflow calls (`scripts/release-version.ts target` and `tag`) and the two scripts import; `scripts/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. The workflow resolves both in a `Resolve release target` step before the install, so a malformed or too-low version fails before anything is built.
+`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release/release.ts --version 0.3.0`. `--version` overrides `--mode`. A sweep with `--version` releases every package still below that version, changed or not, in dependency order; a package already at it is skipped, so a chain that stopped half way runs again. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release/release-version.ts`, which the workflow calls (`scripts/release/release-version.ts target` and `tag`) and `release.ts` imports; `scripts/release/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. The workflow resolves both in a `Resolve release target` step before the install, so a malformed or too-low version fails before anything is built.
 
 ## Force-update the workspace before install
 
@@ -85,7 +79,7 @@ The job resolves the folder for the chosen package (`packages/<name>`), reads it
 across the **whole workspace**, not just the package being released:
 
 ```
-bun scripts/refresh-catalog.ts highest
+bun scripts/build/refresh-catalog.ts highest
 bun run --filter "@venizia/*" force-update highest
 ```
 
@@ -101,15 +95,15 @@ bun run --filter "@venizia/*" force-update highest
   other as `workspace:*` (react -> kernel; admin -> kernel and react; ardor -> all three), which
   `force-update` skips (a protocol specifier) and `bun pm pack` / `bun publish` write as the
   sibling's own version: `@venizia/ardor` X needs `ardor-*` X exactly. A caret here let a fresh install
-  of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/__tests__/sibling-versions.test.ts`
+  of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
 
 ## Gates, bump, publish, record
 
 The workflow follows IGNIS's release workflow, step for step: gates first, then the bump, then the
-publish, and only then any git write. The gates are in `scripts/release-gates.ts` (tested in
-`scripts/__tests__/release-gates.test.ts`); the workflow calls its command line and
-`release-local.ts` imports the same functions, so the two cannot drift.
+publish, and only then any git write. The gates are in `scripts/release/release-gates.ts` (tested in
+`scripts/release/__tests__/release-gates.test.ts`); the workflow calls its command line, and
+`scripts/preset/preset-smoke.ts` imports the same functions.
 
 Before the bump, after the install (see [Build system](/process/build-system.md) and
 [Makefile targets](/reference/makefile-targets.md)):
@@ -131,10 +125,10 @@ Before the bump, after the install (see [Build system](/process/build-system.md)
 Then the mutations, in this order:
 
 9. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package folder, then
-   `git pull` of `develop`, then (ardor) `bun scripts/vulcan-preset.ts`.
+   `git pull` of `develop`, then (ardor) `bun scripts/preset/vulcan-preset.ts`.
 10. **Publish first.** `bun publish --access public --tag $NPM_TAG --ignore-scripts`, where `NPM_TAG` is
     `latest` for `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or
-    version (`scripts/release-version.ts tag`). `IS_PUBLISHED` is set before the call, because a publish
+    version (`scripts/release/release-version.ts tag`). `IS_PUBLISHED` is set before the call, because a publish
     that succeeds and loses its response still leaves npm holding the version. Never `npm publish`: npm
     packs `catalog:` and `workspace:` specifiers verbatim and the package cannot be installed.
 11. `npm dist-tag add <package>@<version> highest` (non-fatal), then **the `next` tag is kept at or above
@@ -158,7 +152,7 @@ a stale `next` is fixed by hand.
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 

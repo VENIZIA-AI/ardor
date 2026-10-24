@@ -23,7 +23,7 @@ Each package's `make <pkg>` target runs `make -C packages/<pkg> rebuild` (`make/
 ## Test, lint, typecheck targets
 
 - `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each running `bun test` with `NODE_ENV=test` and the setup preload inside the package directory. `make test-ardor` says there is no suite and passes.
-- `make lint` runs `lint-packages` (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`); `make lint-all` adds `lint-wiki` and `lint-scripts`, and `make fmt-<pkg>` applies the fixes. The examples run through `bun scripts/examples.ts check` (lint and typecheck) and `build`. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
+- `make lint` runs `lint-packages` (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`); `make lint-all` adds `lint-wiki`, `lint-scripts`, `lint-manifests` and `lint-files` (the root and example `package.json`, and the files outside the projects, the examples among them), and `make lint-fix` applies the fixes. Nothing builds or type-checks the examples; each one keeps its own `compile` and `typecheck` scripts for use by hand. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.
 
@@ -48,7 +48,7 @@ These gates are what CI and reviewers hold a change to; running `make build-all`
 1. Make the source edit.
 2. `make <affected-pkg>` (and its downstream packages, in order) to rebuild through `dist/`.
 3. `make test` (or the specific `test-<pkg>` targets) - remember these test `dist/`, so step 2 must have succeeded first.
-4. `make lint-all`, and `bun scripts/examples.ts check` when an example or a public API changed.
+4. `make lint-all`; when an example or a public API changed, also run that example's own `typecheck` and `compile` scripts.
 5. Run the relevant gates (`catalog-check`, `purity`, `layer-check`, `cycles-check`, `surface-check`, `size-check`, `okf-check-strict`) depending on what changed - a dependency bump needs `catalog-check`, a public API change needs `surface-check`, a docs/bundle change needs `okf-check-strict`.
 
 For the wider workflow this build cycle sits inside, see [Onboarding](/overview/onboarding.md) and [Monorepo layout](/overview/monorepo-layout.md).

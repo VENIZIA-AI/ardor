@@ -14,6 +14,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["./*.ts", "./purity/**/*.ts", "./__tests__/**/*.ts"],
-  "exclude": ["./purity/__tests__/fixtures"]
+  "include": ["./**/*.ts"],
+  "exclude": ["./checks/purity/__tests__/fixtures"]
 }

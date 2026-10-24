@@ -6,7 +6,7 @@
  * Fences opt out with an info string of `ts no-check` (a deliberately partial fragment) and the
  * block is still counted, so the report shows how much of the site is verified.
  *
- * Usage: bun scripts/check-snippets.ts   (from docs/wiki; exit 1 on the first failing snippet)
+ * Usage: bun scripts/check-snippets.mts   (from docs/wiki; exit 1 on the first failing snippet)
  */
 import { Glob } from 'bun';
 import ts from 'typescript';

@@ -139,18 +139,14 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make wiki-anchors-check
 
-      # The examples are not driven by make: they carry their own package.json scripts.
-      - name: Examples compile
+      # The symbol lookup reads the built types, so this step needs the build.
+      - name: Atlas smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: bun scripts/examples.ts compile
+        run: make atlas-smoke
 
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make lint-all
-
-      - name: Lint - examples
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: bun scripts/examples.ts lint
 
       # One loop over the whole manifest, so this gate and a release read the same rows.
       - name: Browser purity
