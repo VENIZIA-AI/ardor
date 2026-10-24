@@ -222,8 +222,8 @@
             </div>
             <h3>Socket.IO Client</h3>
             <p>
-              A thin <code>SocketIOClientHelper</code> wrapper with scoped logging, subscribe by
-              event map and guarded emit, ready to bind as a service.
+              The IGNIS <code>SocketIOClientHelper</code>, browser-pure and handed
+              <code>socket.io-client</code> by your application, ready to bind as a service.
             </p>
           </div>
         </div>

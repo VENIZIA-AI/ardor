@@ -1,4 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
+import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -26,7 +27,6 @@ import {
   AuthTokenStore,
   type IEncodedBody,
   NetworkHeaders,
-  NodeFetchNetworkRequest,
   RequestBodyEncoder,
   ResponseReader,
 } from '@/helpers';
@@ -71,7 +71,8 @@ export class DefaultNetworkRequestService extends BaseService {
     });
     this.networkRequest = new NodeFetchNetworkRequest({
       name,
-      networkOptions: { baseUrl, headers },
+      // A filter travels as one JSON parameter, and a null is left out: what an IGNIS server reads.
+      networkOptions: { baseUrl, headers, queryString: { nullish: 'skip', nested: 'json' } },
     });
   }
 
@@ -367,14 +368,16 @@ export class DefaultNetworkRequestService extends BaseService {
     const url = this.networkRequest.getRequestUrl({ baseUrl, paths });
 
     const sendOnce = (sendHeaders?: HeadersInit) => {
-      return this.networkRequest.getNetworkService().send({
-        url,
-        method,
-        params: query,
-        body: method === RequestMethods.GET ? undefined : body,
-        headers: sendHeaders,
-        configs: {},
-      });
+      return this.networkRequest.getNetworkService().send(
+        {
+          url,
+          method,
+          params: query,
+          body: method === RequestMethods.GET ? undefined : body,
+          headers: sendHeaders,
+        },
+        this.logger,
+      );
     };
 
     let fetched = await sendOnce(headers);

@@ -33,10 +33,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - See [Hooks and services](/reference/hooks-and-services.md) for the full inventory.
 
 ## Networking
-- `packages/kernel/src/helpers/networks/base-request.ts` - shared request logic.
-- `packages/kernel/src/helpers/networks/fetchers/abstract.ts`, `node-fetch.ts` - the fetcher contract and the one implementation.
-- `packages/kernel/src/helpers/networks/common/types.ts` - shared network types, relevant to [Header protocol](/architecture/header-protocol.md).
-- `packages/kernel/src/helpers/socket-io-client.ts` - `SocketIOClientHelper`, outside the helpers barrel and published only as the kernel `./socket-io` sub-path; `packages/ardor/src/socket-io.ts` re-exports it as `@venizia/ardor/socket-io`.
+- `packages/kernel/src/helpers/networks/headers.ts` - `NetworkHeaders`, relevant to [Header protocol](/architecture/header-protocol.md).
 
 ## Error handling
 - `packages/kernel/src/base/decorators/api.ts` - the `@api()` method decorator that logs a failing service call and rethrows it unchanged.
