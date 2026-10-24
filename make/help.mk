@@ -49,6 +49,7 @@ help:
 	@$(HELP_ROW) "lint-fix-wiki" "Apply the lint fixes and bun fmt to docs/wiki."
 	@$(HELP_ROW) "lint-files" "Format check of the files outside the projects: the root package.json, workflows, .agents, .configs, the presets, the examples."
 	@$(HELP_ROW) "fmt-files" "Format those files with bun fmt (part of lint-fix)."
+	@$(HELP_ROW) "fmt-scripts" "Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it)."
 	@$(HELP_ROW) "test-scripts" "Run the repository gate scripts' own regression tests."
 	@$(HELP_ROW) "purity-test" "Run the purity probe's own regression tests."
 	@echo ""
