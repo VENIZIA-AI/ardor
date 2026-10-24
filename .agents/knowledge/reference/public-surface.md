@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (125)
+### `@venizia/ardor-kernel` (127)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -56,6 +56,7 @@ generated:
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
 - `IdType` type
+- `IEncodedBody` interface
 - `IFeatureBase` interface
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -100,6 +101,7 @@ generated:
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
+- `RequestBodyEncoder` class
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
@@ -246,7 +248,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (189)
+### `@venizia/ardor` (191)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -304,6 +306,7 @@ generated:
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
 - `IdType` type
+- `IEncodedBody` interface
 - `IFeatureBase` interface
 - `IFetchable` interface
 - `IFetcherRequestOptions` interface
@@ -366,6 +369,7 @@ generated:
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
+- `RequestBodyEncoder` class
 - `RequestBodyTypes` class
 - `RequestChannel` class
 - `RequestCountData` class
