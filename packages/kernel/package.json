@@ -71,13 +71,9 @@
     "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
-  "dependencies": {
-    "lodash": "catalog:"
-  },
   "devDependencies": {
     "@size-limit/preset-small-lib": "catalog:",
     "@types/bun": "catalog:",
-    "@types/lodash": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-connectors": "catalog:",
     "@venizia/ignis-filter": "catalog:",
@@ -117,11 +113,10 @@
       "ignore": [
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "lodash",
         "reflect-metadata",
         "socket.io-client"
       ],
-      "limit": "8.4 KB"
+      "limit": "7.8 KB"
     }
   ],
   "engines": {

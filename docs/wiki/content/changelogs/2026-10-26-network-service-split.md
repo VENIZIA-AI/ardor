@@ -22,6 +22,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 - **The list filter builder is its own helper.** `ListFilterBuilder.build({ params })` turns react-admin's list params into the IGNIS filter, the query and the list extras, and `ListFilterBuilder.extractQueryParams` replaces the `filter.params` loop that `getOne` and `getMany` repeated. `DefaultRestDataProvider.buildListFilter` stays a protected hook and delegates to it. Admin gains `ListFilterBuilder` in its public surface.
 - **One `request()` for the data provider.** The ten `DefaultRestDataProvider` methods each repeated a `getRequestProps` call and a `doRequest` call; they now call the protected `request({ resource, type, method, paths?, body?, bodyType?, query?, extra?, headers?, requestCountData? })` (typed `IRestRequestOptions`, new). Headers named in `headers` win over the computed ones. Override `request()` to move every method, `send()` included, to another transport.
 - **`requestList` replaces `getListHelper`.** The list GET, with the extras a route answered as `meta.extra`, is the protected `requestList({ resource, type, queryKey, filter, extra? })`. `CountRestDataProvider` overrides it and asks `request()` for `/count` without extras, so its `withoutExtraHeader` workaround is gone.
+- **The unused parse utilities are gone.** Nothing in ARDOR or in the BANA frontend used them, and IGNIS already has the helpers a project needs. The kernel loses its only runtime dependency, `lodash`.
 
 ## Who is affected
 
@@ -53,5 +54,7 @@ protected override requestList(opts: { resource; type; queryKey; filter; extra? 
 A subclass that overrode the ten methods one by one to change the transport can override `request()` instead.
 
 The `/count` request of `CountRestDataProvider` now builds its own headers, so it has its own `x-request-id`; it shared the list's.
+
+These exports are removed from `@venizia/ardor-kernel` and `@venizia/ardor`: `NumberParseMethods`, `TNumberParseMethod`, `INTL_0_DIGITS_FORMATTER`, `INTL_2_DIGITS_FORMATTER`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue` and `parseQueryString`. Replace `parseQueryString({ search })` with `Object.fromEntries(new URLSearchParams(search))`; for the rest, use the IGNIS helpers (`@venizia/ignis-helpers`) or your own.
 
 The rest of the breaking parts of this series are listed here as they land.

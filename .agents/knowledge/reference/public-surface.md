@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (130)
+### `@venizia/ardor-kernel` (115)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -40,8 +40,6 @@ generated:
 - `DefaultAuthService` class
 - `DefaultNetworkRequestService` class
 - `Environments` class
-- `generateUniqueId` const
-- `getNumberValue` const
 - `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplicationInfo` interface
@@ -70,8 +68,6 @@ generated:
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
-- `INTL_0_DIGITS_FORMATTER` const
-- `INTL_2_DIGITS_FORMATTER` const
 - `IPermissionProvider` interface
 - `IRequestOptions` interface
 - `IRequestProps` interface
@@ -81,14 +77,11 @@ generated:
 - `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` interface
-- `isFloat` const
 - `ISignInSession` interface
-- `isInteger` const
 - `isNumber` const
 - `isObject` const
 - `isString` const
 - `isValidDate` const
-- `keysToCamelCase` const
 - `LocalStorageKeys` class
 - `Logger` class
 - `LogLevels` class
@@ -98,8 +91,6 @@ generated:
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
-- `NumberParseMethods` class
-- `parseQueryString` const
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -125,14 +116,8 @@ generated:
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
-- `TNumberParseMethod` type
-- `toBoolean` const
-- `toCamelCase` const
 - `toDataUrl` const
-- `toFloat` const
-- `toInteger` const
 - `toQueryString` const
-- `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type
@@ -253,7 +238,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (196)
+### `@venizia/ardor` (181)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -291,8 +276,6 @@ generated:
 - `englishMessages` const
 - `Environments` class
 - `Features` class
-- `generateUniqueId` const
-- `getNumberValue` const
 - `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplication` interface
@@ -326,8 +309,6 @@ generated:
 - `INoAuthOptions` interface
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
-- `INTL_0_DIGITS_FORMATTER` const
-- `INTL_2_DIGITS_FORMATTER` const
 - `IPermissionProvider` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
@@ -340,9 +321,7 @@ generated:
 - `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` interface
-- `isFloat` const
 - `ISignInSession` interface
-- `isInteger` const
 - `isNumber` const
 - `isObject` const
 - `isString` const
@@ -362,7 +341,6 @@ generated:
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
 - `IUseTranslateKeysOverrides` interface
-- `keysToCamelCase` const
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
 - `Logger` class
@@ -373,8 +351,6 @@ generated:
 - `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
-- `NumberParseMethods` class
-- `parseQueryString` const
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -402,14 +378,8 @@ generated:
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
-- `TNumberParseMethod` type
-- `toBoolean` const
-- `toCamelCase` const
 - `toDataUrl` const
-- `toFloat` const
-- `toInteger` const
 - `toQueryString` const
-- `toStringDecimal` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type

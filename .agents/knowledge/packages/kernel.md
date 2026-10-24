@@ -27,7 +27,7 @@ The package root (`src/index.ts`) re-exports four areas - base, common, helpers,
     re-exported either - the application base imports it straight from `@venizia/ignis-kernel/metadata`.
 - **common** (`src/common/index.ts`) - `constants`, `keys`, `types`. Binding keys (`CoreBindings`, `LocalStorageKeys`, see [Binding key namespaces](/conventions/binding-key-namespaces.md)), request/environment constants (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `HeaderConstants`, `Environments`, `App`), and shared types (`IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, and more).
 - **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, and the network layer: `NodeFetchNetworkRequest`, `NodeFetcher` - the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md). `SocketIOClientHelper` sits in the same directory but outside this barrel - see Peer dependencies below.
-- **utilities** - type guards and small helpers. The type guards `isDefined(value)` and `isString(value)` stay positional so narrowing works; everything else takes one options object: `isNumber`, `isObject`, `isValidDate`, `isInteger`, `isFloat` (`{ value }`), `isEditableTarget` (`{ target }`), `toInteger`, `toFloat` (`{ value, digits }`), `toBoolean`, `toStringDecimal` (`{ value, digits, localeFormat }`), `getNumberValue` (`{ input, method }` with `NumberParseMethods`), `toCamelCase`, `keysToCamelCase`, `toDataUrl` (`{ blob }`), `toQueryString` (`{ params }`), `parseQueryString` (`{ search }`). Plus `isBrowser()`, `generateUniqueId()` and the `INTL_0_DIGITS_FORMATTER` / `INTL_2_DIGITS_FORMATTER` formatters. `getRuntimeConfig({ key, buildTimeEnv, defaultValue })` reads the app's runtime config (`window.__APP_CONFIG__`, written when the preset image starts), else the build-time env the app passes.
+- **utilities** - type guards and small helpers. The type guards `isDefined(value)` and `isString(value)` stay positional so narrowing works; everything else takes one options object: `isNumber`, `isObject`, `isValidDate` (`{ value }`), `isEditableTarget` (`{ target }`), `toDataUrl` (`{ blob }`), `toQueryString` (`{ params }`). Plus `isBrowser()`. The number and string parsers and `parseQueryString` were removed (nothing used them; IGNIS has the helpers a project needs). `getRuntimeConfig({ key, buildTimeEnv, defaultValue })` reads the app's runtime config (`window.__APP_CONFIG__`, written when the preset image starts), else the build-time env the app passes.
 
 ## Layering rule
 
@@ -35,7 +35,7 @@ Kernel sits below the other framework packages in the [monorepo layout](/overvie
 
 ## Peer dependencies
 
-Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has a single runtime dependency: `lodash`.
+Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has no runtime dependency.
 
 ## Build, test, size
 

@@ -19,7 +19,3 @@ export const toQueryString = (opts: { params: Record<string | symbol, unknown> }
 
   return new URLSearchParams(normalized).toString();
 };
-
-export const parseQueryString = (opts: { search: string }): Record<string, string> => {
-  return Object.fromEntries(new URLSearchParams(opts.search));
-};
