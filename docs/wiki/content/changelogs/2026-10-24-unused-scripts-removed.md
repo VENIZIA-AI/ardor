@@ -18,7 +18,7 @@ packages: []
 - **Unused scripts deleted.** `.github/scripts/test-release.ts` (no caller), `docs/wiki/scripts/docs-rebuild.sh` (no reference) and the wiki's `docs:check-sidebar` script (the build runs the check itself) are gone.
 - **Unused targets deleted.** `make all` (an alias of `make build`), `make update` and `make update-all` are gone; the release workflow already runs `scripts/refresh-catalog.ts` and `force-update` itself, and `make update-<pkg>` stays for one package.
 - **`make lint-fix` covers the wiki.** It now runs `lint-fix-wiki` next to the packages, as `make lint-all` already ran `lint-wiki`.
-- **Atlas smoke in CI.** `make atlas-smoke`, which proves the atlas serves this checkout over MCP, is a step of the source gates in `ci.yml`.
+- **Atlas smoke in CI.** `make atlas-smoke`, which proves the atlas serves this checkout over MCP, is a step of the build job in `ci.yml`, after the build, because its symbol lookup reads the built types.
 
 ## Who is affected
 

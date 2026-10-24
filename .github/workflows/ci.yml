@@ -64,10 +64,6 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make wiki-links-check
 
-      - name: Atlas smoke
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: make atlas-smoke
-
   build-and-test:
     name: Build, test and lint
     runs-on: ubuntu-26.04
@@ -142,6 +138,11 @@ jobs:
       - name: Wiki anchors
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make wiki-anchors-check
+
+      # The symbol lookup reads the built types, so this step needs the build.
+      - name: Atlas smoke
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make atlas-smoke
 
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
