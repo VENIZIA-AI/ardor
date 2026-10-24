@@ -9,9 +9,10 @@
 # (`npm version` and force-update.sh change values in place). bun.lock, dist and node_modules are never reached.
 # Paths are ignored through .gitignore: `ignorePatterns` resolve against .configs/, not the project.
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs,json,jsonc,yml,yaml,css,html,vue}"
-# The tracked files that belong to no project make lints: CI and release workflows, the agent and VULCAN files, the
-# presets (templates and preset.json), and the examples.
-FILES_GLOBS := ".github/**/*.{ts,mts,json,yml,yaml}" ".agents/**/*.{ts,mts,json}" ".configs/*.{ts,mts,json}" "presets/**/*.{ts,tsx,mts,js,mjs,json,css,html}" "examples/**/*.{ts,mts,tsx,js,mjs,json,yml,yaml,css,html,vue}"
+# The tracked files that belong to no project make lints: the root package.json (bun fmt sorts its keys), CI and release
+# workflows, the agent and VULCAN files, the presets (templates and preset.json), and the examples (their package.json
+# included).
+FILES_GLOBS := "package.json" ".github/**/*.{ts,mts,json,yml,yaml}" ".agents/**/*.{ts,mts,json}" ".configs/*.{ts,mts,json}" "presets/**/*.{ts,tsx,mts,js,mjs,json,css,html}" "examples/**/*.{ts,mts,tsx,js,mjs,json,yml,yaml,css,html,vue}"
 # $(1) project dir; $(2) what oxlint and ESLint lint (default .); $(3) what bun fmt checks.
 LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs $(or $(2),.) && bun fmt --no-script --check $(or $(3),$(FMT_GLOB))
 FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs --fix $(or $(2),.) && bun fmt --no-script $(or $(3),$(FMT_GLOB))
@@ -19,19 +20,19 @@ FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.confi
 LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
-.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-manifests lint-files lint-fix lint-fix-packages \
-        lint-fix-wiki fmt-manifests fmt-files \
+.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-files lint-fix lint-fix-packages lint-fix-wiki \
+        fmt-files \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages
 	@echo "✅ Linting completed."
 
-lint-all: lint-packages lint-wiki lint-scripts lint-manifests lint-files
+lint-all: lint-packages lint-wiki lint-scripts lint-files
 	@echo "✅ All linting completed."
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-lint-fix: lint-fix-packages lint-fix-wiki fmt-manifests fmt-files
+lint-fix: lint-fix-packages lint-fix-wiki fmt-files
 
 lint-fix-packages: $(FIX_PKG_TARGETS)
 
@@ -51,15 +52,6 @@ lint-wiki:
 
 lint-fix-wiki:
 	@$(call FIX_PROJECT,docs/wiki)
-
-# The package.json files outside the projects make lints (the packages and the wiki format their own): the root one, and
-# the examples'. bun fmt sorts their keys, with the same bunfig.toml.
-lint-manifests:
-	@echo "🔍 Linting the root and example package.json..."
-	@bun fmt --no-script --check "package.json" "examples/*/package.json"
-
-fmt-manifests:
-	@bun fmt --no-script "package.json" "examples/*/package.json"
 
 lint-files:
 	@echo "🔍 Linting the files outside the projects..."
