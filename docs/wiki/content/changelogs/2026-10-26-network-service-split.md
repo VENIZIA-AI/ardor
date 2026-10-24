@@ -20,6 +20,8 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 - **The response reader is its own class.** `ResponseReader.read`, `convert` and `toError` read a response by the request type, take the total from `Content-Range` and build the `ApplicationError` of a failed one; `ResponseReader.ERROR_ROOT_KEY` is the key the data source auth shares. `doRequest` keeps its signature, now typed `Promise<INetworkResponse<TResult>>` (a new type in `common/types.ts`, the same fields), and `convertResponse` stays on the service as a delegate.
 - **The auth recovery is its own class.** `AuthRecovery` holds the refresh shared by every 401 in flight and the rule for which paths recover. The service builds one with callbacks that call its protected hooks when they run, so a subclass that overrides `refreshToken`, `onAuthFailure` or `isNoAuthPath` keeps working. `refresh()` stays public on the service as a delegate and `authRecovery` stays a protected field.
 - **The list filter builder is its own helper.** `ListFilterBuilder.build({ params })` turns react-admin's list params into the IGNIS filter, the query and the list extras, and `ListFilterBuilder.extractQueryParams` replaces the `filter.params` loop that `getOne` and `getMany` repeated. `DefaultRestDataProvider.buildListFilter` stays a protected hook and delegates to it. Admin gains `ListFilterBuilder` in its public surface.
+- **One `request()` for the data provider.** The ten `DefaultRestDataProvider` methods each repeated a `getRequestProps` call and a `doRequest` call; they now call the protected `request({ resource, type, method, paths?, body?, bodyType?, query?, extra?, headers?, requestCountData? })` (typed `IRestRequestOptions`, new). Headers named in `headers` win over the computed ones. Override `request()` to move every method, `send()` included, to another transport.
+- **`requestList` replaces `getListHelper`.** The list GET, with the extras a route answered as `meta.extra`, is the protected `requestList({ resource, type, queryKey, filter, extra? })`. `CountRestDataProvider` overrides it and asks `request()` for `/count` without extras, so its `withoutExtraHeader` workaround is gone.
 
 ## Who is affected
 
@@ -37,5 +39,19 @@ The protected methods `isFileList`, `encodeFormValue` and `appendFormDataValue` 
 The protected method `parseFilenameFromContentDisposition` is gone from `DefaultNetworkRequestService`; the file name of a response is read by `ResponseReader`, which keeps the same rules (`filename*` before a quoted, before a bare `filename`).
 
 The private members `canRecover` and `refreshing` are gone from `DefaultNetworkRequestService`, which matters only to code that reached them through a cast.
+
+`getListHelper` is gone from `DefaultRestDataProvider` and `CountRestDataProvider`: it was public, took a `requestProps` argument, and is now the protected `requestList` with `extra` in its place.
+
+```ts no-check
+// Before
+override getListHelper(opts: { resource; type; queryKey; filter; requestProps }) { ... }
+
+// After
+protected override requestList(opts: { resource; type; queryKey; filter; extra? }) { ... }
+```
+
+A subclass that overrode the ten methods one by one to change the transport can override `request()` instead.
+
+The `/count` request of `CountRestDataProvider` now builds its own headers, so it has its own `x-request-id`; it shared the list's.
 
 The rest of the breaking parts of this series are listed here as they land.

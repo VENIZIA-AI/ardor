@@ -217,7 +217,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (30)
+### `@venizia/ardor-admin` (31)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -232,6 +232,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
+- `IRestRequestOptions` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
@@ -252,7 +253,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (195)
+### `@venizia/ardor` (196)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -333,6 +334,7 @@ generated:
 - `IRequestOptions` interface
 - `IRequestProps` interface
 - `IRestDataProviderOptions` interface
+- `IRestRequestOptions` interface
 - `isBrowser` const
 - `isDefined` const
 - `isEditableTarget` const
