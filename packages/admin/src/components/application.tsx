@@ -111,7 +111,8 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return Features.mount({ features, resources, routes });
   }, [features, resources, routes]);
 
-  const adminProps = React.useMemo(() => {
+  // Resolved once per container: the props below are a new object on every render.
+  const providers = React.useMemo(() => {
     const dataProvider = container.get<IDataProvider>({
       key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
     });
@@ -125,17 +126,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       key: CoreBindings.DEFAULT_I18N_PROVIDER,
     });
 
-    return {
-      dataProvider,
-      ...(authProvider ? { authProvider } : {}),
-      i18nProvider,
-      ...reactAdminProps,
-    };
-  }, [container, reactAdminProps]);
+    return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider };
+  }, [container]);
+
+  const adminProps = { ...providers, ...reactAdminProps };
 
   const isMessagesReady = useFeatureMessagesReady({
     features,
-    i18nProvider: adminProps.i18nProvider,
+    i18nProvider: providers.i18nProvider,
   });
 
   if (!isMessagesReady) {
