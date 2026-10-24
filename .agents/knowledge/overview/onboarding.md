@@ -80,6 +80,6 @@ graph edges - served both as files under `.agents/knowledge/` and over MCP by `a
 Nothing lives in two places. `.agents/` is what agents read; `docs/wiki/` is the human-facing
 VitePress site. Source code is the ground truth for both - when prose and code disagree, the code
 wins and the prose is a bug. The wiki and the bundle serve different audiences and are never
-conflated. When you change a fact in the code, update the matching concept (and `log.md`) in the
+conflated. When you change a fact in the code, update the matching concept in the
 same change - that is what keeps this playbook, and everything it points to, trustworthy for the
 next agent who reads it first.

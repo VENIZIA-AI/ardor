@@ -58,8 +58,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 Only `.md` files are indexed, split into H2 and H3 chunks. Before every call the server fingerprints
 the markdown (file count, newest modification time, total bytes) and rebuilds the index when it
 moved, so an edited concept or wiki page is searchable on the next call - no restart, no generation
-step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page, and
-`log.md` lower still. IGNIS's index is built once per commit. `search` takes a `source` (`ardor` or
+step. Ranking is bm25 times an authority weight: a changelog chunk ranks below a canonical page. IGNIS's index is built once per commit. `search` takes a `source` (`ardor` or
 `ignis`) to narrow a query to one project, and `get` takes one only when two sources hold the same id.
 
 ## Tools

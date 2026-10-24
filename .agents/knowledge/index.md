@@ -21,7 +21,7 @@ Curated knowledge about the ARDOR framework, for agents and for humans. Start he
 re-deriving the project from the source each session.
 
 **The code is ground truth.** These concepts are curated prose over the code. When the two disagree,
-the code wins and the concept is a bug - fix it and note it in [log](/log.md).
+the code wins and the concept is a bug - fix it.
 
 Served over MCP by `atlas`, registered per machine by `vulcan sync`: `search` with
 `corpus: "knowledge"` finds a concept, `get` reads one by the id a search hit returned.
@@ -119,7 +119,7 @@ Generated from source - never hand-edited, run `make okf-gen`:
 
 ## Maintaining this bundle
 
-Change a fact in the code, update its concept in the same change, and append to [log](/log.md).
+Change a fact in the code and update its concept in the same change.
 A bundle that drifts is worse than none, because it is believed.
 
 `make okf-check` validates it: frontmatter, links, docs style, one concept per package and example,
