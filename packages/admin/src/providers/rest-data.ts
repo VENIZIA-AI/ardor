@@ -206,7 +206,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  getList<RecordType extends RaRecord = AnyType>(opts: {
+  async getList<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetListParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetListResult<RecordType>> {
@@ -237,7 +237,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  getOne<RecordType extends RaRecord = AnyType>(opts: {
+  async getOne<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
   }): Promise<GetOneResult<RecordType>> {
@@ -270,7 +270,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  getMany<RecordType extends RaRecord = AnyType>(opts: {
+  async getMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
   }): Promise<GetManyResult<RecordType>> {
@@ -310,7 +310,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  getManyReference<RecordType extends RaRecord = AnyType>(opts: {
+  async getManyReference<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: GetManyReferenceParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetManyReferenceResult<RecordType>> {
@@ -345,7 +345,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  update<RecordType extends RaRecord = AnyType>(opts: {
+  async update<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: UpdateParams;
   }): Promise<UpdateResult<RecordType>> {
@@ -370,7 +370,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  updateMany<RecordType extends RaRecord = AnyType>(opts: {
+  async updateMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: UpdateManyParams;
   }): Promise<UpdateManyResult<RecordType>> {
@@ -411,7 +411,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
   }
 
-  create<
+  async create<
     RecordType extends Omit<RaRecord, 'id'> = AnyType,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
   >(opts: { resource: TResource; params: CreateParams }): Promise<CreateResult<ResultRecordType>> {
@@ -436,7 +436,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  delete<RecordType extends RaRecord = AnyType>(opts: {
+  async delete<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: DeleteParams<RecordType>;
   }): Promise<DeleteResult<RecordType>> {
@@ -460,7 +460,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return response;
   }
 
-  deleteMany<RecordType extends RaRecord = AnyType>(opts: {
+  async deleteMany<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     params: DeleteManyParams<RecordType>;
   }): Promise<DeleteManyResult<RecordType>> {
@@ -494,7 +494,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
   }
 
-  send<ReturnType = AnyType>(opts: {
+  async send<ReturnType = AnyType>(opts: {
     resource: TResource;
     params: ISendParams;
   }): Promise<ISendResponse<ReturnType>> {

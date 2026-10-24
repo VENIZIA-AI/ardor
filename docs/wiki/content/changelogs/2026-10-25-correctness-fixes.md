@@ -18,6 +18,8 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 - **An async `getAppInfo`.** `preConfigure` now waits for it, so `APPLICATION_INFO` holds the info and not a promise. The signature is unchanged and a synchronous `getAppInfo` keeps `preConfigure` synchronous.
 - **A response body that is not an object.** `convertResponse` with `requestCountData=1` throws the documented error for `null` and for a primitive body, instead of a `TypeError`.
 - **Errors are no longer swallowed.** A failed token refresh, a failing `onAuthFailure`, an invalid `noAuthPathRegex` pattern, a stored token that is not JSON, and a JWT payload that cannot be decoded are now logged. The last two log the error name only, because the message of a JSON parse error quotes the text it could not parse, which is the token.
+- **Data-provider methods reject.** `getList`, `getOne`, `getMany`, `getManyReference`, `create`, `update`, `updateMany`, `delete`, `deleteMany` and `send` of the REST data provider are `async`: a failure while the request is being built is a rejected promise, as react-admin expects, and no longer a synchronous throw.
+- **`CountRestDataProvider` keeps the list extras.** The `extra` a list route answers reaches the result as `meta.extra`, and the `x-request-extra` header built for the list is no longer sent to the `/count` route.
 
 ## Who is affected
 
