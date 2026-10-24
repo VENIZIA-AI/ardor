@@ -42,7 +42,7 @@ Nothing lives in two places. Every piece of project information has exactly one 
 - **`docs/wiki/`** - the human-facing VitePress site: guides, references, changelogs.
 
 Source code is the ground truth for both. When prose and code disagree, the code wins and the prose
-is a bug (P-03). The wiki and the bundle are separate audiences; never conflate them (V-C-13).
+is a bug (V-P-04). The wiki and the bundle are separate audiences; never conflate them (V-C-13).
 
 There are **no per-package agent files** - a package carries no local `CLAUDE.md`. Read its concept
 in the knowledge bundle instead.
@@ -66,8 +66,8 @@ wiki, the changelogs and this bundle:
 
 The full contract, and what goes stale, is in [Atlas MCP server](.agents/knowledge/reference/atlas-mcp.md).
 
-Maintaining it is rule P-03: change a fact in the code, update the concept and `log.md` in the same
-change. Generated content comes from `make okf-gen`; `make okf-check-strict` validates and is not a commit
+Maintaining it is rule V-P-04: change a fact in the code, update the concept in the same change.
+Generated content (P-03) comes from `make okf-gen`; `make okf-check-strict` validates and is not a commit
 gate. The `knowledge-sync` skill (shipped by VULCAN) re-verifies the bundle against the code
 periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-areas.md).
 
