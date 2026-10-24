@@ -76,7 +76,9 @@ export const toInteger = (opts: { value: unknown }): number => {
     return 0;
   }
 
-  return Number.parseInt(String(value).replace(/,/g, ''), 10);
+  const parsed = Number.parseInt(String(value).replace(/,/g, ''), 10);
+
+  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 /** Thousands separators are stripped; anything that is not a number reads as `0`. */
@@ -87,7 +89,9 @@ export const toFloat = (opts: { value: unknown; digits?: number }): number => {
     return 0;
   }
 
-  return round(Number.parseFloat(String(value).replace(/,/g, '')), digits);
+  const parsed = Number.parseFloat(String(value).replace(/,/g, ''));
+
+  return Number.isNaN(parsed) ? 0 : round(parsed, digits);
 };
 
 export const toBoolean = (opts: { value: unknown }): boolean => {
@@ -134,7 +138,7 @@ export const toStringDecimal = (opts: {
   }).format(number);
 };
 
-/** Thousands separators and dots are stripped before parsing, so `'1.234'` reads as `1234`. */
+/** Commas are stripped before parsing. A float keeps its dot as the decimal point; an integer strips dots too, so `'1.234'` reads as `1234`. */
 export const getNumberValue = (opts: { input: string; method?: TNumberParseMethod }): number => {
   const { input, method = NumberParseMethods.INT } = opts;
 
@@ -142,7 +146,8 @@ export const getNumberValue = (opts: { input: string; method?: TNumberParseMetho
     return 0;
   }
 
-  const raw = typeof input === 'string' ? input.replace(/,|\./gi, '') : input;
+  const separators = method === NumberParseMethods.FLOAT ? /,/g : /,|\./g;
+  const raw = typeof input === 'string' ? input.replace(separators, '') : input;
 
   switch (method) {
     case NumberParseMethods.FLOAT: {
