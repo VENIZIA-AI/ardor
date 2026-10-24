@@ -20,16 +20,16 @@ import {
 type TCommand = (payload: ISendParams) => unknown;
 
 const COMMANDS: Record<string, TCommand> = {
-  products: (payload) => {
+  products: payload => {
     const rows = [
       { id: 1, name: 'Espresso', price: 30000 },
       { id: 2, name: 'Latte', price: 45000 },
       { id: 3, name: 'Cold brew', price: 50000 },
     ];
     const id = payload.id;
-    return id === undefined ? rows : rows.find((row) => row.id === Number(id));
+    return id === undefined ? rows : rows.find(row => row.id === Number(id));
   },
-  'auth/login': (payload) => ({
+  'auth/login': payload => ({
     userId: 7,
     token: { value: `ipc-${String(payload.body?.username)}`, type: 'Bearer' },
   }),

@@ -22,7 +22,7 @@ export class FeatureMessages {
   /** Whether some feature in the list loads this locale lazily. */
   static hasLoader(opts: { features: Array<TFeature>; locale: string }): boolean {
     const { features, locale } = opts;
-    return features.some((feature) => typeof feature.messages?.[locale] === 'function');
+    return features.some(feature => typeof feature.messages?.[locale] === 'function');
   }
 
   /** Whether a lazy bundle for the locale is still unloaded. */
@@ -45,7 +45,7 @@ export class FeatureMessages {
 
     return FeatureMessages.combine({
       locale,
-      bundles: this.opts.features.map((feature) => {
+      bundles: this.opts.features.map(feature => {
         const messages = feature.messages?.[locale];
         return {
           feature: feature.name,
@@ -65,7 +65,7 @@ export class FeatureMessages {
     }
 
     const bundles = await Promise.all(
-      this.opts.features.map(async (feature) => {
+      this.opts.features.map(async feature => {
         const messages = feature.messages?.[locale];
         return {
           feature: feature.name,

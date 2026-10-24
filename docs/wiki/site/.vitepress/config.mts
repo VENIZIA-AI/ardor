@@ -118,6 +118,39 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-24',
+        collapsed: true,
+        items: [
+          { text: 'ARDOR 0.4.0 follows IGNIS 0.4.0', link: '/changelogs/2026-10-24-ardor-0-4-0' },
+        ],
+      },
+      {
+        text: '2026-10-23',
+        collapsed: true,
+        items: [
+          {
+            text: 'The repository formats with bun fmt',
+            link: '/changelogs/2026-10-23-format-with-bun-fmt',
+          },
+          {
+            text: 'No project keeps a formatter config any more',
+            link: '/changelogs/2026-10-23-no-formatter-config',
+          },
+          {
+            text: 'One code style, set in one bunfig.toml',
+            link: '/changelogs/2026-10-23-one-code-style',
+          },
+          {
+            text: 'The keys of package.json are sorted and checked',
+            link: '/changelogs/2026-10-23-package-json-sorted',
+          },
+          {
+            text: 'A container stops when a required variable is missing',
+            link: '/changelogs/2026-10-23-runtime-config-required-env',
+          },
+        ],
+      },
+      {
         text: '2026-10-22',
         collapsed: true,
         items: [
@@ -525,7 +558,7 @@ const config = defineConfig({
       chunkSizeWarningLimit: 3500,
       rollupOptions: {
         output: {
-          manualChunks: (id) => {
+          manualChunks: id => {
             if (id.includes('node_modules')) {
               // Isolate mermaid (+ its heavy deps) - large and only needed on pages with diagrams.
               if (

@@ -21,7 +21,7 @@ const lint = async (): Promise<number> => {
   return run({ command: ['bun', 'run', '--filter', './examples/*', 'lint'] });
 };
 
-// oxlint and oxfmt do not typecheck, and no example is in `make build-all`.
+// oxlint and bun fmt do not typecheck, and no example is in `make build-all`.
 const typecheck = async (): Promise<number> => {
   console.log('🔍 Typechecking all examples...');
   return run({ command: ['bun', 'run', '--filter', './examples/*', 'typecheck'] });

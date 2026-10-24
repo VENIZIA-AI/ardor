@@ -174,7 +174,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
 
   test.each(['VITE_API_SECRET', 'VITE_DB_PASSWORD', 'VITE_AUTH_TOKEN', 'VITE_X_TOKEN_Y'])(
     '%s stops the container and writes nothing',
-    (name) => {
+    name => {
       const { code, stderr, target } = run({
         path,
         env: { VITE_API_URL: 'https://api.example.com', [name]: 'do-not-publish' },
@@ -205,7 +205,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     const { target } = run({
       path,
       env: { VITE_NEW: 'new' },
-      prepare: (file) => writeFileSync(file, 'window.__APP_CONFIG__ = { VITE_OLD: "old" };\n'),
+      prepare: file => writeFileSync(file, 'window.__APP_CONFIG__ = { VITE_OLD: "old" };\n'),
     });
 
     expect(evaluate(target).config).toEqual({ VITE_NEW: 'new' });
@@ -216,7 +216,7 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     const { code, target } = run({
       path,
       env: { VITE_API_URL: 'https://api.example.com' },
-      prepare: (file) => {
+      prepare: file => {
         writeFileSync(file, original);
         chmodSync(file, 0o444);
       },
@@ -224,5 +224,194 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
 
     expect(code).toBe(0);
     expect(readFileSync(target, 'utf8')).toBe(original);
+  });
+
+  describe('APP_REQUIRED_ENV', () => {
+    const FATAL = '[runtime-config] FATAL: required variable(s) missing or empty:';
+
+    test.each([
+      ['unset', {}],
+      ['empty', { APP_REQUIRED_ENV: '' }],
+      ['only separators and spaces', { APP_REQUIRED_ENV: ' , ,, ' }],
+    ])("nothing declared (%s) is today's behavior", (_name, declared) => {
+      const { code, target } = run({ path, env: { VITE_A: 'one', ...declared } });
+
+      expect(code).toBe(0);
+      expect(evaluate(target).config).toEqual({ VITE_A: 'one' });
+    });
+
+    test('every declared variable present: the container starts', () => {
+      const { code, target } = run({
+        path,
+        env: {
+          APP_REQUIRED_ENV: 'VITE_API_URL,VITE_MAPS_KEY',
+          VITE_API_URL: 'https://api.example.com',
+          VITE_MAPS_KEY: 'public-key',
+        },
+      });
+
+      expect(code).toBe(0);
+      expect(evaluate(target).config).toEqual({
+        VITE_API_URL: 'https://api.example.com',
+        VITE_MAPS_KEY: 'public-key',
+      });
+    });
+
+    test('a missing variable stops the container, names it and writes nothing', () => {
+      const { code, stderr, target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_API_URL,VITE_X', VITE_X: 'present' },
+      });
+
+      expect(code).toBe(1);
+      expect(stderr).toContain(`${FATAL} VITE_API_URL`);
+      expect(stderr).not.toContain('VITE_X,');
+      expect(existsSync(target)).toBe(false);
+    });
+
+    test('every missing variable is listed at once, in the order declared', () => {
+      const { code, stderr } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_Z,VITE_OK,VITE_A,VITE_Z', VITE_OK: 'yes' },
+      });
+
+      expect(code).toBe(1);
+      expect(stderr).toContain(`${FATAL} VITE_Z, VITE_A\n`);
+    });
+
+    test('an empty value counts as missing', () => {
+      const { code, stderr, target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_API_URL', VITE_API_URL: '' },
+      });
+
+      expect(code).toBe(1);
+      expect(stderr).toContain(`${FATAL} VITE_API_URL`);
+      expect(existsSync(target)).toBe(false);
+    });
+
+    test('spaces around a name, empty entries and a trailing comma are ignored', () => {
+      const { code, target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: ' VITE_A , ,VITE_B,', VITE_A: '1', VITE_B: '2' },
+      });
+
+      expect(code).toBe(0);
+      expect(evaluate(target).config).toEqual({ VITE_A: '1', VITE_B: '2' });
+    });
+
+    test('a name outside VITE_ can be required, and is still not published', () => {
+      const ok = run({
+        path,
+        env: {
+          APP_REQUIRED_ENV: 'API_UPSTREAM,VITE_A',
+          API_UPSTREAM: 'http://api:3000',
+          VITE_A: '1',
+        },
+      });
+      const missing = run({ path, env: { APP_REQUIRED_ENV: 'API_UPSTREAM,VITE_A', VITE_A: '1' } });
+
+      expect(ok.code).toBe(0);
+      expect(evaluate(ok.target).config).toEqual({ VITE_A: '1' });
+      expect(missing.code).toBe(1);
+      expect(missing.stderr).toContain(`${FATAL} API_UPSTREAM\n`);
+    });
+
+    test('a lowercase or underscore-led name is a valid name', () => {
+      const { code } = run({
+        path,
+        env: { APP_REQUIRED_ENV: '_private,lower_case', _private: 'a', lower_case: 'b' },
+      });
+
+      expect(code).toBe(0);
+    });
+
+    test('no value is printed, the required ones, the others, or the list itself', () => {
+      const { code, stdout, stderr } = run({
+        path,
+        env: {
+          APP_REQUIRED_ENV: 'VITE_PRESENT,VITE_MISSING',
+          VITE_PRESENT: 'value-that-must-not-print',
+          OTHER: 'another-value-that-must-not-print',
+        },
+      });
+
+      expect(code).toBe(1);
+      expect(`${stdout}${stderr}`).not.toContain('must-not-print');
+      expect(stderr).not.toContain('APP_REQUIRED_ENV=');
+    });
+
+    test.each([
+      'VITE-A',
+      '1VITE',
+      'VITE_A=1',
+      'VITE_*',
+      'A B',
+      '$(touch /tmp/runtime-config-required-pwned)',
+    ])('a malformed entry (%s) stops the container without echoing it', entry => {
+      const { code, stderr, target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: `VITE_A,${entry}`, VITE_A: 'one' },
+      });
+
+      expect(code).toBe(1);
+      expect(stderr).toContain(
+        '[runtime-config] FATAL: APP_REQUIRED_ENV entry 2 is not a variable name',
+      );
+      expect(stderr).not.toContain(entry);
+      expect(existsSync(target)).toBe(false);
+      expect(existsSync('/tmp/runtime-config-required-pwned')).toBe(false);
+    });
+
+    test('a missing variable and a secret-looking one are both reported', () => {
+      const { code, stderr } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_API_URL', VITE_AUTH_TOKEN: 'do-not-publish' },
+      });
+
+      expect(code).toBe(1);
+      expect(stderr).toContain(`${FATAL} VITE_API_URL`);
+      expect(stderr).toContain('VITE_AUTH_TOKEN looks like a secret');
+      expect(stderr).not.toContain('do-not-publish');
+    });
+
+    test('the list is never published', () => {
+      const { target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_A', VITE_A: '1' },
+      });
+
+      expect(evaluate(target).config).toEqual({ VITE_A: '1' });
+    });
+
+    test('a failed check leaves an earlier config.js as it was', () => {
+      const original = 'window.__APP_CONFIG__ = { VITE_OLD: "old" };\n';
+      const { code, target } = run({
+        path,
+        env: { APP_REQUIRED_ENV: 'VITE_NEW' },
+        prepare: file => writeFileSync(file, original),
+      });
+
+      expect(code).toBe(1);
+      expect(readFileSync(target, 'utf8')).toBe(original);
+    });
+
+    test.skipIf(process.getuid?.() === 0)(
+      'a read-only config.js (a mount) is kept and the declared variables are not checked',
+      () => {
+        const original = 'window.__APP_CONFIG__ = { VITE_MOUNTED: "from the operator" };\n';
+        const { code, target } = run({
+          path,
+          env: { APP_REQUIRED_ENV: 'VITE_API_URL' },
+          prepare: file => {
+            writeFileSync(file, original);
+            chmodSync(file, 0o444);
+          },
+        });
+
+        expect(code).toBe(0);
+        expect(readFileSync(target, 'utf8')).toBe(original);
+      },
+    );
   });
 });

@@ -5,35 +5,28 @@
   "description": "ARDOR - frontend application framework for the VENIZIA family, built on IGNIS inversion of control.",
   "keywords": [
     "ardor",
-    "frontend",
+    "dependency-injection",
     "framework",
+    "frontend",
+    "ignis",
+    "monorepo",
     "react",
     "react-admin",
-    "ignis",
-    "venizia",
-    "dependency-injection",
-    "monorepo"
+    "venizia"
   ],
   "homepage": "https://ardor.venizia.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VENIZIA-AI/ardor.git"
-  },
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "VENIZIA AI Developer",
     "email": "developer@venizia.ai",
     "url": "https://venizia.ai"
   },
-  "license": "MIT",
-  "engines": {
-    "bun": ">=1.4.3"
-  },
-  "scripts": {
-    "force-update": "bun run --filter \"@venizia/*\" force-update",
-    "docs:dev": "bun run --filter \"@venizia/ardor-docs\" docs:dev"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git"
   },
   "workspaces": {
     "packages": [
@@ -52,19 +45,18 @@
       "@types/lodash": "^4.17.27",
       "@types/react": "^19",
       "@types/react-dom": "^19",
-      "@venizia/dev-configs": "0.3.6",
-      "@venizia/ignis-boot": "0.3.6",
-      "@venizia/ignis-connectors": "0.3.6",
-      "@venizia/ignis-filter": "0.3.6",
-      "@venizia/ignis-helpers": "0.3.6",
-      "@venizia/ignis-inversion": "0.3.7",
-      "@venizia/ignis-kernel": "0.3.6",
+      "@venizia/dev-configs": "0.4.0",
+      "@venizia/ignis-boot": "0.4.0",
+      "@venizia/ignis-connectors": "0.4.0",
+      "@venizia/ignis-filter": "0.4.0",
+      "@venizia/ignis-helpers": "0.4.0",
+      "@venizia/ignis-inversion": "0.4.0",
+      "@venizia/ignis-kernel": "0.4.0",
       "@vitejs/plugin-react": "^6.1.2",
       "class-variance-authority": "^0.7.1",
       "clsx": "^2.1.1",
       "eslint": "^10.13.0",
       "lodash": "^4.18.1",
-      "oxfmt": "0.74.0",
       "oxlint": "1.89.0",
       "oxlint-tsgolint": "7.0.2004",
       "ra-core": "^5.15.5",
@@ -83,12 +75,18 @@
       "vite": "^8.3.5"
     }
   },
+  "scripts": {
+    "force-update": "bun run --filter \"@venizia/*\" force-update",
+    "docs:dev": "bun run --filter \"@venizia/ardor-docs\" docs:dev"
+  },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.3.10",
-    "oxfmt": "catalog:",
+    "@venizia/vulcan": "0.3.12",
     "playwright-core": "1.64.1",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "bun": ">=1.4.3"
   }
 }

@@ -14,7 +14,7 @@ import { createAppDispatch } from '@/hooks/redux/use-app-dispatch';
 import { createAppSelectors } from '@/hooks/redux/use-app-selector';
 
 const wait = ({ ms }: { ms: number }): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
 };
@@ -476,11 +476,11 @@ const counterSlice = createSlice({
   name: 'counter',
   initialState: initialCounterState,
   reducers: {
-    increment: (state) => {
+    increment: state => {
       state.count += 1;
       state.recordedActions.push('increment');
     },
-    decrement: (state) => {
+    decrement: state => {
       state.count -= 1;
       state.recordedActions.push('decrement');
     },
@@ -584,7 +584,7 @@ const selectorSlice = createSlice({
   name: 'selectorSlice',
   initialState: initialSelectorState,
   reducers: {
-    bumpTick: (state) => {
+    bumpTick: state => {
       state.tick += 1;
     },
     setTitle: (state, action: { payload: string }) => {

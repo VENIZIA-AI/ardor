@@ -12,6 +12,12 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-24 | [ARDOR 0.4.0 follows IGNIS 0.4.0](./2026-10-24-ardor-0-4-0) | Breaking Change |
+| 2026-10-23 | [The repository formats with bun fmt](./2026-10-23-format-with-bun-fmt) | Enhancement |
+| 2026-10-23 | [No project keeps a formatter config any more](./2026-10-23-no-formatter-config) | Enhancement |
+| 2026-10-23 | [One code style, set in one bunfig.toml](./2026-10-23-one-code-style) | Enhancement |
+| 2026-10-23 | [The keys of package.json are sorted and checked](./2026-10-23-package-json-sorted) | Enhancement |
+| 2026-10-23 | [A container stops when a required variable is missing](./2026-10-23-runtime-config-required-env) | New Feature |
 | 2026-10-22 | [Runtime config in the app preset, one image for every environment](./2026-10-22-preset-runtime-config) | New Feature |
 | 2026-10-21 | [An .env.example that matches the app, ignore files, and a sturdier image](./2026-10-21-preset-env-ignore-image) | Enhancement |
 | 2026-10-21 | [A feature library preset](./2026-10-21-preset-lib) | New Feature |

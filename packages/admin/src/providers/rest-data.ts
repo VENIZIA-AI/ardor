@@ -406,7 +406,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         paths: [resource],
         ...request,
       })
-      .then((rs) => {
+      .then(rs => {
         return { data: this.toAffectedIds({ rows: rs.data }) };
       });
   }
@@ -489,7 +489,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         paths: [resource],
         ...request,
       })
-      .then((rs) => {
+      .then(rs => {
         return { data: this.toAffectedIds({ rows: rs.data }) };
       });
   }

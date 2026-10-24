@@ -60,18 +60,18 @@ describe('Features.mount', () => {
       routes: [{ path: '/settings', element: null }],
     });
 
-    expect(mounted.resources.map((resource) => resource.name)).toEqual([
+    expect(mounted.resources.map(resource => resource.name)).toEqual([
       'dashboard',
       'stocks',
       'orders',
     ]);
-    expect(mounted.routes.map((route) => route.path)).toEqual(['/settings', '/stock-report']);
+    expect(mounted.routes.map(route => route.path)).toEqual(['/settings', '/stock-report']);
   });
 
   test('mounts features alone when the application declares no resources or routes', () => {
     const mounted = Features.mount({ features: [commerce] });
 
-    expect(mounted.resources.map((resource) => resource.name)).toEqual(['orders']);
+    expect(mounted.resources.map(resource => resource.name)).toEqual(['orders']);
     expect(mounted.routes).toEqual([]);
   });
 
@@ -105,7 +105,7 @@ describe('useFeatures', () => {
 
     const { result } = renderHook(() => useFeatures<TFeature<IMenuExtension>>(), { wrapper });
 
-    expect(result.current.flatMap((feature) => feature.menu.map((entry) => entry.id))).toEqual([
+    expect(result.current.flatMap(feature => feature.menu.map(entry => entry.id))).toEqual([
       'stocks',
       'orders',
     ]);

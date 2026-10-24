@@ -43,7 +43,7 @@ interface IRecordedSendCall {
 type TServer = ReturnType<typeof Bun.serve>;
 
 const delay = async ({ durationMs }: { durationMs: number }): Promise<void> => {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>(resolve => {
     setTimeout(() => {
       resolve();
     }, durationMs);

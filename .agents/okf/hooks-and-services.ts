@@ -4,7 +4,7 @@ const HOOK_DIRS = ['packages/react/src/hooks', 'packages/admin/src/hooks'];
 const SERVICE_DIRS = ['packages/kernel/src/base/services', 'packages/admin/src/services'];
 
 const toRow = (opts: { dir: string; names: string[] }): string => {
-  const names = opts.names.map((name) => `\`${name}\``).join(' · ') || '_(see source)_';
+  const names = opts.names.map(name => `\`${name}\``).join(' · ') || '_(see source)_';
   return `| \`${opts.dir}/\` | ${names} |`;
 };
 
@@ -20,8 +20,8 @@ export default defineRenderer({
   }),
   render: ({ context, facts }) => {
     const total = facts.hooks.reduce((sum, entry) => sum + entry.names.length, 0);
-    const hookRows = facts.hooks.map((entry) => toRow({ dir: entry.dir, names: entry.names }));
-    const serviceRows = facts.services.map((entry) =>
+    const hookRows = facts.hooks.map(entry => toRow({ dir: entry.dir, names: entry.names }));
+    const serviceRows = facts.services.map(entry =>
       toRow({ dir: entry.dir, names: entry.classes }),
     );
 

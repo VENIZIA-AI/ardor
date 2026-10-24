@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**80 targets.**
+**84 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -33,25 +33,29 @@ generated:
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
+| `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
+| `make fmt-manifests` | - | Sort the keys of the root and example package.json (part of lint-fix). |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
-| `make lint-admin` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts` | lint-packages, lint-wiki and lint-scripts. |
-| `make lint-ardor` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
-| `make lint-fix` | `lint-fix-packages` | lint-fix-<pkg> for every package. |
-| `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make lint-fix-ardor` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
+| `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-manifests lint-files` | lint-packages, lint-wiki and lint-scripts. |
+| `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
+| `make lint-files` | - | Format check of the files outside the projects: workflows, .agents, .configs, the presets. |
+| `make lint-fix` | `lint-fix-packages fmt-manifests fmt-files` | lint-fix-<pkg> for every package. |
+| `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
+| `make lint-fix-ardor` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
+| `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-packages` | `lint-fix-kernel lint-fix-react lint-fix-admin lint-fix-ardor` | lint-fix-<pkg> for every package. |
-| `make lint-fix-react` | - | Apply oxlint --fix, ESLint --fix and oxfmt to one package. |
-| `make lint-fix-wiki` | - | Apply the lint fixes and oxfmt to docs/wiki. |
-| `make lint-kernel` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-fix-react` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
+| `make lint-fix-wiki` | - | Apply the lint fixes and bun fmt to docs/wiki. |
+| `make lint-kernel` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
+| `make lint-manifests` | - | Check the keys of the root and example package.json (bun fmt sorts them). |
 | `make lint-packages` | `lint-kernel lint-react lint-admin lint-ardor` | lint-<pkg> for every package. |
-| `make lint-react` | - | oxlint + ESLint (naming-convention) + oxfmt check of one package. |
+| `make lint-react` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-scripts` | - | Format check + bun check type-check of scripts/. |
 | `make lint-wiki` | - | Lint docs/wiki and check its format. |
 | `make okf-check` | - | Check the knowledge bundle against OKF v0.2. |

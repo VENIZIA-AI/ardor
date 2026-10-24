@@ -20,7 +20,12 @@ TSC := $(BIN)/tsc
 TYPECHECK := bun check --no-pretty
 BUILD_TSCONFIG := .configs/builders/tsconfig.build.json
 
-FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs}"
+# The style is the [fmt] section of the root bunfig.toml: bun fmt finds it from this folder up. A bare `bun fmt`
+# also formats markdown, so the glob is always given: every type bun fmt supports except markdown, and it reaches
+# package.json, whose keys bun fmt sorts.
+# --no-script runs the formatter even if a package has an `fmt` script.
+FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs,json,jsonc,yml,yaml,css,html,vue}"
+BUN_FMT := bun fmt --no-script
 
 .PHONY: build typecheck clean rebuild lint lint-fix test size
 
@@ -51,12 +56,12 @@ rebuild: typecheck clean
 lint:
 	@$(BIN)/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings .
 	@$(BIN)/eslint -c .configs/lints/eslint.config.mjs .
-	@$(BIN)/oxfmt -c .configs/formatters/oxfmt.config.mts --check $(FMT_GLOB)
+	@$(BUN_FMT) --check $(FMT_GLOB)
 
 lint-fix:
 	@$(BIN)/oxlint -c .configs/lints/oxlint.config.mts --fix .
 	@$(BIN)/eslint -c .configs/lints/eslint.config.mjs --fix .
-	@$(BIN)/oxfmt -c .configs/formatters/oxfmt.config.mts $(FMT_GLOB)
+	@$(BUN_FMT) $(FMT_GLOB)
 
 # The test-only settings (B-08) are set here, in the test command, and the preload installs the package's DOM or
 # storage stub: a bare `bun test` inside a package skips both and may fail.

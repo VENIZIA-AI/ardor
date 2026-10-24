@@ -87,7 +87,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     // first. Checked here, never at decoration, so a hot reload that re-decorates a class is no error.
     ArtifactBindingKeys.assertNoDerivedCollision({
       caller: 'registerArtifacts',
-      entries: targets.flatMap((target) => {
+      entries: targets.flatMap(target => {
         const metadata = registry.getArtifactMetadata({ target });
         if (!metadata) {
           return [];
@@ -110,7 +110,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
 
       for (const entry of registry.getProvideMetadata({ target })) {
         this.bind({ key: entry.key })
-          .toProvider((container) => {
+          .toProvider(container => {
             const instance = container.get<Record<string | symbol, () => unknown>>({ key });
             return instance[entry.methodName]();
           })

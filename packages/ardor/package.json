@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -18,24 +18,29 @@
     "venizia"
   ],
   "homepage": "https://ardor.venizia.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
-    "directory": "packages/ardor"
-  },
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
   },
+  "license": "MIT",
   "author": {
     "name": "VENIZIA AI Developer",
     "email": "developer@venizia.ai",
     "url": "https://venizia.ai"
   },
-  "license": "MIT",
-  "engines": {
-    "bun": ">=1.4"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VENIZIA-AI/ardor.git",
+    "directory": "packages/ardor"
   },
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "dist",
+    "!/**/__tests__",
+    "!**/*.tsbuildinfo"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -57,20 +62,6 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
-  "vulcan": {
-    "presets": {
-      "app": "./dist/presets/app/preset.json",
-      "lib": "./dist/presets/lib/preset.json"
-    }
-  },
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "dist",
-    "!/**/__tests__",
-    "!**/*.tsbuildinfo"
-  ],
   "publishConfig": {
     "access": "public"
   },
@@ -83,14 +74,24 @@
     "@venizia/ardor-kernel": "workspace:*",
     "@venizia/ardor-react": "workspace:*"
   },
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "eslint": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "size-limit": "catalog:",
+    "tsc-alias": "catalog:",
+    "typescript": "catalog:"
+  },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
     "@tanstack/react-query": ">=5.104.5",
-    "@venizia/ignis-connectors": "^0.3.6",
-    "@venizia/ignis-filter": "^0.3.6",
-    "@venizia/ignis-helpers": "^0.3.6",
-    "@venizia/ignis-inversion": "^0.3.7",
-    "@venizia/ignis-kernel": "^0.3.6",
+    "@venizia/ignis-connectors": "^0.4.0",
+    "@venizia/ignis-filter": "^0.4.0",
+    "@venizia/ignis-helpers": "^0.4.0",
+    "@venizia/ignis-inversion": "^0.4.0",
+    "@venizia/ignis-kernel": "^0.4.0",
     "ra-core": ">=5.15.5",
     "ra-i18n-polyglot": ">=5.15.5",
     "react": ">=19.3.1",
@@ -107,17 +108,6 @@
     "socket.io-client": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@size-limit/preset-small-lib": "catalog:",
-    "@venizia/dev-configs": "catalog:",
-    "eslint": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
-    "oxlint-tsgolint": "catalog:",
-    "size-limit": "catalog:",
-    "tsc-alias": "catalog:",
-    "typescript": "catalog:"
   },
   "size-limit": [
     {
@@ -140,5 +130,14 @@
       ],
       "limit": "350 B"
     }
-  ]
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "vulcan": {
+    "presets": {
+      "app": "./dist/presets/app/preset.json",
+      "lib": "./dist/presets/lib/preset.json"
+    }
+  }
 }

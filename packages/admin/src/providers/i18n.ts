@@ -60,14 +60,14 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     let isBuilding = true;
 
     const i18nProvider = polyglotI18nProvider(
-      (locale) => {
+      locale => {
         if (isBuilding || !featureMessages.isPending({ locale })) {
           return this.composeMessages({ locale, messages: featureMessages.readNow({ locale }) });
         }
 
         return featureMessages
           .read({ locale })
-          .then((messages) => this.composeMessages({ locale, messages }));
+          .then(messages => this.composeMessages({ locale, messages }));
       },
       initialLocale,
       languages,

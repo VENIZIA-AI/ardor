@@ -24,18 +24,18 @@ describe('clean-install manifest', () => {
   test('a published package without a claim is refused', () => {
     expect(() =>
       assertEveryPackageClaimed({
-        claims: INSTALL_CLAIMS.filter((claim) => claim.package !== 'react'),
+        claims: INSTALL_CLAIMS.filter(claim => claim.package !== 'react'),
         directories: listPackageDirectories(),
       }),
     ).toThrow(/@venizia\/ardor-react.*no claim/);
   });
 
   test('rows come from the exports maps, patterns and JSON skipped', () => {
-    const specifiers = deriveInstallRows({ claims: INSTALL_CLAIMS }).map((row) => row.specifier);
+    const specifiers = deriveInstallRows({ claims: INSTALL_CLAIMS }).map(row => row.specifier);
 
     expect(specifiers).toContain('@venizia/ardor-kernel/repository');
     expect(specifiers).toContain('@venizia/ardor/socket-io');
-    expect(specifiers.some((specifier) => specifier.endsWith('package.json'))).toBe(false);
+    expect(specifiers.some(specifier => specifier.endsWith('package.json'))).toBe(false);
     expect(isCodeSubpath('./styles/*')).toBe(false);
   });
 

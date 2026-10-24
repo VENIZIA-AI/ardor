@@ -9,8 +9,8 @@ export default defineRenderer({
     context.source.exportedClasses({ dirs: PROVIDER_DIRS, suffix: 'Provider' }),
   render: ({ context, facts }) => {
     const total = facts.reduce((sum, entry) => sum + entry.classes.length, 0);
-    const rows = facts.map((entry) => {
-      const classes = entry.classes.map((name) => `\`${name}\``).join(' · ') || '_(see source)_';
+    const rows = facts.map(entry => {
+      const classes = entry.classes.map(name => `\`${name}\``).join(' · ') || '_(see source)_';
       return `| \`${entry.dir}/\` | ${classes} |`;
     });
 
@@ -19,7 +19,8 @@ export default defineRenderer({
       content:
         context.page.header({
           title: 'Providers catalog',
-          description: 'Every provider class the framework ships, by package directory (generated).',
+          description:
+            'Every provider class the framework ships, by package directory (generated).',
           resource: 'packages/admin/src/providers',
           tags: ['reference', 'providers', 'catalog'],
         }) +

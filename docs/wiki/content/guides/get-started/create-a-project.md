@@ -7,7 +7,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-Both commands need VULCAN 0.3.10 or newer. `bun x` fetches the latest release, so you have it unless you pinned an older one.
+Both commands need VULCAN 0.3.12 or newer: it writes the `bunfig.toml` that sets the format and sorts the `package.json` it generates (`--scope` for an app arrived in 0.3.11). `bun x` fetches the latest release, so you have it unless you pinned an older one.
 
 ## Initialize a New Monorepo
 
@@ -17,7 +17,9 @@ Pass each answer as a flag, and `init` asks nothing: `--project` (the monorepo f
 bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
 ```
 
-In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled. Then `vulcan sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan sync --agents claude,omp (or none)` for choosing later.
+To name the app's package with a scope, add `--scope @acme`: the package is `@acme/admin` and the folder stays `apps/admin`. Without the flag the package is named `admin`.
+
+In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled (the scope is an optional question, empty for none). Then `vulcan sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan sync --agents claude,omp (or none)` for choosing later.
 
 The command prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
 
@@ -34,12 +36,12 @@ The command generates the project folder `demo/`:
 ```text
 demo/
   package.json            workspaces, one catalog with every version
-  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore
+  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore  bunfig.toml
   .configs/vulcan.config.mts
   .agents/rules.md  .agents/vulcan.manifest.json  .agents/knowledge/{index.md,log.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  .env.example
-    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/{oxfmt.config.mts,.ignore}
+    .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/.ignore
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
     .configs/builders/docker-entrypoint.d/40-runtime-config.sh
     src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts
@@ -60,7 +62,8 @@ demo/
 - `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
 - `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
-- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for the formatter, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
+- `bunfig.toml` at the root of the monorepo holds the format of every file: its `[fmt]` section sets the print width, single quotes and arrow parentheses, and `devz lint` formats with `bun fmt`, which reads it from the app's folder up. There is no formatter config in the app.
+- `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for `bun fmt`, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
 - `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
 
@@ -112,6 +115,29 @@ At start the image writes `/config.js` from the container's `VITE_` variables, a
 
 In dev and in `vite build`, `config.js` is the empty `src/public/config.js`, so the app falls back to `.env`.
 
+#### Require variables
+
+By default a container starts whatever its environment holds, and an app with a missing value falls back to its build-time one. To refuse to start instead, list the variables the app cannot run without in `APP_REQUIRED_ENV`, in the app's Dockerfile:
+
+```dockerfile
+ENV APP_REQUIRED_ENV="VITE_API_URL,API_UPSTREAM"
+```
+
+```bash
+docker run --rm -e API_UPSTREAM=http://api:3000 admin
+# [runtime-config] FATAL: required variable(s) missing or empty: VITE_API_URL
+```
+
+| Rule | What it means |
+|---|---|
+| A comma-separated list | `VITE_API_URL,API_UPSTREAM`. Spaces around a name and empty entries are ignored. |
+| Unset or empty is missing | The container exits with code 1 and names every missing variable, in the order listed, once each. No `config.js` is written. |
+| Any variable name | The list is not limited to `VITE_` names, so `API_UPSTREAM` can be required. A name outside `VITE_` is still not published. |
+| No value is printed | Only names reach the message, so a secret cannot leak through a failed start. |
+| A bad entry stops the container | An entry that is not a variable name (letters, digits and `_`, not starting with a digit) exits with code 1 and gives its position in the list. |
+| Nothing listed, nothing checked | An unset or empty `APP_REQUIRED_ENV` keeps the start as it was. `-e APP_REQUIRED_ENV=...` overrides the list for one environment. |
+| A mounted `config.js` is not checked | A read-only file mounted over `config.js` is kept as supplied, and the variables are not checked. |
+
 ### Expected API
 
 The app has no sign-in and expects one route of the backend: `GET /api/hello` answering `{ "message": "..." }`, which an IGNIS app made from its preset has. To use your own resources, add them in `src/main.tsx` (`resources`). For sign-in, see [Add sign-in](../tutorials/add-sign-in).
@@ -124,9 +150,9 @@ To add an admin to a monorepo that already exists (for example one created with 
 bun x @venizia/vulcan add --preset ardor --app web --frontend-dir apps --api api
 ```
 
-`--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
+`--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. `--scope @acme` names the package `@acme/web` and leaves the folder `apps/web`. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
-The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.3.6 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.4.0 or newer, the release whose `devz` formats with `bun fmt`): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
 
 ## Add a Feature Library
 
@@ -144,7 +170,7 @@ It creates `libs/merchant` as the package `@acme/merchant`:
 libs/merchant/
   package.json     name, exports ".", imports #src/*, the scripts, catalog: versions
   tsconfig.json
-  .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/oxfmt.config.mts
+  .configs/lints/{oxlint.config.mts,eslint.config.mjs}  .configs/formatters/.ignore
   src/index.ts  src/feature.ts  src/feature.test.ts
 ```
 

@@ -114,7 +114,7 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
       publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
       changedFiles: countChangedSinceRelease({ name }),
-      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter((dep) =>
+      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter(dep =>
         dep.startsWith('@venizia/ardor'),
       ),
     });
@@ -199,7 +199,7 @@ const resolveLatestRunId = async (): Promise<string> => {
   return runs[0] ? String(runs[0].databaseId) : '';
 };
 
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 /** Polls until a run newer than `previousRunId` appears, so we watch OUR dispatch and not an older one. */
 const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> => {
@@ -240,7 +240,7 @@ const assertPublished = async (opts: { state: IPackageState }): Promise<string> 
   // `next` where it was. Four minutes, because the registry can lag the publish.
   for (let attempt = 0; attempt < 48; attempt += 1) {
     const versions = await listPublishedVersions({ packageName: opts.state.packageName });
-    const fresh = versions.find((version) => !opts.state.publishedVersions.includes(version));
+    const fresh = versions.find(version => !opts.state.publishedVersions.includes(version));
 
     if (fresh) {
       return fresh;
@@ -320,9 +320,9 @@ const main = async (): Promise<void> => {
   const isConfirmed = args.includes('--yes');
   const { target, positional: requested, issue } = readReleaseArgs({ argv: args });
   const candidates =
-    requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
+    requested.length > 0 ? RELEASE_ORDER.filter(n => requested.includes(n)) : RELEASE_ORDER;
 
-  const unknown = requested.filter((name) => !RELEASE_ORDER.includes(name as never));
+  const unknown = requested.filter(name => !RELEASE_ORDER.includes(name as never));
   if (unknown.length > 0) {
     throw new Error(
       `Unknown package(s): ${unknown.join(', ')}. Known: ${RELEASE_ORDER.join(', ')}`,

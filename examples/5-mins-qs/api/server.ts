@@ -18,7 +18,7 @@ const json = (body: unknown, init: ResponseInit = {}) =>
 
 const server = Bun.serve({
   port: 3100,
-  fetch: async (request) => {
+  fetch: async request => {
     const url = new URL(request.url);
 
     // IGNIS's sign-in route and body: `{ identifier: { scheme, value }, credential: { scheme, value } }`.
@@ -49,7 +49,7 @@ const server = Bun.serve({
       };
       const minimumPrice = filter.where?.price?.gte;
       const matching =
-        minimumPrice === undefined ? PRODUCTS : PRODUCTS.filter((row) => row.price >= minimumPrice);
+        minimumPrice === undefined ? PRODUCTS : PRODUCTS.filter(row => row.price >= minimumPrice);
       const skip = filter.skip ?? 0;
       const limit = filter.limit ?? matching.length;
       const rows = matching.slice(skip, skip + limit);
@@ -62,7 +62,7 @@ const server = Bun.serve({
 
     const single = url.pathname.match(/^\/api\/products\/(\d+)$/);
     if (single && request.method === 'GET') {
-      const product = PRODUCTS.find((row) => row.id === Number(single[1]));
+      const product = PRODUCTS.find(row => row.id === Number(single[1]));
       return product
         ? json(product)
         : json({ error: { message: 'Not found', statusCode: 404 } }, { status: 404 });

@@ -17,7 +17,9 @@
           </p>
           <div class="ar-cta">
             <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
-            <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary">&#x2605; Star on GitHub</a>
+            <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary"
+              >&#x2605; Star on GitHub</a
+            >
           </div>
           <div class="ar-stats">
             <div class="ar-stat">
@@ -37,9 +39,9 @@
 
         <div class="ar-code-win">
           <div class="ar-code-win__bar">
-            <span class="ar-code-win__dot" style="background:var(--ar-brand)" />
-            <span class="ar-code-win__dot" style="background:var(--ar-aqua)" />
-            <span class="ar-code-win__dot" style="background:var(--ar-brand-lt)" />
+            <span class="ar-code-win__dot" style="background: var(--ar-brand)" />
+            <span class="ar-code-win__dot" style="background: var(--ar-aqua)" />
+            <span class="ar-code-win__dot" style="background: var(--ar-brand-lt)" />
             <span class="ar-code-win__filename">application.tsx</span>
             <span class="ar-code-win__tag">live</span>
           </div>
@@ -80,69 +82,149 @@
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- bolt / performance -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
             </div>
             <h3>Browser IoC Container</h3>
-            <p>Full dependency injection in the browser. Resolve bound singletons cleanly with <code>useInjectable</code> and <code>services.*</code> keys.</p>
+            <p>
+              Full dependency injection in the browser. Resolve bound singletons cleanly with
+              <code>useInjectable</code> and <code>services.*</code> keys.
+            </p>
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- hexagon / DI container -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                />
               </svg>
             </div>
             <h3>REST Data Provider</h3>
-            <p>Maps react-admin pagination, sorting, and filters to IGNIS <code>{ where, order, limit, skip }</code>, parsing totals from Content-Range.</p>
+            <p>
+              Maps react-admin pagination, sorting, and filters to IGNIS
+              <code>{ where, order, limit, skip }</code>, parsing totals from Content-Range.
+            </p>
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- database / type-safe data -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
               </svg>
             </div>
             <h3>Self-Healing Auth</h3>
-            <p>Handles login, logout, checkAuth, and checkError with one-shot token refresh recovery on 401s and configurable no-auth paths.</p>
+            <p>
+              Handles login, logout, checkAuth, and checkError with one-shot token refresh recovery
+              on 401s and configurable no-auth paths.
+            </p>
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- shield / auth -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
             <h3>Type-Safe i18n</h3>
-            <p>Contextual <code>useTranslate</code> hook with keys checked via module augmentation, shipping with built-in en and vi bundles.</p>
+            <p>
+              Contextual <code>useTranslate</code> hook with keys checked via module augmentation,
+              shipping with built-in en and vi bundles.
+            </p>
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- arrows / real-time -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="17 1 21 5 17 9"/>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                <polyline points="7 23 3 19 7 15"/>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="17 1 21 5 17 9" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                <polyline points="7 23 3 19 7 15" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
               </svg>
             </div>
             <h3>Typed Redux Hooks</h3>
-            <p>Factory-generated typed selectors and dispatch hooks connected seamlessly into your IGNIS application container state.</p>
+            <p>
+              Factory-generated typed selectors and dispatch hooks connected seamlessly into your
+              IGNIS application container state.
+            </p>
           </div>
           <div class="ar-fcard">
             <div class="ar-fcard__icon">
               <!-- radio / socket client -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="2"/>
-                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="2" />
+                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
               </svg>
             </div>
             <h3>Socket.IO Client</h3>
-            <p>A thin <code>SocketIOClientHelper</code> wrapper with scoped logging, subscribe by event map and guarded emit, ready to bind as a service.</p>
+            <p>
+              A thin <code>SocketIOClientHelper</code> wrapper with scoped logging, subscribe by
+              event map and guarded emit, ready to bind as a service.
+            </p>
           </div>
         </div>
       </section>
@@ -155,25 +237,36 @@
         <div class="ar-perf__copy">
           <div class="ar-label">Isomorphic Core</div>
           <h2>Frontend state has a<br />structure limit. ARDOR<br />solves it cleanly.</h2>
-          <p>Built as an IGNIS inversion-of-control container, ARDOR eliminates spaghetti providers and ad-hoc wiring while preserving react-admin data conventions.</p>
+          <p>
+            Built as an IGNIS inversion-of-control container, ARDOR eliminates spaghetti providers
+            and ad-hoc wiring while preserving react-admin data conventions.
+          </p>
           <p class="ar-fine">Zero Node builtins in ardor-kernel. Isomorphic and lightweight.</p>
         </div>
         <div class="ar-bars">
           <div class="ar-bar-row">
             <div class="ar-bar-row__name">ardor-kernel</div>
-            <div class="ar-track"><div class="ar-fill ar-fill--muted" style="width:100%">0 Node builtins</div></div>
+            <div class="ar-track">
+              <div class="ar-fill ar-fill--muted" style="width: 100%">0 Node builtins</div>
+            </div>
           </div>
           <div class="ar-bar-row ar-bar-row--hl">
             <div class="ar-bar-row__name">ARDOR</div>
-            <div class="ar-track"><div class="ar-fill ar-fill--ig" style="width:100%">1 meta-package</div></div>
+            <div class="ar-track">
+              <div class="ar-fill ar-fill--ig" style="width: 100%">1 meta-package</div>
+            </div>
           </div>
           <div class="ar-bar-row">
             <div class="ar-bar-row__name">ardor-react</div>
-            <div class="ar-track"><div class="ar-fill ar-fill--muted" style="width:75%">Context + Hooks</div></div>
+            <div class="ar-track">
+              <div class="ar-fill ar-fill--muted" style="width: 75%">Context + Hooks</div>
+            </div>
           </div>
           <div class="ar-bar-row">
             <div class="ar-bar-row__name">ardor-admin</div>
-            <div class="ar-track"><div class="ar-fill ar-fill--muted" style="width:50%">ra-core Adapters</div></div>
+            <div class="ar-track">
+              <div class="ar-fill ar-fill--muted" style="width: 50%">ra-core Adapters</div>
+            </div>
           </div>
         </div>
       </div>
@@ -191,19 +284,43 @@
           <div class="ar-pcard ar-pcard--good">
             <h3>&#x2736; Perfect for</h3>
             <ul>
-              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Enterprise admin panels needing clean IoC architecture</li>
-              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Applications pairing react-admin with IGNIS backends</li>
-              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Teams wanting DI in React via useInjectable</li>
-              <li><span class="ar-ic" style="color:var(--ar-accent)">&#x2713;</span> Typed REST data provider, token refresh, and i18n</li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-accent)">&#x2713;</span> Enterprise admin
+                panels needing clean IoC architecture
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-accent)">&#x2713;</span> Applications
+                pairing react-admin with IGNIS backends
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-accent)">&#x2713;</span> Teams wanting DI
+                in React via useInjectable
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-accent)">&#x2713;</span> Typed REST data
+                provider, token refresh, and i18n
+              </li>
             </ul>
           </div>
           <div class="ar-pcard ar-pcard--alt">
             <h3>&#x25CB; Consider alternatives</h3>
             <ul>
-              <li><span class="ar-ic" style="color:var(--ar-text-3)">&#x2192;</span> Lightweight landing pages with no admin state</li>
-              <li><span class="ar-ic" style="color:var(--ar-text-3)">&#x2192;</span> Non-React applications (Vue, Svelte, Angular)</li>
-              <li><span class="ar-ic" style="color:var(--ar-text-3)">&#x2192;</span> Apps with no service orchestration or DI requirements</li>
-              <li><span class="ar-ic" style="color:var(--ar-text-3)">&#x2192;</span> Greenfield projects not using react-admin data contracts</li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Lightweight
+                landing pages with no admin state
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Non-React
+                applications (Vue, Svelte, Angular)
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Apps with no
+                service orchestration or DI requirements
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Greenfield
+                projects not using react-admin data contracts
+              </li>
             </ul>
           </div>
         </div>
@@ -224,7 +341,10 @@
           <div class="ar-chip"><b>React</b> · UI Runtime</div>
           <div class="ar-chip"><b>TypeScript</b></div>
         </div>
-        <p class="ar-powered__footnote">Bringing IGNIS inversion of control and react-admin data contracts to modern frontend applications.</p>
+        <p class="ar-powered__footnote">
+          Bringing IGNIS inversion of control and react-admin data contracts to modern frontend
+          applications.
+        </p>
       </section>
 
       <section class="ar-footer-cta">
@@ -232,7 +352,9 @@
         <p>From first screen to production admin apps. No ceremony, pure architecture.</p>
         <div class="ar-cta">
           <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
-          <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary">Read the Docs</a>
+          <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary"
+            >Read the Docs</a
+          >
         </div>
       </section>
     </div>
