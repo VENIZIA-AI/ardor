@@ -8,13 +8,13 @@ type TConsoleMethod = 'log' | 'info' | 'warn' | 'error' | 'debug';
 /** Every console call made while `run` executes, with an Error shown as its name and message. */
 const captureConsole = async (run: () => unknown): Promise<string> => {
   const methods: TConsoleMethod[] = ['log', 'info', 'warn', 'error', 'debug'];
-  const spies = methods.map(method => spyOn(console, method).mockImplementation(() => undefined));
+  const spies = methods.map((method) => spyOn(console, method).mockImplementation(() => undefined));
 
   try {
     await run();
 
     return JSON.stringify(
-      spies.flatMap(spy => spy.mock.calls),
+      spies.flatMap((spy) => spy.mock.calls),
       (_key, value) => (value instanceof Error ? `${value.name}: ${value.message}` : value),
     );
   } finally {

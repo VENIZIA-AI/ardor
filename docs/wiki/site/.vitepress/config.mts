@@ -122,6 +122,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'An arrow function parameter always has parentheses',
+            link: '/changelogs/2026-10-26-arrow-parens-always',
+          },
+          {
             text: 'The network service is split into small parts, and its types are closed',
             link: '/changelogs/2026-10-26-network-service-split',
           },
@@ -594,7 +598,7 @@ const config = defineConfig({
       chunkSizeWarningLimit: 3500,
       rollupOptions: {
         output: {
-          manualChunks: id => {
+          manualChunks: (id) => {
             if (id.includes('node_modules')) {
               // Isolate mermaid (+ its heavy deps) - large and only needed on pages with diagrams.
               if (

@@ -86,11 +86,11 @@ server.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/in
 
 const tools = await call({ method: 'tools/list' });
 const names = ((tools.result as { tools?: { name: string }[] } | undefined)?.tools ?? []).map(
-  tool => tool.name,
+  (tool) => tool.name,
 );
 check(
   'exposes search, get, symbol, version, changes',
-  ['search', 'get', 'symbol', 'version', 'changes'].every(name => names.includes(name)),
+  ['search', 'get', 'symbol', 'version', 'changes'].every((name) => names.includes(name)),
   names,
 );
 

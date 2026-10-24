@@ -52,7 +52,7 @@ export class DefaultAuthService extends BaseService {
       key: LocalStorageKeys.KEY_AUTH_PERMISSION,
       method: 'getRoles',
     });
-    const roles = Array.isArray(stored) ? stored.filter(role => typeof role === 'string') : [];
+    const roles = Array.isArray(stored) ? stored.filter((role) => typeof role === 'string') : [];
 
     return new Set<string>(roles);
   }
@@ -101,7 +101,7 @@ export class DefaultAuthService extends BaseService {
       return;
     }
 
-    Object.keys(localStorage).forEach(key => {
+    Object.keys(localStorage).forEach((key) => {
       if (
         !key.startsWith(LocalStorageKeys.PREFIX_AUTH) &&
         !key.startsWith(LocalStorageKeys.PREFIX_OAUTH2)

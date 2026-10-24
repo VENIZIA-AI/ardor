@@ -25,14 +25,14 @@ afterEach(() => {
 });
 
 const logsOf = (run: () => unknown): string => {
-  const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map(method =>
+  const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
     spyOn(console, method).mockImplementation(() => undefined),
   );
 
   try {
     run();
 
-    return JSON.stringify(spies.flatMap(spy => spy.mock.calls));
+    return JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
   } finally {
     for (const spy of spies) {
       spy.mockRestore();

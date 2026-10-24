@@ -281,14 +281,14 @@ describe('corrupt storage', () => {
 
   test('getUser reads corrupt identity as an empty object and never logs the stored text', () => {
     const service = new DefaultAuthService();
-    const spies = (['warn', 'error'] as const).map(level =>
+    const spies = (['warn', 'error'] as const).map((level) =>
       spyOn(service['logger'], level).mockImplementation(() => {}),
     );
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, 'username-secretpart{');
 
       expect(service.getUser()).toEqual({});
-      expect(JSON.stringify(spies.flatMap(spy => spy.mock.calls))).not.toContain('secretpart');
+      expect(JSON.stringify(spies.flatMap((spy) => spy.mock.calls))).not.toContain('secretpart');
     } finally {
       for (const spy of spies) {
         spy.mockRestore();

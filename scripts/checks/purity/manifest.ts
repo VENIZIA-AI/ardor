@@ -218,7 +218,7 @@ const buildLabel = (opts: {
  */
 export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
   const exportsMap = readExportsMap({ package: claim.package });
-  const published = Object.keys(exportsMap).filter(subpath => subpath !== NON_CODE_SUBPATH);
+  const published = Object.keys(exportsMap).filter((subpath) => subpath !== NON_CODE_SUBPATH);
 
   for (const subpath of claim.subpaths ?? []) {
     if (published.includes(subpath)) {
@@ -262,13 +262,13 @@ export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
     const targets = listConditionTargets(exportsMap[subpath]!);
 
     for (const condition of claim.impure?.[subpath] ?? []) {
-      if (targets.some(target => target.condition === condition)) {
+      if (targets.some((target) => target.condition === condition)) {
         continue;
       }
 
       throw new Error(
         `[purity][manifest] '${claim.package}' waives '${subpath}' under condition '${condition}', ` +
-          `which its \`exports\` map does not publish | Published: ${targets.map(t => t.condition).join(', ')}`,
+          `which its \`exports\` map does not publish | Published: ${targets.map((t) => t.condition).join(', ')}`,
       );
     }
 
@@ -305,7 +305,7 @@ export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
 export const assertBrowserImportCondition = (claims: IPurityClaim[]): IPurityClaim[] => {
   for (const claim of claims) {
     const exportsMap = readExportsMap({ package: claim.package });
-    const claimed = claim.subpaths ?? Object.keys(exportsMap).filter(s => s !== NON_CODE_SUBPATH);
+    const claimed = claim.subpaths ?? Object.keys(exportsMap).filter((s) => s !== NON_CODE_SUBPATH);
 
     for (const subpath of claimed) {
       const target = exportsMap[subpath];

@@ -302,7 +302,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       type: RequestTypes.UPDATE_MANY,
       method: RequestMethods.PATCH,
       body: { ...data, where: { id: { inq: ids } } },
-    }).then(result => {
+    }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
     });
   }
@@ -353,7 +353,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       type: RequestTypes.DELETE_MANY,
       method: RequestMethods.DELETE,
       body: { where: { id: { inq: ids } } },
-    }).then(result => {
+    }).then((result) => {
       return { data: this.toAffectedIds({ rows: result.data }) };
     });
   }

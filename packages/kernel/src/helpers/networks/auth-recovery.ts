@@ -28,7 +28,7 @@ export class AuthRecovery {
     // A refresh that throws synchronously is still a failed refresh, not a stray exception.
     this.refreshing ??= Promise.resolve()
       .then(() => refresh())
-      .catch(async error => {
+      .catch(async (error) => {
         logger.error('[refresh] refreshToken failed | error: %o', error);
 
         try {

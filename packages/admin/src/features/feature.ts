@@ -69,8 +69,8 @@ export class Features {
     }
 
     return {
-      resources: [...resources, ...features.flatMap(feature => feature.resources ?? [])],
-      routes: [...routes, ...features.flatMap(feature => feature.routes ?? [])],
+      resources: [...resources, ...features.flatMap((feature) => feature.resources ?? [])],
+      routes: [...routes, ...features.flatMap((feature) => feature.routes ?? [])],
     };
   }
 }

@@ -31,7 +31,7 @@ const METHODS = [
 describe('DefaultRestDataProvider failures', () => {
   test.each(METHODS)(
     '%s rejects instead of throwing when its params are unusable',
-    async method => {
+    async (method) => {
       const provider = new DefaultRestDataProvider(
         restDataProviderOptions({ baseUrl: 'http://127.0.0.1:1' }),
         applicationInfo,
@@ -61,7 +61,7 @@ describe('CountRestDataProvider list extras', () => {
   beforeAll(() => {
     server = Bun.serve({
       port: 0,
-      fetch: request => {
+      fetch: (request) => {
         const url = new URL(request.url);
         requests.push({ pathname: url.pathname, headers: request.headers });
 
@@ -126,8 +126,8 @@ describe('CountRestDataProvider list extras', () => {
       params: listParams({ extra: { facets: ['status'] } }),
     });
 
-    const list = requests.find(entry => entry.pathname === '/posts');
-    const count = requests.find(entry => entry.pathname === '/posts/count');
+    const list = requests.find((entry) => entry.pathname === '/posts');
+    const count = requests.find((entry) => entry.pathname === '/posts/count');
 
     expect(list?.headers.has('x-request-extra')).toBe(true);
     expect(count).toBeDefined();
@@ -144,6 +144,6 @@ describe('CountRestDataProvider list extras', () => {
 
     expect(result.total).toBe(7);
     expect(result.meta).toBeUndefined();
-    expect(requests.every(entry => !entry.headers.has('x-request-extra'))).toBe(true);
+    expect(requests.every((entry) => !entry.headers.has('x-request-extra'))).toBe(true);
   });
 });

@@ -17,7 +17,7 @@ export const useConfirm = (): IUseConfirmReturn => {
     // A prompt that is replaced was not confirmed: settle it, or its caller waits forever.
     settle.current?.(false);
 
-    return new Promise<boolean>(resolve => {
+    return new Promise<boolean>((resolve) => {
       settle.current = resolve;
       setMessage(opts.message);
     });

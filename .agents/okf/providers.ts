@@ -9,8 +9,8 @@ export default defineRenderer({
     context.source.exportedClasses({ dirs: PROVIDER_DIRS, suffix: 'Provider' }),
   render: ({ context, facts }) => {
     const total = facts.reduce((sum, entry) => sum + entry.classes.length, 0);
-    const rows = facts.map(entry => {
-      const classes = entry.classes.map(name => `\`${name}\``).join(' · ') || '_(see source)_';
+    const rows = facts.map((entry) => {
+      const classes = entry.classes.map((name) => `\`${name}\``).join(' · ') || '_(see source)_';
       return `| \`${entry.dir}/\` | ${classes} |`;
     });
 

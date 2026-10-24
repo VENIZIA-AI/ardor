@@ -112,7 +112,7 @@ describe('hooks log through the application logger', () => {
         { initialProps: { data: 'a' } },
       );
       rerender({ data: 'b' });
-      await new Promise(resolve => setTimeout(resolve, 60));
+      await new Promise((resolve) => setTimeout(resolve, 60));
 
       expect(loggerSpy).toHaveBeenCalled();
       expect(consoleSpy).not.toHaveBeenCalled();
