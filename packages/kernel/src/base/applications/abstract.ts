@@ -82,10 +82,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   /**
-   * Binds every stereotyped class under the key and scope it declares, then each of its `@provide`
-   * methods under the method's key, as IGNIS's `bindProvidedKeys` does: a lazy provider that
-   * resolves the class and calls the method on first `get()`, SINGLETON unless `scope` says
-   * otherwise. One data provider then serves react-admin, the auth provider and every hook.
+   * Binds every stereotyped class under its key and scope, then each `@provide` method under its
+   * own key, as IGNIS's `bindProvidedKeys` does: a lazy provider, SINGLETON unless `scope` says
+   * otherwise.
    */
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
@@ -150,10 +149,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   /**
-   * `artifacts()` with each group that carries no `content` replaced by the flat index its
-   * `resolve()` returns. Resolving imports the group's modules, which decorates their classes, so it
-   * must finish before `registerArtifacts()` reads the discovery list. A group with `content` was
-   * inlined by a bundler plugin and is left alone, like a plain index.
+   * `artifacts()` with each group without `content` replaced by the index its `resolve()` returns.
+   * Resolving imports the modules, which decorates their classes: it must finish before
+   * `registerArtifacts()` reads the discovery list.
    */
   private async resolveArtifactIndexes(): Promise<Array<IArtifactIndex>> {
     const resolved: Array<IArtifactIndex> = [];
@@ -186,12 +184,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   /**
-   * Every class an index lists must have been discovered: one that was not lost its decorator, or
-   * the index is stale, and its binding was silently never made.
-   *
-   * An IGNIS artifact group (`isArtifactGroup`) is not an index: its kind fields are getters that
-   * throw when read. Only the `content` a bundler plugin inlined is a flat index, so that is what
-   * gets checked; a group without content is resolved by IGNIS and has nothing to check here.
+   * Every class a flat index lists must be discovered, or its binding is silently never made. An
+   * artifact group (`isArtifactGroup`) is not an index - its kind fields throw when read - so only
+   * its inlined `content` is checked.
    */
   private assertIndexed(opts: { indexes: Array<IArtifactIndex>; discovered: Set<unknown> }): void {
     const { indexes, discovered } = opts;

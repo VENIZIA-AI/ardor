@@ -104,7 +104,7 @@ export class SocketIOClientHelper extends BaseHelper {
     const { events: eventNames, handler } = opts;
     this.logger.info('[unsubscribe][%s] Handling events: %j', this.identifier, eventNames);
     for (const eventName of eventNames) {
-      if (!this.client?.hasListeners(eventName)) {
+      if (!this.client.hasListeners(eventName)) {
         continue;
       }
 
@@ -129,25 +129,15 @@ export class SocketIOClientHelper extends BaseHelper {
   }
 
   connect() {
-    if (!this.client) {
-      this.logger.info('[connect][%s] Invalid client to connect!', this.identifier);
-      return;
-    }
-
     this.client.connect();
   }
 
   disconnect() {
-    if (!this.client) {
-      this.logger.info('[disconnect][%s] Invalid client to disconnect!', this.identifier);
-      return;
-    }
-
     this.client.disconnect();
   }
 
   emit(opts: { topic: string; message: string; doLog?: boolean }) {
-    if (!this.client?.connected) {
+    if (!this.client.connected) {
       throw getError({
         statusCode: 400,
         message: `[emit] Invalid socket client state to emit!`,

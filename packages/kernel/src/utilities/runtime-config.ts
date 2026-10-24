@@ -22,10 +22,9 @@ const readString = (opts: { source: unknown; key: string }): string | undefined 
 };
 
 /**
- * One value of the app's config: the runtime one (`window.__APP_CONFIG__`, written when the container
- * starts), else the build-time one (`buildTimeEnv`, which the app passes as `import.meta.env`; this
- * package never reads `import.meta`), else `defaultValue`. Only a non-empty string counts at either
- * level, and a missing global is not an error, so the same call works in dev, in a test and in the image.
+ * One config value: the runtime one (`window.__APP_CONFIG__`), else the build-time one
+ * (`buildTimeEnv`, passed by the app as `import.meta.env`), else `defaultValue`. Only a non-empty
+ * string counts, and a missing global is not an error.
  */
 export const getRuntimeConfig = (opts: {
   key: string;

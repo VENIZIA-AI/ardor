@@ -127,7 +127,7 @@ export interface INoAuthOptions {
 
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
-  /** Sent in `x-request-channel`. Default `web`. */
+  /** Sent in `x-request-channel`. Default `RequestChannel.WEB`. */
   requestTracingChannel?: string;
 
   headers?: HeadersInit;

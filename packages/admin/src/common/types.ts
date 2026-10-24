@@ -92,10 +92,10 @@ export interface IReactAdminDataProvider<TResource extends string = string> {
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
-  send: <ReturnType = AnyType>(opts: {
+  send: <TResult = AnyType>(opts: {
     resource: TResource;
     params: ISendParams;
-  }) => Promise<ISendResponse<ReturnType>>;
+  }) => Promise<ISendResponse<TResult>>;
 
   getNetworkService(): DefaultNetworkRequestService;
 

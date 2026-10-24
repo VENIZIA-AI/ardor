@@ -24,6 +24,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 - **List pagination.** The page defaults to 1 (a missing page used to send a negative `skip`), a `perPage` of 0 or none sends no limit instead of `limit: 0`, and only `skip` is sent: IGNIS reads `offset` as its alias, so the second copy was redundant.
 - **React hooks.** `useSizer` reports the `offsetWidth` and `offsetHeight` of the element as they are (it mixed `clientWidth` and `offsetHeight` and added a pixel to each). `useWindowDimensions` answers 0 by 0 where there is no `window`, instead of throwing, and measures the browser once mounted. A `confirm()` that replaces an open prompt resolves the replaced one with `false`; it used to leave it pending forever. `useAutosave` and `useCopyToClipboard` log through the application `Logger`, not `console`.
 - **`ArdorApplication` resolves its providers once.** The memo of the data, auth and i18n providers depended on the rest of the props, a new object on every render, so it never held and the container was read again on each render. It depends on the container only; the react-admin props are spread on top, as before.
+- **Housekeeping, no behaviour change.** Comments cut to at most three lines of why; the unreachable guards of `Logger` and `SocketIOClientHelper` and the needless `isEmpty` calls removed; local names spelled out. The generic parameter named `ReturnType` of `send`, `doRequest` and `parseResponse` is `TResult`: it shadowed the TypeScript utility type, and callers pass it positionally.
 
 ## Who is affected
 

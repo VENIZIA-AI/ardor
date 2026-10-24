@@ -98,10 +98,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }
 
   /**
-   * The filter, query and list extras a list request sends, from react-admin's list params:
-   * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, the
-   * remaining params into the filter, `filter.params` and `meta` into the query, and `meta.extra`
-   * into the list extras (sent in a header). Shared by `getList` and `getManyReference`.
+   * The IGNIS filter, the query and the list extras (sent in a header) of a list request, from
+   * react-admin's list params. Shared by `getList` and `getManyReference`.
    */
   protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
     filter: Record<string, AnyType>;
@@ -198,8 +196,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
 
     // The list extras a route answered reach react-admin as the result's `meta.extra`.
-    return response.then(({ extra, ...rs }) => {
-      return extra ? { ...rs, meta: { extra } } : rs;
+    return response.then(({ extra, ...rest }) => {
+      return extra ? { ...rest, meta: { extra } } : rest;
     });
   }
 
@@ -289,8 +287,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       applicationInfo: this.applicationInfo,
     });
 
-    // Always the GET, under the controller's own `find()`: a body-filter POST route bypassed a
-    // controller's tenant scoping and was removed from IGNIS (#92). A very long id list answers 414/431.
+    // Always the GET, under the controller's own `find()`, so its scoping applies. A very long id
+    // list answers 414/431.
     return this.networkService.doRequest<RecordType[]>({
       requestCountData: RequestCountData.DATA_ONLY,
       type: RequestTypes.GET_MANY,
@@ -403,8 +401,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         paths: [resource],
         ...request,
       })
-      .then(rs => {
-        return { data: this.toAffectedIds({ rows: rs.data }) };
+      .then(result => {
+        return { data: this.toAffectedIds({ rows: result.data }) };
       });
   }
 
@@ -486,15 +484,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         paths: [resource],
         ...request,
       })
-      .then(rs => {
-        return { data: this.toAffectedIds({ rows: rs.data }) };
+      .then(result => {
+        return { data: this.toAffectedIds({ rows: result.data }) };
       });
   }
 
-  async send<ReturnType = AnyType>(opts: {
+  async send<TResult = AnyType>(opts: {
     resource: TResource;
     params: ISendParams;
-  }): Promise<ISendResponse<ReturnType>> {
+  }): Promise<ISendResponse<TResult>> {
     const { resource, params } = opts;
 
     if (!params?.method) {
@@ -518,7 +516,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       request.headers = NetworkHeaders.merge({ sources: [request.headers, headers] });
     }
 
-    const response = this.networkService.doRequest<ReturnType>({
+    const response = this.networkService.doRequest<TResult>({
       requestCountData,
       type: requestType ?? RequestTypes.SEND,
       method,

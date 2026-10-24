@@ -1,7 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest, HttpResponseReader } from '@venizia/ignis-kernel/repository';
-import isEmpty from 'lodash/isEmpty.js';
 
 import {
   type AnyType,
@@ -53,17 +52,15 @@ export interface IDataSourceAuth {
   errorRootKey: string;
 }
 
-/**
- * The options hold data: the base URL, headers, the no-auth lists and the refresh path. Behaviour
- * is in the protected hooks, each taking one `opts` object - `resolveAuthToken`, `isNoAuthPath`,
- * `refreshToken`, `onAuthFailure` and `buildRequestTracingId` - which a subclass overrides, and
- * `DefaultRestDataProvider.createNetworkService` returns.
- */
 /** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
 const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
 };
 
+/**
+ * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
+ * in the protected hooks, each taking one `opts` object, which a subclass overrides.
+ */
 export class DefaultNetworkRequestService extends BaseService {
   protected noAuthPaths?: string[];
   protected noAuthPathRegexes: RegExp[];
@@ -149,9 +146,7 @@ export class DefaultNetworkRequestService extends BaseService {
       return false;
     }
 
-    const candidates = [resource, paths?.join('/')].filter(
-      (el): el is string => !!el && !isEmpty(el),
-    );
+    const candidates = [resource, paths?.join('/')].filter((item): item is string => !!item);
 
     if (!candidates.length) {
       return false;
@@ -166,10 +161,8 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Refreshes the session after a 401. Resolve `true` once it is refreshed - the request is then
-   * retried with the new token; resolve `false` when this service has no refresh (the default); throw
-   * when the refresh failed, and `onAuthFailure` runs. A request to `authRecovery.refreshTokenPath`
-   * never gets here.
+   * Refreshes the session after a 401. `true`: refreshed, the request is retried; `false`: this
+   * service has no refresh (the default); a throw: the refresh failed and `onAuthFailure` runs.
    */
   protected refreshToken(): Promise<boolean> {
     return Promise.resolve(false);
@@ -196,7 +189,7 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     const patterns = Array.isArray(input) ? input : [input];
-    const rs: RegExp[] = [];
+    const compiled: RegExp[] = [];
 
     for (const pattern of patterns) {
       if (!pattern) {
@@ -204,12 +197,12 @@ export class DefaultNetworkRequestService extends BaseService {
       }
 
       if (pattern instanceof RegExp) {
-        rs.push(pattern);
+        compiled.push(pattern);
         continue;
       }
 
       try {
-        rs.push(new RegExp(pattern));
+        compiled.push(new RegExp(pattern));
       } catch (error) {
         this.logger.error(
           '[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s | error: %o',
@@ -219,7 +212,7 @@ export class DefaultNetworkRequestService extends BaseService {
       }
     }
 
-    return rs;
+    return compiled;
   }
 
   /**
@@ -264,12 +257,9 @@ export class DefaultNetworkRequestService extends BaseService {
   // --- Requests --------------------------------------------------------------------------------
 
   /**
-   * Spread into an `HttpDataSource`'s settings. Each of its requests then carries, as read at send
-   * time, the session headers (`setHeaders`) and the timezone; with the data provider's options,
-   * the request channel and tracing id too. A no-auth path gets no token and no refresh, as on the
-   * data provider. Any other 401 joins this service's `refresh`: one `refreshToken` call for every
-   * 401 in flight on either transport, `onAuthFailure` on a failed one, and no retry when the
-   * service has no refresh. The refresh is shared, so one call's abort never cancels it.
+   * Spread into an `HttpDataSource`'s settings, so its requests carry the session headers and the
+   * timezone as read at send time (and the channel and tracing id, given the data provider's
+   * options), and a 401 joins this service's shared `refresh`. A no-auth path gets no token.
    */
   getDataSourceAuth(
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
@@ -337,7 +327,7 @@ export class DefaultNetworkRequestService extends BaseService {
     });
   }
 
-  /** The request channel, `web` unless configured, and a fresh tracing id. */
+  /** The request channel (`RequestChannel.WEB` unless configured) and a fresh tracing id. */
   protected getTracingHeaders(
     opts: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
   ): Record<string, string> {
@@ -425,12 +415,12 @@ export class DefaultNetworkRequestService extends BaseService {
       return undefined;
     }
 
-    const extMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
-    if (extMatch) {
+    const encodedMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
+    if (encodedMatch) {
       try {
-        return decodeURIComponent(extMatch[2].trim());
+        return decodeURIComponent(encodedMatch[2].trim());
       } catch {
-        return extMatch[2].trim();
+        return encodedMatch[2].trim();
       }
     }
 
@@ -469,11 +459,11 @@ export class DefaultNetworkRequestService extends BaseService {
       ],
     });
 
-    const rs: IGetRequestPropsResult = { headers, body };
+    const props: IGetRequestPropsResult = { headers, body };
 
     switch (bodyType) {
       case RequestBodyTypes.FORM_URL_ENCODED: {
-        rs.headers = {
+        props.headers = {
           ...headers,
           [HeaderConstants.CONTENT_TYPE]: 'application/x-www-form-urlencoded',
         };
@@ -496,43 +486,43 @@ export class DefaultNetworkRequestService extends BaseService {
           );
         }
 
-        rs.body = encoded;
+        props.body = encoded;
 
         break;
       }
       case RequestBodyTypes.FORM_DATA: {
-        rs.headers = headers;
+        props.headers = headers;
 
         const formData = new FormData();
 
         for (const key in body) {
-          const val = body[key];
+          const fieldValue = body[key];
 
-          if (Array.isArray(val) || this.isFileList({ value: val })) {
-            Array.from(val as ArrayLike<unknown>).forEach(item => {
+          if (Array.isArray(fieldValue) || this.isFileList({ value: fieldValue })) {
+            Array.from(fieldValue as ArrayLike<unknown>).forEach(item => {
               this.appendFormDataValue({ formData, key, value: item });
             });
             continue;
           }
 
-          this.appendFormDataValue({ formData, key, value: val });
+          this.appendFormDataValue({ formData, key, value: fieldValue });
         }
 
-        rs.body = formData;
+        props.body = formData;
 
         break;
       }
       default: {
-        rs.headers = {
+        props.headers = {
           ...headers,
           [HeaderConstants.CONTENT_TYPE]: 'application/json',
         };
-        rs.body = body;
+        props.body = body;
         break;
       }
     }
 
-    return rs;
+    return props;
   }
 
   /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
@@ -640,62 +630,64 @@ export class DefaultNetworkRequestService extends BaseService {
     }
   }
 
-  private async parseResponse<ReturnType = AnyType>(opts: {
+  private async parseResponse<TResult = AnyType>(opts: {
     response: Response;
     type: TRequestType;
     requestCountData?: TConstValue<typeof RequestCountData>;
   }): Promise<{
-    data: ReturnType;
+    data: TResult;
     count?: number;
     total?: number;
     filename?: string;
     contentDisposition?: string;
     extra?: Record<string, unknown>;
   }> {
-    const { response: rs, type, requestCountData } = opts;
+    const { response: fetched, type, requestCountData } = opts;
 
-    if (rs.status === 204) {
-      return { data: {} as ReturnType };
+    if (fetched.status === 204) {
+      return { data: {} as TResult };
     }
 
-    const contentType = (rs.headers?.get(HeaderConstants.CONTENT_TYPE) ?? '').toLowerCase();
-    const contentDisposition = rs.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
+    const contentType = (fetched.headers?.get(HeaderConstants.CONTENT_TYPE) ?? '').toLowerCase();
+    const contentDisposition = fetched.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
 
     const isAttachment = HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
     const isTextual =
       contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
 
     if (isAttachment || !isTextual) {
-      const blob = await rs.blob();
+      const blob = await fetched.blob();
       const filename = this.parseFilenameFromContentDisposition({ header: contentDisposition });
 
       return {
-        data: blob as ReturnType,
+        data: blob as TResult,
         ...(filename ? { filename } : {}),
         ...(contentDisposition ? { contentDisposition } : {}),
       };
     }
 
-    const jsonRs = await rs.json();
+    const parsedBody = await fetched.json();
 
-    // A route with extras answers `{ data, extra }`, marked by `x-response-extra`; a route with a
-    // default extra answers it unasked. `readExtra` strips only `extra`, so a count-in-body request
-    // still reads `{ count, data }` (IGNIS kernel 0.2.1-5 and later).
-    const { body, extra } = HttpResponseReader.readExtra({ body: jsonRs, headers: rs.headers });
+    // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
+    // count-in-body request still reads `{ count, data }`.
+    const { body, extra } = HttpResponseReader.readExtra({
+      body: parsedBody,
+      headers: fetched.headers,
+    });
 
-    const converted = this.convertResponse<ReturnType>({
+    const converted = this.convertResponse<TResult>({
       type,
       requestCountData,
       response: {
-        headers: rs.headers ?? {},
-        data: body as ReturnType,
+        headers: fetched.headers ?? {},
+        data: body as TResult,
       },
     });
 
     return extra ? { ...converted, extra } : converted;
   }
 
-  async doRequest<ReturnType = AnyType>(
+  async doRequest<TResult = AnyType>(
     opts: IGetRequestPropsResult & {
       baseUrl?: string;
       query?: any;
@@ -705,7 +697,7 @@ export class DefaultNetworkRequestService extends BaseService {
       requestCountData?: TConstValue<typeof RequestCountData>;
     },
   ): Promise<{
-    data: ReturnType;
+    data: TResult;
     count?: number;
     total?: number; // GET_LIST || GET_MANY_REFERENCE
     filename?: string;
@@ -723,7 +715,7 @@ export class DefaultNetworkRequestService extends BaseService {
       requestCountData,
     } = opts;
 
-    if (!baseUrl || isEmpty(baseUrl)) {
+    if (!baseUrl) {
       throw getError({
         message: '[doRequest] Invalid baseUrl to send request!',
       });
@@ -742,9 +734,9 @@ export class DefaultNetworkRequestService extends BaseService {
       });
     };
 
-    let rs = await sendOnce(headers);
+    let fetched = await sendOnce(headers);
 
-    if (rs.status === 401 && this.canRecover(paths)) {
+    if (fetched.status === 401 && this.canRecover(paths)) {
       const isRefreshed = await this.refresh();
 
       if (isRefreshed) {
@@ -757,16 +749,16 @@ export class DefaultNetworkRequestService extends BaseService {
             : {}),
         };
 
-        rs = await sendOnce(retryHeaders);
+        fetched = await sendOnce(retryHeaders);
       }
     }
 
-    const status = rs.status;
+    const status = fetched.status;
 
     if (status < 200 || status >= 300) {
-      throw await this.toResponseError({ response: rs });
+      throw await this.toResponseError({ response: fetched });
     }
 
-    return this.parseResponse<ReturnType>({ response: rs, type, requestCountData });
+    return this.parseResponse<TResult>({ response: fetched, type, requestCountData });
   }
 }
