@@ -102,6 +102,17 @@ describe('parse utilities', () => {
     expect(toInteger({ value: undefined })).toBe(0);
   });
 
+  test('toInteger and toFloat read text that is not a number as 0, never NaN', () => {
+    expect(toInteger({ value: 'abc' })).toBe(0);
+    expect(toInteger({ value: '-' })).toBe(0);
+    expect(toInteger({ value: {} })).toBe(0);
+    expect(toInteger({ value: Number.NaN })).toBe(0);
+    expect(toFloat({ value: 'abc' })).toBe(0);
+    expect(toFloat({ value: '.' })).toBe(0);
+    expect(toFloat({ value: {} })).toBe(0);
+    expect(toFloat({ value: Number.NaN })).toBe(0);
+  });
+
   test('toFloat rounds to the given digits', () => {
     expect(toFloat({ value: '1,234.567', digits: 2 })).toBe(1234.57);
     expect(toFloat({ value: '1,234.564', digits: 2 })).toBe(1234.56);
@@ -155,7 +166,9 @@ describe('parse utilities', () => {
     expect(getNumberValue({ input: '1,234.56' })).toBe(123456);
     expect(getNumberValue({ input: '1.234.567' })).toBe(1234567);
     expect(getNumberValue({ input: '1,000', method: NumberParseMethods.INT })).toBe(1000);
-    expect(getNumberValue({ input: '10.50', method: NumberParseMethods.FLOAT })).toBe(1050);
+    expect(getNumberValue({ input: '10.50', method: NumberParseMethods.FLOAT })).toBe(10.5);
+    expect(getNumberValue({ input: '1,050.5', method: NumberParseMethods.FLOAT })).toBe(1050.5);
+    expect(getNumberValue({ input: '1,234.567', method: NumberParseMethods.FLOAT })).toBe(1234.57);
     expect(getNumberValue({ input: '' })).toBe(0);
   });
 

@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-25',
+        collapsed: true,
+        items: [
+          {
+            text: 'Correctness fixes in the kernel, the admin and the hooks',
+            link: '/changelogs/2026-10-25-correctness-fixes',
+          },
+        ],
+      },
+      {
         text: '2026-10-24',
         collapsed: true,
         items: [
