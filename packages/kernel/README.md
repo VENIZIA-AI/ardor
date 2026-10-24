@@ -22,7 +22,7 @@ which re-exports this package.
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
 | Network | `BaseNetworkRequest`, `NodeFetchNetworkRequest`, `NodeFetcher` (fetch only) |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
-| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `toDataUrl`, `toQueryString`, `parseQueryString` |
+| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `toDataUrl`, `toQueryString` |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License

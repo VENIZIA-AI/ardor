@@ -192,13 +192,9 @@
     "packages/kernel": {
       "name": "@venizia/ardor-kernel",
       "version": "0.4.0",
-      "dependencies": {
-        "lodash": "catalog:",
-      },
       "devDependencies": {
         "@size-limit/preset-small-lib": "catalog:",
         "@types/bun": "catalog:",
-        "@types/lodash": "catalog:",
         "@venizia/dev-configs": "catalog:",
         "@venizia/ignis-connectors": "catalog:",
         "@venizia/ignis-filter": "catalog:",
