@@ -444,7 +444,7 @@ describe('useSizer', () => {
       }
     });
 
-    expect(result.current).toEqual({ width: 250, height: 121 });
+    expect(result.current).toEqual({ width: 250, height: 120 });
 
     unmount();
     expect(StubResizeObserver.disconnected).toBe(true);

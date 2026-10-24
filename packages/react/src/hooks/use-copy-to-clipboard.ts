@@ -1,5 +1,9 @@
 import React from 'react';
 
+import { Logger } from '@venizia/ardor-kernel';
+
+const logger = Logger.getInstance({ scope: 'useCopyToClipboard' });
+
 export interface IUseCopyToClipboardReturn {
   copy: (opts: { value: string }) => Promise<boolean>;
 }
@@ -7,7 +11,7 @@ export interface IUseCopyToClipboardReturn {
 export const useCopyToClipboard = (): IUseCopyToClipboardReturn => {
   const copy = React.useCallback(async (opts: { value: string }) => {
     if (!navigator?.clipboard) {
-      console.warn('Clipboard not supported');
+      logger.warn('[copy] The clipboard is not supported');
       return false;
     }
 
@@ -17,7 +21,7 @@ export const useCopyToClipboard = (): IUseCopyToClipboardReturn => {
       await navigator.clipboard.writeText(value);
       return true;
     } catch (error) {
-      console.warn('Copy failed', error);
+      logger.warn('[copy] Copy failed | error: %s', error);
       return false;
     }
   }, []);
