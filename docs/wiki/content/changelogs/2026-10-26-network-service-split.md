@@ -17,6 +17,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 - **One auth token store.** `AuthTokenStore.read()` and `AuthTokenStore.write()` are the one place that reads and writes the token under `LocalStorageKeys.KEY_AUTH_TOKEN`, with the `localStorage` guard and the rule that only the error name of a corrupt value is logged. `DefaultAuthService.getAuth()` and `saveAuth()` use it, and so does `DefaultNetworkRequestService.readAuthTokenFromStorage()`, which stays as a one-line delegate.
 - **The token types are in `common/types.ts`.** `IAuthTokenRecord`, `IDataSourceRequestContext` and `IDataSourceAuth` moved there from the network service file. The package root exports them as before.
 - **The body encoder is its own class.** `RequestBodyEncoder.encode({ bodyType, body })` returns the body and the content type to send (none for multipart, so `fetch` adds the boundary). `getRequestProps` keeps its signature and result and asks the new protected hook `encodeBody`, which delegates to it: override that to encode another way.
+- **The response reader is its own class.** `ResponseReader.read`, `convert` and `toError` read a response by the request type, take the total from `Content-Range` and build the `ApplicationError` of a failed one; `ResponseReader.ERROR_ROOT_KEY` is the key the data source auth shares. `doRequest` keeps its signature, now typed `Promise<INetworkResponse<TResult>>` (a new type in `common/types.ts`, the same fields), and `convertResponse` stays on the service as a delegate.
 
 ## Who is affected
 
@@ -30,5 +31,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 > This affects only a subclass of `DefaultNetworkRequestService` that overrides or calls the protected body helpers.
 
 The protected methods `isFileList`, `encodeFormValue` and `appendFormDataValue` are gone from `DefaultNetworkRequestService`; their logic is private to `RequestBodyEncoder`. To change how a body is encoded, override `encodeBody({ bodyType, body })`, which returns `{ body, contentType? }`.
+
+The protected method `parseFilenameFromContentDisposition` is gone from `DefaultNetworkRequestService`; the file name of a response is read by `ResponseReader`, which keeps the same rules (`filename*` before a quoted, before a bare `filename`).
 
 The rest of the breaking parts of this series are listed here as they land.
