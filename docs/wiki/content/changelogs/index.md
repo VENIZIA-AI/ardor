@@ -14,6 +14,7 @@ Every entry follows the [template](./template); a release without an entry is no
 |------|-------|------|
 | 2026-10-24 | [ARDOR 0.4.0 follows IGNIS 0.4.0](./2026-10-24-ardor-0-4-0) | Breaking Change |
 | 2026-10-24 | [The knowledge log is gone](./2026-10-24-knowledge-log-dropped) | Enhancement |
+| 2026-10-24 | [The fetcher no longer logs secrets, and four request bugs are fixed](./2026-10-24-node-fetcher-fixes) | Security |
 | 2026-10-24 | [scripts/ is grouped by purpose](./2026-10-24-scripts-grouped) | Enhancement |
 | 2026-10-24 | [The unused scripts and make targets are gone](./2026-10-24-unused-scripts-removed) | Enhancement |
 | 2026-10-23 | [The repository formats with bun fmt](./2026-10-23-format-with-bun-fmt) | Enhancement |
