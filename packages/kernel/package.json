@@ -15,7 +15,6 @@
     "isomorphic",
     "logger",
     "network",
-    "socket-io",
     "typescript",
     "venizia"
   ],
@@ -57,11 +56,6 @@
       "import": "./dist/base/repositories/index.js",
       "default": "./dist/base/repositories/index.js"
     },
-    "./socket-io": {
-      "types": "./dist/helpers/socket-io-client.d.ts",
-      "import": "./dist/helpers/socket-io-client.js",
-      "default": "./dist/helpers/socket-io-client.js"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -85,7 +79,6 @@
     "oxlint-tsgolint": "catalog:",
     "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
-    "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
@@ -95,14 +88,10 @@
     "@venizia/ignis-helpers": "^0.4.0",
     "@venizia/ignis-inversion": "^0.4.0",
     "@venizia/ignis-kernel": "^0.4.0",
-    "reflect-metadata": ">=0.2.2",
-    "socket.io-client": ">=4.8.4"
+    "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {
     "@venizia/ignis-connectors": {
-      "optional": true
-    },
-    "socket.io-client": {
       "optional": true
     }
   },
@@ -113,10 +102,9 @@
       "ignore": [
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "reflect-metadata",
-        "socket.io-client"
+        "reflect-metadata"
       ],
-      "limit": "7.8 KB"
+      "limit": "7 KB"
     }
   ],
   "engines": {

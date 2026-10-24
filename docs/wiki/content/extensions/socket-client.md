@@ -1,256 +1,58 @@
 ---
-title: Socket.IO client helper
-description: SocketIOClientHelper wraps a socket.io-client Socket with scoped logging, subscribe and unsubscribe per event or per handler, guarded emit, and lifecycle calls.
+title: Socket.IO client
+description: ARDOR ships no socket client; a browser application uses the IGNIS SocketIOClientHelper, which is handed socket.io-client by the application.
 ---
 
-# Socket.IO client helper
+# Socket.IO client
 
-`SocketIOClientHelper` is a thin wrapper around a `socket.io-client` `Socket`. It creates the socket in its constructor, logs every subscription under a scoped `Logger`, and exposes `connect`, `disconnect`, `subscribe`, `unsubscribe`, `emit` and `getSocketClient`. It has no knowledge of react-admin or of the container - you bind an instance yourself and resolve it where you need it.
+ARDOR does not carry a socket client. The IGNIS one, `SocketIOClientHelper` from `@venizia/ignis-helpers/socket-io/client`, has nothing node in its dependency graph, so a browser bundle can hold it. It does not import `socket.io-client` itself: the application imports `io` and hands it in as `module`.
 
 ## Prerequisites
 
-`socket.io-client` must be installed in your app - the helper imports `io` from it, and ARDOR does not pull it in for you.
+`@venizia/ignis-helpers` and `socket.io-client` are installed in your application.
 
 ## Quick Reference
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
-| `SocketIOClientHelper` | class | Creates and manages one `Socket` for one host |
-| `ISocketIOClientOptions` | interface | Constructor options: `identifier`, `host`, `options` |
-| `BaseHelper` | class | Parent class - gives the helper a `protected logger` scoped to `SocketIOClientHelper` |
+| `SocketIOClientHelper` | class | Creates and manages one `Socket` for one host (`@venizia/ignis-helpers/socket-io/client`) |
 | `useInjectable` | hook | Resolves the bound helper inside a React component |
 
-## Options
-
-The constructor takes one options object.
+## Using it
 
 ```ts no-check
-interface ISocketIOClientOptions {
-  identifier: string;   // label used in every log line
-  host: string;         // first argument to io()
-  options: {
-    path: string;       // socket.io path on the server
-    extraHeaders: Record<string | symbol | number, AnyType>;
-    // ...plus any socket.io-client SocketOptions
-  };
-}
-```
-
-`identifier` is only used for logging. `host` and `options` are passed straight to `io(host, options)`. Both `path` and `extraHeaders` are required by the type - pass an empty object for `extraHeaders` if you have no headers to add.
-
-```ts
-import { SocketIOClientHelper, type ISocketIOClientOptions } from '@venizia/ardor/socket-io';
-
-const opts: ISocketIOClientOptions = {
-  identifier: 'notifications',
-  host: 'https://api.example.com',
-  options: {
-    path: '/io',
-    extraHeaders: { Authorization: 'Bearer <token>' },
-  },
-};
-
-const socketHelper = new SocketIOClientHelper(opts);
-```
-
-## configure, connect, disconnect
-
-`configure()` is called by the constructor. It creates the `Socket` with `io(host, options)` and stores it. Calling `configure()` again is a no-op - the helper logs that the client is already established and returns. There is no way to swap the host or options on an existing instance; create a new helper instead.
-
-```ts no-check
-declare class SocketIOClientHelper {
-  configure(): void;
-  connect(): void;
-  disconnect(): void;
-}
-```
-
-`connect()` calls `client.connect()`. `disconnect()` calls `client.disconnect()`. Both log and return early if the client does not exist, which cannot happen after the constructor has run.
-
-```ts
-import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
+import { SocketIOClientHelper } from '@venizia/ignis-helpers/socket-io/client';
+import { io } from 'socket.io-client';
 
 const socketHelper = new SocketIOClientHelper({
   identifier: 'notifications',
   host: 'https://api.example.com',
-  options: { path: '/io', extraHeaders: {} },
+  options: { path: '/io', extraHeaders: { Authorization: 'Bearer <token>' } },
+  module: { io },
+  // ...onConnected, onDisconnected, onError, onAuthenticated, onUnauthenticated
 });
 
-socketHelper.connect();
-
-// later, for example on logout
-socketHelper.disconnect();
+socketHelper.subscribe({ event: 'order.created', handler: data => { /* ... */ } });
+socketHelper.emit({ topic: 'order.ack', data: { id: 1 } });
 ```
 
-## subscribe and unsubscribe
+The methods are `subscribe({ event, handler })`, `subscribeMany({ events })`, `unsubscribe({ event, handler? })`, `unsubscribeMany({ events })`, `emit({ topic, data })`, `connect()`, `disconnect()`, `getSocketClient()`, `joinRooms`, `leaveRooms` and `shutdown()`. A handler receives the payload (`handler(data)`), not the socket: call `getSocketClient()` for the socket. Its documentation is IGNIS's.
 
-`subscribe` takes a map of event name to handler. For each entry the helper calls `client.on(eventName, ...)`. Entries with no handler are skipped and logged. Subscribing the same handler to the same event twice registers one listener. With `ignoreDuplicate: true`, an event that already has any listener (`client.hasListeners(eventName)`) is skipped and logged instead of getting a second one.
+## From ARDOR's old helper
 
-```ts no-check
-type TSocketIOEventHandler = (client: Socket, ...props: AnyType[]) => void;
+| ARDOR (removed) | IGNIS |
+| --- | --- |
+| `import ... from '@venizia/ardor/socket-io'` | `import ... from '@venizia/ignis-helpers/socket-io/client'` |
+| `new SocketIOClientHelper({ identifier, host, options })` | the same, plus `module: { io }` from your own `import` |
+| `subscribe({ events, ignoreDuplicate })`, handler `(client, ...args)` | `subscribeMany({ events })` or `subscribe({ event, handler })`, handler `(data)` |
+| `unsubscribe({ events, handler? })` | `unsubscribe({ event, handler? })` or `unsubscribeMany({ events })` |
+| `emit({ topic, message })` | `emit({ topic, data })` |
 
-declare class SocketIOClientHelper {
-  subscribe(opts: {
-    events: Record<string, TSocketIOEventHandler>;
-    ignoreDuplicate?: boolean; // default false
-  }): void;
+## Binding it
 
-  unsubscribe(opts: { events: Array<string>; handler?: TSocketIOEventHandler }): void;
-}
-```
-
-The handler is not called with the raw event arguments alone. The helper prepends the `Socket` instance: `handler(client, ...eventArgs)`. So the first parameter of your handler is the socket, and the payload starts at the second.
-
-To remove one listener, pass the same `handler` you subscribed. Without `handler`, `unsubscribe` calls `client.off(eventName)`, which removes every listener for that event, including any you added through `getSocketClient()`.
-
-```ts
-import { SocketIOClientHelper, type TSocketIOEventHandler } from '@venizia/ardor/socket-io';
-
-const socketHelper = new SocketIOClientHelper({
-  identifier: 'notifications',
-  host: 'https://api.example.com',
-  options: { path: '/io', extraHeaders: {} },
-});
-
-const onCreated: TSocketIOEventHandler = (client, payload) => {
-  console.log('connected as', client.id, 'received', payload);
-};
-
-socketHelper.subscribe({
-  events: {
-    'order:created': onCreated,
-    'order:cancelled': (_client, payload) => {
-      console.log('cancelled', payload);
-    },
-  },
-});
-
-// remove only onCreated
-socketHelper.unsubscribe({ events: ['order:created'], handler: onCreated });
-
-// remove every listener on the event
-socketHelper.unsubscribe({ events: ['order:cancelled'] });
-```
-
-## emit
-
-`emit` sends one message on one topic. It throws before sending if the client is not connected.
-
-```ts no-check
-declare class SocketIOClientHelper {
-  emit(opts: { topic: string; message: string; doLog?: boolean }): void;
-}
-```
-
-- If `client.connected` is false, the helper throws an error with `statusCode: 400` and message `[emit] Invalid socket client state to emit!`.
-- `message` is typed as `string`. Serialize objects yourself before passing them.
-- `doLog` defaults to `false`. When `true`, the helper logs the topic and message after emitting.
-
-```ts
-import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
-
-const socketHelper = new SocketIOClientHelper({
-  identifier: 'notifications',
-  host: 'https://api.example.com',
-  options: { path: '/io', extraHeaders: {} },
-});
-
-socketHelper.connect();
-
-try {
-  socketHelper.emit({
-    topic: 'room:join',
-    message: JSON.stringify({ room: 'orders' }),
-    doLog: true,
-  });
-} catch (error) {
-  // thrown when the socket is not connected yet
-  console.error(error);
-}
-```
-
-## getSocketClient
-
-Returns the underlying `Socket`. Use it for anything the helper does not wrap, such as `client.connected`, `client.id`, `once`, or acknowledgements.
-
-```ts no-check
-declare class SocketIOClientHelper {
-  getSocketClient(): Socket;
-}
-```
-
-```ts
-import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
-
-const socketHelper = new SocketIOClientHelper({
-  identifier: 'notifications',
-  host: 'https://api.example.com',
-  options: { path: '/io', extraHeaders: {} },
-});
-
-const client = socketHelper.getSocketClient();
-client.once('connect', () => {
-  console.log('socket id', client.id);
-});
-```
-
-Listeners you attach directly count for `hasListeners`, so a later `subscribe({ ignoreDuplicate: true })` on the same event will skip that event.
-
-## Binding it as a service
-
-The helper is a plain class with no container decorators. Create one instance where you configure your application, bind it under a key of your own, and resolve it in components with `useInjectable`. The binding API and the hook signature are documented on their own pages - see [Services](../best-practices/services) and [Hooks](../references/hooks). The component below assumes the helper was bound under `services.SocketIOClientHelper`.
-
-```tsx
-import { useEffect } from 'react';
-import { useInjectable } from '@venizia/ardor';
-import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
-
-// The key you bound the helper under, made known to `useInjectable`.
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeysOverrides {
-    'services.SocketIOClientHelper': unknown;
-  }
-}
-
-export const OrderFeed = () => {
-  const socketHelper = useInjectable<SocketIOClientHelper>({ key: 'services.SocketIOClientHelper' });
-
-  useEffect(() => {
-    socketHelper.subscribe({
-      ignoreDuplicate: true,
-      events: {
-        'order:created': (_client: unknown, payload: unknown) => {
-          console.info('[OrderFeed] order created', payload);
-        },
-      },
-    });
-
-    return () => {
-      socketHelper.unsubscribe({ events: ['order:created'] });
-    };
-  }, [socketHelper]);
-
-  return <p>Listening for orders</p>;
-};
-```
-
-Keep one instance per host. Because `configure()` refuses to rebuild an existing client, a single bound instance is the natural way to share one socket across the app.
-
-## Common pitfalls
-
-- **Handler arguments are shifted.** The first argument passed to every handler is the `Socket`. Payload starts at the second argument.
-- **`emit` throws when not connected.** Check `getSocketClient().connected` or wait for the `connect` event before emitting. There is no queue.
-- **`message` must be a string.** The type is `string`, not an object. `JSON.stringify` first.
-- **`path` and `extraHeaders` are required.** Both fields are non-optional on the options type. Pass `extraHeaders: {}` when you have none.
-- **`unsubscribe` without `handler` removes every listener for the event.** It calls `client.off(eventName)`. Listeners you added through `getSocketClient()` go too. Pass `handler` to remove one.
-- **`ignoreDuplicate` checks any listener, not your handler.** The same handler is never registered twice anyway; `ignoreDuplicate: true` also skips an event that another handler already listens to.
-- **Options are fixed after construction.** `configure()` is a no-op once a client exists. To change host, path or headers, create a new helper.
+The helper is a plain class. Create one instance where you configure your application, bind it under a key you own, and resolve it with `useInjectable` where you need it; declare the key through `IUseInjectableKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)).
 
 ## Related
 
-- [Services](../best-practices/services) - how to bind and scope a service instance
-- [Hooks](../references/hooks) - `useInjectable` and the other React hooks
-- [Binding keys](../references/binding-keys) - the key conventions used in the container
-- [Network](../references/network) - HTTP request helpers that share the same `Logger`
-- [Custom transport](./custom-transport) - replacing the HTTP fetcher rather than adding a socket
-- [Application](../references/application) - where the application wires its providers and services
+- [Network](../references/network) - the HTTP transport, which is IGNIS's too
+- [Application](../references/application) - where services are bound

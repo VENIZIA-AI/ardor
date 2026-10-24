@@ -69,15 +69,13 @@ const NON_CODE_SUBPATH = './package.json';
 const PURITY_CLAIMS: IPurityClaim[] = [
   // Every ARDOR runtime package is a browser library, so every entry is claimed pure. `external`
   // lists the package's THIRD-PARTY peers and packaging: the React ecosystem reads
-  // `process.env.NODE_ENV` verbatim and relies on the consumer's bundler to define it, and
-  // socket.io-client reads `process` behind guards this text probe cannot see across lines.
+  // `process.env.NODE_ENV` verbatim and relies on the consumer's bundler to define it.
   // ARDOR's own code and every `@venizia/*` dependency stay in the measured graph. The layering rule
   // (no ra-core outside admin, no React in the kernel) is scripts/checks/layer-boundaries.ts.
   {
     package: 'kernel',
     external: {
       '.': [],
-      './socket-io': ['socket.io-client'],
     },
   },
   { package: 'react', external: { '.': ['react', 'react-redux', '@reduxjs/toolkit'] } },
@@ -109,7 +107,6 @@ const PURITY_CLAIMS: IPurityClaim[] = [
         '@tanstack/react-query',
         'react-router-dom',
       ],
-      './socket-io': ['socket.io-client'],
     },
   },
 ];

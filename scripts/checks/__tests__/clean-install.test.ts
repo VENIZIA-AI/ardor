@@ -34,7 +34,7 @@ describe('clean-install manifest', () => {
     const specifiers = deriveInstallRows({ claims: INSTALL_CLAIMS }).map((row) => row.specifier);
 
     expect(specifiers).toContain('@venizia/ardor-kernel/repository');
-    expect(specifiers).toContain('@venizia/ardor/socket-io');
+    expect(specifiers).toContain('@venizia/ardor/repository');
     expect(specifiers.some((specifier) => specifier.endsWith('package.json'))).toBe(false);
     expect(isCodeSubpath('./styles/*')).toBe(false);
   });
@@ -48,7 +48,7 @@ describe('clean-install manifest', () => {
   test('a grant naming an unpublished sub-path is refused', () => {
     expect(() =>
       deriveInstallRows({
-        claims: [{ package: 'kernel', requires: { './gone': ['socket.io-client'] } }],
+        claims: [{ package: 'kernel', requires: { './gone': ['@venizia/ignis-connectors'] } }],
       }),
     ).toThrow(/does not publish/);
   });

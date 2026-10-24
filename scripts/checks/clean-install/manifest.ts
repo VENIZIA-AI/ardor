@@ -16,7 +16,6 @@ export const INSTALL_CLAIMS: IInstallClaim[] = [
     package: 'kernel',
     requires: {
       './repository': ['@venizia/ignis-connectors'],
-      './socket-io': ['socket.io-client'],
     },
   },
   { package: 'react' },
@@ -25,7 +24,6 @@ export const INSTALL_CLAIMS: IInstallClaim[] = [
     package: 'ardor',
     requires: {
       './repository': ['@venizia/ignis-connectors'],
-      './socket-io': ['socket.io-client'],
     },
   },
 ];

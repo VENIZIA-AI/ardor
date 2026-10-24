@@ -1,7 +1,7 @@
 ---
 type: Package
 title: ardor
-description: The umbrella package that re-exports ardor-kernel, ardor-react and ardor-admin behind a single import, plus a ./socket-io sub-path for the optional socket client.
+description: The umbrella package that re-exports ardor-kernel, ardor-react and ardor-admin behind a single import, plus a ./repository sub-path for the IGNIS repository runtime.
 resource: packages/ardor/src/index.ts
 tags: [package, ardor, umbrella, exports]
 ---
@@ -18,7 +18,7 @@ export * from '@venizia/ardor-admin';
 
 Everything an application needs - the container and binding primitives from [kernel](/packages/kernel.md), the typed hooks from [react](/packages/react.md), and the react-admin wiring from [admin](/packages/admin.md) - is reachable through one import: `import { ... } from '@venizia/ardor'`. This is the entry point most applications should use. A consumer that only needs one layer can install that sub-package directly instead of pulling in the whole stack.
 
-The one exception is the socket client. `@venizia/ardor/socket-io` (`src/socket-io.ts`) re-exports `@venizia/ardor-kernel/socket-io` - `SocketIOClientHelper` and `ISocketIOClientOptions`. It is deliberately left out of the root, so `import ... from '@venizia/ardor'` never loads the optional `socket.io-client` peer; only an application that imports the sub-path needs it.
+The one exception is the repository runtime. `@venizia/ardor/repository` re-exports `@venizia/ardor-kernel/repository`; it is left out of the root because it is larger than the whole kernel budget.
 
 ## Install
 

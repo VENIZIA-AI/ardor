@@ -26,8 +26,8 @@ The package root (`src/index.ts`) re-exports four areas - base, common, helpers,
     [binding key namespaces](/conventions/binding-key-namespaces.md). `MetadataRegistry` is not
     re-exported either - the application base imports it straight from `@venizia/ignis-kernel/metadata`.
 - **common** (`src/common/index.ts`) - `constants`, `keys`, `types`. Binding keys (`CoreBindings`, `LocalStorageKeys`, see [Binding key namespaces](/conventions/binding-key-namespaces.md)), request/environment constants (`RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `HeaderConstants`, `Environments`, `App`), and shared types (`IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, and more).
-- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, and the network layer: `NodeFetchNetworkRequest`, `NodeFetcher` - the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md). `SocketIOClientHelper` sits in the same directory but outside this barrel - see Peer dependencies below.
-- **utilities** - type guards and small helpers. The type guards `isDefined(value)` and `isString(value)` stay positional so narrowing works; everything else takes one options object: `isNumber`, `isObject`, `isValidDate` (`{ value }`), `isEditableTarget` (`{ target }`), `toDataUrl` (`{ blob }`), `toQueryString` (`{ params }`). Plus `isBrowser()`. The number and string parsers and `parseQueryString` were removed (nothing used them; IGNIS has the helpers a project needs). `getRuntimeConfig({ key, buildTimeEnv, defaultValue })` reads the app's runtime config (`window.__APP_CONFIG__`, written when the preset image starts), else the build-time env the app passes.
+- **helpers** (`src/helpers/index.ts`) - `Logger`, `BaseHelper`, and the request headers (`NetworkHeaders`), the auth token store, the body encoder, the response reader and the auth recovery. The transport itself is IGNIS's `NodeFetchNetworkRequest` (`@venizia/ignis-helpers/core`): the platform `fetch`, the only transport. These back the transport side of the [data provider pipeline](/architecture/data-provider-pipeline.md).
+- **utilities** - type guards and small helpers. The type guards `isDefined(value)` and `isString(value)` stay positional so narrowing works; everything else takes one options object: `isNumber`, `isObject`, `isValidDate` (`{ value }`), `isEditableTarget` (`{ target }`), `toDataUrl` (`{ blob }`). Plus `isBrowser()`. The number and string parsers and `parseQueryString` were removed (nothing used them; IGNIS has the helpers a project needs). `getRuntimeConfig({ key, buildTimeEnv, defaultValue })` reads the app's runtime config (`window.__APP_CONFIG__`, written when the preset image starts), else the build-time env the app passes.
 
 ## Layering rule
 
@@ -35,7 +35,7 @@ Kernel sits below the other framework packages in the [monorepo layout](/overvie
 
 ## Peer dependencies
 
-Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers, and `socket.io-client` as an optional one. Optional is only true because the socket client is NOT exported from the root barrel - it sits behind the `./socket-io` sub-path, so importing the package never loads it. It has no runtime dependency.
+Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers (and `@venizia/ignis-helpers`, which holds the transport). It has no runtime dependency, and no socket client: that is IGNIS's.
 
 ## Build, test, size
 
