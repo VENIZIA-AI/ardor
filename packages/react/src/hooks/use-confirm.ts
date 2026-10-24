@@ -9,35 +9,34 @@ export interface IUseConfirmReturn {
 }
 
 export const useConfirm = (): IUseConfirmReturn => {
-  const [resolve, setResolve] = React.useState<(value: boolean) => void>();
+  const settle = React.useRef<((isConfirmed: boolean) => void) | undefined>(undefined);
 
   const [message, setMessage] = React.useState<string>();
 
   const confirm = React.useCallback((opts: { message: string }) => {
-    return new Promise<boolean>(_resolve => {
-      setResolve(() => {
-        return (value: boolean) => {
-          return _resolve(value);
-        };
-      });
+    // A prompt that is replaced was not confirmed: settle it, or its caller waits forever.
+    settle.current?.(false);
+
+    return new Promise<boolean>(resolve => {
+      settle.current = resolve;
       setMessage(opts.message);
     });
   }, []);
 
   const handleClose = React.useCallback(() => {
-    setResolve(undefined);
+    settle.current = undefined;
     setMessage(undefined);
   }, []);
 
   const handleConfirm = React.useCallback(() => {
-    resolve?.(true);
+    settle.current?.(true);
     handleClose();
-  }, [handleClose, resolve]);
+  }, [handleClose]);
 
   const handleAbort = React.useCallback(() => {
-    resolve?.(false);
+    settle.current?.(false);
     handleClose();
-  }, [handleClose, resolve]);
+  }, [handleClose]);
 
   return { message, confirm, handleClose, handleConfirm, handleAbort };
 };

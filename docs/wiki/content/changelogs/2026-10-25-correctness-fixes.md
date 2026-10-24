@@ -22,10 +22,12 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 - **`CountRestDataProvider` keeps the list extras.** The `extra` a list route answers reaches the result as `meta.extra`, and the `x-request-extra` header built for the list is no longer sent to the `/count` route.
 - **`DefaultAuthService` on bad or missing storage.** `getUser` and `getRoles` read a corrupt stored value as empty instead of throwing, and `getRoles` keeps only the strings of a stored list. `getAuth` no longer logs the stored text: the message of a JSON parse error quotes it, and the stored text is the token; the error name is logged. Every method is safe where there is no `localStorage`, and `saveAuth` throws a clear error there, because a sign-in that is not kept must not look like it worked. The two prefixes `cleanUp` removes are `LocalStorageKeys.PREFIX_AUTH` and `PREFIX_OAUTH2`.
 - **List pagination.** The page defaults to 1 (a missing page used to send a negative `skip`), a `perPage` of 0 or none sends no limit instead of `limit: 0`, and only `skip` is sent: IGNIS reads `offset` as its alias, so the second copy was redundant.
+- **React hooks.** `useSizer` reports the `offsetWidth` and `offsetHeight` of the element as they are (it mixed `clientWidth` and `offsetHeight` and added a pixel to each). `useWindowDimensions` answers 0 by 0 where there is no `window`, instead of throwing, and measures the browser once mounted. A `confirm()` that replaces an open prompt resolves the replaced one with `false`; it used to leave it pending forever. `useAutosave` and `useCopyToClipboard` log through the application `Logger`, not `console`.
 
 ## Who is affected
 
 - **A server that reads only `offset`.** The list request no longer carries it; read `skip`, which IGNIS treats as the primary.
+- **A layout that relied on the extra pixel of `useSizer`.** The size is now the element's real `offsetWidth` and `offsetHeight`.
 - **A log reader.** The new lines are warnings and errors for the failures above, and a debug line for an undecodable JWT payload.
 - **Code that relied on `NaN` from `toInteger` or `toFloat`.** It now gets `0`.
 - **Code that parsed a decimal with `getNumberValue` and `FLOAT`.** It now gets the decimal; the old result was a number 100 times too large for two decimals.

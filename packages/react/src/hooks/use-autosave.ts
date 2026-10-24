@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Logger } from '@venizia/ardor-kernel';
+
 import { useDebounce } from './use-debounce';
 
 export interface IUseAutosaveOptions<TData, TReturn> {
@@ -11,6 +13,8 @@ export interface IUseAutosaveOptions<TData, TReturn> {
   /** @default true */
   enabled?: boolean;
 }
+
+const logger = Logger.getInstance({ scope: 'useAutosave' });
 
 export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => {
   const { data, onSave, interval = 2000, enableSaveOnUnmount, enabled = true } = opts;
@@ -31,7 +35,7 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
       return;
     }
     Promise.resolve(handleSave.current(debouncedValueToSave)).catch((error: unknown) => {
-      console.error('[useAutosave] Failed to save debounced value | error: %s', error);
+      logger.error('[useAutosave] Failed to save debounced value | error: %s', error);
     });
     return () => {};
   }, [debouncedValueToSave]);
@@ -52,7 +56,7 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
         return;
       }
       Promise.resolve(handleSave.current(valueOnCleanup.current)).catch((error: unknown) => {
-        console.error('[useAutosave] Failed to save value on unmount | error: %s', error);
+        logger.error('[useAutosave] Failed to save value on unmount | error: %s', error);
       });
     };
   }, [enableSaveOnUnmount]);
