@@ -135,6 +135,29 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
   authRecovery?: IAuthRecoveryOptions;
 }
 
+export interface IAuthTokenRecord {
+  type?: string;
+  value: string;
+  provider?: string;
+}
+
+/** What an `HttpDataSource` hook reads from the request it is asked about. */
+export interface IDataSourceRequestContext {
+  paths: Array<string>;
+}
+
+/**
+ * The settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
+ * repository sends what the data provider sends: the same headers, the same token on the same
+ * paths, and one shared refresh per 401 burst. The hooks run on every send, the retry included.
+ */
+export interface IDataSourceAuth {
+  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
+  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
+  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
+  errorRootKey: string;
+}
+
 /**
  * A feature package an application mounts: what it registers in the container. The admin package
  * extends it with resources, routes and messages (`TFeature`); the kernel knows no UI.

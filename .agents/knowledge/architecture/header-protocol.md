@@ -21,7 +21,7 @@ Both are computed once at module load (`App` class fields), not per request, so 
 
 ## Authorization and x-auth-provider
 
-When a call requires auth, the service asks its protected hook `resolveAuthToken()` - by default the static `DefaultNetworkRequestService.readAuthTokenFromStorage()`, which reads `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN` and answers `undefined` where there is no `localStorage` or the value does not parse. Overriding `resolveAuthToken()` is the one way to supply a token from somewhere else. It sends:
+When a call requires auth, the service asks its protected hook `resolveAuthToken()` - by default the static `DefaultNetworkRequestService.readAuthTokenFromStorage()`, a delegate of `AuthTokenStore.read()` (the one reader of the stored token, shared with `DefaultAuthService.getAuth()`), which reads `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN` and answers `undefined` where there is no `localStorage` or the value does not parse. Overriding `resolveAuthToken()` is the one way to supply a token from somewhere else. It sends:
 
 - `authorization: <type> <value>` where type defaults to `Bearer` if the stored token has no explicit type (see `Authentication.TYPE_BASIC` / `TYPE_BEARER` constants).
 - `x-auth-provider` - the provider name recorded alongside the token, letting the backend know which auth strategy issued it. It is omitted when the token names no provider, rather than sent as the string `undefined`.
