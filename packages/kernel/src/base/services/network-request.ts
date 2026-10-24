@@ -13,7 +13,6 @@ import {
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
   type INoAuthOptions,
-  RequestBodyTypes,
   RequestChannel,
   RequestCountData,
   RequestMethods,
@@ -23,8 +22,13 @@ import {
   type TRequestMethod,
   type TRequestType,
 } from '@/common';
-import { AuthTokenStore, NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
-import { isDefined } from '@/utilities';
+import {
+  AuthTokenStore,
+  type IEncodedBody,
+  NetworkHeaders,
+  NodeFetchNetworkRequest,
+  RequestBodyEncoder,
+} from '@/helpers';
 import { BaseService } from './base';
 
 /** The server wraps an error body under this key; both transports unwrap it. */
@@ -320,50 +324,9 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
-  // `FileList` exists only in a DOM; the bare identifier throws in Workers and on Bun.
-  protected isFileList(opts: { value: unknown }): boolean {
-    return typeof FileList !== 'undefined' && opts.value instanceof FileList;
-  }
-
-  /** A multipart text value: JSON for objects and arrays, ISO-8601 for a `Date`, `String()` otherwise. */
-  protected encodeFormValue(opts: { key: string; value: unknown; bodyType: string }): string {
-    const { key, value, bodyType } = opts;
-
-    // A urlencoded body carries text only; a file here would be sent as `"{}"` with nothing said.
-    if (value instanceof Blob) {
-      throw getError({
-        message: `[getRequestProps] "${key}" is a file, which a ${bodyType} body cannot carry. Send it with bodyType "${RequestBodyTypes.FORM_DATA}".`,
-      });
-    }
-
-    if (value instanceof Date) {
-      return value.toISOString();
-    }
-
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-
-    return String(value);
-  }
-
-  /** Skips only `undefined` and `null`: `0`, `false` and `''` are values the caller meant to send. */
-  protected appendFormDataValue(opts: { formData: FormData; key: string; value: unknown }): void {
-    const { formData, key, value } = opts;
-
-    if (!isDefined(value)) {
-      return;
-    }
-
-    if (value instanceof Blob) {
-      formData.append(key, value, (value as File).name);
-      return;
-    }
-
-    formData.append(
-      key,
-      this.encodeFormValue({ key, value, bodyType: RequestBodyTypes.FORM_DATA }),
-    );
+  /** The body as it is sent and the content type to send it under. Override to encode another way. */
+  protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
+    return RequestBodyEncoder.encode(opts);
   }
 
   /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
@@ -418,68 +381,14 @@ export class DefaultNetworkRequestService extends BaseService {
       ],
     });
 
-    const props: IGetRequestPropsResult = { headers, body };
+    const encoded = this.encodeBody({ bodyType, body });
 
-    switch (bodyType) {
-      case RequestBodyTypes.FORM_URL_ENCODED: {
-        props.headers = {
-          ...headers,
-          [HeaderConstants.CONTENT_TYPE]: 'application/x-www-form-urlencoded',
-        };
-
-        const encoded = new URLSearchParams();
-
-        for (const key in body) {
-          // Skip only what was never provided; `0`, `false` and `''` are values.
-          if (!isDefined(body[key])) {
-            continue;
-          }
-
-          encoded.append(
-            key,
-            this.encodeFormValue({
-              key,
-              value: body[key],
-              bodyType: RequestBodyTypes.FORM_URL_ENCODED,
-            }),
-          );
-        }
-
-        props.body = encoded;
-
-        break;
-      }
-      case RequestBodyTypes.FORM_DATA: {
-        props.headers = headers;
-
-        const formData = new FormData();
-
-        for (const key in body) {
-          const fieldValue = body[key];
-
-          if (Array.isArray(fieldValue) || this.isFileList({ value: fieldValue })) {
-            Array.from(fieldValue as ArrayLike<unknown>).forEach(item => {
-              this.appendFormDataValue({ formData, key, value: item });
-            });
-            continue;
-          }
-
-          this.appendFormDataValue({ formData, key, value: fieldValue });
-        }
-
-        props.body = formData;
-
-        break;
-      }
-      default: {
-        props.headers = {
-          ...headers,
-          [HeaderConstants.CONTENT_TYPE]: 'application/json',
-        };
-        props.body = body;
-        break;
-      }
-    }
+    const props: IGetRequestPropsResult = {
+      headers: encoded.contentType
+        ? { ...headers, [HeaderConstants.CONTENT_TYPE]: encoded.contentType }
+        : headers,
+      body: encoded.body,
+    };
 
     return props;
   }
