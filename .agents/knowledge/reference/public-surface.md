@@ -201,7 +201,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (31)
+### `@venizia/ardor-admin` (34)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -214,8 +214,10 @@ generated:
 - `IAuthProvider` interface
 - `IDataProvider` interface
 - `II18nProviderOptions` interface
-- `IReactAdminAuthProvider` interface
-- `IReactAdminDataProvider` interface
+- `IListFilter` interface
+- `ILoginParams` interface
+- `IReactAdminAuthProvider` type
+- `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
@@ -226,6 +228,7 @@ generated:
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
+- `TUseTranslateOptions` type
 - `useDocumentTitle` const
 - `useFeatures` const
 - `useHtmlLang` const
@@ -237,7 +240,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (180)
+### `@venizia/ardor` (183)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -301,7 +304,9 @@ generated:
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
 - `II18nProviderOptions` interface
+- `IListFilter` interface
 - `ILogger` interface
+- `ILoginParams` interface
 - `INetworkResponse` interface
 - `inject` const
 - `injectable` const
@@ -309,8 +314,8 @@ generated:
 - `INodeFetchNetworkOptions` interface
 - `INodeFetchRequestOptions` interface
 - `IPermissionProvider` interface
-- `IReactAdminAuthProvider` interface
-- `IReactAdminDataProvider` interface
+- `IReactAdminAuthProvider` type
+- `IReactAdminDataProvider` type
 - `IRequestOptions` interface
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
@@ -391,6 +396,7 @@ generated:
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
+- `TUseTranslateOptions` type
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const

@@ -8,7 +8,7 @@ import type { IAuthProvider } from '@/common';
 import { useRefreshToken } from '@/hooks/use-refresh-token';
 
 interface ICreateMockAuthProviderOptions {
-  readonly refreshToken?: () => Promise<unknown>;
+  readonly refreshToken?: () => Promise<boolean>;
 }
 
 interface ICreateWrapperOptions {
@@ -17,8 +17,8 @@ interface ICreateWrapperOptions {
 }
 
 const createMockAuthProvider = ({
-  refreshToken = mock((): Promise<string> => {
-    return Promise.resolve('fresh');
+  refreshToken = mock((): Promise<boolean> => {
+    return Promise.resolve(true);
   }),
 }: ICreateMockAuthProviderOptions): IAuthProvider => {
   const authProvider: IAuthProvider = {
@@ -78,8 +78,8 @@ describe('useRefreshToken', () => {
         },
       },
     });
-    const refreshTokenMock = mock((): Promise<string> => {
-      return Promise.resolve('fresh');
+    const refreshTokenMock = mock((): Promise<boolean> => {
+      return Promise.resolve(true);
     });
     const authProvider = createMockAuthProvider({
       refreshToken: refreshTokenMock,
@@ -102,7 +102,7 @@ describe('useRefreshToken', () => {
     });
 
     expect(refreshTokenMock).toHaveBeenCalledTimes(1);
-    expect(resolvedResult).toBe('fresh');
+    expect(resolvedResult).toBe(true);
   });
 
   test('invalidates query cache for auth getPermissions after a refresh', async () => {
@@ -115,8 +115,8 @@ describe('useRefreshToken', () => {
     });
     const invalidateQueriesSpy = spyOn(queryClient, 'invalidateQueries');
     const authProvider = createMockAuthProvider({
-      refreshToken: mock((): Promise<string> => {
-        return Promise.resolve('fresh');
+      refreshToken: mock((): Promise<boolean> => {
+        return Promise.resolve(true);
       }),
     });
     const wrapper = createWrapper({
@@ -141,7 +141,7 @@ describe('useRefreshToken', () => {
     });
   });
 
-  test('resolves undefined and touches nothing when auth provider is missing', async () => {
+  test('resolves false and touches nothing when auth provider is missing', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -167,7 +167,7 @@ describe('useRefreshToken', () => {
       resolvedResult = await result.current();
     });
 
-    expect(resolvedResult).toBeUndefined();
+    expect(resolvedResult).toBe(false);
     expect(invalidateQueriesSpy).not.toHaveBeenCalled();
   });
 });

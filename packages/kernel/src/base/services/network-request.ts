@@ -3,7 +3,6 @@ import { uuidV4 } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
-  type AnyType,
   App,
   HeaderConstants,
   type IApplicationInfo,
@@ -312,7 +311,7 @@ export class DefaultNetworkRequestService extends BaseService {
     const extraHeader = HttpExtraRequest.toHeader({ extra });
 
     // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers: Record<string, AnyType> = NetworkHeaders.merge({
+    const headers = NetworkHeaders.merge({
       sources: [
         this.getRequestHeader({ resource }),
         this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
@@ -334,11 +333,11 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /** Reads a response by the request type. See `ResponseReader.convert`. */
-  convertResponse<TData = AnyType>(opts: Parameters<typeof ResponseReader.convert<TData>>[0]) {
+  convertResponse<TData = unknown>(opts: Parameters<typeof ResponseReader.convert<TData>>[0]) {
     return ResponseReader.convert<TData>(opts);
   }
 
-  async doRequest<TResult = AnyType>(
+  async doRequest<TResult = unknown>(
     opts: IGetRequestPropsResult & {
       baseUrl?: string;
       query?: any;
@@ -385,13 +384,15 @@ export class DefaultNetworkRequestService extends BaseService {
 
       if (isRefreshed) {
         const authHeader = this.getRequestAuthorizationHeader();
-        const retryHeaders = {
-          ...(headers as Record<string, AnyType>),
-          [HeaderConstants.AUTHORIZATION]: authHeader.token,
-          ...(authHeader.provider
-            ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider }
-            : {}),
-        };
+        const retryHeaders = NetworkHeaders.merge({
+          sources: [
+            headers,
+            { [HeaderConstants.AUTHORIZATION]: authHeader.token },
+            authHeader.provider
+              ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider }
+              : undefined,
+          ],
+        });
 
         fetched = await sendOnce(retryHeaders);
       }

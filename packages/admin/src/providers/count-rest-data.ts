@@ -1,22 +1,18 @@
 import type { RaRecord } from 'ra-core';
 
-import {
-  type AnyType,
-  RequestMethods,
-  RequestTypes,
-  type TRequestType,
-} from '@venizia/ardor-kernel';
+import { RequestMethods, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
+import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
 
 export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
-  protected override requestList<RecordType extends RaRecord = AnyType>(opts: {
+  protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     type: TRequestType;
-    queryKey: Record<string, AnyType>;
-    filter: Record<string, AnyType>;
+    queryKey: Record<string, unknown>;
+    filter: IListFilter;
     extra?: TExtraRequest;
   }) {
     const { resource, queryKey, filter } = opts;

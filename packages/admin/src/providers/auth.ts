@@ -2,7 +2,6 @@ import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
-  type AnyType,
   BaseProvider,
   CoreBindings,
   type DefaultAuthService,
@@ -12,6 +11,23 @@ import {
   RequestMethods,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IDataProvider } from '@/common';
+
+/** What the login form hands to `login`: the user name and the password, and whatever else the form holds. */
+export interface ILoginParams {
+  username?: string;
+  password?: string;
+  [field: string]: unknown;
+}
+
+/** The status of a failure: react-admin's `HttpError` has `status`, the data provider's `ApplicationError` has `statusCode`. */
+const readStatus = (error: unknown): unknown => {
+  if (typeof error !== 'object' || error === null) {
+    return undefined;
+  }
+
+  const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
+  return status ?? statusCode;
+};
 
 /**
  * The options hold data (`paths`); behaviour is in the protected hooks around `login` and the page
@@ -62,7 +78,7 @@ export class DefaultAuthProvider<
    * `params.password`. Override it when the API wants another shape; `opts.params` as it is posts
    * the login form unchanged.
    */
-  protected buildSignInBody(opts: { params: AnyType }): unknown {
+  protected buildSignInBody(opts: { params: ILoginParams }): unknown {
     return {
       identifier: { scheme: 'username', value: opts.params?.username },
       credential: { scheme: 'basic', value: opts.params?.password },
@@ -167,7 +183,7 @@ export class DefaultAuthProvider<
   }
 
   /** The username `login` remembers with the identity. Default: `params.username`. */
-  protected resolveUsername(opts: { params: AnyType }): string {
+  protected resolveUsername(opts: { params: ILoginParams }): string {
     return opts.params?.username ?? '';
   }
 
@@ -176,7 +192,10 @@ export class DefaultAuthProvider<
    * rejects `login` and nothing is saved: the place to refuse a user, or to hand the token to
    * another service.
    */
-  protected beforeSaveSession(_opts: { session: ISignInSession; params: AnyType }): Promise<void> {
+  protected beforeSaveSession(_opts: {
+    session: ISignInSession;
+    params: ILoginParams;
+  }): Promise<void> {
     return Promise.resolve();
   }
 
@@ -197,7 +216,7 @@ export class DefaultAuthProvider<
   // --- react-admin's auth provider -------------------------------------------------------------
 
   /** Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling. */
-  async login(params: AnyType): Promise<unknown> {
+  async login(params: ILoginParams): Promise<unknown> {
     const response = await this.restDataProvider.send({
       resource: this.signInPath as TResource,
       params: { method: RequestMethods.POST, body: this.buildSignInBody({ params }) },
@@ -215,14 +234,14 @@ export class DefaultAuthProvider<
     };
   }
 
-  logout(_params: AnyType) {
+  logout(_params?: unknown) {
     return new Promise<void>(resolve => {
       this.authService.cleanUp();
       resolve();
     });
   }
 
-  async checkAuth(_params: AnyType) {
+  async checkAuth(_params?: unknown) {
     const token = this.authService.getAuth();
 
     if (!token?.value) {
@@ -245,9 +264,8 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  checkError(params: AnyType) {
-    // react-admin's own HttpError carries `status`; an ApplicationError from the data provider carries `statusCode`.
-    const status = params?.status ?? params?.statusCode;
+  checkError(error: unknown) {
+    const status = readStatus(error);
 
     if (status === 401) {
       this.authService.cleanUp();
@@ -264,7 +282,7 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  getIdentity(_params: AnyType) {
+  getIdentity(_params?: unknown) {
     const user = this.authService.getUser();
 
     if (!user?.userId) {
@@ -274,11 +292,11 @@ export class DefaultAuthProvider<
     return Promise.resolve(user);
   }
 
-  getPermissions(_params: AnyType) {
+  getPermissions(_params?: unknown) {
     return Promise.resolve();
   }
 
-  getRoles(_params: AnyType) {
+  getRoles(_params?: unknown) {
     return Promise.resolve(this.authService.getRoles());
   }
 
@@ -287,7 +305,7 @@ export class DefaultAuthProvider<
    * `true` when it was refreshed, `false` when the service has no refresh to make. The `401`
    * recovery calls the same method, so one burst of 401s and this call share one refresh.
    */
-  refreshToken(): Promise<AnyType> {
+  refreshToken(): Promise<boolean> {
     return this.restDataProvider.getNetworkService().refresh();
   }
 
@@ -301,13 +319,13 @@ export class DefaultAuthProvider<
       });
 
     return {
-      login: (params: AnyType) => this.login(params),
-      logout: (params: AnyType) => this.logout(params),
-      checkError: (params: AnyType) => this.checkError(params),
-      checkAuth: (params: AnyType) => this.checkAuth(params),
-      getIdentity: (params: AnyType) => this.getIdentity(params),
-      getPermissions: (params: AnyType) => this.getPermissions(params),
-      getRoles: (params: AnyType) => this.getRoles(params),
+      login: (params: ILoginParams) => this.login(params),
+      logout: (params?: unknown) => this.logout(params),
+      checkError: (error: unknown) => this.checkError(error),
+      checkAuth: (params?: unknown) => this.checkAuth(params),
+      getIdentity: (params?: unknown) => this.getIdentity(params),
+      getPermissions: (params?: unknown) => this.getPermissions(params),
+      getRoles: (params?: unknown) => this.getRoles(params),
       refreshToken: () => this.refreshToken(),
       // Absent without a permission provider, so react-admin keeps allowing everything.
       ...(permissionProvider

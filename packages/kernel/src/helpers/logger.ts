@@ -1,4 +1,4 @@
-import type { AnyType, TConstValue } from '@/common';
+import type { TConstValue } from '@/common';
 
 export class LogLevels {
   static readonly DEBUG = 'debug';
@@ -16,10 +16,10 @@ export class LogLevels {
 export type TLogLevel = TConstValue<typeof LogLevels>;
 
 export interface ILogger {
-  debug(message: string, ...args: AnyType[]): void;
-  info(message: string, ...args: AnyType[]): void;
-  warn(message: string, ...args: AnyType[]): void;
-  error(message: string, ...args: AnyType[]): void;
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
 }
 
 export class Logger implements ILogger {
@@ -58,7 +58,7 @@ export class Logger implements ILogger {
     return new Date().toISOString();
   }
 
-  generateLog(opts: { level: TLogLevel; message: AnyType; args: AnyType[] }) {
+  generateLog(opts: { level: TLogLevel; message: unknown; args: unknown[] }) {
     const { level, message, args } = opts;
     const timestamp = this.getTimestamp();
 
@@ -78,7 +78,7 @@ export class Logger implements ILogger {
     }
   }
 
-  private log(opts: { level: TLogLevel; message: AnyType; args: AnyType[] }) {
+  private log(opts: { level: TLogLevel; message: unknown; args: unknown[] }) {
     const { level, message, args } = opts;
     if (level === LogLevels.DEBUG && !this.isDebugEnabled) {
       return;
@@ -90,19 +90,19 @@ export class Logger implements ILogger {
     Logger.sink[level](generated.message, ...generated.args);
   }
 
-  debug(message: AnyType, ...args: AnyType[]) {
+  debug(message: unknown, ...args: unknown[]) {
     this.log({ level: LogLevels.DEBUG, message, args });
   }
 
-  info(message: AnyType, ...args: AnyType[]) {
+  info(message: unknown, ...args: unknown[]) {
     this.log({ level: LogLevels.INFO, message, args });
   }
 
-  warn(message: AnyType, ...args: AnyType[]) {
+  warn(message: unknown, ...args: unknown[]) {
     this.log({ level: LogLevels.WARN, message, args });
   }
 
-  error(message: AnyType, ...args: AnyType[]) {
+  error(message: unknown, ...args: unknown[]) {
     this.log({ level: LogLevels.ERROR, message, args });
   }
 }

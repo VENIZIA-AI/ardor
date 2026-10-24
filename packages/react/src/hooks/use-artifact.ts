@@ -1,4 +1,4 @@
-import { type AnyType, BindingNamespaces } from '@venizia/ardor-kernel';
+import { BindingNamespaces } from '@venizia/ardor-kernel';
 import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
 import {
@@ -52,7 +52,7 @@ const useArtifactInNamespace = <TInstance>(opts: {
   return useInjectable<TInstance>(options);
 };
 
-export const useService = <TInstance = AnyType>(
+export const useService = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
   useArtifactInNamespace<TInstance>({
@@ -61,7 +61,7 @@ export const useService = <TInstance = AnyType>(
     hook: 'useService',
   });
 
-export const useProvider = <TInstance = AnyType>(
+export const useProvider = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
   useArtifactInNamespace<TInstance>({
@@ -70,7 +70,7 @@ export const useProvider = <TInstance = AnyType>(
     hook: 'useProvider',
   });
 
-export const useComponent = <TInstance = AnyType>(
+export const useComponent = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
   useArtifactInNamespace<TInstance>({
@@ -79,7 +79,7 @@ export const useComponent = <TInstance = AnyType>(
     hook: 'useComponent',
   });
 
-export const useConfiguration = <TInstance = AnyType>(
+export const useConfiguration = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
   useArtifactInNamespace<TInstance>({
@@ -88,7 +88,7 @@ export const useConfiguration = <TInstance = AnyType>(
     hook: 'useConfiguration',
   });
 
-export const useRepository = <TInstance = AnyType>(
+export const useRepository = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
   useArtifactInNamespace<TInstance>({

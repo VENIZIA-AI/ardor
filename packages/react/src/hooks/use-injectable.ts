@@ -2,7 +2,7 @@ import React from 'react';
 
 import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
-import type { AnyType, CoreBindings, ValueOf } from '@venizia/ardor-kernel';
+import type { CoreBindings, ValueOf } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '../contexts/application';
 
 export interface IUseInjectableKeysOverrides {}
@@ -13,7 +13,7 @@ export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectabl
 
 export type TUseInjectableOptions =
   | { container?: Container; key: TUseInjectableKeys; target?: never }
-  | { container?: Container; key?: never; target: TClass<AnyType> };
+  | { container?: Container; key?: never; target: TClass<unknown> };
 
 /**
  * The container an injectable hook resolves from: the one passed in, else the application's. Shared,
