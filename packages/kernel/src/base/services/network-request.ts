@@ -23,6 +23,7 @@ import {
   type TRequestType,
 } from '@/common';
 import {
+  AuthRecovery,
   AuthTokenStore,
   type IEncodedBody,
   NetworkHeaders,
@@ -44,7 +45,7 @@ export class DefaultNetworkRequestService extends BaseService {
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
 
-  private refreshing: Promise<boolean> | null = null;
+  private readonly recovery: AuthRecovery;
 
   constructor(
     opts: INoAuthOptions & {
@@ -62,6 +63,13 @@ export class DefaultNetworkRequestService extends BaseService {
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
+    this.recovery = new AuthRecovery({
+      logger: this.logger,
+      getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
+      refresh: () => this.refreshToken(),
+      onFailure: () => this.onAuthFailure(),
+      isNoAuthPath: paths => this.isNoAuthPath({ resource: paths?.[0], paths }),
+    });
     this.networkRequest = new NodeFetchNetworkRequest({
       name,
       networkOptions: { baseUrl, headers },
@@ -172,42 +180,11 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Refreshes the session, once for every 401 in flight on either transport: the callers share one
-   * `refreshToken` call. `true` when the token was refreshed. Also what `DefaultAuthProvider.refreshToken`
-   * calls, so a refresh is made in one place.
+   * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecovery`).
+   * Also what `DefaultAuthProvider.refreshToken` calls, so a refresh is made in one place.
    */
   refresh(): Promise<boolean> {
-    // A refreshToken that throws synchronously is still a failed refresh, not a stray exception.
-    this.refreshing ??= Promise.resolve()
-      .then(() => this.refreshToken())
-      .catch(async error => {
-        this.logger.error('[refresh] refreshToken failed | error: %o', error);
-
-        try {
-          await this.onAuthFailure();
-        } catch (failure) {
-          this.logger.error('[refresh] onAuthFailure failed | error: %o', failure);
-        }
-        return false;
-      })
-      .finally(() => {
-        this.refreshing = null;
-      });
-
-    return this.refreshing;
-  }
-
-  private canRecover(paths: string[]): boolean {
-    if (this.isNoAuthPath({ resource: paths?.[0], paths })) {
-      return false;
-    }
-
-    const refreshTokenPath = this.authRecovery?.refreshTokenPath;
-    if (refreshTokenPath && paths?.join('/').includes(refreshTokenPath)) {
-      return false;
-    }
-
-    return true;
+    return this.recovery.refresh();
   }
 
   // --- Requests --------------------------------------------------------------------------------
@@ -232,7 +209,7 @@ export class DefaultNetworkRequestService extends BaseService {
         });
       },
       onUnauthorized: ({ paths }) => {
-        return this.canRecover(paths) ? this.refresh() : Promise.resolve(false);
+        return this.recovery.canRecover({ paths }) ? this.refresh() : Promise.resolve(false);
       },
       errorRootKey: ResponseReader.ERROR_ROOT_KEY,
     };
@@ -403,7 +380,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     let fetched = await sendOnce(headers);
 
-    if (fetched.status === 401 && this.canRecover(paths)) {
+    if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
       const isRefreshed = await this.refresh();
 
       if (isRefreshed) {

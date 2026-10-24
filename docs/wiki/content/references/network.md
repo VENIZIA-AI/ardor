@@ -185,12 +185,12 @@ When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doR
 - `error.extra`: Server extra metadata, including `requestId` and `upstreamRequestIds`.
 - `error.cause`: Underlying cause details (`server.details?.cause`).
 
-When a request receives a 401 Unauthorized status, `doRequest` triggers token recovery if `canRecover(paths)` returns `true`:
+When a request receives a 401 Unauthorized status, `doRequest` triggers token recovery if `AuthRecovery.canRecover({ paths })` returns `true`:
 - The resource must not match `noAuthPaths` or `noAuthPathRegex`.
 - The path must not contain `authRecovery.refreshTokenPath`.
 
 Recovery calls `refresh()`, which delegates to the protected `refreshToken()` hook:
-- Concurrent requests share a single in-flight `this.refreshing` promise, preventing duplicate refresh calls.
+- Concurrent requests share a single in-flight promise (`AuthRecovery.refresh`), preventing duplicate refresh calls.
 - If `refreshToken()` resolves `true`, `doRequest` retrieves updated authorization headers and retries the original request once.
 - If `refreshToken()` resolves `false` (the default behavior), no retry is attempted and the 401 error is thrown.
 - If `refreshToken()` throws, `onAuthFailure()` runs, and the original 401 error is thrown.
