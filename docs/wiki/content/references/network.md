@@ -178,7 +178,7 @@ export function configureHeaders(): Record<string, string> {
 
 ## Error handling and 401 recovery
 
-When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` from `toResponseError` in `packages/kernel/src/base/services/network-request.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
+When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `ResponseReader.toError` in `packages/kernel/src/helpers/networks/response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
 - `error.statusCode`: The HTTP status code of the response.
 - `error.message`: Server normalized text, server message, or `'HTTP ' + response.status`.
 - `error.normalized`: Server normalized details containing `text`, `code` (`error.normalized.code`, defaulting to `'core.system_error'`), and interpolation arguments `args` (`error.normalized.args`).

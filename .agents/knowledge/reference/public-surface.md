@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (127)
+### `@venizia/ardor-kernel` (129)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -63,6 +63,7 @@ generated:
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
 - `ILogger` interface
+- `INetworkResponse` interface
 - `inject` const
 - `injectable` const
 - `INoAuthOptions` interface
@@ -107,6 +108,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `service` const
 - `StringIdType` type
@@ -248,7 +250,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (191)
+### `@venizia/ardor` (193)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -314,6 +316,7 @@ generated:
 - `IGetRequestPropsResult` interface
 - `II18nProviderOptions` interface
 - `ILogger` interface
+- `INetworkResponse` interface
 - `inject` const
 - `injectable` const
 - `INoAuthOptions` interface
@@ -375,6 +378,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `service` const
 - `StringIdType` type

@@ -158,6 +158,19 @@ export interface IDataSourceAuth {
   errorRootKey: string;
 }
 
+/** What `DefaultNetworkRequestService.doRequest` answers. */
+export interface INetworkResponse<TResult = AnyType> {
+  data: TResult;
+  count?: number;
+  /** GET_LIST and GET_MANY_REFERENCE: the total of `Content-Range`, else the page's own row count. */
+  total?: number;
+  /** A file response: its name and `Content-Disposition`. */
+  filename?: string;
+  contentDisposition?: string;
+  /** What a route with list extras answered. */
+  extra?: Record<string, unknown>;
+}
+
 /**
  * A feature package an application mounts: what it registers in the container. The admin package
  * extends it with resources, routes and messages (`TFeature`); the kernel knows no UI.

@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { uuidV4 } from '@venizia/ignis-helpers/uuid';
-import { HttpExtraRequest, HttpResponseReader } from '@venizia/ignis-kernel/repository';
+import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
   type AnyType,
@@ -12,11 +12,11 @@ import {
   type IDataSourceAuth,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
+  type INetworkResponse,
   type INoAuthOptions,
   RequestChannel,
   RequestCountData,
   RequestMethods,
-  RequestTypes,
   type TConstValue,
   type TNoAuthPathRegex,
   type TRequestMethod,
@@ -28,16 +28,9 @@ import {
   NetworkHeaders,
   NodeFetchNetworkRequest,
   RequestBodyEncoder,
+  ResponseReader,
 } from '@/helpers';
 import { BaseService } from './base';
-
-/** The server wraps an error body under this key; both transports unwrap it. */
-const ERROR_ROOT_KEY = 'error';
-
-/** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
-const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
-  return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
-};
 
 /**
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
@@ -241,7 +234,7 @@ export class DefaultNetworkRequestService extends BaseService {
       onUnauthorized: ({ paths }) => {
         return this.canRecover(paths) ? this.refresh() : Promise.resolve(false);
       },
-      errorRootKey: ERROR_ROOT_KEY,
+      errorRootKey: ResponseReader.ERROR_ROOT_KEY,
     };
   }
 
@@ -329,36 +322,6 @@ export class DefaultNetworkRequestService extends BaseService {
     return RequestBodyEncoder.encode(opts);
   }
 
-  /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
-  protected parseFilenameFromContentDisposition(opts: { header: string }): string | undefined {
-    const { header } = opts;
-
-    if (!header) {
-      return undefined;
-    }
-
-    const encodedMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
-    if (encodedMatch) {
-      try {
-        return decodeURIComponent(encodedMatch[2].trim());
-      } catch {
-        return encodedMatch[2].trim();
-      }
-    }
-
-    const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
-    if (quotedMatch) {
-      return quotedMatch[1];
-    }
-
-    const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
-    if (bareMatch) {
-      return bareMatch[1].trim();
-    }
-
-    return undefined;
-  }
-
   getRequestProps(params: IGetRequestPropsParams) {
     const {
       bodyType,
@@ -393,166 +356,9 @@ export class DefaultNetworkRequestService extends BaseService {
     return props;
   }
 
-  /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
-  private resolveTotal(opts: { headers: Record<string, AnyType>; rowCount: number }): number {
-    const range = HttpResponseReader.parseContentRange({
-      header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
-    });
-    return range?.total ?? opts.rowCount;
-  }
-
-  /**
-   * A failed response as an `ApplicationError`, mapped like IGNIS `HttpDataSource`: the HTTP status,
-   * the server's code and args, its `extra` with the `requestId` added, and `details.cause`.
-   * `message` is the server's text, not a log line, because react-admin shows it to the user.
-   */
-  private async toResponseError(opts: { response: Response }) {
-    const { response } = opts;
-    const server = await HttpResponseReader.readError({ response, rootKey: ERROR_ROOT_KEY });
-
-    // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
-    const extra: Record<string, unknown> = { ...server.extra };
-    if (server.requestId) {
-      const upstreamRequestId = extra.requestId;
-      extra.requestId = server.requestId;
-      if (upstreamRequestId !== undefined && upstreamRequestId !== server.requestId) {
-        const known = Array.isArray(extra.upstreamRequestIds) ? extra.upstreamRequestIds : [];
-        extra.upstreamRequestIds = [upstreamRequestId, ...known];
-      }
-    }
-
-    return getError({
-      statusCode: response.status,
-      message: server.normalized?.text ?? server.message ?? `HTTP ${response.status}`,
-      messageCode: server.normalized?.code,
-      messageArgs: server.normalized?.args,
-      extra: Object.keys(extra).length > 0 ? extra : undefined,
-      cause: server.details?.cause,
-    });
-  }
-
-  convertResponse<TData = AnyType>(opts: {
-    response: {
-      data: TData | { data: TData; count?: number };
-      headers: Record<string, AnyType>;
-    };
-    type: string;
-    requestCountData?: TConstValue<typeof RequestCountData>;
-  }): {
-    data: TData;
-    count?: number;
-    total?: number;
-  } {
-    const {
-      response: { data, headers },
-      type,
-      requestCountData,
-    } = opts;
-
-    switch (type) {
-      case RequestTypes.GET_LIST:
-      case RequestTypes.GET_MANY_REFERENCE: {
-        if (requestCountData === RequestCountData.DATA_WITH_COUNT) {
-          if (!isCountedBody(data)) {
-            throw getError({
-              message: `[convertResponse] Invalid response format for requestCountData=${RequestCountData.DATA_WITH_COUNT} !`,
-            });
-          }
-
-          const dataFormatted = data as { data: TData; count?: number };
-
-          const normalizedData = !Array.isArray(dataFormatted.data)
-            ? [dataFormatted.data]
-            : dataFormatted.data;
-
-          const total = this.resolveTotal({ headers, rowCount: normalizedData.length });
-
-          return {
-            data: normalizedData as TData,
-            count: dataFormatted?.count ?? normalizedData.length,
-            total,
-          };
-        }
-
-        const normalizedData = !Array.isArray(data) ? [data] : data;
-
-        const total = this.resolveTotal({ headers, rowCount: normalizedData.length });
-
-        return {
-          data: normalizedData as TData,
-          total,
-        };
-      }
-      default: {
-        if (requestCountData === RequestCountData.DATA_WITH_COUNT) {
-          return data as { data: TData; count?: number };
-        }
-
-        // A missing or non-numeric header means the server sent no count - never NaN.
-        const count = Number.parseInt(headers?.get(HeaderConstants.RESPONSE_COUNT_DATA) ?? '', 10);
-        return {
-          data: data as TData,
-          count: Number.isNaN(count) ? undefined : count,
-        };
-      }
-    }
-  }
-
-  private async parseResponse<TResult = AnyType>(opts: {
-    response: Response;
-    type: TRequestType;
-    requestCountData?: TConstValue<typeof RequestCountData>;
-  }): Promise<{
-    data: TResult;
-    count?: number;
-    total?: number;
-    filename?: string;
-    contentDisposition?: string;
-    extra?: Record<string, unknown>;
-  }> {
-    const { response: fetched, type, requestCountData } = opts;
-
-    if (fetched.status === 204) {
-      return { data: {} as TResult };
-    }
-
-    const contentType = (fetched.headers?.get(HeaderConstants.CONTENT_TYPE) ?? '').toLowerCase();
-    const contentDisposition = fetched.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
-
-    const isAttachment = HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
-    const isTextual =
-      contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
-
-    if (isAttachment || !isTextual) {
-      const blob = await fetched.blob();
-      const filename = this.parseFilenameFromContentDisposition({ header: contentDisposition });
-
-      return {
-        data: blob as TResult,
-        ...(filename ? { filename } : {}),
-        ...(contentDisposition ? { contentDisposition } : {}),
-      };
-    }
-
-    const parsedBody = await fetched.json();
-
-    // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
-    // count-in-body request still reads `{ count, data }`.
-    const { body, extra } = HttpResponseReader.readExtra({
-      body: parsedBody,
-      headers: fetched.headers,
-    });
-
-    const converted = this.convertResponse<TResult>({
-      type,
-      requestCountData,
-      response: {
-        headers: fetched.headers ?? {},
-        data: body as TResult,
-      },
-    });
-
-    return extra ? { ...converted, extra } : converted;
+  /** Reads a response by the request type. See `ResponseReader.convert`. */
+  convertResponse<TData = AnyType>(opts: Parameters<typeof ResponseReader.convert<TData>>[0]) {
+    return ResponseReader.convert<TData>(opts);
   }
 
   async doRequest<TResult = AnyType>(
@@ -564,14 +370,7 @@ export class DefaultNetworkRequestService extends BaseService {
       paths: string[];
       requestCountData?: TConstValue<typeof RequestCountData>;
     },
-  ): Promise<{
-    data: TResult;
-    count?: number;
-    total?: number; // GET_LIST || GET_MANY_REFERENCE
-    filename?: string;
-    contentDisposition?: string;
-    extra?: Record<string, unknown>; // what a route with list extras answered
-  }> {
+  ): Promise<INetworkResponse<TResult>> {
     const {
       baseUrl = this.baseUrl,
       type,
@@ -624,9 +423,9 @@ export class DefaultNetworkRequestService extends BaseService {
     const status = fetched.status;
 
     if (status < 200 || status >= 300) {
-      throw await this.toResponseError({ response: fetched });
+      throw await ResponseReader.toError({ response: fetched });
     }
 
-    return this.parseResponse<TResult>({ response: fetched, type, requestCountData });
+    return ResponseReader.read<TResult>({ response: fetched, type, requestCountData });
   }
 }
