@@ -127,6 +127,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-24-knowledge-log-dropped',
           },
           {
+            text: 'The fetcher no longer logs secrets, and four request bugs are fixed',
+            link: '/changelogs/2026-10-24-node-fetcher-fixes',
+          },
+          {
             text: 'scripts/ is grouped by purpose',
             link: '/changelogs/2026-10-24-scripts-grouped',
           },

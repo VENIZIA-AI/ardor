@@ -33,7 +33,7 @@ A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/servi
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
 - **Every other case** (`json`, `none`, `binary`, or no `bodyType`) passes the body through untouched.
 
-Then `NodeFetcher.send` passes a `FormData` or `URLSearchParams` straight to `fetch` and `JSON.stringify`s anything else. So `binary` has no binary path: a `Blob` or `File` is sent as `{}`, a typed array as an object of its indexes, and a string arrives quoted. Upload files with `form-data`.
+Then `NodeFetcher.send` (`serializeBody`) passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s anything else, so a `binary` body is sent as its bytes and a string is not quoted a second time (before 0.4.1 a `Blob` went out as `{}`, a typed array as an object of its indexes and a string quoted). The query string is appended with `?`, or with `&` when the url already has one (`buildUrl`). A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, the body is never logged and the headers pass through `redactSecrets`.
 
 ## Traps for a transport author
 
