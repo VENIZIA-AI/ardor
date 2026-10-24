@@ -241,7 +241,7 @@ You do not have to call `cleanUp` in `onAuthFailure` when the request came from 
 
 ## Where tokens live
 
-The request service stores nothing itself. It asks its `resolveAuthToken()` hook, which by default is `DefaultNetworkRequestService.readAuthTokenFromStorage()` - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. It returns `undefined` where there is no `localStorage` or the stored value does not parse.
+The request service stores nothing itself. It asks its `resolveAuthToken()` hook, which by default is `DefaultNetworkRequestService.readAuthTokenFromStorage()` (it delegates to `AuthTokenStore.read()`, which `DefaultAuthService.getAuth()` uses too) - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. It returns `undefined` where there is no `localStorage` or the stored value does not parse.
 
 `resolveAuthToken()` is the one way to supply a token from somewhere else. Override it in the service subclass to read another store or to hold the token in memory:
 

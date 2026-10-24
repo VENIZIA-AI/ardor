@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
+import { Logger } from '@/helpers';
+
+const storeLogger = () => Logger.getInstance({ scope: 'AuthTokenStore' });
 
 describe('saveAuth and credential retrieval', () => {
   beforeEach(() => {
@@ -176,9 +179,9 @@ describe('getAuth error handling', () => {
     localStorage.clear();
   });
 
-  test('getAuth returns null and logs error when stored token is not valid JSON', () => {
+  test('getAuth returns null and logs the store warning when stored token is not valid JSON', () => {
     const service = new DefaultAuthService();
-    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '{malformed-json');
 
@@ -205,16 +208,15 @@ describe('getAuth error handling', () => {
     }
   });
 
-  test('getAuth returns null and logs error when stored token is empty string', () => {
+  // An empty string is nothing usable, as for the network reader: no error to log.
+  test('getAuth returns null without logging when the stored token is an empty string', () => {
     const service = new DefaultAuthService();
-    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '');
 
-      const result = service.getAuth();
-
-      expect(result).toBeNull();
-      expect(loggerSpy).toHaveBeenCalledTimes(1);
+      expect(service.getAuth()).toBeNull();
+      expect(loggerSpy).not.toHaveBeenCalled();
     } finally {
       loggerSpy.mockRestore();
     }
@@ -321,7 +323,7 @@ describe('corrupt storage', () => {
 
   test('getAuth logs the error name, never the stored token text', () => {
     const service = new DefaultAuthService();
-    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'eyJhbGciOiJIUzI1NiJ9.secretpart');
 

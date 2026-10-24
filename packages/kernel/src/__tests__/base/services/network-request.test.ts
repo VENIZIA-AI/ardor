@@ -2,15 +2,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@/base/repositories';
-import {
-  DefaultNetworkRequestService,
-  type IAuthTokenRecord,
-} from '@/base/services/network-request';
+import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
   HeaderConstants,
   type IApplicationInfo,
   type IAuthRecoveryOptions,
+  type IAuthTokenRecord,
   type IRestDataProviderOptions,
   LocalStorageKeys,
   RequestBodyTypes,

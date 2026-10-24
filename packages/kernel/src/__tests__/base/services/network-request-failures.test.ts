@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 
-import {
-  DefaultNetworkRequestService,
-  type IAuthTokenRecord,
-} from '@/base/services/network-request';
-import { LocalStorageKeys, RequestCountData, RequestTypes } from '@/common';
+import { DefaultNetworkRequestService } from '@/base/services/network-request';
+import { type IAuthTokenRecord, LocalStorageKeys, RequestCountData, RequestTypes } from '@/common';
 
 type TConsoleMethod = 'log' | 'info' | 'warn' | 'error' | 'debug';
 

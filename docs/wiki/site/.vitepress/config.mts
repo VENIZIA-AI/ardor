@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-26',
+        collapsed: true,
+        items: [
+          {
+            text: 'The network service is split into small parts, and its types are closed',
+            link: '/changelogs/2026-10-26-network-service-split',
+          },
+        ],
+      },
+      {
         text: '2026-10-25',
         collapsed: true,
         items: [

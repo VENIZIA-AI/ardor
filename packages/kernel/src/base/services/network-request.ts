@@ -7,11 +7,12 @@ import {
   App,
   HeaderConstants,
   type IApplicationInfo,
+  type IAuthTokenRecord,
   type IAuthRecoveryOptions,
+  type IDataSourceAuth,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
   type INoAuthOptions,
-  LocalStorageKeys,
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
@@ -22,35 +23,12 @@ import {
   type TRequestMethod,
   type TRequestType,
 } from '@/common';
-import { Logger, NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
+import { AuthTokenStore, NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
 import { isDefined } from '@/utilities';
 import { BaseService } from './base';
 
-export interface IAuthTokenRecord {
-  type?: string;
-  value: string;
-  provider?: string;
-}
-
 /** The server wraps an error body under this key; both transports unwrap it. */
 const ERROR_ROOT_KEY = 'error';
-
-/** What an `HttpDataSource` hook reads from the request it is asked about. */
-export interface IDataSourceRequestContext {
-  paths: Array<string>;
-}
-
-/**
- * The settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
- * repository sends what the data provider sends: the same headers, the same token on the same
- * paths, and one shared refresh per 401 burst. The hooks run on every send, the retry included.
- */
-export interface IDataSourceAuth {
-  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
-  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
-  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
-  errorRootKey: string;
-}
 
 /** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
 const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
@@ -94,30 +72,11 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Reads the stored token, and `undefined` outside a browser. The default of `resolveAuthToken`,
-   * and what to hand an `HttpDataSource` as its `authTokenResolver`, so both transports send the
-   * same token.
+   * The stored token (`AuthTokenStore.read`), `undefined` outside a browser. The default of
+   * `resolveAuthToken`, and what to hand an `HttpDataSource` as its `authTokenResolver`.
    */
   static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
-    if (typeof localStorage === 'undefined') {
-      return undefined;
-    }
-
-    const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
-    if (!stored?.length) {
-      return undefined;
-    }
-
-    try {
-      return JSON.parse(stored);
-    } catch (error) {
-      // The name only: the message of a JSON parse error quotes the text it could not parse, the token.
-      Logger.getInstance({ scope: DefaultNetworkRequestService.name }).warn(
-        '[readAuthTokenFromStorage] The stored auth token is not valid JSON, ignoring it | error: %s',
-        error instanceof Error ? error.name : typeof error,
-      );
-      return undefined;
-    }
+    return AuthTokenStore.read();
   }
 
   // --- Hooks -----------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import { type AnyType, type IdType, LocalStorageKeys } from '@/common';
+import { type AnyType, type IAuthTokenRecord, type IdType, LocalStorageKeys } from '@/common';
+import { AuthTokenStore } from '@/helpers';
 import { BaseService } from './base';
 
 export class DefaultAuthService extends BaseService {
@@ -56,22 +57,9 @@ export class DefaultAuthService extends BaseService {
     return new Set<string>(roles);
   }
 
-  getAuth() {
-    // Nothing stored is not an error: it is every visitor who has not signed in.
-    const stored = this.readStored({ key: LocalStorageKeys.KEY_AUTH_TOKEN });
-    if (stored === null) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(stored);
-    } catch (error) {
-      this.logger.error(
-        '[getAuth] The stored token is not valid JSON | error: %s',
-        error instanceof Error ? error.name : typeof error,
-      );
-      return null;
-    }
+  /** The stored token, `null` for every visitor who has not signed in. */
+  getAuth(): IAuthTokenRecord | null {
+    return AuthTokenStore.read() ?? null;
   }
 
   saveAuth(opts: {
@@ -97,10 +85,7 @@ export class DefaultAuthService extends BaseService {
     }
 
     const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
-    localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_TOKEN,
-      JSON.stringify(Object.assign({}, token, { provider })),
-    );
+    AuthTokenStore.write({ token, provider });
     localStorage.setItem(
       LocalStorageKeys.KEY_AUTH_IDENTITY,
       JSON.stringify({ userId, username, referenceId, provider }),

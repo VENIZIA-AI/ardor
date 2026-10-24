@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (124)
+### `@venizia/ardor-kernel` (125)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -24,6 +24,7 @@ generated:
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
+- `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
 - `BaseNetworkRequest` class
@@ -245,7 +246,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (188)
+### `@venizia/ardor` (189)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -259,6 +260,7 @@ generated:
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
 - `Authentication` class
+- `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
 - `BaseNetworkRequest` class
