@@ -20,6 +20,10 @@ export class CoreBindings {
 }
 
 export class LocalStorageKeys {
+  /** Everything under these prefixes is the session: `DefaultAuthService.cleanUp` removes it all. */
+  static readonly PREFIX_AUTH = '@app/auth/';
+  static readonly PREFIX_OAUTH2 = '@app/oauth2/';
+
   static readonly KEY_AUTH_TOKEN = '@app/auth/token';
   static readonly KEY_AUTH_IDENTITY = '@app/auth/identity';
   static readonly KEY_AUTH_PERMISSION = '@app/auth/permission';

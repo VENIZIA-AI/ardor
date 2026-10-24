@@ -121,7 +121,7 @@
         "reflect-metadata",
         "socket.io-client"
       ],
-      "limit": "8.1 KB"
+      "limit": "8.2 KB"
     }
   ],
   "engines": {
