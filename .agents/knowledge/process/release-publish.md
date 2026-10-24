@@ -57,13 +57,7 @@ dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushe
 
 After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
 
-`bun scripts/release-local.ts` publishes from the machine instead, without Actions minutes. It runs
-the workflow's force-update, build, lint, version bump and `bun publish`, but not
-`refresh-catalog.ts`, and it checks the files the `exports` map names rather than `dist/index.js`.
-It adds gates CI lacks - `make catalog-check`, no `catalog:`/`workspace:` left in the packed
-manifest, every internal dependency on the registry - and a `Continue? [y/N]` prompt that `--yes`
-skips. It is stricter than CI: it refuses a dirty tree or a HEAD that is not `origin/develop`, and
-it publishes before any git write, so a rejected publish leaves nothing to roll back.
+A release always goes through this script and the workflow: there is no way to publish from a developer machine.
 
 ## Release order
 
@@ -76,7 +70,7 @@ force-update step below cannot invent a published version that does not exist ye
 
 ARDOR and IGNIS share a minor version (Phat's decision, 2026-10-20): ARDOR `X.Y.*` peers IGNIS `^X.Y.0`, so a new IGNIS minor means a new ARDOR minor of the same number, even when that skips one (ARDOR goes 0.1.5 to 0.3.0 with IGNIS 0.3.0, never through 0.2). Patches move independently on each side. `@venizia/vulcan` and `@venizia/dev-configs` version on their own lines. The four ARDOR packages release together on one version, so a minor release is `kernel`, `react`, `admin` and `ardor` at the same number.
 
-`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release.ts --version 0.3.0` or `bun scripts/release-local.ts --version 0.3.0`. `--version` overrides `--mode`. A sweep with `--version` releases every package still below that version, changed or not, in dependency order; a package already at it is skipped, so a chain that stopped half way runs again. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release-version.ts`, which the workflow calls (`scripts/release-version.ts target` and `tag`) and the two scripts import; `scripts/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. The workflow resolves both in a `Resolve release target` step before the install, so a malformed or too-low version fails before anything is built.
+`build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release.ts --version 0.3.0`. `--version` overrides `--mode`. A sweep with `--version` releases every package still below that version, changed or not, in dependency order; a package already at it is skipped, so a chain that stopped half way runs again. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release-version.ts`, which the workflow calls (`scripts/release-version.ts target` and `tag`) and `release.ts` imports; `scripts/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. The workflow resolves both in a `Resolve release target` step before the install, so a malformed or too-low version fails before anything is built.
 
 ## Force-update the workspace before install
 
@@ -108,8 +102,8 @@ bun run --filter "@venizia/*" force-update highest
 
 The workflow follows IGNIS's release workflow, step for step: gates first, then the bump, then the
 publish, and only then any git write. The gates are in `scripts/release-gates.ts` (tested in
-`scripts/__tests__/release-gates.test.ts`); the workflow calls its command line and
-`release-local.ts` imports the same functions, so the two cannot drift.
+`scripts/__tests__/release-gates.test.ts`); the workflow calls its command line, and
+`scripts/preset-smoke.ts` imports the same functions.
 
 Before the bump, after the install (see [Build system](/process/build-system.md) and
 [Makefile targets](/reference/makefile-targets.md)):
@@ -158,7 +152,7 @@ a stale `next` is fixed by hand.
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. `release-local.ts` does both for `ardor` too. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 

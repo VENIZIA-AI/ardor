@@ -172,14 +172,11 @@ make build
 We use oxlint, ESLint (naming only) and `bun fmt` (the style is the `[fmt]` section of the root `bunfig.toml`):
 
 ```bash
-# Check code style: packages, wiki and scripts/
+# Check code style: packages, wiki, scripts/, the manifests and the other tracked files
 make lint-all
 
 # Auto-fix issues
 make lint-fix
-
-# The examples carry their own scripts
-bun scripts/examples.ts check
 ```
 
 For the detailed standards, see the VULCAN base V-C rules (`node_modules/@venizia/vulcan/base/rules.md`) and ARDOR's C rules in [`.agents/rules.md`](.agents/rules.md).

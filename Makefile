@@ -1,12 +1,8 @@
 # The ARDOR monorepo. Each file under make/ holds one job; `make help` lists every target.
 # make/project.mk is not included here: it is the per-package include, used by packages/*/Makefile.
 
-.PHONY: all
-
-# A bare `make` prints the target list; `make all` / `make build` builds.
+# A bare `make` prints the target list; `make build` builds.
 .DEFAULT_GOAL := help
-
-all: build
 
 # Every package directory under packages/, in dependency order. Each per-package target (`<pkg>`,
 # `update-<pkg>`, `lint-<pkg>`, `lint-fix-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`)

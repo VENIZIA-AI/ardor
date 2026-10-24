@@ -10,13 +10,12 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**84 targets.**
+**81 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
 | `make admin` | `react` | Rebuild one package, after its dependencies. |
 | `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
-| `make all` | `build` | Rebuilds all packages (alias for 'build-all'). |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
 | `make atlas-releases` | - | Print the release table atlas computes from the tags. |
 | `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
@@ -42,10 +41,10 @@ generated:
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-manifests lint-files` | lint-packages, lint-wiki and lint-scripts. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-manifests lint-files` | lint-packages, lint-wiki, lint-scripts, lint-manifests and lint-files. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-files` | - | Format check of the files outside the projects: workflows, .agents, .configs, the presets. |
-| `make lint-fix` | `lint-fix-packages fmt-manifests fmt-files` | lint-fix-<pkg> for every package. |
+| `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-manifests fmt-files` | lint-fix-<pkg> for every package. |
 | `make lint-fix-admin` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-ardor` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
 | `make lint-fix-kernel` | - | Apply oxlint --fix, ESLint --fix and bun fmt to one package. |
@@ -88,9 +87,7 @@ generated:
 | `make test-scripts` | - | Run the repository gate scripts' own regression tests. |
 | `make typecheck` | `typecheck-all` | Type-check every package (tests included) without emitting. |
 | `make typecheck-all` | - | Type-check every package (tests included) without emitting. |
-| `make update` | - | Move every @venizia/* catalog entry to the highest published version. |
 | `make update-admin` | - | Force update one package's dependencies from NPM. |
-| `make update-all` | `update` | Move every @venizia/* catalog entry to the highest published version. |
 | `make update-ardor` | - | Force update one package's dependencies from NPM. |
 | `make update-kernel` | - | Force update one package's dependencies from NPM. |
 | `make update-react` | - | Force update one package's dependencies from NPM. |

@@ -109,5 +109,5 @@ line is what the framework builds on. The `@venizia/*` entries of the root `work
 IGNIS packages and `dev-configs`) follow the npm dist-tag `highest` through
 `bun scripts/refresh-catalog.ts highest`. ARDOR's own cross-package ranges sit outside the catalog
 and follow the semver-highest published version through each package's `force-update highest`.
-`make update` runs both. See [Build system](/process/build-system.md) and
+The release workflow runs both. See [Build system](/process/build-system.md) and
 [Release and publish](/process/release-publish.md).
