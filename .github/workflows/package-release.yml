@@ -118,15 +118,15 @@ jobs:
           echo "│ Version:     $CURRENT_VERSION → ${VERSION:-$BUILD_MODE}"
           echo "└─────────────────────────────────────────────────"
 
-      # What this release is released AS, decided in one tested place (scripts/release-version.ts): the
+      # What this release is released AS, decided in one tested place (scripts/release/release-version.ts): the
       # explicit version when one is given, else the bump type. A version that is malformed or not above
       # the current one fails here, before any build. A stable target publishes to latest, a prerelease
       # to next.
       - name: Resolve release target
         run: |
           CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
-          TARGET=$(bun scripts/release-version.ts target --version "$VERSION" --mode "$BUILD_MODE" --current "$CURRENT_VERSION")
-          NPM_TAG=$(bun scripts/release-version.ts tag "$TARGET")
+          TARGET=$(bun scripts/release/release-version.ts target --version "$VERSION" --mode "$BUILD_MODE" --current "$CURRENT_VERSION")
+          NPM_TAG=$(bun scripts/release/release-version.ts tag "$TARGET")
           echo "TARGET=$TARGET" >> $GITHUB_ENV
           echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
           echo ">>> $CURRENT_VERSION -> $TARGET (npm tag: $NPM_TAG)"
@@ -138,7 +138,7 @@ jobs:
       # per-package script refreshes any range the catalog does not own.
       - name: Force update workspace
         run: |
-          bun scripts/refresh-catalog.ts highest
+          bun scripts/build/refresh-catalog.ts highest
           bun run --filter "@venizia/*" force-update highest
 
       - name: Install
@@ -148,7 +148,7 @@ jobs:
       # always wrong: the build would validate code that is not in this repository. The failure mode is
       # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
       - name: Assert internal dependencies link to the workspace
-        run: bun scripts/release-gates.ts links $PACKAGE_PATH
+        run: bun scripts/release/release-gates.ts links $PACKAGE_PATH
 
       # -------------------------------------------------------------------------
       # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
@@ -175,7 +175,7 @@ jobs:
       # PUBLISHED target is strictly stronger than checking one index - a sub-path whose file never got
       # emitted fails here instead of at a consumer's first import.
       - name: Validate build artifacts
-        run: bun scripts/release-gates.ts artifacts $PACKAGE_PATH
+        run: bun scripts/release/release-gates.ts artifacts $PACKAGE_PATH
 
       - name: Check dependency catalog
         run: make catalog-check
@@ -193,10 +193,10 @@ jobs:
       # Packed once, read by every validator below: they all see the SAME manifest - the one npm
       # receives, not the one in the working tree.
       - name: Pack the release tarball
-        run: bun scripts/release-gates.ts pack $PACKAGE_PATH "$RUNNER_TEMP/packed-manifest.json"
+        run: bun scripts/release/release-gates.ts pack $PACKAGE_PATH "$RUNNER_TEMP/packed-manifest.json"
 
       - name: Validate packed manifest
-        run: bun scripts/release-gates.ts protocols "$RUNNER_TEMP/packed-manifest.json"
+        run: bun scripts/release/release-gates.ts protocols "$RUNNER_TEMP/packed-manifest.json"
 
       # The check above only rejects an *unresolved* protocol. A `workspace:*` on a package that was
       # never published resolves cleanly to a literal version while packing, so the tarball would name
@@ -207,7 +207,7 @@ jobs:
       - name: Validate dependencies exist on the registry
         env:
           CHAIN_RELEASED: ${{ github.event.inputs.chain_released }}
-        run: bun scripts/release-gates.ts registry "$RUNNER_TEMP/packed-manifest.json" --chain-released "$CHAIN_RELEASED"
+        run: bun scripts/release/release-gates.ts registry "$RUNNER_TEMP/packed-manifest.json" --chain-released "$CHAIN_RELEASED"
 
       # An app created from the PACKED preset typechecks, lints, builds and starts without a warning.
       # Before the bump and the publish: a preset that cannot create a working app must not ship.
@@ -235,7 +235,7 @@ jobs:
       # after the sync that brings in the chain's earlier releases.
       - name: Write the VULCAN preset
         if: ${{ env.PACKAGE == 'ardor' }}
-        run: bun scripts/vulcan-preset.ts
+        run: bun scripts/preset/vulcan-preset.ts
 
       # -------------------------------------------------------------------------
       # PUBLISH - deliberately ahead of every git write
@@ -285,7 +285,7 @@ jobs:
       # is looked at, not only this one, so a package that was not released also heals. Non-fatal and loud.
       - name: Keep the next tag at or above latest
         continue-on-error: true
-        run: bun scripts/release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"
+        run: bun scripts/release/release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
@@ -383,6 +383,6 @@ jobs:
           bun-version: latest
 
       - name: Move next to latest where it is below
-        run: bun scripts/release-gates.ts heal-next
+        run: bun scripts/release/release-gates.ts heal-next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}

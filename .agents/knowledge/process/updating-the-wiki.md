@@ -20,7 +20,7 @@ tags: [process, docs, wiki]
    socket client), `best-practices/` (architectural conventions), `changelogs/` (feature
    announcements - indexed by `atlas` as their own `changelog` corpus). A new dated changelog
    page is searchable at once, but the atlas release table behind `changes` only lists it once
-   regenerated - `scripts/release.ts` does that after the next release chain. The index table and the
+   regenerated - `scripts/release/release.ts` does that after the next release chain. The index table and the
    changelog sidebar (Overview, then History with one collapsible group per date) are generated from
    the entries by `docs/wiki/scripts/changelogs.mts`; `make docs` runs it with `--check` and fails on
    drift.

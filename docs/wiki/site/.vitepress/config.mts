@@ -123,6 +123,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         items: [
           { text: 'ARDOR 0.4.0 follows IGNIS 0.4.0', link: '/changelogs/2026-10-24-ardor-0-4-0' },
           {
+            text: 'scripts/ is grouped by purpose',
+            link: '/changelogs/2026-10-24-scripts-grouped',
+          },
+          {
             text: 'The unused scripts and make targets are gone',
             link: '/changelogs/2026-10-24-unused-scripts-removed',
           },
