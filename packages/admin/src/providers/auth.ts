@@ -136,7 +136,12 @@ export class DefaultAuthProvider<
       return typeof claims === 'object' && claims !== null
         ? (claims as Record<string, unknown>)
         : undefined;
-    } catch {
+    } catch (error) {
+      // The name only: the message of a JSON parse error quotes the payload it could not parse.
+      this.logger.debug(
+        '[decodeJwtClaims] The token payload cannot be decoded, reading no claims | error: %s',
+        error instanceof Error ? error.name : typeof error,
+      );
       return undefined;
     }
   }
