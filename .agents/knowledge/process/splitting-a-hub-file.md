@@ -2,7 +2,7 @@
 type: Playbook
 title: Splitting a hub file by topic
 description: Ordered steps to split a multi-topic types, constants or class file into one-concept files behind the same barrel, with the gates that prove nothing leaked.
-resource: scripts/split-report.ts
+resource: scripts/checks/split-report.ts
 tags: [process, file-splitting, refactor, surface]
 ---
 
@@ -38,7 +38,7 @@ and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class 
    must show `types/` and no `types.js`.
 6. Gates: the package suite and every downstream suite (kernel changes ripple into react and admin,
    which load `dist`), `make lint-<package>`,
-   `bun scripts/module-cycles.ts packages/<package>/dist --max 0`, `make surface-check` (never
+   `bun scripts/checks/module-cycles.ts packages/<package>/dist --max 0`, `make surface-check` (never
    `surface-gen` for a split - a changed snapshot means a leak or a loss), `make okf-gen && make okf-check`,
    `make wiki-links-check` (repoint every doc link at the topic file that declares the named symbol).
 7. Commit the move and the doc repoints separately: `refactor(<package>): <scope> types split by topic`

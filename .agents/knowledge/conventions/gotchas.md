@@ -40,7 +40,7 @@ A boolean field with a `null` value shows nothing rather than a "false"-looking 
 
 ## `force-update` skips catalogued ranges
 
-`force-update` rewrites only the `@venizia/*` ranges in a package's `dependencies` and `devDependencies` that the root catalog does not own - a `catalog:` or `workspace:` range, or a peer-only dependency, is skipped on purpose. Every release runs it before `bun install`, which would otherwise have resolved the old ranges; the workflow runs `refresh-catalog` first, then `force-update`. The trap is expecting it to move a `catalog:` range: a per-package `make update-<package>` target, and the root `force-update` script both leave the catalog where it was - only `bun scripts/refresh-catalog.ts highest` rewrites it. See [release-publish](/process/release-publish.md) and [build-system](/process/build-system.md).
+`force-update` rewrites only the `@venizia/*` ranges in a package's `dependencies` and `devDependencies` that the root catalog does not own - a `catalog:` or `workspace:` range, or a peer-only dependency, is skipped on purpose. Every release runs it before `bun install`, which would otherwise have resolved the old ranges; the workflow runs `refresh-catalog` first, then `force-update`. The trap is expecting it to move a `catalog:` range: a per-package `make update-<package>` target, and the root `force-update` script both leave the catalog where it was - only `bun scripts/build/refresh-catalog.ts highest` rewrites it. See [release-publish](/process/release-publish.md) and [build-system](/process/build-system.md).
 
 ## Size budgets are measured with peers external
 
@@ -48,7 +48,7 @@ When package size is checked against its budget, peer dependencies are treated a
 
 ## Purity externals are third-party packages only
 
-`make purity` bundles every runtime entry in the `exports` maps of kernel, react, admin and ardor for the browser and keeps ARDOR's own code and every `@venizia/*` dependency in the measured graph. The per-sub-path `external` list in `scripts/purity/manifest.ts` may exempt only a third-party package - a peer, or a dependency such as `ra-i18n-polyglot` - whose own packaging the probe cannot judge; listing an `@venizia/*` package there throws when the manifest loads, because an external would hide the exact leak the gate exists to catch. When purity fails on ARDOR code, fix the import - do not reach for `external`. See [build-run-test](/overview/build-run-test.md) ("Repository gates") and [design-decisions](/overview/design-decisions.md) ("Purity and layer gates").
+`make purity` bundles every runtime entry in the `exports` maps of kernel, react, admin and ardor for the browser and keeps ARDOR's own code and every `@venizia/*` dependency in the measured graph. The per-sub-path `external` list in `scripts/checks/purity/manifest.ts` may exempt only a third-party package - a peer, or a dependency such as `ra-i18n-polyglot` - whose own packaging the probe cannot judge; listing an `@venizia/*` package there throws when the manifest loads, because an external would hide the exact leak the gate exists to catch. When purity fails on ARDOR code, fix the import - do not reach for `external`. See [build-run-test](/overview/build-run-test.md) ("Repository gates") and [design-decisions](/overview/design-decisions.md) ("Purity and layer gates").
 
 ## A bare provider binding hands each consumer its own data provider
 

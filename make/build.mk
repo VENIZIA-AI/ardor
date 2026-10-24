@@ -59,7 +59,7 @@ typecheck-all:
 
 # ----------------------------------------------------------------------------
 # FORCE UPDATE TARGETS - ARDOR tracks the HIGHEST published IGNIS line (prerelease included),
-# never `latest`. The root catalog is refreshed first, by `bun scripts/refresh-catalog.ts highest`; the
+# never `latest`. The root catalog is refreshed first, by `bun scripts/build/refresh-catalog.ts highest`; the
 # per-package force-update skips catalogued ranges by design. The release workflow runs both.
 # ----------------------------------------------------------------------------
 $(UPDATE_TARGETS): update-%:

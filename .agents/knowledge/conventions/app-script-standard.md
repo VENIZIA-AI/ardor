@@ -36,7 +36,7 @@ api/server.ts` for the API alone.
 `presets/app/` writes the standard into every generated admin: `preset.json` has the seven
 scripts and `files/scripts/{lint,compile,clean}.sh`, with `src/application.test.ts` as the one test (it
 starts the container and checks that `AdminConfiguration` binds the REST data provider options). The
-preset's `checks` are `typecheck`, `lint`, `test` and `compile`. `scripts/preset-smoke.ts` runs `server:dev`
+preset's `checks` are `typecheck`, `lint`, `test` and `compile`. `scripts/preset/preset-smoke.ts` runs `server:dev`
 (not `dev`), `compile` and `clean`, and fails when a script is missing or a forbidden name is present.
 
 ## The library packages

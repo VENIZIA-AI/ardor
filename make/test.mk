@@ -1,7 +1,7 @@
 # Package test suites, type-check, the browser-purity gate, the clean-install gate, the bundle and
 # layering gates, and the gate scripts' own tests.
 
-# Packages with an entry claimed browser-pure (scripts/purity/manifest.ts) - all of them.
+# Packages with an entry claimed browser-pure (scripts/checks/purity/manifest.ts) - all of them.
 PURE := $(PACKAGES)
 
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
@@ -29,7 +29,7 @@ $(TEST_TARGETS): test-%:
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:
 	@echo "🔍 Running the repository gate scripts' regression tests..."
-	@bun test scripts/__tests__
+	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__ scripts/wiki/__tests__
 
 # ----------------------------------------------------------------------------
 # PURITY TARGETS
@@ -38,16 +38,16 @@ test-scripts:
 # ----------------------------------------------------------------------------
 purity:
 	@echo "🔍 Checking browser purity for all claimed entries..."
-	@bun scripts/purity/cli.ts
+	@bun scripts/checks/purity/cli.ts
 
 # The probe's own regression tests. They live outside every package, so nothing else runs them.
 purity-test:
 	@echo "🔍 Running the purity probe's regression tests..."
-	@bun test scripts/purity/__tests__
+	@bun test scripts/checks/purity/__tests__
 
 $(addprefix purity-,$(PURE)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
-	@bun scripts/purity/cli.ts $*
+	@bun scripts/checks/purity/cli.ts $*
 
 # ----------------------------------------------------------------------------
 # CLEAN-INSTALL TARGETS
@@ -56,21 +56,21 @@ $(addprefix purity-,$(PURE)): purity-%:
 # ----------------------------------------------------------------------------
 clean-install:
 	@echo "🔍 Loading every published sub-path from a clean install..."
-	@bun scripts/clean-install/cli.ts
+	@bun scripts/checks/clean-install/cli.ts
 
 $(CLEAN_INSTALL_TARGETS): clean-install-%:
 	@echo "🔍 Loading every published sub-path of $* from a clean install..."
-	@bun scripts/clean-install/cli.ts $*
+	@bun scripts/checks/clean-install/cli.ts $*
 
 # ----------------------------------------------------------------------------
 # LAYERING AND BUNDLE GATES - run after a build.
 # ----------------------------------------------------------------------------
 layer-check:
-	@bun scripts/layer-boundaries.ts
+	@bun scripts/checks/layer-boundaries.ts
 
 # `--max 0` is what makes this a gate; without it the script only reports.
 cycles-check:
-	@$(foreach p,$(PACKAGES),bun scripts/module-cycles.ts packages/$(p)/dist --max 0 &&) true
+	@$(foreach p,$(PACKAGES),bun scripts/checks/module-cycles.ts packages/$(p)/dist --max 0 &&) true
 
 # Bundle budgets, measured brotlied with every third-party peer external.
 size-check:
