@@ -4,12 +4,8 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ESNext"
-    ],
-    "types": [
-      "bun"
-    ],
+    "lib": ["ESNext"],
+    "types": ["bun"],
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -18,12 +14,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": [
-    "./*.ts",
-    "./purity/**/*.ts",
-    "./__tests__/**/*.ts"
-  ],
-  "exclude": [
-    "./purity/__tests__/fixtures"
-  ]
+  "include": ["./*.ts", "./purity/**/*.ts", "./__tests__/**/*.ts"],
+  "exclude": ["./purity/__tests__/fixtures"]
 }

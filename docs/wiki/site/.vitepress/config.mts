@@ -118,12 +118,23 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-24',
+        collapsed: true,
+        items: [
+          { text: 'ARDOR 0.4.0 follows IGNIS 0.4.0', link: '/changelogs/2026-10-24-ardor-0-4-0' },
+        ],
+      },
+      {
         text: '2026-10-23',
         collapsed: true,
         items: [
           {
             text: 'The repository formats with bun fmt',
             link: '/changelogs/2026-10-23-format-with-bun-fmt',
+          },
+          {
+            text: 'No project keeps a formatter config any more',
+            link: '/changelogs/2026-10-23-no-formatter-config',
           },
           {
             text: 'One code style, set in one bunfig.toml',

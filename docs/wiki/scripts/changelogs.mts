@@ -96,7 +96,7 @@ ${groups.join('\n')}
 ];`;
 };
 
-/** Formatting is oxfmt's business; compare what the entries say, not how it is laid out. */
+/** Formatting is bun fmt's business; compare what the entries say, not how it is laid out. */
 const normalize = (text: string): string => text.replace(/[\s'",\\]/g, '');
 
 const main = async () => {

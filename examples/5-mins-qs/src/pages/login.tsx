@@ -20,7 +20,7 @@ export const LoginPage = () => {
         <input
           name="username"
           value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          onChange={event => setUsername(event.target.value)}
         />
       </label>
       <label>
@@ -29,7 +29,7 @@ export const LoginPage = () => {
           name="password"
           type="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={event => setPassword(event.target.value)}
         />
       </label>
       <button type="submit">Sign in</button>
