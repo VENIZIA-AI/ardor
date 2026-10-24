@@ -25,7 +25,6 @@ import type {
 } from 'ra-core';
 
 import {
-  type AnyType,
   BaseProvider,
   CoreBindings,
   DefaultNetworkRequestService,
@@ -45,7 +44,7 @@ import {
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import type { IDataProvider, IRestRequestOptions } from '@/common';
-import { ListFilterBuilder } from './list-filter';
+import { type IListFilter, ListFilterBuilder } from './list-filter';
 
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
@@ -121,7 +120,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * `doRequest`. `paths` default to `[resource]`; headers in `headers` win over the computed
    * ones, because a caller that names a header means it.
    */
-  protected request<TResult = AnyType>(
+  protected request<TResult = unknown>(
     opts: IRestRequestOptions<TResource>,
   ): Promise<INetworkResponse<TResult>> {
     const {
@@ -164,11 +163,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * The list GET: the filter in the query, and the extras a route answered as the result's
    * `meta.extra`. Override it to change how a list is read (`CountRestDataProvider` adds the total).
    */
-  protected requestList<RecordType extends RaRecord = AnyType>(opts: {
+  protected requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     type: TRequestType;
-    queryKey: Record<string, AnyType>;
-    filter: Record<string, AnyType>;
+    queryKey: Record<string, unknown>;
+    filter: IListFilter;
     extra?: TExtraRequest;
   }) {
     const { resource, type, queryKey, filter, extra } = opts;
@@ -184,7 +183,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async getList<RecordType extends RaRecord = AnyType>(opts: {
+  async getList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetListParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetListResult<RecordType>> {
@@ -200,7 +199,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async getOne<RecordType extends RaRecord = AnyType>(opts: {
+  async getOne<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
   }): Promise<GetOneResult<RecordType>> {
@@ -218,7 +217,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async getMany<RecordType extends RaRecord = AnyType>(opts: {
+  async getMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
   }): Promise<GetManyResult<RecordType>> {
@@ -243,7 +242,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async getManyReference<RecordType extends RaRecord = AnyType>(opts: {
+  async getManyReference<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetManyReferenceParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetManyReferenceResult<RecordType>> {
@@ -263,7 +262,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async update<RecordType extends RaRecord = AnyType>(opts: {
+  async update<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateParams;
   }): Promise<UpdateResult<RecordType>> {
@@ -278,7 +277,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async updateMany<RecordType extends RaRecord = AnyType>(opts: {
+  async updateMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateManyParams;
   }): Promise<UpdateManyResult<RecordType>> {
@@ -309,7 +308,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }
 
   async create<
-    RecordType extends Omit<RaRecord, 'id'> = AnyType,
+    RecordType extends Omit<RaRecord, 'id'> = Omit<RaRecord, 'id'>,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
   >(opts: { resource: TResource; params: CreateParams }): Promise<CreateResult<ResultRecordType>> {
     const { resource, params } = opts;
@@ -322,7 +321,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async delete<RecordType extends RaRecord = AnyType>(opts: {
+  async delete<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteParams<RecordType>;
   }): Promise<DeleteResult<RecordType>> {
@@ -336,7 +335,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async deleteMany<RecordType extends RaRecord = AnyType>(opts: {
+  async deleteMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteManyParams<RecordType>;
   }): Promise<DeleteManyResult<RecordType>> {
@@ -359,7 +358,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
-  async send<TResult = AnyType>(opts: {
+  async send<TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
   }): Promise<ISendResponse<TResult>> {

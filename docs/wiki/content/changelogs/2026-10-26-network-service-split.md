@@ -24,6 +24,10 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 - **`requestList` replaces `getListHelper`.** The list GET, with the extras a route answered as `meta.extra`, is the protected `requestList({ resource, type, queryKey, filter, extra? })`. `CountRestDataProvider` overrides it and asks `request()` for `/count` without extras, so its `withoutExtraHeader` workaround is gone.
 - **The unused parse utilities are gone.** Nothing in ARDOR or in the BANA frontend used them, and IGNIS already has the helpers a project needs. The kernel loses its only runtime dependency, `lodash`.
 - **The request types name every field.** `ISendParams` and `IApplicationInfo` no longer end in `[key]: any`, so a typo is a compile error instead of a field that is silently dropped. `ISendParams.body` is `unknown` and `query` is `Record<string, unknown>`; `extra` (the list extras `send()` already passed on) is named. `ISendResponse` is the `INetworkResponse` it duplicated.
+- **The provider types come from ra-core.** `IReactAdminDataProvider` is the nine data methods of ra-core's `DataProvider`, and `IReactAdminAuthProvider` the auth methods of its `AuthProvider` (with `getPermissions` required), taken with `Pick`: a ra-core upgrade changes them, and they cannot drift from it.
+- **`refreshToken` answers a boolean.** `IAuthProvider.refreshToken`, `DefaultAuthProvider.refreshToken` and `useRefreshToken` are `Promise<boolean>`: `true` when the session was refreshed, `false` when there is no refresh to make (`useRefreshToken` also answers `false` with no auth provider, where it answered `undefined`).
+- **`AnyType` leaves the signatures.** `send()`, `request()`, `doRequest()`, `ISendResponse` and `INetworkResponse` default to `unknown` data (name the type: `send<TSignInResponse>(...)`); the record generics of the data provider methods default to `RaRecord`; the auth hooks take `ILoginParams` or `unknown`; the list filter is a named `IListFilter`; `i18nSources` is `Record<string, object>`; the `Logger` takes `unknown` arguments; `useService`, `useProvider`, `useComponent`, `useConfiguration` and `useRepository` default to `unknown`.
+- **`useTranslate()` is typed in every case.** It used to return a union with an `(key: any) => any` fallback, so a plain `string` key and a translated text assigned to a key-typed prop both compiled; it returns `TUseTranslateFn`, and `translate()` returns `string`.
 
 ## Who is affected
 
@@ -59,5 +63,18 @@ The `/count` request of `CountRestDataProvider` now builds its own headers, so i
 These exports are removed from `@venizia/ardor-kernel` and `@venizia/ardor`: `NumberParseMethods`, `TNumberParseMethod`, `INTL_0_DIGITS_FORMATTER`, `INTL_2_DIGITS_FORMATTER`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue` and `parseQueryString`. Replace `parseQueryString({ search })` with `Object.fromEntries(new URLSearchParams(search))`; for the rest, use the IGNIS helpers (`@venizia/ignis-helpers`) or your own.
 
 `ISendParams` loses the index signature and the unused `id` and `file`; `IApplicationInfo` loses the index signature; the unused `IRequestProps` is removed. Code that passed an extra key to either now fails to compile: delete the key, or carry the value another way (a header in `headers`, a path in `resource`).
+
+Type-level only; nothing changes at run time except the `useRefreshToken` result with no auth provider. Name the type on `send()` and resolve `true` from a `refreshToken` override:
+
+```diff
+-.send({ resource, params })
+-.then((rs: { data: TSignInResponse }) => { /* ... */ resolve(rs); })
++.send<TSignInResponse>({ resource, params })
++.then(rs => { /* ... */ resolve(true); }) // inside new Promise<boolean>(...)
+```
+
+- A subclass of `DefaultAuthProvider` that overrides `refreshToken` must return `Promise<boolean>`.
+- A call to `send()` or `doRequest()` without a type argument gets `unknown` data: pass the type.
+- A value that is a translated text must not be typed as `TUseTranslateKeys`, and a key built at run time must be typed as one.
 
 The rest of the breaking parts of this series are listed here as they land.

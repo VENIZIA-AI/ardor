@@ -3,8 +3,10 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthProvider } from 'ra-core';
 
-import type { AnyType } from '@venizia/ardor-kernel';
+import { Logger } from '@venizia/ardor-kernel';
 import type { IAuthProvider } from '@/common';
+
+const logger = Logger.getInstance({ scope: 'useRefreshToken' });
 
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();
@@ -13,23 +15,21 @@ export const useRefreshToken = (): TRefreshToken => {
 
   const refreshToken = React.useCallback(() => {
     if (!authProvider) {
-      return Promise.resolve();
+      return Promise.resolve(false);
     }
 
-    return authProvider.refreshToken().then((ret: AnyType) => {
+    return authProvider.refreshToken().then(isRefreshed => {
       queryClient
         .invalidateQueries({ queryKey: ['auth', 'getPermissions'] })
         .catch((error: unknown) => {
-          console.error(
-            '[useRefreshToken] Failed to invalidate permissions cache | error: %s',
-            error,
-          );
+          logger.error('[refreshToken] Failed to invalidate permissions cache | error: %s', error);
         });
-      return ret;
+      return isRefreshed;
     });
   }, [authProvider, queryClient]);
 
   return refreshToken;
 };
 
-type TRefreshToken = () => Promise<any>;
+/** `true` when the session was refreshed, `false` when there is no auth provider or no refresh to make. */
+type TRefreshToken = () => Promise<boolean>;

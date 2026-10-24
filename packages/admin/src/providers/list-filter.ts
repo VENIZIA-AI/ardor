@@ -1,11 +1,26 @@
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import omit from 'lodash/omit.js';
 import type { GetListParams } from 'ra-core';
 
-import { type AnyType, type ICustomParams, isDefined } from '@venizia/ardor-kernel';
+import { type ICustomParams, isDefined } from '@venizia/ardor-kernel';
+
+/** The IGNIS filter a list request sends. Any other key of the list params is a filter key too. */
+export interface IListFilter {
+  where: Record<string, unknown>;
+  order?: Array<string>;
+  limit?: number;
+  skip?: number;
+  offset?: number;
+  include?: unknown;
+  fields?: unknown;
+  params?: Record<string, unknown>;
+  noLimit?: boolean;
+  [key: string]: unknown;
+}
 
 export class ListFilterBuilder {
   /** `filter.params` as the keys of the query string, as a copy. */
-  static extractQueryParams(opts: { params?: Record<string, AnyType> }): Record<string, AnyType> {
+  static extractQueryParams(opts: { params?: Record<string, unknown> }): Record<string, unknown> {
     return { ...opts.params };
   }
 
@@ -16,13 +31,13 @@ export class ListFilterBuilder {
    * extras (sent in a header).
    */
   static build(opts: { params: GetListParams & ICustomParams }): {
-    filter: Record<string, AnyType>;
-    queryKey: Record<string, AnyType>;
-    extra: Record<string, AnyType> | undefined;
+    filter: IListFilter;
+    queryKey: Record<string, unknown>;
+    extra: TExtraRequest | undefined;
   } {
     const { pagination, sort, filter: filterInput, meta, ...rest } = opts.params;
 
-    let filter: Record<string, AnyType> = {};
+    let filter = {} as IListFilter;
 
     if (filterInput?.where) {
       filter = { ...filterInput, where: { ...filterInput.where } };

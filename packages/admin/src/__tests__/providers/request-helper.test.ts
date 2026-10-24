@@ -156,7 +156,7 @@ describe('requestList', () => {
       resource: 'posts',
       type: RequestTypes.GET_LIST,
       queryKey: {},
-      filter: {},
+      filter: { where: {} },
       extra: { facets: ['status'] } as never,
     });
 

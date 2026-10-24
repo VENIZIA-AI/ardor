@@ -47,7 +47,7 @@ export interface ISendParams {
 }
 
 /** What `IDataProvider.send` answers: the network service's response. */
-export type ISendResponse<T = AnyType> = INetworkResponse<T>;
+export type ISendResponse<T = unknown> = INetworkResponse<T>;
 
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
@@ -68,6 +68,7 @@ export interface IGetRequestPropsResult {
   body?: unknown;
 }
 
+/** Keys react-admin does not know ride on its params and become filter keys; `any`, so ra-core's param interfaces stay assignable. */
 export interface ICustomParams {
   params?: Record<string, AnyType>;
   [key: string]: AnyType;
@@ -150,7 +151,7 @@ export interface IDataSourceAuth {
 }
 
 /** What `DefaultNetworkRequestService.doRequest` answers. */
-export interface INetworkResponse<TResult = AnyType> {
+export interface INetworkResponse<TResult = unknown> {
   data: TResult;
   count?: number;
   /** GET_LIST and GET_MANY_REFERENCE: the total of `Content-Range`, else the page's own row count. */

@@ -68,7 +68,7 @@ describe('convertResponse on a body that is not an object', () => {
       service.convertResponse({
         type: RequestTypes.GET_LIST,
         requestCountData: RequestCountData.DATA_WITH_COUNT,
-        response: { data: data as never, headers: {} },
+        response: { data: data as never, headers: new Headers() },
       });
     } catch (error) {
       thrown = error;

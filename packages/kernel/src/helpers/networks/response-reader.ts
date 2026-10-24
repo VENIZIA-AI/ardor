@@ -2,7 +2,6 @@ import { getError } from '@venizia/ignis-inversion';
 import { HttpResponseReader } from '@venizia/ignis-kernel/repository';
 
 import {
-  type AnyType,
   HeaderConstants,
   type INetworkResponse,
   RequestCountData,
@@ -21,7 +20,7 @@ export class ResponseReader {
   static readonly ERROR_ROOT_KEY = 'error';
 
   /** A response as `INetworkResponse`: JSON read by the request type, a file as a `Blob`. */
-  static async read<TResult = AnyType>(opts: {
+  static async read<TResult = unknown>(opts: {
     response: Response;
     type: TRequestType;
     requestCountData?: TConstValue<typeof RequestCountData>;
@@ -62,16 +61,16 @@ export class ResponseReader {
     const converted = ResponseReader.convert<TResult>({
       type,
       requestCountData,
-      response: { headers: response.headers ?? {}, data: body as TResult },
+      response: { headers: response.headers, data: body as TResult },
     });
 
     return extra ? { ...converted, extra } : converted;
   }
 
-  static convert<TData = AnyType>(opts: {
+  static convert<TData = unknown>(opts: {
     response: {
       data: TData | { data: TData; count?: number };
-      headers: Record<string, AnyType>;
+      headers: Pick<Headers, 'get'>;
     };
     type: string;
     requestCountData?: TConstValue<typeof RequestCountData>;
@@ -169,10 +168,7 @@ export class ResponseReader {
   }
 
   /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
-  private static resolveTotal(opts: {
-    headers: Record<string, AnyType>;
-    rowCount: number;
-  }): number {
+  private static resolveTotal(opts: { headers: Pick<Headers, 'get'>; rowCount: number }): number {
     const range = HttpResponseReader.parseContentRange({
       header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
     });

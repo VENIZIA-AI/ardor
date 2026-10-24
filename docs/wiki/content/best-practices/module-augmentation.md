@@ -236,7 +236,7 @@ export const VerifyKeys = () => {
 };
 ```
 
-Annotate the local as `TUseTranslateFn`. `useTranslate()` returns the typed function when an i18n provider is mounted and an identity fallback otherwise, and the fallback's `any` parameter widens the union if you let inference pick the type. The annotation is what makes the unknown-key line an error.
+`useTranslate()` returns a `TUseTranslateFn` whether or not an i18n provider is mounted (without one it answers the key), so the unknown-key line is an error with or without the annotation. The annotation documents the type.
 
 ### Do not
 
@@ -249,7 +249,7 @@ Do not verify by reading the hover tooltip in the editor. Editors can resolve a 
 - **Augmentation file outside `tsconfig` `include`.** The editor may see it while the build does not. The `@ts-expect-error` check catches this.
 - **Message object typed too loosely.** `TFullPaths<Record<string, unknown>>` does not give you literal paths. Keep `messages` as a literal object.
 - **Expecting `target` to be typed by the augmentation.** `useInjectable({ target })` resolves the key from class metadata and ignores the key union.
-- **Inferring the `translate` type.** Assign `useTranslate()` to a `TUseTranslateFn` local; otherwise the identity fallback widens the key parameter.
+- **A key built at run time.** A plain `string` is not a `TUseTranslateKeys`; type the value as `TUseTranslateKeys` where it is made (a label map), or narrow it before the call.
 
 ## Related
 
