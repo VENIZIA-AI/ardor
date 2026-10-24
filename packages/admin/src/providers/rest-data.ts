@@ -43,6 +43,7 @@ import {
   type TRequestType,
 } from '@venizia/ardor-kernel';
 import type { IDataProvider } from '@/common';
+import { ListFilterBuilder } from './list-filter';
 
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
@@ -98,75 +99,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }
 
   /**
-   * The IGNIS filter, the query and the list extras (sent in a header) of a list request, from
-   * react-admin's list params. Shared by `getList` and `getManyReference`.
+   * See `ListFilterBuilder.build`. Override it to change the filter a list request sends; shared by
+   * `getList` and `getManyReference`.
    */
-  protected buildListFilter(opts: { params: GetListParams & ICustomParams }): {
-    filter: Record<string, AnyType>;
-    queryKey: Record<string, AnyType>;
-    extra: Record<string, AnyType> | undefined;
-  } {
-    const { pagination, sort, filter: filterInput, meta, ...rest } = opts.params;
-
-    let filter: Record<string, AnyType> = {};
-
-    if (filterInput?.where) {
-      filter = { ...filterInput, where: { ...filterInput.where } };
-    } else {
-      filter['where'] = {
-        ...omit(filterInput, ['include', 'params', 'noLimit', 'fields']),
-      };
-      filter['include'] = filterInput?.include;
-      filter['fields'] = filterInput?.fields;
-      filter['params'] = filterInput?.params;
-      filter['noLimit'] = filterInput?.noLimit;
-    }
-
-    if (sort?.field) {
-      filter['order'] = [`${sort.field} ${sort.order}`];
-    }
-
-    // Remove default limit and skip in react-admin
-    if (filter?.noLimit) {
-      filter['limit'] = undefined;
-      filter['skip'] = undefined;
-      filter['offset'] = undefined;
-      filter['noLimit'] = undefined;
-    } else {
-      const { page = 1, perPage = 0 } = pagination ?? {};
-
-      // No `perPage` is no limit. `skip` is IGNIS's offset (`offset` is its alias): one is enough.
-      if (perPage > 0) {
-        filter['limit'] = perPage;
-        filter['skip'] = (Math.max(page, 1) - 1) * perPage;
-      }
-    }
-
-    for (const key in rest) {
-      // Skip only undefined and null: `false` and `0` are filters.
-      if (!isDefined(rest[key])) {
-        continue;
-      }
-
-      filter[key] = rest[key];
-    }
-
-    const queryKey: Record<string, AnyType> = {};
-
-    if (filter?.params) {
-      for (const key in filter.params) {
-        queryKey[key] = filter.params[key];
-      }
-      filter['params'] = undefined;
-    }
-
-    // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
-    const { extra, ...queryMeta } = meta ?? {};
-    for (const key in queryMeta) {
-      queryKey[key] = queryMeta[key];
-    }
-
-    return { filter, queryKey, extra };
+  protected buildListFilter(opts: { params: GetListParams & ICustomParams }) {
+    return ListFilterBuilder.build(opts);
   }
 
   /** `HttpDataSource` settings that send what this provider sends, channel and tracing id included. */
@@ -245,13 +182,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       applicationInfo: this.applicationInfo,
     });
     const filter = params?.meta?.filter ?? {};
-    const queryKey: Record<string, AnyType> = {};
-
-    if (filter?.params) {
-      for (const key in filter.params) {
-        queryKey[key] = filter.params[key];
-      }
-    }
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
 
     const response = this.networkService.doRequest<RecordType>({
       requestCountData: RequestCountData.DATA_ONLY,
@@ -272,13 +203,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const { resource, params } = opts;
 
     const filter = params?.meta?.filter ?? {};
-    const queryKey: Record<string, AnyType> = {};
-
-    if (filter?.params) {
-      for (const key in filter.params) {
-        queryKey[key] = filter.params[key];
-      }
-    }
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
 
     const request = this.networkService.getRequestProps({
       requestCountData: RequestCountData.DATA_ONLY,

@@ -135,7 +135,7 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 ## Filter and pagination encoding
 
-`getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })` in `packages/admin/src/providers/rest-data.ts`:
+`getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })`, which delegates to `ListFilterBuilder.build` in `packages/admin/src/providers/list-filter.ts`:
 - **Filter modes**: If `params.filter.where` is defined, the filter is treated as an explicit IGNIS filter and sent as `{ ...filterInput, where: { ...filterInput.where } }`. Otherwise, flat keys in `params.filter` become properties in `where`, except `include`, `fields`, `params`, and `noLimit`, which are lifted to the top level of the filter.
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
 - **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
