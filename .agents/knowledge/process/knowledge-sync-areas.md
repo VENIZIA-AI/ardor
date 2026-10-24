@@ -16,7 +16,7 @@ Extend the map when a new area appears, and keep it in step with the concepts it
 | Changed area | Concepts to verify (under `.agents/knowledge/`) |
 |---|---|
 | `packages/kernel/src/base/applications`, `src/base/metadata`, `src/base/decorators` | architecture/application-lifecycle, architecture/di-in-the-browser, conventions/binding-key-namespaces, packages/kernel |
-| `packages/kernel/src/base/services`, `src/helpers/networks`, `src/helpers/socket-io-client.ts` | architecture/data-provider-pipeline, architecture/auth-recovery, architecture/no-auth-paths, architecture/header-protocol, reference/key-source-files, packages/kernel |
+| `packages/kernel/src/base/services`, `src/helpers/networks` | architecture/data-provider-pipeline, architecture/auth-recovery, architecture/no-auth-paths, architecture/header-protocol, reference/key-source-files, packages/kernel |
 | `packages/kernel/src/base/providers` | architecture/di-in-the-browser, process/adding-a-provider |
 | `packages/kernel/src/common` | conventions/const-classes, conventions/binding-key-namespaces, conventions/error-handling, architecture/header-protocol |
 | `packages/kernel` (broad/other) | packages/kernel, process/debugging, conventions/gotchas |

@@ -7,7 +7,6 @@ import {
   isString,
   isValidDate,
 } from '@/utilities/boolean';
-import { toQueryString } from '@/utilities/url';
 import { rejectionOf } from '@/__tests__/rejection';
 import { toDataUrl } from '@/utilities/file';
 
@@ -74,31 +73,6 @@ describe('boolean utilities', () => {
     if (hadWindow) {
       Reflect.set(globalThis, 'window', originalWindow);
     }
-  });
-});
-
-describe('URL utilities', () => {
-  test('toQueryString drops undefined and null, keeps numbers and strings, and JSON-encodes objects and arrays', () => {
-    const payload = {
-      brand: 'ARDOR',
-      system: 'IGNIS',
-      count: 42,
-      emptyValue: null,
-      missingValue: undefined,
-      metadata: { debug: true, retries: 3 },
-      scopes: ['read', 'write'],
-    };
-
-    const serialized = toQueryString({ params: payload });
-    const parsed = new URLSearchParams(serialized);
-
-    expect(parsed.get('brand')).toBe('ARDOR');
-    expect(parsed.get('system')).toBe('IGNIS');
-    expect(parsed.get('count')).toBe('42');
-    expect(parsed.has('emptyValue')).toBe(false);
-    expect(parsed.has('missingValue')).toBe(false);
-    expect(parsed.get('metadata')).toBe(JSON.stringify({ debug: true, retries: 3 }));
-    expect(parsed.get('scopes')).toBe(JSON.stringify(['read', 'write']));
   });
 });
 

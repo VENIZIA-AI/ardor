@@ -1,29 +1,25 @@
 ---
 type: Concept
 title: Network layer
-description: The fetch transport beneath DefaultNetworkRequestService - URL joining, query and body encoding, the fetcher contract, timeouts, response decoding and the traps in each - plus the socket client on the ./socket-io sub-path.
+description: The fetch transport beneath DefaultNetworkRequestService - the IGNIS NodeFetchNetworkRequest it sends through, query and body encoding, headers, response decoding and the traps in each - and where the socket client lives now.
 resource: packages/kernel/src/helpers/networks
-tags: [architecture, network, transport, fetch, kernel, socket-io]
+tags: [architecture, network, transport, fetch, kernel, ignis]
 ---
 
 # Network layer
 
-Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks `DefaultNetworkRequestService` for request props (`getRequestProps`), then calls `doRequest`, which joins the URL through a `NodeFetchNetworkRequest` and hands the request to its `NodeFetcher`, which calls the platform `fetch`. There is no second transport. This concept covers the layer from `doRequest` down. What sits on top has its own home: the headers in [Header protocol](/architecture/header-protocol.md), the filter mapping in [Data provider pipeline](/architecture/data-provider-pipeline.md), the one 401 retry in [Auth recovery](/architecture/auth-recovery.md) and a non-2xx or failed request in [Error flow](/architecture/error-flow.md).
+Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks `DefaultNetworkRequestService` for request props (`getRequestProps`), then calls `doRequest`, which joins the URL through a `NodeFetchNetworkRequest` and hands the request to its fetcher, which calls the platform `fetch`. The transport is the IGNIS one (`@venizia/ignis-helpers/core`); ARDOR keeps no fork of it. There is no second transport. This concept covers the layer from `doRequest` down. What sits on top has its own home: the headers in [Header protocol](/architecture/header-protocol.md), the filter mapping in [Data provider pipeline](/architecture/data-provider-pipeline.md), the one 401 retry in [Auth recovery](/architecture/auth-recovery.md) and a non-2xx or failed request in [Error flow](/architecture/error-flow.md).
 
 ## The pieces
 
-- **`BaseNetworkRequest`** (`packages/kernel/src/helpers/networks/base-request.ts`) holds a base URL and a fetcher. `getRequestUrl({ baseUrl, paths })` strips one trailing `/` from the base, prefixes each path segment with `/` when it lacks one and joins the segments with nothing between them, so `['users', '1']` becomes `/users/1` and an empty segment adds a trailing slash. An empty base throws `getError` with status 500. `getNetworkService()` returns the fetcher.
-- **`NodeFetchNetworkRequest`** is the only concrete request: it builds a `NodeFetcher` from its `networkOptions`.
-- **`IFetchable`** (`fetchers/abstract.ts`) is the fetcher contract: `send`, the verb shortcuts `get`, `post`, `put`, `patch` and `delete`, and `getWorker`. `AbstractNetworkFetchableHelper` implements the shortcuts by calling `send` with the method set, leaving `send` abstract. `TFetcherVariant` is `'node-fetch'` alone and its response type is the Fetch `Response`, so every fetcher resolves one.
-- **`NodeFetcher`** (`fetchers/node-fetch.ts`) is the only fetcher.
-
-`DefaultNetworkRequestService` builds one `NodeFetchNetworkRequest` in its constructor. `doRequest` checks `baseUrl` itself before joining, with a `getError` that carries no status (so 400), which means the 500 is only reachable by calling `getRequestUrl` directly.
+- **`NodeFetchNetworkRequest`** (IGNIS, `@venizia/ignis-helpers/core`) holds a base URL and a `NodeFetcher`. `getRequestUrl({ baseUrl, paths })` strips one trailing `/` from the base, prefixes each path segment with `/` when it lacks one and joins the segments with nothing between them, so `['users', '1']` becomes `/users/1`. An empty base throws. `getNetworkService()` returns the fetcher, whose `send` resolves the Fetch `Response`.
+- **`DefaultNetworkRequestService`** builds one in its constructor, with `queryString: { nullish: 'skip', nested: 'json' }` (below), and keeps it in the protected `networkRequest`. `doRequest` checks `baseUrl` itself before joining, with a `getError` that carries no status (so 400).
 
 ## What doRequest sends
 
-`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method. It passes no `timeout`, no `signal` and no logger.
+`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. It passes no `timeout` and no `signal`.
 
-**Query string.** Whenever `params` is set, `send` appends `?` and `toQueryString({ params })` (`packages/kernel/src/utilities/url.ts`). `toQueryString` skips `undefined` and `null` only, keeps strings and numbers as they are, and JSON-encodes everything else: objects, arrays, booleans, and a `Date` as a quoted ISO string. The `?` is appended unconditionally, so a path that already carries a query string gets a second `?`, and the params land inside its last value.
+**Query string.** The transport writes `params` into the url with IGNIS's `toQueryString`, configured by the service as `{ nullish: 'skip', nested: 'json' }`: `undefined` and `null` leave the pair out, a string or number is written as it is, and an object or an array is ONE JSON-encoded parameter (`filter={"where":{}}`, `ids=[1,2]`). That is the shape an IGNIS server reads; the IGNIS defaults would drop the filter object and repeat an array's key. A space is written `%20`. The `?` is used when the url has no query, and `&` when it already has one.
 
 ## Body encoding
 
@@ -33,14 +29,13 @@ A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/servi
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
 - **Every other case** (`json`, `none`, `binary`, or no `bodyType`) passes the body through untouched.
 
-Then `NodeFetcher.send` (`serializeBody`) passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s anything else, so a `binary` body is sent as its bytes and a string is not quoted a second time (before 0.4.1 a `Blob` went out as `{}`, a typed array as an object of its indexes and a string quoted). The query string is appended with `?`, or with `&` when the url already has one (`buildUrl`). A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, the body is never logged and the headers pass through `redactSecrets`.
+Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s a plain object or an array, so a `binary` body is sent as its bytes and a string is not quoted a second time; no body stays no body. A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, to the logger `doRequest` passes; the body is never logged and the headers pass through `redactSecrets`. With no logger the fetcher logs nothing.
 
 ## Traps for a transport author
 
-- **Timeouts never fire from the data provider.** `send` honours `timeout` by aborting an `AbortController`, and clears the timer as soon as `fetch` resolves, so reading the body is not timed. `doRequest` never passes one, and a `timeout` in `networkOptions` lands in the fetcher's default `RequestInit` where `send` never reads it. When `timeout` is set, the caller's `signal` is replaced, not combined.
-- **The constructor's headers never reach `fetch`.** `NodeFetchNetworkRequest` stores `networkOptions.headers`, plus a default `content-type: application/json; charset=utf-8`, in the fetcher's default config, but `send` always writes the call's own `headers` over it, even when they are `undefined`. The service's headers arrive only because `getRequestHeader` merges its own copy, so a `doRequest` called without `headers` sends none of them.
-- **The verb shortcuts send the upper-case `RequestMethods` values.** The Fetch standard upper-cases `delete`, `get`, `head`, `options`, `post` and `put`, but not `patch`, so a lowercase `patch` would reach the server as written from a browser. Bun upper-cases it anyway, so a stub server cannot catch a regression; the fetcher tests pin the method the helper passes on. `doRequest` passes a `TRequestMethod` from the same values.
-- **`send` calls the global `fetch` at request time**, while `getWorker()` returns the `fetch` captured when the fetcher was built. Replacing `globalThis.fetch` later changes what `send` calls, not what `getWorker()` returns.
+- **Timeouts never fire from the data provider.** The fetcher honours a `timeout` and clears the timer as soon as `fetch` resolves, so reading the body is not timed, but `doRequest` never passes one. A caller that sends through `getNetworkService().send` can.
+- **A call's `headers` replace the defaults; a call with none keeps them.** The service's headers arrive because `getRequestHeader` merges its own copy into every call, so a `doRequest` called without `headers` sends the transport's defaults (`content-type: application/json; charset=utf-8`) and none of the service's. The `form-data` branch of the body encoder sets no `content-type`, and the fetcher does not add or strip one, so `fetch` writes the multipart boundary - unless a `content-type` header is passed in, which replaces it.
+- **`doRequest` passes the upper-case `RequestMethods` values** (`GET`, `PATCH`, ...). The Fetch standard upper-cases most methods but not `patch`, so a lowercase one would reach the server as written from a browser.
 
 ## What comes back
 
@@ -54,13 +49,8 @@ The textual pattern admits `text/*` and XML, but those bodies are still parsed w
 
 ## Replacing the transport
 
-Three seams, widest first. A provider subclass overrides `send()` and the CRUD methods - [ipc-data-provider](/examples/ipc-data-provider.md) walks it. A `DefaultRestDataProvider` subclass can assign its own `DefaultNetworkRequestService` subclass to the protected `networkService` and override `doRequest`. Narrowest, a service subclass can assign the protected `networkRequest` a `BaseNetworkRequest<'node-fetch'>` built with its own `AbstractNetworkFetchableHelper`. That fetcher must resolve a Fetch `Response`: `doRequest` reads `status`, `headers.get`, `json()` and `blob()` from it.
+Three seams, widest first. A provider subclass overrides `request()` - one override moves every method and `send()`; [ipc-data-provider](/examples/ipc-data-provider.md) walks the older, per-method form. A `DefaultRestDataProvider` subclass can assign its own `DefaultNetworkRequestService` subclass to the protected `networkService` and override `doRequest`. Narrowest, a service subclass can assign the protected `networkRequest` an IGNIS `NodeFetchNetworkRequest` (or a `BaseNetworkRequest<'node-fetch'>` with its own fetcher). That fetcher must resolve a Fetch `Response`: `doRequest` reads `status`, `headers.get`, `json()` and `blob()` from it.
 
-## SocketIOClientHelper
+## The socket client
 
-The socket client (`packages/kernel/src/helpers/socket-io-client.ts`) is outside the helpers barrel and ships only on the `./socket-io` sub-path, so the optional `socket.io-client` peer loads only for an application that imports that sub-path - see [Kernel package](/packages/kernel.md). It is built from `{ identifier, host, options }`, where `options` is socket.io's `SocketOptions` plus a required `path` and `extraHeaders`, and the constructor passes them straight to `io(host, options)`. socket.io connects on `io()` unless `autoConnect` is `false`, a key the options type does not admit, so the socket starts connecting when the helper is built. `connect()` and `disconnect()` forward to the client.
-
-- `subscribe({ events, ignoreDuplicate })` calls each handler (`TSocketIOEventHandler`) as `handler(client, ...args)`: the socket first, the payload after. An event with no handler is skipped, and `ignoreDuplicate` skips an event that already has any listener, not only this handler. The helper keeps a map of handler to wrapper per event, so subscribing the same handler twice registers one listener.
-- `unsubscribe({ events, handler? })` with a `handler` removes only that handler's wrapper. Without one it calls `off(eventName)`, which removes every listener on that event, including ones registered outside the helper.
-- `emit({ topic, message, doLog })` throws `getError` with status 400 when the client is not connected, so an emit before the handshake completes throws instead of buffering. It sends no acknowledgement callback.
-- `getSocketClient()` returns the raw socket.io `Socket` for anything else.
+ARDOR has none. A browser application uses the IGNIS one, `SocketIOClientHelper` from `@venizia/ignis-helpers/socket-io/client`, which has nothing node in its graph and is handed `socket.io-client` by the application: `new SocketIOClientHelper({ identifier, host, options, module: { io } })` with `io` from the application's own `import`. See [Socket.IO client](/extensions/socket-client).

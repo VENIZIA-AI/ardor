@@ -62,9 +62,7 @@ export class AuditReportService {
 | Export | Kind | Purpose |
 |---|---|---|
 | `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `BaseNetworkRequest` | class | Base network helper linking a service instance to an underlying fetcher |
-| `NodeFetchNetworkRequest` | class | Transport helper wrapping `NodeFetcher` with default JSON headers |
-| `NodeFetcher` | class | HTTP transport executing standard `fetch` with timeout and abort support |
+| `NodeFetchNetworkRequest` | class | The IGNIS transport helper (`@venizia/ignis-helpers/core`) `DefaultNetworkRequestService` sends through: standard `fetch` with timeout and abort support |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
 | `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
@@ -114,26 +112,22 @@ The configuration relies on the following defaults and container keys:
 
 ## Fetch transport and timeout
 
-ARDOR uses standard platform `fetch` through `NodeFetchNetworkRequest` and `NodeFetcher`. `DefaultNetworkRequestService` holds a `NodeFetchNetworkRequest` (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) which delegates to `NodeFetcher`.
+ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out.
 
-`BaseNetworkRequest` defines the common transport abstraction in `packages/kernel/src/helpers/networks/base-request.ts`. `NodeFetchNetworkRequest` extends it by configuring `fetch` as its underlying worker:
-- `getNetworkService()` returns the fetcher instance implementing `IFetchable`.
+- `getNetworkService()` returns the fetcher, whose `send` resolves a `Response`.
 - `getWorker()` returns the global `fetch` function.
 
 For non-HTTP transports such as WebSockets or custom protocols, see [Custom transport](../extensions/custom-transport).
 
-`NodeFetcher.send` in `packages/kernel/src/helpers/networks/fetchers/node-fetch.ts` handles request timeouts. If a `timeout` value in milliseconds is provided, `NodeFetcher` creates an `AbortController` and schedules a timer. If the request does not complete within the specified duration, the controller aborts the request, causing `fetch` to reject with an `AbortError`. The timer is guaranteed to clear in a `finally` block:
+The fetcher handles request timeouts. If a `timeout` value in milliseconds is provided, it creates an `AbortController` and schedules a timer, combined with the caller's `signal`. If the request does not complete within the specified duration, the request is aborted and `fetch` rejects with an `AbortError`. The timer is cleared in a `finally` block:
 
 ```ts
-import { NodeFetchNetworkRequest } from '@venizia/ardor';
+import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 
 export async function requestWithTimeout(): Promise<number> {
   const transport = new NodeFetchNetworkRequest({
     name: 'custom-transport',
-    networkOptions: {
-      baseUrl: 'https://api.example.com',
-      timeout: 5000,
-    },
+    networkOptions: { baseUrl: 'https://api.example.com' },
   });
 
   const service = transport.getNetworkService();

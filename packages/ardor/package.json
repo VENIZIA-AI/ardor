@@ -55,11 +55,6 @@
       "import": "./dist/repository.js",
       "default": "./dist/repository.js"
     },
-    "./socket-io": {
-      "types": "./dist/socket-io.d.ts",
-      "import": "./dist/socket-io.js",
-      "default": "./dist/socket-io.js"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -98,14 +93,10 @@
     "react-dom": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "react-router-dom": ">=7.18.4",
-    "reflect-metadata": ">=0.2.2",
-    "socket.io-client": ">=4.8.4"
+    "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {
     "@venizia/ignis-connectors": {
-      "optional": true
-    },
-    "socket.io-client": {
       "optional": true
     }
   },
