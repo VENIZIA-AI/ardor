@@ -55,7 +55,7 @@ export class RestDataConfiguration {
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
 | `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
-| `ISendResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
+| `ISendResponse<T>` | type | Response object returned by `IDataProvider.send()` (an `INetworkResponse<T>`). |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
 | `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
 | `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
@@ -146,7 +146,7 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 ## Extended provider methods
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
-1. `send<ReturnType = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<ReturnType>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+1. `send<TResult = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 

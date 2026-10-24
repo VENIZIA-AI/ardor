@@ -74,9 +74,8 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `TRequestType` | `type` | Operation types union (`RequestTypes`), used by data provider operations. |
 | `TRequestBodyType` | `type` | Payload format union (`'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'`), used in requests. |
 | `TEnvironment` | `type` | Environment names union (`'development' \| 'production'`), used for runtime environment checks. |
-| `IRequestProps` | `interface` | HTTP request options (`headers`, `body`, `query`), used by network fetchers. |
-| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. |
-| `ISendResponse<T>` | `interface` | Envelope returned by `dataProvider.send` containing `{ data: T }`. |
+| `ISendParams` | `interface` | Parameters object for `dataProvider.send` (`method`, `requestType`, `bodyType`, `body`, `query`, `headers`, `requestCountData`, `extra`), used for arbitrary endpoint calls. It names every field it accepts: a typo is a compile error. |
+| `ISendResponse<T>` | `type` | Envelope returned by `dataProvider.send`: an `INetworkResponse<T>` (`data`, and `total`, `count`, `filename`, `contentDisposition`, `extra` where the response has them). |
 | `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. |
 | `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. |
 | `ICustomParams` | `interface` | Parameter bag merged into react-admin calls via `params`. |
@@ -89,7 +88,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IAuthTokenRecord` | `interface` | Auth token payload (`value`, `type`, `provider`), returned by `resolveAuthToken()`. |
 | `IDataSourceRequestContext` | `interface` | Request context (`paths`) supplied to `HttpDataSource` auth hooks. |
 | `IDataSourceAuth` | `interface` | Bridge settings (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) returned by `getDataSourceAuth()`. |
-| `IApplicationInfo` | `interface` | Application metadata (`name`, `version`, `description`, `author`), bound under `CoreBindings.APPLICATION_INFO`. |
+| `IApplicationInfo` | `interface` | Application metadata (`name`, `version`, `description`, `author`; no other key), bound under `CoreBindings.APPLICATION_INFO`. |
 | `IFeatureBase` | `interface` | Base feature configuration (`name`, `configurations`, `permissions`), bound under `CoreBindings.FEATURES`. |
 | `IArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. |
 | `IPermissionProvider` | `interface` | Authorization checker contract (`canAccess`), bound under `CoreBindings.PERMISSION_PROVIDER`. |
