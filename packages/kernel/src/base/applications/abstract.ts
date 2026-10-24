@@ -53,9 +53,21 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   /** What `start()` resolved from `artifacts()`; unset when `preConfigure()` runs without it. */
   private resolvedIndexes: Array<IArtifactIndex> | undefined;
 
+  /** Stays synchronous unless `getAppInfo()` returns a promise: a subclass may still return either. */
   preConfigure(): ValueOrPromise<void> {
     this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);
-    this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());
+
+    const info = this.getAppInfo();
+
+    if (info instanceof Promise) {
+      return info.then(resolved => this.bindInfoAndArtifacts({ info: resolved }));
+    }
+
+    return this.bindInfoAndArtifacts({ info });
+  }
+
+  private bindInfoAndArtifacts(opts: { info: IApplicationInfo }): ValueOrPromise<void> {
+    this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(opts.info);
 
     // Least explicit first, so the most explicit wins: stereotype, features, bindingList(), bindContext().
     this.registerArtifacts();

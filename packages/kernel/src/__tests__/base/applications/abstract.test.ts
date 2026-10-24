@@ -311,3 +311,35 @@ describe('bindingList', () => {
     expect(app.get({ key: 'services.AuditService' })).toBeInstanceOf(Replacement);
   });
 });
+
+class AsyncAppInfoApplication extends BaseArdorApplication {
+  async getAppInfo(): Promise<IApplicationInfo> {
+    await new Promise<void>(resolve => {
+      setTimeout(resolve, 10);
+    });
+
+    return {
+      name: 'ARDOR-async-app-info-test',
+      version: '1.0.0',
+      description: 'Tests an async getAppInfo in ARDOR application',
+    };
+  }
+
+  bindContext(): void {}
+}
+
+describe('BaseArdorApplication - an async getAppInfo', () => {
+  test('start() binds the resolved info to CoreBindings.APPLICATION_INFO, not a promise', async () => {
+    const app = new AsyncAppInfoApplication();
+    await app.start();
+
+    const info = app.get<IApplicationInfo>({ key: CoreBindings.APPLICATION_INFO });
+
+    expect(info).not.toBeInstanceOf(Promise);
+    expect(info).toEqual({
+      name: 'ARDOR-async-app-info-test',
+      version: '1.0.0',
+      description: 'Tests an async getAppInfo in ARDOR application',
+    });
+  });
+});

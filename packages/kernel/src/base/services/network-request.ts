@@ -23,7 +23,7 @@ import {
   type TRequestMethod,
   type TRequestType,
 } from '@/common';
-import { NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
+import { Logger, NetworkHeaders, NodeFetchNetworkRequest } from '@/helpers';
 import { isDefined } from '@/utilities';
 import { BaseService } from './base';
 
@@ -59,6 +59,11 @@ export interface IDataSourceAuth {
  * `refreshToken`, `onAuthFailure` and `buildRequestTracingId` - which a subclass overrides, and
  * `DefaultRestDataProvider.createNetworkService` returns.
  */
+/** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
+const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
+  return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
+};
+
 export class DefaultNetworkRequestService extends BaseService {
   protected noAuthPaths?: string[];
   protected noAuthPathRegexes: RegExp[];
@@ -108,7 +113,12 @@ export class DefaultNetworkRequestService extends BaseService {
 
     try {
       return JSON.parse(stored);
-    } catch {
+    } catch (error) {
+      // The name only: the message of a JSON parse error quotes the text it could not parse, the token.
+      Logger.getInstance({ scope: DefaultNetworkRequestService.name }).warn(
+        '[readAuthTokenFromStorage] The stored auth token is not valid JSON, ignoring it | error: %s',
+        error instanceof Error ? error.name : typeof error,
+      );
       return undefined;
     }
   }
@@ -200,8 +210,12 @@ export class DefaultNetworkRequestService extends BaseService {
 
       try {
         rs.push(new RegExp(pattern));
-      } catch {
-        this.logger.error('[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s', pattern);
+      } catch (error) {
+        this.logger.error(
+          '[compileNoAuthPathRegex] Invalid noAuthPathRegex pattern: %s | error: %o',
+          pattern,
+          error,
+        );
       }
     }
 
@@ -217,11 +231,13 @@ export class DefaultNetworkRequestService extends BaseService {
     // A refreshToken that throws synchronously is still a failed refresh, not a stray exception.
     this.refreshing ??= Promise.resolve()
       .then(() => this.refreshToken())
-      .catch(async () => {
+      .catch(async error => {
+        this.logger.error('[refresh] refreshToken failed | error: %o', error);
+
         try {
           await this.onAuthFailure();
-        } catch {
-          this.logger.error('[refresh] onAuthFailure failed');
+        } catch (failure) {
+          this.logger.error('[refresh] onAuthFailure failed | error: %o', failure);
         }
         return false;
       })
@@ -579,7 +595,7 @@ export class DefaultNetworkRequestService extends BaseService {
       case RequestTypes.GET_LIST:
       case RequestTypes.GET_MANY_REFERENCE: {
         if (requestCountData === RequestCountData.DATA_WITH_COUNT) {
-          if (!('data' in (data as AnyType)) || !('count' in (data as AnyType))) {
+          if (!isCountedBody(data)) {
             throw getError({
               message: `[convertResponse] Invalid response format for requestCountData=${RequestCountData.DATA_WITH_COUNT} !`,
             });
