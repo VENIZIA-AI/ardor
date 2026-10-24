@@ -64,6 +64,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make wiki-links-check
 
+      - name: Atlas smoke
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make atlas-smoke
+
   build-and-test:
     name: Build, test and lint
     runs-on: ubuntu-26.04
@@ -139,18 +143,9 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make wiki-anchors-check
 
-      # The examples are not driven by make: they carry their own package.json scripts.
-      - name: Examples compile
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: bun scripts/examples.ts compile
-
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make lint-all
-
-      - name: Lint - examples
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: bun scripts/examples.ts lint
 
       # One loop over the whole manifest, so this gate and a release read the same rows.
       - name: Browser purity

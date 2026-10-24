@@ -40,7 +40,7 @@ A boolean field with a `null` value shows nothing rather than a "false"-looking 
 
 ## `force-update` skips catalogued ranges
 
-`force-update` rewrites only the `@venizia/*` ranges in a package's `dependencies` and `devDependencies` that the root catalog does not own - a `catalog:` or `workspace:` range, or a peer-only dependency, is skipped on purpose. Every release runs it before `bun install`, which would otherwise have resolved the old ranges; CI runs `refresh-catalog` first, while `scripts/release-local.ts` runs only `force-update`. The trap is expecting it to move a `catalog:` range: a per-package `make update-<package>` target, the root `force-update` script and a local release all leave the catalog where it was - only `refresh-catalog` (or `make update`) rewrites it. See [release-publish](/process/release-publish.md) and [build-system](/process/build-system.md).
+`force-update` rewrites only the `@venizia/*` ranges in a package's `dependencies` and `devDependencies` that the root catalog does not own - a `catalog:` or `workspace:` range, or a peer-only dependency, is skipped on purpose. Every release runs it before `bun install`, which would otherwise have resolved the old ranges; CI runs `refresh-catalog` first, while `scripts/release-local.ts` runs only `force-update`. The trap is expecting it to move a `catalog:` range: a per-package `make update-<package>` target, the root `force-update` script and a local release all leave the catalog where it was - only `bun scripts/refresh-catalog.ts highest` rewrites it. See [release-publish](/process/release-publish.md) and [build-system](/process/build-system.md).
 
 ## Size budgets are measured with peers external
 

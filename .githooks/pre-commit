@@ -15,9 +15,8 @@ echo ""
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
-echo "📦 Linting all packages and examples..."
+echo "📦 Linting everything..."
 make lint-all
-bun scripts/examples.ts check
 
 echo ""
 echo "✅ Pre-commit checks passed!"

@@ -2,7 +2,7 @@
 
 UPDATE_TARGETS := $(addprefix update-,$(PACKAGES))
 
-.PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all update update-all \
+.PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all \
         $(PACKAGES) $(UPDATE_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -59,18 +59,9 @@ typecheck-all:
 
 # ----------------------------------------------------------------------------
 # FORCE UPDATE TARGETS - ARDOR tracks the HIGHEST published IGNIS line (prerelease included),
-# never `latest`. `update` refreshes the root catalog first; per-package force-update skips
-# catalogued ranges by design.
+# never `latest`. The root catalog is refreshed first, by `bun scripts/refresh-catalog.ts highest`; the
+# per-package force-update skips catalogued ranges by design. The release workflow runs both.
 # ----------------------------------------------------------------------------
-update:
-	@echo "🔄 Moving every @venizia/* catalog entry to the highest published version..."
-	@bun scripts/refresh-catalog.ts highest
-	@bun run --filter "@venizia/*" force-update highest
-	@bun install
-	@echo "✅ Update completed."
-
-update-all: update
-
 $(UPDATE_TARGETS): update-%:
 	@echo "🔄 Force updating $(call PKG_NAME,$*)..."
 	@bun run --filter "$(call PKG_NAME,$*)" force-update highest

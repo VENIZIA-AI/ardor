@@ -37,14 +37,14 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 |---|---|
 | `packages/` | The five packages above |
 | `presets/` | The VULCAN preset templates, a sibling of `packages/`: `presets/app/{preset.json,files/}` for the app kind and `presets/lib/{preset.json,files/}` for the library kind. The release writes the built copy into the published package (`packages/ardor/dist/presets/app`), so the package's `vulcan` field and `--preset ardor` do not change |
-| `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist` - gated by `bun scripts/examples.ts` (`check`, `build`), not by make |
+| `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist`; no gate builds them - their format is checked by `make lint-files`, and each keeps its own `compile` and `typecheck` scripts for use by hand |
 | `docs/wiki/` | VitePress site `@venizia/ardor-docs` - `content/` pages, `site/` theme, `scripts/` gates (sidebar, snippet compile) |
 | `docs/migration/` | A pointer to the wiki migration guide, kept because the npm deprecation of `@minimaltech/ra-core-infra` links to it |
 | `scripts/` | Repository gates: `check-catalog.ts`, `purity/`, `layer-boundaries.ts`, `module-cycles.ts`, `split-report.ts`, `wiki-source-links.ts`, `wiki-anchors.ts`, `refresh-catalog.ts`, `clean-install/`. Atlas: `atlas-smoke.ts` (VULCAN's atlas computes releases and reads symbols itself - see [Atlas MCP server](/reference/atlas-mcp.md)). Release: `release.ts`, `release-local.ts`, `release-scope.ts` (see [Release and publish](/process/release-publish.md)) |
 | `.agents/` | `rules.md` (ARDOR's layer over the VULCAN base rules, and the minimap shape the session digest prints), this knowledge bundle, `okf/` (the `providers` and `hooks-and-services` renderers behind two generated reference pages), `vulcan.manifest.json` (written by `make vulcan-sync`, committed so another project's atlas can read ARDOR) |
 | `.configs/` | `vulcan.config.mts` - the one VULCAN config (every project of the repository keeps its own `.configs/` with `lints/` and, where it builds, `builders/`; an example and the presets also keep `formatters/`, until `devz` reads the root `bunfig.toml`): rule slot, project hooks, knowledge roots, atlas packages |
 | `.mcp.json` (gitignored) | Registers the `atlas` MCP server (VULCAN's atlas run against this checkout); `vulcan sync` writes it on each machine - see [Atlas MCP server](/reference/atlas-mcp.md) |
-| `.githooks/` | `pre-commit` runs `make lint-all` and `bun scripts/examples.ts check`; enabled by `make setup-hooks` |
+| `.githooks/` | `pre-commit` runs `make lint-all`; enabled by `make setup-hooks` |
 | `.github/workflows/` | `ci.yml` (gates, build, tests, lint), `package-release.yml` (dispatch per package), `deploy-docs.yml` |
 | `bunfig.toml` | Bun's config for commands run at the root: only `telemetry = false`. Bun reads it only from the directory a command runs in, and no `minimumReleaseAge`: it would refuse the young versions that the floors at the latest need |
 | `Makefile`, `make/` | Every entry point; one job per `make/*.mk` file, `make/project.mk` is the per-package include; a bare `make` lists them |

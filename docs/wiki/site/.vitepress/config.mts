@@ -122,6 +122,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           { text: 'ARDOR 0.4.0 follows IGNIS 0.4.0', link: '/changelogs/2026-10-24-ardor-0-4-0' },
+          {
+            text: 'The unused scripts and make targets are gone',
+            link: '/changelogs/2026-10-24-unused-scripts-removed',
+          },
         ],
       },
       {
