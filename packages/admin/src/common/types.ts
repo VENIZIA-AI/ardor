@@ -1,5 +1,6 @@
 import type { Store } from '@reduxjs/toolkit';
 import type { Container } from '@venizia/ignis-inversion';
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type {
   CoreAdminProps,
   CreateParams,
@@ -37,7 +38,27 @@ import type {
   IDataSourceAuth,
   ISendParams,
   ISendResponse,
+  RequestCountData,
+  TConstValue,
+  TRequestMethod,
+  TRequestType,
 } from '@venizia/ardor-kernel';
+
+/** What `DefaultRestDataProvider.request` sends: every react-admin method goes through it. */
+export interface IRestRequestOptions<TResource extends string = string> {
+  resource: TResource;
+  type: TRequestType;
+  method: TRequestMethod;
+  /** Default `[resource]`. */
+  paths?: Array<string>;
+  body?: AnyType;
+  bodyType?: ISendParams['bodyType'];
+  query?: Record<string, AnyType>;
+  extra?: TExtraRequest;
+  /** Win over the computed headers: a caller that names a header means it. */
+  headers?: HeadersInit;
+  requestCountData?: TConstValue<typeof RequestCountData>;
+}
 
 export interface IReactAdminDataProvider<TResource extends string = string> {
   getList: <RecordType extends RaRecord = AnyType>(
