@@ -59,7 +59,7 @@ This is the part you keep. Your transport receives a `query` whose `filter` is a
 - `filter.where` - the react-admin filter with `include`, `params`, `noLimit` and `fields` removed. If the incoming filter already has a `where`, it is passed through as-is.
 - `filter.include`, `filter.fields` - copied from the react-admin filter.
 - `filter.order` - `[\`${sort.field} ${sort.order}\`]` when `sort.field` is set.
-- `filter.limit`, `filter.skip`, `filter.offset` - from `pagination`. `skip` and `offset` are both `(page - 1) * perPage`. When `filter.noLimit` is truthy, all three are cleared.
+- `filter.limit`, `filter.skip` - from `pagination`: `limit` is `perPage` and `skip` is `(page - 1) * perPage`, with the page defaulting to 1. No `perPage` (or 0) sends neither. When `filter.noLimit` is truthy, both are cleared.
 - `getMany` adds `where.id = { inq: params.ids }`.
 - `getManyReference` adds `where[target] = id`.
 
@@ -241,9 +241,9 @@ The `IDataProvider` react-admin receives from the container is unchanged: positi
 - **`url` is still required.** `createNetworkService()` passes `restDataProviderOptions.url` to `DefaultNetworkRequestService`. `IRestDataProviderOptions.url` is a required string, so bind options with a `url` even when no HTTP request is ever made.
 - **`getListHelper` only covers `getList`.** `getOne`, `getMany` and `getManyReference` call `this.networkService.doRequest` directly. If you override only the helper, those three still go to HTTP.
 - **`getMany` and `getManyReference` mutate `where`.** `getMany` sets `where.id = { inq: params.ids }`; `getManyReference` sets `where[target] = id`. Your transport has to understand a LoopBack-style filter (`where`, `include`, `fields`, `order`, `limit`, `skip`, `offset`), or you translate it inside the transport.
-- **`noLimit` clears pagination.** When `filter.noLimit` is truthy, `limit`, `skip` and `offset` are set to `undefined`. Do not fall back to a default page size in the transport unless you mean to.
+- **`noLimit` clears pagination.** When `filter.noLimit` is truthy, `limit` and `skip` are set to `undefined`. Do not fall back to a default page size in the transport unless you mean to.
 - **`meta` and `filter.params` are not inside `filter`.** Their keys are spread onto the top level of `query`. Read them from `req.query`, not from `req.query.filter`.
-- **Both `skip` and `offset` are sent.** They hold the same value. Pick one in the transport and ignore the other.
+- **Only `skip` is sent.** IGNIS reads `offset` as an alias of `skip`; a transport that wants `offset` maps it itself.
 
 ## Related
 
