@@ -1,5 +1,3 @@
-import { getError } from '@venizia/ignis-inversion';
-
 import type { AnyType, TConstValue } from '@/common';
 
 export class LogLevels {
@@ -82,10 +80,6 @@ export class Logger implements ILogger {
 
   private log(opts: { level: TLogLevel; message: AnyType; args: AnyType[] }) {
     const { level, message, args } = opts;
-    if (!Logger.sink) {
-      throw getError({ message: '[info] Invalid logger instance!' });
-    }
-
     if (level === LogLevels.DEBUG && !this.isDebugEnabled) {
       return;
     }

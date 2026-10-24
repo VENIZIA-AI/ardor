@@ -14,10 +14,8 @@ import {
 import type { IAuthProvider, IDataProvider } from '@/common';
 
 /**
- * The options hold data (`paths`); behaviour is in the protected hooks, each taking one `opts`
- * object: `buildSignInBody`, `resolveUsername`, `beforeSaveSession`, `saveSession` and
- * `readSignInSession` around `login`, and the page paths (`signInPath`, `afterLoginPath`,
- * `loginPagePath`, `unauthorizedPagePath`).
+ * The options hold data (`paths`); behaviour is in the protected hooks around `login` and the page
+ * paths, each taking one `opts` object, which a subclass overrides.
  */
 export class DefaultAuthProvider<
   TResource extends string = string,
@@ -72,12 +70,9 @@ export class DefaultAuthProvider<
   }
 
   /**
-   * What a sign-in response carries. IGNIS's auth controller returns whatever the application's
-   * `signIn` returns, so two shapes are read: `{ userId, roles?, token: { value, type } }` (the
-   * recommended one), and `{ token: '<jwt>' }`, a Bearer token whose user id is a claim of the token
-   * itself (`userId`, else `sub`). Roles come from the response, else from the token's `roles`
-   * claim. A response with no token or no user id throws: storing `undefined` would pass `login`
-   * and fail every check after it.
+   * Reads `{ userId, roles?, token: { value, type } }` or `{ token: '<jwt>' }` (the user id is then a
+   * claim of the token: `userId`, else `sub`). No token or no user id throws: storing `undefined`
+   * would pass `login` and fail every check after it.
    */
   protected readSignInSession(opts: { data: unknown }): ISignInSession {
     const { userId, token, roles } = (opts.data ?? {}) as {
@@ -201,24 +196,21 @@ export class DefaultAuthProvider<
 
   // --- react-admin's auth provider -------------------------------------------------------------
 
-  /**
-   * Typed `Promise<unknown>`, as it was before it became async: a subclass that overrides `login`
-   * with that signature keeps compiling.
-   */
+  /** Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling. */
   async login(params: AnyType): Promise<unknown> {
-    const rs = await this.restDataProvider.send({
+    const response = await this.restDataProvider.send({
       resource: this.signInPath as TResource,
       params: { method: RequestMethods.POST, body: this.buildSignInBody({ params }) },
     });
 
-    const session = this.readSignInSession({ data: rs.data });
+    const session = this.readSignInSession({ data: response.data });
 
     // Before anything is saved, so a throw here leaves no session behind.
     await this.beforeSaveSession({ session, params });
     this.saveSession({ session, username: this.resolveUsername({ params }) });
 
     return {
-      ...rs,
+      ...response,
       redirectTo: removeDoubleSlashes(`/${this.afterLoginPath}`),
     };
   }
@@ -241,12 +233,12 @@ export class DefaultAuthProvider<
       return Promise.resolve();
     }
 
-    const rs = await this.restDataProvider.send({
+    const response = await this.restDataProvider.send({
       resource: this.authProviderOptions.paths.checkAuth as TResource,
       params: { method: RequestMethods.GET },
     });
 
-    if (!rs?.data) {
+    if (!response?.data) {
       return Promise.reject({ redirectTo: this.loginPagePath });
     }
 

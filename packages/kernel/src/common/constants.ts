@@ -117,10 +117,7 @@ export class HeaderConstants {
   /**
    * content-range: <unit> <range-start>-<range-end>/<size>
    * @format unit start-end/total
-   * - unit: Usually bytes/items/records.
-   * - start: The zero-indexed position of the first byte/item/record in the range.
-   * - end: The zero-indexed position of the last byte/item/record in the range (inclusive).
-   * - total: The total length of the entity body (or * if unknown).
+   * The positions are zero-indexed, the end inclusive; the total is `*` if unknown.
    */
   static readonly CONTENT_RANGE = 'content-range';
   static readonly CONTENT_DISPOSITION = 'content-disposition';

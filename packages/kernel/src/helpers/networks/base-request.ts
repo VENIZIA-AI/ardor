@@ -1,5 +1,4 @@
 import { getError } from '@venizia/ignis-inversion';
-import isEmpty from 'lodash/isEmpty.js';
 
 import type { AnyObject } from '@/common/types';
 import { BaseHelper } from '../base-helper';
@@ -57,7 +56,7 @@ export class BaseNetworkRequest<TVariant extends TFetcherVariant> extends BaseHe
     let baseUrl = opts?.baseUrl ?? this.baseUrl ?? '';
     const paths = opts?.paths ?? [];
 
-    if (!baseUrl || isEmpty(baseUrl)) {
+    if (!baseUrl) {
       throw getError({
         statusCode: 500,
         message: '[getRequestUrl] Invalid configuration for third party request base url!',

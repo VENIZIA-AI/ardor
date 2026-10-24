@@ -16,10 +16,8 @@ export type TUseInjectableOptions =
   | { container?: Container; key?: never; target: TClass<AnyType> };
 
 /**
- * The container an injectable hook resolves from: the one passed in, else the one the application
- * context holds. Shared so that every hook built on `useInjectable` reads the SAME container it
- * resolves from - a hook that re-derived it would be checking one container and resolving from
- * another, and the check would pass by accident.
+ * The container an injectable hook resolves from: the one passed in, else the application's. Shared,
+ * so a hook never checks one container and resolves from another.
  */
 export const useInjectableContainer = (opts?: { container?: Container }): Container => {
   const applicationContext = React.useContext(ApplicationContext);
