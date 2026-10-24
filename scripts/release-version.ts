@@ -1,7 +1,7 @@
 /**
  * What a release is released AS: a semver bump (`--mode`) or an explicit version (`--version`). One
- * home for the argument parsing and the dist-tag rule, so `release.ts`, `release-local.ts` and
- * `package-release.yml` cannot drift apart. `release.ts` and `release-local.ts` run on import, so
+ * home for the argument parsing and the dist-tag rule, so `release.ts` and
+ * `package-release.yml` cannot drift apart. `release.ts` runs on import, so
  * the rule lives here, where a test can reach it.
  *
  * `--version` overrides `--mode`. A stable version goes to `latest`, a version with a prerelease
@@ -11,7 +11,7 @@
  *
  *   bun scripts/release-version.ts target --version <x.y.z|''> --mode <mode> [--current <x.y.z>]
  *
- * `--issue <N>` rides along in the same argument list (release.ts and release-local.ts read it here).
+ * `--issue <N>` rides along in the same argument list (release.ts reads it here).
  *   bun scripts/release-version.ts tag <mode|x.y.z>
  */
 

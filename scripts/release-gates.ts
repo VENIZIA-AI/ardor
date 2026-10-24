@@ -1,7 +1,6 @@
 /**
  * The gates a package passes between its build and its publish, in one place: `package-release.yml`
- * calls the command line of this file and `release-local.ts` imports the functions, so the two cannot
- * drift. They are the gates IGNIS's release workflow runs inline.
+ * calls the command line of this file and `preset-smoke.ts` imports the functions. They are the gates IGNIS's release workflow runs inline.
  *
  *   bun scripts/release-gates.ts artifacts <package-dir>        every file the `exports` map names exists
  *   bun scripts/release-gates.ts links <package-dir>            every ARDOR sibling resolves to the workspace
