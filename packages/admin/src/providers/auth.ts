@@ -140,7 +140,7 @@ export class DefaultAuthProvider<
     }
 
     try {
-      const bytes = Uint8Array.from(atob(segment.replace(/-/g, '+').replace(/_/g, '/')), char =>
+      const bytes = Uint8Array.from(atob(segment.replace(/-/g, '+').replace(/_/g, '/')), (char) =>
         char.charCodeAt(0),
       );
       const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
@@ -173,7 +173,7 @@ export class DefaultAuthProvider<
       const name =
         typeof role === 'string'
           ? role
-          : [named.identifier, named.name].find(v => typeof v === 'string');
+          : [named.identifier, named.name].find((v) => typeof v === 'string');
       if (typeof name === 'string' && name.length > 0) {
         names.push(name);
       }
@@ -235,7 +235,7 @@ export class DefaultAuthProvider<
   }
 
   logout(_params?: unknown) {
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       this.authService.cleanUp();
       resolve();
     });

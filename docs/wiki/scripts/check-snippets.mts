@@ -91,7 +91,7 @@ const isExcerpt = (code: string): boolean => {
   // A declaration excerpt, decided by the parser rather than by a regex: every statement is a
   // type, an interface, a class or a variable/function signature with no body and no initializer.
   const source = ts.createSourceFile('excerpt.ts', trimmed, ts.ScriptTarget.ESNext, true);
-  return source.statements.every(statement => {
+  return source.statements.every((statement) => {
     if (
       ts.isInterfaceDeclaration(statement) ||
       ts.isTypeAliasDeclaration(statement) ||
@@ -100,28 +100,28 @@ const isExcerpt = (code: string): boolean => {
       return true;
     }
     if (ts.isClassDeclaration(statement)) {
-      return statement.members.every(member => !('body' in member) || member.body === undefined);
+      return statement.members.every((member) => !('body' in member) || member.body === undefined);
     }
     if (ts.isFunctionDeclaration(statement)) {
       return statement.body === undefined;
     }
     if (ts.isVariableStatement(statement)) {
       return statement.declarationList.declarations.every(
-        declaration => declaration.type !== undefined && declaration.initializer === undefined,
+        (declaration) => declaration.type !== undefined && declaration.initializer === undefined,
       );
     }
     return false;
   });
 };
 
-const abused = snippets.filter(snippet => snippet.noCheck && !isExcerpt(snippet.code));
+const abused = snippets.filter((snippet) => snippet.noCheck && !isExcerpt(snippet.code));
 if (abused.length > 0) {
   console.error(
-    `snippet check FAILED - ${abused.length} runnable snippet(s) marked no-check (only excerpts with \`...\` or declaration bodies may opt out):\n  ${abused.map(snippet => `${snippet.file}:${snippet.line}`).join('\n  ')}`,
+    `snippet check FAILED - ${abused.length} runnable snippet(s) marked no-check (only excerpts with \`...\` or declaration bodies may opt out):\n  ${abused.map((snippet) => `${snippet.file}:${snippet.line}`).join('\n  ')}`,
   );
   process.exit(1);
 }
-const checked = snippets.filter(snippet => !snippet.noCheck);
+const checked = snippets.filter((snippet) => !snippet.noCheck);
 const dir = mkdtempSync(join(tmpdir(), 'ardor-docs-snippets-'));
 // third-party types resolve from the admin package, which depends on everything the docs show
 Bun.spawnSync(['ln', '-s', join(REPO, 'packages/admin/node_modules'), join(dir, 'node_modules')]);
@@ -176,7 +176,7 @@ for (const [page, pageSnippets] of byPage) {
   });
 
   const program = ts.createProgram(
-    files.map(file => file.name),
+    files.map((file) => file.name),
     compilerOptions,
     undefined,
     previous,
@@ -189,7 +189,7 @@ for (const [page, pageSnippets] of byPage) {
       problems.push(`${page}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`);
       continue;
     }
-    const owner = files.find(entry => entry.name === file.fileName);
+    const owner = files.find((entry) => entry.name === file.fileName);
     const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
     const preludeLines = owner ? preludeFor(owner.snippet.code).split('\n').length : 0;
     const pageLine = owner ? owner.snippet.line + line + 1 - preludeLines : line + 1;

@@ -41,7 +41,7 @@ export const ConfigurationList = () => {
       </button>
       <table>
         <tbody>
-          {(data ?? []).map(row => (
+          {(data ?? []).map((row) => (
             <tr key={row.id}>
               <td>{row.code}</td>
               <td>{JSON.stringify(row.value)}</td>

@@ -157,12 +157,12 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       enableDebug={enableDebug}
     >
       <CoreAdmin {...adminProps}>
-        {mounted.resources.map(resource => {
+        {mounted.resources.map((resource) => {
           return <Resource key={resource.name} {...resource} />;
         })}
 
         <CustomRoutes>
-          {mounted.routes.map(route => {
+          {mounted.routes.map((route) => {
             return <Route key={route.id ?? route.path} {...route} />;
           })}
         </CustomRoutes>

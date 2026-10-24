@@ -728,7 +728,7 @@ describe('canAccess', () => {
     const asked: Array<unknown> = [];
     const provider = resolveAuthProvider({
       permissionProvider: {
-        canAccess: params => {
+        canAccess: (params) => {
           asked.push(params);
           return Promise.resolve(params.action === 'list');
         },
@@ -753,7 +753,7 @@ describe('login hooks', () => {
       LocalStorageKeys.KEY_AUTH_TOKEN,
       LocalStorageKeys.KEY_AUTH_IDENTITY,
       LocalStorageKeys.KEY_AUTH_PERMISSION,
-    ].every(key => localStorage.getItem(key) === null);
+    ].every((key) => localStorage.getItem(key) === null);
   };
 
   test('beforeSaveSession gets the session and the form params, before anything is saved', async () => {
@@ -820,7 +820,7 @@ describe('login hooks', () => {
 
     class SlowAuthProvider extends DefaultAuthProvider {
       protected override async beforeSaveSession() {
-        await new Promise(resolve => setTimeout(resolve, 5));
+        await new Promise((resolve) => setTimeout(resolve, 5));
         wasStoredAfterWait = !isNothingStored();
       }
     }
@@ -920,7 +920,7 @@ describe('paths as protected getters', () => {
     });
     await signInWith({ sent, providerClass: RenamedAuthProvider }).login({ username: 'a' });
 
-    expect(sent.map(request => request.resource)).toEqual([
+    expect(sent.map((request) => request.resource)).toEqual([
       '/auth/sign-in',
       '/api/login',
       '/v2/sign-in',

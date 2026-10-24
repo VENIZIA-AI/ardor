@@ -57,11 +57,11 @@ const computeSymmetricDifference = ({
   rightName,
 }: IComputeSymmetricDifferenceOptions): readonly string[] => {
   const missingInRight = [...leftKeys]
-    .filter(key => !rightKeys.has(key))
-    .map(key => `Missing in ${rightName}: ${key}`);
+    .filter((key) => !rightKeys.has(key))
+    .map((key) => `Missing in ${rightName}: ${key}`);
   const missingInLeft = [...rightKeys]
-    .filter(key => !leftKeys.has(key))
-    .map(key => `Missing in ${leftName}: ${key}`);
+    .filter((key) => !leftKeys.has(key))
+    .map((key) => `Missing in ${leftName}: ${key}`);
   return [...missingInRight, ...missingInLeft];
 };
 

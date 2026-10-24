@@ -35,7 +35,7 @@ const recorded: IRecorded[] = [];
 beforeAll(() => {
   server = Bun.serve({
     port: 0,
-    fetch: async req => {
+    fetch: async (req) => {
       const url = new URL(req.url);
       const text = req.method === 'GET' ? '' : await req.text();
       recorded.push({
@@ -106,7 +106,7 @@ describe('request', () => {
       method: RequestMethods.GET,
     });
 
-    expect(recorded.map(r => r.pathname)).toEqual(['/posts/7', '/posts']);
+    expect(recorded.map((r) => r.pathname)).toEqual(['/posts/7', '/posts']);
   });
 
   test('sends the tracing headers, and the list extras in x-request-extra', async () => {
@@ -186,8 +186,8 @@ describe('CountRestDataProvider.requestList', () => {
     expect(result.total).toBe(7);
     expect(result.meta).toEqual({ extra: { facets: { open: 3 } } });
 
-    const list = recorded.find(r => r.pathname === '/posts');
-    const count = recorded.find(r => r.pathname === '/posts/count');
+    const list = recorded.find((r) => r.pathname === '/posts');
+    const count = recorded.find((r) => r.pathname === '/posts/count');
     expect(list?.headers.has('x-request-extra')).toBe(true);
     expect(count?.headers.has('x-request-extra')).toBe(false);
     expect(JSON.parse(count?.query.where ?? 'null')).toEqual({ status: 'open' });

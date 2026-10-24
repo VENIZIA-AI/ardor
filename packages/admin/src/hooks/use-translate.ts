@@ -16,7 +16,7 @@ export type TUseTranslateOptions = Parameters<I18nProvider['translate']>[1];
 
 export type TUseTranslateFn = (key: TUseTranslateKeys, options?: TUseTranslateOptions) => string;
 
-const identity: TUseTranslateFn = key => key;
+const identity: TUseTranslateFn = (key) => key;
 
 export const useTranslate = (): TUseTranslateFn => {
   const i18nProvider = useI18nProvider();

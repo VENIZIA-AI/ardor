@@ -52,11 +52,11 @@ const run = async (opts: {
 };
 
 const firstErrorLine = (opts: { output: string }): string => {
-  const lines = opts.output.split('\n').map(line => line.trim());
-  const found = lines.find(line =>
+  const lines = opts.output.split('\n').map((line) => line.trim());
+  const found = lines.find((line) =>
     /Cannot find|Could not resolve|not found|Error|error:/.test(line),
   );
-  return (found ?? lines.find(line => line.length > 0) ?? '').slice(0, 200);
+  return (found ?? lines.find((line) => line.length > 0) ?? '').slice(0, 200);
 };
 
 const newestMtime = (directory: string): number => {
@@ -128,7 +128,7 @@ const pack = async (opts: {
         `[clean-install] bun pm pack failed in ${directory}: ${firstErrorLine(packed)}`,
       );
     }
-    const produced = readdirSync(destination).filter(file => file.endsWith('.tgz'));
+    const produced = readdirSync(destination).filter((file) => file.endsWith('.tgz'));
     if (produced.length !== 1) {
       throw new Error(
         `[clean-install] expected one tarball for ${directory}, found ${produced.length}`,
@@ -151,14 +151,14 @@ const requiredPeers = (opts: { manifest: IPackageManifest }): Record<string, str
 /** The peers an ARDOR package and the ARDOR packages under it resolve differently from the application. */
 const findSplitPeers = async (opts: { name: string; sandbox: string }): Promise<string[]> => {
   const byName = new Map(
-    listPackageDirectories().map(directory => {
+    listPackageDirectories().map((directory) => {
       const manifest = readPackageManifest({ package: directory });
       return [manifest.name, manifest] as const;
     }),
   );
-  const holders = peerIdentityHolders({ name: opts.name }).map(name => ({
+  const holders = peerIdentityHolders({ name: opts.name }).map((name) => ({
     name,
-    peers: Object.keys(byName.get(name)?.peerDependencies ?? {}).filter(peer =>
+    peers: Object.keys(byName.get(name)?.peerDependencies ?? {}).filter((peer) =>
       isIdentityPeer({ name: peer }),
     ),
   }));
@@ -194,7 +194,7 @@ const checkRow = async (opts: {
     attempt('node-esm', ['node', '--input-type=module', '-e', LOAD(row.specifier)]),
   ];
 
-  const claim = PURITY_MANIFEST.find(entry => entry.entry === row.entry);
+  const claim = PURITY_MANIFEST.find((entry) => entry.entry === row.entry);
   if (claim) {
     const entryFile = join(sandbox, `entry-${row.subpath.replace(/[^a-z0-9]/gi, '_')}.ts`);
     writeFileSync(
@@ -209,7 +209,7 @@ const checkRow = async (opts: {
         '--target=browser',
         '--outdir',
         join(sandbox, 'browser-out'),
-        ...(claim.external ?? []).flatMap(name => ['--external', name]),
+        ...(claim.external ?? []).flatMap((name) => ['--external', name]),
       ]),
     );
   }
@@ -220,7 +220,7 @@ const checkRow = async (opts: {
 const main = async (): Promise<number> => {
   const args = process.argv.slice(2);
   const keep = args.includes('--keep');
-  const tokens = args.filter(arg => !arg.startsWith('--'));
+  const tokens = args.filter((arg) => !arg.startsWith('--'));
 
   if (!(await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT })).ok) {
     throw new Error('[clean-install] `node` is not on PATH - the Node checks cannot run');
@@ -229,13 +229,13 @@ const main = async (): Promise<number> => {
   assertEveryPackageClaimed({ claims: INSTALL_CLAIMS, directories: listPackageDirectories() });
   const claims =
     tokens.length > 0
-      ? INSTALL_CLAIMS.filter(claim => tokens.includes(claim.package))
+      ? INSTALL_CLAIMS.filter((claim) => tokens.includes(claim.package))
       : INSTALL_CLAIMS;
   if (claims.length === 0) {
     throw new Error(`[clean-install] no claim matches ${tokens.join(', ')}`);
   }
 
-  const directories = claims.map(claim => claim.package);
+  const directories = claims.map((claim) => claim.package);
   assertFreshDist({ directories });
 
   const rows = deriveInstallRows({ claims });
@@ -269,7 +269,7 @@ const main = async (): Promise<number> => {
       const dependencies = {
         [manifest.name]: `file:${tarballs.get(manifest.name)}`,
         ...requiredPeers({ manifest }),
-        ...Object.fromEntries(extras.map(name => [name, peerRanges[name]])),
+        ...Object.fromEntries(extras.map((name) => [name, peerRanges[name]])),
         'reflect-metadata': peerRanges['reflect-metadata'] ?? '^0.2.2',
       };
       writeFileSync(
@@ -310,9 +310,9 @@ const main = async (): Promise<number> => {
       for (const row of groupRows) {
         const results = await checkRow({ row, sandbox });
         checkCount += results.length;
-        const failed = results.filter(result => !result.ok);
+        const failed = results.filter((result) => !result.ok);
         const marks = results
-          .map(result => `${result.name} ${result.ok ? 'ok' : 'FAIL'}`)
+          .map((result) => `${result.name} ${result.ok ? 'ok' : 'FAIL'}`)
           .join('  ');
         console.log(
           `  ${failed.length ? '✗' : '✓'} ${row.specifier.padEnd(34)} ${linker.padEnd(8)} ${marks}`,

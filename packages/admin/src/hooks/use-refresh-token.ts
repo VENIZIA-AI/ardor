@@ -18,7 +18,7 @@ export const useRefreshToken = (): TRefreshToken => {
       return Promise.resolve(false);
     }
 
-    return authProvider.refreshToken().then(isRefreshed => {
+    return authProvider.refreshToken().then((isRefreshed) => {
       queryClient
         .invalidateQueries({ queryKey: ['auth', 'getPermissions'] })
         .catch((error: unknown) => {

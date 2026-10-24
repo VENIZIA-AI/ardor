@@ -30,14 +30,14 @@ describe('AuthRecovery.refresh', () => {
       // Only the first refresh is held open; a later one settles at once.
       refresh: () => {
         return started++ === 0
-          ? new Promise<boolean>(resolve => (release = resolve))
+          ? new Promise<boolean>((resolve) => (release = resolve))
           : Promise.resolve(true);
       },
     });
 
     const callers = [recovery.refresh(), recovery.refresh(), recovery.refresh()];
     // The refresh starts on a microtask, so the resolver exists one tick later.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     release(true);
 
     expect(await Promise.all(callers)).toEqual([true, true, true]);

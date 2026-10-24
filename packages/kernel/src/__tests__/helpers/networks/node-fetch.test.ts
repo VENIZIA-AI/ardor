@@ -25,7 +25,7 @@ beforeAll(() => {
       const url = new URL(request.url);
 
       if (url.pathname === '/delay') {
-        await new Promise(resolve => setTimeout(resolve, 600));
+        await new Promise((resolve) => setTimeout(resolve, 600));
       }
 
       recorded.push({
@@ -59,7 +59,7 @@ describe('NodeFetcher logging', () => {
     const fetcher = createFetcher({ name: 'node-fetch-log-test' });
     Logger.getInstance({ scope: 'node-fetch-log-test', enableDebug: true });
 
-    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map(method =>
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
       spyOn(console, method).mockImplementation(() => undefined),
     );
 
@@ -72,7 +72,7 @@ describe('NodeFetcher logging', () => {
       });
       expect(rs.status).toBe(200);
 
-      const logged = JSON.stringify(spies.flatMap(spy => spy.mock.calls));
+      const logged = JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
       expect(logged).not.toContain('SECRET-TOKEN-4f1c9a');
       expect(logged).not.toContain('hunter2-PASSWORD-7d2e');
     } finally {

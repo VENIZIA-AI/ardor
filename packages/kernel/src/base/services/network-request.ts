@@ -67,7 +67,7 @@ export class DefaultNetworkRequestService extends BaseService {
       getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
       refresh: () => this.refreshToken(),
       onFailure: () => this.onAuthFailure(),
-      isNoAuthPath: paths => this.isNoAuthPath({ resource: paths?.[0], paths }),
+      isNoAuthPath: (paths) => this.isNoAuthPath({ resource: paths?.[0], paths }),
     });
     this.networkRequest = new NodeFetchNetworkRequest({
       name,
@@ -115,8 +115,8 @@ export class DefaultNetworkRequestService extends BaseService {
       return false;
     }
 
-    return this.noAuthPathRegexes.some(regex => {
-      return candidates.some(candidate => {
+    return this.noAuthPathRegexes.some((regex) => {
+      return candidates.some((candidate) => {
         regex.lastIndex = 0;
         return regex.test(candidate);
       });

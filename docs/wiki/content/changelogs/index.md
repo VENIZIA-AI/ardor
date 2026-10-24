@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-26 | [An arrow function parameter always has parentheses](./2026-10-26-arrow-parens-always) | Enhancement |
 | 2026-10-26 | [The network service is split into small parts, and its types are closed](./2026-10-26-network-service-split) | Breaking Change |
 | 2026-10-25 | [Correctness fixes in the kernel, the admin and the hooks](./2026-10-25-correctness-fixes) | Bug Fix |
 | 2026-10-24 | [ARDOR 0.4.0 follows IGNIS 0.4.0](./2026-10-24-ardor-0-4-0) | Breaking Change |
