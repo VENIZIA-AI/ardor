@@ -217,7 +217,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (29)
+### `@venizia/ardor-admin` (30)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -235,6 +235,7 @@ generated:
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
+- `ListFilterBuilder` class
 - `TFeature` type
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
@@ -251,7 +252,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (194)
+### `@venizia/ardor` (195)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -360,6 +361,7 @@ generated:
 - `IUseSizerReturn` interface
 - `IUseTranslateKeysOverrides` interface
 - `keysToCamelCase` const
+- `ListFilterBuilder` class
 - `LocalStorageKeys` class
 - `Logger` class
 - `LogLevels` class
