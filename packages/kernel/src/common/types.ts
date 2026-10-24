@@ -34,29 +34,20 @@ export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
-export interface IRequestProps {
-  headers?: { [key: string]: string | number };
-  body?: any;
-  query?: any;
-}
-
 export interface ISendParams {
-  id?: string | number;
   method?: TRequestMethod;
   requestType?: TRequestType;
   bodyType?: TRequestBodyType;
-  body?: any;
-  file?: any;
-  query?: { [key: string]: any };
-  headers?: { [key: string]: string | number };
+  body?: unknown;
+  query?: Record<string, unknown>;
+  headers?: Record<string, string | number>;
   requestCountData?: TConstValue<typeof RequestCountData>;
-  [key: string]: any;
+  /** The list extras to ask the route for, sent in `x-request-extra`. */
+  extra?: TExtraRequest;
 }
 
-export interface ISendResponse<T = AnyType> {
-  data: T;
-  [key: string]: any;
-}
+/** What `IDataProvider.send` answers: the network service's response. */
+export type ISendResponse<T = AnyType> = INetworkResponse<T>;
 
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
@@ -64,7 +55,7 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 export interface IGetRequestPropsParams {
   resource: string;
   requestCountData?: TConstValue<typeof RequestCountData>;
-  body?: any;
+  body?: unknown;
   bodyType?: TRequestBodyType;
   restDataProviderOptions: IRestDataProviderOptions;
   applicationInfo: IApplicationInfo;
@@ -74,7 +65,7 @@ export interface IGetRequestPropsParams {
 
 export interface IGetRequestPropsResult {
   headers?: HeadersInit;
-  body?: any;
+  body?: unknown;
 }
 
 export interface ICustomParams {
@@ -277,7 +268,6 @@ export interface IApplicationInfo {
   version: string;
   description: string;
   author?: { name: string; email: string; url?: string };
-  [extra: string | symbol]: any;
 }
 
 export type TDataCount<T> = {

@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (115)
+### `@venizia/ardor-kernel` (114)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -70,13 +70,12 @@ generated:
 - `INodeFetchRequestOptions` interface
 - `IPermissionProvider` interface
 - `IRequestOptions` interface
-- `IRequestProps` interface
 - `IRestDataProviderOptions` interface
 - `isBrowser` const
 - `isDefined` const
 - `isEditableTarget` const
 - `ISendParams` interface
-- `ISendResponse` interface
+- `ISendResponse` type
 - `ISignInSession` interface
 - `isNumber` const
 - `isObject` const
@@ -238,7 +237,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (181)
+### `@venizia/ardor` (180)
 
 - `AbstractArdorApplication` class
 - `AbstractNetworkFetchableHelper` class
@@ -313,14 +312,13 @@ generated:
 - `IReactAdminAuthProvider` interface
 - `IReactAdminDataProvider` interface
 - `IRequestOptions` interface
-- `IRequestProps` interface
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
 - `isBrowser` const
 - `isDefined` const
 - `isEditableTarget` const
 - `ISendParams` interface
-- `ISendResponse` interface
+- `ISendResponse` type
 - `ISignInSession` interface
 - `isNumber` const
 - `isObject` const
