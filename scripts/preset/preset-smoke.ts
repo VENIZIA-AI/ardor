@@ -1398,7 +1398,7 @@ const main = async () => {
         '/dev/null',
         '--header',
         'Accept-Encoding: gzip',
-        `http://localhost:8080${asset}`,
+        `http://127.0.0.1:8080${asset}`,
       ]);
 
       assert({
