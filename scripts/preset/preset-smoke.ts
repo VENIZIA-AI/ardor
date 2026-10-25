@@ -1,7 +1,10 @@
 /**
- * Proves the packed VULCAN preset of @venizia/ardor makes a green app, from outside this repository:
- * every package is packed, the preset is read from the extracted tarball, and the app is created,
- * installed and checked in a temp folder, so nothing works only because this repo hoists it.
+ * Proves the packed VULCAN preset of @venizia/ardor makes a green app: every package is packed, the
+ * preset is read from the extracted tarball, and the app is created, installed and checked in a
+ * scratch folder under `.agents/local/tmp` that is its own git repository. This repository's
+ * `node_modules` is still above that folder, so a dependency the app forgot to declare could resolve
+ * from it: `assertDeclaredDependenciesInstalled` proves only that every declared one was installed
+ * in the project.
  *
  *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
  *             .env copied from .env.example it passes them again and the dev server reads PORT and API_URL
@@ -34,19 +37,18 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 
 import { chromium } from 'playwright-core';
 
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from '../release/release-gates';
+import { makeScratch } from '../scratch';
 
 const ROOT = resolve(import.meta.dir, '..', '..');
 const SCENARIOS = ['solo', 'refusal', 'pair', 'lib', 'docker'] as const;
@@ -67,7 +69,10 @@ const readJson = (opts: { path: string }): TRecord => {
   return value;
 };
 
-const tempFolder = mkdtempSync(join(tmpdir(), 'ardor-preset-smoke-'));
+const tempFolder = makeScratch({ prefix: 'ardor-preset-smoke-' });
+// Its own repository: `vulcan sync` and the linters stop at the nearest `.git`, so they never read
+// this repository's `.git/info/exclude` or `.gitignore` (the scratch folder is ignored by both).
+Bun.spawnSync(['git', 'init', '--quiet', tempFolder], { stdout: 'ignore', stderr: 'inherit' });
 let step = 0;
 
 /** Runs one command; a non-zero exit stops the smoke with the command, its folder and its output. */
@@ -343,6 +348,25 @@ const checksOf = (opts: { presetRoot: string; kind?: 'lib' }): string[] => {
   });
 
   return Array.isArray(checks) ? checks.map(String) : [];
+};
+
+/** A dependency the app declares must be installed in the project, not found above the scratch folder. */
+const assertDeclaredDependenciesInstalled = (opts: { project: string; folder: string }): void => {
+  const manifest = readJson({ path: join(opts.project, opts.folder, 'package.json') });
+  const declared = ['dependencies', 'devDependencies'].flatMap((field) => {
+    const group = manifest[field];
+    return isRecord(group) ? Object.keys(group) : [];
+  });
+  const missing = declared.filter(
+    (name) =>
+      !existsSync(join(opts.project, opts.folder, 'node_modules', name)) &&
+      !existsSync(join(opts.project, 'node_modules', name)),
+  );
+
+  assert({
+    condition: missing.length === 0,
+    message: `every dependency of ${opts.folder} is installed in the project (missing: ${missing.join(', ') || 'none'})`,
+  });
 };
 
 /** install, sync, each app's checks, then the project's own contract. */
@@ -642,6 +666,10 @@ const install = async (opts: {
     cwd: opts.project,
     command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'sync'],
   });
+
+  for (const app of opts.apps) {
+    assertDeclaredDependenciesInstalled({ project: opts.project, folder: app.folder });
+  }
 
   for (const app of opts.apps) {
     for (const check of app.checks) {
