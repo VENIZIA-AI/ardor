@@ -38,15 +38,17 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 
-import { chromium } from 'playwright-core';
+import { type BrowserContext, chromium } from 'playwright-core';
 
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from '../release/release-gates';
 import { makeScratch } from '../scratch';
@@ -487,13 +489,20 @@ const HELLO = { message: 'Hello from IGNIS!' };
  */
 const assertPageRenders = async (opts: { port: number; name: string }) => {
   const executablePath = process.env.CHROME_BIN;
-  const browser = await chromium.launch({
-    executablePath,
-    channel: executablePath === undefined ? 'chrome' : undefined,
-  });
+  // The profile is a short folder this check creates and always removes. It cannot be under the repository's
+  // scratch area: Chrome puts a unix socket in it (`<profile>/com.google.Chrome.*/SingletonSocket`) and aborts
+  // with "Socket path too long" past 107 characters, which a checkout under a deep home folder exceeds.
+  // Chrome's own temporary files (that socket folder) go in it too, through TMPDIR, so none is left behind.
+  const profile = mkdtempSync(join(process.env.XDG_RUNTIME_DIR ?? tmpdir(), 'ardor-chrome-'));
+  let browser: BrowserContext | undefined;
   const problems: string[] = [];
 
   try {
+    browser = await chromium.launchPersistentContext(profile, {
+      executablePath,
+      channel: executablePath === undefined ? 'chrome' : undefined,
+      env: { ...process.env, TMPDIR: profile },
+    });
     const page = await browser.newPage();
 
     page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
@@ -538,7 +547,8 @@ const assertPageRenders = async (opts: { port: number; name: string }) => {
       `the page did not render: ${error instanceof Error ? error.message : String(error)}`,
     );
   } finally {
-    await browser.close();
+    await browser?.close();
+    rmSync(profile, { recursive: true, force: true });
   }
 
   assert({
