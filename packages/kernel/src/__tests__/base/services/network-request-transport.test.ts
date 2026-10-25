@@ -1,8 +1,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 
 import { rejectionOf } from '@/__tests__/rejection';
-import { Logger } from '@/helpers/logger';
-import { NodeFetcher } from '@/helpers/networks/fetchers/node-fetch';
+import { DefaultNetworkRequestService } from '@/base/services/network-request';
+import { RequestBodyTypes, RequestTypes } from '@/common';
+import { Logger } from '@/helpers';
 
 interface IRecorded {
   method: string;
@@ -35,7 +36,7 @@ beforeAll(() => {
         bytes: new Uint8Array(await request.arrayBuffer()),
       });
 
-      return new Response('ok');
+      return Response.json({ ok: true });
     },
   });
   baseUrl = `http://localhost:${server.port}`;
@@ -49,28 +50,39 @@ afterEach(() => {
   recorded.length = 0;
 });
 
-const createFetcher = (opts: { name: string }) =>
-  new NodeFetcher({ name: opts.name, defaultConfigs: {} });
+/** The transport DefaultNetworkRequestService sends through, as the service builds it. */
+class TransportService extends DefaultNetworkRequestService {
+  transport() {
+    return this.networkRequest.getNetworkService();
+  }
+}
+
+const createService = () =>
+  new TransportService({ name: 'transport-test', baseUrl, noAuthPathRegex: /./ });
+
+const createFetcher = (_opts: { name: string }) => createService().transport();
 
 const decode = (bytes: Uint8Array): string => new TextDecoder().decode(bytes);
 
-describe('NodeFetcher logging', () => {
+describe('request log', () => {
   test('no Authorization value and no body reaches any console method, at any level', async () => {
-    const fetcher = createFetcher({ name: 'node-fetch-log-test' });
-    Logger.getInstance({ scope: 'node-fetch-log-test', enableDebug: true });
+    const service = createService();
+    // The service logs through its own scope; the switch is process-wide.
+    Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: true });
 
     const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
       spyOn(console, method).mockImplementation(() => undefined),
     );
 
     try {
-      const rs = await fetcher.send({
-        url: `${baseUrl}/echo`,
-        method: 'post',
+      const response = await service.doRequest({
+        type: RequestTypes.SEND,
+        method: 'POST',
+        paths: ['echo'],
         headers: { Authorization: SECRET_TOKEN, 'content-type': 'application/json' },
-        body: { username: 'admin', password: SECRET_PASSWORD } as any,
+        body: { username: 'admin', password: SECRET_PASSWORD },
       });
-      expect(rs.status).toBe(200);
+      expect(response.data).toBeDefined();
 
       const logged = JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
       expect(logged).not.toContain('SECRET-TOKEN-4f1c9a');
@@ -79,7 +91,7 @@ describe('NodeFetcher logging', () => {
       for (const spy of spies) {
         spy.mockRestore();
       }
-      Logger.getInstance({ scope: 'node-fetch-log-test', enableDebug: false });
+      Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: false });
     }
 
     // Redaction is for the log only: the server still received the real header and body.
@@ -93,6 +105,11 @@ describe('NodeFetcher logging', () => {
 
     try {
       await fetcher.send({ url: `${baseUrl}/echo`, method: 'get' });
+      await createService().doRequest({
+        type: RequestTypes.SEND,
+        method: 'GET',
+        paths: ['echo'],
+      });
       expect(info).not.toHaveBeenCalled();
     } finally {
       info.mockRestore();
@@ -100,7 +117,7 @@ describe('NodeFetcher logging', () => {
   });
 });
 
-describe('NodeFetcher abort signals', () => {
+describe('abort signals', () => {
   test('a caller abort cancels the request even when a timeout is set', async () => {
     const fetcher = createFetcher({ name: 'node-fetch-abort-test' });
     const controller = new AbortController();
@@ -260,5 +277,78 @@ describe('NodeFetcher bodies', () => {
     await fetcher.send({ url: `${baseUrl}/echo`, method: 'get' });
 
     expect(recorded[0]!.bytes.length).toBe(0);
+  });
+});
+
+describe('what a request carries, through doRequest', () => {
+  const info = { name: 'transport-test', version: '1.0.0', description: 'x' };
+
+  test('a filter object is one JSON parameter, null and undefined are left out, a primitive array is one JSON parameter', async () => {
+    await createService().doRequest({
+      type: RequestTypes.GET_LIST,
+      method: 'GET',
+      paths: ['posts'],
+      query: {
+        filter: {
+          where: { status: 'open', id: { inq: [1, 2] } },
+          fields: ['id', 'name'],
+          limit: 5,
+        },
+        ids: [1, 2],
+        name: 'a b',
+        skipped: undefined,
+        nothing: null,
+        page: 2,
+      },
+    });
+
+    const params = new URLSearchParams(recorded[0]!.search);
+    expect(JSON.parse(params.get('filter') ?? 'null')).toEqual({
+      where: { status: 'open', id: { inq: [1, 2] } },
+      fields: ['id', 'name'],
+      limit: 5,
+    });
+    expect(params.getAll('ids')).toEqual(['[1,2]']);
+    expect(params.get('name')).toBe('a b');
+    expect(params.get('page')).toBe('2');
+    expect(params.has('skipped')).toBe(false);
+    expect(params.has('nothing')).toBe(false);
+  });
+
+  test('a multipart body reaches the server with a boundary, which fetch writes', async () => {
+    const service = createService();
+    const props = service.getRequestProps({
+      resource: 'upload',
+      bodyType: RequestBodyTypes.FORM_DATA,
+      body: { name: 'a', file: new File(['content'], 'a.txt') },
+      restDataProviderOptions: { url: baseUrl, noAuthPathRegex: /./ },
+      applicationInfo: info,
+    });
+
+    await service.doRequest({
+      type: RequestTypes.CREATE,
+      method: 'POST',
+      paths: ['upload'],
+      ...props,
+    });
+
+    expect(recorded[0]!.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+    expect(decode(recorded[0]!.bytes)).toContain('name="file"; filename="a.txt"');
+  });
+
+  test('a JSON body is sent as JSON, and a GET sends no body', async () => {
+    const service = createService();
+
+    await service.doRequest({
+      type: RequestTypes.CREATE,
+      method: 'POST',
+      paths: ['posts'],
+      headers: { 'content-type': 'application/json' },
+      body: { title: 'a' },
+    });
+    await service.doRequest({ type: RequestTypes.GET_ONE, method: 'GET', paths: ['posts', '1'] });
+
+    expect(JSON.parse(decode(recorded[0]!.bytes))).toEqual({ title: 'a' });
+    expect(recorded[1]!.bytes.length).toBe(0);
   });
 });

@@ -38,7 +38,7 @@ ARDOR defines no stereotype decorators of its own. Its `metadata` barrel re-expo
 
 ## Fetch only, socket client behind a sub-path
 
-The network layer is `fetch` only; there is no second HTTP transport. Kernel keeps its one optional peer, `socket.io-client`, out of the root barrel: the socket client ships behind its own sub-path (`./socket-io`, re-exported by `@venizia/ardor` as `./socket-io`), so importing `@venizia/ardor-kernel` never requires installing it. `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
+The network layer is `fetch` only; there is no second HTTP transport. The transport is IGNIS's (`NodeFetchNetworkRequest`, `@venizia/ignis-helpers/core`); ARDOR keeps no fork of the fetcher, the query string or the socket client (the browser-pure client is `@venizia/ignis-helpers/socket-io/client`). `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
 
 ## The augmentation seam
 

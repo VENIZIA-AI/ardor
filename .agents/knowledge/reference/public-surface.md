@@ -12,10 +12,9 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (114)
+### `@venizia/ardor-kernel` (101)
 
 - `AbstractArdorApplication` class
-- `AbstractNetworkFetchableHelper` class
 - `AnyObject` type
 - `AnyType` type
 - `api` const
@@ -28,7 +27,6 @@ generated:
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
-- `BaseNetworkRequest` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
@@ -57,8 +55,6 @@ generated:
 - `IdType` type
 - `IEncodedBody` interface
 - `IFeatureBase` interface
-- `IFetchable` interface
-- `IFetcherRequestOptions` interface
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
 - `ILogger` interface
@@ -66,10 +62,7 @@ generated:
 - `inject` const
 - `injectable` const
 - `INoAuthOptions` interface
-- `INodeFetchNetworkOptions` interface
-- `INodeFetchRequestOptions` interface
 - `IPermissionProvider` interface
-- `IRequestOptions` interface
 - `IRestDataProviderOptions` interface
 - `isBrowser` const
 - `isDefined` const
@@ -86,8 +79,6 @@ generated:
 - `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
-- `NodeFetcher` class
-- `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `provide` const
@@ -108,15 +99,11 @@ generated:
 - `TConstValue` type
 - `TDataCount` type
 - `TEnvironment` type
-- `TFetcherResponse` type
-- `TFetcherVariant` type
-- `TFetcherWorker` type
 - `TFullPaths` type
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
 - `toDataUrl` const
-- `toQueryString` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type
@@ -152,12 +139,6 @@ generated:
 - `THttpHeadersResolver` type
 - `THttpQuery` type
 - `THttpRepositoryOptions` type
-
-### `@venizia/ardor-kernel/socket-io` (3)
-
-- `ISocketIOClientOptions` interface
-- `SocketIOClientHelper` class
-- `TSocketIOEventHandler` type
 
 ## react
 
@@ -240,10 +221,9 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (183)
+### `@venizia/ardor` (170)
 
 - `AbstractArdorApplication` class
-- `AbstractNetworkFetchableHelper` class
 - `AnyObject` type
 - `AnyType` type
 - `api` const
@@ -258,7 +238,6 @@ generated:
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseHelper` class
-- `BaseNetworkRequest` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
@@ -299,8 +278,6 @@ generated:
 - `IdType` type
 - `IEncodedBody` interface
 - `IFeatureBase` interface
-- `IFetchable` interface
-- `IFetcherRequestOptions` interface
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
 - `II18nProviderOptions` interface
@@ -311,12 +288,9 @@ generated:
 - `inject` const
 - `injectable` const
 - `INoAuthOptions` interface
-- `INodeFetchNetworkOptions` interface
-- `INodeFetchRequestOptions` interface
 - `IPermissionProvider` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
-- `IRequestOptions` interface
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
 - `isBrowser` const
@@ -350,8 +324,6 @@ generated:
 - `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
-- `NodeFetcher` class
-- `NodeFetchNetworkRequest` class
 - `NullableType` type
 - `NumberIdType` type
 - `provide` const
@@ -374,15 +346,11 @@ generated:
 - `TEnvironment` type
 - `TFeature` type
 - `TFeatureMessages` type
-- `TFetcherResponse` type
-- `TFetcherVariant` type
-- `TFetcherWorker` type
 - `TFullPaths` type
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
 - `toDataUrl` const
-- `toQueryString` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type
@@ -449,10 +417,4 @@ generated:
 - `THttpHeadersResolver` type
 - `THttpQuery` type
 - `THttpRepositoryOptions` type
-
-### `@venizia/ardor/socket-io` (3)
-
-- `ISocketIOClientOptions` interface
-- `SocketIOClientHelper` class
-- `TSocketIOEventHandler` type
 

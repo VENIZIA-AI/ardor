@@ -20,9 +20,9 @@ which re-exports this package.
 | Decorators | `api()` - logs and rethrows a failing API method |
 | Bindings | `CoreBindings`, `LocalStorageKeys` |
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
-| Network | `BaseNetworkRequest`, `NodeFetchNetworkRequest`, `NodeFetcher` (fetch only) |
+| Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
 | Helpers | `Logger`, `BaseHelper`, `SocketIOClientHelper` |
-| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `toDataUrl`, `toQueryString` |
+| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `toDataUrl` |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License

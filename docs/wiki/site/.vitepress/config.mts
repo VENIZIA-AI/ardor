@@ -136,6 +136,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'ARDOR 0.4.1 follows IGNIS 0.4.1',
+            link: '/changelogs/2026-10-25-ardor-0-4-1',
+          },
+          {
             text: 'Correctness fixes in the kernel, the admin and the hooks',
             link: '/changelogs/2026-10-25-correctness-fixes',
           },

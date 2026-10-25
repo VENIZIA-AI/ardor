@@ -9,8 +9,8 @@ ARDOR provides extension packages and integration patterns to adapt applications
 
 <div class="guide-cards">
 <a href="./socket-client" class="guide-card">
-  <h3>Socket.IO Client Helper</h3>
-  <p>Real-time socket client wrapper with scoped logging, subscriptions, and container injection</p>
+  <h3>Socket.IO client</h3>
+  <p>The IGNIS browser-pure socket client, handed socket.io-client by your application</p>
 </a>
 <a href="./count-provider" class="guide-card">
   <h3>CountRestDataProvider</h3>
@@ -27,7 +27,7 @@ ARDOR provides extension packages and integration patterns to adapt applications
 <div class="roadmap">
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">1</span><h4>Real-Time Networking</h4></div>
-  <p><a href="./socket-client">Socket.IO Client Helper</a></p>
+  <p><a href="./socket-client">Socket.IO client</a></p>
   <span class="stage-desc">Connect real-time socket events with the dependency injection container</span>
 </div>
 <div class="roadmap-stage">
