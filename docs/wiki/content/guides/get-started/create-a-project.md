@@ -43,7 +43,8 @@ demo/
     package.json  tsconfig.json  .env.example
     .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/.ignore
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
-    .configs/builders/docker-entrypoint.d/40-runtime-config.sh
+    .configs/builders/nginx-snippets/{security-headers.conf,api-proxy.conf}
+    .configs/builders/docker-entrypoint.d/{40-runtime-config.sh,45-api-proxy.sh}
     src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts
     src/configurations/admin.configuration.ts
     src/pages/home.tsx
@@ -84,7 +85,10 @@ Open `http://localhost:8080`. On Linux, `--network host` lets the container reac
 What the image does:
 
 - **Three stages.** `deps` installs with `bun install --frozen-lockfile --ignore-scripts`, `builder` runs `bun run compile`, and `production` is nginx (unprivileged, port 8080) serving `dist/`. Every route that is not a file answers with `index.html`.
-- **`/api` proxy.** `/api` goes to `API_UPSTREAM` (default `http://api:3000`): a compose service name, a cluster service or an address.
+- **`/api` proxy.** `/api` goes to `API_UPSTREAM` (default `http://api:3000`): a compose service name, a cluster service or an address. The script `45-api-proxy.sh` writes the proxy from `nginx-snippets/api-proxy.conf` only when `API_UPSTREAM` is set and not empty, so an app served behind a gateway runs with `-e API_UPSTREAM=` (or `ENV API_UPSTREAM=` in its Dockerfile) and has no `/api` at all. A value that is not an address (a space, a `;`, a quote) stops the container.
+- **`/health`.** Answers `200 ok` from nginx alone, never cached, for a load balancer or an orchestrator. It does not call the backend.
+- **Compression.** nginx gzips text, JavaScript, CSS, JSON and SVG.
+- **Security headers.** Every response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: SAMEORIGIN`. They are in `nginx-snippets/security-headers.conf`, which every location includes; a `Content-Security-Policy` is left there as a commented example, because the right one depends on what your app loads.
 - **No secrets.** An environment file in the build context would stay in the image's layers, so the `deps` stage stops when the context holds one. The root `.dockerignore` keeps `.env` and `.env.*` out and `.env.example` in.
 - **The commit.** The image has no `.git`, so a build without `APP_BUILD_COMMIT` stops, and so does a value that is not a sha of at least seven lowercase hex digits (`Pass --build-arg APP_BUILD_COMMIT=$(git rev-parse HEAD) after a first commit; got: HEAD`). The commit becomes the `org.opencontainers.image.revision` label of the image.
 - **A private registry.** `BUN_CONFIG_REGISTRY` is empty; pass it as a build argument to install from one.

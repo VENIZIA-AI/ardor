@@ -16,8 +16,9 @@
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
  *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
  *             without a commit sha (none, HEAD, too short, not hex) stops, the image carries the commit as its
- *             revision label, and nginx serves the page, the SPA fallback, the hashed assets and `/api` through
- *             `API_UPSTREAM`; with an upstream that does not resolve it still starts and only `/api` is a 502; and
+ *             revision label, and nginx serves the page, the SPA fallback, the hashed assets, `/health`, the security
+ *             headers on every kind of response, gzip, and `/api` through `API_UPSTREAM`; with an upstream that does
+ *             not resolve it still starts and only `/api` is a 502; with `API_UPSTREAM` empty there is no `/api`; and
  *             `config.js` carries exactly the container's VITE_ variables, escaped, and never a secret. Runs
  *             where `docker` is installed (it is skipped elsewhere); the project's unreleased packages are
  *             copied into it (vendor/) because a Docker context cannot reach tarballs outside the project.
@@ -1146,6 +1147,7 @@ const main = async () => {
       `ardor-smoke-web-${suffix}`,
       `ardor-smoke-orphan-${suffix}`,
       `ardor-smoke-config-${suffix}`,
+      `ardor-smoke-gateway-${suffix}`,
     ];
     const commit = '0123456789abcdef0123456789abcdef01234567';
     const docker = (args: string[], failure = false) =>
@@ -1353,6 +1355,56 @@ const main = async () => {
         condition: (await get('/assets/missing.js')).status === 404,
         message: 'a missing asset is a 404, not the page',
       });
+      // /health answers from nginx alone, never cached.
+      const health = await get('/health');
+
+      assert({
+        condition:
+          health.status === 200 &&
+          (await health.text()).trim() === 'ok' &&
+          (health.headers.get('cache-control') ?? '').includes('no-store'),
+        message: '/health answers 200 from nginx without calling the backend, and is never cached',
+      });
+      // The security headers reach every kind of response: nginx drops the inherited ones in a location
+      // that sets its own add_header, which every location here does.
+      const secured = await Promise.all(
+        ['/', '/config.js', asset, '/health', '/anything/not/a/file', '/assets/missing.js'].map(
+          async (path) => ({ path, response: await get(path) }),
+        ),
+      );
+      const unsecured = secured.filter(({ response }) => {
+        return !(
+          response.headers.get('x-content-type-options') === 'nosniff' &&
+          response.headers.get('referrer-policy') === 'strict-origin-when-cross-origin' &&
+          response.headers.get('x-frame-options') === 'SAMEORIGIN'
+        );
+      });
+
+      assert({
+        condition:
+          unsecured.length === 0 &&
+          !secured.some(({ response }) => {
+            return response.headers.has('content-security-policy');
+          }),
+        message: `nosniff, Referrer-Policy and X-Frame-Options are on the page, config.js, assets, /health and the 404 (missing: ${unsecured.map(({ path }) => path).join(', ') || 'none'}), and no CSP is sent by default`,
+      });
+      const compressed = docker([
+        'exec',
+        containers[1]!,
+        'wget',
+        '-q',
+        '-S',
+        '-O',
+        '/dev/null',
+        '--header',
+        'Accept-Encoding: gzip',
+        `http://127.0.0.1:8080${asset}`,
+      ]);
+
+      assert({
+        condition: /content-encoding:\s*gzip/i.test(compressed.output),
+        message: 'a JavaScript asset is gzipped for a client that accepts it',
+      });
       // The upstream does not resolve: the container still starts, the page answers, only /api is a 502.
       const orphanPort = freePort();
 
@@ -1388,6 +1440,50 @@ const main = async () => {
       assert({
         condition: (await orphan('/api/hello')).status === 502,
         message: 'with an upstream that does not resolve, only /api answers 502',
+      });
+
+      // API_UPSTREAM empty: an app served behind a gateway. There is no /api location, so /api is the app's.
+      const gatewayPort = freePort();
+
+      docker([
+        'run',
+        '-d',
+        '--name',
+        containers[4]!,
+        '--network',
+        network,
+        '-p',
+        `${gatewayPort}:8080`,
+        '-e',
+        'API_UPSTREAM=',
+        image,
+      ]);
+      const gateway = async (path: string): Promise<Response> => {
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+          try {
+            return await fetch(`http://localhost:${gatewayPort}${path}`);
+          } catch {
+            await Bun.sleep(500);
+          }
+        }
+
+        throw new Error(`[preset-smoke] the gateway container did not answer ${path}`);
+      };
+
+      assert({
+        condition: (await gateway('/')).status === 200 && (await gateway('/health')).status === 200,
+        message: 'with API_UPSTREAM empty, nginx starts and serves the page and /health',
+      });
+      assert({
+        condition: (await (await gateway('/api/hello')).text()) === html,
+        message:
+          'with API_UPSTREAM empty there is no /api proxy: the path is the app, not the backend',
+      });
+      assert({
+        condition: !docker(['exec', containers[4]!, 'ls', '/etc/nginx/conf.d']).output.includes(
+          'api-proxy.locations',
+        ),
+        message: 'with API_UPSTREAM empty the proxy file is not written',
       });
 
       // The VITE_ variables of the container reach the browser, escaped; nothing else does.
