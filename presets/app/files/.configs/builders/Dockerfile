@@ -60,8 +60,9 @@ ARG APP_BUILD_COMMIT=
 LABEL org.opencontainers.image.revision="${APP_BUILD_COMMIT}"
 
 # The base image's entrypoint turns every /etc/nginx/templates/*.template into /etc/nginx/conf.d/*,
-# replacing ${API_UPSTREAM} and leaving nginx's own variables ($uri, $host) as they are.
+# leaving nginx's own variables ($uri, $host) as they are. The template includes the two snippets below.
 COPY --from=builder /home/bun/app/{{appPath}}/.configs/builders/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=builder /home/bun/app/{{appPath}}/.configs/builders/nginx-snippets /etc/nginx/snippets
 COPY --from=builder --chown=101:101 /home/bun/app/{{appPath}}/dist /usr/share/nginx/html
 
 # The runtime config: this script writes /usr/share/nginx/html/config.js from the VITE_ environment variables
@@ -69,7 +70,11 @@ COPY --from=builder --chown=101:101 /home/bun/app/{{appPath}}/dist /usr/share/ng
 # file it rewrites is the one the build copied from src/public, owned by 101 above.
 COPY --from=builder --chmod=0755 /home/bun/app/{{appPath}}/.configs/builders/docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 
-# Where /api goes: a compose service name, a cluster service, an address (an origin, with no path).
+# The /api proxy: this script writes it from snippets/api-proxy.conf when API_UPSTREAM is set and not empty.
+COPY --from=builder --chmod=0755 /home/bun/app/{{appPath}}/.configs/builders/docker-entrypoint.d/45-api-proxy.sh /docker-entrypoint.d/45-api-proxy.sh
+
+# Where /api goes: a compose service name, a cluster service, an address (an origin, with no path). An app
+# served behind a gateway sets it empty (`ENV API_UPSTREAM=` or `-e API_UPSTREAM=`), and then has no /api.
 ENV API_UPSTREAM=http://api:3000
 
 # The variables the app cannot run without, comma separated. A container that starts without one of them,

@@ -99,7 +99,7 @@
     },
     "packages/admin": {
       "name": "@venizia/ardor-admin",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
         "@venizia/ardor-react": "workspace:*",
@@ -151,7 +151,7 @@
     },
     "packages/ardor": {
       "name": "@venizia/ardor",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "@venizia/ardor-admin": "workspace:*",
         "@venizia/ardor-kernel": "workspace:*",
@@ -189,7 +189,7 @@
     },
     "packages/kernel": {
       "name": "@venizia/ardor-kernel",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@size-limit/preset-small-lib": "catalog:",
         "@types/bun": "catalog:",
@@ -221,7 +221,7 @@
     },
     "packages/react": {
       "name": "@venizia/ardor-react",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
         "lodash": "catalog:",

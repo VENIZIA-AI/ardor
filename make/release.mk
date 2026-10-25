@@ -18,7 +18,7 @@ release:
 preset-build:
 	@bun scripts/preset/vulcan-preset.ts
 
-# Creates an app from the packed preset in a temp folder outside this repository and checks it.
+# Creates an app from the packed preset in a scratch folder under .agents/local/tmp (its own git repository) and checks it.
 # Needs `make build-all` first. VULCAN_CMD, VULCAN_TGZ and IGNIS_DIR are described in scripts/preset/preset-smoke.ts.
 preset-smoke:
 	@bun scripts/preset/preset-smoke.ts $(ARGS)

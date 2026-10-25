@@ -12,10 +12,12 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
-| 2026-10-26 | [An arrow function parameter always has parentheses](./2026-10-26-arrow-parens-always) | Enhancement |
-| 2026-10-26 | [The network service is split into small parts, and its types are closed](./2026-10-26-network-service-split) | Breaking Change |
 | 2026-10-25 | [ARDOR 0.4.1 follows IGNIS 0.4.1](./2026-10-25-ardor-0-4-1) | Breaking Change |
+| 2026-10-25 | [An arrow function parameter always has parentheses](./2026-10-25-arrow-parens-always) | Enhancement |
 | 2026-10-25 | [Correctness fixes in the kernel, the admin and the hooks](./2026-10-25-correctness-fixes) | Bug Fix |
+| 2026-10-25 | [The network service is split into small parts, and its types are closed](./2026-10-25-network-service-split) | Breaking Change |
+| 2026-10-25 | [The preset image compresses, answers /health, sends security headers and can drop /api](./2026-10-25-preset-nginx) | New Feature |
+| 2026-10-25 | [getRuntimeConfig can require a value](./2026-10-25-runtime-config-required) | New Feature |
 | 2026-10-24 | [ARDOR 0.4.0 follows IGNIS 0.4.0](./2026-10-24-ardor-0-4-0) | Breaking Change |
 | 2026-10-24 | [The knowledge log is gone](./2026-10-24-knowledge-log-dropped) | Enhancement |
 | 2026-10-24 | [The fetcher no longer logs secrets, and four request bugs are fixed](./2026-10-24-node-fetcher-fixes) | Security |
