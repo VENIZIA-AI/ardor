@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-kernel",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and CRUD bases, request/auth constants, binding keys, logger, network fetchers and socket client. No React and no react-admin.",
   "keywords": [
     "ardor",
@@ -15,7 +15,6 @@
     "isomorphic",
     "logger",
     "network",
-    "socket-io",
     "typescript",
     "venizia"
   ],
@@ -57,11 +56,6 @@
       "import": "./dist/base/repositories/index.js",
       "default": "./dist/base/repositories/index.js"
     },
-    "./socket-io": {
-      "types": "./dist/helpers/socket-io-client.d.ts",
-      "import": "./dist/helpers/socket-io-client.js",
-      "default": "./dist/helpers/socket-io-client.js"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -71,13 +65,9 @@
     "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
-  "dependencies": {
-    "lodash": "catalog:"
-  },
   "devDependencies": {
     "@size-limit/preset-small-lib": "catalog:",
     "@types/bun": "catalog:",
-    "@types/lodash": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-connectors": "catalog:",
     "@venizia/ignis-filter": "catalog:",
@@ -89,24 +79,19 @@
     "oxlint-tsgolint": "catalog:",
     "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
-    "socket.io-client": "catalog:",
     "tsc-alias": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": "^0.4.0",
-    "@venizia/ignis-filter": "^0.4.0",
-    "@venizia/ignis-helpers": "^0.4.0",
-    "@venizia/ignis-inversion": "^0.4.0",
-    "@venizia/ignis-kernel": "^0.4.0",
-    "reflect-metadata": ">=0.2.2",
-    "socket.io-client": ">=4.8.4"
+    "@venizia/ignis-connectors": "^0.4.1",
+    "@venizia/ignis-filter": "^0.4.1",
+    "@venizia/ignis-helpers": "^0.4.1",
+    "@venizia/ignis-inversion": "^0.4.1",
+    "@venizia/ignis-kernel": "^0.4.1",
+    "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {
     "@venizia/ignis-connectors": {
-      "optional": true
-    },
-    "socket.io-client": {
       "optional": true
     }
   },
@@ -117,11 +102,9 @@
       "ignore": [
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "lodash",
-        "reflect-metadata",
-        "socket.io-client"
+        "reflect-metadata"
       ],
-      "limit": "7.8 KB"
+      "limit": "7 KB"
     }
   ],
   "engines": {

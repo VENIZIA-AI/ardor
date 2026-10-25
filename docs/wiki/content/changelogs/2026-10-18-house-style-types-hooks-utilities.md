@@ -13,13 +13,13 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 **In one line.** Utilities take one options object, hooks take `opts` with an `enabled` flag, and a feature is defined with `Features.define` (issue #83):
 
 ```typescript
-import { Features, toInteger, useDebounce } from '@venizia/ardor';
+import { Features, isNumber, useDebounce } from '@venizia/ardor';
 
 // Was: defineFeature({ name: 'orders' })
 export const ordersFeature = Features.define({ name: 'orders' });
 
-// Was: int(input)
-export const pageSize = toInteger({ value: '1,000' });
+// Was: isNumber(input)
+export const isPageSize = isNumber({ value: '1000' });
 
 // Was: useDebounce({ value: search, disabled: !ready })
 export const useSearchTerm = (opts: { search: string; ready: boolean }) => {

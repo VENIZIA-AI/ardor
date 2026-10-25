@@ -40,9 +40,12 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
    * (the application may relabel a feature), English for a locale the application has no source for.
    */
   protected composeMessages(opts: { locale: string; messages: object }): TranslationMessages {
-    const { i18nSources = { en: englishMessages } } = this.i18nProviderOptions;
+    const sources: Record<string, object> = this.i18nProviderOptions.i18nSources ?? {
+      en: englishMessages,
+    };
 
-    return merge({}, opts.messages, i18nSources?.[opts.locale] ?? englishMessages);
+    // lodash `merge` loses the message type; every source is a (partial) set of messages.
+    return merge({}, opts.messages, sources[opts.locale] ?? englishMessages) as TranslationMessages;
   }
 
   override value(_container: Container): I18nProvider {
@@ -60,14 +63,14 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     let isBuilding = true;
 
     const i18nProvider = polyglotI18nProvider(
-      locale => {
+      (locale) => {
         if (isBuilding || !featureMessages.isPending({ locale })) {
           return this.composeMessages({ locale, messages: featureMessages.readNow({ locale }) });
         }
 
         return featureMessages
           .read({ locale })
-          .then(messages => this.composeMessages({ locale, messages }));
+          .then((messages) => this.composeMessages({ locale, messages }));
       },
       initialLocale,
       languages,

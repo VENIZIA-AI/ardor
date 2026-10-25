@@ -92,7 +92,7 @@ describe('assertNoWorkspaceExternal', () => {
  * sub-path added later must appear here or the derivation fails.
  */
 describe('PURITY_MANIFEST derivation', () => {
-  const claimedPackages = [...new Set(PURITY_MANIFEST.map(row => row.package))];
+  const claimedPackages = [...new Set(PURITY_MANIFEST.map((row) => row.package))];
 
   const fullSurfacePackages = claimedPackages;
 
@@ -100,7 +100,7 @@ describe('PURITY_MANIFEST derivation', () => {
     'every entry point %s publishes has a row',
     (packageName: string) => {
       const probed = new Set(
-        PURITY_MANIFEST.filter(row => row.package === packageName).map(row => row.entry),
+        PURITY_MANIFEST.filter((row) => row.package === packageName).map((row) => row.entry),
       );
 
       for (const target of readPublishedTargets({ package: packageName })) {
@@ -110,20 +110,17 @@ describe('PURITY_MANIFEST derivation', () => {
   );
 
   test('every published entry is claimed, root and optional sub-path alike', () => {
-    const entries = PURITY_MANIFEST.map(row => row.entry).toSorted();
+    const entries = PURITY_MANIFEST.map((row) => row.entry).toSorted();
 
     // Every runtime package is a browser library, so every entry it publishes is claimed - one
-    // added without a claim is a gate hole, not a default. The socket client sits on its own
-    // sub-path because its peer is optional: importing the package must never require
-    // `socket.io-client` to be installed. The repository sub-path is there for weight - it pulls
-    // the IGNIS repository runtime, which is larger than the whole kernel budget.
+    // added without a claim is a gate hole, not a default. The repository sub-path sits on its
+    // own for weight - it pulls the IGNIS repository runtime, which is larger than the whole kernel
+    // budget.
     expect(entries).toEqual([
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
       'packages/ardor/dist/repository.js',
-      'packages/ardor/dist/socket-io.js',
       'packages/kernel/dist/base/repositories/index.js',
-      'packages/kernel/dist/helpers/socket-io-client.js',
       'packages/kernel/dist/index.js',
       'packages/react/dist/index.js',
     ]);
@@ -142,10 +139,12 @@ describe('PURITY_MANIFEST derivation', () => {
   });
 
   test('a single-build package yields exactly one row, deduping the default condition', () => {
-    const labels = PURITY_MANIFEST.filter(row => row.package === 'kernel').map(row => row.label);
+    const labels = PURITY_MANIFEST.filter((row) => row.package === 'kernel').map(
+      (row) => row.label,
+    );
 
     // Each condition set names import AND default; default repeats the import file, so every
     // entry yields ONE row - the root without a suffix, each sub-path labelled by its own.
-    expect(labels).toEqual(['kernel', 'kernel/repository', 'kernel/socket-io']);
+    expect(labels).toEqual(['kernel', 'kernel/repository']);
   });
 });

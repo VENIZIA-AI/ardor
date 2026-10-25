@@ -27,9 +27,9 @@ to the new transport without being touched. The base class, `DefaultRestDataProv
 by default, but nothing about its public shape (`IDataProvider`) requires HTTP.
 
 `send()` is **not** the seam for the react-admin CRUD methods (`getList`, `create`, ...): they reach
-`networkService.doRequest` without going through `send()` (`getList` and `getManyReference` by way
-of the overridable `getListHelper`), so with only `send()` overridden they still issue HTTP against
-the bound `url` - see Step 3.
+`networkService.doRequest` without going through `send()` (every method, `send()` included, ends
+in the protected `request()`), so with only `send()` overridden they still issue HTTP against the
+bound `url` - see Step 3.
 
 This example shows the `send()` seam by replacing HTTP under it with an in-memory command dispatch
 table - the same shape a desktop shell would use for Tauri's `invoke`, an Electron bridge, or a

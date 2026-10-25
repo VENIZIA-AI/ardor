@@ -118,6 +118,34 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-26',
+        collapsed: true,
+        items: [
+          {
+            text: 'An arrow function parameter always has parentheses',
+            link: '/changelogs/2026-10-26-arrow-parens-always',
+          },
+          {
+            text: 'The network service is split into small parts, and its types are closed',
+            link: '/changelogs/2026-10-26-network-service-split',
+          },
+        ],
+      },
+      {
+        text: '2026-10-25',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR 0.4.1 follows IGNIS 0.4.1',
+            link: '/changelogs/2026-10-25-ardor-0-4-1',
+          },
+          {
+            text: 'Correctness fixes in the kernel, the admin and the hooks',
+            link: '/changelogs/2026-10-25-correctness-fixes',
+          },
+        ],
+      },
+      {
         text: '2026-10-24',
         collapsed: true,
         items: [
@@ -125,6 +153,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
           {
             text: 'The knowledge log is gone',
             link: '/changelogs/2026-10-24-knowledge-log-dropped',
+          },
+          {
+            text: 'The fetcher no longer logs secrets, and four request bugs are fixed',
+            link: '/changelogs/2026-10-24-node-fetcher-fixes',
           },
           {
             text: 'scripts/ is grouped by purpose',
@@ -570,7 +602,7 @@ const config = defineConfig({
       chunkSizeWarningLimit: 3500,
       rollupOptions: {
         output: {
-          manualChunks: id => {
+          manualChunks: (id) => {
             if (id.includes('node_modules')) {
               // Isolate mermaid (+ its heavy deps) - large and only needed on pages with diagrams.
               if (

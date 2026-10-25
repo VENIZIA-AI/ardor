@@ -21,7 +21,7 @@ LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
 .PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-files lint-fix lint-fix-packages lint-fix-wiki \
-        fmt-files \
+        fmt-files fmt-scripts \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages
@@ -32,7 +32,7 @@ lint-all: lint-packages lint-wiki lint-scripts lint-files
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-lint-fix: lint-fix-packages lint-fix-wiki fmt-files
+lint-fix: lint-fix-packages lint-fix-wiki fmt-files fmt-scripts
 
 lint-fix-packages: $(FIX_PKG_TARGETS)
 
@@ -61,7 +61,10 @@ fmt-files:
 	@bun fmt --no-script $(FILES_GLOBS)
 
 # `scripts/` is not a workspace member: bun fmt takes the root bunfig.toml like the other projects, and
-# bun check reads scripts/tsconfig.json.
+# bun check reads scripts/tsconfig.json. `lint-scripts` checks its format, so `lint-fix` formats it too.
+fmt-scripts:
+	@cd scripts && bun fmt --no-script $(FMT_GLOB)
+
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
 	@cd scripts && bun fmt --no-script --check $(FMT_GLOB)

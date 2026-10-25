@@ -1,101 +1,58 @@
 import type { Store } from '@reduxjs/toolkit';
 import type { Container } from '@venizia/ignis-inversion';
-import type {
-  CoreAdminProps,
-  CreateParams,
-  CreateResult,
-  DeleteManyParams,
-  DeleteManyResult,
-  DeleteParams,
-  DeleteResult,
-  GetListParams,
-  GetListResult,
-  GetManyParams,
-  GetManyReferenceParams,
-  GetManyReferenceResult,
-  GetManyResult,
-  GetOneParams,
-  GetOneResult,
-  Identifier,
-  Locale,
-  QueryFunctionContext,
-  RaRecord,
-  ResourceProps,
-  UpdateManyParams,
-  UpdateManyResult,
-  UpdateParams,
-  UpdateResult,
-  UserIdentity,
-} from 'ra-core';
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
+import type { AuthProvider, CoreAdminProps, DataProvider, Locale, ResourceProps } from 'ra-core';
 import type { ReactNode } from 'react';
 import type { RouteProps } from 'react-router-dom';
 
 import type {
-  AnyType,
   DefaultNetworkRequestService,
-  ICustomParams,
   IDataSourceAuth,
   ISendParams,
   ISendResponse,
+  RequestCountData,
+  TConstValue,
+  TRequestMethod,
+  TRequestType,
 } from '@venizia/ardor-kernel';
 
-export interface IReactAdminDataProvider<TResource extends string = string> {
-  getList: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: GetListParams & QueryFunctionContext & ICustomParams,
-  ) => Promise<GetListResult<RecordType>>;
-
-  getOne: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams,
-  ) => Promise<GetOneResult<RecordType>>;
-
-  getMany: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams,
-  ) => Promise<GetManyResult<RecordType>>;
-
-  getManyReference: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: GetManyReferenceParams & QueryFunctionContext & ICustomParams,
-  ) => Promise<GetManyReferenceResult<RecordType>>;
-
-  update: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: UpdateParams,
-  ) => Promise<UpdateResult<RecordType>>;
-
-  updateMany: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: UpdateManyParams,
-  ) => Promise<UpdateManyResult<RecordType>>;
-
-  create: <
-    RecordType extends Omit<RaRecord, 'id'> = AnyType,
-    ResultRecordType extends RaRecord = RecordType & { id: Identifier },
-  >(
-    resource: TResource,
-    params: CreateParams,
-  ) => Promise<CreateResult<ResultRecordType>>;
-
-  delete: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: DeleteParams<RecordType>,
-  ) => Promise<DeleteResult<RecordType>>;
-
-  deleteMany: <RecordType extends RaRecord = AnyType>(
-    resource: TResource,
-    params: DeleteManyParams<RecordType>,
-  ) => Promise<DeleteManyResult<RecordType>>;
+/** What `DefaultRestDataProvider.request` sends: every react-admin method goes through it. */
+export interface IRestRequestOptions<TResource extends string = string> {
+  resource: TResource;
+  type: TRequestType;
+  method: TRequestMethod;
+  /** Default `[resource]`. */
+  paths?: Array<string>;
+  body?: unknown;
+  bodyType?: ISendParams['bodyType'];
+  query?: Record<string, unknown>;
+  extra?: TExtraRequest;
+  /** Win over the computed headers: a caller that names a header means it. */
+  headers?: HeadersInit;
+  requestCountData?: TConstValue<typeof RequestCountData>;
 }
+
+/** The nine data methods of react-admin, as ra-core declares them. */
+export type IReactAdminDataProvider<TResource extends string = string> = Pick<
+  DataProvider<TResource>,
+  | 'getList'
+  | 'getOne'
+  | 'getMany'
+  | 'getManyReference'
+  | 'update'
+  | 'updateMany'
+  | 'create'
+  | 'delete'
+  | 'deleteMany'
+>;
 
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
-  send: <ReturnType = AnyType>(opts: {
+  send: <TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
-  }) => Promise<ISendResponse<ReturnType>>;
+  }) => Promise<ISendResponse<TResult>>;
 
   getNetworkService(): DefaultNetworkRequestService;
 
@@ -103,29 +60,21 @@ export interface IDataProvider<
   getDataSourceAuth(): IDataSourceAuth;
 }
 
-export interface IReactAdminAuthProvider {
-  login: (params: AnyType) => Promise<{ redirectTo?: string | boolean } | void | AnyType>;
-  logout: (params: AnyType) => Promise<void | false | string>;
-  checkAuth: (params: AnyType & QueryFunctionContext) => Promise<void>;
-  checkError: (error: AnyType) => Promise<void>;
-  getIdentity?: (params?: QueryFunctionContext) => Promise<UserIdentity>;
-  getPermissions: (params: AnyType & QueryFunctionContext) => Promise<AnyType>;
-  /** Present only when the application binds `CoreBindings.PERMISSION_PROVIDER`. */
-  canAccess?: (params: {
-    resource: string;
-    action: string;
-    record?: unknown;
-    signal?: AbortSignal;
-  }) => Promise<boolean>;
-}
+/** The auth methods of react-admin, as ra-core declares them; `getPermissions` is required here. */
+export type IReactAdminAuthProvider = Required<
+  Pick<AuthProvider, 'login' | 'logout' | 'checkAuth' | 'checkError' | 'getPermissions'>
+> &
+  Pick<AuthProvider, 'getIdentity' | 'canAccess'>;
 
 export interface IAuthProvider extends IReactAdminAuthProvider {
-  getRoles: (params?: AnyType) => Promise<Set<string>>;
-  refreshToken: () => Promise<AnyType>;
+  getRoles: (params?: unknown) => Promise<Set<string>>;
+  /** `true` when the session was refreshed, `false` when there is no refresh to make. */
+  refreshToken: () => Promise<boolean>;
 }
 
 export interface II18nProviderOptions {
-  i18nSources?: Record<string | symbol, AnyType>;
+  /** Messages by locale, merged over the English ones: a source may hold only the keys it relabels. */
+  i18nSources?: Record<string, object>;
   languages?: Array<Locale>;
 }
 

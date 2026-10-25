@@ -1,51 +1,40 @@
 import type { RaRecord } from 'ra-core';
 
-import {
-  type AnyType,
-  RequestCountData,
-  RequestTypes,
-  type TRequestMethod,
-  type TRequestType,
-} from '@venizia/ardor-kernel';
+import { RequestMethods, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
+import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
+import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
 
 export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
-  override getListHelper<RecordType extends RaRecord = AnyType>(opts: {
+  protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     type: TRequestType;
-    queryKey: Record<string, AnyType>;
-    filter: Record<string, AnyType>;
-    requestProps: { headers?: HeadersInit; body?: AnyType; method: TRequestMethod };
+    queryKey: Record<string, unknown>;
+    filter: IListFilter;
+    extra?: TExtraRequest;
   }) {
-    const { type, resource, queryKey, filter, requestProps } = opts;
+    const { resource, queryKey, filter } = opts;
 
-    const paths = [resource];
+    // The base class reads the rows and keeps the route's list extras as `meta.extra`.
+    const list = super.requestList<RecordType>(opts);
 
-    const response = this.networkService.doRequest<RecordType[]>({
-      requestCountData: RequestCountData.DATA_ONLY,
-      type,
-      paths,
-      query: { ...queryKey, filter },
-      ...requestProps,
-    });
-
-    const responseCount = this.networkService.doRequest({
-      requestCountData: RequestCountData.DATA_ONLY,
+    // The count route has no extras: its request carries none.
+    const count = this.request<{ count?: number }>({
+      resource,
       type: RequestTypes.SEND,
+      method: RequestMethods.GET,
       paths: [resource, 'count'],
       query: { ...queryKey, where: filter?.where },
-      ...requestProps,
     });
 
-    const responseAll = Promise.all([response, responseCount]).then((responses: AnyType[]) => {
+    return Promise.all([list, count]).then(([listResult, countResult]) => {
       return {
-        data: responses?.[0]?.data,
-        total: responses?.[1]?.data?.count ?? 0,
+        data: listResult.data,
+        total: countResult?.data?.count ?? 0,
+        ...('meta' in listResult && listResult.meta ? { meta: listResult.meta } : {}),
       };
     });
-
-    return responseAll;
   }
 }

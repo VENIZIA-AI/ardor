@@ -1,0 +1,32 @@
+---
+title: Correctness fixes in the kernel, the admin and the hooks
+description: A series of fixes in the data providers, the network service, the auth service and the React hooks where the code did not do what its documentation said.
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin', '@venizia/ardor']
+---
+
+# Changelog - 2026-10-25
+
+## Correctness fixes in the kernel, the admin and the hooks
+
+<Badge type="info" text="Bug Fix" />
+
+**In one line.** A series of small fixes where the code did not do what its documentation said; none changes a public signature.
+
+## What changed
+
+- **An async `getAppInfo`.** `preConfigure` now waits for it, so `APPLICATION_INFO` holds the info and not a promise. The signature is unchanged and a synchronous `getAppInfo` keeps `preConfigure` synchronous.
+- **A response body that is not an object.** `convertResponse` with `requestCountData=1` throws the documented error for `null` and for a primitive body, instead of a `TypeError`.
+- **Errors are no longer swallowed.** A failed token refresh, a failing `onAuthFailure`, an invalid `noAuthPathRegex` pattern, a stored token that is not JSON, and a JWT payload that cannot be decoded are now logged. The last two log the error name only, because the message of a JSON parse error quotes the text it could not parse, which is the token.
+- **Data-provider methods reject.** `getList`, `getOne`, `getMany`, `getManyReference`, `create`, `update`, `updateMany`, `delete`, `deleteMany` and `send` of the REST data provider are `async`: a failure while the request is being built is a rejected promise, as react-admin expects, and no longer a synchronous throw.
+- **`CountRestDataProvider` keeps the list extras.** The `extra` a list route answers reaches the result as `meta.extra`, and the `x-request-extra` header built for the list is no longer sent to the `/count` route.
+- **`DefaultAuthService` on bad or missing storage.** `getUser` and `getRoles` read a corrupt stored value as empty instead of throwing, and `getRoles` keeps only the strings of a stored list. `getAuth` no longer logs the stored text: the message of a JSON parse error quotes it, and the stored text is the token; the error name is logged. Every method is safe where there is no `localStorage`, and `saveAuth` throws a clear error there, because a sign-in that is not kept must not look like it worked. The two prefixes `cleanUp` removes are `LocalStorageKeys.PREFIX_AUTH` and `PREFIX_OAUTH2`.
+- **List pagination.** The page defaults to 1 (a missing page used to send a negative `skip`), a `perPage` of 0 or none sends no limit instead of `limit: 0`, and only `skip` is sent: IGNIS reads `offset` as its alias, so the second copy was redundant.
+- **React hooks.** `useSizer` reports the `offsetWidth` and `offsetHeight` of the element as they are (it mixed `clientWidth` and `offsetHeight` and added a pixel to each). `useWindowDimensions` answers 0 by 0 where there is no `window`, instead of throwing, and measures the browser once mounted. A `confirm()` that replaces an open prompt resolves the replaced one with `false`; it used to leave it pending forever. `useAutosave` and `useCopyToClipboard` log through the application `Logger`, not `console`.
+- **`ArdorApplication` resolves its providers once.** The memo of the data, auth and i18n providers depended on the rest of the props, a new object on every render, so it never held and the container was read again on each render. It depends on the container only; the react-admin props are spread on top, as before.
+- **Housekeeping, no behaviour change.** Comments cut to at most three lines of why; the unreachable guards of `Logger` and `SocketIOClientHelper` and the needless `isEmpty` calls removed; local names spelled out. The generic parameter named `ReturnType` of `send`, `doRequest` and `parseResponse` is `TResult`: it shadowed the TypeScript utility type, and callers pass it positionally.
+
+## Who is affected
+
+- **A server that reads only `offset`.** The list request no longer carries it; read `skip`, which IGNIS treats as the primary.
+- **A layout that relied on the extra pixel of `useSizer`.** The size is now the element's real `offsetWidth` and `offsetHeight`.
+- **A log reader.** The new lines are warnings and errors for the failures above, and a debug line for an undecodable JWT payload.

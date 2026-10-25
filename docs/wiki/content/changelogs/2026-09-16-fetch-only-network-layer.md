@@ -41,9 +41,11 @@ const socket = new SocketIOClientHelper({ host, options });
 
 **After:**
 
-```ts
+```ts no-check
+// Written for 0.3.x; both classes are IGNIS's since 2026-10-26 (see that entry).
 import { NodeFetchNetworkRequest } from '@venizia/ardor';
 import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
+// ...
 
 const request = new NodeFetchNetworkRequest({
   name: 'reporting',

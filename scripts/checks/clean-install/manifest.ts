@@ -16,7 +16,6 @@ export const INSTALL_CLAIMS: IInstallClaim[] = [
     package: 'kernel',
     requires: {
       './repository': ['@venizia/ignis-connectors'],
-      './socket-io': ['socket.io-client'],
     },
   },
   { package: 'react' },
@@ -25,7 +24,6 @@ export const INSTALL_CLAIMS: IInstallClaim[] = [
     package: 'ardor',
     requires: {
       './repository': ['@venizia/ignis-connectors'],
-      './socket-io': ['socket.io-client'],
     },
   },
 ];
@@ -71,7 +69,7 @@ export const assertEveryPackageClaimed = (opts: {
     if (manifest.private) {
       continue;
     }
-    if (!opts.claims.some(claim => claim.package === directory)) {
+    if (!opts.claims.some((claim) => claim.package === directory)) {
       throw new Error(`[clean-install][manifest] '${manifest.name}' is published but has no claim`);
     }
   }
@@ -79,9 +77,9 @@ export const assertEveryPackageClaimed = (opts: {
 
 export const listPackageDirectories = (): string[] =>
   readdirSync(join(REPOSITORY_ROOT, 'packages'), { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .filter(name => {
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((name) => {
       try {
         readPackageManifest({ package: name });
         return true;
@@ -230,7 +228,7 @@ export const findDuplicateCopies = (opts: { lock: string }): string[] => {
  */
 export const peerIdentityHolders = (opts: { name: string }): string[] => {
   const byName = new Map(
-    listPackageDirectories().map(directory => {
+    listPackageDirectories().map((directory) => {
       const manifest = readPackageManifest({ package: directory });
       return [manifest.name, manifest] as const;
     }),

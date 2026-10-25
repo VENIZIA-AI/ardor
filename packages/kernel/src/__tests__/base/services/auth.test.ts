@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
+import { Logger } from '@/helpers';
+
+const storeLogger = () => Logger.getInstance({ scope: 'AuthTokenStore' });
 
 describe('saveAuth and credential retrieval', () => {
   beforeEach(() => {
@@ -176,9 +179,9 @@ describe('getAuth error handling', () => {
     localStorage.clear();
   });
 
-  test('getAuth returns null and logs error when stored token is not valid JSON', () => {
+  test('getAuth returns null and logs the store warning when stored token is not valid JSON', () => {
     const service = new DefaultAuthService();
-    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '{malformed-json');
 
@@ -205,16 +208,15 @@ describe('getAuth error handling', () => {
     }
   });
 
-  test('getAuth returns null and logs error when stored token is empty string', () => {
+  // An empty string is nothing usable, as for the network reader: no error to log.
+  test('getAuth returns null without logging when the stored token is an empty string', () => {
     const service = new DefaultAuthService();
-    const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '');
 
-      const result = service.getAuth();
-
-      expect(result).toBeNull();
-      expect(loggerSpy).toHaveBeenCalledTimes(1);
+      expect(service.getAuth()).toBeNull();
+      expect(loggerSpy).not.toHaveBeenCalled();
     } finally {
       loggerSpy.mockRestore();
     }
@@ -265,5 +267,117 @@ describe('cleanUp selective removal', () => {
 
     expect(localStorage.getItem('app_cache')).toBe('val-1');
     expect(localStorage.getItem('@app/i18n/locale')).toBe('en-US');
+  });
+});
+
+describe('corrupt storage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('getUser reads corrupt identity as an empty object and never logs the stored text', () => {
+    const service = new DefaultAuthService();
+    const spies = (['warn', 'error'] as const).map((level) =>
+      spyOn(service['logger'], level).mockImplementation(() => {}),
+    );
+    try {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, 'username-secretpart{');
+
+      expect(service.getUser()).toEqual({});
+      expect(JSON.stringify(spies.flatMap((spy) => spy.mock.calls))).not.toContain('secretpart');
+    } finally {
+      for (const spy of spies) {
+        spy.mockRestore();
+      }
+    }
+  });
+
+  test('getRoles reads corrupt permissions as an empty set', () => {
+    const service = new DefaultAuthService();
+    const loggerSpy = spyOn(service['logger'], 'warn').mockImplementation(() => {});
+    try {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, 'admin,editor{');
+
+      expect(service.getRoles()).toEqual(new Set());
+    } finally {
+      loggerSpy.mockRestore();
+    }
+  });
+
+  test('getRoles reads a stored value that is not a list as no roles, and keeps only strings', () => {
+    const service = new DefaultAuthService();
+
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, '"admin"');
+    expect(service.getRoles()).toEqual(new Set());
+
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, '{"admin":true}');
+    expect(service.getRoles()).toEqual(new Set());
+
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, '["admin", 1, null, "editor"]');
+    expect(service.getRoles()).toEqual(new Set(['admin', 'editor']));
+  });
+
+  test('getAuth logs the error name, never the stored token text', () => {
+    const service = new DefaultAuthService();
+    const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+    try {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'eyJhbGciOiJIUzI1NiJ9.secretpart');
+
+      expect(service.getAuth()).toBeNull();
+      expect(loggerSpy).toHaveBeenCalledTimes(1);
+
+      const logged = JSON.stringify(loggerSpy.mock.calls);
+      expect(logged).toContain('SyntaxError');
+      expect(logged).not.toContain('secretpart');
+      expect(logged).not.toContain('eyJhbGci');
+    } finally {
+      loggerSpy.mockRestore();
+    }
+  });
+});
+
+describe('without a localStorage', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+  beforeEach(() => {
+    Object.defineProperty(globalThis, 'localStorage', { value: undefined, configurable: true });
+  });
+
+  afterEach(() => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, 'localStorage', descriptor);
+    }
+  });
+
+  test('the readers answer what a visitor who has not signed in gets', () => {
+    const service = new DefaultAuthService();
+
+    expect(service.getUser()).toEqual({});
+    expect(service.getRoles()).toEqual(new Set());
+    expect(service.getAuth()).toBeNull();
+  });
+
+  test('cleanUp has nothing to clear and does not throw', () => {
+    expect(() => new DefaultAuthService().cleanUp()).not.toThrow();
+  });
+
+  test('saveAuth throws a clear error, because it would otherwise lose a sign-in silently', () => {
+    const service = new DefaultAuthService();
+
+    expect(() =>
+      service.saveAuth({ userId: 1, token: { value: 'token', type: 'Bearer' } }),
+    ).toThrow('localStorage is not available');
+  });
+});
+
+describe('LocalStorageKeys prefixes', () => {
+  test('name the two prefixes cleanUp removes', () => {
+    expect(LocalStorageKeys.PREFIX_AUTH).toBe('@app/auth/');
+    expect(LocalStorageKeys.PREFIX_OAUTH2).toBe('@app/oauth2/');
+    expect(LocalStorageKeys.KEY_AUTH_TOKEN.startsWith(LocalStorageKeys.PREFIX_AUTH)).toBe(true);
   });
 });

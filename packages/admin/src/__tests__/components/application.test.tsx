@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore } from '@reduxjs/toolkit';
 import { cleanup, render, screen } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
@@ -79,5 +79,35 @@ describe('ArdorApplication with features', () => {
     );
 
     expect(await screen.findByText('Monthly reports')).toBeDefined();
+  });
+
+  test('resolves the providers once per container, however often it renders', async () => {
+    const load = mock(() => Promise.resolve({ reports: { title: 'Monthly reports' } }));
+    const container = createContainer({ load });
+    const getSpy = spyOn(container, 'get');
+    const reduxStore = configureStore({ reducer: () => ({}) });
+
+    const tree = (title: string) => (
+      <MemoryRouter>
+        <ArdorApplication
+          container={container}
+          reduxStore={reduxStore}
+          suspense={<span>loading</span>}
+          title={title}
+        />
+      </MemoryRouter>
+    );
+
+    const { rerender } = render(tree('one'));
+    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    rerender(tree('two'));
+    rerender(tree('three'));
+
+    const resolved = (key: string) => {
+      return getSpy.mock.calls.filter(([opts]) => (opts as { key: string }).key === key).length;
+    };
+    expect(resolved(CoreBindings.DEFAULT_REST_DATA_PROVIDER)).toBe(1);
+    expect(resolved(CoreBindings.DEFAULT_AUTH_PROVIDER)).toBe(1);
+    expect(resolved(CoreBindings.DEFAULT_I18N_PROVIDER)).toBe(1);
   });
 });

@@ -34,29 +34,20 @@ export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
 export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
-export interface IRequestProps {
-  headers?: { [key: string]: string | number };
-  body?: any;
-  query?: any;
-}
-
 export interface ISendParams {
-  id?: string | number;
   method?: TRequestMethod;
   requestType?: TRequestType;
   bodyType?: TRequestBodyType;
-  body?: any;
-  file?: any;
-  query?: { [key: string]: any };
-  headers?: { [key: string]: string | number };
+  body?: unknown;
+  query?: Record<string, unknown>;
+  headers?: Record<string, string | number>;
   requestCountData?: TConstValue<typeof RequestCountData>;
-  [key: string]: any;
+  /** The list extras to ask the route for, sent in `x-request-extra`. */
+  extra?: TExtraRequest;
 }
 
-export interface ISendResponse<T = AnyType> {
-  data: T;
-  [key: string]: any;
-}
+/** What `IDataProvider.send` answers: the network service's response. */
+export type ISendResponse<T = unknown> = INetworkResponse<T>;
 
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
@@ -64,7 +55,7 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 export interface IGetRequestPropsParams {
   resource: string;
   requestCountData?: TConstValue<typeof RequestCountData>;
-  body?: any;
+  body?: unknown;
   bodyType?: TRequestBodyType;
   restDataProviderOptions: IRestDataProviderOptions;
   applicationInfo: IApplicationInfo;
@@ -74,9 +65,10 @@ export interface IGetRequestPropsParams {
 
 export interface IGetRequestPropsResult {
   headers?: HeadersInit;
-  body?: any;
+  body?: unknown;
 }
 
+/** Keys react-admin does not know ride on its params and become filter keys; `any`, so ra-core's param interfaces stay assignable. */
 export interface ICustomParams {
   params?: Record<string, AnyType>;
   [key: string]: AnyType;
@@ -127,12 +119,48 @@ export interface INoAuthOptions {
 
 export interface IRestDataProviderOptions extends INoAuthOptions {
   url: string;
-  /** Sent in `x-request-channel`. Default `web`. */
+  /** Sent in `x-request-channel`. Default `RequestChannel.WEB`. */
   requestTracingChannel?: string;
 
   headers?: HeadersInit;
 
   authRecovery?: IAuthRecoveryOptions;
+}
+
+export interface IAuthTokenRecord {
+  type?: string;
+  value: string;
+  provider?: string;
+}
+
+/** What an `HttpDataSource` hook reads from the request it is asked about. */
+export interface IDataSourceRequestContext {
+  paths: Array<string>;
+}
+
+/**
+ * The settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
+ * repository sends what the data provider sends: the same headers, the same token on the same
+ * paths, and one shared refresh per 401 burst. The hooks run on every send, the retry included.
+ */
+export interface IDataSourceAuth {
+  authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
+  headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
+  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
+  errorRootKey: string;
+}
+
+/** What `DefaultNetworkRequestService.doRequest` answers. */
+export interface INetworkResponse<TResult = unknown> {
+  data: TResult;
+  count?: number;
+  /** GET_LIST and GET_MANY_REFERENCE: the total of `Content-Range`, else the page's own row count. */
+  total?: number;
+  /** A file response: its name and `Content-Disposition`. */
+  filename?: string;
+  contentDisposition?: string;
+  /** What a route with list extras answered. */
+  extra?: Record<string, unknown>;
 }
 
 /**
@@ -241,7 +269,6 @@ export interface IApplicationInfo {
   version: string;
   description: string;
   author?: { name: string; email: string; url?: string };
-  [extra: string | symbol]: any;
 }
 
 export type TDataCount<T> = {

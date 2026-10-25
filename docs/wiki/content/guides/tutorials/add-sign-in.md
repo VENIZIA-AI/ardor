@@ -180,7 +180,7 @@ Components check permissions with `useCanAccess` from `ra-core`. See [Permission
 
 ## 5. Token recovery and refresh
 
-When a request returns HTTP 401, `DefaultNetworkRequestService` evaluates `canRecover(paths)`: the endpoint must not be a no-auth path (`isNoAuthPath`) or match `authRecovery.refreshTokenPath`.
+When a request returns HTTP 401, `DefaultNetworkRequestService` asks `AuthRecovery.canRecover({ paths })`: the endpoint must not be a no-auth path (`isNoAuthPath`) or match `authRecovery.refreshTokenPath`.
 
 If both pass, `refresh()` batches concurrent 401 failures into a single in-flight promise and calls `refreshToken()`. Retried once if `refreshToken()` resolves `true`. If `refreshToken()` throws, `onAuthFailure()` runs once, the refresh resolves `false`, and the 401 error is raised.
 

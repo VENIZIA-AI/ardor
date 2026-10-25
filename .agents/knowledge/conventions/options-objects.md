@@ -33,7 +33,7 @@ options separately. Never more than 5 parameters in all; VULCAN's `venizia/max-p
 
 ## Known exceptions
 
-The kernel utilities take one options object (`isNumber({ value })`, `getNumberValue({ input, method })`),
+The kernel utilities take one options object (`isNumber({ value })`, `isValidDate({ value })`),
 except the type guards `isDefined(value)` and `isString(value)`: an options object would lose the
 narrowing. The `Logger` methods (`debug(message, ...args)`) stay positional, console-style. Three more
 shapes are positional on purpose:

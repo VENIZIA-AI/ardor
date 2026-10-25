@@ -69,15 +69,13 @@ const NON_CODE_SUBPATH = './package.json';
 const PURITY_CLAIMS: IPurityClaim[] = [
   // Every ARDOR runtime package is a browser library, so every entry is claimed pure. `external`
   // lists the package's THIRD-PARTY peers and packaging: the React ecosystem reads
-  // `process.env.NODE_ENV` verbatim and relies on the consumer's bundler to define it, and
-  // socket.io-client reads `process` behind guards this text probe cannot see across lines.
+  // `process.env.NODE_ENV` verbatim and relies on the consumer's bundler to define it.
   // ARDOR's own code and every `@venizia/*` dependency stay in the measured graph. The layering rule
   // (no ra-core outside admin, no React in the kernel) is scripts/checks/layer-boundaries.ts.
   {
     package: 'kernel',
     external: {
       '.': [],
-      './socket-io': ['socket.io-client'],
     },
   },
   { package: 'react', external: { '.': ['react', 'react-redux', '@reduxjs/toolkit'] } },
@@ -109,7 +107,6 @@ const PURITY_CLAIMS: IPurityClaim[] = [
         '@tanstack/react-query',
         'react-router-dom',
       ],
-      './socket-io': ['socket.io-client'],
     },
   },
 ];
@@ -218,7 +215,7 @@ const buildLabel = (opts: {
  */
 export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
   const exportsMap = readExportsMap({ package: claim.package });
-  const published = Object.keys(exportsMap).filter(subpath => subpath !== NON_CODE_SUBPATH);
+  const published = Object.keys(exportsMap).filter((subpath) => subpath !== NON_CODE_SUBPATH);
 
   for (const subpath of claim.subpaths ?? []) {
     if (published.includes(subpath)) {
@@ -262,13 +259,13 @@ export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
     const targets = listConditionTargets(exportsMap[subpath]!);
 
     for (const condition of claim.impure?.[subpath] ?? []) {
-      if (targets.some(target => target.condition === condition)) {
+      if (targets.some((target) => target.condition === condition)) {
         continue;
       }
 
       throw new Error(
         `[purity][manifest] '${claim.package}' waives '${subpath}' under condition '${condition}', ` +
-          `which its \`exports\` map does not publish | Published: ${targets.map(t => t.condition).join(', ')}`,
+          `which its \`exports\` map does not publish | Published: ${targets.map((t) => t.condition).join(', ')}`,
       );
     }
 
@@ -305,7 +302,7 @@ export const deriveEntries = (claim: IPurityClaim): IPurityEntry[] => {
 export const assertBrowserImportCondition = (claims: IPurityClaim[]): IPurityClaim[] => {
   for (const claim of claims) {
     const exportsMap = readExportsMap({ package: claim.package });
-    const claimed = claim.subpaths ?? Object.keys(exportsMap).filter(s => s !== NON_CODE_SUBPATH);
+    const claimed = claim.subpaths ?? Object.keys(exportsMap).filter((s) => s !== NON_CODE_SUBPATH);
 
     for (const subpath of claimed) {
       const target = exportsMap[subpath];

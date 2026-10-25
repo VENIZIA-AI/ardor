@@ -17,64 +17,58 @@ You have an ARDOR application with `REST_DATA_PROVIDER_OPTIONS` and `APPLICATION
 
 | Export | Kind | Role on this page |
 | --- | --- | --- |
-| `CountRestDataProvider` | class | `DefaultRestDataProvider` subclass that overrides `getListHelper` |
+| `CountRestDataProvider` | class | `DefaultRestDataProvider` subclass that overrides `requestList` |
 | `DefaultRestDataProvider` | class | The base provider; supplies `getList`, `getOne`, `getMany` and the network service |
 | `RequestTypes` | class | `GET_LIST` for the list call, `SEND` for the count call |
 | `RequestCountData` | class | Both calls use `RequestCountData.DATA_ONLY` |
 | `CoreBindings` | class | Holds `DEFAULT_REST_DATA_PROVIDER`, the key you bind this class under |
-| `TRequestType`, `TRequestMethod` | types | Parameter types of `getListHelper` |
+| `TRequestType` | type | Parameter type of `requestList` |
 
 ## What it overrides
 
-`CountRestDataProvider` extends `DefaultRestDataProvider` and overrides only `getListHelper`. Everything else - the constructor, `getOne`, `getMany`, filter building in `getList`, `getNetworkService()` - is inherited unchanged.
+`CountRestDataProvider` extends `DefaultRestDataProvider` and overrides only the protected `requestList`. Everything else - the constructor, `getOne`, `getMany`, filter building in `getList`, `getNetworkService()` - is inherited unchanged.
 
 ```ts no-check
 class CountRestDataProvider<TResource extends string = string>
   extends DefaultRestDataProvider<TResource> {
 
-  override getListHelper<RecordType extends RaRecord = AnyType>(opts: {
+  protected override requestList<RecordType extends RaRecord = AnyType>(opts: {
     resource: TResource;
     type: TRequestType;
     queryKey: Record<string, AnyType>;
     filter: Record<string, AnyType>;
-    requestProps: { headers?: HeadersInit; body?: AnyType; method: TRequestMethod };
-  }): Promise<{ data: RecordType[]; total: number }>;
+    extra?: TExtraRequest;
+  }): Promise<{ data: RecordType[]; total: number; meta?: { extra: ... } }>;
   // ...
 }
 ```
 
-`getList` in the base class builds `filter` (with `where`, `order`, `limit`, `skip`, `offset`, `include`, `fields`) and `queryKey` (from `filter.params` and `meta`), then delegates to `getListHelper`. The override receives exactly those arguments.
+`getList` in the base class builds `filter` (with `where`, `order`, `limit`, `skip`, `include`, `fields`) and `queryKey` (from `filter.params` and `meta`), then delegates to `requestList`. The override receives exactly those arguments, and the list extras the caller asked for in `extra`.
 
 ## The two requests
 
-The override fires two requests in parallel through the inherited `networkService`:
+The override fires two requests in parallel through the inherited protected `request()`:
 
-1. The list request. Identical to the base class: `type` as passed by `getList` (`RequestTypes.GET_LIST`), path `[resource]`, query `{ ...queryKey, filter }`.
+1. The list request, made by the base `requestList`: `type` as passed by `getList` (`RequestTypes.GET_LIST`), path `[resource]`, query `{ ...queryKey, filter }`, and the `x-request-extra` header when extras were asked for.
 2. The count request. `type: RequestTypes.SEND`, path `[resource, 'count']`, query `{ ...queryKey, where: filter?.where }`.
 
-Both spread the same `requestProps` - so they share the method (`GET`, set by `getList`), headers, and body.
+Each is a `GET` that builds its own headers. The count request carries no list extras, and it has its own tracing id.
 
-Only `filter.where` reaches the count endpoint. `order`, `limit`, `skip`, `offset`, `include`, and `fields` are not sent, so the count reflects every record matching the filter, not just the current page.
+Only `filter.where` reaches the count endpoint. `order`, `limit`, `skip`, `include`, and `fields` are not sent, so the count reflects every record matching the filter, not just the current page.
 
 ```ts
-import {
-  CountRestDataProvider,
-  RequestMethods,
-  RequestTypes,
-  type TRequestMethod,
-} from '@venizia/ardor';
+import { CountRestDataProvider } from '@venizia/ardor';
 
 declare const provider: CountRestDataProvider<'products'>;
 
 export async function loadProducts() {
-  // getList() normally builds these arguments; calling the helper directly
-  // shows what the two requests receive.
-  const page = await provider.getListHelper({
-    type: RequestTypes.GET_LIST,
+  const page = await provider.getList({
     resource: 'products',
-    queryKey: {},
-    filter: { where: { status: 'active' }, limit: 25, skip: 0 },
-    requestProps: { method: RequestMethods.GET as TRequestMethod },
+    params: {
+      pagination: { page: 1, perPage: 25 },
+      sort: { field: 'id', order: 'ASC' },
+      filter: { status: 'active' },
+    },
   });
 
   // GET /products?filter=...            -> page.data
@@ -88,7 +82,7 @@ export async function loadProducts() {
 The result is `Promise.all` over the two responses, mapped to the react-admin `getList` contract:
 
 ```ts no-check
-// excerpt of the value resolved by getListHelper
+// excerpt of the value resolved by requestList
 const result = {
   data: listResponse.data,
   total: countResponse.data?.count ?? 0,
@@ -129,7 +123,7 @@ See [Binding keys best practices](../best-practices/binding-keys) for the exact 
 
 ## Extending it
 
-Because `getListHelper` is a public method, you can subclass `CountRestDataProvider` and narrow the resource union or adjust the helper further.
+Because `requestList` is protected, you can subclass `CountRestDataProvider` and narrow the resource union or adjust the hook further.
 
 ```ts
 import { CountRestDataProvider } from '@venizia/ardor';
@@ -143,6 +137,7 @@ export class AppDataProvider extends CountRestDataProvider<'products' | 'categor
 - The count request only carries `where`. Filters that rely on `include` or `fields` to restrict rows are not applied to the count.
 - Keys from `meta` and from `filter.params` are copied into `queryKey`, and `queryKey` is spread into both requests. Anything you put there also hits the count endpoint.
 - The count call uses `RequestTypes.SEND`, not `RequestTypes.GET_LIST`. Any logic that branches on request type sees `SEND` for the second call.
+- The count request is made without the list extras, so a route that answers extras by default answers them only on the list.
 - The two requests run in parallel and the result waits for both. If the count endpoint is slow, the list is slow.
 - Do not instantiate the class yourself - it depends on constructor injection of `REST_DATA_PROVIDER_OPTIONS` and `APPLICATION_INFO`.
 

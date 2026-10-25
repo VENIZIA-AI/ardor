@@ -121,7 +121,7 @@ In `packages/admin/src/providers/rest-data.ts`, `DefaultRestDataProvider` conver
 
 | Screen | Controller component | Data provider call | HTTP method and path |
 | --- | --- | --- | --- |
-| List (`list`) | `<ListBase>` | `dataProvider.getList(resource, params)` | `GET /${resource}?filter={where,order,limit,skip,offset}` |
+| List (`list`) | `<ListBase>` | `dataProvider.getList(resource, params)` | `GET /${resource}?filter={where,order,limit,skip}` |
 | Create (`create`) | `<CreateBase>` | `dataProvider.create(resource, { data })` | `POST /${resource}` (JSON body: `data`) |
 | Edit load (`edit`) | `<EditBase>` | `dataProvider.getOne(resource, { id })` | `GET /${resource}/${id}` |
 | Edit save (`edit`) | `<EditBase>` `save(data)` | `dataProvider.update(resource, { id, data })` | `PATCH /${resource}/${id}` (JSON body: `data`) |
@@ -132,7 +132,7 @@ In `packages/admin/src/providers/rest-data.ts`, `DefaultRestDataProvider` conver
 
 In `DefaultRestDataProvider`:
 
-- `getList` builds an IGNIS filter object containing `where`, `order`, `limit`, and `skip`/`offset`. Total count comes from `Content-Range`, falling back to the returned row count when absent or malformed (`packages/kernel/src/base/services/network-request.ts`, `resolveTotal`).
+- `getList` builds an IGNIS filter object containing `where`, `order`, `limit`, and `skip`. Total count comes from `Content-Range`, falling back to the returned row count when absent or malformed (`packages/kernel/src/helpers/networks/response-reader.ts`).
 - `update` sends a `PATCH` request with `params.data` directly (`packages/admin/src/providers/rest-data.ts`).
 - `deleteMany` and `updateMany` send bulk operations in one HTTP request with the selector in the body. `updateMany` throws if `data` carries a `where` field, and both bulk calls throw when `ids` is empty.
 

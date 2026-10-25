@@ -55,7 +55,7 @@ export class RestDataConfiguration {
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
 | `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
-| `ISendResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
+| `ISendResponse<T>` | type | Response object returned by `IDataProvider.send()` (an `INetworkResponse<T>`). |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
 | `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
 | `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
@@ -120,7 +120,7 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 | react-admin method | HTTP method | Path | Request body / query | Result conversion |
 | --- | --- | --- | --- | --- |
-| `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `offset`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
+| `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
 | `getOne` | `GET` | `/{resource}/{id}` | Query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body. | `{ data: RecordType }` from JSON response body. |
 | `getMany` | `GET` | `/{resource}` | Always a GET with the ids in `filter.where.id.inq` (query `filter` JSON string containing `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`). A very long id list can answer 414 or 431. No body. | `{ data: RecordType[] }` from JSON response array. |
 | `getManyReference` | `GET` | `/{resource}` | Same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
@@ -135,10 +135,10 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 ## Filter and pagination encoding
 
-`getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })` in `packages/admin/src/providers/rest-data.ts`:
+`getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })`, which delegates to `ListFilterBuilder.build` in `packages/admin/src/providers/list-filter.ts`:
 - **Filter modes**: If `params.filter.where` is defined, the filter is treated as an explicit IGNIS filter and sent as `{ ...filterInput, where: { ...filterInput.where } }`. Otherwise, flat keys in `params.filter` become properties in `where`, except `include`, `fields`, `params`, and `noLimit`, which are lifted to the top level of the filter.
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
-- **Pagination**: By default, `limit` is set to `perPage`, and `skip` and `offset` are set to `(page - 1) * perPage`. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
+- **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
 - **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
 - **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
 - **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
@@ -146,7 +146,7 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 ## Extended provider methods
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
-1. `send<ReturnType = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<ReturnType>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+1. `send<TResult = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 

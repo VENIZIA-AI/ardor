@@ -163,7 +163,7 @@ describe('the re-exported HTTP repository', () => {
     try {
       const rows = await repositoryFor({ server: enveloped }).find({ filter: {} });
 
-      expect(rows.map(row => row.id)).toEqual(['a', 'b', 'c']);
+      expect(rows.map((row) => row.id)).toEqual(['a', 'b', 'c']);
     } finally {
       await enveloped.stop(true);
     }

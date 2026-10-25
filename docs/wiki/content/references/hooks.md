@@ -412,7 +412,7 @@ export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
 
 - **Parameters**: `opts: IUseAutosaveOptions<TData, TReturn>` - `data`, `onSave`, optional `interval` (default `2000`), optional `enableSaveOnUnmount`, optional `enabled` (default `true`).
 - **Return value**: `void`.
-- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged via `console.error` and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
+- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged through the application logger (`Logger`, scope `useAutosave`) and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
 
 ### useConfirm
 
@@ -438,7 +438,7 @@ export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
 
 - **Parameters**: None.
 - **Return value**: `IUseConfirmReturn` - `{ message?, confirm, handleClose, handleConfirm, handleAbort }`.
-- **Gotcha**: `handleConfirm` resolves `true`, `handleAbort` resolves `false`, `handleClose` clears the state without resolving. Calling `confirm` again while a prior confirmation is pending replaces the internal resolver, leaving the previous Promise unresolved. Defined in `packages/react/src/hooks/use-confirm.ts`.
+- **Gotcha**: `handleConfirm` resolves `true`, `handleAbort` resolves `false`, `handleClose` clears the state without resolving. Calling `confirm` again while a prior confirmation is pending resolves the previous Promise with `false` and shows the new message. Defined in `packages/react/src/hooks/use-confirm.ts`.
 
 ### useCopyToClipboard
 
@@ -456,7 +456,7 @@ export function CopyShareLink(props: { url: string }) {
 
 - **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
 - **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and outputs `console.warn` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Gotcha**: Resolves to `false` and logs a warning through the application logger (`Logger`, scope `useCopyToClipboard`) if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 
@@ -492,7 +492,7 @@ export function ChartContainer() {
 
 - **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
 - **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
-- **Gotcha**: Reported width is `clientWidth + 1` and reported height is `offsetHeight + 1`. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
+- **Gotcha**: Reported width and height are the element's `offsetWidth` and `offsetHeight`, as they are. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
 
 ### useWindowDimensions
 
@@ -507,7 +507,7 @@ export function ViewportInfo() {
 
 - **Parameters**: None.
 - **Return value**: `{ width: number; height: number }`.
-- **Gotcha**: Reads `window.innerWidth` and `window.innerHeight` synchronously during initial state evaluation. Throws a `ReferenceError` during server-side rendering (SSR) if `window` is undefined. Defined in `packages/react/src/hooks/use-window-dimensions.ts`.
+- **Gotcha**: Reads `window.innerWidth` and `window.innerHeight` during initial state evaluation, and again once the effect runs. Where `window` is undefined (server-side rendering) the first render is `0` by `0`. Defined in `packages/react/src/hooks/use-window-dimensions.ts`.
 
 ## Related
 

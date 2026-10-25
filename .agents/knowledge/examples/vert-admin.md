@@ -73,7 +73,7 @@ route through its own `doRequest` and stores the token IGNIS re-issues under `Lo
 (the retry re-reads it), resolving `true`. `VertRestDataProvider` extends `DefaultRestDataProvider` and
 overrides `createNetworkService()` to return it, and `AdminConfiguration` binds that provider under
 `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The refresh endpoint itself is not listed in `noAuthPaths`
-(only sign-in is), and `DefaultNetworkRequestService.canRecover()` excludes `authRecovery.refreshTokenPath`,
+(only sign-in is), and `AuthRecovery.canRecover()` (behind `DefaultNetworkRequestService`) excludes `authRecovery.refreshTokenPath`,
 so a failed refresh surfaces as a real error instead of looping - the general shape of this mechanism is
 documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 
