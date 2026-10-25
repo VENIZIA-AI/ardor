@@ -51,12 +51,39 @@ import { runInNewContext } from 'node:vm';
 import { type BrowserContext, chromium } from 'playwright-core';
 
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from '../release/release-gates';
+import type { TConstValue } from '../const-value';
 import { makeScratch } from '../scratch';
 
 const ROOT = resolve(import.meta.dir, '..', '..');
-const SCENARIOS = ['solo', 'refusal', 'pair', 'lib', 'docker'] as const;
 
-type TScenario = (typeof SCENARIOS)[number];
+/** The scenarios of this check, one per argument: with none, all that the machine can run. */
+class Scenarios {
+  static readonly SOLO = 'solo';
+  static readonly REFUSAL = 'refusal';
+  static readonly PAIR = 'pair';
+  static readonly LIB = 'lib';
+  static readonly DOCKER = 'docker';
+
+  static readonly SCHEME_SET = new Set([this.SOLO, this.REFUSAL, this.PAIR, this.LIB, this.DOCKER]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+/** The two presets VULCAN ships: an app and a lib. */
+class PresetKinds {
+  static readonly APP = 'app';
+  static readonly LIB = 'lib';
+
+  static readonly SCHEME_SET = new Set([this.APP, this.LIB]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+type TPresetKind = TConstValue<typeof PresetKinds>;
 type TRecord = Record<string, unknown>;
 
 const isRecord = (value: unknown): value is TRecord =>
@@ -339,15 +366,15 @@ const addOverrides = (opts: {
 };
 
 /** The preset file of a packed package: `dist/presets/<kind>/preset.json`. */
-const presetPath = (opts: { presetRoot: string; kind: 'app' | 'lib' }): string =>
+const presetPath = (opts: { presetRoot: string; kind: TPresetKind }): string =>
   join(opts.presetRoot, `dist/presets/${opts.kind}/preset.json`);
 
 const appPresetPath = (opts: { presetRoot: string }): string =>
-  presetPath({ presetRoot: opts.presetRoot, kind: 'app' });
+  presetPath({ presetRoot: opts.presetRoot, kind: PresetKinds.APP });
 
-const checksOf = (opts: { presetRoot: string; kind?: 'lib' }): string[] => {
+const checksOf = (opts: { presetRoot: string; kind?: typeof PresetKinds.LIB }): string[] => {
   const { checks } = readJson({
-    path: presetPath({ presetRoot: opts.presetRoot, kind: opts.kind ?? 'app' }),
+    path: presetPath({ presetRoot: opts.presetRoot, kind: opts.kind ?? PresetKinds.APP }),
   });
 
   return Array.isArray(checks) ? checks.map(String) : [];
@@ -772,9 +799,9 @@ const unsubstituted = (opts: { folder: string }): string[] =>
 const main = async () => {
   const requested = process.argv[2];
 
-  if (requested !== undefined && !SCENARIOS.includes(requested as TScenario)) {
+  if (requested !== undefined && !Scenarios.isValid(requested)) {
     throw new Error(
-      `[preset-smoke] unknown scenario "${requested}" | use one of ${SCENARIOS.join(', ')}`,
+      `[preset-smoke] unknown scenario "${requested}" | use one of ${[...Scenarios.SCHEME_SET].join(', ')}`,
     );
   }
 
@@ -792,12 +819,14 @@ const main = async () => {
       return false;
     }
   })();
-  const scenarios = SCENARIOS.filter((name) => {
+  const scenarios = [...Scenarios.SCHEME_SET].filter((name) => {
     if (requested !== undefined) {
       return requested === name;
     }
 
-    return name === 'docker' ? hasDocker : name !== 'lib' || process.env.VULCAN_LIB === '1';
+    return name === Scenarios.DOCKER
+      ? hasDocker
+      : name !== Scenarios.LIB || process.env.VULCAN_LIB === '1';
   });
   const ignisDirectory = process.env.IGNIS_DIR;
   const vulcanTarballs = (process.env.VULCAN_TGZ ?? '').split(',').filter(Boolean);
@@ -818,7 +847,7 @@ const main = async () => {
     ...vulcanTarballs.map((tarball): [string, string] => [packageNameOf({ tarball }), tarball]),
   ]);
 
-  if (scenarios.includes('solo')) {
+  if (scenarios.includes(Scenarios.SOLO)) {
     console.log('\nscenario solo: vulcan init --preset ardor');
     const work = join(tempFolder, 'solo');
 
@@ -905,7 +934,7 @@ const main = async () => {
     });
   }
 
-  if (scenarios.includes('refusal')) {
+  if (scenarios.includes(Scenarios.REFUSAL)) {
     console.log('\nscenario refusal: a catalog IGNIS outside the peer range');
     const work = join(tempFolder, 'refusal');
 
@@ -960,7 +989,7 @@ const main = async () => {
     });
   }
 
-  if (scenarios.includes('lib')) {
+  if (scenarios.includes(Scenarios.LIB)) {
     console.log('\nscenario lib: vulcan add --preset ardor --lib merchant');
     const work = join(tempFolder, 'lib');
 
@@ -1092,7 +1121,7 @@ const main = async () => {
       message: 'no file of the library still holds a {{ token',
     });
 
-    const libChecks = checksOf({ presetRoot, kind: 'lib' });
+    const libChecks = checksOf({ presetRoot, kind: PresetKinds.LIB });
 
     addOverrides({ project, tarballs: ownTarballs });
     await install({
@@ -1104,7 +1133,7 @@ const main = async () => {
     });
   }
 
-  if (scenarios.includes('docker')) {
+  if (scenarios.includes(Scenarios.DOCKER)) {
     console.log('\nscenario docker: build and run the app image next to a stub backend');
     const work = join(tempFolder, 'docker');
 
@@ -1599,7 +1628,7 @@ const main = async () => {
     }
   }
 
-  if (scenarios.includes('pair')) {
+  if (scenarios.includes(Scenarios.PAIR)) {
     {
       console.log(
         '\nscenario pair: IGNIS backends, then vulcan add --preset ardor --api <backend>',

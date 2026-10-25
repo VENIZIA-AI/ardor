@@ -15,15 +15,31 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import type { TConstValue } from '../const-value';
+
 const CONTENT_DIRECTORY = 'docs/wiki/content';
 const DIST_DIRECTORY = 'docs/wiki/site/.vitepress/dist';
+
+/** Why a link is broken: its page does not exist, or the page has no such fragment. */
+class AnchorProblems {
+  static readonly MISSING_PAGE = 'missing page';
+  static readonly DEAD_ANCHOR = 'dead anchor';
+
+  static readonly SCHEME_SET = new Set([this.MISSING_PAGE, this.DEAD_ANCHOR]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+type TAnchorProblem = TConstValue<typeof AnchorProblems>;
 
 /** A link whose target page or fragment does not exist. */
 interface IBrokenAnchor {
   file: string;
   line: number;
   target: string;
-  reason: 'missing page' | 'dead anchor';
+  reason: TAnchorProblem;
 }
 
 const walk = (opts: { dir: string; extension: string }): string[] => {
@@ -109,7 +125,7 @@ export class AnchorCheck {
               file,
               line: index + 1,
               target: `${page}#${anchor}`,
-              reason: 'missing page',
+              reason: AnchorProblems.MISSING_PAGE,
             });
             continue;
           }
@@ -118,7 +134,7 @@ export class AnchorCheck {
               file,
               line: index + 1,
               target: `${page}#${anchor}`,
-              reason: 'dead anchor',
+              reason: AnchorProblems.DEAD_ANCHOR,
             });
           }
         }

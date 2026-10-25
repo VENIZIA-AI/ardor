@@ -13,7 +13,7 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
-import { isReleaseVersion } from './release-version';
+import { isReleaseVersion, NpmTags, type TNpmTag } from './release-version';
 
 const SIBLING_PREFIX = '@venizia/ardor';
 const PROTOCOL = /^(catalog|workspace):/;
@@ -178,7 +178,7 @@ export interface IDistTags {
 export interface IPublished {
   name: string;
   version: string;
-  tag: 'latest' | 'next';
+  tag: TNpmTag;
 }
 
 /**
@@ -233,7 +233,7 @@ export const parsePublished = (opts: { argv: string[] }): IPublished | undefined
 
   const tag = readFlag({ argv: opts.argv, flag: '--tag' });
 
-  if (tag !== 'latest' && tag !== 'next') {
+  if (tag !== NpmTags.LATEST && tag !== NpmTags.NEXT) {
     throw new Error(`[parsePublished] --published needs --tag latest or next, got '${tag ?? ''}'`);
   }
 

@@ -74,6 +74,8 @@ names the `isValid` parameter `value`. Two are exempt: `HeaderConstants`, the na
 [header protocol](/architecture/header-protocol.md), also holds regexes, and `App` holds runtime
 defaults, so neither has a `SCHEME_SET` or `isValid()`.
 
+A list of property names is not a value domain, so it stays a `Pick` or an `as const satisfies ReadonlyArray<keyof T>` list: `Pick<DataProvider, 'getList' | ...>` and `ArtifactIndexKinds` name keys of an interface, and the compiler checks them against it, which a const class would lose.
+
 ## Related
 
 - [Binding key namespaces](/conventions/binding-key-namespaces.md)
