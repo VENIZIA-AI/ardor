@@ -46,4 +46,4 @@ Scripts follow the standard package layout described in [Build/run/test](/overvi
 - `make test-kernel` (`bun test` with `NODE_ENV=test` and the `src/__tests__/setup.ts` preload) - see [testing conventions](/conventions/testing-conventions.md) and [testing process](/process/testing.md)
 - `make -C packages/kernel size` - runs `size-limit`
 
-The package enforces a size budget via `size-limit`: `dist/index.js` (importing everything, with all peer/runtime deps ignored from the measurement) must stay under **7.7 KB**. This budget is a hard constraint on kernel growth - anything bulky belongs in a higher package, not in the isomorphic core.
+The package enforces a size budget via `size-limit`: `dist/index.js` (importing everything, with all peer/runtime deps ignored from the measurement) must stay under the limit in the `size-limit` block of `packages/kernel/package.json`, which is the one place the number is written. This budget is a hard constraint on kernel growth - anything bulky belongs in a higher package, not in the isomorphic core.
