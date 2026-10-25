@@ -3,15 +3,15 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
+
+import { makeScratch } from '../../scratch';
 
 const SCRIPT = resolve(
   import.meta.dir,
@@ -26,7 +26,7 @@ afterAll(() => {
 });
 
 const workspace = (): string => {
-  const root = mkdtempSync(join(tmpdir(), 'runtime-config-'));
+  const root = makeScratch({ prefix: 'runtime-config-' });
 
   roots.push(root);
 

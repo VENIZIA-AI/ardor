@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 import { countChangedSinceRelease, withDependents } from '../release-scope';
 
@@ -21,7 +22,7 @@ const write = (root: string, path: string, content: string) => {
 
 /** A repository whose `umbrella` package has one release commit. */
 const released = (): string => {
-  const root = mkdtempSync(join(tmpdir(), 'release-scope-'));
+  const root = makeScratch({ prefix: 'release-scope-' });
   roots.push(root);
   git(root, 'init', '-q');
   git(root, 'config', 'user.email', 'test@example.com');

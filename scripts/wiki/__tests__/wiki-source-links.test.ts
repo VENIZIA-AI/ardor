@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 import { SourceLinkCheck } from '../wiki-source-links';
 
 const tmpDirs: string[] = [];
@@ -16,7 +17,7 @@ const writeFixture = (opts: { root: string; relPath: string; content: string }):
 // `git init` + `git add` (no commit) is enough - `git ls-files` reads the index, and this repo is
 // disposable, unrelated to the outer ARDOR checkout.
 const makeTrackedRepo = (): string => {
-  const root = mkdtempSync(join(tmpdir(), 'ignis-wiki-source-links-'));
+  const root = makeScratch({ prefix: 'ignis-wiki-source-links-' });
   tmpDirs.push(root);
   execFileSync('git', ['init', '-q'], { cwd: root });
 

@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { builtinModules } from 'node:module';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 export interface IPurityResult {
   entry: string;
@@ -223,7 +223,7 @@ const readMetafile = async (path: string): Promise<IMetafile | undefined> => {
     console.error(`[purity] Failed to read the build metafile at ${path}: ${reason}`);
     return undefined;
   } finally {
-    await rm(path, { force: true });
+    await rm(dirname(path), { recursive: true, force: true });
   }
 };
 
@@ -237,7 +237,8 @@ export const probeEntry = async (opts: {
   external?: string[];
 }): Promise<IPurityResult> => {
   const { entry, cwd, external = [] } = opts;
-  const metafilePath = join(tmpdir(), `ignis-purity-${randomUUID()}.json`);
+  // Its own folder in the repository's scratch area, removed with the file once read.
+  const metafilePath = join(makeScratch({ prefix: 'ignis-purity-' }), 'metafile.json');
 
   // `--env=disable`: Bun inlines `process.env.NODE_ENV` as a compile-time string constant by
   // default, regardless of whether the read is reachable. That erases the very read this probe
@@ -265,7 +266,7 @@ export const probeEntry = async (opts: {
   ]);
 
   if (exitCode !== 0) {
-    await rm(metafilePath, { force: true });
+    await rm(dirname(metafilePath), { recursive: true, force: true });
     return {
       entry,
       ok: false,

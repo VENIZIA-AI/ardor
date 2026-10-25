@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 import { AnchorCheck } from '../wiki-anchors';
 
 const tmpDirs: string[] = [];
@@ -18,7 +19,7 @@ const writeFixture = (opts: { root: string; relPath: string; content: string }):
  * the point of the gate is to read emitted ids rather than recompute a slug.
  */
 const makeFixture = (): { content: string; dist: string } => {
-  const root = mkdtempSync(join(tmpdir(), 'ignis-wiki-anchors-'));
+  const root = makeScratch({ prefix: 'ignis-wiki-anchors-' });
   tmpDirs.push(root);
   const content = join(root, 'content');
   const dist = join(root, 'dist');

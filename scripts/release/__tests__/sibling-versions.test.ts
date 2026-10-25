@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 /**
  * A package of this repository depends on its siblings at the EXACT version released with it.
@@ -92,7 +93,7 @@ describe('the packed manifest of each package', () => {
   const packed = new Map<string, TManifest>();
 
   const pack = async (opts: { dir: string }): Promise<TManifest> => {
-    const out = mkdtempSync(join(tmpdir(), 'ardor-sibling-pack-'));
+    const out = makeScratch({ prefix: 'ardor-sibling-pack-' });
     tmpDirs.push(out);
 
     const proc = Bun.spawn(['bun', 'pm', 'pack', '--destination', out, '--quiet'], {

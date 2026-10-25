@@ -1,13 +1,14 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 import { ModuleGraph } from '../module-cycles';
 
 const tmpDirs: string[] = [];
 
 const makeFixture = (opts: { files: Record<string, string> }): string => {
-  const dir = mkdtempSync(join(tmpdir(), 'ignis-module-cycles-'));
+  const dir = makeScratch({ prefix: 'ignis-module-cycles-' });
   tmpDirs.push(dir);
   for (const [name, content] of Object.entries(opts.files)) {
     writeFileSync(join(dir, name), content);
