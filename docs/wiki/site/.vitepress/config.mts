@@ -118,30 +118,21 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
-        text: '2026-10-26',
-        collapsed: true,
-        items: [
-          {
-            text: 'An arrow function parameter always has parentheses',
-            link: '/changelogs/2026-10-26-arrow-parens-always',
-          },
-          {
-            text: 'The network service is split into small parts, and its types are closed',
-            link: '/changelogs/2026-10-26-network-service-split',
-          },
-        ],
-      },
-      {
         text: '2026-10-25',
         collapsed: true,
         items: [
+          { text: 'ARDOR 0.4.1 follows IGNIS 0.4.1', link: '/changelogs/2026-10-25-ardor-0-4-1' },
           {
-            text: 'ARDOR 0.4.1 follows IGNIS 0.4.1',
-            link: '/changelogs/2026-10-25-ardor-0-4-1',
+            text: 'An arrow function parameter always has parentheses',
+            link: '/changelogs/2026-10-25-arrow-parens-always',
           },
           {
             text: 'Correctness fixes in the kernel, the admin and the hooks',
             link: '/changelogs/2026-10-25-correctness-fixes',
+          },
+          {
+            text: 'The network service is split into small parts, and its types are closed',
+            link: '/changelogs/2026-10-25-network-service-split',
           },
         ],
       },

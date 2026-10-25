@@ -4,7 +4,7 @@ description: The bun fmt style sets arrowParens to always, the repository is ref
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin', '@venizia/ardor']
 ---
 
-# Changelog - 2026-10-26
+# Changelog - 2026-10-25
 
 ## An arrow function parameter always has parentheses
 
