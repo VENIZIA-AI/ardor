@@ -27,7 +27,7 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-kernel @venizia/i
 bun add ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
 ```
 
-IGNIS is the backend framework in the VENIZIA family; ARDOR is its frontend sibling and a consumer of it. Inversion of control comes from `@venizia/ignis-inversion`, and the data layer speaks the query vocabulary of `@venizia/ignis-filter`. `@venizia/ignis-kernel` is a required runtime peer of `@venizia/ardor-kernel`: its `./metadata` sub-path supplies the artifact stereotypes and the `MetadataRegistry` that the application base reads, so even the root import needs it. `reflect-metadata` is required for decorator metadata used by the container - see [DI in the browser](/architecture/di-in-the-browser.md). The second line is the react-admin stack the umbrella declares as peers. Add `socket.io-client` only if the application uses the `./socket-io` sub-path.
+IGNIS is the backend framework in the VENIZIA family; ARDOR is its frontend sibling and a consumer of it. Inversion of control comes from `@venizia/ignis-inversion`, and the data layer speaks the query vocabulary of `@venizia/ignis-filter`. `@venizia/ignis-kernel` is a required runtime peer of `@venizia/ardor-kernel`: its `./metadata` sub-path supplies the artifact stereotypes and the `MetadataRegistry` that the application base reads, so even the root import needs it. `reflect-metadata` is required for decorator metadata used by the container - see [DI in the browser](/architecture/di-in-the-browser.md). The second line is the react-admin stack the umbrella declares as peers.
 
 ## The VULCAN preset
 
