@@ -142,6 +142,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'getRuntimeConfig can require a value',
             link: '/changelogs/2026-10-25-runtime-config-required',
           },
+          {
+            text: 'The required error of getRuntimeConfig has a code',
+            link: '/changelogs/2026-10-25-runtime-config-required-code',
+          },
         ],
       },
       {

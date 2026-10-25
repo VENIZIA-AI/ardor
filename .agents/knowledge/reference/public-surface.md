@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (101)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -92,6 +92,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -221,7 +222,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (170)
+### `@venizia/ardor` (171)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -337,6 +338,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
