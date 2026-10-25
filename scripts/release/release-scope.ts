@@ -4,14 +4,22 @@
  */
 
 /**
+ * The umbrella ships the VULCAN preset: the script writes `presets/` into its `dist/presets`, so a
+ * change to either changes what a consumer installs, though neither is under `packages/ardor`.
+ */
+const PRESET_PACKAGE = 'ardor';
+const PRESET_SCOPE_PATHS = ['presets', 'scripts/preset/vulcan-preset.ts'];
+
+/**
  * What a consumer installs: the code, the manifest (peers, exports, engines) and the build config -
- * the emit program and the root tsconfig it extends.
+ * the emit program and the root tsconfig it extends. The umbrella adds the preset it ships.
  */
 export const releaseScopePaths = (opts: { name: string }): string[] => [
   `packages/${opts.name}/src`,
   `packages/${opts.name}/package.json`,
   `packages/${opts.name}/tsconfig.json`,
   `packages/${opts.name}/.configs/builders/tsconfig.build.json`,
+  ...(opts.name === PRESET_PACKAGE ? PRESET_SCOPE_PATHS : []),
 ];
 
 const git = (opts: { cwd: string; args: string[] }): string => {
@@ -37,7 +45,7 @@ export const countChangedSinceRelease = (opts: { name: string; cwd?: string }): 
     args: ['log', '--format=%H %s', '--', `packages/${opts.name}/package.json`],
   })
     .split('\n')
-    .find(line => line.includes('release v'))
+    .find((line) => line.includes('release v'))
     ?.split(' ')[0];
 
   if (!releaseCommit) {
@@ -77,9 +85,9 @@ export const withDependents = <
 }): T[] => {
   const released = new Set<string>();
 
-  return opts.states.filter(state => {
+  return opts.states.filter((state) => {
     const isReleased =
-      state.changedFiles > 0 || state.internalDependencies.some(dep => released.has(dep));
+      state.changedFiles > 0 || state.internalDependencies.some((dep) => released.has(dep));
     if (isReleased) {
       released.add(state.packageName);
     }
