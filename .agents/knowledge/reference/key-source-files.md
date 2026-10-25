@@ -55,7 +55,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/kernel/src/helpers/base-helper.ts` and `logger.ts` - shared helper base and logging.
 
 ## Package entry points
-- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./socket-io` in kernel and ARDOR. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), and [ARDOR package](/packages/ardor.md).
+- `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./repository` in kernel and ARDOR. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), and [ARDOR package](/packages/ardor.md).
 
 ## Types and constants
 - `packages/kernel/src/common/types.ts`, `constants.ts` - shared kernel-wide types and constants.
