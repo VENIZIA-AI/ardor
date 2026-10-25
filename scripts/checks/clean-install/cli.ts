@@ -15,8 +15,9 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { homedir } from 'node:os';
+import { join, relative } from 'node:path';
+import { makeScratch } from '../../scratch';
 import { PURITY_MANIFEST } from '../purity/manifest';
 import {
   assertEveryPackageClaimed,
@@ -33,6 +34,7 @@ import {
 import type { IInstallRow, IPackageManifest } from './manifest';
 
 const LINKERS = ['hoisted', 'isolated'];
+const GUARD_DIRECTORY = import.meta.dir;
 
 // Entries run decorators at import, so each check loads the polyfill first, as an application does.
 const LOAD = (specifier: string): string =>
@@ -41,8 +43,14 @@ const LOAD = (specifier: string): string =>
 const run = async (opts: {
   command: string[];
   cwd: string;
+  env?: Record<string, string>;
 }): Promise<{ ok: boolean; output: string }> => {
-  const child = Bun.spawn(opts.command, { cwd: opts.cwd, stdout: 'pipe', stderr: 'pipe' });
+  const child = Bun.spawn(opts.command, {
+    cwd: opts.cwd,
+    env: { ...process.env, ...opts.env },
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
   const [stdout, stderr, status] = await Promise.all([
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
@@ -86,17 +94,13 @@ const assertFreshDist = (opts: { directories: string[] }): void => {
   }
 };
 
-/** Node and Bun resolve up the parent chain, so a stray `node_modules` there would satisfy a missing peer. */
-const assertNoAncestorModules = (opts: { root: string }): void => {
+/**
+ * The sandbox sits inside this repository, so Node and Bun would also find this repository's
+ * `node_modules` above it; the probes hold every bare import to the sandbox (sandbox-guard.ts).
+ * What is left is what no guard reaches: a legacy global folder and NODE_PATH.
+ */
+const assertNoAmbientResolution = (): void => {
   const leaks: string[] = [];
-  for (let directory = dirname(opts.root); ; directory = dirname(directory)) {
-    if (existsSync(join(directory, 'node_modules'))) {
-      leaks.push(join(directory, 'node_modules'));
-    }
-    if (dirname(directory) === directory) {
-      break;
-    }
-  }
   for (const legacy of ['.node_modules', '.node_libraries']) {
     if (existsSync(join(homedir(), legacy))) {
       leaks.push(join(homedir(), legacy));
@@ -184,14 +188,22 @@ const checkRow = async (opts: {
   sandbox: string;
 }): Promise<Array<{ name: string; ok: boolean; detail: string }>> => {
   const { row, sandbox } = opts;
+  const guarded = { CLEAN_INSTALL_SANDBOX: sandbox };
   const attempt = async (name: string, command: string[]) => {
-    const result = await run({ command, cwd: sandbox });
+    const result = await run({ command, cwd: sandbox, env: guarded });
     return { name, ok: result.ok, detail: result.ok ? '' : firstErrorLine(result) };
   };
 
   const checks = [
-    attempt('bun', ['bun', '-e', LOAD(row.specifier)]),
-    attempt('node-esm', ['node', '--input-type=module', '-e', LOAD(row.specifier)]),
+    attempt('bun', ['bun', GUARD_DIRECTORY + '/bun-probe.ts', row.specifier]),
+    attempt('node-esm', [
+      'node',
+      '--import',
+      GUARD_DIRECTORY + '/node-guard.mjs',
+      '--input-type=module',
+      '-e',
+      LOAD(row.specifier),
+    ]),
   ];
 
   const claim = PURITY_MANIFEST.find((entry) => entry.entry === row.entry);
@@ -204,12 +216,10 @@ const checkRow = async (opts: {
     checks.push(
       attempt('browser', [
         'bun',
-        'build',
+        GUARD_DIRECTORY + '/browser-probe.ts',
         relative(sandbox, entryFile),
-        '--target=browser',
-        '--outdir',
         join(sandbox, 'browser-out'),
-        ...(claim.external ?? []).flatMap((name) => ['--external', name]),
+        ...(claim.external ?? []),
       ]),
     );
   }
@@ -239,8 +249,8 @@ const main = async (): Promise<number> => {
   assertFreshDist({ directories });
 
   const rows = deriveInstallRows({ claims });
-  const root = mkdtempSync(join(tmpdir(), 'ardor-clean-install-'));
-  assertNoAncestorModules({ root });
+  assertNoAmbientResolution();
+  const root = makeScratch({ prefix: 'ardor-clean-install-' });
 
   const failures: string[] = [];
   let checkCount = 0;
