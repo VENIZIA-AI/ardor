@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises';
 import { builtinModules } from 'node:module';
 import { dirname, join } from 'node:path';
 
+import type { TConstValue } from '../../const-value';
 import { makeScratch } from '../../scratch';
 
 export interface IPurityResult {
@@ -20,6 +21,20 @@ export interface IPurityResult {
   external: string[];
   buildError?: string;
 }
+
+/** Whether a matched global fails the gate (`error`) or is only reported (`guarded`). */
+export class GlobalSeverities {
+  static readonly ERROR = 'error';
+  static readonly GUARDED = 'guarded';
+
+  static readonly SCHEME_SET = new Set([this.ERROR, this.GUARDED]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+export type TGlobalSeverity = TConstValue<typeof GlobalSeverities>;
 
 /**
  * Node globals survive verbatim into a `target: 'browser'` bundle, so a gate reading only module
@@ -43,39 +58,47 @@ export interface IPurityResult {
 export const GLOBAL_PATTERNS: Array<{
   name: string;
   pattern: RegExp;
-  severity: 'error' | 'guarded';
+  severity: TGlobalSeverity;
 }> = [
-  { name: 'process', pattern: /(?<![A-Za-z0-9_$.])process\s*\./, severity: 'error' },
-  { name: 'process?.', pattern: /(?<![A-Za-z0-9_$.])process\s*\?\./, severity: 'guarded' },
+  { name: 'process', pattern: /(?<![A-Za-z0-9_$.])process\s*\./, severity: GlobalSeverities.ERROR },
+  {
+    name: 'process?.',
+    pattern: /(?<![A-Za-z0-9_$.])process\s*\?\./,
+    severity: GlobalSeverities.GUARDED,
+  },
   {
     name: 'globalThis.process',
     pattern: /(?<![A-Za-z0-9_$.])globalThis\s*\.\s*process\s*\./,
-    severity: 'error',
+    severity: GlobalSeverities.ERROR,
   },
   {
     name: 'globalThis.process?.',
     pattern: /(?<![A-Za-z0-9_$.])globalThis\s*\.\s*process\s*\?\./,
-    severity: 'guarded',
+    severity: GlobalSeverities.GUARDED,
   },
   {
     name: '__dirname',
     pattern: /(?<![A-Za-z0-9_$.])__dirname(?![A-Za-z0-9_$])/,
-    severity: 'error',
+    severity: GlobalSeverities.ERROR,
   },
   {
     name: '__filename',
     pattern: /(?<![A-Za-z0-9_$.])__filename(?![A-Za-z0-9_$])/,
-    severity: 'error',
+    severity: GlobalSeverities.ERROR,
   },
   {
     name: 'createRequire',
     pattern: /(?<![A-Za-z0-9_$.])createRequire\s*\(/,
-    severity: 'error',
+    severity: GlobalSeverities.ERROR,
   },
-  { name: 'require(', pattern: /(?<![A-Za-z0-9_$.])require\s*\(/, severity: 'error' },
+  {
+    name: 'require(',
+    pattern: /(?<![A-Za-z0-9_$.])require\s*\(/,
+    severity: GlobalSeverities.ERROR,
+  },
   // Member access only. `typeof Bun !== 'undefined'` is the legitimate runtime probe and never
   // throws; `Bun.serve(...)` in a browser does.
-  { name: 'Bun', pattern: /(?<![A-Za-z0-9_$.])Bun\s*\./, severity: 'error' },
+  { name: 'Bun', pattern: /(?<![A-Za-z0-9_$.])Bun\s*\./, severity: GlobalSeverities.ERROR },
 ];
 
 /**
@@ -301,8 +324,10 @@ export const probeEntry = async (opts: {
   });
   const scannableText = stripBundlerPathComments(stdout);
   const matched = GLOBAL_PATTERNS.filter((g) => g.pattern.test(scannableText));
-  const globals = matched.filter((g) => g.severity === 'error').map((g) => g.name);
-  const guardedGlobals = matched.filter((g) => g.severity === 'guarded').map((g) => g.name);
+  const globals = matched.filter((g) => g.severity === GlobalSeverities.ERROR).map((g) => g.name);
+  const guardedGlobals = matched
+    .filter((g) => g.severity === GlobalSeverities.GUARDED)
+    .map((g) => g.name);
 
   if (builtins.length > 0 || unresolvedExternals.length > 0) {
     const reasons: string[] = [];

@@ -5,8 +5,10 @@ import { join, resolve } from 'node:path';
 import {
   assertAbove,
   isReleaseVersion,
+  NpmTags,
   npmTagFor,
   packagesForVersion,
+  ReleaseModes,
   readReleaseArgs,
 } from '../release-version';
 
@@ -71,7 +73,7 @@ describe('readReleaseArgs', () => {
 
   test.each(['0.3', 'v0.3.0', '0.3.0.1', '03.0.0', 'latest', '0.3.0-'])(
     'a version that is not semver throws: %s',
-    version => {
+    (version) => {
       expect(() => readReleaseArgs({ argv: ['--version', version] })).toThrow(version);
     },
   );
@@ -85,18 +87,18 @@ describe('readReleaseArgs', () => {
 describe('isReleaseVersion', () => {
   test.each(['0.3.0', '1.2.3', '0.3.0-0', '0.3.0-rc.1', '1.0.0-alpha.2+build.5'])(
     'accepts %s',
-    v => {
+    (v) => {
       expect(isReleaseVersion({ value: v })).toBe(true);
     },
   );
 });
 
 describe('npmTagFor: a stable release is latest, a prerelease is next', () => {
-  test.each(['patch', 'minor', 'major'])('mode %s -> latest', mode => {
+  test.each(['patch', 'minor', 'major'])('mode %s -> latest', (mode) => {
     expect(npmTagFor({ target: mode })).toBe('latest');
   });
 
-  test.each(['prepatch', 'preminor', 'premajor', 'prerelease'])('mode %s -> next', mode => {
+  test.each(['prepatch', 'preminor', 'premajor', 'prerelease'])('mode %s -> next', (mode) => {
     expect(npmTagFor({ target: mode })).toBe('next');
   });
 
@@ -104,12 +106,38 @@ describe('npmTagFor: a stable release is latest, a prerelease is next', () => {
     expect(npmTagFor({ target: '0.3.0' })).toBe('latest');
   });
 
-  test.each(['0.3.0-0', '0.3.0-rc.1', '1.0.0-alpha.2'])('%s -> next', version => {
+  test.each(['0.3.0-0', '0.3.0-rc.1', '1.0.0-alpha.2'])('%s -> next', (version) => {
     expect(npmTagFor({ target: version })).toBe('next');
   });
 
   test('a target that is neither a mode nor a version throws', () => {
     expect(() => npmTagFor({ target: 'latest' })).toThrow('latest');
+  });
+});
+
+// The workflow and the command line spell these words; the classes must keep them.
+describe('the release modes and the npm tags', () => {
+  test('the modes are the seven words of npm version', () => {
+    expect([...ReleaseModes.SCHEME_SET]).toEqual([
+      'patch',
+      'minor',
+      'major',
+      'prepatch',
+      'preminor',
+      'premajor',
+      'prerelease',
+    ]);
+  });
+
+  test('the tags are latest and next', () => {
+    expect([...NpmTags.SCHEME_SET]).toEqual(['latest', 'next']);
+  });
+
+  test('isValid accepts a member and refuses any other word', () => {
+    expect(ReleaseModes.isValid('premajor')).toBe(true);
+    expect(ReleaseModes.isValid('1.2.3')).toBe(false);
+    expect(NpmTags.isValid('next')).toBe(true);
+    expect(NpmTags.isValid('beta')).toBe(false);
   });
 });
 
@@ -144,7 +172,7 @@ describe('packagesForVersion: a shared version releases every package still belo
   ];
 
   test('a package already at the version is left out, the order is kept', () => {
-    expect(packagesForVersion({ states, version: '0.3.0' }).map(s => s.name)).toEqual([
+    expect(packagesForVersion({ states, version: '0.3.0' }).map((s) => s.name)).toEqual([
       'kernel',
       'react',
       'ardor',
@@ -152,7 +180,7 @@ describe('packagesForVersion: a shared version releases every package still belo
   });
 
   test('every package is included when none is at the version', () => {
-    const all = states.map(s => ({ ...s, localVersion: '0.1.5' }));
+    const all = states.map((s) => ({ ...s, localVersion: '0.1.5' }));
     expect(packagesForVersion({ states: all, version: '0.3.0' })).toHaveLength(4);
   });
 });
