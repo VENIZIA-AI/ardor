@@ -135,6 +135,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-25-network-service-split',
           },
           {
+            text: 'The preset image compresses, answers /health, sends security headers and can drop /api',
+            link: '/changelogs/2026-10-25-preset-nginx',
+          },
+          {
             text: 'getRuntimeConfig can require a value',
             link: '/changelogs/2026-10-25-runtime-config-required',
           },
