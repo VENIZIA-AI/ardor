@@ -4,7 +4,7 @@ description: DefaultNetworkRequestService stays the class you extend, but the to
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 ---
 
-# Changelog - 2026-10-26
+# Changelog - 2026-10-25
 
 ## The network service is split into small parts, and its types are closed
 
