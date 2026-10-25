@@ -33,4 +33,10 @@ try {
 
 ## Who is affected
 
-- **No one has to act.** An app that matches the message keeps working; the code is an addition. An app that matches the text can switch to the code.
+- **An app that catches the error by matching its message.** No action is needed, it keeps working. To stop depending on the text, compare the code as in the example above.
+- **Every other app.** No action needed.
+
+## Details
+
+- The error comes from `getError` of `@venizia/ignis-inversion`, which ARDOR already depended on; the change adds no class and no dependency. The kernel bundle grows by about 50 bytes.
+- It follows [getRuntimeConfig can require a value](./2026-10-25-runtime-config-required).

@@ -127,6 +127,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-25-arrow-parens-always',
           },
           {
+            text: 'Everything since ARDOR 0.4.1 in one place, with an upgrade checklist',
+            link: '/changelogs/2026-10-25-batch-overview',
+          },
+          {
             text: 'Correctness fixes in the kernel, the admin and the hooks',
             link: '/changelogs/2026-10-25-correctness-fixes',
           },
@@ -137,6 +141,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
           {
             text: 'The preset image compresses, answers /health, sends security headers and can drop /api',
             link: '/changelogs/2026-10-25-preset-nginx',
+          },
+          {
+            text: "Repository tooling - release scope, the smoke's Chrome profile, const classes in scripts, VULCAN 0.4.4",
+            link: '/changelogs/2026-10-25-repository-tooling',
           },
           {
             text: 'getRuntimeConfig can require a value',
