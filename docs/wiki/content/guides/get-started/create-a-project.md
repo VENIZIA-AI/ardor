@@ -102,7 +102,7 @@ docker run --rm -p 8080:8080 \
   admin
 ```
 
-At start the image writes `/config.js` from the container's `VITE_` variables, and `index.html` loads it before the app. The app reads a value with `getRuntimeConfig`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. The preset uses it once, for `VITE_API_URL`, in `src/configurations/admin.configuration.ts`.
+At start the image writes `/config.js` from the container's `VITE_` variables, and `index.html` loads it before the app. The app reads a value with `getRuntimeConfig`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. Pass `required: true` for a value the app cannot run without: the result is then a `string`, and a missing value throws an error that names the key (never a value). The preset uses it once, for `VITE_API_URL`, in `src/configurations/admin.configuration.ts`.
 
 | Rule | What it means |
 |---|---|

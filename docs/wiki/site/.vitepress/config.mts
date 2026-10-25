@@ -134,6 +134,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'The network service is split into small parts, and its types are closed',
             link: '/changelogs/2026-10-25-network-service-split',
           },
+          {
+            text: 'getRuntimeConfig can require a value',
+            link: '/changelogs/2026-10-25-runtime-config-required',
+          },
         ],
       },
       {
