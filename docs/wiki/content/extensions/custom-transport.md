@@ -73,7 +73,7 @@ export interface ITransportRequest {
 
 export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
 
-// An in-memory transport, useful in tests and Storybook.
+// An in-memory transport, useful in tests.
 const products = [
   { id: 1, name: 'Anvil' },
   { id: 2, name: 'Rope' },

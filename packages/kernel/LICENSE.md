@@ -84,7 +84,6 @@ ARDOR is inspired by and built upon the work of many open-source projects:
 
 - **[IGNIS](https://ignis.venizia.ai)** - The backend framework ARDOR is the frontend sibling of
 - **[react-admin](https://marmelab.com/react-admin/)** by Marmelab - The admin framework ARDOR adapts
-- **[LoopBack 4](https://loopback.io/)** by IBM/StrongLoop - Inspiration for the binding-key and provider patterns
 - **[shadcn/ui](https://ui.shadcn.com/)** - Inspiration and source for the UI kit component layer
 
 We thank all the maintainers and contributors of these projects for their excellent work.
