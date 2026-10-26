@@ -663,7 +663,6 @@ const config = defineConfig({
       { text: 'Extensions', link: '/extensions/' },
       { text: 'Best Practices', link: '/best-practices/' },
       { text: 'Changelogs', link: '/changelogs/' },
-      { text: 'VENIZIA', link: 'https://venizia.ai' },
     ],
     sidebar: {
       '/guides/': guidesSidebar,
@@ -678,8 +677,9 @@ const config = defineConfig({
     ],
     footer: {
       message:
-        'Released under the MIT License. ARDOR is part of <a href="https://venizia.ai">VENIZIA</a>.',
-      copyright: 'Copyright © 2025 <a href="https://venizia.ai">VENIZIA Ltd. Co.</a>',
+        'Released under the MIT License. ARDOR is part of <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA</a>.',
+      copyright:
+        'Copyright © 2025 <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA Ltd. Co.</a>',
     },
     outline: { level: [2, 3] },
   },

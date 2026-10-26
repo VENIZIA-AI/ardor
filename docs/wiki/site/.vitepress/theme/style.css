@@ -2237,7 +2237,7 @@ html:not(.dark) .ar-fill--muted {
 /* The VENIZIA wordmark is wide: keep its ratio at the header height. */
 .VPSocialLinks .VPSocialLink[aria-label='Venizia'] {
   width: auto;
-  padding: 0 4px;
+  padding: 0 8px 0 0;
 }
 
 .VPSocialLinks .VPSocialLink[aria-label='Venizia'] svg {
@@ -2247,7 +2247,7 @@ html:not(.dark) .ar-fill--muted {
 
 /* The header divider of VitePress (menu | social links): 1px, 24px high, 8px each side. */
 .VPNavBarSocialLinks .VPSocialLink[aria-label='Venizia']::before {
-  margin: 0 8px 0 4px;
+  margin: 0 16px 0 8px;
   width: 1px;
   height: 24px;
   background-color: var(--vp-c-divider);
