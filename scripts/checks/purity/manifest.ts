@@ -96,6 +96,8 @@ const PURITY_CLAIMS: IPurityClaim[] = [
   },
   {
     package: 'ardor',
+    // `./vite` runs in Node, under the build of an app: it is no browser entry.
+    subpaths: ['.', './repository'],
     external: {
       '.': [
         'react',

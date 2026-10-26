@@ -55,7 +55,12 @@
       "import": "./dist/repository.js",
       "default": "./dist/repository.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js",
+      "default": "./dist/vite/index.js"
+    }
   },
   "publishConfig": {
     "access": "public"
@@ -71,17 +76,22 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
     "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-boot": "catalog:",
     "eslint": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "size-limit": "catalog:",
     "tsc-alias": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
     "@tanstack/react-query": ">=5.104.5",
+    "@venizia/ignis-boot": "^0.4.1",
     "@venizia/ignis-connectors": "^0.4.1",
     "@venizia/ignis-filter": "^0.4.1",
     "@venizia/ignis-helpers": "^0.4.1",
@@ -93,10 +103,17 @@
     "react-dom": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "react-router-dom": ">=7.18.4",
-    "reflect-metadata": ">=0.2.2"
+    "reflect-metadata": ">=0.2.2",
+    "vite": ">=8.3.5"
   },
   "peerDependenciesMeta": {
+    "@venizia/ignis-boot": {
+      "optional": true
+    },
     "@venizia/ignis-connectors": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   },

@@ -1,3 +1,4 @@
+import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import type { TClass } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -269,6 +270,11 @@ export interface IApplicationInfo {
   version: string;
   description: string;
   author?: { name: string; email: string; url?: string };
+}
+
+/** The `build-info.json` that the `buildInfoFile` Vite plugin of `@venizia/ardor/vite` writes: IGNIS's build stamp and the installed versions of the framework packages. */
+export interface IBuildInfoFile extends TBuildInfoRecord {
+  frameworks: Record<string, string>;
 }
 
 export type TDataCount<T> = {

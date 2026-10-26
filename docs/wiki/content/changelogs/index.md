@@ -13,6 +13,7 @@ Every entry follows the [template](./template); a release without an entry is no
 | Date | Title | Type |
 |------|-------|------|
 | 2026-10-26 | [ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes](./2026-10-26-ignis-0-4-3-repository-exports) | Enhancement |
+| 2026-10-26 | [The preset keeps chunks in import order, and buildInfoFile writes build-info.json](./2026-10-26-vite-build-info) | New Feature |
 | 2026-10-25 | [ARDOR 0.4.1 follows IGNIS 0.4.1](./2026-10-25-ardor-0-4-1) | Breaking Change |
 | 2026-10-25 | [An arrow function parameter always has parentheses](./2026-10-25-arrow-parens-always) | Enhancement |
 | 2026-10-25 | [Everything since ARDOR 0.4.1 in one place, with an upgrade checklist](./2026-10-25-batch-overview) | New Feature |

@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // The one Node-only entry of the package (@venizia/ardor/vite): Node's types, never Bun's.
+    "types": ["node"]
+  },
+  "include": ["../../src/vite"],
+  "exclude": ["../../node_modules", "../../dist", "../../**/__tests__"]
+}

@@ -5,5 +5,5 @@
     // A browser library: no Bun or Node ambient type may reach the published .d.ts.
     "types": []
   },
-  "exclude": ["../../node_modules", "../../dist", "../../**/__tests__"]
+  "exclude": ["../../node_modules", "../../dist", "../../**/__tests__", "../../src/vite"]
 }

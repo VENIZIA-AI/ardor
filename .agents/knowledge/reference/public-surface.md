@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (102)
+### `@venizia/ardor-kernel` (103)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -49,6 +49,7 @@ generated:
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
+- `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
@@ -224,7 +225,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (171)
+### `@venizia/ardor` (172)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -274,6 +275,7 @@ generated:
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
+- `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
 - `IDataSourceAuth` interface
@@ -423,4 +425,13 @@ generated:
 - `THttpQuery` type
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
+
+### `@venizia/ardor/vite` (6)
+
+- `buildInfoFile` const
+- `DEFAULT_BUILD_INFO_FILE_NAME` const
+- `DEFAULT_FRAMEWORK_SCOPE` const
+- `IBuildInfoFileOptions` interface
+- `TUnresolvedPolicy` type
+- `UnresolvedPolicies` class
 
