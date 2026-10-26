@@ -23,3 +23,16 @@ resolved with `useRepository`.
 | `src/main.tsx` | `ArdorApplication` receiving the container |
 | `.configs/builders/vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
 | `api/server.ts` | The list contract the data provider expects |
+
+---
+
+<p align="center">
+  <a href="https://venizia.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://venizia.ai/assets/logo-white.svg">
+      <img src="https://venizia.ai/assets/logo.svg" alt="VENIZIA" height="28">
+    </picture>
+  </a>
+  <br>
+  <sub>ARDOR is built and maintained by <a href="https://venizia.ai">VENIZIA</a>.</sub>
+</p>

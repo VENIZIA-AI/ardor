@@ -245,3 +245,16 @@ Standing on [IGNIS](https://ignis.venizia.ai) (the container and the filter voca
 
 MIT licensed - see [LICENSE.md](LICENSE.md).
 Questions: [GitHub Issues](https://github.com/VENIZIA-AI/ardor/issues) &#8226; developer@venizia.ai
+
+---
+
+<p align="center">
+  <a href="https://venizia.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://venizia.ai/assets/logo-white.svg">
+      <img src="https://venizia.ai/assets/logo.svg" alt="VENIZIA" height="28">
+    </picture>
+  </a>
+  <br>
+  <sub>ARDOR is built and maintained by <a href="https://venizia.ai">VENIZIA</a>.</sub>
+</p>

@@ -11,3 +11,16 @@ bun run server:dev
 
 Only `send()` is replaced. Filter mapping, `value()` and the react-admin methods still come from
 the base class; a shell with no HTTP at all overrides those the same way.
+
+---
+
+<p align="center">
+  <a href="https://venizia.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://venizia.ai/assets/logo-white.svg">
+      <img src="https://venizia.ai/assets/logo.svg" alt="VENIZIA" height="28">
+    </picture>
+  </a>
+  <br>
+  <sub>ARDOR is built and maintained by <a href="https://venizia.ai">VENIZIA</a>.</sub>
+</p>
