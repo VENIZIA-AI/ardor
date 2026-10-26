@@ -10,9 +10,9 @@
  */
 import { Glob } from 'bun';
 import ts from 'typescript';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { makeScratch } from '../../../scripts/scratch';
 
 const WIKI = resolve(import.meta.dir, '..');
 const REPO = resolve(WIKI, '..', '..');
@@ -122,7 +122,9 @@ if (abused.length > 0) {
   process.exit(1);
 }
 const checked = snippets.filter((snippet) => !snippet.noCheck);
-const dir = mkdtempSync(join(tmpdir(), 'ardor-docs-snippets-'));
+const dir = makeScratch({ prefix: 'ardor-docs-snippets-' });
+// removed on every exit, so a crash or a failing snippet leaves nothing in .agents/local/tmp
+process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
 // third-party types resolve from the admin package, which depends on everything the docs show
 Bun.spawnSync(['ln', '-s', join(REPO, 'packages/admin/node_modules'), join(dir, 'node_modules')]);
 
@@ -194,8 +196,6 @@ for (const [page, pageSnippets] of byPage) {
     );
   }
 }
-
-rmSync(dir, { recursive: true, force: true });
 
 if (problems.length > 0) {
   console.error(`snippet check FAILED - ${problems.length} error(s):\n  ${problems.join('\n  ')}`);
