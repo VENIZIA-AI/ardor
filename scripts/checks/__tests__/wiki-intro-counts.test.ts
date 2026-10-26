@@ -102,6 +102,16 @@ describe('the sentences of the home page', () => {
     expect(HOME.version).toBe(pkg.version);
   });
 
+  test('the lede is the description of the page in every meta tag', () => {
+    const config = readFileSync(
+      join(ROOT, 'docs', 'wiki', 'site', '.vitepress', 'config.mts'),
+      'utf8',
+    );
+
+    // description, og:description and twitter:description
+    expect(config.split(HOME.lede)).toHaveLength(4);
+  });
+
   test('the install box holds the commands of the README', () => {
     const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
 

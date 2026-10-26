@@ -35,7 +35,8 @@ export const HOME: THomeContent = {
   eyebrow: `ARDOR ${VERSION} · MIT · Bun ${BUN_FLOOR} · React`,
   // A no-break space joins the last two words, so the coloured line never leaves "surface." alone.
   title: [['Shape your admin panels.'], 'ARDOR tempers the surface.'],
-  lede: "ra-core's CRUD contract on IGNIS's container: dependency injection, a REST data provider, token refresh on 401 and i18n, in one package, @venizia/ardor, with a core that uses no Node builtins.",
+  // The sentence of the meta, og and twitter descriptions in config.mts (a test keeps them equal).
+  lede: 'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
   install: {
     label: 'Create an admin',
     lines: [
