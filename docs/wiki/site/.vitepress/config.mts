@@ -143,7 +143,7 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-25-preset-nginx',
           },
           {
-            text: "Repository tooling - release scope, the smoke's Chrome profile, const classes in scripts, VULCAN 0.4.4",
+            text: "Repository tooling - release scope, the smoke's Chrome profile, the docs snippet check, const classes in scripts, VULCAN 0.4.4",
             link: '/changelogs/2026-10-25-repository-tooling',
           },
           {

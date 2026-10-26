@@ -28,6 +28,7 @@ bun add @venizia/ardor
 | Bug fix | A preset change counts for the release sweep of `ardor` | repository tooling | `X.Y.Z` | [Repository tooling](./2026-10-25-repository-tooling) |
 | Tooling | The preset smoke and the clean-install check keep their scratch folders under `.agents/local/tmp` | repository tooling | 0.4.2 | [Repository tooling](./2026-10-25-repository-tooling) |
 | Tooling | The preset smoke keeps its Chrome profile in a short folder it removes; script tests use the repository's scratch folder | repository tooling | `X.Y.Z` | [Repository tooling](./2026-10-25-repository-tooling) |
+| Tooling | `make docs` keeps the folder of its snippet check in `.agents/local/tmp` and removes it on every exit | repository tooling | `X.Y.Z` | [Repository tooling](./2026-10-25-repository-tooling) |
 | Tooling | String unions in the scripts are const classes | repository tooling | `X.Y.Z` | [Repository tooling](./2026-10-25-repository-tooling) |
 | Tooling | VULCAN dev dependency 0.4.2 to 0.4.4 | repository tooling | `X.Y.Z` | [Repository tooling](./2026-10-25-repository-tooling) |
 | Documentation | Changelog dates, the removed `./socket-io` guidance, neutral minimap labels and the kernel size budget read from `package.json` | repository only | no package | none: pages and rules, no behavior |
