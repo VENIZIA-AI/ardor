@@ -34,7 +34,7 @@ For anything that issues real HTTP requests - notably `DefaultNetworkRequestServ
 
 ## Scratch files
 
-A script or a test that needs a folder makes it with `makeScratch` (`scripts/scratch.ts`), which creates it under the gitignored `.agents/local/tmp`, and never with `os.tmpdir()`; it removes what it made. One exception is sanctioned: the preset smoke keeps the profile of its headless Chrome in a short folder made with `mkdtempSync` under `XDG_RUNTIME_DIR` (else the system temp folder) and removes it in a `finally`. Chrome puts a unix socket in the profile and aborts with "Socket path too long" past 107 characters, which a checkout under a deep home folder exceeds. Existing `com.google.Chrome.*` folders in the system temp folder are not deleted.
+A script, a docs script (`docs/wiki/scripts/check-snippets.mts`) or a test that needs a folder makes it with `makeScratch` (`scripts/scratch.ts`), which creates it under the gitignored `.agents/local/tmp`, and never with `os.tmpdir()`; it removes what it made. One exception is sanctioned: the preset smoke keeps the profile of its headless Chrome in a short folder made with `mkdtempSync` under `XDG_RUNTIME_DIR` (else the system temp folder) and removes it in a `finally`. Chrome puts a unix socket in the profile and aborts with "Socket path too long" past 107 characters, which a checkout under a deep home folder exceeds. Existing `com.google.Chrome.*` folders in the system temp folder are not deleted.
 
 ## What CI runs
 
