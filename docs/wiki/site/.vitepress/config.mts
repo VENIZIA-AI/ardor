@@ -19,6 +19,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Setup', link: '/guides/get-started/setup' },
       { text: 'Quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
+      { text: 'Examples', link: '/guides/get-started/examples' },
     ],
   },
   {

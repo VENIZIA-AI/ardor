@@ -35,6 +35,21 @@ ARDOR shares foundational IGNIS packages across the browser and the server: inve
 - **It does not replace ra-core.** ARDOR relies on `ra-core` for CRUD operations, controller hooks, and page lifecycles. Only `packages/admin/src` connects to `ra-core`, acting as an adapter between the container and `ra-core`.
 - **It does not write your REST API.** ARDOR provides the browser-side HTTP transport (`DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` using the browser `fetch` API), but it does not generate backend endpoints, database schemas, or server routes.
 
+## Is ARDOR for you?
+
+**Yes**, if you build an admin console on ra-core that must grow with a team: many resources, real sign-in, services shared across screens. It fits best when your API already runs on IGNIS, because the data provider speaks the IGNIS filter language.
+
+**Probably not** for a marketing site, a three-screen tool, or a UI that is not an admin.
+
+What ARDOR adds to ra-core:
+
+| Concern | In ARDOR |
+| :--- | :--- |
+| Services | An IGNIS container: `bindingList()`, `@inject`, `useInjectable` by key or by class |
+| Data layer | A REST data provider that sends the IGNIS filter language (`where`, `order`, `limit`, `skip`) and reads totals from `Content-Range` |
+| Sign-in | A 401 triggers one token refresh for a burst of requests, then retries them; no-auth paths are explicit |
+| Keys | `useInjectable` and `useTranslate` keys typed through module augmentation |
+
 ## Packages
 
 | Package | Contents |

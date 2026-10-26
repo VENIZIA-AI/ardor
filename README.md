@@ -1,10 +1,8 @@
 <div align="center">
 
-<a href="https://ardor.venizia.ai"><img src="https://ardor.venizia.ai/logo.svg" alt="ARDOR" height="96"></a>
+# <img src="https://ardor.venizia.ai/logo.svg" alt="" height="32" align="top"> ARDOR
 
-# ARDOR
-
-**react-admin's data contract. IGNIS's container.**
+**A TypeScript framework for admin consoles on react-admin: dependency injection, a REST data provider, sign-in with token refresh and i18n.**
 
 [![Docs](https://img.shields.io/badge/Docs-ardor.venizia.ai-0369A1.svg?style=flat-square)](https://ardor.venizia.ai)
 [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837&label=@venizia/ardor)](https://www.npmjs.com/package/@venizia/ardor)
@@ -15,111 +13,69 @@
 [Documentation](https://ardor.venizia.ai) &#8226;
 [Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) &#8226;
 [References](https://ardor.venizia.ai/references/) &#8226;
-[Examples](#examples) &#8226;
+[Examples](https://ardor.venizia.ai/guides/get-started/examples) &#8226;
 [Changelog](https://ardor.venizia.ai/changelogs/)
 
 </div>
 
 ---
 
-Frontend application framework for the [VENIZIA](https://venizia.ai) family. IGNIS is the backend framework; ARDOR is its
-frontend sibling and a consumer of it - a react-admin application built as an IGNIS
-inversion-of-control container. You bind providers and services by key; React resolves them
-through hooks; the data layer speaks the IGNIS filter vocabulary to your API.
+ARDOR builds admin consoles on `ra-core`, the core of react-admin. You write configuration classes,
+repositories and pages; ARDOR wires them through an [IGNIS](https://ignis.venizia.ai) dependency
+injection container, sends your REST API the IGNIS filter language, and handles sign-in, token
+refresh and i18n. It is for teams with many resources, real auth and services shared across screens,
+most of all when the API already runs on IGNIS.
 
-## Start a project
+## Start
+
+A new project, with an admin, a Dockerfile and runtime configuration (see
+[Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project)):
 
 ```bash
 bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
-cd demo && make dev    # the admin on http://localhost:5173/
 ```
 
-This creates a monorepo with one admin, runs its checks, and needs VULCAN 0.4.0 or newer. See [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project) for every step, the Dockerfile and the library preset.
-
-## Install into an existing Vite project
+Or install into an existing Vite and React project (the peers and the `tsconfig.json` options are in
+[Setup](https://ardor.venizia.ai/guides/get-started/setup)):
 
 ```bash
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors reflect-metadata
-bun add ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query
-bun add -d typescript @venizia/dev-configs @types/react @types/react-dom
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
 ```
-
-> [!IMPORTANT]
-> `experimentalDecorators: true`, `emitDecoratorMetadata: true` and `useDefineForClassFields: false` must
-> be declared **inline** in your own `tsconfig.json`. Bun ignores an `extends` that names a package (a
-> preset such as `@venizia/dev-configs/tsconfig.common.json`), and a bundler may too, while `tsc` stays
-> green - so `@inject` is silently dropped. Import `reflect-metadata` once, before the application class
-> is defined. Vite's `react-ts` template also sets `erasableSyntaxOnly: true`; set it to `false`, because
-> ARDOR classes use constructor parameter properties.
 
 ## Hello world
 
-```typescript
+```tsx
 import 'reflect-metadata';
 
+import { configureStore } from '@reduxjs/toolkit';
 import {
-  type BaseArdorApplication as TArdorApplication, BaseArdorApplication, configuration, CoreBindings, datasource,
-  DefaultAuthProvider, DefaultAuthService, DefaultI18nProvider, DefaultNetworkRequestService, DefaultRestDataProvider,
-  repository, RepositoryTypes, type IApplicationInfo, inject, provide,
+  ArdorApplication, BaseArdorApplication, configuration, CoreBindings, DefaultI18nProvider,
+  DefaultRestDataProvider, englishMessages, type IApplicationInfo, inject, provide,
 } from '@venizia/ardor';
-import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
+import { createRoot } from 'react-dom/client';
 
-// Declared, as in IGNIS: start() discovers both classes and binds each as a singleton.
-@datasource()
-class ApiDataSource extends HttpDataSource {
-  constructor() {
-    super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
-  }
-}
-
-@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
-class ProductRepository extends HttpRepository<{ id: number; name: string }> {
-  constructor(dataSource: ApiDataSource) {
-    super({ dataSource, resource: 'products' });
-  }
-}
-
-// Every framework binding, declared: start() binds each @provide method under its key, SINGLETON,
-// built on first use - react-admin, the auth provider and every hook share one data provider.
 @configuration()
 class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
+  constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly app: BaseArdorApplication) {}
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
-  }
-
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
-    return { paths: { afterLogin: '/products' } };
+  dataOptions() {
+    return { url: '/api', noAuthPathRegex: /./ };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {};
+  i18nOptions() {
+    return { i18nSources: { en: englishMessages }, languages: [{ locale: 'en', name: 'English' }] };
   }
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService() {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  dataProvider() {
+    return this.app.instantiate(DefaultRestDataProvider).value(this.app);
   }
 
   @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
   i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+    return this.app.instantiate(DefaultI18nProvider).value(this.app);
   }
 }
 
@@ -130,117 +86,44 @@ class Application extends BaseArdorApplication {
 
   bindContext(): void {}
 }
-```
-
-```tsx
-import { ArdorApplication, useRepository, useTranslate } from '@venizia/ardor';
-
-const ProductList = () => {
-  const products = useRepository({ target: ProductRepository });
-  const translate = useTranslate();
-  // ...
-};
 
 const application = new Application();
-await application.start();
+const store = configureStore({ reducer: { app: (state: { ready: boolean } = { ready: true }) => state } });
+await application.start(); // binds every @provide method; the auth provider stays unbound, so pages are public
 
-createRoot(root).render(
-  <ArdorApplication container={application} reduxStore={store} suspense={<Spinner />} resources={[{ name: 'products', list: ProductList }]} />,
+createRoot(document.getElementById('root')!).render(
+  <ArdorApplication container={application} reduxStore={store} suspense={<p>Loading</p>} dashboard={() => <h1>Hello from ARDOR</h1>} />,
 );
 ```
 
-Full walkthrough: [Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
-then the [references](https://ardor.venizia.ai/references/).
+Next: the [Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) adds a
+repository, a resource page and sign-in.
 
 ## What you get
 
-| | |
-| :--- | :--- |
-| **Dependency injection in the browser** | The application is an IGNIS `Container`; `bindingList()`, `@inject`, `useInjectable` by key or by class |
-| **A typed REST data layer** | react-admin's `getList`/`getOne`/... mapped onto the IGNIS filter vocabulary (`where`, `order`, `limit`, `skip`), totals from `content-range`, `send()` for anything else |
-| **Auth with recovery** | Login/logout/checkAuth/checkError providers; a 401 triggers one token refresh and one retry, never a loop; no-auth paths are explicit |
-| **i18n with typed keys** | English and Vietnamese bundles, `useTranslate` keys typed through module augmentation |
-| **Hooks** | `useDebounce`, `useAutosave`, `useConfirm`, `useNotifyError`, `useRefreshToken`, typed Redux hook factories |
-| **Browser-pure core** | `ardor-kernel` imports no Node builtin and no React; every package is gated for purity, layering, bundle size and a public-surface snapshot |
-
-[References](https://ardor.venizia.ai/references/) &#8226;
-[Extensions](https://ardor.venizia.ai/extensions/) &#8226;
-[Best practices](https://ardor.venizia.ai/best-practices/)
+- **Dependency injection in the browser:** the application is an IGNIS container; [Application](https://ardor.venizia.ai/guides/core-concepts/application)
+- **A REST data provider** on the IGNIS filter language, totals from `Content-Range`: [Data provider](https://ardor.venizia.ai/references/data-provider)
+- **Sign-in with token refresh:** a 401 refreshes once, then retries: [Auth provider](https://ardor.venizia.ai/references/auth-provider)
+- **i18n with typed keys,** English and Vietnamese included: [Internationalization](https://ardor.venizia.ai/references/i18n)
+- **HTTP repositories** that share the data provider's session: [Repositories](https://ardor.venizia.ai/references/repository)
+- **Runtime configuration and an nginx image** in the generated project: [Create a project](https://ardor.venizia.ai/guides/get-started/create-a-project#one-image-for-every-environment)
 
 ## Packages
 
-In release order - each builds on the ones above it.
-
 | Package | Role | Version |
 | :--- | :--- | ---: |
-| [`@venizia/ardor-kernel`](packages/kernel/) | Isomorphic core: application base, services, network layer, constants and keys | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
-| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, UI hooks, Redux factories | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) |
-| [`@venizia/ardor-admin`](packages/admin/) | react-admin adapter: data, auth and i18n providers, the ra-core hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) |
-| [`@venizia/ardor`](packages/ardor/) | The umbrella - one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) |
-
-ARDOR is built on IGNIS 0.4: every ARDOR package peers on `@venizia/ignis-*` `^0.4.0`, and the workspace catalog pins the exact versions. The documentation site lives in
-[`docs/wiki`](docs/wiki/) and is not published to npm.
-
-## Is ARDOR for you?
-
-**Yes** if you are building a react-admin console that must scale with a team - many resources, real
-auth, services shared across screens - and especially if your API already runs on IGNIS.
-
-**Probably not** for a marketing site, a three-screen tool, or a UI that is not an admin. Plain
-react-admin is lighter.
-
-| | Plain react-admin | **ARDOR** |
-| :--- | :--- | :--- |
-| Services | module singletons, hand-wired | IoC container, `bindingList()`, `@inject` |
-| Data layer | write your own `dataProvider` | REST provider speaking the IGNIS filter vocabulary |
-| Auth recovery | do it yourself | one refresh, one retry, explicit no-auth paths |
-| Key typing | strings | `useInjectable` and `useTranslate` keys typed through augmentation |
-| Structure | do it yourself | guided, the IGNIS way |
+| [`@venizia/ardor-kernel`](packages/kernel/) | The container, services, network layer and runtime config; no UI | [![npm](https://img.shields.io/npm/v/@venizia/ardor-kernel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-kernel) |
+| [`@venizia/ardor-react`](packages/react/) | React bindings: application context, `useInjectable`, hooks | [![npm](https://img.shields.io/npm/v/@venizia/ardor-react.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-react) |
+| [`@venizia/ardor-admin`](packages/admin/) | The ra-core adapter: data, auth and i18n providers, `ArdorApplication` | [![npm](https://img.shields.io/npm/v/@venizia/ardor-admin.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor-admin) |
+| [`@venizia/ardor`](packages/ardor/) | The umbrella: one import over the three above | [![npm](https://img.shields.io/npm/v/@venizia/ardor.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@venizia/ardor) |
 
 > [!NOTE]
-> ARDOR is 0.x: minor versions can break. It replaces `@minimaltech/ra-core-infra`, which runs in
-> production at nine applications; the core patterns are that package's, hardened. Pin exact versions
-> and read the [changelog](https://ardor.venizia.ai/changelogs/) before upgrading.
-
-## Examples
-
-| Example | What it shows |
-| :--- | :--- |
-| [5-mins-qs](examples/5-mins-qs/) | The smallest app that runs: sign-in, a resource list, a service resolved by key, against a stub API |
-| [vert-admin](examples/vert-admin/) | The family reference: an admin console over IGNIS's `vert` API - its auth component, token refresh, a CRUD list |
-| [ipc-data-provider](examples/ipc-data-provider/) | `DefaultRestDataProvider.send` over a non-HTTP transport, the desktop-shell pattern |
-
-```bash
-cd examples/5-mins-qs
-bun run server:dev    # the stub API on :3100 (sign in with admin / admin) and Vite on :5173
-```
+> ARDOR is 0.x: minor versions can break. Read the [changelog](https://ardor.venizia.ai/changelogs/)
+> before upgrading.
 
 ## Contributing
 
-```bash
-git clone https://github.com/VENIZIA-AI/ardor.git && cd ardor
-bun install
-make build           # kernel -> react -> admin -> ardor
-make test            # bun test, every package with a suite
-make lint-all
-make docs            # the wiki, with the sidebar and snippet gates
-```
-
-Conventional Commits (`feat:`, `fix:`, `docs:`, ...), branches `feature/*` / `fix/*`, and **PRs target
-`develop`**. Bun only - never npm, yarn, or pnpm. See [CONTRIBUTING.md](CONTRIBUTING.md),
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md). Agents read
-[AGENTS.md](AGENTS.md); `make vulcan-sync` sets up your agent through VULCAN (`@venizia/vulcan`).
-
-## Migrating from `@minimaltech/ra-core-infra`
-
-ARDOR is that package, split and rebranded. See the
-[migration guide](https://ardor.venizia.ai/guides/migrations/from-ra-core-infra) - four mechanical
-edits, four symbol renames among them.
-
-## Credits
-
-Standing on [IGNIS](https://ignis.venizia.ai) (the container and the filter vocabulary) and
-[react-admin](https://marmelab.com/react-admin/) (the data contract and the UI runtime).
+`bun install && make build`, then see [CONTRIBUTING.md](CONTRIBUTING.md): Conventional Commits, branches `feature/*` or `fix/*`, pull requests to `develop`, Bun only.
 
 MIT licensed - see [LICENSE.md](LICENSE.md).
 Questions: [GitHub Issues](https://github.com/VENIZIA-AI/ardor/issues) &#8226; developer@venizia.ai
