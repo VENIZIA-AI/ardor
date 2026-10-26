@@ -2,7 +2,7 @@
 
 UPDATE_TARGETS := $(addprefix update-,$(PACKAGES))
 
-.PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all \
+.PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all typecheck-examples \
         $(PACKAGES) $(UPDATE_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -56,6 +56,13 @@ typecheck: typecheck-all
 typecheck-all:
 	@echo "🔎 Type-checking all packages..."
 	@$(foreach p,$(PACKAGES),$(MAKE) --no-print-directory -C packages/$(p) typecheck &&) true
+
+# An example imports the built packages, so this needs `make build-all` first.
+EXAMPLES := $(notdir $(patsubst %/,%,$(wildcard examples/*/)))
+
+typecheck-examples:
+	@echo "🔎 Type-checking the examples..."
+	@$(foreach e,$(EXAMPLES),bun run --cwd examples/$(e) typecheck &&) true
 
 # ----------------------------------------------------------------------------
 # FORCE UPDATE TARGETS - ARDOR tracks the HIGHEST published IGNIS line (prerelease included),
