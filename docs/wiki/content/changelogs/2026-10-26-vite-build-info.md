@@ -10,7 +10,7 @@ packages: ['@venizia/ardor', '@venizia/ardor-kernel']
 
 <Badge type="tip" text="New Feature" /> <Badge type="warning" text="Behavior Change" />
 
-**In one line.** The preset's `vite.config.mts` sets `output.strictExecutionOrder: true`, so a production build cannot run a split chunk before `reflect-metadata`; and the new Node-only entry `@venizia/ardor/vite` exports `buildInfoFile`, which writes `build-info.json` for an About page. Both need Vite 8.3.5 or newer. Available in X.Y.Z.
+**In one line.** The preset's `vite.config.mts` sets `output.strictExecutionOrder: true`, so a production build cannot run a split chunk before `reflect-metadata`; and the new Node-only entry `@venizia/ardor/vite` exports `buildInfoFile`, which writes `build-info.json` for an About page. Both need Vite 8.3.5 or newer. Available in 0.4.4.
 
 ```ts
 import { buildInfoFile } from '@venizia/ardor/vite';
