@@ -6,12 +6,15 @@ import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';
 
-import { CoreBindings, Logger } from '@venizia/ardor-kernel';
-import type { IAuthProvider, IDataProvider } from '@/common';
+import { Logger } from '@venizia/ardor-kernel';
 import { type TFeature, Features } from '@/features/feature';
-import { FeatureMessages } from '@/features/messages';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
+import {
+  hasPendingFeatureMessages,
+  loadFeatureMessages,
+  resolveApplicationProviders,
+} from './resolve';
 
 const Wrapper: React.FC<{
   applicationName?: string;
@@ -55,7 +58,7 @@ const useFeatureMessagesReady = (opts: {
 
   const [state, setState] = React.useState<{ isReady: boolean; error?: unknown }>(() => {
     return {
-      isReady: !FeatureMessages.hasLoader({ features, locale: i18nProvider.getLocale() }),
+      isReady: !hasPendingFeatureMessages({ features, i18nProvider }),
     };
   });
 
@@ -66,7 +69,7 @@ const useFeatureMessagesReady = (opts: {
 
     let isLive = true;
 
-    Promise.resolve(i18nProvider.changeLocale(i18nProvider.getLocale())).then(
+    loadFeatureMessages({ features, i18nProvider }).then(
       () => {
         if (isLive) {
           setState({ isReady: true });
@@ -82,7 +85,7 @@ const useFeatureMessagesReady = (opts: {
     return () => {
       isLive = false;
     };
-  }, [i18nProvider, state.isReady]);
+  }, [features, i18nProvider, state.isReady]);
 
   if (state.error) {
     throw state.error;
@@ -113,20 +116,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   // Resolved once per container: the props below are a new object on every render.
   const providers = React.useMemo(() => {
-    const dataProvider = container.get<IDataProvider>({
-      key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-    });
-    // Optional: an application with no sign-in leaves it unbound, and react-admin then runs
-    // without an auth provider - every page is public.
-    const authProvider = container.get<IAuthProvider>({
-      key: CoreBindings.DEFAULT_AUTH_PROVIDER,
-      isOptional: true,
-    });
-    const i18nProvider = container.get<I18nProvider>({
-      key: CoreBindings.DEFAULT_I18N_PROVIDER,
-    });
-
-    return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider };
+    return resolveApplicationProviders({ container });
   }, [container]);
 
   const adminProps = { ...providers, ...reactAdminProps };
