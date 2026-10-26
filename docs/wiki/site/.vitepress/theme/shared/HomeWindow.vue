@@ -20,22 +20,22 @@ let started = false;
 
 const label = (tab: THomeTab): string => tab.file.split('/').pop() ?? tab.file;
 
-const select = (index: number): void => {
+const select = async (index: number): Promise<void> => {
   active.value = index;
 
   // A tab switch replays that tab's terminal.
   if (started) {
-    void nextTick(() => {
-      const panel = root.value?.querySelectorAll('[role="tabpanel"]')[index];
+    await nextTick();
 
-      if (panel) {
-        playTerminalsIn(panel);
-      }
-    });
+    const panel = root.value?.querySelectorAll('[role="tabpanel"]')[index];
+
+    if (panel) {
+      playTerminalsIn(panel);
+    }
   }
 };
 
-const onKey = (event: KeyboardEvent, index: number): void => {
+const onKey = async (event: KeyboardEvent, index: number): Promise<void> => {
   const step = ({ ArrowRight: 1, ArrowLeft: -1 } as Record<string, number>)[event.key];
 
   if (step === undefined) {
@@ -44,8 +44,8 @@ const onKey = (event: KeyboardEvent, index: number): void => {
 
   const next = (index + step + props.tabs.length) % props.tabs.length;
 
-  select(next);
-  void nextTick(() => root.value?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus());
+  await select(next);
+  root.value?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
 };
 
 onMounted(() => {

@@ -104,8 +104,15 @@ export const playTerminal = async (term: HTMLElement): Promise<void> => {
   term.classList.add('is-done');
 };
 
+/** Plays a scene and reports it when it stops; the page does not depend on it, so it is never thrown at the caller. */
+const start = (term: HTMLElement): void => {
+  playTerminal(term).catch((error: unknown) => {
+    console.error('terminal: a scene stopped', error);
+  });
+};
+
 export const playTerminalsIn = (container: Element): void => {
-  container.querySelectorAll<HTMLElement>('[data-term]').forEach((term) => void playTerminal(term));
+  container.querySelectorAll<HTMLElement>('[data-term]').forEach(start);
 };
 
 /** Plays each terminal under the root once, when it first scrolls into view. */
@@ -117,7 +124,7 @@ export const useTerminal = (root: Ref<HTMLElement | null>): void => {
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting && !runs.has(entry.target)) {
-            void playTerminal(entry.target as HTMLElement);
+            start(entry.target as HTMLElement);
           }
         }
       },

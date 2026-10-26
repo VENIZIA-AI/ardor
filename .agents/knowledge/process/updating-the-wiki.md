@@ -69,8 +69,8 @@ tags: [process, docs, wiki]
    `bun ../vulcan/scripts/wiki-shared/check.ts .`. `scripts/checks/__tests__/wiki-shared.test.ts` (the one file of
    the scheme that is a hand copy of VULCAN's) hashes the folder against its `SHARED.json` and checks that the
    VitePress pieces the shared CSS overrides still exist; `make test-scripts` runs it. `.gitattributes` marks the
-   folder `-text` so git never converts a byte, and `make lint-wiki` and `lint-fix-wiki` ignore it for the same reason
-   (it is linted in VULCAN). ARDOR's own part of the theme stays outside the folder: `style.css`,
+   folder `-text` so git never converts a byte. `make lint-wiki` covers it like any other file: a lint finding in it is
+   fixed in VULCAN's copy, and `lint-fix-wiki` must leave it in step. ARDOR's own part of the theme stays outside the folder: `style.css`,
    `design-tokens.css` and, from the next steps, `product.css` and `home-content.ts`.
 
 ## Related
