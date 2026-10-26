@@ -74,10 +74,13 @@ lint-fix:
 # A package with no suite sets `HAS_TESTS := no` before the include.
 HAS_TESTS ?= yes
 BUN_TEST_FLAGS ?=
+# Where bun looks for tests, default the whole package. `ardor` limits it to src: its dist holds the
+# preset's own test files, which only run inside a generated app.
+TEST_PATHS ?=
 
 test:
 ifeq ($(HAS_TESTS),yes)
-	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
+	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS) $(TEST_PATHS)
 else
 	@echo "ℹ️  No test suite in this package - skipping."
 endif

@@ -21,6 +21,7 @@ The packages (see [kernel](/packages/kernel.md), [react](/packages/react.md), [a
 - `EXTRA_BUILD_TSCONFIGS` (a Makefile variable, empty by default) - further build programs of one package, each with its own `types`. `ardor` sets `.configs/builders/tsconfig.vite.build.json` for its Node-only `./vite` entry (`types: ["node"]`); the main program excludes `src/vite`. `build` emits each of them after the main one.
 - `lint` / `lint-fix` - see [Lint presets](#lint-presets).
 - `test` - `NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)` inside the package. A package with no suite sets `HAS_TESTS := no`: its `make test` says so and passes (none today).
+- `TEST_PATHS` (a Makefile variable, empty by default) - where `bun test` looks, the whole package by default. `ardor` sets `./src`, because its `dist` holds the preset's own test files, which run only inside a generated app.
 - `size` - runs `size-limit` against the built bundle. Its `ignore` list excludes the peers (like `reflect-metadata` and the IGNIS packages) and any runtime dependencies from the measurement, so the budget measures only the package's own code.
 - `force-update` (a `package.json` script) - runs the one root `scripts/build/force-update.sh` (a package carries no copy), which bumps this package's own `@venizia/*` peer/dev dependency versions but deliberately skips any dependency that's already pinned through the root catalog.
 

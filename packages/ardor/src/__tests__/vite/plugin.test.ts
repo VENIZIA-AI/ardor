@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import type { IBuildInfoFile } from '@venizia/ardor-kernel';
+import { BuildInfoEnvironmentKeys } from '@venizia/ignis-boot/build-info';
 import { BuildInfoRegistry, type TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 import { build, createServer, type ViteDevServer } from 'vite';
@@ -323,15 +324,24 @@ describe('the default sources, as a build under Node uses them', () => {
     APP_BUILD_COMMIT: '0123456789abcdef0123',
     APP_BUILD_BRANCH: 'release/1.2',
   };
+  // CI sets some of these itself (GITHUB_REF_NAME is the version on a branch build): the test owns all of them.
+  const KEYS = [
+    ...BuildInfoEnvironmentKeys.VERSION,
+    ...BuildInfoEnvironmentKeys.COMMIT,
+    ...BuildInfoEnvironmentKeys.BRANCH,
+    ...BuildInfoEnvironmentKeys.BUILT_AT,
+  ];
 
   beforeAll(() => {
     root = makeScratch({ prefix: 'build-info-real-' });
     writeFiles({ root, files: appFiles });
 
-    for (const [key, value] of Object.entries(ENVIRONMENT)) {
+    for (const key of KEYS) {
       saved[key] = process.env[key];
-      process.env[key] = value;
+      delete process.env[key];
     }
+
+    Object.assign(process.env, ENVIRONMENT);
   });
 
   afterAll(() => {
