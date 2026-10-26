@@ -16,6 +16,8 @@
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
 
+    // The tests run on Bun; the build programs drop these types again for dist.
+    "types": ["bun"],
     "paths": {
       "@/*": ["./src/*"]
     }

@@ -6,6 +6,9 @@ import type { IPurityEntry } from '../manifest';
 
 const REPOSITORY_ROOT = join(__dirname, '../../../..');
 
+/** Entries that run in Node, in the build of an app: they carry no browser claim, and nothing else is exempt. */
+const NODE_ONLY_ENTRIES = ['packages/ardor/dist/vite/index.js'];
+
 const readPublishedTargets = (opts: { package: string }): string[] => {
   const manifestPath = join(REPOSITORY_ROOT, 'packages', opts.package, 'package.json');
   const exportsMap = (
@@ -104,10 +107,21 @@ describe('PURITY_MANIFEST derivation', () => {
       );
 
       for (const target of readPublishedTargets({ package: packageName })) {
-        expect(probed).toContain(target);
+        if (!NODE_ONLY_ENTRIES.includes(target)) {
+          expect(probed).toContain(target);
+        }
       }
     },
   );
+
+  test('only the listed Node-only entries are published without a row', () => {
+    const probed = new Set(PURITY_MANIFEST.map((row) => row.entry));
+    const unclaimed = claimedPackages
+      .flatMap((packageName) => readPublishedTargets({ package: packageName }))
+      .filter((target) => !probed.has(target));
+
+    expect(unclaimed.toSorted()).toEqual(NODE_ONLY_ENTRIES);
+  });
 
   test('every published entry is claimed, root and optional sub-path alike', () => {
     const entries = PURITY_MANIFEST.map((row) => row.entry).toSorted();

@@ -146,6 +146,8 @@ const compilerOptions: ts.CompilerOptions = {
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
     '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository.d.ts')],
+    '@venizia/ardor/vite': [join(REPO, 'packages/ardor/dist/vite/index.d.ts')],
+    vite: [join(REPO, 'packages/ardor/node_modules/vite/dist/node/index.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],
     '@venizia/ardor-kernel/repository': [
       join(REPO, 'packages/kernel/dist/base/repositories/index.d.ts'),

@@ -17,6 +17,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Create a project', link: '/guides/get-started/create-a-project' },
       { text: 'Setup', link: '/guides/get-started/setup' },
+      { text: 'Vite setup', link: '/guides/get-started/vite-setup' },
       { text: 'Quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
     ],
@@ -129,6 +130,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
           {
             text: 'ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes',
             link: '/changelogs/2026-10-26-ignis-0-4-3-repository-exports',
+          },
+          {
+            text: 'The preset keeps chunks in import order, and buildInfoFile writes build-info.json',
+            link: '/changelogs/2026-10-26-vite-build-info',
           },
         ],
       },

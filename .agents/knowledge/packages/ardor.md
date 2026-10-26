@@ -1,14 +1,14 @@
 ---
 type: Package
 title: ardor
-description: The umbrella package that re-exports ardor-kernel, ardor-react and ardor-admin behind a single import, plus a ./repository sub-path for the IGNIS repository runtime.
+description: The umbrella package that re-exports ardor-kernel, ardor-react and ardor-admin behind a single import, plus a ./repository sub-path for the IGNIS repository runtime and a Node-only ./vite entry with the buildInfoFile Vite plugin.
 resource: packages/ardor/src/index.ts
 tags: [package, ardor, umbrella, exports]
 ---
 
 # ardor
 
-`@venizia/ardor` is the umbrella package. It has almost no code of its own - two entry points made of re-export statements. The root (`src/index.ts`) is three:
+`@venizia/ardor` is the umbrella package. It has almost no code of its own - two entry points made of re-export statements, and one Node-only entry (`./vite`, below). The root (`src/index.ts`) is three:
 
 ```ts
 export * from '@venizia/ardor-kernel';
@@ -19,6 +19,10 @@ export * from '@venizia/ardor-admin';
 Everything an application needs - the container and binding primitives from [kernel](/packages/kernel.md), the typed hooks from [react](/packages/react.md), and the react-admin wiring from [admin](/packages/admin.md) - is reachable through one import: `import { ... } from '@venizia/ardor'`. This is the entry point most applications should use. A consumer that only needs one layer can install that sub-package directly instead of pulling in the whole stack.
 
 The one exception is the repository runtime. `@venizia/ardor/repository` re-exports `@venizia/ardor-kernel/repository`; it is left out of the root because it is larger than the whole kernel budget.
+
+## The Node-only `./vite` entry
+
+`@venizia/ardor/vite` (`src/vite/`) holds `buildInfoFile`, a Vite plugin that emits `build-info.json` into the build and serves it on the dev server (the stamp of IGNIS's `BuildInfoResolver`, completed from git under Node, plus the installed `@venizia/*` versions). It runs in Node, in the build of an app, so it has its own program (`tsconfig.vite.build.json`, `types: ["node"]`), is left out of the purity claim (`subpaths: ['.', './repository']` in `scripts/checks/purity/manifest.ts`) and needs two optional peers: `vite` (8.3.5 or newer) and `@venizia/ignis-boot` (the clean-install claim grants it). The shape of the file, `IBuildInfoFile`, is a type in the kernel, so browser code can import it from `@venizia/ardor`. It is the umbrella's only code under test: `make test-ardor` runs real Vite builds and a real dev server in scratch folders under `.agents/local/tmp`. The preset does not use the plugin; the wiki page [Vite setup](https://ardor.venizia.ai/guides/get-started/vite-setup) documents it with the `output.strictExecutionOrder` flag the preset turns on.
 
 ## Install
 
