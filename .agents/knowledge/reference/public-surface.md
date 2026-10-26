@@ -432,6 +432,12 @@ generated:
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
+### `@venizia/ardor/testing` (3)
+
+- `assertArdorApplicationBoots` const
+- `IAssertArdorApplicationBootsOptions` interface
+- `TBootSkip` type
+
 ### `@venizia/ardor/vite` (6)
 
 - `buildInfoFile` const
