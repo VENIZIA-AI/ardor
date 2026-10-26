@@ -36,7 +36,7 @@ Logging is obtained per scope rather than through one global logger instance. `L
 
 ARDOR defines no stereotype decorators of its own. Its `metadata` barrel re-exports `@venizia/ignis-kernel/metadata`, so a class written for a worker and a class written for a browser register the same way - one mechanism for the whole VENIZIA family. The re-export is listed name by name rather than with `export *`: a name added upstream is published on purpose, and a collision with ARDOR's own surface is caught at that line instead of in a consumer. `CoreBindings` is the collision that already happened: IGNIS's and ARDOR's share a member with different values, so it is left out of the list and only ARDOR's is reachable - see [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
-## Fetch only, socket client behind a sub-path
+## Fetch only, no socket client
 
 The network layer is `fetch` only; there is no second HTTP transport. The transport is IGNIS's (`NodeFetchNetworkRequest`, `@venizia/ignis-helpers/core`); ARDOR keeps no fork of the fetcher, the query string or the socket client (the browser-pure client is `@venizia/ignis-helpers/socket-io/client`). `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
 
