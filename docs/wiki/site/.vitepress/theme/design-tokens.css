@@ -11,8 +11,9 @@
  * Refs: w3.org/TR/WCAG21 · webaim.org/resources/contrastchecker
  *       designsystems.com/space-grids-and-layouts · baymard.com/blog/line-length-readability
  *
- * Usage: import in `theme/index.ts` BEFORE style.css. The --vp-* mappings make
- * it drop-in for VitePress; the --ar-* tokens are the canonical primitives.
+ * Usage: import in `theme/index.ts` BEFORE style.css. The --ar-* tokens are the primitives of the
+ * home page and the page components; the VitePress mapping and the shared look are in theme/shared
+ * (tokens.css, vp-map.css) and theme/product.css.
  * ============================================================================= */
 
 :root {
@@ -31,8 +32,8 @@
     radial-gradient(680px 420px at 92% 6%, rgba(208,188,136,.12), transparent 62%);
 
   /* ---- Typography : scale = 16 × 1.25^n ------------------------------------ */
-  --ar-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --ar-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ar-font-sans: var(--font-sans);
+  --ar-font-mono: var(--font-mono);
   --ar-fs-caption: 0.75rem; /* 12px - labels, captions, badges               */
   --ar-fs-sm: 0.875rem; /* 14px - secondary, tables, inline code         */
   --ar-fs-body: 1rem; /* 16px - BASE body / docs prose                 */
@@ -94,23 +95,6 @@
   --ar-link: var(--ar-brand-deep); /* 7.40:1 on white - AAA */
   --ar-primary: var(--ar-brand);
   --ar-on-primary: #ffffff; /* 4.80:1 on brand - AA  */
-
-  /* ---- VitePress mapping --------------------------------------------------- */
-  --vp-c-brand-1: var(--ar-link);
-  --vp-c-brand-2: var(--ar-brand); /* link hover: lighter than the link (dark theme: see .dark) */
-  --vp-c-brand-3: var(--ar-primary);
-  --vp-c-bg: var(--ar-bg);
-  --vp-c-bg-alt: var(--ar-surface);
-  --vp-c-bg-soft: var(--ar-surface);
-  --vp-c-text-1: var(--ar-text);
-  --vp-c-text-2: var(--ar-text-2);
-  --vp-c-text-3: var(--ar-text-3);
-  --vp-button-brand-bg: var(--ar-primary);
-  --vp-button-brand-text: var(--ar-on-primary);
-  --vp-button-brand-hover-bg: var(--ar-brand-deep);
-  --vp-home-hero-name-background: var(--ar-gradient);
-  --vp-font-family-base: var(--ar-font-sans);
-  --vp-font-family-mono: var(--ar-font-mono);
 }
 
 /* ===========================================================================
@@ -128,7 +112,6 @@
   --ar-faint: #66727c; /* 4.05:1 - large/decorative only */
   --ar-link: var(--ar-brand-lt); /* 9.31:1 on dark - AAA           */
   --ar-accent: var(--ar-brand-lt);
-  --vp-c-brand-2: var(--ar-brand-deep);
   --ar-primary: var(--ar-brand);
   --ar-on-primary: #ffffff; /* 4.80:1 on brand - AA           */
 }

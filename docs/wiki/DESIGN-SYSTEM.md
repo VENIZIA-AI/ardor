@@ -5,6 +5,11 @@ grounded in an established standard, not chosen by feel. Tokens live in
 [`site/.vitepress/theme/design-tokens.css`](./site/.vitepress/theme/design-tokens.css)
 and are applied live in the VitePress theme (`site/.vitepress/theme/style.css`).
 
+The look of the header, sidebar, doc content, callouts and code blocks is not set here: it is the shared
+Venizia theme in `site/.vitepress/theme/shared/` (a byte-identical copy of VULCAN's, never edited in this
+repository), and ARDOR adds only its accent in `site/.vitepress/theme/product.css`. The `--ar-*` tokens
+below are the primitives of the home page and the page components.
+
 ## Principles
 
 | Axis | Standard | Value |
@@ -73,8 +78,11 @@ background `#07090b` (Tide BACKGROUND).
 
 ```ts
 // site/.vitepress/theme/index.ts
-import './design-tokens.css'   // FIRST - defines tokens + VitePress var mapping
-import './style.css'           // component + brand theming, consuming var(--ar-*)
+import './shared/tokens.css'   // the shared Venizia tokens and fonts
+import './product.css'         // ARDOR's accent, the only product-specific value of the shared theme
+import './design-tokens.css'   // the --ar-* primitives of the home page and the page components
+import './style.css'           // those components, consuming var(--ar-*)
+import './shared/vp-map.css'   // maps the tokens onto the VitePress variables, after the above
 ```
 
 ```css
