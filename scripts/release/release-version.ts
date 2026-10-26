@@ -15,28 +15,58 @@
  *   bun scripts/release/release-version.ts tag <mode|x.y.z>
  */
 
-export const RELEASE_MODES = [
-  'patch',
-  'minor',
-  'major',
-  'prepatch',
-  'preminor',
-  'premajor',
-  'prerelease',
-] as const;
+import type { TConstValue } from '../const-value';
 
-export type TReleaseMode = (typeof RELEASE_MODES)[number];
+export class ReleaseModes {
+  static readonly PATCH = 'patch';
+  static readonly MINOR = 'minor';
+  static readonly MAJOR = 'major';
+  static readonly PREPATCH = 'prepatch';
+  static readonly PREMINOR = 'preminor';
+  static readonly PREMAJOR = 'premajor';
+  static readonly PRERELEASE = 'prerelease';
+
+  static readonly SCHEME_SET = new Set([
+    this.PATCH,
+    this.MINOR,
+    this.MAJOR,
+    this.PREPATCH,
+    this.PREMINOR,
+    this.PREMAJOR,
+    this.PRERELEASE,
+  ]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+export type TReleaseMode = TConstValue<typeof ReleaseModes>;
+
+/** The npm dist-tag a release goes to. */
+export class NpmTags {
+  static readonly LATEST = 'latest';
+  static readonly NEXT = 'next';
+
+  static readonly SCHEME_SET = new Set([this.LATEST, this.NEXT]);
+
+  static isValid(value: string): boolean {
+    return this.SCHEME_SET.has(value);
+  }
+}
+
+export type TNpmTag = TConstValue<typeof NpmTags>;
 
 /** A mode from `RELEASE_MODES` or a semver version, as written. */
 export type TReleaseTarget = string;
 
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/;
-const DEFAULT_MODE: TReleaseMode = 'prerelease';
+const DEFAULT_MODE: TReleaseMode = ReleaseModes.PRERELEASE;
 const VALUE_FLAGS = ['--mode', '--version', '--current', '--issue'];
 
 export const isReleaseMode = (opts: { value: string }): opts is { value: TReleaseMode } =>
-  (RELEASE_MODES as readonly string[]).includes(opts.value);
+  ReleaseModes.isValid(opts.value);
 
 export const isReleaseVersion = (opts: { value: string }): boolean => SEMVER.test(opts.value);
 
@@ -75,7 +105,7 @@ export const readReleaseArgs = (opts: { argv: string[] }): IReleaseArgs => {
 
   if (mode !== undefined && !isReleaseMode({ value: mode })) {
     throw new Error(
-      `[readReleaseArgs] unknown --mode '${mode}' | expected one of: ${RELEASE_MODES.join(', ')}`,
+      `[readReleaseArgs] unknown --mode '${mode}' | expected one of: ${[...ReleaseModes.SCHEME_SET].join(', ')}`,
     );
   }
 
@@ -99,15 +129,15 @@ export const readReleaseArgs = (opts: { argv: string[] }): IReleaseArgs => {
 };
 
 /** `latest` for a stable release, `next` for a prerelease: a mode starting `pre`, or `x.y.z-pre`. */
-export const npmTagFor = (opts: { target: TReleaseTarget }): 'latest' | 'next' => {
+export const npmTagFor = (opts: { target: TReleaseTarget }): TNpmTag => {
   const { target } = opts;
 
   if (isReleaseMode({ value: target })) {
-    return target.startsWith('pre') ? 'next' : 'latest';
+    return target.startsWith('pre') ? NpmTags.NEXT : NpmTags.LATEST;
   }
 
   if (isReleaseVersion({ value: target })) {
-    return target.includes('-') ? 'next' : 'latest';
+    return target.includes('-') ? NpmTags.NEXT : NpmTags.LATEST;
   }
 
   throw new Error(`[npmTagFor] '${target}' is neither a release mode nor a semver version`);

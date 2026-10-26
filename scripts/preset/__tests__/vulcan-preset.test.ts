@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 import { buildPreset } from '../vulcan-preset';
 
@@ -30,7 +31,7 @@ const repository = (opts: {
   catalog?: Record<string, string>;
   lib?: TLib;
 }): string => {
-  const root = mkdtempSync(join(tmpdir(), 'vulcan-preset-'));
+  const root = makeScratch({ prefix: 'vulcan-preset-' });
   roots.push(root);
   write(
     root,

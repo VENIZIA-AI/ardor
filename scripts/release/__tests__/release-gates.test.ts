@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 import {
   exportTargets,
@@ -21,7 +22,7 @@ const ROOT = resolve(import.meta.dir, '..', '..', '..');
 const roots: string[] = [];
 
 const temp = (): string => {
-  const root = mkdtempSync(join(tmpdir(), 'release-gates-'));
+  const root = makeScratch({ prefix: 'release-gates-' });
   roots.push(root);
   return root;
 };

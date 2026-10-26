@@ -8,7 +8,7 @@ packages: ['@venizia/ardor']
 
 ## The preset image compresses, answers /health, sends security headers and can drop /api
 
-<Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="danger" text="Security" />
+<Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="warning" text="Behavior Change" /> <Badge type="danger" text="Security" />
 
 **In one line.** The image of an app made from the ARDOR preset now gzips text, answers `/health` from nginx alone, sends safe security headers on every response, and leaves out the `/api` proxy when `API_UPSTREAM` is empty, for an app served behind a gateway.
 
@@ -28,7 +28,7 @@ packages: ['@venizia/ardor']
 
 ## Copy the new files into an existing app
 
-The preset is published inside `@venizia/ardor` at `dist/presets/app/files/.configs/builders/`, after the next release. Until then, copy from the repository, at `presets/app/files/.configs/builders/`. In the files you copy, replace the tokens `{{app}}` and `{{appPath}}` (the app name and its folder) the way the existing Dockerfile has them.
+The preset is published inside `@venizia/ardor` at `dist/presets/app/files/.configs/builders/` since ARDOR 0.4.2; the same files are in the repository, at `presets/app/files/.configs/builders/`. In the files you copy, replace the tokens `{{app}}` and `{{appPath}}` (the app name and its folder) the way the existing Dockerfile has them.
 
 1. **Replace** `nginx.conf.template` with the new one.
 2. **Add** the folder `nginx-snippets/` (`security-headers.conf` and `api-proxy.conf`).

@@ -21,6 +21,7 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | `checks/` | `purity/` | Bundles every entry claimed browser-pure and fails on a node builtin or global | `make purity`, `make purity-<pkg>` (CI, release workflow) |
 | `checks/` | `clean-install/` | Loads each package's published sub-paths from packed tarballs in an empty project under `.agents/local/tmp`; every bare import must come from that project (`sandbox-guard.ts`, `bun-probe.ts`, `node-guard.mjs`) | `make clean-install`, `make clean-install-<pkg>` (CI, release workflow) |
 | (root) | `scratch.ts` | `makeScratch`: a new folder under the repo's gitignored `.agents/local/tmp`, never the system temp folder | `preset/preset-smoke.ts`, `checks/clean-install/cli.ts` |
+| (root) | `const-value.ts` | `TConstValue`: the union of the string values of a const class (V-C-08), the scripts' copy of the type the packages use | `release/release-version.ts`, `checks/purity/probe.ts`, `preset/preset-smoke.ts`, `wiki/wiki-anchors.ts` |
 | `build/` | `force-update.sh` | Raises a package's `@venizia/*` dependencies to the registry's highest | the `force-update` script of each package and of the wiki, `make update-<pkg>`, `package-release.yml` |
 | `build/` | `refresh-catalog.ts` | Moves every `@venizia/*` entry of the root catalog to the highest published version | `package-release.yml`, by hand |
 | `wiki/` | `wiki-anchors.ts` | Every `#fragment` the wiki links to exists on its page | `make wiki-anchors-check` (CI) |

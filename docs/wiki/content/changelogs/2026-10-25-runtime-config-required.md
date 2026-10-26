@@ -34,3 +34,4 @@ const apiUrl = getRuntimeConfig({ key: 'VITE_API_URL', required: true });
 
 - The check runs where `getRuntimeConfig` is called, in the browser. For a container that must not start at all, list the variable in `APP_REQUIRED_ENV` as well (see [A container stops when a required variable is missing](./2026-10-23-runtime-config-required-env)); the two cover different moments.
 - A `required` that TypeScript knows only as `boolean` returns `string | undefined`, because it may be `false`.
+- To tell this error from another in code, without reading the message, see [The required error of getRuntimeConfig has a code](./2026-10-25-runtime-config-required-code).

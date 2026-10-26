@@ -6,6 +6,9 @@ import { getError } from '@venizia/ignis-inversion';
  */
 export const RUNTIME_CONFIG_GLOBAL = '__APP_CONFIG__';
 
+/** The `normalized.code` of the error `getRuntimeConfig` throws for a required value that is not set; the key is in its `extra.key`. */
+export const RUNTIME_CONFIG_REQUIRED_CODE = 'ardor.runtime_config.required';
+
 const readString = (opts: { source: unknown; key: string }): string | undefined => {
   const { source, key } = opts;
 
@@ -35,7 +38,9 @@ interface IRuntimeConfigOptions {
  * string counts, and a missing global is not an error.
  *
  * With `required: true` the result is a `string`: when all three are absent it throws, naming the
- * key and never a value. Without it, the result is `string | undefined`.
+ * key and never a value. The error is an `ApplicationError` with `normalized.code` equal to
+ * `RUNTIME_CONFIG_REQUIRED_CODE` and the key in `extra.key`, so a caller tells it from another error
+ * without reading the message. Without `required`, the result is `string | undefined`.
  */
 export const getRuntimeConfig: {
   (opts: IRuntimeConfigOptions & { required: true }): string;
@@ -50,6 +55,8 @@ export const getRuntimeConfig: {
 
   if (required && value === undefined) {
     throw getError({
+      messageCode: RUNTIME_CONFIG_REQUIRED_CODE,
+      extra: { key },
       message: `[getRuntimeConfig] '${key}' is required and not set | Write it to config.js (a VITE_ variable of the container, listed in APP_REQUIRED_ENV), or pass it in buildTimeEnv or defaultValue`,
     });
   }

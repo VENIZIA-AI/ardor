@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (101)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -92,6 +92,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -116,10 +117,11 @@ generated:
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
 
-### `@venizia/ardor-kernel/repository` (21)
+### `@venizia/ardor-kernel/repository` (23)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
+- `HttpReadShapes` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
 - `HttpResponseReader` class
@@ -138,6 +140,7 @@ generated:
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
+- `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
 ## react
@@ -221,7 +224,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (170)
+### `@venizia/ardor` (171)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -337,6 +340,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -394,10 +398,11 @@ generated:
 - `ValueOrPromise` type
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (21)
+### `@venizia/ardor/repository` (23)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
+- `HttpReadShapes` class
 - `HttpRepository` class
 - `HttpResourceEntity` class
 - `HttpResponseReader` class
@@ -416,5 +421,6 @@ generated:
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
+- `THttpReadShape` type
 - `THttpRepositoryOptions` type
 

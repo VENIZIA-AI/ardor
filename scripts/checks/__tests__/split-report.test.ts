@@ -1,13 +1,14 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 import { SplitReport } from '../split-report';
 
 const tmpDirs: string[] = [];
 
 const makeFixture = (opts: { files: Record<string, string> }): string => {
-  const root = mkdtempSync(join(tmpdir(), 'ignis-split-report-'));
+  const root = makeScratch({ prefix: 'ignis-split-report-' });
   tmpDirs.push(root);
   for (const [relPath, content] of Object.entries(opts.files)) {
     const full = join(root, relPath);

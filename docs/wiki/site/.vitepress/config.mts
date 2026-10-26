@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-26',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes',
+            link: '/changelogs/2026-10-26-ignis-0-4-3-repository-exports',
+          },
+        ],
+      },
+      {
         text: '2026-10-25',
         collapsed: true,
         items: [
@@ -125,6 +135,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
           {
             text: 'An arrow function parameter always has parentheses',
             link: '/changelogs/2026-10-25-arrow-parens-always',
+          },
+          {
+            text: 'Everything since ARDOR 0.4.1 in one place, with an upgrade checklist',
+            link: '/changelogs/2026-10-25-batch-overview',
           },
           {
             text: 'Correctness fixes in the kernel, the admin and the hooks',
@@ -139,8 +153,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             link: '/changelogs/2026-10-25-preset-nginx',
           },
           {
+            text: "Repository tooling - release scope, the smoke's Chrome profile, the docs snippet check, const classes in scripts, VULCAN 0.4.4",
+            link: '/changelogs/2026-10-25-repository-tooling',
+          },
+          {
             text: 'getRuntimeConfig can require a value',
             link: '/changelogs/2026-10-25-runtime-config-required',
+          },
+          {
+            text: 'The required error of getRuntimeConfig has a code',
+            link: '/changelogs/2026-10-25-runtime-config-required-code',
           },
         ],
       },

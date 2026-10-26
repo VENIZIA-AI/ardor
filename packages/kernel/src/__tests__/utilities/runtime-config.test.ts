@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { getRuntimeConfig, RUNTIME_CONFIG_GLOBAL } from '@/utilities/runtime-config';
+import { isApplicationError } from '@venizia/ignis-inversion';
+import {
+  getRuntimeConfig,
+  RUNTIME_CONFIG_GLOBAL,
+  RUNTIME_CONFIG_REQUIRED_CODE,
+} from '@/utilities/runtime-config';
 
 const setRuntimeConfig = (value: unknown) => {
   Reflect.set(globalThis, RUNTIME_CONFIG_GLOBAL, value);
@@ -100,6 +105,23 @@ describe('getRuntimeConfig', () => {
       expect(() => getRuntimeConfig({ key: 'VITE_API_URL', required: true })).toThrow(
         "'VITE_API_URL'",
       );
+    });
+
+    test('the error is told by its code and carries the key, whatever the message says', () => {
+      let thrown: unknown;
+      try {
+        getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(RUNTIME_CONFIG_REQUIRED_CODE).toBe('ardor.runtime_config.required');
+      expect(isApplicationError(thrown)).toBe(true);
+      if (!isApplicationError(thrown)) {
+        return;
+      }
+      expect(thrown.normalized.code).toBe(RUNTIME_CONFIG_REQUIRED_CODE);
+      expect(thrown.extra?.key).toBe('VITE_API_URL');
     });
 
     test('an empty or non-string value is absent, and the message holds the key but no value', () => {
