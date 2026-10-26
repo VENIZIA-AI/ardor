@@ -679,7 +679,7 @@ const config = defineConfig({
       message:
         'Released under the MIT License. ARDOR is part of <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA</a>.',
       copyright:
-        'Copyright © 2025 <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA Ltd. Co.</a>',
+        'Copyright © 2025 <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">Venizia Co., Ltd.</a>',
     },
     outline: { level: [2, 3] },
   },
