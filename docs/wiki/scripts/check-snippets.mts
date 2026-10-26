@@ -53,9 +53,6 @@ type TSnippet = { file: string; line: number; code: string; lang: string; noChec
 const collect = async (): Promise<TSnippet[]> => {
   const snippets: TSnippet[] = [];
   for await (const file of new Glob('**/*.md').scan(CONTENT)) {
-    if (file.startsWith('changelogs/template')) {
-      continue;
-    }
     const text = await Bun.file(join(CONTENT, file)).text();
     for (const match of text.matchAll(FENCE)) {
       const line = text.slice(0, match.index).split('\n').length;

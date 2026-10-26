@@ -1,16 +1,23 @@
 {
-  "fingerprint": "65b8508fab432738c7a663fde36e4db588c57813757bbdaeb093c9f2b3636d8e",
+  "fingerprint": "561b262b1dcd4031bf912a3707a0ec0524ada83a6989259c4f6d6aea7d07c9d4",
   "files": {
+    "ChangelogEntryHead.vue": "f39ba1e011c369954e9a1cdf64dc0f3eefc965365e0e5a4fc99182753db70a2a",
+    "ChangelogIndex.vue": "9f0f208dc3dec07c3a41bfed05cb3ebcb14a9f0244c9fc8a50b217fbe68e2553",
     "EcosystemSwitcher.vue": "8f88184713bb819da6010634bc05f00fbfc2035d3a05614edb3df67a56e71ba3",
     "HomeLayout.vue": "8785c016644a6b9eb36c4c0a51b75ecb1b979ef0f2fdbd75ecfc84e745f73d17",
     "HomeWindow.vue": "fc3402609936adeb7cf7136c982c68f2d139f11344157f9a86bf0100ef73eb3a",
     "InstallBox.vue": "a51e007485c23e8cdba0512c254029d09faed57fc16bef7d28d157a92dd6b0b0",
     "SiteFooter.vue": "41d208916cd60a66a94cada5b904c23b91a527a157c39fb8f15aae9d707666c5",
-    "SiteLayout.vue": "ff2c4b8034cf2b1d46cd5bec8137d4f9a0c8bbcffab99c0d032a31c2bac49150",
+    "SiteLayout.vue": "ce7249add6a99395f3616011b1b5970d2bfb6f1abb4d7b2e64451b89b2821589",
     "TerminalView.vue": "97bf05802a8baa08b0ac75092ff6a9ac94bfe9e591c9781219f302eba101248f",
     "assets/ardor-logo.svg": "370cc37bed3b3fbbce546a24e5c04b0037ad5e1ef20cb17e78f3df93ceca93e7",
     "assets/ignis-logo.svg": "5457a4bd3cf5bdbfd0ff5f3f47a5ddbffbd4645381f2813237bc7de07c443e39",
     "assets/vulcan-logo.svg": "9f712481c19058885c89cf9eb91becbf44d212e32e7aa892ab40ed4a1b005e40",
+    "changelog-entries.ts": "601e1878dd5e5b6d73d8f7e8ae09b4d86d1d2a4d08069714b03312b7a2014f9f",
+    "changelog-feed.ts": "65f4c38ac8e1525decf6208f621b2bbac90b98b3428e02f07a4ae674e5c6dc24",
+    "changelog-loader.ts": "8c090caed3c345328b1247007e12e07d57f1671e8b9815e8aaa0eb522dbeea7b",
+    "changelog.css": "a449c505b7e0ee1c73b0bf4908b83c452bc5095cdd367db9623522e09193848c",
+    "changelog.data.ts": "0b7def6ba98b2ffbd93b0df6d088821308c1821e80f9826fc2103214568ecabe",
     "doc.css": "556312ed4a639f878394fa5eaf8711c383f68a76bef5026a5ae1e319d581dd3f",
     "ecosystem.ts": "28097eccbc043916e58ed83cad7ea1bdd03baf26eaeeda61e003e14b5ca2ebea",
     "fonts.css": "f4517f0df6869816b9718412bd6023ce6cbadf6f58b4895f1f5909ec91e3cc94",
@@ -32,7 +39,7 @@
     "useReveal.ts": "85ae4377440194d728f18545aeb2e51790e5c4eb674a511092a35ec974b0157b",
     "useTerminal.ts": "8ab1e37b701c93b73f237a4791128b76d19e90dac4adc626fc249f47283f3ab0",
     "venizia-logo.ts": "743b2255878053ec1e1c94359da71d7dc819b693507d8bd3c270c372dc4289ff",
-    "vitepress-selectors.json": "9d82447a4d46f5247a8e37b1e3b7b748368a45e474b92d348b9de6b6c37c2391",
+    "vitepress-selectors.json": "9f0bde42766ca653fbab2c75a8908828793137ea64142866de648f3ff59ccc87",
     "vp-map.css": "81eccfc381490c28c1d2ef2bb1458919afedd2e7e24b16c02f5f130ede89fed2"
   }
 }

@@ -25,6 +25,7 @@ bun add @venizia/ardor
 | Enhancement | The kernel's npm description and keywords match its code; the LICENSE files name Venizia Co., Ltd. and list only the libraries ARDOR uses; each README ends with the VENIZIA credit | all four packages | 0.4.4 | [The kernel description says what the kernel holds](./2026-10-26-package-metadata) |
 | Tooling | CI runs the umbrella's tests; a package can have a second TypeScript program; the shared wiki theme and the home numbers are under test | repository tooling | 0.4.4 | [Repository tooling](./2026-10-26-repository-tooling) |
 | Documentation | The wiki has a new home page, a footer, a Venizia switcher, a smoother light and dark switch and a Vite setup guide | repository only | no package | [Wiki: a new home page](./2026-10-26-wiki-new-look) |
+| Documentation | The changelog is a filterable list with an RSS feed at `/changelog.xml`; its Introduction and Template pages are gone | repository only | no package | [The wiki changelog is a filterable list](./2026-10-27-wiki-changelog-index) |
 
 | Package | ARDOR 0.4.3 | ARDOR 0.4.4 |
 |---------|------------|--------------|

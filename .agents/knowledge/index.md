@@ -94,6 +94,7 @@ How the work gets done.
 - [Adding a hook](/process/adding-a-hook.md)
 - [Splitting a hub file by topic](/process/splitting-a-hub-file.md)
 - [Updating the wiki](/process/updating-the-wiki.md)
+- [Writing a changelog entry](/process/writing-a-changelog-entry.md) - the parts every entry needs and the template to copy
 - [Knowledge-sync area map](/process/knowledge-sync-areas.md)
 
 ## Examples

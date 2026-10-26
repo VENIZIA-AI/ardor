@@ -20,10 +20,10 @@ tags: [process, docs, wiki]
    socket client), `best-practices/` (architectural conventions), `changelogs/` (feature
    announcements - indexed by `atlas` as their own `changelog` corpus). A new dated changelog
    page is searchable at once, but the atlas release table behind `changes` only lists it once
-   regenerated - `scripts/release/release.ts` does that after the next release chain. The index table and the
-   changelog sidebar (Overview, then History with one collapsible group per date) are generated from
-   the entries by `docs/wiki/scripts/changelogs.mts`; `make docs` runs it with `--check` and fails on
-   drift.
+   regenerated - `scripts/release/release.ts` does that after the next release chain. The changelog index
+   (`/changelogs/`, a filterable list with an RSS feed at `/changelog.xml`) is built from the entries by the
+   shared theme, so a new entry needs no table row and no sidebar link; the template to copy is
+   [Writing a changelog entry](/process/writing-a-changelog-entry.md).
 3. To add a new doc page: create the `.md` file under the right `content/` subdirectory, then add
    it to the VitePress sidebar config at `docs/wiki/site/.vitepress/config.mts` - a page that
    exists but isn't in the sidebar config is unreachable from site navigation. This is enforced,
