@@ -21,6 +21,7 @@ help:
 	@$(HELP_ROW) "setup-hooks" "Configure git to use .githooks directory."
 	@$(HELP_ROW) "docs" "Build the wiki (VitePress) with the sidebar gate."
 	@$(HELP_ROW) "typecheck / typecheck-all" "Type-check every package (tests included) without emitting."
+	@$(HELP_ROW) "typecheck-examples" "Type-check every example against the built packages. Needs a build."
 	@echo ""
 	@echo "Per package - <pkg> is one of:"
 	@echo "  $(PACKAGES)"

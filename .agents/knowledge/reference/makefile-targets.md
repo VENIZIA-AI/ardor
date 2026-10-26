@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**80 targets.**
+**81 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -86,6 +86,7 @@ generated:
 | `make test-scripts` | - | Run the repository gate scripts' own regression tests. |
 | `make typecheck` | `typecheck-all` | Type-check every package (tests included) without emitting. |
 | `make typecheck-all` | - | Type-check every package (tests included) without emitting. |
+| `make typecheck-examples` | - | Type-check every example against the built packages. Needs a build. |
 | `make update-admin` | - | Force update one package's dependencies from NPM. |
 | `make update-ardor` | - | Force update one package's dependencies from NPM. |
 | `make update-kernel` | - | Force update one package's dependencies from NPM. |
