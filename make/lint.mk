@@ -46,12 +46,16 @@ $(FIX_PKG_TARGETS): lint-fix-%:
 	@$(MAKE) --no-print-directory -C packages/$* lint-fix
 
 # The wiki ESLint config skips site/ (the VitePress theme API spells `Layout` and `enhanceApp`).
+# The shared theme folder is a byte-identical copy of VULCAN's (scripts/checks/__tests__/wiki-shared.test.ts), so it is
+# linted there and never changed here, not even by --fix.
+WIKI_LINT_ARGS := . --ignore-pattern 'site/.vitepress/theme/shared/**'
+
 lint-wiki:
 	@echo "🔍 Linting docs/wiki..."
-	@$(call LINT_PROJECT,docs/wiki)
+	@$(call LINT_PROJECT,docs/wiki,$(WIKI_LINT_ARGS))
 
 lint-fix-wiki:
-	@$(call FIX_PROJECT,docs/wiki)
+	@$(call FIX_PROJECT,docs/wiki,$(WIKI_LINT_ARGS))
 
 lint-files:
 	@echo "🔍 Linting the files outside the projects..."
