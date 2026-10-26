@@ -1,6 +1,7 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
 import { withMermaid } from 'vitepress-plugin-mermaid';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
+import { venziaCodeTheme } from './theme/shared/code-theme.ts';
 import { VENIZIA_LOGO_SVG } from './theme/shared/venizia-logo.ts';
 
 // Every page under content/ must be reachable from a sidebar below - scripts/check-sidebar.mts fails
@@ -112,8 +113,9 @@ const config = defineConfig({
   base: '/',
   appearance: 'dark',
   markdown: {
-    // The code windows are dark in both themes (theme/shared/tokens.css), so one dark theme serves both.
-    theme: 'one-dark-pro',
+    // The code windows are dark in both themes (theme/shared/tokens.css), so one dark theme serves both: the
+    // shared theme built from ARDOR's accent on dark (the same value as --accent-on-dark in theme/product.css).
+    theme: venziaCodeTheme({ accent: '#38bdf8' }),
   },
   srcDir: '../content',
   outDir: './.vitepress/dist',
