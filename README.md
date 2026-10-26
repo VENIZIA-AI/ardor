@@ -239,9 +239,8 @@ edits, four symbol renames among them.
 
 ## Credits
 
-Standing on [IGNIS](https://ignis.venizia.ai) (the container and the filter vocabulary),
-[react-admin](https://marmelab.com/react-admin/) (the data contract and the UI runtime), and
-[LoopBack 4](https://loopback.io/) (the binding-key and provider patterns).
+Standing on [IGNIS](https://ignis.venizia.ai) (the container and the filter vocabulary) and
+[react-admin](https://marmelab.com/react-admin/) (the data contract and the UI runtime).
 
 MIT licensed - see [LICENSE.md](LICENSE.md).
 Questions: [GitHub Issues](https://github.com/VENIZIA-AI/ardor/issues) &#8226; developer@venizia.ai

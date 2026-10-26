@@ -6,7 +6,6 @@
     "ardor",
     "ardor-kernel",
     "browser",
-    "crud",
     "dependency-injection",
     "fetch",
     "framework",

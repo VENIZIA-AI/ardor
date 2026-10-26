@@ -326,15 +326,15 @@
             </ul>
           </div>
           <div class="ar-pcard ar-pcard--alt">
-            <h3>&#x25CB; Consider alternatives</h3>
+            <h3>&#x25CB; Probably not a fit</h3>
             <ul>
               <li>
                 <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Lightweight
                 landing pages with no admin state
               </li>
               <li>
-                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Non-React
-                applications (Vue, Svelte, Angular)
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Applications
+                that are not built on React
               </li>
               <li>
                 <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Apps with no
