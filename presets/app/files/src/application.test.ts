@@ -12,7 +12,7 @@ import {
 
 import { AdminConfiguration } from '#src/configurations/admin.configuration';
 
-// The class list is given by hand: the one `application.ts` uses is built by Vite, not by Bun.
+// The class list is given by hand, so this test names exactly what it binds; boot.test.ts boots the real Application.
 class TestApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'test', version: '0.0.0', description: 'A test of the container' };
