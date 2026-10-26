@@ -39,7 +39,9 @@ Or install into an existing Vite and React project (the peers and the `tsconfig.
 [Setup](https://ardor.venizia.ai/guides/get-started/setup)):
 
 ```bash
-bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers @venizia/ignis-connectors ra-core ra-i18n-polyglot react react-dom react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
+bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel \
+  @venizia/ignis-helpers @venizia/ignis-connectors ra-core ra-i18n-polyglot react react-dom \
+  react-redux @reduxjs/toolkit react-router-dom @tanstack/react-query reflect-metadata
 ```
 
 ## Hello world
@@ -56,7 +58,9 @@ import { createRoot } from 'react-dom/client';
 
 @configuration()
 class AdminConfiguration {
-  constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly app: BaseArdorApplication) {}
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly app: BaseArdorApplication,
+  ) {}
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   dataOptions() {
@@ -65,7 +69,10 @@ class AdminConfiguration {
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
   i18nOptions() {
-    return { i18nSources: { en: englishMessages }, languages: [{ locale: 'en', name: 'English' }] };
+    return {
+      i18nSources: { en: englishMessages },
+      languages: [{ locale: 'en', name: 'English' }],
+    };
   }
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
@@ -88,11 +95,20 @@ class Application extends BaseArdorApplication {
 }
 
 const application = new Application();
-const store = configureStore({ reducer: { app: (state: { ready: boolean } = { ready: true }) => state } });
-await application.start(); // binds every @provide method; the auth provider stays unbound, so pages are public
+const store = configureStore({
+  reducer: { app: (state: { ready: boolean } = { ready: true }) => state },
+});
+
+// Binds every @provide method. The auth provider stays unbound, so every page is public.
+await application.start();
 
 createRoot(document.getElementById('root')!).render(
-  <ArdorApplication container={application} reduxStore={store} suspense={<p>Loading</p>} dashboard={() => <h1>Hello from ARDOR</h1>} />,
+  <ArdorApplication
+    container={application}
+    reduxStore={store}
+    suspense={<p>Loading</p>}
+    dashboard={() => <h1>Hello from ARDOR</h1>}
+  />,
 );
 ```
 

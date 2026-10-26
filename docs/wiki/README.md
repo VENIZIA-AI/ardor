@@ -1,8 +1,6 @@
 <div align="center">
 
-<a href="https://ardor.venizia.ai"><img src="https://ardor.venizia.ai/logo.svg" alt="ARDOR" height="96"></a>
-
-# ARDOR - @venizia/ardor-docs
+# <img src="https://ardor.venizia.ai/logo.svg" alt="" height="32" align="top"> ARDOR - @venizia/ardor-docs
 
 **Documentation site for the ARDOR framework**
 
