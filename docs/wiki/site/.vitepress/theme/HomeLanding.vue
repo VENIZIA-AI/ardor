@@ -9,11 +9,14 @@
           <div class="ar-eyebrow">
             <span class="ar-eyebrow__dot" />TypeScript · React · react-admin · IGNIS
           </div>
-          <h1>Admin apps on an<br />IGNIS <span class="ar-gtext">container</span></h1>
+          <h1>
+            Shape your admin&nbsp;panels.<br /><span class="ar-gtext"
+              >ARDOR tempers the&nbsp;surface.</span
+            >
+          </h1>
           <p class="ar-lede">
-            ra-core's CRUD contract on IGNIS's container.
-            <b>Dependency injection, a REST data provider, token refresh on 401 and i18n</b>
-            in one package, <code>@venizia/ardor</code>, with a core that uses no Node builtins.
+            Admin consoles on react-admin, with the same dependency injection and filter language as
+            IGNIS, plus sign-in and i18n.
           </p>
           <div class="ar-cta">
             <a href="/guides/get-started/create-a-project" class="ar-btn ar-btn--primary"
