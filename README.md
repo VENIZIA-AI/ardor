@@ -22,7 +22,7 @@
 
 ---
 
-Frontend application framework for the VENIZIA family. IGNIS is the backend framework; ARDOR is its
+Frontend application framework for the [VENIZIA](https://venizia.ai) family. IGNIS is the backend framework; ARDOR is its
 frontend sibling and a consumer of it - a react-admin application built as an IGNIS
 inversion-of-control container. You bind providers and services by key; React resolves them
 through hooks; the data layer speaks the IGNIS filter vocabulary to your API.
@@ -149,7 +149,7 @@ createRoot(root).render(
 );
 ```
 
-Full walkthrough: [5-minute quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
+Full walkthrough: [Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
 then the [references](https://ardor.venizia.ai/references/).
 
 ## What you get

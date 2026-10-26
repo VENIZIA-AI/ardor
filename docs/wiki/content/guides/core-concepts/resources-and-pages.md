@@ -170,12 +170,14 @@ When a page requires data or actions outside the data provider's CRUD contract, 
 - **`useRefreshToken`**: Manually calls `authProvider.refreshToken()` and invalidates the cached permissions query in TanStack Query.
 - **`useNotifyError`**: Accepts an `ApplicationError` (from `@venizia/ignis-inversion`) and optional `NotificationOptions`, dispatching the code and arguments to react-admin's notification system.
 
-Decorated repository and datasource classes must be bound into the container before `useRepository` resolves them:
+Decorated repository and datasource classes must be bound into the container before `useRepository` resolves them. The datasource below spreads `dataProvider.getDataSourceAuth()`, so its repository sends the same token and session headers as the data provider and joins its 401 refresh:
 
 ```tsx
 import {
+  CoreBindings,
   datasource,
-  DefaultNetworkRequestService,
+  type IDataProvider,
+  inject,
   repository,
   RepositoryTypes,
   useNotifyError,
@@ -189,11 +191,10 @@ import { useEffect, useState } from 'react';
 
 @datasource()
 export class ApiDataSource extends HttpDataSource {
-  constructor() {
-    super({
-      baseUrl: '/api',
-      authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage,
-    });
+  constructor(
+    @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) dataProvider: IDataProvider,
+  ) {
+    super({ baseUrl: '/api', ...dataProvider.getDataSourceAuth() });
   }
 }
 

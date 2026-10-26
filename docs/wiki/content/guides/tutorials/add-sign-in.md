@@ -134,7 +134,7 @@ export const LoginPage = () => {
 };
 ```
 
-Pass `LoginPage` to the `loginPage` prop of `ArdorApplication` ([5-minute quickstart](../get-started/5-minute-quickstart)). When an unauthenticated user accesses a protected route, `DefaultAuthProvider.checkAuth()` checks storage via `authService.getAuth()`. If no valid token exists, `checkAuth` rejects with `{ redirectTo: '/login' }`.
+Pass `LoginPage` to the `loginPage` prop of `ArdorApplication` ([Quickstart](../get-started/5-minute-quickstart)). When an unauthenticated user accesses a protected route, `DefaultAuthProvider.checkAuth()` checks storage via `authService.getAuth()`. If no valid token exists, `checkAuth` rejects with `{ redirectTo: '/login' }`.
 
 ## 4. Protecting pages and components by role
 

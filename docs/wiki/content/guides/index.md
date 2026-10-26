@@ -5,7 +5,17 @@ description: Getting started tutorials, core architecture concepts, and migratio
 
 # ARDOR Guides
 
-Welcome to ARDOR - the browser framework of the VENIZIA ecosystem. ARDOR structures react-admin applications into an inversion-of-control container powered by IGNIS. These guides take you from installation and tutorials to core architecture concepts and migration workflows.
+ARDOR is the browser framework of [VENIZIA](https://venizia.ai). It structures ra-core applications inside an IGNIS inversion-of-control container. These guides take you from a first project to the core concepts and a migration path.
+
+ARDOR 0.4.3 gives you:
+
+- **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
+- **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
+- **An HTTP repository** from IGNIS on `@venizia/ardor/repository`, which can share the data provider's token and 401 refresh through `getDataSourceAuth()`.
+- **Runtime configuration.** `getRuntimeConfig` reads `window.__APP_CONFIG__`, so one built image serves every environment; with `required: true` it throws an error that carries a code. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
+- **A VULCAN preset** that generates an admin with Tailwind, an nginx image (gzip, `/health`, security headers) and that runtime configuration.
+
+ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
 
 <div class="guide-cards">
 <a href="./get-started/create-a-project" class="guide-card">
@@ -17,8 +27,8 @@ Welcome to ARDOR - the browser framework of the VENIZIA ecosystem. ARDOR structu
   <p>Install Bun, configure dependencies, and prepare your development environment</p>
 </a>
 <a href="./get-started/5-minute-quickstart" class="guide-card highlight">
-  <h3>5-Minute Quickstart</h3>
-  <p>Scaffold and boot a working administration console in five minutes</p>
+  <h3>Quickstart</h3>
+  <p>Write a small admin by hand against a stub API: a datasource, a repository, a list page and a login</p>
 </a>
 <a href="./tutorials/build-an-admin" class="guide-card">
   <h3>Build an Admin</h3>
@@ -67,8 +77,8 @@ Welcome to ARDOR - the browser framework of the VENIZIA ecosystem. ARDOR structu
 <div class="roadmap">
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">1</span><h4>First Steps</h4></div>
-  <p><a href="./get-started/create-a-project">Create a Project</a> or <a href="./get-started/setup">Setup</a> → <a href="./get-started/5-minute-quickstart">5-Minute Quickstart</a></p>
-  <span class="stage-desc">Prepare your development environment and boot your first admin console</span>
+  <p><a href="./get-started/create-a-project">Create a Project</a> or <a href="./get-started/setup">Setup</a> → <a href="./get-started/5-minute-quickstart">Quickstart</a></p>
+  <span class="stage-desc">Generate an admin with one command, or set up a Vite project and write a small one by hand</span>
 </div>
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">2</span><h4>Build Something Real</h4></div>
