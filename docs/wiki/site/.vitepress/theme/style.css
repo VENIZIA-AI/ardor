@@ -2233,3 +2233,23 @@ html:not(.dark) .ar-fill--muted {
     flex-direction: column;
   }
 }
+
+/* The VENIZIA wordmark is wide: keep its ratio at the header height. */
+.VPSocialLinks .VPSocialLink[aria-label='Venizia'] {
+  width: auto;
+  padding: 0 4px;
+}
+
+.VPSocialLinks .VPSocialLink[aria-label='Venizia'] svg {
+  width: auto;
+  height: 18px;
+}
+
+/* The header divider of VitePress (menu | social links): 1px, 24px high, 8px each side. */
+.VPNavBarSocialLinks .VPSocialLink[aria-label='Venizia']::before {
+  margin: 0 8px 0 4px;
+  width: 1px;
+  height: 24px;
+  background-color: var(--vp-c-divider);
+  content: '';
+}
