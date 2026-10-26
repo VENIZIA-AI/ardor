@@ -70,8 +70,10 @@ tags: [process, docs, wiki]
    the scheme that is a hand copy of VULCAN's) hashes the folder against its `SHARED.json` and checks that the
    VitePress pieces the shared CSS overrides still exist; `make test-scripts` runs it. `.gitattributes` marks the
    folder `-text` so git never converts a byte. `make lint-wiki` covers it like any other file: a lint finding in it is
-   fixed in VULCAN's copy, and `lint-fix-wiki` must leave it in step. ARDOR's own part of the theme stays outside the folder: `style.css`,
-   `design-tokens.css` and, from the next steps, `product.css` and `home-content.ts`.
+   fixed in VULCAN's copy, and `lint-fix-wiki` must leave it in step. ARDOR's own part of the theme stays outside the folder: `product.css` (the accent: the blue and the
+   aqua of `design-tokens.css`), `design-tokens.css` and `style.css` (the primitives, the page components and
+   the home page), and `index.ts`, which imports the shared stylesheets and registers the ecosystem switcher, the
+   version chip and the smooth theme switch in the layout. `config.mts` imports the Venizia wordmark from the folder.
 
 ## Related
 

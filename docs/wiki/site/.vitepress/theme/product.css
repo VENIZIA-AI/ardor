@@ -1,0 +1,20 @@
+/*
+ * ARDOR's accent, the one thing this wiki sets on top of the shared theme (theme/shared). The values
+ * are the brand ramp of design-tokens.css: --ar-brand on light, --ar-brand-lt on dark. See
+ * shared/tokens.css for what each variable is for.
+ */
+:root {
+  --accent: #0277bd; /* --ar-brand, 4.80:1 under white text */
+  --accent-ink: #ffffff;
+  --accent-text: #01579b; /* --ar-brand-deep, 7.40:1 on white */
+  --accent-2: #0091ea;
+  --accent-on-dark: #38bdf8; /* --ar-brand-lt */
+  --glow: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.dark {
+  --accent: #38bdf8; /* --ar-brand-lt */
+  --accent-ink: #03121c; /* 9:1 on the fill */
+  --accent-text: #38bdf8; /* 9.31:1 on the dark background */
+  --glow: color-mix(in srgb, var(--accent) 16%, transparent);
+}
