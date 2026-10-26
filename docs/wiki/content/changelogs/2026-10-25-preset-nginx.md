@@ -8,7 +8,7 @@ packages: ['@venizia/ardor']
 
 ## The preset image compresses, answers /health, sends security headers and can drop /api
 
-<Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="danger" text="Security" />
+<Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="warning" text="Behavior Change" /> <Badge type="danger" text="Security" />
 
 **In one line.** The image of an app made from the ARDOR preset now gzips text, answers `/health` from nginx alone, sends safe security headers on every response, and leaves out the `/api` proxy when `API_UPSTREAM` is empty, for an app served behind a gateway.
 
