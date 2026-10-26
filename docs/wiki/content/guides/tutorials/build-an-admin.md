@@ -286,7 +286,7 @@ export const ProductEditPage = () => (
 
 ## Related
 
-- [5-Minute Quickstart](../get-started/5-minute-quickstart)
+- [Quickstart](../get-started/5-minute-quickstart)
 - [Add Sign-in](./add-sign-in)
 - [Configuration](../core-concepts/configuration)
 - [REST data provider](../../references/data-provider)

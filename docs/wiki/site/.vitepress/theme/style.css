@@ -1999,10 +1999,11 @@ html:not(.dark) .ar-btn--secondary:hover {
 }
 
 .ar-bar-row__name {
-  width: 78px;
+  width: 168px;
   font-size: var(--ar-fs-sm);
   color: var(--ar-text-2);
   text-align: right;
+  overflow-wrap: anywhere;
   font-weight: 500;
   flex-shrink: 0;
 }

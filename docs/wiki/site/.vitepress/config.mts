@@ -12,7 +12,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Create a project', link: '/guides/get-started/create-a-project' },
       { text: 'Setup', link: '/guides/get-started/setup' },
-      { text: '5-minute quickstart', link: '/guides/get-started/5-minute-quickstart' },
+      { text: 'Quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
     ],
   },
@@ -658,6 +658,7 @@ const config = defineConfig({
       { text: 'Extensions', link: '/extensions/' },
       { text: 'Best Practices', link: '/best-practices/' },
       { text: 'Changelogs', link: '/changelogs/' },
+      { text: 'VENIZIA', link: 'https://venizia.ai' },
     ],
     sidebar: {
       '/guides/': guidesSidebar,
@@ -668,7 +669,7 @@ const config = defineConfig({
     },
     socialLinks: [{ icon: 'github', link: 'https://github.com/VENIZIA-AI/ardor' }],
     footer: {
-      message: 'Released under the MIT License.',
+      message: 'Released under the MIT License. Part of <a href="https://venizia.ai">VENIZIA</a>.',
       copyright: 'Copyright (c) 2025 VENIZIA Ltd. Co.',
     },
     outline: { level: [2, 3] },

@@ -149,7 +149,7 @@ createRoot(root).render(
 );
 ```
 
-Full walkthrough: [5-minute quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
+Full walkthrough: [Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) -
 then the [references](https://ardor.venizia.ai/references/).
 
 ## What you get

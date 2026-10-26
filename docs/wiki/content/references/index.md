@@ -5,7 +5,7 @@ description: Technical API reference for ARDOR container classes, providers, bin
 
 # ARDOR API References
 
-ARDOR packages react-admin applications into an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks across every framework package.
+ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`getRuntimeConfig`) has its own section below.
 
 <div class="guide-cards">
 <a href="./application" class="guide-card"><h3>Application</h3><p>Container lifecycle, configuration, and ArdorApplication component</p></a>
@@ -25,17 +25,46 @@ ARDOR packages react-admin applications into an IGNIS inversion-of-control conta
 
 | Piece | Package | Page |
 |---|---|---|
-| Application | `ardor-kernel`, `ardor-admin` | [Application](./application) |
-| Binding keys | `ardor-kernel` | [Binding keys](./binding-keys) |
-| Data provider | `ardor-admin` | [Data provider](./data-provider) |
-| Auth provider | `ardor-admin` | [Auth provider](./auth-provider) |
-| Internationalization | `ardor-admin` | [Internationalization](./i18n) |
-| Network | `ardor-kernel` | [Network](./network) |
-| Permission | `ardor-kernel`, `ardor-admin` | [Permission](./permission) |
-| Features | `ardor-kernel`, `ardor-admin` | [Features](./features) |
-| Repository | `ardor-kernel`, `@venizia/ardor/repository` | [Repository](./repository) |
-| Hooks | `ardor-react`, `ardor-admin` | [Hooks](./hooks) |
-| Types | `ardor-kernel` | [Types](./types) |
+| Application | `@venizia/ardor-kernel`, `@venizia/ardor-admin` | [Application](./application) |
+| Binding keys | `@venizia/ardor-kernel` | [Binding keys](./binding-keys) |
+| Data provider | `@venizia/ardor-admin` | [Data provider](./data-provider) |
+| Auth provider | `@venizia/ardor-admin` | [Auth provider](./auth-provider) |
+| Internationalization | `@venizia/ardor-admin` | [Internationalization](./i18n) |
+| Network | `@venizia/ardor-kernel` | [Network](./network) |
+| Permission | `@venizia/ardor-kernel`, `@venizia/ardor-admin` | [Permission](./permission) |
+| Features | `@venizia/ardor-kernel`, `@venizia/ardor-admin` | [Features](./features) |
+| Repository | `@venizia/ardor-kernel`, `@venizia/ardor/repository` | [Repository](./repository) |
+| Hooks | `@venizia/ardor-react`, `@venizia/ardor-admin` | [Hooks](./hooks) |
+| Types | `@venizia/ardor-kernel` | [Types](./types) |
+| Runtime config | `@venizia/ardor-kernel` | [Runtime config](#runtime-config) |
+
+## Runtime config
+
+`getRuntimeConfig` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
+
+| Option | Type | Default | Meaning |
+|---|---|---|---|
+| `key` | `string` | - | The variable name, for example `VITE_API_URL`. |
+| `buildTimeEnv` | `Record<string, unknown>` | none | The build-time source, normally `import.meta.env`. |
+| `defaultValue` | `string` | none | Used when neither source has a value. |
+| `required` | `boolean` | `false` | With `true` the result is a `string`, and a missing value throws. |
+
+Without `required` the result is `string | undefined`. With `required: true` and no value anywhere, it throws an `ApplicationError` from `@venizia/ignis-inversion`. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
+
+```typescript
+import { getRuntimeConfig, RUNTIME_CONFIG_REQUIRED_CODE } from '@venizia/ardor';
+import { isApplicationError } from '@venizia/ignis-inversion';
+
+try {
+  getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+} catch (error) {
+  if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
+    console.error('missing config key', error.extra?.key);
+  }
+}
+```
+
+`RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
 
 ## Find the Exact API
 

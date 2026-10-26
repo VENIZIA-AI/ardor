@@ -5,7 +5,7 @@ description: Install Bun, scaffold a Vite and React project, configure TypeScrip
 
 # Set Up Your Environment
 
-Install the tools required to build an ARDOR administrative interface, scaffold a Vite project with React and TypeScript, and verify that the application compiles.
+Install the tools to build an ARDOR admin by hand: Bun, a Vite project with React and TypeScript, ARDOR and its peers, and the TypeScript options for decorators. To skip these steps, [create a project](create-a-project): one VULCAN command generates the project already set up.
 
 ## Requirements
 
@@ -13,8 +13,7 @@ Install the tools required to build an ARDOR administrative interface, scaffold 
 |---|---|---|---|
 | **Bun** | >= 1.4 | Yes | Installs dependencies and runs builds; ARDOR uses Bun across all packages |
 | **REST API** | Any | Yes | Backing API for data and authentication; an IGNIS backend or `examples/5-mins-qs/api/server.ts` |
-| **Browser** | - | - | Packages build with `target: ESNext` and `lib: ESNext, DOM, DOM.Iterable` (`packages/kernel/tsconfig.json`); ARDOR states no older browser floor |
-| **VS Code** | Latest | Optional | Recommended editor setup with Oxc and ESLint extensions |
+| **Browser** | Current | Yes | The packages are compiled with `lib: ES2025, DOM, DOM.Iterable` (from `@venizia/dev-configs/tsconfig.browser.json`, which `packages/kernel/tsconfig.json` extends) |
 
 ## Step 1: Install Bun
 
@@ -48,7 +47,7 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 bun add -d @venizia/ignis-boot
 ```
 
-Everything after `@venizia/ardor` is a peer dependency so your application controls a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages. Duplicate copies of these libraries break React context and inversion-of-control container resolution.
+Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
 
 ## Step 4: Configure TypeScript for Decorators
 
@@ -82,4 +81,4 @@ bun run build
 
 The `-p tsconfig.app.json` flag targets the file edited in step 4. Both commands must exit with code 0.
 
-Next: [5-minute quickstart](./5-minute-quickstart)
+Next: [Quickstart](./5-minute-quickstart)
