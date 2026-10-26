@@ -34,7 +34,7 @@ class QuietDebugLogger implements ILogger {
   }
 }
 
-/** The default IGNIS logger needs winston, which a frontend app does not install. */
+/** The default IGNIS logger needs winston, which a frontend app does not install. The provider is process-wide: it is the one of the Vite process that runs the build. */
 export const useQuietConsoleLogger = (): void => {
   LoggerFactory.use({
     provider: { get: (scope) => new QuietDebugLogger(ConsoleLogger.get({ scope })) },

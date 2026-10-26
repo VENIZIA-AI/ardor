@@ -1,6 +1,6 @@
 ---
 title: Vite setup
-description: What an ARDOR app needs in its Vite 8 config - the chunk order flag the preset turns on, and the buildInfoFile plugin that writes build-info.json for an About page.
+description: What an ARDOR app needs in its Vite 8 config - the chunk order flag the preset sets, and buildInfoFile, which writes build-info.json for an About page.
 ---
 
 # Vite setup
@@ -9,7 +9,7 @@ An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` alr
 
 ## Run modules in the order they import each other
 
-Rolldown can run a split-off chunk before the module that another module in it depends on. When that module is `reflect-metadata` and the other is a DI package that needs `Reflect.getMetadata` as it is evaluated, a production build fails in the browser with `Reflect.getMetadata is not a function` while `vite dev` works ([vitejs/vite#21866](https://github.com/vitejs/vite/issues/21866)).
+Rolldown can run a split-off chunk before the module that it depends on. Take a dependency injection (DI) package that needs `Reflect.getMetadata` as it is evaluated, and `reflect-metadata` in another chunk. The production build then fails in the browser with `Reflect.getMetadata is not a function`, while `vite dev` works ([vitejs/vite#21866](https://github.com/vitejs/vite/issues/21866)).
 
 Turn on `output.strictExecutionOrder`, as the preset does:
 
@@ -34,7 +34,7 @@ export default defineConfig({
 | JavaScript, raw | 593,726 B | 609,757 B (+2.7%) |
 | JavaScript, gzip | 185,386 B | 191,757 B (+3.4%) |
 
-The extra weight is in the `vendor` chunk, which the browser caches across deploys. Measured on Vite 8.3.5 with Rolldown 1.2.14; the same build loads in a real browser with no console error. An app on Vite 8.1.0 reported `React$12 is not defined` with the flag on, so keep Vite at 8.3.5 or newer and check the built app in a browser after you turn it on.
+The extra weight is in the `vendor` chunk, which the browser caches across deploys. This was measured on Vite 8.3.5 with Rolldown 1.2.14, and the built app loads in a real browser with no console error. An app on Vite 8.1.0 reported `React$12 is not defined` with the flag on. Keep Vite at 8.3.5 or newer, and check the built app in a browser after you turn the flag on.
 
 The ARDOR repository pins this: a test builds a DI module that guards on `Reflect.getMetadata` in a chunk of its own, and it fails with the flag off and passes with it on. The same test fails the day Rolldown orders that module correctly by itself, which is when the flag can go.
 
@@ -67,6 +67,9 @@ The shape is `IBuildInfoFile`, exported by `@venizia/ardor` for the browser code
 
 The text is the same for the same input: the keys keep one order and the file ends with a newline. The preset's Dockerfile passes `APP_BUILD_COMMIT` and `APP_BUILD_BRANCH`, so an image build needs no git.
 
+> [!WARNING]
+> The file is public: every visitor can read it. It tells them the app's version, the commit, the branch name and the versions of the framework packages. The values are copied as the pipeline wrote them, so never put a secret in a variable named above.
+
 ### Options
 
 | Option | Type | Default | Meaning |
@@ -78,7 +81,9 @@ The text is the same for the same input: the keys keep one order and the file en
 
 A build with no commit fails with a message that says to build inside a git checkout or to set `APP_BUILD_COMMIT`. The dev server never refuses: it serves what it has, with `unspecified` fields, and warns. A missing branch, or a dependency that is not installed, is a warning in both.
 
-The dev server answers `GET` and `HEAD` on the file's path under its `base`, with `Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`; any other method gets `405`.
+The dev server answers `GET` and `HEAD` on the file's path under its `base`, with `Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`. Any other method gets `405`.
+
+If the file cannot be resolved, the cause goes to the terminal and the response is a `500` with no path and no stack; the next request tries again. The server resolves the file once, so restart it after an install.
 
 ### Read it in the app
 

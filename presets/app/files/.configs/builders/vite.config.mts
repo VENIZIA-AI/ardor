@@ -27,9 +27,8 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rolldownOptions: {
         output: {
-          // Runs every module after the modules it imports. Without it a split chunk can run a DI package
-          // before reflect-metadata and fail on Reflect.getMetadata (vitejs/vite#21866). It adds about 3%
-          // to the gzip size of the vendor chunk: keep it on.
+          // Runs each module after the modules it imports: a split chunk can otherwise run a DI package
+          // before reflect-metadata (vitejs/vite#21866). It costs about 3% of the gzip size; keep it on.
           strictExecutionOrder: true,
           // React, react-admin and the router weigh about 500 KB before any application code. Two
           // vendor chunks keep the application's own chunk small, cacheable across a deploy, and

@@ -1,29 +1,16 @@
 import { getError } from '@venizia/ignis-inversion';
-import type { Logger, Plugin, ResolvedConfig } from 'vite';
+import type { Plugin } from 'vite';
 
 import {
+  DEFAULT_BUILD_INFO_FILE_NAME,
+  DEFAULT_FRAMEWORK_SCOPE,
+  type IBuildInfoFileOptions,
   type IBuildInfoSources,
-  isBuildInfoRequest,
-  defaultSources,
-  resolveBuildInfo,
-  serializeBuildInfoFile,
   type TUnresolvedPolicy,
   UnresolvedPolicies,
-} from './build-info';
-
-export const DEFAULT_BUILD_INFO_FILE_NAME = 'build-info.json';
-export const DEFAULT_FRAMEWORK_SCOPE = '@venizia/';
-
-export interface IBuildInfoFileOptions {
-  /** The app folder, where its package.json is. Default: the folder Vite runs in. */
-  root?: string;
-  /** The file's path under the output folder and under the dev server's base. Default: `build-info.json`. */
-  fileName?: string;
-  /** Dependencies whose name starts with this are listed under `frameworks`. Default: `@venizia/`. */
-  frameworkScope?: string;
-  /** What a build does when no commit can be found: `error` (default) or `unspecified`. The dev server always serves what it has and warns. */
-  onUnresolved?: TUnresolvedPolicy;
-}
+} from './common';
+import { serializeBuildInfoFile, resolveBuildInfo } from './resolver';
+import { defaultSources } from './sources';
 
 type TParsedOptions = Required<IBuildInfoFileOptions>;
 
@@ -59,6 +46,18 @@ export const parseBuildInfoFileOptions = (opts: IBuildInfoFileOptions): TParsedO
   return { root, fileName, frameworkScope, onUnresolved };
 };
 
+export const isBuildInfoRequest = (opts: {
+  url: string | undefined;
+  base: string;
+  fileName: string;
+}): boolean => {
+  if (opts.url === undefined) {
+    return false;
+  }
+
+  return opts.url.split('?')[0] === `${opts.base}${opts.fileName}`;
+};
+
 export const createBuildInfoFilePlugin = (opts: {
   options: IBuildInfoFileOptions;
   sources: IBuildInfoSources;
@@ -66,11 +65,14 @@ export const createBuildInfoFilePlugin = (opts: {
   const { options, sources } = opts;
   const { root, fileName, frameworkScope, onUnresolved } = parseBuildInfoFileOptions(options);
 
-  let config: ResolvedConfig | undefined;
   let body: Promise<string> | undefined;
 
-  // One resolution per process: the dev server and the build both serve the same builtAt.
-  const loadBody = (load: { logger: Logger; policy: TUnresolvedPolicy }): Promise<string> => {
+  // One resolution per process, so the dev server and the build both serve the same builtAt; a failed
+  // one is not kept, because the cause (a half-saved package.json) may be gone on the next request.
+  const loadBody = (load: {
+    warn: (message: string) => void;
+    policy: TUnresolvedPolicy;
+  }): Promise<string> => {
     body ??= (async () => {
       const { info, warnings } = await resolveBuildInfo({
         root,
@@ -80,21 +82,21 @@ export const createBuildInfoFilePlugin = (opts: {
       });
 
       for (const warning of warnings) {
-        load.logger.warn(warning);
+        load.warn(warning);
       }
 
       return serializeBuildInfoFile({ info });
-    })();
+    })().catch((error: unknown) => {
+      body = undefined;
+
+      throw error;
+    });
 
     return body;
   };
 
   return {
     name: 'ardor:build-info-file',
-
-    configResolved(resolved) {
-      config = resolved;
-    },
 
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
@@ -114,7 +116,7 @@ export const createBuildInfoFilePlugin = (opts: {
 
         try {
           const text = await loadBody({
-            logger: server.config.logger,
+            warn: (message) => server.config.logger.warn(message),
             policy: UnresolvedPolicies.UNSPECIFIED,
           });
 
@@ -123,20 +125,27 @@ export const createBuildInfoFilePlugin = (opts: {
           response.setHeader('cache-control', 'no-store');
           response.end(request.method === 'HEAD' ? undefined : text);
         } catch (error) {
-          next(error);
+          // The cause goes to the terminal of the developer; the response never carries a path or a stack.
+          server.config.logger.error(error instanceof Error ? error.message : String(error));
+
+          response.statusCode = 500;
+          response.setHeader('content-type', 'application/json; charset=utf-8');
+          response.setHeader('cache-control', 'no-store');
+          response.end(
+            `${JSON.stringify({ error: `${fileName} is unavailable, see the dev server log` })}\n`,
+          );
         }
       });
     },
 
     async generateBundle() {
-      if (config === undefined) {
-        throw getError({ message: '[buildInfoFile] used before Vite resolved its configuration' });
-      }
-
       this.emitFile({
         type: 'asset',
         fileName,
-        source: await loadBody({ logger: config.logger, policy: onUnresolved }),
+        source: await loadBody({
+          warn: (message) => this.warn(message),
+          policy: onUnresolved,
+        }),
       });
     },
   };

@@ -2,19 +2,21 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import type { IBuildInfoFile } from '@venizia/ardor-kernel';
 import { BuildInfoRegistry, type TBuildInfoRecord } from '@venizia/ignis-helpers/core';
+import { getError } from '@venizia/ignis-inversion';
 import { build, createServer, type ViteDevServer } from 'vite';
 
-import { type IBuildInfoSources, UnresolvedPolicies } from '@/vite/build-info';
+import { type IBuildInfoSources, UnresolvedPolicies } from '@/vite/common';
 import {
   buildInfoFile,
   createBuildInfoFilePlugin,
-  DEFAULT_BUILD_INFO_FILE_NAME,
+  isBuildInfoRequest,
   parseBuildInfoFileOptions,
-} from '@/vite/build-info-file';
+} from '@/vite/plugin';
 
+import { getRejection } from '../rejection';
 import { makeScratch, removeScratch, writeFiles } from './fixture';
-import { rejectionOf } from '../rejection';
 
 const STAMP: TBuildInfoRecord = {
   service: '@acme/shop',
@@ -28,19 +30,27 @@ const FRAMEWORKS = { '@venizia/ardor': '0.4.3' };
 
 const EXPECTED_TEXT = `${JSON.stringify({ ...STAMP, frameworks: FRAMEWORKS }, null, 2)}\n`;
 
-const fakeSources = (
-  opts: { record?: TBuildInfoRecord; failWith?: Error } = {},
-): IBuildInfoSources => ({
-  resolveRecord: async () => {
-    if (opts.failWith) {
-      throw opts.failWith;
-    }
+const makeFakeSources = (
+  opts: { record?: TBuildInfoRecord; failTimes?: number } = {},
+): IBuildInfoSources => {
+  let failures = opts.failTimes ?? 0;
 
-    return opts.record ?? STAMP;
-  },
-  readGit: async () => ({ ok: false, reason: 'no git in this test' }),
-  readFrameworkVersions: async () => ({ versions: FRAMEWORKS, missing: [] }),
-});
+  return {
+    resolveRecord: async () => {
+      if (failures > 0) {
+        failures -= 1;
+
+        throw getError({ message: `no manifest in ${STAMP.service}` });
+      }
+
+      return opts.record ?? STAMP;
+    },
+    readGit: async () => ({ ok: false, reason: 'no git in this test' }),
+    readFrameworkVersions: async () => ({ versions: FRAMEWORKS, missing: [], invalid: [] }),
+  };
+};
+
+const withoutCommit = (): TBuildInfoRecord => ({ ...STAMP, commit: BuildInfoRegistry.UNSPECIFIED });
 
 const appFiles = {
   'package.json': JSON.stringify({
@@ -61,7 +71,7 @@ describe('parseBuildInfoFileOptions', () => {
   test('fills the defaults', () => {
     expect(parseBuildInfoFileOptions({})).toEqual({
       root: process.cwd(),
-      fileName: DEFAULT_BUILD_INFO_FILE_NAME,
+      fileName: 'build-info.json',
       frameworkScope: '@venizia/',
       onUnresolved: UnresolvedPolicies.ERROR,
     });
@@ -104,6 +114,21 @@ describe('parseBuildInfoFileOptions', () => {
   });
 });
 
+describe('isBuildInfoRequest', () => {
+  test.each([
+    ['/build-info.json', '/', 'build-info.json', true],
+    ['/build-info.json?t=1', '/', 'build-info.json', true],
+    ['/app/build-info.json', '/app/', 'build-info.json', true],
+    ['/meta/info.json', '/', 'meta/info.json', true],
+    ['/app/build-info.json', '/', 'build-info.json', false],
+    ['/build-info.json.map', '/', 'build-info.json', false],
+    ['/other.json', '/', 'build-info.json', false],
+    [undefined, '/', 'build-info.json', false],
+  ])('%p on base %p for %p is %p', (url, base, fileName, expected) => {
+    expect(isBuildInfoRequest({ url, base, fileName })).toBe(expected);
+  });
+});
+
 describe('the dev server', () => {
   let root: string;
   let server: ViteDevServer;
@@ -125,10 +150,13 @@ describe('the dev server', () => {
     return started;
   };
 
+  const getUrl = (opts: { started: ViteDevServer }): string =>
+    `${opts.started.resolvedUrls?.local[0] ?? ''}build-info.json`;
+
   beforeAll(async () => {
     root = makeScratch({ prefix: 'build-info-dev-' });
     writeFiles({ root, files: appFiles });
-    server = await startServer({ sources: fakeSources() });
+    server = await startServer({ sources: makeFakeSources() });
     origin = server.resolvedUrls?.local[0] ?? '';
   });
 
@@ -171,26 +199,31 @@ describe('the dev server', () => {
   });
 
   test('the file lives under the base of the dev server', async () => {
-    const underBase = await startServer({ sources: fakeSources(), base: '/app/' });
+    const underBase = await startServer({ sources: makeFakeSources(), base: '/app/' });
 
     try {
-      const url = underBase.resolvedUrls?.local[0] ?? '';
-
-      expect(await (await fetch(`${url}build-info.json`)).text()).toBe(EXPECTED_TEXT);
+      expect(await (await fetch(getUrl({ started: underBase }))).text()).toBe(EXPECTED_TEXT);
     } finally {
       await underBase.close();
     }
   });
 
-  test('a resolution that fails is a 500, not a hang', async () => {
-    const failing = await startServer({
-      sources: fakeSources({ failWith: new Error('no manifest') }),
-    });
+  test('a resolution that fails is a 500 without a path or a stack, and the next request tries again', async () => {
+    const failing = await startServer({ sources: makeFakeSources({ failTimes: 1 }) });
 
     try {
-      const response = await fetch(`${failing.resolvedUrls?.local[0] ?? ''}build-info.json`);
+      const first = await fetch(getUrl({ started: failing }));
+      const body = await first.text();
 
-      expect(response.status).toBe(500);
+      expect(first.status).toBe(500);
+      expect(body).toContain('build-info.json is unavailable');
+      expect(body).not.toContain(root);
+      expect(body).not.toContain('at ');
+
+      const second = await fetch(getUrl({ started: failing }));
+
+      expect(second.status).toBe(200);
+      expect(await second.text()).toBe(EXPECTED_TEXT);
     } finally {
       await failing.close();
     }
@@ -198,14 +231,15 @@ describe('the dev server', () => {
 
   test('without a commit the dev server serves what it has instead of refusing', async () => {
     const unresolved = await startServer({
-      sources: fakeSources({ record: { ...STAMP, commit: BuildInfoRegistry.UNSPECIFIED } }),
+      sources: makeFakeSources({ record: withoutCommit() }),
     });
 
     try {
-      const response = await fetch(`${unresolved.resolvedUrls?.local[0] ?? ''}build-info.json`);
+      const response = await fetch(getUrl({ started: unresolved }));
+      const info: IBuildInfoFile = await response.json();
 
       expect(response.status).toBe(200);
-      expect((await response.json()).commit).toBe(BuildInfoRegistry.UNSPECIFIED);
+      expect(info.commit).toBe(BuildInfoRegistry.UNSPECIFIED);
     } finally {
       await unresolved.close();
     }
@@ -236,7 +270,7 @@ describe('the build', () => {
 
   test('emits the file into the output folder', async () => {
     await buildApp({
-      plugin: createBuildInfoFilePlugin({ options: { root }, sources: fakeSources() }),
+      plugin: createBuildInfoFilePlugin({ options: { root }, sources: makeFakeSources() }),
     });
 
     expect(readFileSync(join(root, 'dist', 'build-info.json'), 'utf8')).toBe(EXPECTED_TEXT);
@@ -246,7 +280,7 @@ describe('the build', () => {
     await buildApp({
       plugin: createBuildInfoFilePlugin({
         options: { root, fileName: 'meta/info.json' },
-        sources: fakeSources(),
+        sources: makeFakeSources(),
       }),
     });
 
@@ -258,30 +292,37 @@ describe('the build', () => {
   test('without a commit the build fails with a message that names the fix', async () => {
     const plugin = createBuildInfoFilePlugin({
       options: { root },
-      sources: fakeSources({ record: { ...STAMP, commit: BuildInfoRegistry.UNSPECIFIED } }),
+      sources: makeFakeSources({ record: withoutCommit() }),
     });
 
-    expect(String(await rejectionOf(buildApp({ plugin })))).toContain('APP_BUILD_COMMIT');
+    expect(String(await getRejection({ task: buildApp({ plugin }) }))).toContain(
+      'APP_BUILD_COMMIT',
+    );
   });
 
   test('with the unspecified policy the build keeps going', async () => {
     await buildApp({
       plugin: createBuildInfoFilePlugin({
         options: { root, onUnresolved: UnresolvedPolicies.UNSPECIFIED },
-        sources: fakeSources({ record: { ...STAMP, commit: BuildInfoRegistry.UNSPECIFIED } }),
+        sources: makeFakeSources({ record: withoutCommit() }),
       }),
     });
 
-    expect(JSON.parse(readFileSync(join(root, 'dist', 'build-info.json'), 'utf8')).commit).toBe(
-      BuildInfoRegistry.UNSPECIFIED,
+    const info: IBuildInfoFile = JSON.parse(
+      readFileSync(join(root, 'dist', 'build-info.json'), 'utf8'),
     );
+
+    expect(info.commit).toBe(BuildInfoRegistry.UNSPECIFIED);
   });
 });
 
 describe('the default sources, as a build under Node uses them', () => {
   let root: string;
   const saved: Record<string, string | undefined> = {};
-  const ENVIRONMENT = { APP_BUILD_COMMIT: '0123456789abcdef0123', APP_BUILD_BRANCH: 'release/1.2' };
+  const ENVIRONMENT = {
+    APP_BUILD_COMMIT: '0123456789abcdef0123',
+    APP_BUILD_BRANCH: 'release/1.2',
+  };
 
   beforeAll(() => {
     root = makeScratch({ prefix: 'build-info-real-' });
@@ -314,7 +355,9 @@ describe('the default sources, as a build under Node uses them', () => {
       build: { outDir: 'dist', rolldownOptions: { input: 'src/main.ts' } },
     });
 
-    const info = JSON.parse(readFileSync(join(root, 'dist', 'build-info.json'), 'utf8'));
+    const info: IBuildInfoFile = JSON.parse(
+      readFileSync(join(root, 'dist', 'build-info.json'), 'utf8'),
+    );
 
     expect(info.service).toBe('@acme/shop');
     expect(info.version).toBe('1.2.3');

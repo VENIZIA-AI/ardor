@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   buildFixture,
   linkAllInstalledPackages,
@@ -12,11 +14,9 @@ import {
   writeFiles,
 } from './fixture';
 
-// vitejs/vite#21866: Rolldown can run a split-off chunk before the module that sets up
-// `reflect-metadata`, and a DI package then fails on `Reflect.getMetadata`. The Vite team's answer is
-// `output.strictExecutionOrder`, which the preset turns on. The fixture is a DI library that needs
-// `Reflect.getMetadata` the moment it is evaluated (tsyringe and inversify do), split into a chunk
-// of its own the way the preset's chunk groups can split a package.
+// vitejs/vite#21866: Rolldown can run a split-off chunk before `reflect-metadata`. The fixture is a
+// DI library that needs `Reflect.getMetadata` as it is evaluated (tsyringe and inversify do), in a
+// chunk of its own. `output.strictExecutionOrder` is the fix, and the preset turns it on.
 const GUARDED_PACKAGE = '@fixture/guarded-di';
 const GUARDED_GROUP = { name: 'di', test: /@fixture[\\/]guarded-di/ };
 
@@ -52,8 +52,11 @@ const guardedFiles = {
 };
 
 describe('the preset turns on output.strictExecutionOrder', () => {
-  test('its vite config sets the flag', () => {
-    expect(readFileSync(PRESET_VITE_CONFIG, 'utf8')).toMatch(/strictExecutionOrder:\s*true/);
+  test('its vite config sets the flag as the first option of build.rolldownOptions.output', () => {
+    // Comments may sit before it; a commented-out line does not match.
+    expect(readFileSync(PRESET_VITE_CONFIG, 'utf8')).toMatch(
+      /rolldownOptions:\s*\{\s*output:\s*\{(?:\s*\/\/[^\n]*)*\s*strictExecutionOrder:\s*true,/,
+    );
   });
 });
 
@@ -71,15 +74,16 @@ describe('what output.strictExecutionOrder prevents', () => {
     removeScratch({ root });
   });
 
-  // Fails the day Rolldown orders the fixture correctly on its own: then the flag, and the 3% it costs, have no case left.
+  // Fails the day Rolldown orders the fixture correctly on its own: then the flag has no case left.
   test('with the flag off a split chunk runs before reflect-metadata and the DI module fails', async () => {
     await buildFixture({ root, chunkGroups: [GUARDED_GROUP] });
     const run = await runBuiltEntry({ root });
 
     if (run.exitCode === 0) {
-      throw new Error(
-        'Rolldown now orders the fixture correctly without output.strictExecutionOrder: drop the flag from the preset (vitejs/vite#21866).',
-      );
+      throw getError({
+        message:
+          'Rolldown now orders the fixture correctly without output.strictExecutionOrder: drop the flag from the preset (vitejs/vite#21866).',
+      });
     }
 
     expect(run.stderr).toContain('Reflect.getMetadata is not a function');
@@ -95,7 +99,7 @@ describe('what output.strictExecutionOrder prevents', () => {
   });
 });
 
-describe('the real ARDOR stack with the preset chunk groups and the flag on', () => {
+describe('the real ARDOR stack, with a React chunk group like the preset and the flag on', () => {
   let root: string;
 
   beforeAll(() => {

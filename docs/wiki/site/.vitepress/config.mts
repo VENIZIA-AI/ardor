@@ -590,7 +590,13 @@ const config = defineConfig({
     ],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'ARDOR - Shape your admin panels.' }],
+    [
+      'meta',
+      {
+        property: 'og:title',
+        content: 'ARDOR - Shape your admin panels. ARDOR tempers the surface.',
+      },
+    ],
     [
       'meta',
       {
@@ -606,7 +612,7 @@ const config = defineConfig({
       'meta',
       {
         name: 'twitter:title',
-        content: 'ARDOR - Shape your admin panels.',
+        content: 'ARDOR - Shape your admin panels. ARDOR tempers the surface.',
       },
     ],
     [
