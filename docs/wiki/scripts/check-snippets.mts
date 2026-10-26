@@ -33,6 +33,8 @@ const AMBIENT: Record<string, string> = {
     "import type { ReactNode as PreludeListNode } from 'react';\ndeclare const ProductList: () => PreludeListNode;",
   PricingService: 'declare class PricingService {\n  quote(): Promise<number>;\n}',
   messages: 'declare const messages: { app: { products: { title: string; empty: string } } };',
+  Application:
+    "import type { BaseArdorApplication as PreludeApplication } from '@venizia/ardor';\ndeclare const Application: new () => PreludeApplication;",
   container:
     "import type { Container as PreludeContainer } from '@venizia/ignis-inversion';\ndeclare const container: PreludeContainer;",
 };
@@ -146,6 +148,7 @@ const compilerOptions: ts.CompilerOptions = {
   paths: {
     '@venizia/ardor': [join(REPO, 'packages/ardor/dist/index.d.ts')],
     '@venizia/ardor/repository': [join(REPO, 'packages/ardor/dist/repository.d.ts')],
+    '@venizia/ardor/testing': [join(REPO, 'packages/ardor/dist/testing.d.ts')],
     '@venizia/ardor/vite': [join(REPO, 'packages/ardor/dist/vite/index.d.ts')],
     vite: [join(REPO, 'packages/ardor/node_modules/vite/dist/node/index.d.ts')],
     '@venizia/ardor-kernel': [join(REPO, 'packages/kernel/dist/index.d.ts')],

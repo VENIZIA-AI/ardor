@@ -12,6 +12,7 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-27 | [assertArdorApplicationBoots proves an application boots, and the preset ships a boot test](./2026-10-27-assert-ardor-application-boots) | New Feature |
 | 2026-10-26 | [Everything since ARDOR 0.4.3 in one place, with an upgrade checklist](./2026-10-26-batch-overview) | New Feature |
 | 2026-10-26 | [ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes](./2026-10-26-ignis-0-4-3-repository-exports) | Enhancement |
 | 2026-10-26 | [The kernel description says what the kernel holds, and the licence and the READMEs follow the company name](./2026-10-26-package-metadata) | Enhancement |

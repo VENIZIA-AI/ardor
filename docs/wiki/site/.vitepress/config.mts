@@ -76,6 +76,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Repositories', link: '/references/repository' },
       { text: 'Hooks', link: '/references/hooks' },
+      { text: 'Testing', link: '/references/testing' },
     ],
   },
 ];
@@ -119,6 +120,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     text: 'History',
     collapsed: false,
     items: [
+      {
+        text: '2026-10-27',
+        collapsed: true,
+        items: [
+          {
+            text: 'assertArdorApplicationBoots proves an application boots, and the preset ships a boot test',
+            link: '/changelogs/2026-10-27-assert-ardor-application-boots',
+          },
+        ],
+      },
       {
         text: '2026-10-26',
         collapsed: true,

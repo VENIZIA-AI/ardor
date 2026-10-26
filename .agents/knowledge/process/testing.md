@@ -20,6 +20,10 @@ ARDOR tests run on Bun's built-in test runner (`bun:test`), driven through Makef
 
 Follow [Testing conventions](/conventions/testing-conventions.md) for naming and structure. Put the `*.test.ts` file under the package's `src/__tests__/`, mirroring the path of the module it exercises. Use `describe`/`test` blocks from `bun:test`, and prefer small option-object helpers (`createService`, `createApplicationInfo`, `createRestDataProviderOptions` style factories) over duplicating construction logic across test cases - this mirrors the [Options objects](/conventions/options-objects.md) convention used in production code.
 
+## Proving an application boots
+
+`assertArdorApplicationBoots` (`@venizia/ardor/testing`) is the one test an app needs for "does it start": an unregistered injection, a missing provider or a lazy locale that cannot load fails it, with no browser and no network. Its tests use a hand-written `BaseArdorApplication` fixture and bind services in `bindContext()`; they cover the incident shape (a service injecting a key nobody bound), a skip that matches nothing, an empty application, a second start of one instance, and `fetch` being replaced and restored on both paths.
+
 ## Positive control procedure
 
 Before trusting a test that asserts a failure path or an error condition, temporarily break the code (or invert the assertion) and confirm the test actually fails. A test that always passes regardless of the implementation is worse than no test. This matters most for auth-recovery and no-auth-path tests, where a silently-vacuous assertion would hide a real security regression - see [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
