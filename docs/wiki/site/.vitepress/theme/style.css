@@ -2245,8 +2245,8 @@ html:not(.dark) .ar-fill--muted {
   height: 18px;
 }
 
-/* The header divider of VitePress (menu | social links): 1px, 24px high, 8px each side. */
-.VPNavBarSocialLinks .VPSocialLink[aria-label='Venizia']::before {
+/* A divider before the wordmark in every social links row (header, flyout, mobile menu): 1px, 24px high, 16px of room to each icon like VitePress's own. */
+.VPSocialLinks .VPSocialLink[aria-label='Venizia']::before {
   margin: 0 16px 0 8px;
   width: 1px;
   height: 24px;
