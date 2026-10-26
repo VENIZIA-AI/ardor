@@ -1986,71 +1986,36 @@ html:not(.dark) .ar-btn--secondary:hover {
   color: var(--ar-text-3) !important;
 }
 
-.ar-bars {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ar-s4);
-}
-
-.ar-bar-row {
-  display: flex;
-  align-items: center;
-  gap: var(--ar-s4);
-}
-
-.ar-bar-row__name {
-  width: 168px;
+.ar-pkgs {
+  width: 100%;
+  border-collapse: collapse;
   font-size: var(--ar-fs-sm);
-  color: var(--ar-text-2);
-  text-align: right;
-  overflow-wrap: anywhere;
-  font-weight: 500;
-  flex-shrink: 0;
 }
 
-.ar-bar-row--hl .ar-bar-row__name {
-  color: var(--ar-text);
-}
-
-.ar-track {
-  flex: 1;
-  height: 30px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--ar-r-sm);
-  overflow: hidden;
-}
-
-html:not(.dark) .ar-track {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.ar-fill {
-  height: 100%;
-  border-radius: var(--ar-r-sm);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: var(--ar-s3);
+.ar-pkgs th {
+  padding: var(--ar-s2) var(--ar-s3);
+  text-align: left;
   font-size: var(--ar-fs-caption);
-  font-weight: 700;
-}
-
-/* ARDOR bar: gradient fill, dark label for contrast on the gradient */
-.ar-fill--ig {
-  background: var(--ar-gradient);
-  color: #07090b; /* intentional: dark contrast on the water gradient */
-}
-
-/* Other frameworks: neutral muted fill */
-.ar-fill--muted {
-  background: #3a3338;
-  color: var(--ar-text-2);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ar-text-3);
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
-html:not(.dark) .ar-fill--muted {
-  background: #c8bfc4;
-  color: var(--ar-text-3);
+.ar-pkgs td {
+  padding: var(--ar-s3);
+  color: var(--ar-text-2);
+  border-bottom: 1px solid var(--vp-c-divider);
+  vertical-align: top;
+}
+
+.ar-pkgs td:first-child {
+  white-space: nowrap;
+}
+
+.ar-pkgs td:first-child code {
+  color: var(--ar-text);
 }
 
 /* ── Honest-fit positioning ───────────────────────────────────────────────── */
