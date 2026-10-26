@@ -12,7 +12,10 @@ Every entry follows the [template](./template); a release without an entry is no
 
 | Date | Title | Type |
 |------|-------|------|
+| 2026-10-26 | [Everything since ARDOR 0.4.3 in one place, with an upgrade checklist](./2026-10-26-batch-overview) | New Feature |
 | 2026-10-26 | [ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes](./2026-10-26-ignis-0-4-3-repository-exports) | Enhancement |
+| 2026-10-26 | [The kernel description says what the kernel holds, and the licence and the READMEs follow the company name](./2026-10-26-package-metadata) | Enhancement |
+| 2026-10-26 | [Repository tooling - ardor tests in CI, a Node-only entry in the build, the shared wiki theme under test](./2026-10-26-repository-tooling) | Enhancement |
 | 2026-10-26 | [The preset keeps chunks in import order, and buildInfoFile writes build-info.json](./2026-10-26-vite-build-info) | New Feature |
 | 2026-10-26 | [Wiki: A New Home Page, a Venizia Switcher and a Smooth Light and Dark Switch](./2026-10-26-wiki-new-look) | Enhancement |
 | 2026-10-25 | [ARDOR 0.4.1 follows IGNIS 0.4.1](./2026-10-25-ardor-0-4-1) | Breaking Change |

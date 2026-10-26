@@ -124,8 +124,20 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
         collapsed: true,
         items: [
           {
+            text: 'Everything since ARDOR 0.4.3 in one place, with an upgrade checklist',
+            link: '/changelogs/2026-10-26-batch-overview',
+          },
+          {
             text: 'ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes',
             link: '/changelogs/2026-10-26-ignis-0-4-3-repository-exports',
+          },
+          {
+            text: 'The kernel description says what the kernel holds, and the licence and the READMEs follow the company name',
+            link: '/changelogs/2026-10-26-package-metadata',
+          },
+          {
+            text: 'Repository tooling - ardor tests in CI, a Node-only entry in the build, the shared wiki theme under test',
+            link: '/changelogs/2026-10-26-repository-tooling',
           },
           {
             text: 'The preset keeps chunks in import order, and buildInfoFile writes build-info.json',

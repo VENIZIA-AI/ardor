@@ -5,7 +5,7 @@ description: What an ARDOR app needs in its Vite 8 config - the chunk order flag
 
 # Vite setup
 
-An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` already has what is below; this page is for an app that wrote its own config, and for the `buildInfoFile` plugin, which the preset does not use.
+An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` already has what is below (since ARDOR 0.4.4); this page is for an app that wrote its own config, and for the `buildInfoFile` plugin (`@venizia/ardor/vite`, also since 0.4.4), which the preset does not use.
 
 ## Run modules in the order they import each other
 
