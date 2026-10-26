@@ -23,7 +23,7 @@ ARDOR ships no UI components and no design tokens - buttons, dialogs and styling
 
 ## The four packages
 
-- [`@venizia/ardor-kernel`](/packages/kernel.md) - isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetchers, socket client. No React, no react-admin.
+- [`@venizia/ardor-kernel`](/packages/kernel.md) - isomorphic core: application base, service and provider bases, request and auth constants, binding keys, logger, the network request service, runtime config, the HTTP repository (from IGNIS). No React, no react-admin.
 - [`@venizia/ardor-react`](/packages/react.md) - React bindings: the application context, `useInjectable`, typed Redux hook factories, and UI hooks such as `useDebounce`, `useAutosave`, `useConfirm`, `useSizer`. No react-admin.
 - [`@venizia/ardor-admin`](/packages/admin.md) - the react-admin adapter: `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider`, the `ArdorApplication` root component, `useTranslate`, and the English/Vietnamese message bundles. This is the only package that imports react-admin.
 - [`@venizia/ardor`](/packages/ardor.md) - the umbrella entry point. It re-exports kernel, react and admin so an application needs one dependency, and adds nothing of its own.

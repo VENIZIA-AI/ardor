@@ -1,6 +1,6 @@
 <div align="center">
 
-# :droplet: ARDOR - @venizia/ardor-docs
+# <img src="https://ardor.venizia.ai/logo.svg" alt="" height="32" align="top"> ARDOR - @venizia/ardor-docs
 
 **Documentation site for the ARDOR framework**
 
@@ -50,3 +50,16 @@ against this checkout, which searches this site, its changelogs and the agent kn
 ## License
 
 MIT - see [LICENSE.md](LICENSE.md).
+
+---
+
+<p align="center">
+  <a href="https://venizia.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://venizia.ai/assets/logo-white.svg">
+      <img src="https://venizia.ai/assets/logo.svg" alt="VENIZIA" height="28">
+    </picture>
+  </a>
+  <br>
+  <sub>ARDOR is built and maintained by <a href="https://venizia.ai">VENIZIA</a>.</sub>
+</p>

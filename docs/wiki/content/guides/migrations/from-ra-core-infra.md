@@ -12,7 +12,7 @@ specifier, so the migration is four mechanical edits, not a redesign.
 
 ## What ARDOR is
 
-ARDOR is the frontend member of the VENIZIA family. IGNIS is the backend framework; ARDOR is a
+ARDOR is the frontend member of the [VENIZIA](https://venizia.ai) family. IGNIS is the backend framework; ARDOR is a
 consumer of IGNIS - it builds a frontend application on `@venizia/ignis-inversion` for inversion of
 control and `@venizia/ignis-filter` for the query vocabulary the data layer speaks.
 

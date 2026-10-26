@@ -5,7 +5,7 @@ ARDOR is a TypeScript frontend application framework built on [IGNIS](https://ig
 
 ## MIT License
 
-Copyright (c) 2025 VENIZIA Ltd. Co.
+Copyright (c) 2025 Venizia Co., Ltd.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,6 @@ these projects.
 | [React Redux](https://github.com/reduxjs/react-redux) | MIT | React bindings for Redux |
 | [TanStack Query](https://github.com/TanStack/query) | MIT | Asynchronous state management |
 | [React Router](https://github.com/remix-run/react-router) | MIT | Routing |
-| [Socket.IO Client](https://github.com/socketio/socket.io) | MIT | Real-time bidirectional communication |
 | [Lodash](https://github.com/lodash/lodash) | MIT | Utility library |
 | [node-polyglot](https://github.com/airbnb/polyglot.js) (`ra-i18n-polyglot`) | BSD-2-Clause | Internationalisation |
 
@@ -74,7 +73,6 @@ ARDOR is inspired by and built upon the work of many open-source projects:
 
 - **[IGNIS](https://ignis.venizia.ai)** - The backend framework ARDOR is the frontend sibling of
 - **[react-admin](https://marmelab.com/react-admin/)** by Marmelab - The admin framework ARDOR adapts
-- **[LoopBack 4](https://loopback.io/)** by IBM/StrongLoop - Inspiration for the binding-key and provider patterns
 
 We thank all the maintainers and contributors of these projects for their excellent work.
 

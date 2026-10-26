@@ -24,7 +24,7 @@ Create `src/main.tsx`:
 
 Subclasses implement two abstract methods:
 
-- **`getAppInfo()`**: Returns an `IApplicationInfo` object containing `name`, `version`, and `description`. `preConfigure()` binds this metadata under `CoreBindings.APPLICATION_INFO`. Return a plain object, because the value is bound directly without awaiting.
+- **`getAppInfo()`**: Returns an `IApplicationInfo` object containing `name`, `version`, and `description`. `preConfigure()` binds this metadata under `CoreBindings.APPLICATION_INFO`. Return the object, or a promise of it: `preConfigure()` waits for a promise before it binds the rest.
 - **`bindContext()`**: Hook for registering container bindings by hand (such as `this.service()`, `this.repository()`, `this.dataSource()`, `this.component()`, or `this.bind()`). Bindings placed here override any binding declared by a configuration class or stereotype decorator.
 
 ## The start() Lifecycle

@@ -30,3 +30,16 @@ Sign in with a user seeded in `vert` (`bun run seed:authz` there creates test ac
 | `src/application.ts` | The application alone, with `AutoArtifacts` from the Vite plugin |
 | `src/constants/vert-paths.ts`, `src/services/`, `src/providers/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, the 401 refresh as a `refreshToken` hook of a network service subclass returned by `createNetworkService`, and the bindings - one decorated class per file |
 | `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useInjectable`, `useNotifyError` with an `ApplicationError` |
+
+---
+
+<p align="center">
+  <a href="https://venizia.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://venizia.ai/assets/logo-white.svg">
+      <img src="https://venizia.ai/assets/logo.svg" alt="VENIZIA" height="28">
+    </picture>
+  </a>
+  <br>
+  <sub>ARDOR is built and maintained by <a href="https://venizia.ai">VENIZIA</a>.</sub>
+</p>

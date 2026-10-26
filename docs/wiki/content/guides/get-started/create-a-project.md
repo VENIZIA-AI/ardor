@@ -7,7 +7,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-Both commands need VULCAN 0.4.0 or newer: it writes the `bunfig.toml` that sets the format and sorts the `package.json` it generates (`--scope` for an app arrived in 0.3.11). `bun x` fetches the latest release, so you have it unless you pinned an older one.
+You get an ARDOR admin on Vite and React, styled with Tailwind CSS and shadcn components, with the REST data provider and i18n, plus a Dockerfile for an nginx image that gzips, answers `/health`, sends security headers and reads its configuration when the container starts. `bun x` fetches the latest VULCAN release, so you have the current preset unless you pinned an older one.
 
 ## Initialize a New Monorepo
 
@@ -21,7 +21,7 @@ To name the app's package with a scope, add `--scope @acme`: the package is `@ac
 
 In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled (the scope is an optional question, empty for none). Then `vulcan sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan sync --agents claude,omp (or none)` for choosing later.
 
-The command prints `created <path>` for each file, runs `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
+The command prints a `created` line for each file of the app, runs `git init`, `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
 
 ```text
 Done. Next:
@@ -36,9 +36,9 @@ The command generates the project folder `demo/`:
 ```text
 demo/
   package.json            workspaces, one catalog with every version
-  Makefile  README.md  AGENTS.md  .mcp.json  .gitignore  .dockerignore  bunfig.toml
+  Makefile  README.md  AGENTS.md  .gitignore  .dockerignore  bunfig.toml
   .configs/vulcan.config.mts
-  .agents/rules.md  .agents/vulcan.manifest.json  .agents/knowledge/{index.md,packages/admin.md}
+  .agents/rules.md  .agents/knowledge/{index.md,packages/admin.md}
   apps/admin/
     package.json  tsconfig.json  .env.example
     .configs/lints/{oxlint.config.mts,eslint.config.mjs,.ignore}  .configs/formatters/.ignore
@@ -52,15 +52,15 @@ demo/
     src/themes/index.css  src/utilities/tw.utility.ts
 ```
 
-`vulcan sync` also writes your agent files (`CLAUDE.md`, `.claude/`), which `.gitignore` keeps out of git. The compile check leaves `apps/admin/dist/`. The application is small:
+`vulcan sync` also writes `.mcp.json`, `.agents/vulcan.manifest.json` and your agent files (`CLAUDE.md`, `.claude/`); `.gitignore` keeps the per-machine ones out of git. The compile check leaves `apps/admin/dist/`. Where things live:
 
 - `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
 - `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
-- `src/pages/home.tsx` is the one page: the ARDOR logo, the app name and the message the backend answers to `GET /api/hello`, in a card on a soft wash of the brand gradient. It shows a placeholder while it loads, and when the backend is down it says so and shows `bun run server:dev`, the command that starts it, with a button to try again. The call goes through the data provider's `send`, not a raw `fetch`. Replace the page with your own.
+- `src/pages/home.tsx` is the one page: the ARDOR logo, the app name and the message the backend answers to `GET /api/hello`. It shows a placeholder while it loads, and when the backend is down it says so and shows `bun run server:dev`, the command that starts it, with a button to try again. The call goes through the data provider's `send`, not a raw `fetch`. Replace it with your own page.
 - `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them. There is no `components.json` (the app root holds nothing else): to add more with the shadcn CLI, run `bunx shadcn init` first, which writes its own.
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
-- `src/application.test.ts` is the one test: it starts the container and checks that the configuration binds the REST data provider options.
+- `src/application.test.ts` has two tests: the container binds the REST data provider options (the API is `/api` by default), and the API url is the one `config.js` wrote when the container started.
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
 - `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
 - `bunfig.toml` at the root of the monorepo holds the format of every file: its `[fmt]` section sets the print width, single quotes and arrow parentheses, and `devz lint` formats with `bun fmt`, which reads it from the app's folder up. There is no formatter config in the app.
@@ -80,7 +80,7 @@ docker build -f apps/admin/.configs/builders/Dockerfile -t admin \
 docker run --rm --network host -e API_UPSTREAM=http://127.0.0.1:3000 admin
 ```
 
-Open `http://localhost:8080`. On Linux, `--network host` lets the container reach the backend that `make dev` serves on port 3000 of your machine, so there is no `-p`. In compose or a cluster, `API_UPSTREAM` is the service name (`http://api:3000`) and the container needs no special flag. nginx resolves the name with DNS, not with `/etc/hosts`, so a name added with `--add-host` does not work; an IP address does. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
+Open `http://localhost:8080`. On Linux, `--network host` lets the container reach a backend listening on port 3000 of your machine (an IGNIS app added to the monorepo serves there; `make dev` of this project starts only the admin), so there is no `-p`. In compose or a cluster, `API_UPSTREAM` is the service name (`http://api:3000`) and the container needs no special flag. nginx resolves the name with DNS, not with `/etc/hosts`, so a name added with `--add-host` does not work; an IP address does. A host that does not resolve does not stop the container: the page answers, and `/api` answers 502 until the name resolves.
 
 What the image does:
 
@@ -106,7 +106,7 @@ docker run --rm -p 8080:8080 \
   admin
 ```
 
-At start the image writes `/config.js` from the container's `VITE_` variables, and `index.html` loads it before the app. The app reads a value with `getRuntimeConfig`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. Pass `required: true` for a value the app cannot run without: the result is then a `string`, and a missing value throws an error that names the key (never a value) and whose `normalized.code` is `RUNTIME_CONFIG_REQUIRED_CODE`, so code can tell it without reading the message. The preset uses it once, for `VITE_API_URL`, in `src/configurations/admin.configuration.ts`.
+At start the image writes `/config.js` from the container's `VITE_` variables, as `window.__APP_CONFIG__`, and `index.html` loads it before the app. The app reads a value with `getRuntimeConfig`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. Pass `required: true` for a value the app cannot run without: the result is then a `string`, and a missing value throws an error that names the key (never a value) and whose `normalized.code` is `RUNTIME_CONFIG_REQUIRED_CODE`, so code can tell it without reading the message. The preset calls it for `VITE_API_URL`, with the default `/api`, in `src/configurations/admin.configuration.ts`; `required: true` is for values you add.
 
 | Rule | What it means |
 |---|---|
@@ -156,7 +156,7 @@ bun x @venizia/vulcan add --preset ardor --app web --frontend-dir apps --api api
 
 `--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. `--scope @acme` names the package `@acme/web` and leaves the folder `apps/web`. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
-The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.4.0 or newer, the release whose `devz` formats with `bun fmt`): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs ^0.2.2 - move the catalog first`.
+The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.4.0 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs <the range ARDOR supports> - move the catalog first`.
 
 ## Add a Feature Library
 
@@ -190,4 +190,4 @@ An app mounts the feature by listing it in `features()`: `import { feature } fro
 After `init` or `add`: `cd <project>`, then `make dev` at the root (or `bun run server:dev` in `apps/admin`) serves the admin on `http://localhost:5173/`. In a library, `bun run test` runs the feature's test.
 
 - Already have a Vite project? See [Set up your environment](./setup) for the manual way.
-- For a guided walk through the code, see [5-minute quickstart](./5-minute-quickstart).
+- For a guided walk through the code, see the [Quickstart](./5-minute-quickstart).

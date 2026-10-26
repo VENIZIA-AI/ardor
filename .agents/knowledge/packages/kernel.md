@@ -8,7 +8,7 @@ tags: [kernel, package, isomorphic, ignis, core]
 
 ## Role
 
-`@venizia/ardor-kernel` is the bottom layer of ARDOR. It contains everything that does not need React, react-admin, or a Node runtime: the application base built on IGNIS inversion, service and provider base classes, constants, binding keys, a logger, network fetchers, a socket client, and general-purpose utilities. See [What is ARDOR](/overview/what-is-ardor.md) for where this sits in the whole framework.
+`@venizia/ardor-kernel` is the bottom layer of ARDOR. It contains everything that does not need React, react-admin, or a Node runtime: the application base built on IGNIS inversion, service and provider base classes, constants, binding keys, a logger, the network request service, runtime configuration (`getRuntimeConfig`), the HTTP repository re-exported from IGNIS on `@venizia/ardor-kernel/repository`, and general-purpose utilities. See [What is ARDOR](/overview/what-is-ardor.md) for where this sits in the whole framework.
 
 The defining rule is the purity gate: kernel code must run in a browser or in a plain TypeScript process without any Node builtins (no `fs`, `path`, `http`, etc.) and without importing `react` or `ra-core`. This is what lets the same kernel be used by the browser data client, by [react](/packages/react.md), and by anything embedding ARDOR outside a UI. Consumers usually never install the kernel directly - most applications depend on [`@venizia/ardor`](/packages/ardor.md), which re-exports it, or on [`@venizia/ardor-react`](/packages/react.md) which builds on it.
 

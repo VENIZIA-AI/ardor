@@ -38,7 +38,7 @@ export function PriceDisplay(props: { amount: number }) {
 
 ## Stereotype decorators and derived keys
 
-ARDOR exports four class stereotypes from `@venizia/ardor` (re-exported from `packages/kernel/src/base/metadata/index.ts`). Each derives a conventional binding key `<namespace>.<ClassName>` recorded in `MetadataRegistry`:
+ARDOR exports class stereotypes from `@venizia/ardor` (re-exported from `packages/kernel/src/base/metadata/index.ts`), among them `@configuration()`, which [Configuration](./configuration) covers. These four derive a conventional binding key `<namespace>.<ClassName>` recorded in `MetadataRegistry`:
 
 | Stereotype decorator | Namespace | Default derived key |
 | --- | --- | --- |
@@ -174,5 +174,5 @@ Add the stereotype decorator (`@service()`, `@repository()`, `@datasource()`, or
 
 - [Application](./application) - Application container lifecycle and startup
 - [Configuration](./configuration) - Configuring providers with `@configuration` and `@provide`
-- [5-Minute Quickstart](../get-started/5-minute-quickstart) - End-to-end working example
+- [Quickstart](../get-started/5-minute-quickstart) - End-to-end working example
 - [Hooks](../../references/hooks) - Complete reference for React hooks

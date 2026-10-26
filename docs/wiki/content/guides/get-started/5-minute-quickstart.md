@@ -1,18 +1,19 @@
 ---
-title: 5-Minute Quickstart
-description: Build a running ARDOR admin in five minutes with a datasource, repository, configuration class, resource page, and login page.
+title: Quickstart
+description: Build a small ARDOR admin by hand in a Vite project, with a datasource, repository, configuration class, resource page, and login page.
 ---
 
-# 5-Minute Quickstart
+# Quickstart
 
-Build a running ARDOR admin: one datasource, one repository, an application configuration, a resource page, and a login page.
+Build a small ARDOR admin by hand: one datasource, one repository, an application configuration, a resource page, and a login page. You write eight files and run them against a stub API.
 
-**Time to complete:** ~5 minutes
+> [!TIP]
+> Want a running admin without writing these files? [Create a project](create-a-project) generates one with a single command. This page is the manual route, to show what each piece does.
 
 > [!NOTE]
-> This quickstart assumes you have a Vite + React project with ARDOR installed and TypeScript configured for decorators. If you need to set up a project, follow [Setup](setup) first.
+> Start from the Vite `react-ts` project of [Setup](setup): ARDOR installed, TypeScript set up for decorators, and the `@/*` path alias that the imports below use. Step 7 uses `build.rolldownOptions`, which needs Vite 8 or newer (`bun create vite` installs the latest), and Setup installs `@venizia/ignis-connectors`, which `@venizia/ardor/repository` needs.
 >
-> You also need a REST API for the data provider. The examples talk to the runnable stub API at `examples/5-mins-qs/api/server.ts`.
+> Step 7 changes how the project builds, so do it first if you want the files to compile as you add them. You also need a REST API for the data provider: the examples talk to the runnable stub API at `examples/5-mins-qs/api/server.ts`.
 
 ## 1. The datasource
 
@@ -20,7 +21,7 @@ Create `src/datasources/api.datasource.ts`:
 
 <<< @/../../../examples/5-mins-qs/src/datasources/api.datasource.ts{ts}
 
-`src/datasources/api.datasource.ts` defines the transport for API requests. `@datasource()` registers the class with the container, and `baseUrl: '/api'` sets a relative path that Vite proxies to the backend. It uses `DefaultNetworkRequestService.readAuthTokenFromStorage` to attach stored authentication tokens to outgoing requests.
+`src/datasources/api.datasource.ts` defines the transport for API requests. `@datasource()` registers the class with the container, and `baseUrl: '/api'` sets a relative path that Vite proxies to the backend. It uses `DefaultNetworkRequestService.readAuthTokenFromStorage` to attach stored authentication tokens to outgoing requests. To send the same headers as the data provider and share its 401 refresh, spread `getDataSourceAuth()` instead: see [Resources and pages](../core-concepts/resources-and-pages).
 
 ## 2. The repository
 
@@ -55,7 +56,7 @@ Create `src/pages/product-list.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/pages/product-list.tsx{tsx}
 
-`src/pages/product-list.tsx` renders the product listing using react-admin's `useListContext` for data and pagination. It resolves `ProductRepository` by class with `useRepository()` to fetch the expensive products count independently. `useTranslate()` localizes labels using keys registered in the configuration.
+`src/pages/product-list.tsx` renders the product listing from the page of products that `useListContext` holds (`data`, `total`, `isPending`), and logs out with `useLogout`. It resolves `ProductRepository` by class with `useRepository()` to fetch the expensive products count independently. `useTranslate()` localizes labels using keys registered in the configuration.
 
 Create `src/pages/login.tsx`:
 
@@ -69,11 +70,11 @@ Create `src/main.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/main.tsx{tsx}
 
-`src/main.tsx` starts the application container and mounts the React root. `reduxStore` is required by `IApplication` and goes to the Redux provider. `await application.start()` executes `preConfigure()`, which binds `CoreBindings.APPLICATION_INSTANCE`, `CoreBindings.APPLICATION_INFO`, discovered artifacts and their `@provide` methods via `registerArtifacts()`, `CoreBindings.FEATURES` via `registerFeatures()`, `bindingList()`, and then `bindContext()`. `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
+`src/main.tsx` starts the application container and mounts the React root. `reduxStore` is required by `IApplication` and goes to the Redux provider. `await application.start()` binds the application, its info, the discovered classes and their `@provide` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
 
 ## 7. Configure Vite
 
-Replace the template's `vite.config.ts` at the project root with this one. `bun run dev` and `bun run build` read that file, so a config kept anywhere else never runs, and Vite cannot resolve the decorated classes:
+Replace the template's `vite.config.ts` at the project root with this one. `bun run dev` and `bun run build` read that file, so a config kept anywhere else never runs, and Vite cannot resolve the decorated classes. (The example repository keeps its copy at `.configs/builders/vite.config.ts` and passes it with `--config`.)
 
 <<< @/../../../examples/5-mins-qs/.configs/builders/vite.config.ts{ts}
 
@@ -95,7 +96,7 @@ Start the Vite development server in another terminal:
 bun run dev
 ```
 
-Open `http://localhost:5173` in your browser. Sign in with username `admin` and password `admin` to view the product list.
+Open `http://localhost:5173` in your browser. Sign in with username `admin` and password `admin` to see the product list with its total and the count of expensive products.
 
 If you have your own IGNIS API, skip the stub and point the proxy in `vite.config.ts` at that API.
 
@@ -108,7 +109,7 @@ For complete authentication options and contracts, see [Auth provider](../../ref
 
 ## What you built
 
-A running ARDOR admin with a datasource, a repository, an application configuration that wires data and authentication providers, and a localized resource page. The application discovered its decorated classes automatically through `AutoArtifacts`, and `ArdorApplication` mounted the UI with dependency injection intact.
+An ARDOR admin with a datasource, a repository, an application configuration that wires data and authentication providers, and a localized resource page. The application discovered its decorated classes through `AutoArtifacts`, and `ArdorApplication` mounted the UI with dependency injection intact. The project that [Create a project](create-a-project) generates is built the same way, plus Tailwind, an nginx image and runtime configuration.
 
 ## Next steps
 

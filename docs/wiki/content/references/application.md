@@ -146,7 +146,7 @@ Returns artifact index definitions checked by `start()` (default `[]`). `IArtifa
 | `services` | `ReadonlyArray<TClass<unknown>>` | Optional list of `@service()` classes to verify upon startup |
 | `controllers` | `ReadonlyArray<TClass<unknown>>` | Optional list of controller classes (remains empty in browser applications) |
 
-Artifact indexes ensure that bundlers do not drop classes that are only imported for decorator side-effects. The `ignis-artifacts generate` command emits the index, while the [5-minute quickstart](../guides/get-started/5-minute-quickstart) uses `AutoArtifacts` from `@venizia/ignis-boot/auto` instead. An artifact group with `isArtifactGroup: true` provides inlined `content` or a `resolve()` function that `start()` awaits dynamically.
+Artifact indexes ensure that bundlers do not drop classes that are only imported for decorator side-effects. The `ignis-artifacts generate` command emits the index, while the [Quickstart](../guides/get-started/5-minute-quickstart) uses `AutoArtifacts` from `@venizia/ignis-boot/auto` instead. An artifact group with `isArtifactGroup: true` provides inlined `content` or a `resolve()` function that `start()` awaits dynamically.
 
 ### features()
 

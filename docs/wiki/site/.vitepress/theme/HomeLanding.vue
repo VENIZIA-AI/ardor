@@ -9,11 +9,11 @@
           <div class="ar-eyebrow">
             <span class="ar-eyebrow__dot" />TypeScript · React · react-admin · IGNIS
           </div>
-          <h1>Admin apps with a<br />real <span class="ar-gtext">architecture</span></h1>
+          <h1>Admin apps on an<br />IGNIS <span class="ar-gtext">container</span></h1>
           <p class="ar-lede">
-            react-admin's data contract on IGNIS's container.
-            <b>Dependency injection, a typed REST data layer, auth recovery and i18n</b>
-            - one import, browser-pure core.
+            ra-core's CRUD contract on IGNIS's container.
+            <b>Dependency injection, a REST data provider, token refresh on 401 and i18n</b>
+            in one package, <code>@venizia/ardor</code>, with a core that uses no Node builtins.
           </p>
           <div class="ar-cta">
             <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
@@ -23,16 +23,16 @@
           </div>
           <div class="ar-stats">
             <div class="ar-stat">
-              <div class="ar-stat__n ar-gtext">1</div>
-              <div class="ar-stat__l">import to install</div>
+              <div class="ar-stat__n ar-gtext">4</div>
+              <div class="ar-stat__l">packages: kernel, react, admin, umbrella</div>
             </div>
             <div class="ar-stat">
               <div class="ar-stat__n ar-gtext">0</div>
-              <div class="ar-stat__l">Node builtins in the core</div>
+              <div class="ar-stat__l">Node builtins in kernel, react, admin</div>
             </div>
             <div class="ar-stat">
-              <div class="ar-stat__n ar-gtext">100%</div>
-              <div class="ar-stat__l">type-safe hooks</div>
+              <div class="ar-stat__n ar-gtext">0.4.3</div>
+              <div class="ar-stat__l">current release, before 1.0</div>
             </div>
           </div>
         </div>
@@ -42,28 +42,44 @@
             <span class="ar-code-win__dot" style="background: var(--ar-brand)" />
             <span class="ar-code-win__dot" style="background: var(--ar-aqua)" />
             <span class="ar-code-win__dot" style="background: var(--ar-brand-lt)" />
-            <span class="ar-code-win__filename">application.tsx</span>
-            <span class="ar-code-win__tag">live</span>
+            <span class="ar-code-win__filename">admin.configuration.ts</span>
+            <span class="ar-code-win__tag">from the preset</span>
           </div>
           <!-- v-pre: skip Vue template compilation inside the code sample -->
-          <pre v-pre><span class="ar-k">import</span> <span class="ar-s">'reflect-metadata'</span>
-<span class="ar-k">import</span> { <span class="ar-c">BaseArdorApplication</span>, <span class="ar-c">CoreBindings</span>, <span class="ar-c">DefaultRestDataProvider</span> } <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
-<span class="ar-k">import</span> { <span class="ar-d">useRepository</span>, <span class="ar-d">useTranslate</span> } <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
+          <pre v-pre><span class="ar-k">import</span> {
+  <span class="ar-k">type</span> <span class="ar-c">BaseArdorApplication</span>,
+  <span class="ar-d">configuration</span>,
+  <span class="ar-c">CoreBindings</span>,
+  <span class="ar-c">DefaultRestDataProvider</span>,
+  <span class="ar-d">getRuntimeConfig</span>,
+  <span class="ar-d">inject</span>,
+  <span class="ar-d">provide</span>,
+} <span class="ar-k">from</span> <span class="ar-s">'@venizia/ardor'</span>
 
-<span class="ar-k">class</span> <span class="ar-c">Application</span> <span class="ar-k">extends</span> <span class="ar-c">BaseArdorApplication</span> {
-  <span class="ar-d">bindContext</span>() {
-    <span class="ar-k">this</span>.<span class="ar-d">bind</span>({ key: <span class="ar-c">CoreBindings</span>.REST_DATA_PROVIDER_OPTIONS })
-      .<span class="ar-d">toValue</span>({ url: <span class="ar-s">'/api'</span>, noAuthPaths: [<span class="ar-s">'/auth/login'</span>] })
-    <span class="ar-k">this</span>.<span class="ar-d">bind</span>({ key: <span class="ar-c">CoreBindings</span>.DEFAULT_REST_DATA_PROVIDER })
-      .<span class="ar-d">toProvider</span>(<span class="ar-c">DefaultRestDataProvider</span>)
-    <span class="ar-k">this</span>.<span class="ar-d">repository</span>(<span class="ar-c">ProductRepository</span>)   <span class="ar-k">// -> repositories.ProductRepository</span>
+@<span class="ar-d">configuration</span>()
+<span class="ar-k">export class</span> <span class="ar-c">AdminConfiguration</span> {
+  <span class="ar-k">constructor</span>(
+    @<span class="ar-d">inject</span>({ key: <span class="ar-c">CoreBindings</span>.APPLICATION_INSTANCE })
+    <span class="ar-k">private readonly</span> application: <span class="ar-c">BaseArdorApplication</span>,
+  ) {}
+
+  @<span class="ar-d">provide</span>({ key: <span class="ar-c">CoreBindings</span>.REST_DATA_PROVIDER_OPTIONS })
+  <span class="ar-d">restDataProviderOptions</span>() {
+    <span class="ar-k">const</span> url = <span class="ar-d">getRuntimeConfig</span>({
+      key: <span class="ar-s">'VITE_API_URL'</span>,
+      buildTimeEnv: <span class="ar-k">import</span>.meta.env,
+      defaultValue: <span class="ar-s">'/api'</span>,
+    })
+
+    <span class="ar-k">return</span> { url, noAuthPathRegex: <span class="ar-s">/./</span> }
   }
-}
 
-<span class="ar-k">const</span> <span class="ar-c">ProductList</span> = () => {
-  <span class="ar-k">const</span> products = <span class="ar-d">useRepository</span>({ target: <span class="ar-c">ProductRepository</span> })
-  <span class="ar-k">const</span> translate = <span class="ar-d">useTranslate</span>()
-  <span class="ar-k">return</span> &lt;<span class="ar-c">h1</span>&gt;{translate(<span class="ar-s">'resources.product.name'</span>)}&lt;/<span class="ar-c">h1</span>&gt;
+  @<span class="ar-d">provide</span>({ key: <span class="ar-c">CoreBindings</span>.DEFAULT_REST_DATA_PROVIDER })
+  <span class="ar-d">restDataProvider</span>() {
+    <span class="ar-k">return this</span>.application
+      .<span class="ar-d">instantiate</span>(<span class="ar-c">DefaultRestDataProvider</span>)
+      .<span class="ar-d">value</span>(<span class="ar-k">this</span>.application)
+  }
 }</pre>
         </div>
       </section>
@@ -74,9 +90,9 @@
     <div class="ar-wrap">
       <section class="ar-section">
         <div class="ar-section-head">
-          <div class="ar-label">Everything you need</div>
-          <h2>Enterprise structure,<br />without the ceremony</h2>
-          <p>The patterns that scale teams - wired into a framework that doesn't slow down.</p>
+          <div class="ar-label">What is in the box</div>
+          <h2>Six pieces,<br />all in ARDOR 0.4.3</h2>
+          <p>Each one is code in this repository, with a reference page and a test.</p>
         </div>
         <div class="ar-features">
           <div class="ar-fcard">
@@ -124,7 +140,7 @@
             <h3>REST Data Provider</h3>
             <p>
               Maps react-admin pagination, sorting, and filters to IGNIS
-              <code>{ where, order, limit, skip }</code>, parsing totals from Content-Range.
+              <code>{ where, order, limit, skip }</code> and reads the total from Content-Range.
             </p>
           </div>
           <div class="ar-fcard">
@@ -148,8 +164,9 @@
             </div>
             <h3>Self-Healing Auth</h3>
             <p>
-              Handles login, logout, checkAuth, and checkError with one-shot token refresh recovery
-              on 401s and configurable no-auth paths.
+              Handles login, logout, checkAuth, and checkError. A 401 triggers one token refresh for
+              a burst of requests, then retries them. An HTTP repository can share the same token
+              and refresh through <code>getDataSourceAuth()</code>.
             </p>
           </div>
           <div class="ar-fcard">
@@ -171,8 +188,8 @@
             </div>
             <h3>Type-Safe i18n</h3>
             <p>
-              Contextual <code>useTranslate</code> hook with keys checked via module augmentation,
-              shipping with built-in en and vi bundles.
+              <code>useTranslate</code> with keys checked through module augmentation. English and
+              Vietnamese bundles are included.
             </p>
           </div>
           <div class="ar-fcard">
@@ -197,8 +214,8 @@
             </div>
             <h3>Typed Redux Hooks</h3>
             <p>
-              Factory-generated typed selectors and dispatch hooks connected seamlessly into your
-              IGNIS application container state.
+              <code>createAppSelectors</code> and <code>createAppDispatch</code> build typed
+              selector and dispatch hooks for your Redux store.
             </p>
           </div>
           <div class="ar-fcard">
@@ -220,10 +237,12 @@
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
               </svg>
             </div>
-            <h3>Socket.IO Client</h3>
+            <h3>Runtime Config and Preset</h3>
             <p>
-              The IGNIS <code>SocketIOClientHelper</code>, browser-pure and handed
-              <code>socket.io-client</code> by your application, ready to bind as a service.
+              <code>getRuntimeConfig</code> reads <code>window.__APP_CONFIG__</code>, so one built
+              image serves every environment. With <code>required: true</code> it throws an error
+              with a code when the value is missing. The preset adds an nginx image with gzip,
+              <code>/health</code> and security headers.
             </p>
           </div>
         </div>
@@ -235,37 +254,41 @@
     <div class="ar-wrap">
       <div class="ar-perf">
         <div class="ar-perf__copy">
-          <div class="ar-label">Isomorphic Core</div>
-          <h2>Frontend state has a<br />structure limit. ARDOR<br />solves it cleanly.</h2>
+          <div class="ar-label">The packages</div>
+          <h2>Take the umbrella,<br />or only the layer<br />you need.</h2>
           <p>
-            Built as an IGNIS inversion-of-control container, ARDOR eliminates spaghetti providers
-            and ad-hoc wiring while preserving react-admin data conventions.
+            The kernel is the container and has no UI. React adds the hooks. Admin adapts ra-core.
+            <code>@venizia/ardor</code> re-exports all three.
           </p>
-          <p class="ar-fine">Zero Node builtins in ardor-kernel. Isomorphic and lightweight.</p>
+          <p class="ar-fine">
+            Kernel, react and admin use no Node builtins, so they run in the browser.
+          </p>
         </div>
         <div class="ar-bars">
-          <div class="ar-bar-row">
-            <div class="ar-bar-row__name">ardor-kernel</div>
-            <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 100%">0 Node builtins</div>
-            </div>
-          </div>
           <div class="ar-bar-row ar-bar-row--hl">
-            <div class="ar-bar-row__name">ARDOR</div>
+            <div class="ar-bar-row__name">@venizia/ardor</div>
             <div class="ar-track">
-              <div class="ar-fill ar-fill--ig" style="width: 100%">1 meta-package</div>
+              <div class="ar-fill ar-fill--ig" style="width: 100%">Re-exports the three</div>
             </div>
           </div>
           <div class="ar-bar-row">
-            <div class="ar-bar-row__name">ardor-react</div>
+            <div class="ar-bar-row__name">@venizia/ardor-kernel</div>
             <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 75%">Context + Hooks</div>
+              <div class="ar-fill ar-fill--muted" style="width: 100%">
+                Container, services, runtime config
+              </div>
             </div>
           </div>
           <div class="ar-bar-row">
-            <div class="ar-bar-row__name">ardor-admin</div>
+            <div class="ar-bar-row__name">@venizia/ardor-react</div>
             <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 50%">ra-core Adapters</div>
+              <div class="ar-fill ar-fill--muted" style="width: 100%">Context and hooks</div>
+            </div>
+          </div>
+          <div class="ar-bar-row">
+            <div class="ar-bar-row__name">@venizia/ardor-admin</div>
+            <div class="ar-track">
+              <div class="ar-fill ar-fill--muted" style="width: 100%">ra-core adapter</div>
             </div>
           </div>
         </div>
@@ -303,15 +326,15 @@
             </ul>
           </div>
           <div class="ar-pcard ar-pcard--alt">
-            <h3>&#x25CB; Consider alternatives</h3>
+            <h3>&#x25CB; Probably not a fit</h3>
             <ul>
               <li>
                 <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Lightweight
                 landing pages with no admin state
               </li>
               <li>
-                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Non-React
-                applications (Vue, Svelte, Angular)
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Applications
+                that are not built on React
               </li>
               <li>
                 <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Apps with no
@@ -320,6 +343,10 @@
               <li>
                 <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Greenfield
                 projects not using react-admin data contracts
+              </li>
+              <li>
+                <span class="ar-ic" style="color: var(--ar-text-3)">&#x2192;</span> Projects that
+                need a 1.0 API: ARDOR is 0.4.x and a minor release can break
               </li>
             </ul>
           </div>
@@ -332,29 +359,28 @@
     <div class="ar-wrap">
       <section class="ar-section ar-powered">
         <div class="ar-section-head ar-powered__head">
-          <div class="ar-label">Built on giants</div>
-          <h2>Powered by the best of the ecosystem</h2>
+          <div class="ar-label">Built on</div>
+          <h2>What ARDOR stands on</h2>
         </div>
         <div class="ar-chips">
-          <div class="ar-chip"><b>react-admin</b> · ra-core</div>
+          <div class="ar-chip"><b>ra-core</b> · CRUD runtime of react-admin</div>
           <div class="ar-chip"><b>IGNIS</b> · IoC Container</div>
           <div class="ar-chip"><b>React</b> · UI Runtime</div>
           <div class="ar-chip"><b>TypeScript</b></div>
+          <div class="ar-chip"><b>VULCAN</b> · project scaffolding</div>
         </div>
         <p class="ar-powered__footnote">
-          Bringing IGNIS inversion of control and react-admin data contracts to modern frontend
-          applications.
+          ARDOR is the browser framework of <a href="https://venizia.ai">VENIZIA</a>, next to IGNIS
+          on the server and VULCAN for tooling.
         </p>
       </section>
 
       <section class="ar-footer-cta">
-        <h2>Build something that <span class="ar-gtext">scales</span>.</h2>
-        <p>From first screen to production admin apps. No ceremony, pure architecture.</p>
+        <h2>Create an admin in <span class="ar-gtext">one command</span>.</h2>
+        <p><code>bun x @venizia/vulcan init --preset ardor</code></p>
         <div class="ar-cta">
           <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
-          <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary"
-            >Read the Docs</a
-          >
+          <a href="/references/" class="ar-btn ar-btn--secondary">References</a>
         </div>
       </section>
     </div>
