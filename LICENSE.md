@@ -62,7 +62,6 @@ these projects.
 | [React Redux](https://github.com/reduxjs/react-redux) | MIT | React bindings for Redux |
 | [TanStack Query](https://github.com/TanStack/query) | MIT | Asynchronous state management |
 | [React Router](https://github.com/remix-run/react-router) | MIT | Routing |
-| [Socket.IO Client](https://github.com/socketio/socket.io) | MIT | Real-time bidirectional communication |
 | [Lodash](https://github.com/lodash/lodash) | MIT | Utility library |
 | [node-polyglot](https://github.com/airbnb/polyglot.js) (`ra-i18n-polyglot`) | BSD-2-Clause | Internationalisation |
 
