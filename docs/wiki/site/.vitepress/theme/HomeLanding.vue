@@ -9,14 +9,19 @@
           <div class="ar-eyebrow">
             <span class="ar-eyebrow__dot" />TypeScript · React · react-admin · IGNIS
           </div>
-          <h1>Admin apps on an<br />IGNIS <span class="ar-gtext">container</span></h1>
+          <h1>
+            Shape your admin&nbsp;panels.<br /><span class="ar-gtext"
+              >ARDOR tempers the&nbsp;surface.</span
+            >
+          </h1>
           <p class="ar-lede">
-            ra-core's CRUD contract on IGNIS's container.
-            <b>Dependency injection, a REST data provider, token refresh on 401 and i18n</b>
-            in one package, <code>@venizia/ardor</code>, with a core that uses no Node builtins.
+            Admin consoles on react-admin, with the same dependency injection and filter language as
+            IGNIS, plus sign-in and i18n.
           </p>
           <div class="ar-cta">
-            <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
+            <a href="/guides/get-started/create-a-project" class="ar-btn ar-btn--primary"
+              >Get Started &#x2192;</a
+            >
             <a href="https://github.com/VENIZIA-AI/ardor" class="ar-btn ar-btn--secondary"
               >&#x2605; Star on GitHub</a
             >
@@ -264,34 +269,37 @@
             Kernel, react and admin use no Node builtins, so they run in the browser.
           </p>
         </div>
-        <div class="ar-bars">
-          <div class="ar-bar-row ar-bar-row--hl">
-            <div class="ar-bar-row__name">@venizia/ardor</div>
-            <div class="ar-track">
-              <div class="ar-fill ar-fill--ig" style="width: 100%">Re-exports the three</div>
-            </div>
-          </div>
-          <div class="ar-bar-row">
-            <div class="ar-bar-row__name">@venizia/ardor-kernel</div>
-            <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 100%">
-                Container, services, runtime config
-              </div>
-            </div>
-          </div>
-          <div class="ar-bar-row">
-            <div class="ar-bar-row__name">@venizia/ardor-react</div>
-            <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 100%">Context and hooks</div>
-            </div>
-          </div>
-          <div class="ar-bar-row">
-            <div class="ar-bar-row__name">@venizia/ardor-admin</div>
-            <div class="ar-track">
-              <div class="ar-fill ar-fill--muted" style="width: 100%">ra-core adapter</div>
-            </div>
-          </div>
-        </div>
+        <table class="ar-pkgs">
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Role</th>
+              <th>Runs in</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>@venizia/ardor</code></td>
+              <td>Re-exports the three packages below, and ships the VULCAN preset</td>
+              <td>Browser</td>
+            </tr>
+            <tr>
+              <td><code>@venizia/ardor-kernel</code></td>
+              <td>The container, services, network layer and runtime config; no UI</td>
+              <td>Browser</td>
+            </tr>
+            <tr>
+              <td><code>@venizia/ardor-react</code></td>
+              <td>Application context and hooks</td>
+              <td>Browser</td>
+            </tr>
+            <tr>
+              <td><code>@venizia/ardor-admin</code></td>
+              <td>The ra-core adapter: providers and <code>ArdorApplication</code></td>
+              <td>Browser</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -379,7 +387,9 @@
         <h2>Create an admin in <span class="ar-gtext">one command</span>.</h2>
         <p><code>bun x @venizia/vulcan init --preset ardor</code></p>
         <div class="ar-cta">
-          <a href="/guides/" class="ar-btn ar-btn--primary">Get Started &#x2192;</a>
+          <a href="/guides/get-started/create-a-project" class="ar-btn ar-btn--primary"
+            >Get Started &#x2192;</a
+          >
           <a href="/references/" class="ar-btn ar-btn--secondary">References</a>
         </div>
       </section>

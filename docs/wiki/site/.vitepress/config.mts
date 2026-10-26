@@ -571,7 +571,7 @@ const config = defineConfig({
   srcExclude: ['**/template/**'],
   title: 'ARDOR',
   description:
-    "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
+    'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
   head: [
     // Favicon + PWA
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
@@ -590,16 +590,13 @@ const config = defineConfig({
     ],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
-    [
-      'meta',
-      { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" },
-    ],
+    ['meta', { property: 'og:title', content: 'ARDOR - Shape your admin panels.' }],
     [
       'meta',
       {
         property: 'og:description',
         content:
-          'A react-admin application built as an IGNIS inversion-of-control container: dependency injection in the browser, a typed REST data layer, auth recovery and i18n - one import.',
+          'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
       },
     ],
     ['meta', { property: 'og:url', content: 'https://ardor.venizia.ai/' }],
@@ -609,7 +606,7 @@ const config = defineConfig({
       'meta',
       {
         name: 'twitter:title',
-        content: "ARDOR - react-admin's data contract on IGNIS's container",
+        content: 'ARDOR - Shape your admin panels.',
       },
     ],
     [
@@ -617,7 +614,7 @@ const config = defineConfig({
       {
         name: 'twitter:description',
         content:
-          'A react-admin application built as an IGNIS inversion-of-control container: dependency injection in the browser, a typed REST data layer, auth recovery and i18n - one import.',
+          'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
       },
     ],
   ],
