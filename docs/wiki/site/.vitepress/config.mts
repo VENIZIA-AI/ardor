@@ -118,6 +118,16 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: '2026-10-26',
+        collapsed: true,
+        items: [
+          {
+            text: 'ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes',
+            link: '/changelogs/2026-10-26-ignis-0-4-3-repository-exports',
+          },
+        ],
+      },
+      {
         text: '2026-10-25',
         collapsed: true,
         items: [
