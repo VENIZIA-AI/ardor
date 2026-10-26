@@ -1,8 +1,8 @@
 <div align="center">
 
-<br />
+<a href="https://ardor.venizia.ai"><img src="https://ardor.venizia.ai/logo.svg" alt="ARDOR" height="96"></a>
 
-# :droplet: ARDOR
+# ARDOR
 
 **react-admin's data contract. IGNIS's container.**
 

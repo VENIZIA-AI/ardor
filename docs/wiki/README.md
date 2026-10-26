@@ -1,6 +1,8 @@
 <div align="center">
 
-# :droplet: ARDOR - @venizia/ardor-docs
+<a href="https://ardor.venizia.ai"><img src="https://ardor.venizia.ai/logo.svg" alt="ARDOR" height="96"></a>
+
+# ARDOR - @venizia/ardor-docs
 
 **Documentation site for the ARDOR framework**
 
