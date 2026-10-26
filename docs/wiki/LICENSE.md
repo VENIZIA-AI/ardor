@@ -5,7 +5,7 @@ VENIZIA family. It is not published to npm.
 
 ## MIT License
 
-Copyright (c) 2025 VENIZIA Ltd. Co.
+Copyright (c) 2025 Venizia Co., Ltd.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
