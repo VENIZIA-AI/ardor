@@ -1,10 +1,10 @@
 {
-  "fingerprint": "43c3aac15abd6f63880162449c6f2ebc6e2c0bbd2af0b42690764dbfe0a35b5c",
+  "fingerprint": "fa940aebdaa0b24f4136b2390ffad65c98053136fd1d35b537e14cc8ab02e43a",
   "files": {
     "ChangelogEntryHead.vue": "f39ba1e011c369954e9a1cdf64dc0f3eefc965365e0e5a4fc99182753db70a2a",
     "ChangelogIndex.vue": "9f0f208dc3dec07c3a41bfed05cb3ebcb14a9f0244c9fc8a50b217fbe68e2553",
     "EcosystemSwitcher.vue": "8f88184713bb819da6010634bc05f00fbfc2035d3a05614edb3df67a56e71ba3",
-    "HomeLayout.vue": "8785c016644a6b9eb36c4c0a51b75ecb1b979ef0f2fdbd75ecfc84e745f73d17",
+    "HomeLayout.vue": "5d4e631cbf314a325119486378489e81a086fbf017ab7612695190c0630596f1",
     "HomeWindow.vue": "fc3402609936adeb7cf7136c982c68f2d139f11344157f9a86bf0100ef73eb3a",
     "InstallBox.vue": "a51e007485c23e8cdba0512c254029d09faed57fc16bef7d28d157a92dd6b0b0",
     "SiteFooter.vue": "41d208916cd60a66a94cada5b904c23b91a527a157c39fb8f15aae9d707666c5",
@@ -33,7 +33,7 @@
     "header.css": "b780de0a6e019e2f1fa96f89c37a9f9bb61a3f5fd94cad651fad4fed72ca368a",
     "highlight.ts": "10405f487837df4fd9276301653b8f568ab91592170aab7d47abeb5162164eaa",
     "home-types.ts": "3e9efd210599c296b7e6537a9373e6a18a8a287767972354531ad63ff27789ec",
-    "home.css": "881c1e7e172bef33318e0121563f3db2277b3a5706430d6355979d24f92eb783",
+    "home.css": "dce7028d1d058222b903068765ce39f8d8fbb32706b68f8a5a86d682218c5346",
     "theme-switch.css": "2e1e80211023e8429af2b7561f1abf141a9a3d5439062f028e3631f14bdad888",
     "toggle-appearance.ts": "77ea0c377f0d7ba8cecd26580a6e79a5b173c1bc140c80516ddf67f94395c04c",
     "tokens.css": "8155ddc6b8bee8cd528be239b272e9665ea82fc387db8d5c8bbdec20447b4898",

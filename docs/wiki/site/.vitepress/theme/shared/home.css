@@ -144,6 +144,14 @@
   align-items: center;
 }
 
+/* the headline runs the full width above the two columns */
+.vh .hero-head {
+  grid-column: 1 / -1;
+}
+.vh .hero-copy .lede {
+  margin-top: 0;
+}
+
 .vh .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -164,8 +172,8 @@
 .vh h1 {
   margin: 0;
   color: var(--text-title);
-  /* two beats: one line each at 1440, at most three lines at 375 */
-  font-size: clamp(27px, 2.16vw + 18.9px, 48px);
+  /* two beats: one line each from 960 up, at most three lines at 375 */
+  font-size: clamp(27px, 6vw, 84px);
   font-weight: 500;
   line-height: 1.04;
   letter-spacing: -0.03em;
