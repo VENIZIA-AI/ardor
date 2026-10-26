@@ -72,8 +72,12 @@ tags: [process, docs, wiki]
    folder `-text` so git never converts a byte. `make lint-wiki` covers it like any other file: a lint finding in it is
    fixed in VULCAN's copy, and `lint-fix-wiki` must leave it in step. ARDOR's own part of the theme stays outside the folder: `product.css` (the accent: the blue and the
    aqua of `design-tokens.css`), `design-tokens.css` and `style.css` (the primitives, the page components and
-   the home page), and `index.ts`, which imports the shared stylesheets and registers the ecosystem switcher, the
-   version chip and the smooth theme switch in the layout. `config.mts` imports the Venizia wordmark from the folder.
+   the home page), `home-content.ts` (every word of the home page and the footer's pitch, with `COUNTS`, the numbers of the proof
+   strip) and `index.ts`, which imports the shared stylesheets and gives the wiki the shared `SiteLayout`. A home
+   page number is a claim: `scripts/checks/__tests__/wiki-intro-counts.test.ts` counts the same things from the
+   repository (packages, examples, test files, Node builtin imports in the browser packages), checks that the code
+   windows hold only lines of the preset files and that every link is a wiki page, and fails when one drifts; update
+   `COUNTS` when it does. `config.mts` imports the Venizia wordmark from the folder and sets no footer of its own.
 
 ## Related
 

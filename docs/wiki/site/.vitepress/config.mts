@@ -131,6 +131,10 @@ const changelogsSidebar: DefaultTheme.SidebarItem[] = [
             text: 'The preset keeps chunks in import order, and buildInfoFile writes build-info.json',
             link: '/changelogs/2026-10-26-vite-build-info',
           },
+          {
+            text: 'Wiki: A New Home Page, a Venizia Switcher and a Smooth Light and Dark Switch',
+            link: '/changelogs/2026-10-26-wiki-new-look',
+          },
         ],
       },
       {
@@ -571,6 +575,8 @@ const config = defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
     ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'manifest', href: '/site.webmanifest' }],
+    // The home page and its terminal hide their reveal states only under this class, set before first paint.
+    ['script', {}, "document.documentElement.classList.add('js');"],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
     [
@@ -666,12 +672,6 @@ const config = defineConfig({
       { icon: 'github', link: 'https://github.com/VENIZIA-AI/ardor' },
       { icon: { svg: VENIZIA_LOGO_SVG }, link: 'https://venizia.ai', ariaLabel: 'Venizia' },
     ],
-    footer: {
-      message:
-        'Released under the MIT License. ARDOR is part of <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA</a>.',
-      copyright:
-        'Copyright © 2025 <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">Venizia Co., Ltd.</a>',
-    },
     outline: { level: [2, 3] },
   },
 });

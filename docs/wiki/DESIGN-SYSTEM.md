@@ -8,7 +8,8 @@ and are applied live in the VitePress theme (`site/.vitepress/theme/style.css`).
 The look of the header, sidebar, doc content, callouts and code blocks is not set here: it is the shared
 Venizia theme in `site/.vitepress/theme/shared/` (a byte-identical copy of VULCAN's, never edited in this
 repository), and ARDOR adds only its accent in `site/.vitepress/theme/product.css`. The `--ar-*` tokens
-below are the primitives of the home page and the page components.
+below are the primitives of the page components. The home page is the shared `HomeLayout.vue` with ARDOR's
+words in `site/.vitepress/theme/home-content.ts`.
 
 ## Principles
 
@@ -83,6 +84,10 @@ import './product.css'         // ARDOR's accent, the only product-specific valu
 import './design-tokens.css'   // the --ar-* primitives of the home page and the page components
 import './style.css'           // those components, consuming var(--ar-*)
 import './shared/vp-map.css'   // maps the tokens onto the VitePress variables, after the above
+import './shared/doc.css'      // sidebar, outline, callouts and code blocks
+import './shared/header.css'   // the header, the ecosystem switcher
+import './shared/home.css'     // the home page
+import './shared/footer.css'   // the footer slab
 ```
 
 ```css
