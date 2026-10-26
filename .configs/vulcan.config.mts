@@ -8,6 +8,17 @@ export default {
   // The base slot V-W-01: git writes happen only on the user's word (ARDOR's own W-01 agrees).
   rules: { 'V-W-01': 'on-user-word' },
 
+  // Team-shared Claude settings that `vulcan sync` merges into `.claude/settings.json`. The two
+  // plugins are off here by choice of the team, not a VULCAN default.
+  claude: {
+    settings: {
+      enabledPlugins: {
+        'figma@claude-plugins-official': false,
+        'chrome-devtools-mcp@claude-plugins-official': false,
+      },
+    },
+  },
+
   // In release order. `ui-kit` has no directory any more; retired, its tags and changelogs still resolve.
   packages: [
     { dir: 'kernel', name: '@venizia/ardor-kernel' },
