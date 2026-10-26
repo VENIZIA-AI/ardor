@@ -38,6 +38,7 @@
     "url": "git+https://github.com/VENIZIA-AI/ardor.git",
     "directory": "docs/wiki"
   },
+  "type": "module",
   "scripts": {
     "docs:build": "sh ./scripts/docs-build.sh",
     "docs:clean": "sh ./scripts/docs-clean.sh",
