@@ -1495,7 +1495,6 @@ html.dark .honest-box {
 .VPDocAside .outline-link.active,
 .outline-link.active {
   color: var(--ar-link) !important;
-  border-left-color: var(--ar-brand) !important;
 }
 
 /* Prose: token-grounded type scale and line-height */
