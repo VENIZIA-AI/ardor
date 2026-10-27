@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
-import { GLOBAL_PATTERNS, probeEntry, stripBundlerPathComments } from '../probe';
+import { GLOBAL_PATTERNS, probeEntry, stripBundlerPathComments } from '@venizia/dev-configs/checks';
 
 const PROCESS_PATTERN = GLOBAL_PATTERNS.find((g) => g.name === 'process')!;
 

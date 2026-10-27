@@ -4,7 +4,7 @@
 
 # Every catalogued dependency is referenced as "catalog:" (root workspaces.catalog), none drifted.
 catalog-check:
-	@bun scripts/checks/check-catalog.ts
+	@bun x --no-install devz check catalog --glob 'examples/*/package.json' --glob 'docs/*/package.json' --glob 'presets/*/preset.json' --preset-prefix presets/
 
 # Dispatches the release workflow one package at a time, in dependency order, waiting for each.
 release-plan:

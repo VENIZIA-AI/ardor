@@ -5,7 +5,7 @@
 .PHONY: split-report wiki-links-check wiki-anchors-check atlas-smoke
 
 split-report:
-	@bun scripts/checks/split-report.ts
+	@bun x --no-install devz check split-report --dist dist
 
 wiki-links-check:
 	@bun scripts/wiki/wiki-source-links.ts

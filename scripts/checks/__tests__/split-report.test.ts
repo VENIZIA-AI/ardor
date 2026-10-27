@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { makeScratch } from '../../scratch';
-import { SplitReport } from '../split-report';
+import { SplitReport } from '@venizia/dev-configs/checks';
 
 const tmpDirs: string[] = [];
 
