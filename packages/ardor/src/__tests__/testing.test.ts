@@ -30,6 +30,7 @@ interface IFixtureOptions {
   services?: Array<[string, new (...args: never[]) => unknown]>;
   withoutDataProvider?: boolean;
   withAuthProvider?: boolean;
+  withBrokenAuthProvider?: boolean;
   features?: ReturnType<typeof Features.define>[];
   i18n?: typeof i18nProvider;
 }
@@ -39,6 +40,7 @@ const createApplication = (opts: IFixtureOptions = {}) => {
     services = [],
     withoutDataProvider = false,
     withAuthProvider = false,
+    withBrokenAuthProvider = false,
     features,
     i18n = i18nProvider,
   } = opts;
@@ -55,6 +57,9 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
       if (withAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
+      }
+      if (withBrokenAuthProvider) {
+        this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toClass(Detached);
       }
       if (features) {
         this.bind({ key: CoreBindings.FEATURES }).toValue(features);
@@ -138,6 +143,34 @@ describe('assertArdorApplicationBoots', () => {
     });
 
     await assertArdorApplicationBoots(application);
+  });
+
+  // skipBindings reaches the binding check only; the provider step builds what the application bound.
+  test('rejects when the bound auth provider cannot be built, as opening the app would', async () => {
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      withBrokenAuthProvider: true,
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain('services.Missing');
+  });
+
+  test('rejects a skip of the auth provider key: skipBindings covers the five namespaces only', async () => {
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      withBrokenAuthProvider: true,
+    });
+
+    const message = await messageOf(
+      assertArdorApplicationBoots(application, {
+        skipBindings: [CoreBindings.DEFAULT_AUTH_PROVIDER],
+      }),
+    );
+
+    expect(message).toContain('skip matched no binding');
+    expect(message).toContain(CoreBindings.DEFAULT_AUTH_PROVIDER);
   });
 
   test('rejects an application that binds nothing to check', async () => {

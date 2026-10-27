@@ -30,9 +30,11 @@ In order, and it stops at the first failure with the error the app would raise:
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
-| `skipBindings` | `Array<TClass \| string>` | none | Bindings left unresolved: an exact class, a class name or a binding key. A skip that matches no binding rejects, so a typo does not skip silently. |
+| `skipBindings` | `Array<TClass \| string>` | none | Bindings left unresolved: an exact class, a class name or a binding key, among the five namespaces of step 2. A skip that matches no binding rejects, so a typo does not skip silently. It does not reach step 3: see below. |
 | `locale` | `string` | the i18n provider's | The locale whose messages must load. |
 | `allowEmpty` | `boolean` | `false` | An application with nothing to check and no feature rejects: the artifact index is usually empty. |
+
+`skipBindings` applies to step 2 only. Step 3 builds the data, auth and i18n providers the application bound, so a bound auth provider that cannot be built fails the check even when you name its key, and the key, outside the five namespaces, rejects as a skip that matched nothing. An application that never signs in, such as a guest app that builds its own react-admin tree, leaves `CoreBindings.DEFAULT_AUTH_PROVIDER` unbound (see [Authentication (No Sign-In)](../guides/core-concepts/providers#authentication-no-sign-in)).
 
 The first argument is an instance or a function that returns one. Pass a function: a failed start leaves a half-started instance, and the same instance cannot be passed twice.
 

@@ -10,6 +10,11 @@ export interface IAssertArdorApplicationBootsOptions {
   /**
    * Bindings the check leaves unresolved, for the few that open a socket or read the page when
    * they are built. A name that matches no binding rejects: a typo must not skip silently.
+   *
+   * It applies to the binding check only: the bindings of the five namespaces below. The provider
+   * step (data, auth, i18n) always builds what the application bound, and a provider key such as
+   * `CoreBindings.DEFAULT_AUTH_PROVIDER` is outside those namespaces, so naming it rejects as a
+   * skip that matched nothing. To leave a provider out, leave it unbound.
    */
   skipBindings?: Array<TBootSkip>;
 
