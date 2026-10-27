@@ -286,10 +286,11 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
     expect(workflow).toContain('--chain-released');
   });
 
-  test('action versions and bun follow IGNIS', () => {
-    expect(workflow).toContain('actions/checkout@v6.0.3');
-    expect(workflow).toContain('actions/setup-node@v6.4.0');
-    expect(workflow).toContain('bun-version: latest');
+  test('the actions are pinned by commit with the tag IGNIS uses, and bun is exact', () => {
+    expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/);
+    expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v6\.4\.0/);
+    expect(workflow).toContain('bun-version: 1.4.4');
+    expect(workflow).not.toContain('bun-version: latest');
     expect(workflow).toContain('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true');
   });
 
@@ -482,10 +483,248 @@ describe('the workflow passes what it published, and can heal alone', () => {
   test('a heal_only dispatch runs only the heal job; a release skips it', () => {
     expect(workflow).toMatch(/\n      heal_only:\n\s+type: boolean/);
     expect(workflow).toMatch(
-      /\n  heal-next:\n\s+name: Heal next tags\n\s+if: \$\{\{ inputs.heal_only == true \}\}/,
+      /\n  heal-next:\n\s+name: Heal next tags\n\s+if: \$\{\{ github.ref == 'refs\/heads\/develop' && inputs.heal_only == true \}\}/,
     );
     expect(workflow).toMatch(
-      /\n  release:\n\s+name: NPM Release\n\s+if: \$\{\{ inputs.heal_only != true \}\}/,
+      /\n  release:\n\s+name: NPM Release\n\s+needs: test\n\s+if: \$\{\{ github.ref == 'refs\/heads\/develop' && inputs.heal_only != true \}\}/,
     );
+  });
+});
+
+// The release workflow is read as text, like the tests above. Each guard is a function of the workflow
+// text; the real file satisfies every guard, and a copy with ONE guard removed fails exactly that one,
+// so a guard that stops detecting anything cannot pass unnoticed. A pull request that removes a guard
+// and its test together still passes: this stops accidents, not an author.
+describe('package-release.yml guards, one mutation per guard', () => {
+  const workflow = readFileSync(join(ROOT, '.github/workflows/package-release.yml'), 'utf8');
+  const presetSmoke = readFileSync(join(ROOT, 'scripts/preset/preset-smoke.ts'), 'utf8');
+  const vulcanPin: string = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).devDependencies[
+    '@venizia/vulcan'
+  ];
+
+  const headOf = (text: string): string => text.split(/\njobs:\n/)[0] ?? '';
+
+  /** The text of each job: from `  <name>:` under `jobs:` to the next job. */
+  const jobsOf = (text: string): Record<string, string> => {
+    const section = text.split(/\njobs:\n/)[1] ?? '';
+    const starts = [...section.matchAll(/^  ([\w-]+):\s*$/gm)];
+
+    return Object.fromEntries(
+      starts.map((start, index) => [
+        start[1] ?? '',
+        section.slice(start.index, starts[index + 1]?.index ?? section.length),
+      ]),
+    );
+  };
+
+  /** The steps of a job, each with its name and its text. */
+  const stepsOf = (job: string): Array<{ name: string; text: string }> =>
+    job
+      .split(/\n {6}- name: /)
+      .slice(1)
+      .map((chunk) => ({ name: chunk.split('\n')[0] ?? '', text: chunk }));
+
+  const NPM_STEPS = [
+    'Publish to NPM',
+    'Tag highest version on NPM',
+    'Keep the next tag at or above latest',
+    'Move next to latest where it is below',
+  ];
+
+  const guards = {
+    // C1: the release, test and heal jobs run only for develop.
+    developOnly: (text: string): boolean => {
+      const jobs = jobsOf(text);
+
+      return ['test', 'release', 'heal-next'].every((name) =>
+        /\n {4}if: .*github\.ref == 'refs\/heads\/develop'/.test(jobs[name] ?? ''),
+      );
+    },
+    // C2: read-only by default; only the release job writes.
+    minimalPermissions: (text: string): boolean => {
+      const jobs = jobsOf(text);
+
+      return (
+        /\npermissions:\n {2}contents: read\n/.test(headOf(text)) &&
+        /\n {4}permissions:\n {6}contents: write\n/.test(jobs.release ?? '') &&
+        !(jobs.test ?? '').includes('contents: write') &&
+        !(jobs['heal-next'] ?? '').includes('contents: write')
+      );
+    },
+    // C3: the release job needs a test job that has no secret.
+    testJobNeeded: (text: string): boolean => {
+      const jobs = jobsOf(text);
+
+      return (
+        /\n {4}needs: test\n/.test(jobs.release ?? '') &&
+        (jobs.test ?? '').length > 0 &&
+        !(jobs.test ?? '').includes('secrets.') &&
+        !(jobs.test ?? '').includes('contents: write')
+      );
+    },
+    // C5: an exact bun in every setup.
+    exactBun: (text: string): boolean => {
+      const versions = [...text.matchAll(/bun-version: (.+)/g)].map((match) => match[1] ?? '');
+
+      return versions.length >= 3 && versions.every((version) => /^\d+\.\d+\.\d+$/.test(version));
+    },
+    // C6: the registry credential, and every secret, only in the publish and dist-tag steps.
+    secretsInPublishSteps: (text: string): boolean => {
+      const jobs = jobsOf(text);
+      const everyReference = [...text.matchAll(/secrets\.(\w+)/g)].every(
+        (match) => match[1] === 'NPM_ACCESS_TOKEN',
+      );
+      const placed = ['release', 'heal-next'].every((name) => {
+        const withSecret = stepsOf(jobs[name] ?? '').filter((step) => step.text.includes('secrets.'));
+
+        return withSecret.length > 0 && withSecret.every((step) => NPM_STEPS.includes(step.name));
+      });
+
+      return everyReference && placed;
+    },
+    // C17: every checkout is the dispatched commit; no step moves to a branch; the run name carries it.
+    dispatchedCommit: (text: string): boolean => {
+      const jobs = jobsOf(text);
+      const checkouts = Object.values(jobs).flatMap((job) =>
+        stepsOf(job).filter((step) => step.text.includes('uses: actions/checkout@')),
+      );
+      const runName = text.match(/^run-name: (.+)$/m)?.[1] ?? '';
+
+      return (
+        checkouts.length >= 3 &&
+        checkouts.every((step) => /\n {10}ref: \$\{\{ github\.sha \}\}/.test(step.text)) &&
+        !/git checkout develop|git pull origin develop|git switch develop/.test(text) &&
+        runName.includes('github.sha')
+      );
+    },
+    // D6: every action by its full commit, with the tag in a comment.
+    actionsByCommit: (text: string): boolean => {
+      const uses = [...text.matchAll(/^\s+uses: (.+)$/gm)].map((match) => match[1] ?? '');
+
+      return (
+        uses.length >= 9 &&
+        uses.every((value) => /^[\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+(\.\d+)*$/.test(value))
+      );
+    },
+    // C4: preset-smoke runs the VULCAN the repository pins, and `latest` appears nowhere.
+    pinnedVulcan: (text: string, script: string): boolean =>
+      text.match(/VULCAN_CMD: bun x @venizia\/vulcan@(\S+)/)?.[1] === vulcanPin &&
+      !/@latest|bun-version: latest/.test(text) &&
+      !script.includes('@venizia/vulcan@latest'),
+  };
+
+  const mutations: Array<{
+    guard: keyof typeof guards;
+    name: string;
+    mutate: (text: string) => string;
+  }> = [
+    {
+      guard: 'developOnly',
+      name: 'the heal job loses the develop condition',
+      mutate: (text) =>
+        text.replace("github.ref == 'refs/heads/develop' && inputs.heal_only == true", 'inputs.heal_only == true'),
+    },
+    {
+      guard: 'developOnly',
+      name: 'the release job loses the develop condition',
+      mutate: (text) =>
+        text.replace("github.ref == 'refs/heads/develop' && inputs.heal_only != true", 'inputs.heal_only != true'),
+    },
+    {
+      guard: 'minimalPermissions',
+      name: 'the workflow default is write',
+      mutate: (text) => text.replace('\npermissions:\n  contents: read\n', '\npermissions:\n  contents: write\n'),
+    },
+    {
+      guard: 'minimalPermissions',
+      name: 'the release job loses its write grant',
+      mutate: (text) => text.replace('    permissions:\n      contents: write\n', ''),
+    },
+    {
+      guard: 'testJobNeeded',
+      name: 'the release job no longer needs the test job',
+      mutate: (text) => text.replace('    needs: test\n', ''),
+    },
+    {
+      guard: 'testJobNeeded',
+      name: 'the test job reads the registry credential',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Install\n        run: bun install\n',
+          '      - name: Install\n        run: bun install\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}\n',
+        ),
+    },
+    {
+      guard: 'exactBun',
+      name: 'bun is latest',
+      mutate: (text) => text.replace(/bun-version: \d+\.\d+\.\d+/, 'bun-version: latest'),
+    },
+    {
+      guard: 'secretsInPublishSteps',
+      name: 'the credential is read by a build step',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Version bump\n',
+          '      - name: Version bump\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}\n',
+        ),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'a checkout names a branch',
+      mutate: (text) => text.replace('ref: ${{ github.sha }}', 'ref: develop'),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the step that moves to develop is back',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Version bump\n',
+          '      - name: Sync develop\n        run: git fetch origin && git checkout develop && git pull origin develop\n\n      - name: Version bump\n',
+        ),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the run name drops the commit',
+      mutate: (text) => text.replace(/^(run-name: .*) \| \$\{\{ github\.sha \}\}/m, '$1'),
+    },
+    {
+      guard: 'actionsByCommit',
+      name: 'an action goes back to a tag',
+      mutate: (text) => text.replace(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/, 'actions/checkout@v6.0.3'),
+    },
+  ];
+
+  test.each(Object.keys(guards).filter((name) => name !== 'pinnedVulcan'))(
+    'the real workflow satisfies the guard %s',
+    (name) => {
+      expect(guards[name as keyof typeof guards](workflow, presetSmoke)).toBe(true);
+    },
+  );
+
+  test('the real workflow and the smoke script run the pinned VULCAN', () => {
+    expect(guards.pinnedVulcan(workflow, presetSmoke)).toBe(true);
+  });
+
+  test.each(mutations)('$guard fails when $name', ({ guard, mutate }) => {
+    const mutated = mutate(workflow);
+
+    expect(mutated).not.toBe(workflow);
+    expect(guards[guard](mutated, presetSmoke)).toBe(false);
+  });
+
+  test('pinnedVulcan fails when preset-smoke asks for the latest VULCAN', () => {
+    expect(
+      guards.pinnedVulcan(
+        workflow.replace(/VULCAN_CMD: bun x @venizia\/vulcan@\S+/, 'VULCAN_CMD: bun x @venizia/vulcan@latest'),
+        presetSmoke,
+      ),
+    ).toBe(false);
+    expect(
+      guards.pinnedVulcan(workflow, presetSmoke.replace(/bun x @venizia\/vulcan@\S+/, 'bun x @venizia/vulcan@latest')),
+    ).toBe(false);
+  });
+
+  test('a guard needs the jobs it reads', () => {
+    expect(Object.keys(jobsOf(workflow)).toSorted()).toEqual(['heal-next', 'release', 'test']);
   });
 });

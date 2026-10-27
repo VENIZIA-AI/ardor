@@ -36,9 +36,10 @@ it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh wo
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
-defaults to the DEFAULT branch, `main`, so an unpinned run builds `main` even though its bump commit
-lands on `develop`. `scripts/release/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
-too.
+defaults to the DEFAULT branch, `main`, so an unpinned run would build `main`; the workflow now runs only for `develop`, so such a dispatch runs nothing. `scripts/release/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
+too. Every job checks out the dispatched commit (`github.sha`), never a branch name, and the run name carries it.
+
+**The guards of the workflow.** Workflow permissions are read-only; only the `release` job, which pushes the release commit and the tag, has `contents: write`. A `test` job with no secret runs the build, the package tests, the repository script tests and the gates that need no registry credential (lint, purity, clean-install, catalog, and the preset smoke against the VULCAN version the root `package.json` pins); the `release` job `needs` it, so a failing test publishes nothing. The `release` job keeps the gates of the tree it publishes (links, build, artifacts, pack, protocols, registry). Both jobs and the `heal-next` job run only for `develop`. The registry credential appears only in the publish and dist-tag steps. `bun` has an exact version and every action is pinned by its full commit with the tag in a comment: a bump is a deliberate pull request. `scripts/release/__tests__/release-gates.test.ts` reads the workflow as text and fails when one guard is removed (one mutation per guard); it stops accidents, not an author who removes the guard and the test together. Known limit: the `test` job and the `release` job each refresh the catalog to the highest IGNIS, so the tested tree is the published tree only if no IGNIS version appears between them.
 
 There is no fan-out step that releases every package in one dispatch: each package is released with
 its own run. See [Monorepo layout](/overview/monorepo-layout.md) for how the packages map to
@@ -55,7 +56,7 @@ dispatches nothing, and `--dry-run` prints the plan even from a dirty or unpushe
 `<package>-v<version>` tags the workflow pushes, so there is nothing to regenerate (see
 [Atlas MCP server](/reference/atlas-mcp.md)).
 
-After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
+While a run waits for an approval (status `waiting`) the script keeps waiting, with no deadline, and says so on the first poll and every five minutes (`waitForCompletion` in `scripts/release/release-wait.ts`). After each run the script checks the registry twice: `npm view` must report the new version, and then the **tarball** URL (`scripts/release/release-wait.ts`, `HEAD` every 5 s for up to 15 minutes) must answer 200. The packument and the dist-tag are listed minutes before the tarball, and the next package's clean-install gate installs the one before it; a chain that went on at the dist-tag failed `react` once on the `ardor-kernel` 404.
 
 A release always goes through this script and the workflow: there is no way to publish from a developer machine.
 

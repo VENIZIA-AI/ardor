@@ -57,4 +57,51 @@ const waitForTarball = async (opts: {
   );
 };
 
-export { tarballUrl, waitForTarball };
+/** How often a run that waits for approval is reported again: every thirty polls, five minutes at the default interval. */
+const WAITING_REPORT_EVERY = 30;
+
+/**
+ * Polls a run until it completes and returns its conclusion. A run that waits for a person to approve
+ * it (status `waiting`) is waited for as long as it waits: there is no deadline, because the approval
+ * is a human step. The first poll of the wait and every thirty polls after it are reported, so the
+ * operator sees what the driver is waiting for.
+ */
+const waitForCompletion = async (opts: {
+  runId: string;
+  readRun: (opts: { runId: string }) => Promise<{ status: string; conclusion: string }>;
+  sleepFn?: (ms: number) => Promise<void>;
+  intervalMs?: number;
+  onWaiting?: (opts: { runId: string; polls: number }) => void;
+}): Promise<string> => {
+  const {
+    runId,
+    readRun,
+    sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    intervalMs = 10_000,
+    onWaiting,
+  } = opts;
+
+  let waitingPolls = 0;
+
+  for (;;) {
+    const { status, conclusion } = await readRun({ runId });
+
+    if (status === "completed") {
+      return conclusion;
+    }
+
+    if (status === "waiting") {
+      waitingPolls += 1;
+
+      if ((waitingPolls - 1) % WAITING_REPORT_EVERY === 0) {
+        onWaiting?.({ runId, polls: waitingPolls });
+      }
+    } else {
+      waitingPolls = 0;
+    }
+
+    await sleepFn(intervalMs);
+  }
+};
+
+export { tarballUrl, waitForCompletion, waitForTarball };

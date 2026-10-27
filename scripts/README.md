@@ -9,7 +9,7 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | `release/` | `release.ts` | Plans and dispatches the NPM Release workflow one package at a time, in dependency order | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
 | `release/` | `release-scope.ts` | Decides which files make a package need a release | `release.ts` |
 | `release/` | `release-version.ts` | The release version (a semver bump or an explicit one) and the dist-tag rule | `release.ts`, `package-release.yml`, step "Resolve release target" |
-| `release/` | `release-wait.ts` | Waits until a published tarball answers 200 | `release.ts` |
+| `release/` | `release-wait.ts` | Waits until a published tarball answers 200, and for a run to complete (a run that waits for approval is waited for, and reported) | `release.ts` |
 | `release/` | `release-gates.ts` | The gates between build and publish: artifacts, links, pack, protocols, registry, and healing the `next` tag | `package-release.yml`, `preset/preset-smoke.ts` (imports it) |
 | `preset/` | `vulcan-preset.ts` | Writes the VULCAN presets (`presets/app`, `presets/lib`) into `packages/ardor/dist/presets` with exact versions | `make preset-build`, `package-release.yml`, `preset-smoke.ts` |
 | `preset/` | `preset-smoke.ts` | Creates an app and a library from the packed preset and runs their checks | `make preset-smoke` (CI, release workflow) |

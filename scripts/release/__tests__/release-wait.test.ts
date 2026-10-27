@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { tarballUrl, waitForTarball } from '../release-wait';
+import { tarballUrl, waitForCompletion, waitForTarball } from '../release-wait';
 
 /** A fetch that answers each call with the next status, and the last one forever. */
 const statuses = (opts: { sequence: Array<number | 'network-error'> }) => {
@@ -105,5 +105,67 @@ describe('release.ts', () => {
     expect(published).toBeGreaterThan(-1);
     expect(tarball).toBeGreaterThan(published);
     expect(pulled).toBeGreaterThan(tarball);
+  });
+});
+
+// The release job waits for a person to approve it, so a run can sit in `waiting` for as long as that
+// takes; the driver must not give up on it and must tell the operator what it waits for.
+describe('waitForCompletion', () => {
+  const run = (opts: { statuses: Array<{ status: string; conclusion: string }> }) => {
+    let polls = 0;
+    const readRun = async () => {
+      const step = opts.statuses[Math.min(polls, opts.statuses.length - 1)]!;
+      polls += 1;
+      return step;
+    };
+
+    return { readRun, polls: () => polls };
+  };
+  const noSleep = async () => {};
+
+  test('returns the conclusion of a run that completes', async () => {
+    const { readRun } = run({
+      statuses: [
+        { status: 'queued', conclusion: '' },
+        { status: 'in_progress', conclusion: '' },
+        { status: 'completed', conclusion: 'success' },
+      ],
+    });
+
+    expect(await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep })).toBe('success');
+  });
+
+  test('keeps waiting while the run waits for approval, however long', async () => {
+    const waiting = Array.from({ length: 2000 }, () => ({ status: 'waiting', conclusion: '' }));
+    const { readRun, polls } = run({
+      statuses: [...waiting, { status: 'completed', conclusion: 'success' }],
+    });
+
+    expect(await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep })).toBe('success');
+    expect(polls()).toBe(2001);
+  });
+
+  test('reports the wait when it starts and then now and then, never on every poll', async () => {
+    const waiting = Array.from({ length: 70 }, () => ({ status: 'waiting', conclusion: '' }));
+    const { readRun } = run({ statuses: [...waiting, { status: 'completed', conclusion: 'failure' }] });
+    const reports: number[] = [];
+
+    await waitForCompletion({
+      runId: '9',
+      readRun,
+      sleepFn: noSleep,
+      onWaiting: ({ polls }) => reports.push(polls),
+    });
+
+    expect(reports).toEqual([1, 31, 61]);
+  });
+
+  test('says nothing for a run that never waits', async () => {
+    const { readRun } = run({ statuses: [{ status: 'completed', conclusion: 'success' }] });
+    const reports: number[] = [];
+
+    await waitForCompletion({ runId: '9', readRun, sleepFn: noSleep, onWaiting: ({ polls }) => reports.push(polls) });
+
+    expect(reports).toEqual([]);
   });
 });
