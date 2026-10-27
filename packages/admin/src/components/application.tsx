@@ -99,12 +99,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     enableDebug = false,
     resources,
     routes,
+    features: selected,
     ...reactAdminProps
   } = props;
 
+  // The list the shell passed, else every feature the application bound.
   const features = React.useMemo(() => {
-    return Features.read({ container });
-  }, [container]);
+    return selected ?? Features.read({ container });
+  }, [container, selected]);
 
   // The application's own resources and routes, then each feature's it bound in `features()`.
   const mounted = React.useMemo(() => {
