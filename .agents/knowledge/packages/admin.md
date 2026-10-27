@@ -29,6 +29,8 @@ There is no CRUD service: a class that calls one REST resource is an `HttpReposi
 
 The package also exports `ArdorApplication` - the `CoreAdmin` root component that react-admin apps mount, wired from the [DI container](/architecture/di-in-the-browser.md) as part of the [application lifecycle](/architecture/application-lifecycle.md).
 
+It mounts every feature the application bound under `CoreBindings.FEATURES`, unless its optional `features` prop gives a list: a shell filters `Features.read({ container })` with its own rule and passes the result. ARDOR reads no context, never re-reads the list for a new workspace (the app remounts with a `key`), and a feature left out is not unbound - its configurations stay bound and its messages stay in the i18n provider.
+
 Types worth knowing: `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`.
 
 ## The augmentation it owns

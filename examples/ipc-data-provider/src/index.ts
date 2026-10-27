@@ -19,6 +19,10 @@ import {
 // port, an Electron bridge). One in-memory implementation is enough to show the seam.
 type TCommand = (payload: ISendParams) => unknown;
 
+// `ISendParams.body` is `unknown`: read the one field this command needs.
+const usernameOf = (body: unknown): string =>
+  typeof body === 'object' && body !== null && 'username' in body ? String(body.username) : '';
+
 const COMMANDS: Record<string, TCommand> = {
   products: (payload) => {
     const rows = [
@@ -26,12 +30,12 @@ const COMMANDS: Record<string, TCommand> = {
       { id: 2, name: 'Latte', price: 45000 },
       { id: 3, name: 'Cold brew', price: 50000 },
     ];
-    const id = payload.id;
+    const id = payload.query?.id;
     return id === undefined ? rows : rows.find((row) => row.id === Number(id));
   },
   'auth/login': (payload) => ({
     userId: 7,
-    token: { value: `ipc-${String(payload.body?.username)}`, type: 'Bearer' },
+    token: { value: `ipc-${usernameOf(payload.body)}`, type: 'Bearer' },
   }),
 };
 
@@ -98,7 +102,7 @@ const list = await dataProvider.send<{ id: number; name: string }[]>({
 });
 const one = await dataProvider.send<{ id: number; name: string }>({
   resource: 'products',
-  params: { method: RequestMethods.GET, id: 2 },
+  params: { method: RequestMethods.GET, query: { id: 2 } },
 });
 const login = await dataProvider.send<{ userId: number }>({
   resource: 'auth/login',
