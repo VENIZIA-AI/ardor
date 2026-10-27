@@ -240,7 +240,7 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
     'Pack the release tarball',
     'Validate packed manifest',
     'Validate dependencies exist on the registry',
-  ])('it has the gate "%s"', name => {
+  ])('it has the gate "%s"', (name) => {
     expect(at(name)).toBeGreaterThan(-1);
   });
 
@@ -347,7 +347,7 @@ describe('nextTagsToHeal: `next` is never below `latest`', () => {
         { name: 'c', latest: '0.3.1', next: '0.3.1-0' },
       ],
     });
-    expect(healed.map(entry => entry.name)).toEqual(['a', 'c']);
+    expect(healed.map((entry) => entry.name)).toEqual(['a', 'c']);
   });
 });
 
@@ -426,7 +426,7 @@ describe('withPublished: the version just published beats a stale registry read'
       published: { name: 'a', version: '0.3.1', tag: 'latest' },
     });
     expect(packages[1]).toEqual({ name: 'b', latest: '0.3.0', next: '0.1.4-5' });
-    expect(nextTagsToHeal({ packages }).map(entry => entry.name)).toEqual(['a', 'b']);
+    expect(nextTagsToHeal({ packages }).map((entry) => entry.name)).toEqual(['a', 'b']);
   });
 
   test('a published package the registry did not list is added', () => {
@@ -498,9 +498,8 @@ describe('the workflow passes what it published, and can heal alone', () => {
 describe('package-release.yml guards, one mutation per guard', () => {
   const workflow = readFileSync(join(ROOT, '.github/workflows/package-release.yml'), 'utf8');
   const presetSmoke = readFileSync(join(ROOT, 'scripts/preset/preset-smoke.ts'), 'utf8');
-  const vulcanPin: string = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).devDependencies[
-    '@venizia/vulcan'
-  ];
+  const vulcanPin: string = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+    .devDependencies['@venizia/vulcan'];
 
   const headOf = (text: string): string => text.split(/\njobs:\n/)[0] ?? '';
 
@@ -575,7 +574,9 @@ describe('package-release.yml guards, one mutation per guard', () => {
         (match) => match[1] === 'NPM_ACCESS_TOKEN',
       );
       const placed = ['release', 'heal-next'].every((name) => {
-        const withSecret = stepsOf(jobs[name] ?? '').filter((step) => step.text.includes('secrets.'));
+        const withSecret = stepsOf(jobs[name] ?? '').filter((step) =>
+          step.text.includes('secrets.'),
+        );
 
         return withSecret.length > 0 && withSecret.every((step) => NPM_STEPS.includes(step.name));
       });
@@ -622,18 +623,25 @@ describe('package-release.yml guards, one mutation per guard', () => {
       guard: 'developOnly',
       name: 'the heal job loses the develop condition',
       mutate: (text) =>
-        text.replace("github.ref == 'refs/heads/develop' && inputs.heal_only == true", 'inputs.heal_only == true'),
+        text.replace(
+          "github.ref == 'refs/heads/develop' && inputs.heal_only == true",
+          'inputs.heal_only == true',
+        ),
     },
     {
       guard: 'developOnly',
       name: 'the release job loses the develop condition',
       mutate: (text) =>
-        text.replace("github.ref == 'refs/heads/develop' && inputs.heal_only != true", 'inputs.heal_only != true'),
+        text.replace(
+          "github.ref == 'refs/heads/develop' && inputs.heal_only != true",
+          'inputs.heal_only != true',
+        ),
     },
     {
       guard: 'minimalPermissions',
       name: 'the workflow default is write',
-      mutate: (text) => text.replace('\npermissions:\n  contents: read\n', '\npermissions:\n  contents: write\n'),
+      mutate: (text) =>
+        text.replace('\npermissions:\n  contents: read\n', '\npermissions:\n  contents: write\n'),
     },
     {
       guard: 'minimalPermissions',
@@ -690,7 +698,8 @@ describe('package-release.yml guards, one mutation per guard', () => {
     {
       guard: 'actionsByCommit',
       name: 'an action goes back to a tag',
-      mutate: (text) => text.replace(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/, 'actions/checkout@v6.0.3'),
+      mutate: (text) =>
+        text.replace(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/, 'actions/checkout@v6.0.3'),
     },
   ];
 
@@ -715,12 +724,18 @@ describe('package-release.yml guards, one mutation per guard', () => {
   test('pinnedVulcan fails when preset-smoke asks for the latest VULCAN', () => {
     expect(
       guards.pinnedVulcan(
-        workflow.replace(/VULCAN_CMD: bun x @venizia\/vulcan@\S+/, 'VULCAN_CMD: bun x @venizia/vulcan@latest'),
+        workflow.replace(
+          /VULCAN_CMD: bun x @venizia\/vulcan@\S+/,
+          'VULCAN_CMD: bun x @venizia/vulcan@latest',
+        ),
         presetSmoke,
       ),
     ).toBe(false);
     expect(
-      guards.pinnedVulcan(workflow, presetSmoke.replace(/bun x @venizia\/vulcan@\S+/, 'bun x @venizia/vulcan@latest')),
+      guards.pinnedVulcan(
+        workflow,
+        presetSmoke.replace(/bun x @venizia\/vulcan@\S+/, 'bun x @venizia/vulcan@latest'),
+      ),
     ).toBe(false);
   });
 
