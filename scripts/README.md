@@ -18,15 +18,13 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | `checks/` | `purity/manifest.ts` | The claims only: which entries are browser-pure and what each leaves external. The engine is `devz check purity` | `make purity`, `make purity-<pkg>` (CI, release workflow) |
 | `checks/` | `clean-install/` | Loads each package's published sub-paths from packed tarballs in an empty project under `.agents/local/tmp`; every bare import must come from that project (`sandbox-guard.ts`, `bun-probe.ts`, `node-guard.mjs`) | `make clean-install`, `make clean-install-<pkg>` (CI, release workflow) |
 | (root) | `scratch.ts` | `makeScratch`: a new folder under the repo's gitignored `.agents/local/tmp`, never the system temp folder | `preset/preset-smoke.ts`, `checks/clean-install/cli.ts` |
-| (root) | `const-value.ts` | `TConstValue`: the union of the string values of a const class (V-C-08), the scripts' copy of the type the packages use | `release/release-version.ts`, `preset/preset-smoke.ts`, `wiki/wiki-anchors.ts` |
+| (root) | `const-value.ts` | `TConstValue`: the union of the string values of a const class (V-C-08), the scripts' copy of the type the packages use | `release/release-version.ts`, `preset/preset-smoke.ts` |
 | `build/` | `force-update.sh` | Raises a package's `@venizia/*` dependencies to the registry's highest | the `force-update` script of each package and of the wiki, `make update-<pkg>`, `package-release.yml` |
 | `build/` | `refresh-catalog.ts` | Moves every `@venizia/*` entry of the root catalog to the highest published version | `package-release.yml`, by hand |
-| `wiki/` | `wiki-anchors.ts` | Every `#fragment` the wiki links to exists on its page | `make wiki-anchors-check` (CI) |
-| `wiki/` | `wiki-source-links.ts` | Every source path the wiki and the knowledge bundle name is tracked by git | `make wiki-links-check` (CI) |
 
 The cycles, split-report, catalog and purity gates are the shared `devz check <name>` commands of
 `@venizia/dev-configs`; this repository keeps their data (`checks/purity/manifest.ts`) and the positive
-controls that run the engines on fixtures. `make test-scripts` runs the `__tests__/` of `release/`, `preset/`,
-`checks/` and `wiki/`. The tests of `checks/purity/` run under `make purity-test`. The test of the preset's entrypoint script
+controls that run the engines on fixtures. `make test-scripts` runs the `__tests__/` of `release/`, `preset/` and
+`checks/`. The tests of `checks/purity/` run under `make purity-test`. The test of the preset's entrypoint script
 (`preset/__tests__/runtime-config-entrypoint.test.ts`) and the manifest check
 (`release/__tests__/sibling-versions.test.ts`) sit with the group they protect.
