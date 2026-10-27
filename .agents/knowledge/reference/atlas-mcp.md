@@ -14,6 +14,7 @@ tags: [reference, atlas, mcp, tooling]
 - [Tools](#tools)
 - [Symbols and releases](#symbols-and-releases)
 - [When an answer is stale](#when-an-answer-is-stale)
+- [The prebuilt index of this repository](#the-prebuilt-index-of-this-repository)
 - [Related](#related)
 <!-- okf:generated:contents end -->
 
@@ -132,6 +133,10 @@ nothing is committed to compare. `make atlas-smoke` is manual and gates nothing:
 server against this repository and checks that it names itself `ardor-atlas`,
 lists the five tools, finds `no-auth-paths` in the knowledge corpus and the data provider page in
 the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.
+
+## The prebuilt index of this repository
+
+ARDOR publishes the atlas index of its own commits, so a project that declares ARDOR as a source downloads it instead of building it. `.github/workflows/atlas-index.yml` runs on a push to `main`, to `develop` or of a tag, builds the index through VULCAN's action (`VENIZIA-AI/vulcan/.github/actions/atlas-index`, pinned by commit to the installed VULCAN release, a bump is a deliberate pull request), signs it with the Actions secret `ATLAS_INDEX_KEY` and attaches the pair to the release `atlas-index`. The public half of the key is `atlas.index.keys` in `.configs/vulcan.config.mts`, rendered into `.agents/vulcan.manifest.json`; a reader accepts a pair only when a listed key verifies it, and otherwise builds locally as before. The job has `contents: write` and nothing else does; the secret is read only by the publishing step; `scripts/release/__tests__/atlas-index-workflow.test.ts` holds those rules. **Known limit:** the release workflow pushes its release commits and tags with the Actions token, and GitHub starts no workflow from those pushes, so a release tag of ARDOR gets no pair until ARDOR moves to a VULCAN whose release runs the action itself (0.4.7); the next push to `develop` covers the head. Rotating the key: make a new key, replace the secret, replace the public key in the config and run `vulcan sync`; pairs signed by the old key then stop verifying and readers build locally.
 
 ## Related
 
