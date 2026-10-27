@@ -9,7 +9,7 @@ An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` alr
 
 ## Run modules in the order they import each other
 
-Rolldown can run a split-off chunk before the module that it depends on. Take a dependency injection (DI) package that needs `Reflect.getMetadata` as it is evaluated, and `reflect-metadata` in another chunk. The production build then fails in the browser with `Reflect.getMetadata is not a function`, while `vite dev` works ([vitejs/vite#21866](https://github.com/vitejs/vite/issues/21866)).
+Rolldown can run a split-off chunk before the module that it depends on. Take a dependency injection (DI) package that needs `Reflect.getMetadata` as it is evaluated, and `reflect-metadata` in another chunk. The production build then fails in the browser with `Reflect.getMetadata is not a function`, while `vite dev` works ([vitejs/vite#21866](https://github.com/vitejs/vite/issues/21866)). One reported case was fixed in Vite 8.0.6. The class is not fixed: the thread ends with the Rolldown team saying that splitting cannot guarantee execution order and that `output.strictExecutionOrder` is the way, and a four-file case still fails on Vite 8.3.5 with the flag off.
 
 Turn on `output.strictExecutionOrder`, as the preset does:
 
@@ -35,6 +35,18 @@ export default defineConfig({
 | JavaScript, gzip | 185,386 B | 191,757 B (+3.4%) |
 
 The extra weight is in the `vendor` chunk, which the browser caches across deploys. This was measured on Vite 8.3.5 with Rolldown 1.2.14, and the built app loads in a real browser with no console error. An app on Vite 8.1.0 reported `React$12 is not defined` with the flag on. Keep Vite at 8.3.5 or newer, and check the built app in a browser after you turn the flag on.
+
+**The flag costs size, and the cost grows with the number of chunks.** Rolldown wraps modules with runtime helpers and can duplicate shared code. Rolldown's own documentation warns that the option increases bundle size. An app with hundreds of lazy chunks and locale files pays more than the four-chunk example above: one team measured 5 to 8% more raw JavaScript and CSS and 10 to 12% more gzip on its production apps.
+
+### Decide for your app
+
+The preset keeps the flag on because a new app cannot tell why a production-only failure points at a library. For an app that has grown, decide with a measurement:
+
+1. Build twice, with the flag on and off, and compare the raw and gzip size of `dist` and the number of chunks.
+2. Open the built app (`vite preview`, not `vite dev`) in a real browser and read the console.
+3. Turn the flag off only if the built app boots clean and you keep a check of the built app in CI: a later import can change how chunks are shared and bring the failure back.
+
+An app that wants no size cost can instead make sure `reflect-metadata` loads before each DI module it owns, for example with a Vite `transform` hook that adds `import 'reflect-metadata'` at the top of the DI package's files. That is measured by the team that uses it, not by ARDOR.
 
 The ARDOR repository pins this: a test builds a DI module that guards on `Reflect.getMetadata` in a chunk of its own, and it fails with the flag off and passes with it on. The same test fails the day Rolldown orders that module correctly by itself, which is when the flag can go.
 
