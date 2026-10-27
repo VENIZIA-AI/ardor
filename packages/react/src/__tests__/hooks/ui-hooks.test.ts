@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, mock } from 'bun:test';
+import { describe, test, expect, afterEach, beforeEach, jest, mock } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 import { configureStore, createSlice, type Dispatch, type UnknownAction } from '@reduxjs/toolkit';
@@ -13,9 +13,20 @@ import { useSizer, type IUseSizerOptions } from '@/hooks/use-sizer';
 import { createAppDispatch } from '@/hooks/redux/use-app-dispatch';
 import { createAppSelectors } from '@/hooks/redux/use-app-selector';
 
-const wait = ({ ms }: { ms: number }): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+// A fake clock, not a sleep: the debounce fires when the test says so, on any runner.
+const useFakeClock = (): void => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+};
+
+const advance = async ({ ms }: { ms: number }): Promise<void> => {
+  await act(async () => {
+    jest.advanceTimersByTime(ms);
   });
 };
 
@@ -73,6 +84,8 @@ const createContainerElement = ({
 };
 
 describe('useDebounce', () => {
+  useFakeClock();
+
   test('returns the initial value immediately and the new value only after delay', async () => {
     const { result, rerender } = renderHook(
       ({ value, delay }: { value: string; delay: number }) => {
@@ -86,9 +99,7 @@ describe('useDebounce', () => {
     rerender({ value: 'updated', delay: 20 });
     expect(result.current.debouncedValue).toBe('initial');
 
-    await act(async () => {
-      await wait({ ms: 40 });
-    });
+    await advance({ ms: 40 });
 
     expect(result.current.debouncedValue).toBe('updated');
   });
@@ -105,15 +116,15 @@ describe('useDebounce', () => {
 
     rerender({ value: 'updated', delay: 20, enabled: false });
 
-    await act(async () => {
-      await wait({ ms: 40 });
-    });
+    await advance({ ms: 40 });
 
     expect(result.current.debouncedValue).toBe('initial');
   });
 });
 
 describe('useAutosave', () => {
+  useFakeClock();
+
   test('does not call onSave on the first render', () => {
     const onSaveMock = mock((_data: string) => {});
 
@@ -145,9 +156,7 @@ describe('useAutosave', () => {
     rerender({ data: 'modified' });
     expect(onSaveMock).not.toHaveBeenCalled();
 
-    await act(async () => {
-      await wait({ ms: 40 });
-    });
+    await advance({ ms: 40 });
 
     expect(onSaveMock).toHaveBeenCalledTimes(1);
     expect(onSaveMock).toHaveBeenCalledWith('modified');
@@ -177,9 +186,7 @@ describe('useAutosave', () => {
       enabled: false,
     });
 
-    await act(async () => {
-      await wait({ ms: 40 });
-    });
+    await advance({ ms: 40 });
 
     expect(onSaveMock).not.toHaveBeenCalled();
   });
