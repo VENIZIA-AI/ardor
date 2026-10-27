@@ -29,7 +29,7 @@ import {
   readReleaseArgs,
   type TReleaseTarget,
 } from './release-version';
-import { waitForTarball } from './release-wait';
+import { waitForCompletion, waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
@@ -214,20 +214,21 @@ const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> =
   throw new Error('Dispatched, but no new workflow run appeared within two minutes.');
 };
 
-const waitForCompletion = async (opts: { runId: string }): Promise<string> => {
-  for (;;) {
-    const { stdout } = await run({
-      command: ['gh', 'run', 'view', opts.runId, '--json', 'status,conclusion'],
-    });
+const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
+  waitForCompletion({
+    runId: opts.runId,
+    readRun: async ({ runId }) => {
+      const { stdout } = await run({
+        command: ['gh', 'run', 'view', runId, '--json', 'status,conclusion'],
+      });
 
-    const { status, conclusion } = JSON.parse(stdout) as { status: string; conclusion: string };
-    if (status === 'completed') {
-      return conclusion;
-    }
-
-    await sleep(10_000);
-  }
-};
+      return JSON.parse(stdout) as { status: string; conclusion: string };
+    },
+    // The release job waits for an approval in the Actions page; say so, and keep waiting.
+    onWaiting: ({ runId }) => {
+      console.log(`  run ${runId} is waiting for an approval in the Actions page - still waiting`);
+    },
+  });
 
 /**
  * A green workflow is not proof of a publish. Verified against the registry, because the release
@@ -294,7 +295,7 @@ const releasePackage = async (opts: {
   const runId = await waitForNewRun({ previousRunId });
   console.log(`  run ${runId} - waiting...`);
 
-  const conclusion = await waitForCompletion({ runId });
+  const conclusion = await waitForRunCompletion({ runId });
   if (conclusion !== 'success') {
     throw new Error(
       `Run ${runId} finished '${conclusion}'. See: gh run view ${runId} --log-failed`,
