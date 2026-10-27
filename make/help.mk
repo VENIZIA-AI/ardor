@@ -52,7 +52,7 @@ help:
 	@$(HELP_ROW) "fmt-files" "Format those files with bun fmt (part of lint-fix)."
 	@$(HELP_ROW) "fmt-scripts" "Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it)."
 	@$(HELP_ROW) "test-scripts" "Run the repository gate scripts' own regression tests."
-	@$(HELP_ROW) "purity-test" "Run the purity probe's own regression tests."
+	@$(HELP_ROW) "purity-test" "Run the purity gate's regression tests (the shared engine on ARDOR's fixtures)."
 	@echo ""
 	@echo "Knowledge bundle (.agents/knowledge):"
 	@$(HELP_ROW) "okf-check" "Check the knowledge bundle against OKF v0.2."

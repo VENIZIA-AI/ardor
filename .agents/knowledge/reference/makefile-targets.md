@@ -68,7 +68,7 @@ generated:
 | `make purity-ardor` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-kernel` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-react` | - | Gate: one package's browser-pure entries. Needs a build. |
-| `make purity-test` | - | Run the purity probe's own regression tests. |
+| `make purity-test` | - | Run the purity gate's regression tests (the shared engine on ARDOR's fixtures). |
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
 | `make release` | - | Dispatch the release workflow per package, e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |

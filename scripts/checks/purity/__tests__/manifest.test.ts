@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { assertNoWorkspaceExternal, deriveEntries, PURITY_MANIFEST } from '../manifest';
-import type { IPurityEntry } from '../manifest';
+import {
+  assertNoWorkspaceExternal,
+  buildManifest,
+  deriveEntries,
+} from '@venizia/dev-configs/checks';
+import type { IPurityEntry } from '@venizia/dev-configs/checks';
+import { PURITY_CLAIMS } from '../manifest';
 
 const REPOSITORY_ROOT = join(__dirname, '../../../..');
+
+const PURITY_MANIFEST = buildManifest({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
 
 /** Entries that run in Node, in the build of an app: they carry no browser claim, and nothing else is exempt. */
 const NODE_ONLY_ENTRIES = ['packages/ardor/dist/vite/index.js'];
@@ -142,14 +149,20 @@ describe('PURITY_MANIFEST derivation', () => {
   });
 
   test('a claimed sub-path that the exports map no longer publishes fails the derivation', () => {
-    expect(() => deriveEntries({ package: 'kernel', subpaths: ['./renamed-away'] })).toThrow(
-      /no longer\s+publishes/,
-    );
+    expect(() =>
+      deriveEntries({
+        claim: { package: 'kernel', subpaths: ['./renamed-away'] },
+        root: REPOSITORY_ROOT,
+      }),
+    ).toThrow(/no longer\s+publishes/);
   });
 
   test('an external declared for a sub-path that is gone fails the derivation', () => {
     expect(() =>
-      deriveEntries({ package: 'admin', external: { './renamed-away': ['ra-core'] } }),
+      deriveEntries({
+        claim: { package: 'admin', external: { './renamed-away': ['ra-core'] } },
+        root: REPOSITORY_ROOT,
+      }),
     ).toThrow(/no longer\s+publishes/);
   });
 
