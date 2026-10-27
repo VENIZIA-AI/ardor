@@ -243,6 +243,7 @@ export class ShopApplication extends BaseArdorApplication {
 | `enableDebug` | `boolean` | No | Enables debug-level logging in the application logger. Default is `false`. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<RouteProps>` | No | Custom route definitions registered inside `CustomRoutes` before feature routes. |
+| `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list). |
 | `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties passed directly to `CoreAdmin` (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`). |
 
 ### Render Lifecycle
@@ -253,8 +254,8 @@ When rendered, `ArdorApplication` executes the following sequence:
    - `CoreBindings.DEFAULT_REST_DATA_PROVIDER`: Required. Resolves `IDataProvider`, which extends react-admin's nine data methods with `send`, `getNetworkService`, and `getDataSourceAuth`. See [Data provider](./data-provider).
    - `CoreBindings.DEFAULT_AUTH_PROVIDER`: Optional (`isOptional: true`). If unbound, react-admin runs without an auth provider - every page is public. See [Auth provider](./auth-provider).
    - `CoreBindings.DEFAULT_I18N_PROVIDER`: Required. Resolves the `I18nProvider` implementation. See [i18n](./i18n).
-2. **Mounts Resources and Routes**: Reads features from `CoreBindings.FEATURES` via `Features.read({ container })` and mounts the application's own `resources` and `routes`, followed by each feature's resources and routes in order via `Features.mount({ features, resources, routes })`. If duplicate resource names are detected across the application and mounted features, an error is thrown.
-3. **Verifies Translation Readiness**: Calls `useFeatureMessagesReady`. If any feature supplies lazy translation loaders for the active locale, `changeLocale()` is triggered, and `suspense` is rendered until messages are loaded.
+2. **Mounts Resources and Routes**: Reads features from `CoreBindings.FEATURES` via `Features.read({ container })`, or takes the `features` prop instead, and mounts the application's own `resources` and `routes`, followed by each feature's resources and routes in order via `Features.mount({ features, resources, routes })`. If duplicate resource names are detected across the application and mounted features, an error is thrown.
+3. **Verifies Translation Readiness**: Calls `useFeatureMessagesReady`. If any mounted feature supplies lazy translation loaders for the active locale, `changeLocale()` is triggered, and `suspense` is rendered until messages are loaded.
 4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`), and `React.Suspense` (`suspense`).
 5. **Renders CoreAdmin**: Forwards providers and props to `CoreAdmin`, mounting each resource under `<Resource />` and routes under `<CustomRoutes>`.
 

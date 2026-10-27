@@ -15,6 +15,7 @@ import type {
   TRequestMethod,
   TRequestType,
 } from '@venizia/ardor-kernel';
+import type { TFeature } from '@/features/feature';
 
 /** What `DefaultRestDataProvider.request` sends: every react-admin method goes through it. */
 export interface IRestRequestOptions<TResource extends string = string> {
@@ -89,4 +90,11 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   resources?: Array<ResourceProps>;
   /** The application's own routes; each feature's are mounted after them. */
   routes?: Array<RouteProps>;
+  /**
+   * The features to mount, when the shell mounts fewer than the application bound - filter
+   * `Features.read({ container })` and pass the result. Absent, every bound feature is mounted. The
+   * list is read as given: pass the same array until the filter changes, and remount the application
+   * (a `key`) when it does.
+   */
+  features?: Array<TFeature>;
 }
