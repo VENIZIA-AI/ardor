@@ -19,6 +19,9 @@ bun.lockb
 dist/
 release/
 build/
+# The folders of that name under scripts/ hold source: a new file there is tracked, not ignored.
+!scripts/release/
+!scripts/build/
 app_data/
 *.tsbuildinfo
 .lock-wscript
