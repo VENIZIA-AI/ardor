@@ -1,3 +1,16 @@
+import type {
+  AnyObject,
+  AnyType,
+  TConstValue,
+  TNumberConstValue,
+  TPrettify,
+  TStringConstValue,
+  ValueOf,
+  ValueOptional,
+  ValueOptionalExcept,
+  ValueOrPromise,
+} from '@venizia/ignis-helpers/common';
+import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import type { TClass } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -14,22 +27,19 @@ export type StringIdType = string;
 export type IdType = string | number;
 export type NullableType = undefined | null | void;
 
-export type AnyType = any;
-export type AnyObject = Record<string | symbol | number, any>;
-
-export type ValueOrPromise<T> = T | Promise<T>;
-export type ValueOf<T> = T[keyof T];
-
-export type ValueOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-export type ValueOptionalExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>;
-
-// `& {}` turns the widening literals of `static readonly` members into regular ones, so a value
-// copied into an object literal or a `let` keeps its union instead of widening to string/number.
-export type TStringConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string> & {};
-export type TNumberConstValue<T extends TClass<any>> = Extract<ValueOf<T>, number> & {};
-export type TConstValue<T extends TClass<any>> = Extract<ValueOf<T>, string | number> & {};
-
-export type TPrettify<T> = { [K in keyof T]: T[K] } & {};
+// The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
+export type {
+  AnyObject,
+  AnyType,
+  TConstValue,
+  TNumberConstValue,
+  TPrettify,
+  TStringConstValue,
+  ValueOf,
+  ValueOptional,
+  ValueOptionalExcept,
+  ValueOrPromise,
+};
 
 export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
 export type TEnvironment = TStringConstValue<typeof Environments>;
@@ -269,6 +279,11 @@ export interface IApplicationInfo {
   version: string;
   description: string;
   author?: { name: string; email: string; url?: string };
+}
+
+/** The `build-info.json` that the `buildInfoFile` Vite plugin of `@venizia/ardor/vite` writes: IGNIS's build stamp and the installed versions of the framework packages. */
+export interface IBuildInfoFile extends TBuildInfoRecord {
+  frameworks: Record<string, string>;
 }
 
 export type TDataCount<T> = {

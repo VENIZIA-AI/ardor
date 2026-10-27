@@ -38,16 +38,16 @@ test-scripts:
 # ----------------------------------------------------------------------------
 purity:
 	@echo "🔍 Checking browser purity for all claimed entries..."
-	@bun scripts/checks/purity/cli.ts
+	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts
 
-# The probe's own regression tests. They live outside every package, so nothing else runs them.
+# The positive controls of the shared purity engine, run against ARDOR's fixtures and claims. They live outside every package, so nothing else runs them.
 purity-test:
-	@echo "🔍 Running the purity probe's regression tests..."
+	@echo "🔍 Running the purity gate's regression tests..."
 	@bun test scripts/checks/purity/__tests__
 
 $(addprefix purity-,$(PURE)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
-	@bun scripts/checks/purity/cli.ts $*
+	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts $*
 
 # ----------------------------------------------------------------------------
 # CLEAN-INSTALL TARGETS
@@ -70,7 +70,7 @@ layer-check:
 
 # `--max 0` is what makes this a gate; without it the script only reports.
 cycles-check:
-	@$(foreach p,$(PACKAGES),bun scripts/checks/module-cycles.ts packages/$(p)/dist --max 0 &&) true
+	@$(foreach p,$(PACKAGES),bun x --no-install devz check module-cycles packages/$(p)/dist --max 0 &&) true
 
 # Bundle budgets, measured brotlied with every third-party peer external.
 size-check:

@@ -3,7 +3,7 @@ import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { makeScratch } from '../../scratch';
-import { ModuleGraph } from '../module-cycles';
+import { ModuleGraph } from '@venizia/dev-configs/checks';
 
 const tmpDirs: string[] = [];
 

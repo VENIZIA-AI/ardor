@@ -101,6 +101,52 @@ ARDOR enforces isolation during startup and mount:
 - **Duplicate resource name (`mount`):** If a resource name is mounted more than once, `Features.mount()` in `packages/admin/src/features/feature.ts` throws:
   `[features] Resource '${resource.name}' is mounted by both '${owner}' and '${entry.owner}' | A resource name is unique within an application`
 
+## Mount a filtered list
+
+`ArdorApplication` mounts every bound feature unless you pass `features`. A shell that serves an industry, a plan or a role filters `Features.read` with its own rule and passes the result:
+
+```tsx
+import React from 'react';
+import { type Store } from '@reduxjs/toolkit';
+import {
+  ArdorApplication,
+  type BaseArdorApplication,
+  Features,
+  type TFeature,
+} from '@venizia/ardor';
+
+interface IIndustryExtension {
+  industries: Array<string>;
+}
+
+export const IndustryShell: React.FC<{
+  application: BaseArdorApplication;
+  reduxStore: Store;
+  industry: string;
+}> = ({ application, reduxStore, industry }) => {
+  const features = React.useMemo(() => {
+    return Features.read<TFeature<IIndustryExtension>>({ container: application }).filter(
+      (feature) => feature.industries.includes(industry),
+    );
+  }, [application, industry]);
+
+  // A new industry is a new application: the key remounts it.
+  return (
+    <ArdorApplication
+      key={industry}
+      container={application}
+      reduxStore={reduxStore}
+      suspense={<div>Loading...</div>}
+      features={features}
+    />
+  );
+};
+```
+
+- **The rule is yours.** ARDOR reads no context and has no predicate. `industries` is the shell's own extension, declared with `Features.define<IIndustryExtension>`; ARDOR carries it and never reads it.
+- **The list is read as given.** Pass the same array until the rule's input changes. ARDOR does not re-read it for a new workspace: remount the application with a `key` when the industry, plan or merchant changes. That remount is the app's job.
+- **Left out is not unbound.** A feature missing from `features` mounts no resource and no route, but the container still holds its configurations, and the i18n provider still holds its messages. A message key two features define still throws, even if one of them is not mounted.
+
 ## Message loading and suspense
 
 Feature messages are merged per locale by `FeatureMessages.combine()` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.

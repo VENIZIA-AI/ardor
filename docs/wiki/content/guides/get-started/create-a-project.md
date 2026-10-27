@@ -45,7 +45,7 @@ demo/
     .configs/builders/{vite.config.mts,Dockerfile,nginx.conf.template}
     .configs/builders/nginx-snippets/{security-headers.conf,api-proxy.conf}
     .configs/builders/docker-entrypoint.d/{40-runtime-config.sh,45-api-proxy.sh}
-    src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts
+    src/index.html  src/public/config.js  src/main.tsx  src/application.ts  src/application.test.ts  src/boot.test.ts
     src/configurations/admin.configuration.ts
     src/pages/home.tsx
     src/components/shadcn/{button,card}.tsx
@@ -61,6 +61,7 @@ demo/
 - `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them. There is no `components.json` (the app root holds nothing else): to add more with the shadcn CLI, run `bunx shadcn init` first, which writes its own.
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
 - `src/application.test.ts` has two tests: the container binds the REST data provider options (the API is `/api` by default), and the API url is the one `config.js` wrote when the container started.
+- `src/boot.test.ts` calls `assertArdorApplicationBoots` on the real `Application`: every binding resolves, the providers the first render needs are bound and the messages load, with no browser and no network. See [Testing](../../references/testing).
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
 - `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
 - `bunfig.toml` at the root of the monorepo holds the format of every file: its `[fmt]` section sets the print width, single quotes and arrow parentheses, and `devz lint` formats with `bun fmt`, which reads it from the app's folder up. There is no formatter config in the app.

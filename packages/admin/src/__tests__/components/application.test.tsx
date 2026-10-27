@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore } from '@reduxjs/toolkit';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
+import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { CoreBindings } from '@venizia/ardor-kernel';
@@ -109,5 +110,85 @@ describe('ArdorApplication with features', () => {
     expect(resolved(CoreBindings.DEFAULT_REST_DATA_PROVIDER)).toBe(1);
     expect(resolved(CoreBindings.DEFAULT_AUTH_PROVIDER)).toBe(1);
     expect(resolved(CoreBindings.DEFAULT_I18N_PROVIDER)).toBe(1);
+  });
+});
+
+const InvoiceList = () => <h1>Open invoices</h1>;
+
+const InvoiceReminders = () => <h1>Reminders</h1>;
+
+const invoices = Features.define({
+  name: 'invoices',
+  resources: [{ name: 'invoices', list: InvoiceList }],
+  routes: [{ path: '/reminders', element: <InvoiceReminders /> }],
+});
+
+const reports = Features.define({
+  name: 'reports',
+  resources: [{ name: 'reports', list: ReportList }],
+  messages: { en: { reports: { title: 'Monthly reports' } } },
+});
+
+const createFeatureContainer = () => {
+  const container = new Container();
+  container.bind({ key: CoreBindings.FEATURES }).toValue([invoices, reports]);
+  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+  container
+    .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+    .toValue(new DefaultI18nProvider({}, [invoices, reports]).value(container));
+
+  return container;
+};
+
+describe('ArdorApplication features prop', () => {
+  const renderAt = (opts: { path: string; features?: Array<TFeature> }) => {
+    return render(
+      <MemoryRouter initialEntries={[opts.path]}>
+        <ArdorApplication
+          container={createFeatureContainer()}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          {...(opts.features ? { features: opts.features } : {})}
+        />
+      </MemoryRouter>,
+    );
+  };
+
+  test('mounts every bound feature when no list is passed', async () => {
+    renderAt({ path: '/reports' });
+    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    cleanup();
+
+    renderAt({ path: '/invoices' });
+    expect(await screen.findByText('Open invoices')).toBeDefined();
+    cleanup();
+
+    renderAt({ path: '/reminders' });
+    expect(await screen.findByText('Reminders')).toBeDefined();
+  });
+
+  test("mounts only the passed list's resources and routes", async () => {
+    renderAt({ path: '/invoices', features: [invoices] });
+    expect(await screen.findByText('Open invoices')).toBeDefined();
+    cleanup();
+
+    renderAt({ path: '/reminders', features: [invoices] });
+    expect(await screen.findByText('Reminders')).toBeDefined();
+    cleanup();
+
+    // The container still binds `reports`; the list left it out, so its page is not mounted.
+    const { container } = renderAt({ path: '/reports', features: [invoices] });
+    await act(async () => {});
+
+    expect(screen.queryByText('Monthly reports')).toBeNull();
+    expect(container.textContent).toBe('');
+  });
+
+  test('an empty list mounts no feature', async () => {
+    const { container } = renderAt({ path: '/invoices', features: [] });
+    await act(async () => {});
+
+    expect(screen.queryByText('Open invoices')).toBeNull();
+    expect(container.textContent).toBe('');
   });
 });

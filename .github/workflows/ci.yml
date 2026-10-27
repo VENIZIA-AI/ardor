@@ -114,6 +114,14 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make test-admin
 
+      - name: Test - ardor
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make test-ardor
+
+      - name: Type-check the examples
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make typecheck-examples
+
       - name: Layer boundaries
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make layer-check

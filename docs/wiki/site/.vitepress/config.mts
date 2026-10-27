@@ -1,13 +1,11 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
 import { withMermaid } from 'vitepress-plugin-mermaid';
+import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
+import { venziaCodeTheme } from './theme/shared/code-theme.ts';
+import { VENIZIA_LOGO_SVG } from './theme/shared/venizia-logo.ts';
 
 // Every page under content/ must be reachable from a sidebar below - scripts/check-sidebar.mts fails
 // the build on an orphan page or a dead link.
-
-// The VENIZIA wordmark (https://venizia.ai/assets/logo.svg), inline so the header fetches nothing. The dark
-// letters use currentColor, so they follow the header text colour in light and dark mode.
-const VENIZIA_LOGO =
-  '<svg viewBox="0 0 119 28.8893" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><g><circle cx="67.7365" cy="6.20154" r="3.35925" fill="#0A6BFF"/><circle cx="95.6441" cy="6.20163" r="3.35925" fill="#0A6BFF"/><path d="M65.4105 5.58664C65.4105 5.58664 78.6315 2.16855e-05 81.3024 2.16855e-05C83.9733 2.16854e-05 97.1942 5.58664 97.1942 5.58664L93.455 8.01055C93.455 8.01055 87.579 4.0824 81.3024 4.0824C75.0258 4.0824 70.2182 8.01055 70.2182 8.01055L65.4105 5.58664Z" fill="#0A6BFF"/></g><g><path d="M7.21053 28.6247L0 10.5364H5.03888L11.2788 26.144H8.63278L15.0825 10.8299H20.0439L12.5357 28.6247H7.21053Z" fill="currentColor"/><path d="M30.4961 28.8893C28.4674 28.8893 26.6814 28.4924 25.1378 27.6986C23.6163 26.9047 22.4366 25.8243 21.5987 24.4571C20.7608 23.0679 20.3418 21.4913 20.3418 19.7273C20.3418 17.9412 20.7498 16.3646 21.5656 14.9975C22.4036 13.6083 23.5392 12.5278 24.9724 11.7561C26.4057 10.9622 28.0264 10.5653 29.8346 10.5653C31.5766 10.5653 33.1422 10.9402 34.5313 11.6899C35.9426 12.4176 37.0561 13.476 37.872 14.8652C38.6878 16.2323 39.0958 17.8751 39.0958 19.7935C39.0958 19.9919 39.0848 20.2234 39.0627 20.488C39.0407 20.7306 39.0186 20.9621 38.9966 21.1826H24.5425V18.1727H36.2843L34.2998 19.0658C34.2998 18.1397 34.1124 17.3348 33.7375 16.6513C33.3627 15.9677 32.8445 15.4385 32.183 15.0636C31.5214 14.6667 30.7497 14.4683 29.8677 14.4683C28.9856 14.4683 28.2028 14.6667 27.5193 15.0636C26.8578 15.4385 26.3396 15.9787 25.9647 16.6843C25.5899 17.3679 25.4024 18.1838 25.4024 19.1319V19.9258C25.4024 20.896 25.6119 21.7559 26.0309 22.5057C26.4719 23.2333 27.0783 23.7956 27.85 24.1925C28.6439 24.5674 29.57 24.7548 30.6284 24.7548C31.5766 24.7548 32.4035 24.6115 33.1091 24.3248C33.8367 24.0382 34.4983 23.6082 35.0936 23.0349L37.8389 26.0117C37.023 26.9378 35.9977 27.6544 34.7629 28.1616C33.528 28.6467 32.1058 28.8893 30.4961 28.8893Z" fill="currentColor"/><path d="M53.3468 10.5653C54.758 10.5653 56.0149 10.852 57.1174 11.4253C58.242 11.9766 59.124 12.8365 59.7635 14.0052C60.4029 15.1518 60.7227 16.6292 60.7227 18.4373V28.6247H55.5628V19.2312C55.5628 17.7979 55.2431 16.7395 54.6036 16.0559C53.9862 15.3723 53.1042 15.0305 51.9576 15.0305C51.1417 15.0305 50.403 15.207 49.7415 15.5598C49.102 15.8905 48.5949 16.4087 48.22 17.1143C47.8672 17.8199 47.6908 18.724 47.6908 19.8265V28.6247H42.531V10.8299H47.4593V15.7582L46.5332 14.2698C47.1726 13.0791 48.0877 12.164 49.2785 11.5245C50.4692 10.8851 51.8253 10.5653 53.3468 10.5653Z" fill="currentColor"/><path d="M65.3998 28.6247V10.5364C65.3998 10.5364 66.1514 11.3116 67.9603 11.3116C69.6399 11.3116 70.5596 10.5364 70.5596 10.5364V28.6247H65.3998Z" fill="currentColor"/><path d="M74.1245 28.6247V25.5156L84.6426 13.0791L85.5356 14.799H74.356V10.8299H89.7032V13.939L79.1851 26.3755L78.259 24.6556H90.0009V28.6247H74.1245Z" fill="currentColor"/><path d="M114.171 28.6247V25.1517L113.84 24.391V18.1727C113.84 17.0702 113.498 16.2102 112.815 15.5928C112.153 14.9754 111.128 14.6667 109.739 14.6667C108.791 14.6667 107.853 14.8211 106.927 15.1298C106.023 15.4164 105.252 15.8133 104.612 16.3205L102.76 12.7152C103.73 12.0317 104.899 11.5025 106.266 11.1276C107.633 10.7528 109.022 10.5653 110.433 10.5653C113.146 10.5653 115.251 11.2048 116.751 12.4837C118.25 13.7626 119 15.7582 119 18.4704V28.6247H114.171ZM108.747 28.8893C107.357 28.8893 106.167 28.6577 105.174 28.1947C104.182 27.7096 103.421 27.0591 102.892 26.2432C102.363 25.4274 102.098 24.5123 102.098 23.4979C102.098 22.4395 102.352 21.5134 102.859 20.7196C103.388 19.9258 104.215 19.3083 105.34 18.8673C106.464 18.4043 107.931 18.1727 109.739 18.1727H114.469V21.1826H110.301C109.088 21.1826 108.25 21.3811 107.787 21.778C107.346 22.1749 107.126 22.671 107.126 23.2664C107.126 23.9279 107.379 24.4571 107.887 24.854C108.416 25.2289 109.132 25.4163 110.036 25.4163C110.896 25.4163 111.668 25.2179 112.352 24.821C113.035 24.402 113.531 23.7956 113.84 23.0018L114.634 25.3833C114.259 26.5299 113.576 27.4009 112.583 27.9962C111.591 28.5916 110.312 28.8893 108.747 28.8893Z" fill="currentColor"/><path d="M93.4131 28.6247V10.5364C93.4131 10.5364 94.1648 11.3116 95.9736 11.3116C97.6532 11.3116 98.5729 10.5364 98.5729 10.5364V28.6247H93.4131Z" fill="currentColor"/></g></g></svg>';
 
 const guidesSidebar: DefaultTheme.SidebarItem[] = [
   { text: 'Guides', items: [{ text: 'Overview', link: '/guides/' }] },
@@ -17,6 +15,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Create a project', link: '/guides/get-started/create-a-project' },
       { text: 'Setup', link: '/guides/get-started/setup' },
+      { text: 'Vite setup', link: '/guides/get-started/vite-setup' },
       { text: 'Quickstart', link: '/guides/get-started/5-minute-quickstart' },
       { text: 'Philosophy', link: '/guides/get-started/philosophy' },
     ],
@@ -79,6 +78,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Repositories', link: '/references/repository' },
       { text: 'Hooks', link: '/references/hooks' },
+      { text: 'Testing', link: '/references/testing' },
     ],
   },
 ];
@@ -110,491 +110,62 @@ const bestPracticesSidebar: DefaultTheme.SidebarItem[] = [
   },
 ];
 
-const changelogsSidebar: DefaultTheme.SidebarItem[] = [
-  {
-    text: 'Overview',
-    items: [
-      { text: 'Introduction', link: '/changelogs/' },
-      { text: 'Template', link: '/changelogs/template' },
-    ],
-  },
-  {
-    text: 'History',
-    collapsed: false,
-    items: [
-      {
-        text: '2026-10-26',
-        collapsed: true,
-        items: [
-          {
-            text: 'ARDOR is built on IGNIS 0.4.3, and the repository sub-path exports HttpReadShapes',
-            link: '/changelogs/2026-10-26-ignis-0-4-3-repository-exports',
-          },
-        ],
-      },
-      {
-        text: '2026-10-25',
-        collapsed: true,
-        items: [
-          { text: 'ARDOR 0.4.1 follows IGNIS 0.4.1', link: '/changelogs/2026-10-25-ardor-0-4-1' },
-          {
-            text: 'An arrow function parameter always has parentheses',
-            link: '/changelogs/2026-10-25-arrow-parens-always',
-          },
-          {
-            text: 'Everything since ARDOR 0.4.1 in one place, with an upgrade checklist',
-            link: '/changelogs/2026-10-25-batch-overview',
-          },
-          {
-            text: 'Correctness fixes in the kernel, the admin and the hooks',
-            link: '/changelogs/2026-10-25-correctness-fixes',
-          },
-          {
-            text: 'The network service is split into small parts, and its types are closed',
-            link: '/changelogs/2026-10-25-network-service-split',
-          },
-          {
-            text: 'The preset image compresses, answers /health, sends security headers and can drop /api',
-            link: '/changelogs/2026-10-25-preset-nginx',
-          },
-          {
-            text: "Repository tooling - release scope, the smoke's Chrome profile, the docs snippet check, const classes in scripts, VULCAN 0.4.4",
-            link: '/changelogs/2026-10-25-repository-tooling',
-          },
-          {
-            text: 'getRuntimeConfig can require a value',
-            link: '/changelogs/2026-10-25-runtime-config-required',
-          },
-          {
-            text: 'The required error of getRuntimeConfig has a code',
-            link: '/changelogs/2026-10-25-runtime-config-required-code',
-          },
-        ],
-      },
-      {
-        text: '2026-10-24',
-        collapsed: true,
-        items: [
-          { text: 'ARDOR 0.4.0 follows IGNIS 0.4.0', link: '/changelogs/2026-10-24-ardor-0-4-0' },
-          {
-            text: 'The knowledge log is gone',
-            link: '/changelogs/2026-10-24-knowledge-log-dropped',
-          },
-          {
-            text: 'The fetcher no longer logs secrets, and four request bugs are fixed',
-            link: '/changelogs/2026-10-24-node-fetcher-fixes',
-          },
-          {
-            text: 'scripts/ is grouped by purpose',
-            link: '/changelogs/2026-10-24-scripts-grouped',
-          },
-          {
-            text: 'The unused scripts and make targets are gone',
-            link: '/changelogs/2026-10-24-unused-scripts-removed',
-          },
-        ],
-      },
-      {
-        text: '2026-10-23',
-        collapsed: true,
-        items: [
-          {
-            text: 'The repository formats with bun fmt',
-            link: '/changelogs/2026-10-23-format-with-bun-fmt',
-          },
-          {
-            text: 'No project keeps a formatter config any more',
-            link: '/changelogs/2026-10-23-no-formatter-config',
-          },
-          {
-            text: 'One code style, set in one bunfig.toml',
-            link: '/changelogs/2026-10-23-one-code-style',
-          },
-          {
-            text: 'The keys of package.json are sorted and checked',
-            link: '/changelogs/2026-10-23-package-json-sorted',
-          },
-          {
-            text: 'A container stops when a required variable is missing',
-            link: '/changelogs/2026-10-23-runtime-config-required-env',
-          },
-        ],
-      },
-      {
-        text: '2026-10-22',
-        collapsed: true,
-        items: [
-          {
-            text: 'Runtime config in the app preset, one image for every environment',
-            link: '/changelogs/2026-10-22-preset-runtime-config',
-          },
-        ],
-      },
-      {
-        text: '2026-10-21',
-        collapsed: true,
-        items: [
-          {
-            text: 'An .env.example that matches the app, ignore files, and a sturdier image',
-            link: '/changelogs/2026-10-21-preset-env-ignore-image',
-          },
-          { text: 'A feature library preset', link: '/changelogs/2026-10-21-preset-lib' },
-          {
-            text: 'A tidy app root and a Dockerfile in the preset',
-            link: '/changelogs/2026-10-21-preset-root-and-image',
-          },
-        ],
-      },
-      {
-        text: '2026-10-20',
-        collapsed: true,
-        items: [
-          {
-            text: 'Every app has the same scripts',
-            link: '/changelogs/2026-10-20-app-script-standard',
-          },
-          { text: 'ARDOR 0.3.0 Is Stable', link: '/changelogs/2026-10-20-ardor-0-3-0-stable' },
-          {
-            text: "The preset's typecheck runs bun check",
-            link: '/changelogs/2026-10-20-preset-bun-check',
-          },
-          {
-            text: 'Silent first run for the ARDOR preset',
-            link: '/changelogs/2026-10-20-preset-first-run',
-          },
-          {
-            text: "The preset app's lint scripts are short",
-            link: '/changelogs/2026-10-20-preset-lint-script',
-          },
-          {
-            text: 'The preset app imports its own modules with #src',
-            link: '/changelogs/2026-10-20-preset-subpath-imports',
-          },
-          {
-            text: 'The generated app is one styled page',
-            link: '/changelogs/2026-10-20-preset-ui',
-          },
-          { text: 'ARDOR ships a VULCAN preset', link: '/changelogs/2026-10-20-vulcan-preset' },
-        ],
-      },
-      {
-        text: '2026-10-19',
-        collapsed: true,
-        items: [
-          {
-            text: 'Augment @venizia/ardor, not the declaring packages',
-            link: '/changelogs/2026-10-19-augment-the-umbrella',
-          },
-          {
-            text: 'toDataUrl no longer needs Promise.withResolvers',
-            link: '/changelogs/2026-10-19-to-data-url-without-with-resolvers',
-          },
-          {
-            text: 'The wiki is rebuilt around the core of ARDOR',
-            link: '/changelogs/2026-10-19-wiki-rebuild',
-          },
-        ],
-      },
-      {
-        text: '2026-10-18',
-        collapsed: true,
-        items: [
-          {
-            text: 'start() names a module cycle in the artifact index',
-            link: '/changelogs/2026-10-18-artifact-cycle-error',
-          },
-          {
-            text: "IGNIS's sign-in is the default, and an application can run with no sign-in",
-            link: '/changelogs/2026-10-18-auth-optional-and-ignis-sign-in',
-          },
-          {
-            text: 'ARDOR follows ignis-boot 0.2.1-11',
-            link: '/changelogs/2026-10-18-boot-pins-class-names',
-          },
-          {
-            text: 'A package depends on its siblings at the exact version released with it',
-            link: '/changelogs/2026-10-18-exact-sibling-versions',
-          },
-          {
-            text: 'The final IGNIS chain, and the examples autoload with the Vite plugin',
-            link: '/changelogs/2026-10-18-final-pin-and-autoload',
-          },
-          {
-            text: 'Options hold data, behaviour lives in protected hooks',
-            link: '/changelogs/2026-10-18-hooks-not-flags',
-          },
-          {
-            text: 'Types, hooks and utilities follow IGNIS house style',
-            link: '/changelogs/2026-10-18-house-style-types-hooks-utilities',
-          },
-          {
-            text: 'ARDOR builds on the IGNIS 0.2.2-12 chain',
-            link: '/changelogs/2026-10-18-ignis-0-2-2-12-chain',
-          },
-          {
-            text: 'ARDOR builds on the IGNIS 0.2.2-9 chain',
-            link: '/changelogs/2026-10-18-ignis-0-2-2-9-chain',
-          },
-          {
-            text: 'One copy of each package that carries identity, owned by the application',
-            link: '/changelogs/2026-10-18-one-copy-of-each',
-          },
-          {
-            text: 'The release script waits for each tarball, and vert-admin splits its vendor chunks',
-            link: '/changelogs/2026-10-18-release-waits-for-the-tarball',
-          },
-          {
-            text: 'login stores roles, and the sign-in extension points are protected hooks',
-            link: '/changelogs/2026-10-18-sign-in-hooks',
-          },
-          {
-            text: 'ARDOR 0.1.4 on stable IGNIS 0.2.2 and VULCAN 0.2.0',
-            link: '/changelogs/2026-10-18-stable-ignis-0-2-2',
-          },
-          {
-            text: 'TPaths stops at a Date, a Set, a function and an any field',
-            link: '/changelogs/2026-10-18-tpaths-stops-at-values',
-          },
-        ],
-      },
-      {
-        text: '2026-10-17',
-        collapsed: true,
-        items: [
-          {
-            text: "ARDOR's agent tooling is VULCAN",
-            link: '/changelogs/2026-10-17-agent-tooling-vulcan',
-          },
-          { text: 'Type checking runs on bun check', link: '/changelogs/2026-10-17-bun-check' },
-          {
-            text: 'A generated artifact index for the application',
-            link: '/changelogs/2026-10-17-generated-artifact-index',
-          },
-          {
-            text: 'PATCH in upper case, log levels, getManyReference without pagination, no NaN count',
-            link: '/changelogs/2026-10-17-patch-log-levels-pagination-count',
-          },
-        ],
-      },
-      {
-        text: '2026-10-16',
-        collapsed: true,
-        items: [
-          {
-            text: 'Every package builds, lints and formats through make',
-            link: '/changelogs/2026-10-16-make-per-package',
-          },
-          {
-            text: 'ARDOR lints with oxlint and formats with oxfmt',
-            link: '/changelogs/2026-10-16-oxlint-oxfmt',
-          },
-        ],
-      },
-      {
-        text: '2026-10-15',
-        collapsed: true,
-        items: [
-          {
-            text: 'ARDOR 0.1.3, stable on the IGNIS 0.2.2 line',
-            link: '/changelogs/2026-10-15-ardor-0-1-3-stable',
-          },
-        ],
-      },
-      {
-        text: '2026-10-14',
-        collapsed: true,
-        items: [
-          {
-            text: 'canAccess reaches an AuthProvider subclass without a fourth super argument',
-            link: '/changelogs/2026-10-14-permission-provider-from-the-container',
-          },
-        ],
-      },
-      {
-        text: '2026-10-12',
-        collapsed: true,
-        items: [
-          {
-            text: 'ARDOR 0.1.2, stable on IGNIS 0.2.1',
-            link: '/changelogs/2026-10-12-ardor-0-1-2-stable',
-          },
-        ],
-      },
-      {
-        text: '2026-10-10',
-        collapsed: true,
-        items: [
-          {
-            text: 'checkError redirects on a 401 or 403 from the data provider',
-            link: '/changelogs/2026-10-10-check-error-reads-status-code',
-          },
-          {
-            text: 'The data provider throws an ApplicationError, and reads Content-Range like IGNIS',
-            link: '/changelogs/2026-10-10-data-provider-errors-through-response-reader',
-          },
-          {
-            text: 'useDocumentTitle no longer overwrites a newer title on unmount',
-            link: '/changelogs/2026-10-10-document-title-cleanup-guard',
-          },
-        ],
-      },
-      {
-        text: '2026-10-09',
-        collapsed: true,
-        items: [
-          {
-            text: 'Const-value types keep their literals when copied',
-            link: '/changelogs/2026-10-09-const-value-types-keep-literals',
-          },
-          {
-            text: 'useDocumentTitle and useHtmlLang',
-            link: '/changelogs/2026-10-09-document-title-and-html-lang-hooks',
-          },
-        ],
-      },
-      {
-        text: '2026-10-07',
-        collapsed: true,
-        items: [
-          {
-            text: 'Class identity survives a minifier',
-            link: '/changelogs/2026-10-07-class-identity-and-container',
-          },
-          {
-            text: 'Feature modules and permissions',
-            link: '/changelogs/2026-10-07-feature-modules',
-          },
-          {
-            text: 'List extras on the data provider and the repository',
-            link: '/changelogs/2026-10-07-list-extras',
-          },
-        ],
-      },
-      {
-        text: '2026-10-06',
-        collapsed: true,
-        items: [
-          {
-            text: 'A repository sends what the data provider sends',
-            link: '/changelogs/2026-10-06-repository-sends-the-session',
-          },
-        ],
-      },
-      {
-        text: '2026-10-02',
-        collapsed: true,
-        items: [
-          {
-            text: "HttpRepository writes and shares the data provider's auth; BaseCrudService is gone",
-            link: '/changelogs/2026-10-02-repository-writes-and-ignis-0-2-1',
-          },
-        ],
-      },
-      {
-        text: '2026-09-24',
-        collapsed: true,
-        items: [
-          {
-            text: 'ARDOR 0.1.1, the first stable line on IGNIS 0.2.0',
-            link: '/changelogs/2026-09-24-ardor-0-1-1-stable',
-          },
-          {
-            text: 'Repositories by discovery, a relative baseUrl, and IGNIS 0.2.0 stable',
-            link: '/changelogs/2026-09-24-remote-repositories-and-relative-base-url',
-          },
-        ],
-      },
-      {
-        text: '2026-09-23',
-        collapsed: true,
-        items: [
-          {
-            text: 'Registration by hand, useRepository, and a clean-install gate',
-            link: '/changelogs/2026-09-23-registration-by-hand-and-clean-install',
-          },
-        ],
-      },
-      {
-        text: '2026-09-19',
-        collapsed: true,
-        items: [
-          {
-            text: 'IGNIS stereotypes and repositories, bulk writes in the body, safer headers',
-            link: '/changelogs/2026-09-19-ignis-repository-and-bulk-writes',
-          },
-        ],
-      },
-      {
-        text: '2026-09-16',
-        collapsed: true,
-        items: [
-          {
-            text: 'The network layer is fetch only, and axios is gone',
-            link: '/changelogs/2026-09-16-fetch-only-network-layer',
-          },
-        ],
-      },
-      {
-        text: '2026-09-11',
-        collapsed: true,
-        items: [
-          {
-            text: 'ARDOR Replaces @minimaltech/ra-core-infra',
-            link: '/changelogs/2026-09-11-ardor-from-ra-core-infra',
-          },
-          {
-            text: 'One logger per scope, singleton services, and a kernel that owns its headers',
-            link: '/changelogs/2026-09-11-kernel-hardening',
-          },
-        ],
-      },
-    ],
-  },
-];
-
 const config = defineConfig({
   base: '/',
   appearance: 'dark',
   markdown: {
-    theme: {
-      light: 'github-light',
-      dark: 'one-dark-pro',
-    },
+    // The code windows are dark in both themes (theme/shared/tokens.css), so one dark theme serves both: the
+    // shared theme built from ARDOR's accent on dark (the same value as --accent-on-dark in theme/product.css).
+    theme: venziaCodeTheme({ accent: '#38bdf8' }),
   },
   srcDir: '../content',
   outDir: './.vitepress/dist',
   srcExclude: ['**/template/**'],
   title: 'ARDOR',
   description:
-    "Frontend application framework for the VENIZIA family - react-admin's data contract on IGNIS's container",
+    'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
+  // The changelog feed (RSS 2.0) is written next to the pages; the changelog has no sidebar, its index is the way in.
+  buildEnd: async (siteConfig) => {
+    await writeChangelogFeed({
+      outDir: siteConfig.outDir,
+      site: {
+        title: 'ARDOR changelog',
+        description: 'What changed in ARDOR, who is affected and what to do about it.',
+        siteUrl: 'https://ardor.venizia.ai',
+      },
+    });
+  },
   head: [
+    [
+      'link',
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: 'ARDOR changelog',
+        href: '/changelog.xml',
+      },
+    ],
     // Favicon + PWA
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
     ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'manifest', href: '/site.webmanifest' }],
-    // Fonts - preconnect
-    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
-    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-    // Fonts - stylesheet
-    [
-      'link',
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap',
-      },
-    ],
+    // The home page and its terminal hide their reveal states only under this class, set before first paint.
+    ['script', {}, "document.documentElement.classList.add('js');"],
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
     [
       'meta',
-      { property: 'og:title', content: "ARDOR - react-admin's data contract on IGNIS's container" },
+      {
+        property: 'og:title',
+        content: 'ARDOR - Shape your admin panels. ARDOR tempers the surface.',
+      },
     ],
     [
       'meta',
       {
         property: 'og:description',
         content:
-          'A react-admin application built as an IGNIS inversion-of-control container: dependency injection in the browser, a typed REST data layer, auth recovery and i18n - one import.',
+          'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
       },
     ],
     ['meta', { property: 'og:url', content: 'https://ardor.venizia.ai/' }],
@@ -604,7 +175,7 @@ const config = defineConfig({
       'meta',
       {
         name: 'twitter:title',
-        content: "ARDOR - react-admin's data contract on IGNIS's container",
+        content: 'ARDOR - Shape your admin panels. ARDOR tempers the surface.',
       },
     ],
     [
@@ -612,7 +183,7 @@ const config = defineConfig({
       {
         name: 'twitter:description',
         content:
-          'A react-admin application built as an IGNIS inversion-of-control container: dependency injection in the browser, a typed REST data layer, auth recovery and i18n - one import.',
+          'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
       },
     ],
   ],
@@ -669,18 +240,11 @@ const config = defineConfig({
       '/references/': referencesSidebar,
       '/extensions/': extensionsSidebar,
       '/best-practices/': bestPracticesSidebar,
-      '/changelogs/': changelogsSidebar,
     },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/VENIZIA-AI/ardor' },
-      { icon: { svg: VENIZIA_LOGO }, link: 'https://venizia.ai', ariaLabel: 'Venizia' },
+      { icon: { svg: VENIZIA_LOGO_SVG }, link: 'https://venizia.ai', ariaLabel: 'Venizia' },
     ],
-    footer: {
-      message:
-        'Released under the MIT License. ARDOR is part of <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">VENIZIA</a>.',
-      copyright:
-        'Copyright © 2025 <a href="https://venizia.ai" target="_blank" rel="noopener noreferrer">Venizia Co., Ltd.</a>',
-    },
     outline: { level: [2, 3] },
   },
 });

@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rolldownOptions: {
         output: {
+          // Runs each module after the modules it imports: a split chunk can otherwise run a DI package
+          // before reflect-metadata (vitejs/vite#21866). It costs about 3% of the gzip size; keep it on.
+          strictExecutionOrder: true,
           // React, react-admin and the router weigh about 500 KB before any application code. Two
           // vendor chunks keep the application's own chunk small, cacheable across a deploy, and
           // under Vite's 500 KB warning.

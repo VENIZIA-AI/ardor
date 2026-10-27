@@ -19,6 +19,9 @@ BIN := $(CURDIR)/node_modules/.bin
 TSC := $(BIN)/tsc
 TYPECHECK := bun check --no-pretty
 BUILD_TSCONFIG := .configs/builders/tsconfig.build.json
+# Further build programs of one package, each with its own types: a Node-only entry cannot share the
+# browser program, whose `types` is empty. They are type-checked and emitted like the main one.
+EXTRA_BUILD_TSCONFIGS ?=
 
 # The style is the [fmt] section of the root bunfig.toml: bun fmt finds it from this folder up. A bare `bun fmt`
 # also formats markdown, so the glob is always given: every type bun fmt supports except markdown, and it reaches
@@ -33,6 +36,7 @@ BUN_FMT := bun fmt --no-script
 typecheck:
 	@$(TYPECHECK) -p tsconfig.json
 	@$(TYPECHECK) -p $(BUILD_TSCONFIG)
+	@$(foreach config,$(EXTRA_BUILD_TSCONFIGS),$(TYPECHECK) -p $(config) &&) true
 
 # tsc-alias reads the ROOT tsconfig: pointed at a .configs/ file it resolves `paths` against
 # .configs/ and leaves every `@/` import unrewritten. --resolve-full-paths: Node's ESM loader refuses
@@ -40,6 +44,7 @@ typecheck:
 build:
 	@echo "START | Building $(notdir $(CURDIR))..."
 	@$(TSC) -p $(BUILD_TSCONFIG) --extendedDiagnostics
+	@$(foreach config,$(EXTRA_BUILD_TSCONFIGS),$(TSC) -p $(config) &&) true
 	@$(BIN)/tsc-alias -p tsconfig.json --resolve-full-paths
 	@echo "DONE | Build completed successfully!"
 
@@ -69,10 +74,13 @@ lint-fix:
 # A package with no suite sets `HAS_TESTS := no` before the include.
 HAS_TESTS ?= yes
 BUN_TEST_FLAGS ?=
+# Where bun looks for tests, default the whole package. `ardor` limits it to src: its dist holds the
+# preset's own test files, which only run inside a generated app.
+TEST_PATHS ?=
 
 test:
 ifeq ($(HAS_TESTS),yes)
-	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS)
+	@NODE_ENV=test bun test --preload ./src/__tests__/setup.ts $(BUN_TEST_FLAGS) $(TEST_PATHS)
 else
 	@echo "ℹ️  No test suite in this package - skipping."
 endif

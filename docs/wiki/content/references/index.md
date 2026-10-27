@@ -18,6 +18,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 <a href="./features" class="guide-card"><h3>Features</h3><p>Feature package definitions, configuration classes, and route mounting</p></a>
 <a href="./repository" class="guide-card"><h3>Repository</h3><p>HttpRepository and HttpDataSource for resource-level operations</p></a>
 <a href="./hooks" class="guide-card"><h3>Hooks</h3><p>Container resolution, Redux hooks, ra-core helpers, and UI utilities</p></a>
+<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network</p></a>
 <a href="./types" class="guide-card"><h3>Types</h3><p>Kernel type aliases, const classes, path helpers, and options shapes</p></a>
 </div>
 
@@ -35,6 +36,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 | Features | `@venizia/ardor-kernel`, `@venizia/ardor-admin` | [Features](./features) |
 | Repository | `@venizia/ardor-kernel`, `@venizia/ardor/repository` | [Repository](./repository) |
 | Hooks | `@venizia/ardor-react`, `@venizia/ardor-admin` | [Hooks](./hooks) |
+| Testing | `@venizia/ardor` (`/testing`) | [Testing](./testing) |
 | Types | `@venizia/ardor-kernel` | [Types](./types) |
 | Runtime config | `@venizia/ardor-kernel` | [Runtime config](#runtime-config) |
 

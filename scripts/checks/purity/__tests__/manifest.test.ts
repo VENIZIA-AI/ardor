@@ -1,10 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { assertNoWorkspaceExternal, deriveEntries, PURITY_MANIFEST } from '../manifest';
-import type { IPurityEntry } from '../manifest';
+import {
+  assertNoWorkspaceExternal,
+  buildManifest,
+  deriveEntries,
+} from '@venizia/dev-configs/checks';
+import type { IPurityEntry } from '@venizia/dev-configs/checks';
+import { PURITY_CLAIMS } from '../manifest';
 
 const REPOSITORY_ROOT = join(__dirname, '../../../..');
+
+const PURITY_MANIFEST = buildManifest({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
+
+/** Entries that run in Node, in the build of an app: they carry no browser claim, and nothing else is exempt. */
+const NODE_ONLY_ENTRIES = ['packages/ardor/dist/vite/index.js'];
 
 const readPublishedTargets = (opts: { package: string }): string[] => {
   const manifestPath = join(REPOSITORY_ROOT, 'packages', opts.package, 'package.json');
@@ -104,10 +114,21 @@ describe('PURITY_MANIFEST derivation', () => {
       );
 
       for (const target of readPublishedTargets({ package: packageName })) {
-        expect(probed).toContain(target);
+        if (!NODE_ONLY_ENTRIES.includes(target)) {
+          expect(probed).toContain(target);
+        }
       }
     },
   );
+
+  test('only the listed Node-only entries are published without a row', () => {
+    const probed = new Set(PURITY_MANIFEST.map((row) => row.entry));
+    const unclaimed = claimedPackages
+      .flatMap((packageName) => readPublishedTargets({ package: packageName }))
+      .filter((target) => !probed.has(target));
+
+    expect(unclaimed.toSorted()).toEqual(NODE_ONLY_ENTRIES);
+  });
 
   test('every published entry is claimed, root and optional sub-path alike', () => {
     const entries = PURITY_MANIFEST.map((row) => row.entry).toSorted();
@@ -120,6 +141,7 @@ describe('PURITY_MANIFEST derivation', () => {
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
       'packages/ardor/dist/repository.js',
+      'packages/ardor/dist/testing.js',
       'packages/kernel/dist/base/repositories/index.js',
       'packages/kernel/dist/index.js',
       'packages/react/dist/index.js',
@@ -127,14 +149,20 @@ describe('PURITY_MANIFEST derivation', () => {
   });
 
   test('a claimed sub-path that the exports map no longer publishes fails the derivation', () => {
-    expect(() => deriveEntries({ package: 'kernel', subpaths: ['./renamed-away'] })).toThrow(
-      /no longer\s+publishes/,
-    );
+    expect(() =>
+      deriveEntries({
+        claim: { package: 'kernel', subpaths: ['./renamed-away'] },
+        root: REPOSITORY_ROOT,
+      }),
+    ).toThrow(/no longer\s+publishes/);
   });
 
   test('an external declared for a sub-path that is gone fails the derivation', () => {
     expect(() =>
-      deriveEntries({ package: 'admin', external: { './renamed-away': ['ra-core'] } }),
+      deriveEntries({
+        claim: { package: 'admin', external: { './renamed-away': ['ra-core'] } },
+        root: REPOSITORY_ROOT,
+      }),
     ).toThrow(/no longer\s+publishes/);
   });
 
