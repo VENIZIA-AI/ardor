@@ -55,6 +55,11 @@
       "import": "./dist/repository.js",
       "default": "./dist/repository.js"
     },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js",
+      "default": "./dist/testing.js"
+    },
     "./package.json": "./package.json",
     "./vite": {
       "types": "./dist/vite/index.d.ts",
@@ -95,7 +100,7 @@
     "@venizia/ignis-connectors": "^0.4.1",
     "@venizia/ignis-filter": "^0.4.1",
     "@venizia/ignis-helpers": "^0.4.1",
-    "@venizia/ignis-inversion": "^0.4.1",
+    "@venizia/ignis-inversion": "^0.4.4",
     "@venizia/ignis-kernel": "^0.4.1",
     "ra-core": ">=5.15.5",
     "ra-i18n-polyglot": ">=5.15.5",
@@ -137,6 +142,26 @@
         "reflect-metadata"
       ],
       "limit": "350 B"
+    },
+    {
+      "path": "dist/testing.js",
+      "import": "*",
+      "ignore": [
+        "@reduxjs/toolkit",
+        "@tanstack/react-query",
+        "@venizia/ardor-admin",
+        "@venizia/ardor-kernel",
+        "@venizia/ardor-react",
+        "@venizia/ignis-filter",
+        "@venizia/ignis-inversion",
+        "ra-core",
+        "react",
+        "react-dom",
+        "react-redux",
+        "react-router-dom",
+        "reflect-metadata"
+      ],
+      "limit": "900 B"
     }
   ],
   "engines": {

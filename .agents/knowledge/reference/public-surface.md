@@ -186,7 +186,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (34)
+### `@venizia/ardor-admin` (37)
 
 - `ArdorApplication` const
 - `CountRestDataProvider` class
@@ -195,6 +195,7 @@ generated:
 - `DefaultRestDataProvider` class
 - `englishMessages` const
 - `Features` class
+- `hasPendingFeatureMessages` const
 - `IApplication` interface
 - `IAuthProvider` interface
 - `IDataProvider` interface
@@ -208,6 +209,8 @@ generated:
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
+- `loadFeatureMessages` const
+- `resolveApplicationProviders` const
 - `TFeature` type
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
@@ -225,7 +228,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (172)
+### `@venizia/ardor` (175)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -262,6 +265,7 @@ generated:
 - `Environments` class
 - `Features` class
 - `getRuntimeConfig` const
+- `hasPendingFeatureMessages` const
 - `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationContextValue` interface
@@ -324,6 +328,7 @@ generated:
 - `IUseSizerReturn` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
+- `loadFeatureMessages` const
 - `LocalStorageKeys` class
 - `Logger` class
 - `LogLevels` class
@@ -340,6 +345,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `resolveApplicationProviders` const
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -425,6 +431,12 @@ generated:
 - `THttpQuery` type
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
+
+### `@venizia/ardor/testing` (3)
+
+- `assertArdorApplicationBoots` const
+- `IAssertArdorApplicationBootsOptions` interface
+- `TBootSkip` type
 
 ### `@venizia/ardor/vite` (6)
 
