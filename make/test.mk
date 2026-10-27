@@ -29,7 +29,7 @@ $(TEST_TARGETS): test-%:
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:
 	@echo "🔍 Running the repository gate scripts' regression tests..."
-	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__ scripts/wiki/__tests__
+	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__
 
 # ----------------------------------------------------------------------------
 # PURITY TARGETS

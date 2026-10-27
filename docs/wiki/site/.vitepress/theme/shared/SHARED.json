@@ -1,5 +1,5 @@
 {
-  "fingerprint": "fa940aebdaa0b24f4136b2390ffad65c98053136fd1d35b537e14cc8ab02e43a",
+  "fingerprint": "0eeddbb2a3e618f5d91cd2f71ed405657e8562d129244e5a4abb63e4f6c266e6",
   "files": {
     "ChangelogEntryHead.vue": "f39ba1e011c369954e9a1cdf64dc0f3eefc965365e0e5a4fc99182753db70a2a",
     "ChangelogIndex.vue": "9f0f208dc3dec07c3a41bfed05cb3ebcb14a9f0244c9fc8a50b217fbe68e2553",
@@ -13,6 +13,7 @@
     "assets/ardor-logo.svg": "370cc37bed3b3fbbce546a24e5c04b0037ad5e1ef20cb17e78f3df93ceca93e7",
     "assets/ignis-logo.svg": "5457a4bd3cf5bdbfd0ff5f3f47a5ddbffbd4645381f2813237bc7de07c443e39",
     "assets/vulcan-logo.svg": "9f712481c19058885c89cf9eb91becbf44d212e32e7aa892ab40ed4a1b005e40",
+    "base.css": "975a04d4c0ed1e85178ed5f7445567a2822ab55810162dfec8c016cd8f41e1a5",
     "changelog-entries.ts": "601e1878dd5e5b6d73d8f7e8ae09b4d86d1d2a4d08069714b03312b7a2014f9f",
     "changelog-feed.ts": "65f4c38ac8e1525decf6208f621b2bbac90b98b3428e02f07a4ae674e5c6dc24",
     "changelog-loader.ts": "8c090caed3c345328b1247007e12e07d57f1671e8b9815e8aaa0eb522dbeea7b",
@@ -34,6 +35,7 @@
     "highlight.ts": "10405f487837df4fd9276301653b8f568ab91592170aab7d47abeb5162164eaa",
     "home-types.ts": "3e9efd210599c296b7e6537a9373e6a18a8a287767972354531ad63ff27789ec",
     "home.css": "dce7028d1d058222b903068765ce39f8d8fbb32706b68f8a5a86d682218c5346",
+    "index.ts": "8951bad0bdd2004358bb53c642ba0794245f91fb8862f4d23e7ec33ac3d3b5bb",
     "theme-switch.css": "2e1e80211023e8429af2b7561f1abf141a9a3d5439062f028e3631f14bdad888",
     "toggle-appearance.ts": "77ea0c377f0d7ba8cecd26580a6e79a5b173c1bc140c80516ddf67f94395c04c",
     "tokens.css": "8155ddc6b8bee8cd528be239b272e9665ea82fc387db8d5c8bbdec20447b4898",

@@ -69,11 +69,11 @@ tags: [process, docs, wiki]
    `bun ../vulcan/scripts/wiki-shared/check.ts .`. `scripts/checks/__tests__/wiki-shared.test.ts` (the one file of
    the scheme that is a hand copy of VULCAN's) hashes the folder against its `SHARED.json` and checks that the
    VitePress pieces the shared CSS overrides still exist; `make test-scripts` runs it. `.gitattributes` marks the
-   folder `-text` so git never converts a byte. `make lint-wiki` covers it like any other file: a lint finding in it is
+   folder `-text` so git never converts a byte. The wiki link and anchor gates (`make wiki-links-check`, `make wiki-anchors-check`) are VULCAN's, set up in the Makefile with `WIKI_REPO` and `WIKI_LINKS_FLAGS`. `make lint-wiki` covers it like any other file: a lint finding in it is
    fixed in VULCAN's copy, and `lint-fix-wiki` must leave it in step. ARDOR's own part of the theme stays outside the folder: `product.css` (the accent: the blue and the
-   aqua of `design-tokens.css`), `design-tokens.css` and `style.css` (the primitives, the page components and
-   the home page), `home-content.ts` (every word of the home page and the footer's pitch, with `COUNTS`, the numbers of the proof
-   strip) and `index.ts`, which imports the shared stylesheets and gives the wiki the shared `SiteLayout`. A home
+   aqua of `design-tokens.css`), `design-tokens.css` and `style.css` (the rules only ARDOR has: the primitives, the page components and
+   the home page; the rules every wiki shares are `shared/base.css`, and a rule identical to one there is deleted from `style.css`), `home-content.ts` (every word of the home page and the footer's pitch, with `COUNTS`, the numbers of the proof
+   strip) and `index.ts`, a stub that re-exports `./shared/index.ts` (the shared one imports the stylesheets, in order, and gives the wiki the shared `SiteLayout`; it reads the product files above by their fixed names). A home
    page number is a claim: `scripts/checks/__tests__/wiki-intro-counts.test.ts` counts the same things from the
    repository (packages, examples, test files, Node builtin imports in the browser packages), checks that the code
    windows hold only lines of the preset files and that every link is a wiki page, and fails when one drifts; update
