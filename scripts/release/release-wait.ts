@@ -34,7 +34,7 @@ const waitForTarball = async (opts: {
     packageName,
     version,
     fetchFn = fetch,
-    sleepFn = ms => new Promise<void>(resolve => setTimeout(resolve, ms)),
+    sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
     intervalMs = 5_000,
     attempts = 180,
   } = opts;
@@ -86,11 +86,11 @@ const waitForCompletion = async (opts: {
   for (;;) {
     const { status, conclusion } = await readRun({ runId });
 
-    if (status === "completed") {
+    if (status === 'completed') {
       return conclusion;
     }
 
-    if (status === "waiting") {
+    if (status === 'waiting') {
       waitingPolls += 1;
 
       if ((waitingPolls - 1) % WAITING_REPORT_EVERY === 0) {

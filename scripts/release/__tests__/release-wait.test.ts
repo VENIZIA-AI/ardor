@@ -43,9 +43,9 @@ describe('waitForTarball', () => {
     });
 
     expect(calls).toHaveLength(3);
-    expect(calls.every(call => call.url.endsWith('/ardor-kernel/-/ardor-kernel-0.1.4-4.tgz'))).toBe(
-      true,
-    );
+    expect(
+      calls.every((call) => call.url.endsWith('/ardor-kernel/-/ardor-kernel-0.1.4-4.tgz')),
+    ).toBe(true);
   });
 
   test('a network error is not an answer: it polls again', async () => {
@@ -65,7 +65,7 @@ describe('waitForTarball', () => {
       version: '1.0.0',
       fetchFn,
       intervalMs: 7,
-      sleepFn: async ms => {
+      sleepFn: async (ms) => {
         slept.push(ms);
       },
     });
@@ -147,7 +147,9 @@ describe('waitForCompletion', () => {
 
   test('reports the wait when it starts and then now and then, never on every poll', async () => {
     const waiting = Array.from({ length: 70 }, () => ({ status: 'waiting', conclusion: '' }));
-    const { readRun } = run({ statuses: [...waiting, { status: 'completed', conclusion: 'failure' }] });
+    const { readRun } = run({
+      statuses: [...waiting, { status: 'completed', conclusion: 'failure' }],
+    });
     const reports: number[] = [];
 
     await waitForCompletion({
@@ -164,7 +166,12 @@ describe('waitForCompletion', () => {
     const { readRun } = run({ statuses: [{ status: 'completed', conclusion: 'success' }] });
     const reports: number[] = [];
 
-    await waitForCompletion({ runId: '9', readRun, sleepFn: noSleep, onWaiting: ({ polls }) => reports.push(polls) });
+    await waitForCompletion({
+      runId: '9',
+      readRun,
+      sleepFn: noSleep,
+      onWaiting: ({ polls }) => reports.push(polls),
+    });
 
     expect(reports).toEqual([]);
   });

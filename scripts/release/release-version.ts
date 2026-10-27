@@ -160,7 +160,7 @@ export const assertAbove = (opts: { version: string; current: string }): void =>
 export const packagesForVersion = <T extends { localVersion: string }>(opts: {
   states: T[];
   version: string;
-}): T[] => opts.states.filter(state => Bun.semver.order(state.localVersion, opts.version) < 0);
+}): T[] => opts.states.filter((state) => Bun.semver.order(state.localVersion, opts.version) < 0);
 
 const main = (): void => {
   const [command, ...rest] = Bun.argv.slice(2);

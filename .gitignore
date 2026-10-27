@@ -19,6 +19,10 @@ bun.lockb
 dist/
 release/
 build/
+# scripts/release and scripts/build are source, not build output: without these lines a new file there is
+# silently ignored, and the formatter never checks the folder.
+!/scripts/release/
+!/scripts/build/
 app_data/
 *.tsbuildinfo
 .lock-wscript
