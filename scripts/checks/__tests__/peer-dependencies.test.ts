@@ -22,6 +22,14 @@ type TManifest = {
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
 };
 
+/**
+ * A peer the umbrella alone asks for at a higher floor, with the reason. The umbrella's `./testing`
+ * entry calls `assertBindingsResolve`, which arrived in `@venizia/ignis-inversion` 0.4.4; the other
+ * packages do not use it, so an application on 0.4.1 to 0.4.3 still installs them. A higher floor
+ * narrows what the umbrella accepts and splits no copy: one version satisfies both ranges.
+ */
+const UMBRELLA_FLOORS: Record<string, string> = { '@venizia/ignis-inversion': '^0.4.4' };
+
 const directories = readdirSync(PACKAGES_DIR);
 const manifestOf = (directory: string): TManifest => {
   return JSON.parse(readFileSync(join(PACKAGES_DIR, directory, 'package.json'), 'utf8'));
@@ -78,6 +86,10 @@ describe('peer dependencies of the ARDOR packages', () => {
 
     for (const { manifest } of manifests) {
       for (const [name, range] of Object.entries(manifest.peerDependencies ?? {})) {
+        if (manifest.name === '@venizia/ardor' && UMBRELLA_FLOORS[name] === range) {
+          continue;
+        }
+
         const byRange = ranges.get(name) ?? new Map<string, Array<string>>();
         byRange.set(range, [...(byRange.get(range) ?? []), manifest.name]);
         ranges.set(name, byRange);
@@ -129,7 +141,9 @@ describe('peer dependencies of the ARDOR packages', () => {
 
         for (const [name, range] of Object.entries(sibling.peerDependencies ?? {})) {
           const isOptional = sibling.peerDependenciesMeta?.[name]?.optional === true;
-          if (!isOptional && manifest.peerDependencies?.[name] !== range) {
+          const expected =
+            manifest.name === '@venizia/ardor' ? (UMBRELLA_FLOORS[name] ?? range) : range;
+          if (!isOptional && manifest.peerDependencies?.[name] !== expected) {
             unforwarded.push(`${manifest.name} does not forward ${name} ${range} of ${dependency}`);
           }
         }

@@ -134,6 +134,7 @@ describe('PURITY_MANIFEST derivation', () => {
       'packages/admin/dist/index.js',
       'packages/ardor/dist/index.js',
       'packages/ardor/dist/repository.js',
+      'packages/ardor/dist/testing.js',
       'packages/kernel/dist/base/repositories/index.js',
       'packages/kernel/dist/index.js',
       'packages/react/dist/index.js',

@@ -78,6 +78,7 @@ const referencesSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Repositories', link: '/references/repository' },
       { text: 'Hooks', link: '/references/hooks' },
+      { text: 'Testing', link: '/references/testing' },
     ],
   },
 ];

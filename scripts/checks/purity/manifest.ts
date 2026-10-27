@@ -66,6 +66,18 @@ const WORKSPACE_SCOPE = '@venizia/';
 const NON_RUNTIME_CONDITION = 'types';
 const NON_CODE_SUBPATH = './package.json';
 
+/** What the umbrella's browser entries leave external: the peers of ARDOR's UI layers. */
+const ARDOR_EXTERNAL = [
+  'react',
+  'react-dom',
+  'react-redux',
+  '@reduxjs/toolkit',
+  'ra-core',
+  'ra-i18n-polyglot',
+  '@tanstack/react-query',
+  'react-router-dom',
+];
+
 const PURITY_CLAIMS: IPurityClaim[] = [
   // Every ARDOR runtime package is a browser library, so every entry is claimed pure. `external`
   // lists the package's THIRD-PARTY peers and packaging: the React ecosystem reads
@@ -96,19 +108,12 @@ const PURITY_CLAIMS: IPurityClaim[] = [
   },
   {
     package: 'ardor',
-    // `./vite` runs in Node, under the build of an app: it is no browser entry.
-    subpaths: ['.', './repository'],
+    // `./vite` runs in Node, under the build of an app: it is no browser entry. `./testing` is
+    // claimed: a boot test runs under a DOM and must not pull a Node builtin into the app's graph.
+    subpaths: ['.', './repository', './testing'],
     external: {
-      '.': [
-        'react',
-        'react-dom',
-        'react-redux',
-        '@reduxjs/toolkit',
-        'ra-core',
-        'ra-i18n-polyglot',
-        '@tanstack/react-query',
-        'react-router-dom',
-      ],
+      '.': ARDOR_EXTERNAL,
+      './testing': ARDOR_EXTERNAL,
     },
   },
 ];
