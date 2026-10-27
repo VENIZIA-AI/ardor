@@ -110,5 +110,10 @@
       "repo": "VENIZIA-AI/ignis",
       "ref": "develop"
     }
-  ]
+  ],
+  "atlas": {
+    "index": {
+      "keys": ["gqQ8Wtlk6KiZpnCDafb3deR/VqhW2aBaDqqnKJLblZc="]
+    }
+  }
 }
