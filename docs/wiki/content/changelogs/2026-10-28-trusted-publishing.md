@@ -24,5 +24,5 @@ packages: []
 ## Who is affected
 
 - **An app or a package.** Nothing. The packed files are the same as before; the packages gain a provenance statement on npmjs.com.
-- **The owner of the npm packages.** Before the first release, register a trusted publisher on npmjs.com for each of `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin` and `@venizia/ardor`: organisation `VENIZIA-AI`, repository `ardor`, workflow `package-release.yml`, environment `npm-release`, and the actions `npm publish` and `npm dist-tag`. After a release has passed, delete the `NPM_ACCESS_TOKEN` secret.
+- **The owner of the npm packages.** Before the first release, register a trusted publisher on npmjs.com for each of `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin` and `@venizia/ardor`: organisation `VENIZIA-AI`, repository `ardor`, workflow `package-release.yml`, environment `npm-release`, and the actions `npm publish` and `npm dist-tag`. The `NPM_ACCESS_TOKEN` secret is already deleted, so those four entries are all that is left to do.
 - **A contributor.** A release is still started with `make release`, and still needs the owner's word.

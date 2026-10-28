@@ -21,6 +21,7 @@
  * gate installs the one before it.
  */
 
+import { isTrustedPublishWorkflow } from './release-gates';
 import { countChangedSinceRelease, withDependents } from './release-scope';
 import {
   assertAbove,
@@ -175,10 +176,7 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
   // `bun pm pack` resolves them, and npm then publishes that tarball with a provenance.
   const workflowPath = '.github/workflows/package-release.yml';
   const workflow = await Bun.file(workflowPath).text();
-  if (
-    !/^\s*\(cd .*&& bun pm pack\b/m.test(workflow) ||
-    !/^\s*npm publish .*--provenance\b/m.test(workflow)
-  ) {
+  if (!isTrustedPublishWorkflow({ workflow })) {
     complain(
       `${workflowPath} must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
     );

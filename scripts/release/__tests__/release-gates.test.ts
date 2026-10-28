@@ -7,6 +7,7 @@ import { makeScratch } from '../../scratch';
 import {
   exportTargets,
   isTarballLag,
+  isTrustedPublishWorkflow,
   missingExportTargets,
   missingFromRegistry,
   nextTagsToHeal,
@@ -635,6 +636,23 @@ describe('package-release.yml guards, one mutation per guard', () => {
         !/\bbun publish\b/.test(withoutComments(text))
       );
     },
+    // C23: the npm that is installed and asserted comes before the first step that uses npm to talk to the registry.
+    npmInstalledBeforeUse: (text: string): boolean => {
+      const jobs = jobsOf(text);
+      const firstUse: Record<string, string> = {
+        release: PUBLISH_STEP,
+        'heal-next': 'Move next to latest where it is below',
+      };
+
+      return Object.entries(firstUse).every(([job, use]) => {
+        const names = stepsOf(jobs[job] ?? '').map((step) => step.name);
+
+        return (
+          names.indexOf(INSTALL_NPM_STEP) > -1 &&
+          names.indexOf(INSTALL_NPM_STEP) < names.indexOf(use)
+        );
+      });
+    },
     // C24: the tarball that was packed and checked is the tarball that is published.
     tarballChecksum: (text: string): boolean => {
       const steps = stepsOf(jobsOf(text).release ?? '');
@@ -815,6 +833,38 @@ describe('package-release.yml guards, one mutation per guard', () => {
         text.replace('bun pm pack --quiet --filename', 'npm pack --quiet --filename'),
     },
     {
+      guard: 'npmInstalledBeforeUse',
+      name: 'the release job installs npm after the publish',
+      mutate: (text) => {
+        const block =
+          /      # Trusted publishing needs npm[^\n]*\n      # that ships[^\n]*\n      - name: Install the npm that publishes\n        run: \|\n(?: {10}[^\n]*\n)+/.exec(
+            text,
+          )?.[0] ?? '';
+
+        return text
+          .replace(block, '')
+          .replace(
+            '      - name: Tag highest version on NPM\n',
+            `${block}\n      - name: Tag highest version on NPM\n`,
+          );
+      },
+    },
+    {
+      guard: 'npmInstalledBeforeUse',
+      name: 'the heal job installs npm after the heal',
+      mutate: (text) => {
+        const block =
+          /      - name: Install the npm that publishes\n        run: \|\n(?: {10}[^\n]*\n)+\n(?=      - name: Move next)/.exec(
+            text.slice(text.indexOf('\n  heal-next:')),
+          )?.[0] ?? '';
+        const healAt = text.indexOf('\n  heal-next:');
+        const head = text.slice(0, healAt);
+        const heal = text.slice(healAt).replace(block, '');
+
+        return `${head}${heal.trimEnd()}\n\n${block.trimEnd()}\n`;
+      },
+    },
+    {
       guard: 'tarballChecksum',
       name: 'the publish stops checking the checksum',
       mutate: (text) => text.replace('sha256sum --check --quiet SHA256SUMS', 'true'),
@@ -914,5 +964,46 @@ describe('package-release.yml guards, one mutation per guard', () => {
 
   test('a guard needs the jobs it reads', () => {
     expect(Object.keys(jobsOf(workflow)).toSorted()).toEqual(['heal-next', 'release', 'test']);
+  });
+});
+
+// release.ts runs main() on import, so its preflight is the pure function it calls.
+describe('isTrustedPublishWorkflow: the workflow make release may dispatch', () => {
+  const workflow = readFileSync(join(ROOT, '.github/workflows/package-release.yml'), 'utf8');
+
+  test('the real workflow passes', () => {
+    expect(isTrustedPublishWorkflow({ workflow })).toBe(true);
+  });
+
+  test('the old shape, bun publish and no pack by bun, fails', () => {
+    const oldShape = [
+      '      - name: Publish to NPM',
+      '        run: |',
+      '          cd $PACKAGE_PATH',
+      '          bun publish --access public --tag $NPM_TAG --ignore-scripts',
+      '',
+    ].join('\n');
+
+    expect(isTrustedPublishWorkflow({ workflow: oldShape })).toBe(false);
+  });
+
+  test('the real workflow fails when the publish drops the provenance', () => {
+    expect(isTrustedPublishWorkflow({ workflow: workflow.replace(' --provenance', '') })).toBe(
+      false,
+    );
+  });
+
+  test('the real workflow fails when the tarball is no longer packed by bun', () => {
+    expect(
+      isTrustedPublishWorkflow({
+        workflow: workflow.replace('bun pm pack --quiet --filename', 'npm pack --quiet --filename'),
+      }),
+    ).toBe(false);
+  });
+
+  test('a comment that names the commands is not the commands', () => {
+    const commented = '# (cd x && bun pm pack)\n# npm publish a.tgz --provenance\n';
+
+    expect(isTrustedPublishWorkflow({ workflow: commented })).toBe(false);
   });
 });
