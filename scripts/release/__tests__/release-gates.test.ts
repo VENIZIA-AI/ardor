@@ -236,10 +236,11 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
     'Clean-install gate',
     'Validate build artifacts',
     'Check dependency catalog',
-    'Assert the publisher is bun',
     'Pack the release tarball',
     'Validate packed manifest',
     'Validate dependencies exist on the registry',
+    'Install the npm that publishes',
+    'Pack the tarball to publish',
   ])('it has the gate "%s"', (name) => {
     expect(at(name)).toBeGreaterThan(-1);
   });
@@ -252,7 +253,9 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
 
   test('the gates run before the version bump, the publish before any git write', () => {
     expect(at('Validate dependencies exist on the registry')).toBeLessThan(at('Version bump'));
-    expect(at('Version bump')).toBeLessThan(at('Publish to NPM'));
+    expect(at('Version bump')).toBeLessThan(at('Write the VULCAN preset'));
+    expect(at('Write the VULCAN preset')).toBeLessThan(at('Pack the tarball to publish'));
+    expect(at('Pack the tarball to publish')).toBeLessThan(at('Publish to NPM'));
     expect(at('Publish to NPM')).toBeLessThan(at('Tag highest version on NPM'));
     expect(at('Tag highest version on NPM')).toBeLessThan(
       at('Keep the next tag at or above latest'),
@@ -286,10 +289,11 @@ describe('package-release.yml follows IGNIS: gates first, publish first, no forc
     expect(workflow).toContain('--chain-released');
   });
 
-  test('the actions are pinned by commit with the tag IGNIS uses, and bun is exact', () => {
+  test('the actions are pinned by commit with the tag IGNIS uses, and bun and Node are exact', () => {
     expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/);
     expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v6\.4\.0/);
     expect(workflow).toContain('bun-version: 1.4.4');
+    expect(workflow).toContain('node-version: 24.22.1');
     expect(workflow).not.toContain('bun-version: latest');
     expect(workflow).toContain('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true');
   });
@@ -523,12 +527,12 @@ describe('package-release.yml guards, one mutation per guard', () => {
       .slice(1)
       .map((chunk) => ({ name: chunk.split('\n')[0] ?? '', text: chunk }));
 
-  const NPM_STEPS = [
-    'Publish to NPM',
-    'Tag highest version on NPM',
-    'Keep the next tag at or above latest',
-    'Move next to latest where it is below',
-  ];
+  const withoutComments = (text: string): string => text.replace(/^\s*#.*$/gm, '');
+
+  const MINIMUM_NPM = '11.21.0';
+  const PACK_STEP = 'Pack the tarball to publish';
+  const PUBLISH_STEP = 'Publish to NPM';
+  const INSTALL_NPM_STEP = 'Install the npm that publishes';
 
   const guards = {
     // C1: the release, test and heal jobs run only for develop.
@@ -567,21 +571,78 @@ describe('package-release.yml guards, one mutation per guard', () => {
 
       return versions.length >= 3 && versions.every((version) => /^\d+\.\d+\.\d+$/.test(version));
     },
-    // C6: the registry credential, and every secret, only in the publish and dist-tag steps.
-    secretsInPublishSteps: (text: string): boolean => {
+    // C5, C23: an exact Node without a cache in every setup, and where npm talks to the registry an
+    // exact npm of at least 11.21.0 (the first that moves a dist-tag over OIDC), asserted.
+    exactNodeAndNpm: (text: string): boolean => {
       const jobs = jobsOf(text);
-      const everyReference = [...text.matchAll(/secrets\.(\w+)/g)].every(
-        (match) => match[1] === 'NPM_ACCESS_TOKEN',
+      const nodes = [...text.matchAll(/node-version: (.+)/g)].map((match) => match[1] ?? '');
+      const caches = [...text.matchAll(/package-manager-cache: (.+)/g)].map(
+        (match) => match[1] ?? '',
       );
-      const placed = ['release', 'heal-next'].every((name) => {
-        const withSecret = stepsOf(jobs[name] ?? '').filter((step) =>
-          step.text.includes('secrets.'),
-        );
+      const npmIsPinned = ['release', 'heal-next'].every((name) => {
+        const run = stepsOf(jobs[name] ?? '').find((step) => step.name === INSTALL_NPM_STEP)?.text;
+        const version = run?.match(/npm install --global npm@(\d+\.\d+\.\d+)(?:\s|$)/)?.[1];
 
-        return withSecret.length > 0 && withSecret.every((step) => NPM_STEPS.includes(step.name));
+        return (
+          version !== undefined &&
+          Bun.semver.order(version, MINIMUM_NPM) >= 0 &&
+          run?.includes('npm --version') === true
+        );
       });
 
-      return everyReference && placed;
+      return (
+        nodes.length >= 3 &&
+        nodes.every((version) => /^\d+\.\d+\.\d+$/.test(version)) &&
+        caches.length === nodes.length &&
+        caches.every((value) => value === 'false') &&
+        npmIsPinned
+      );
+    },
+    // C6: no npm token in any form and no secret at all: the release publishes through trusted publishing.
+    noNpmToken: (text: string): boolean =>
+      !/secrets\.|NPM_ACCESS_TOKEN|NPM_CONFIG_TOKEN|NODE_AUTH_TOKEN/.test(withoutComments(text)),
+    // C16: the jobs that talk to npm name the environment npm-release; the test job names none.
+    publishEnvironment: (text: string): boolean => {
+      const jobs = jobsOf(text);
+
+      return (
+        ['release', 'heal-next'].every((name) =>
+          /\n {4}environment: npm-release\n/.test(jobs[name] ?? ''),
+        ) && !(jobs.test ?? '').includes('environment:')
+      );
+    },
+    // C20: id-token: write is what trusted publishing signs with: on the jobs that talk to npm, nowhere else.
+    idTokenOnPublishJobs: (text: string): boolean => {
+      const jobs = jobsOf(text);
+
+      return (
+        ['release', 'heal-next'].every((name) =>
+          /\n {4}permissions:\n(?: {6}[\w-]+: \w+\n)* {6}id-token: write\n/.test(jobs[name] ?? ''),
+        ) &&
+        !withoutComments(headOf(text)).includes('id-token') &&
+        !withoutComments(jobs.test ?? '').includes('id-token')
+      );
+    },
+    // C21: the release publishes the tarball bun packed, with npm and a provenance; bun publish is gone.
+    provenancePublish: (text: string): boolean => {
+      const steps = stepsOf(jobsOf(text).release ?? '');
+      const pack = steps.find((step) => step.name === PACK_STEP)?.text ?? '';
+      const publish = steps.find((step) => step.name === PUBLISH_STEP)?.text ?? '';
+
+      return (
+        pack.includes('bun pm pack') &&
+        /npm publish "\$TARBALLS\/package\.tgz"[^\n]*--provenance/.test(publish) &&
+        !/\bbun publish\b/.test(withoutComments(text))
+      );
+    },
+    // C24: the tarball that was packed and checked is the tarball that is published.
+    tarballChecksum: (text: string): boolean => {
+      const steps = stepsOf(jobsOf(text).release ?? '');
+      const pack = steps.find((step) => step.name === PACK_STEP)?.text ?? '';
+      const publish = steps.find((step) => step.name === PUBLISH_STEP)?.text ?? '';
+      const check = publish.indexOf('sha256sum --check');
+
+      return pack.includes('sha256sum') && check > -1 && check < publish.indexOf('npm publish');
     },
     // C17: every checkout is the dispatched commit; no step moves to a branch; the run name carries it.
     dispatchedCommit: (text: string): boolean => {
@@ -668,13 +729,125 @@ describe('package-release.yml guards, one mutation per guard', () => {
       mutate: (text) => text.replace(/bun-version: \d+\.\d+\.\d+/, 'bun-version: latest'),
     },
     {
-      guard: 'secretsInPublishSteps',
-      name: 'the credential is read by a build step',
+      guard: 'noNpmToken',
+      name: 'a build step reads the old credential',
       mutate: (text) =>
         text.replace(
           '      - name: Version bump\n',
           '      - name: Version bump\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}\n',
         ),
+    },
+    {
+      guard: 'noNpmToken',
+      name: 'the heal step reads the old credential',
+      mutate: (text) =>
+        text.replace(
+          '        run: bun scripts/release/release-gates.ts heal-next\n',
+          '        run: bun scripts/release/release-gates.ts heal-next\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}\n',
+        ),
+    },
+    {
+      guard: 'noNpmToken',
+      name: 'the publish step gets a token again',
+      mutate: (text) =>
+        text.replace(
+          'npm publish "$TARBALLS/package.tgz"',
+          'NPM_CONFIG_TOKEN=abc npm publish "$TARBALLS/package.tgz"',
+        ),
+    },
+    {
+      guard: 'publishEnvironment',
+      name: 'the release job loses the environment',
+      mutate: (text) => text.replace('    environment: npm-release\n', ''),
+    },
+    {
+      guard: 'publishEnvironment',
+      name: 'the heal job loses the environment',
+      mutate: (text) =>
+        text.replace(/(\n {2}heal-next:[\s\S]*?)\n {4}environment: npm-release\n/, '$1\n'),
+    },
+    {
+      guard: 'publishEnvironment',
+      name: 'the test job joins the environment',
+      mutate: (text) =>
+        text.replace(
+          '    runs-on: ubuntu-26.04\n\n    steps:\n      # -------------------------------------------------------------------------\n      # SETUP',
+          '    runs-on: ubuntu-26.04\n    environment: npm-release\n\n    steps:\n      # -------------------------------------------------------------------------\n      # SETUP',
+        ),
+    },
+    {
+      guard: 'idTokenOnPublishJobs',
+      name: 'the release job loses id-token',
+      mutate: (text) => text.replace('      id-token: write\n', ''),
+    },
+    {
+      guard: 'idTokenOnPublishJobs',
+      name: 'the heal job loses id-token',
+      mutate: (text) => text.replace(/(\n {2}heal-next:[\s\S]*?)\n {6}id-token: write\n/, '$1\n'),
+    },
+    {
+      guard: 'idTokenOnPublishJobs',
+      name: 'the workflow default grants id-token',
+      mutate: (text) =>
+        text.replace(
+          '\npermissions:\n  contents: read\n',
+          '\npermissions:\n  contents: read\n  id-token: write\n',
+        ),
+    },
+    {
+      guard: 'provenancePublish',
+      name: 'the publish drops the provenance',
+      mutate: (text) => text.replace(' --provenance', ''),
+    },
+    {
+      guard: 'provenancePublish',
+      name: 'the publish is bun publish again',
+      mutate: (text) =>
+        text.replace(
+          'npm publish "$TARBALLS/package.tgz" --access public --tag $NPM_TAG --ignore-scripts --provenance',
+          'bun publish --access public --tag $NPM_TAG --ignore-scripts',
+        ),
+    },
+    {
+      guard: 'provenancePublish',
+      name: 'the tarball is no longer packed by bun',
+      mutate: (text) =>
+        text.replace('bun pm pack --quiet --filename', 'npm pack --quiet --filename'),
+    },
+    {
+      guard: 'tarballChecksum',
+      name: 'the publish stops checking the checksum',
+      mutate: (text) => text.replace('sha256sum --check --quiet SHA256SUMS', 'true'),
+    },
+    {
+      guard: 'tarballChecksum',
+      name: 'the pack stops recording the checksum',
+      mutate: (text) => text.replace('sha256sum package.tgz > SHA256SUMS', 'true'),
+    },
+    {
+      guard: 'exactNodeAndNpm',
+      name: 'Node is a range',
+      mutate: (text) => text.replace('node-version: 24.22.1', "node-version: '24'"),
+    },
+    {
+      guard: 'exactNodeAndNpm',
+      name: 'a Node setup caches',
+      mutate: (text) => text.replace('package-manager-cache: false', 'package-manager-cache: true'),
+    },
+    {
+      guard: 'exactNodeAndNpm',
+      name: 'npm is not pinned',
+      mutate: (text) => text.replace('npm@11.21.1', 'npm@latest'),
+    },
+    {
+      guard: 'exactNodeAndNpm',
+      name: 'npm is below the first that moves a dist-tag over OIDC',
+      mutate: (text) => text.replace(/npm@11\.21\.1 /g, 'npm@11.20.0 '),
+    },
+    {
+      guard: 'exactNodeAndNpm',
+      name: 'the npm version is no longer asserted',
+      mutate: (text) => text.replace(/npm --version/g, 'true'),
     },
     {
       guard: 'dispatchedCommit',

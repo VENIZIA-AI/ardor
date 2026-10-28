@@ -19,7 +19,7 @@ packages: []
 - **A test job first.** A job with no secret runs the build, the package and script tests and the gates that need no registry credential; the release job needs it.
 - **The dispatched commit.** Every job checks out the commit that was dispatched, and the run name shows it. The step that moved the checkout to the branch head is gone.
 - **Pinned.** `bun` has an exact version, every action is pinned by its full commit with its tag in a comment, and the preset smoke runs the VULCAN version the repository pins, never the newest.
-- **The credential.** The registry credential is read only by the publish and dist-tag steps.
+- **The credential.** No step reads a registry credential: see [Releases publish with npm trusted publishing](./2026-10-28-trusted-publishing).
 - **The driver waits.** `make release` keeps waiting while a run waits for approval and says so.
 - **A guard test.** `scripts/release/__tests__/release-gates.test.ts` fails when one of these guards is removed from a copy of the workflow.
 
