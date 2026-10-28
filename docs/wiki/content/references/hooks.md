@@ -359,9 +359,20 @@ export function OrderPage(props: { orderNumber?: string }) {
 }
 ```
 
-- **Parameters**: `opts: IUseDocumentTitleOptions` - `title`, `appTitle`, optional `separator` (default `' · '`), optional `enabled` (default `true`).
+A layout with a base title; a screen such as `OrderPage` above overrides it:
+
+```tsx
+import { useDocumentTitle } from '@venizia/ardor';
+
+export function AppLayout(props: { appName: string; children: React.ReactNode }) {
+  useDocumentTitle({ title: undefined, appTitle: props.appName, fallback: true });
+  return props.children;
+}
+```
+
+- **Parameters**: `opts: IUseDocumentTitleOptions` - `title`, `appTitle`, optional `separator` (default `' · '`), optional `enabled` (default `true`), optional `fallback` (default `false`; a base title for a layout, below).
 - **Return value**: `void`.
-- **Gotcha**: Restores the previous title on cleanup only if `document.title` still equals what this hook set; an update from a later writer is left in place. Child effects run before parent effects, so when a layout and a screen both call it, the layout's title wins on the first mount (and when the layout mounts again); a later title change in the screen, and the screen's unmount, behave as expected. To give screens a base title, set it before the app mounts (the `<title>` of `index.html`, or `document.title` once before `createRoot`) and let each screen call the hook: the hook puts back the title it replaced. Defined in `packages/admin/src/hooks/use-document-title.ts`.
+- **Gotcha**: Restores the previous title on cleanup only if `document.title` still equals what this hook set; an update from a later writer is left in place. Child effects run before parent effects, so when a layout and a screen both call it, the layout's title wins on the first mount (and when the layout mounts again). Pass `fallback: true` in the layout: a fallback shows only while no other call is mounted, so the screen's title wins on the first mount, the fallback shows again when the screen unmounts, and of two fallbacks the one mounted last shows. A base title that never changes can also be the `<title>` of `index.html`. Defined in `packages/admin/src/hooks/use-document-title.ts`.
 
 ### useHtmlLang
 
