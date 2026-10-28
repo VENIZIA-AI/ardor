@@ -50,14 +50,16 @@ on:
 # The workflow can write nothing by default; the one job that pushes the release commit and the tag says so.
 # Every job runs only for the develop branch and checks out the commit that was dispatched, so the test
 # job, the release job and the run name all name the same commit. The release job needs the test job,
-# which has no secret: a failing test publishes nothing. scripts/release/__tests__/release-gates.test.ts
-# fails when one of these guards is removed.
+# which has no secret: a failing test publishes nothing. There is no npm token anywhere: the release
+# publishes through npm trusted publishing, so the two jobs that talk to npm (release, heal-next) name the
+# environment npm-release and hold id-token: write, and the test job holds neither.
+# scripts/release/__tests__/release-gates.test.ts fails when one of these guards is removed.
 permissions:
   contents: read
 
 # Build order comes from the Makefile chain (kernel -> react -> admin -> ardor). The umbrella `ardor`
 # depends on the other three by exact version, so all three must be published before it or the
-# registry-existence check fails. Every sibling is `workspace:*`, so `bun publish` writes its exact
+# registry-existence check fails. Every sibling is `workspace:*`, so `bun pm pack` writes its exact
 # version into the tarball.
 #
 # One release at a time, repository-wide. A release mutates a shared branch and the registry, and
@@ -74,6 +76,9 @@ env:
   PACKAGE: ${{ github.event.inputs.package }}
   BUILD_MODE: ${{ github.event.inputs.build_mode }}
   VERSION: ${{ github.event.inputs.version }}
+  # The tarball bun packs, the checks read and npm publishes: one folder inside the workspace (gitignored).
+  # Absolute, because npm reads `.agents/x/y.tgz` as a package spec and `/abs/y.tgz` as a file.
+  TARBALLS: ${{ github.workspace }}/.agents/local/tmp/release-tarballs
 
 jobs:
   # Everything that needs no secret, on the dispatched commit: the release job needs it.
@@ -94,8 +99,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
+          node-version: 24.22.1
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -204,8 +210,16 @@ jobs:
     name: NPM Release
     needs: test
     if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only != true }}
+    # Every run waits here for the owner's approval before any step of the job starts, and only a run on
+    # develop can enter. The environment's reviewers and ref rule are GitHub settings, not this file's: this
+    # line is what makes the job subject to them. The trusted publisher on npmjs.com names it too.
+    environment: npm-release
+    # The release pushes the release commit and the tag: it writes contents. `id-token` is what trusted
+    # publishing signs with: npm exchanges the job's identity for a short-lived publish credential, so the
+    # release holds no npm token at all. The test job has neither grant.
     permissions:
       contents: write
+      id-token: write
     runs-on: ubuntu-26.04
 
     steps:
@@ -220,8 +234,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
+          node-version: 24.22.1
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -232,6 +247,13 @@ jobs:
         run: |
           git config user.name "venizia-ci"
           git config user.email "developer@venizia.ai"
+
+      # Trusted publishing needs npm 11.5.1 or later to publish and 11.21.0 or later to move a dist-tag; the npm
+      # that ships with this Node is older. An exact version, never `latest`, asserted.
+      - name: Install the npm that publishes
+        run: |
+          npm install --global npm@11.21.1 --ignore-scripts
+          [ "$(npm --version)" = "11.21.1" ] || { echo "ERROR: npm is $(npm --version), expected 11.21.1"; exit 1; }
 
       # -------------------------------------------------------------------------
       # PREPARE
@@ -299,18 +321,9 @@ jobs:
       - name: Validate build artifacts
         run: bun scripts/release/release-gates.ts artifacts $PACKAGE_PATH
 
-      # A policy assertion about THIS file, not about the package - so it stands on its own. Only
-      # `bun publish` resolves `catalog:` while packing; npm ships it verbatim and breaks every
-      # consumer, so the publish step below may never be switched to npm.
-      - name: Assert the publisher is bun
-        run: |
-          grep -q 'bun publish' "$GITHUB_WORKSPACE/.github/workflows/package-release.yml" \
-            || { echo "ERROR: the publish step must use 'bun publish' - npm ships catalog: verbatim"; exit 1; }
-
-          echo "    ✓ the publish step still uses bun"
-
       # Packed once, read by every validator below: they all see the SAME manifest - the one npm
-      # receives, not the one in the working tree.
+      # receives, not the one in the working tree. A check before any mutation: the tarball that is
+      # published is packed again after the bump (Pack the tarball to publish).
       - name: Pack the release tarball
         run: bun scripts/release/release-gates.ts pack $PACKAGE_PATH "$RUNNER_TEMP/packed-manifest.json"
 
@@ -348,6 +361,25 @@ jobs:
         if: ${{ env.PACKAGE == 'ardor' }}
         run: bun scripts/preset/vulcan-preset.ts
 
+      # The file that gets published, packed once, after the bump and the preset it carries. Only `bun pm pack`
+      # resolves `catalog:` and `workspace:` while packing (npm ships them verbatim and breaks every consumer), so
+      # bun packs; the publish step publishes this very file after checking its sha256. Its manifest is checked
+      # here: no unresolved protocol, and the version this run releases.
+      - name: Pack the tarball to publish
+        run: |
+          rm -rf "$TARBALLS"
+          mkdir -p "$TARBALLS"
+
+          (cd "$PACKAGE_PATH" && bun pm pack --quiet --filename "$TARBALLS/package.tgz" > /dev/null)
+          tar -xzOf "$TARBALLS/package.tgz" package/package.json > "$RUNNER_TEMP/published-manifest.json"
+          bun scripts/release/release-gates.ts protocols "$RUNNER_TEMP/published-manifest.json"
+
+          PACKED_VERSION=$(jq -r .version "$RUNNER_TEMP/published-manifest.json")
+          [ "$PACKED_VERSION" = "$NEW_VERSION" ] \
+            || { echo "ERROR: the tarball is $PACKED_VERSION, this run releases $NEW_VERSION"; exit 1; }
+
+          (cd "$TARBALLS" && sha256sum package.tgz > SHA256SUMS)
+
       # -------------------------------------------------------------------------
       # PUBLISH - deliberately ahead of every git write
       # -------------------------------------------------------------------------
@@ -360,7 +392,9 @@ jobs:
       # it as a duplicate.
       - name: Publish to NPM
         run: |
-          cd $PACKAGE_PATH
+          # What is published is what was packed and checked: the same file, byte for byte. A mismatch
+          # stops here, before any publish was attempted.
+          (cd "$TARBALLS" && sha256sum --check --quiet SHA256SUMS)
 
           # BEFORE the publish, not after: a publish that succeeds and loses its response leaves npm
           # permanently holding the version while this step fails, and the failure reports would then
@@ -368,15 +402,11 @@ jobs:
           # is exactly what those reports have to assume.
           echo "IS_PUBLISHED=true" >> $GITHUB_ENV
 
-          # `bun`, not npm: bun resolves `catalog:`/`workspace:` while packing, npm ships them verbatim
-          # and breaks every consumer. --ignore-scripts skips the already-run prepublishOnly.
-          bun publish --access public --tag $NPM_TAG --ignore-scripts
+          # Trusted publishing: no token; npm signs in with this job's identity and writes the provenance.
+          # --ignore-scripts: the build above already ran.
+          npm publish "$TARBALLS/package.tgz" --access public --tag $NPM_TAG --ignore-scripts --provenance
 
           echo "✓ Published $PACKAGE_NAME@$NEW_VERSION ($NPM_TAG)"
-        env:
-          # NPM_CONFIG_TOKEN, not NODE_AUTH_TOKEN: bun ignores the NPM_CONFIG_USERCONFIG path that
-          # actions/setup-node writes its .npmrc to, and does not read NODE_AUTH_TOKEN.
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Tag highest version on NPM
         run: |
@@ -385,8 +415,6 @@ jobs:
           npm dist-tag add "$PACKAGE_NAME@$NEW_VERSION" highest \
             && echo "✓ Tagged $PACKAGE_NAME@$NEW_VERSION as 'highest'" \
             || echo "⚠️  Could not set 'highest' dist-tag (non-fatal)"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       # The package just published is passed in: npm can serve the old tags for minutes after a publish,
       # and a heal that read them moved `next` to a stale `latest`.
@@ -397,8 +425,6 @@ jobs:
       - name: Keep the next tag at or above latest
         continue-on-error: true
         run: bun scripts/release/release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       # -------------------------------------------------------------------------
       # RECORD IN GIT
@@ -480,6 +506,13 @@ jobs:
   heal-next:
     name: Heal next tags
     if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only == true }}
+    # It moves a dist-tag, so it is a trusted-publisher action like the release: the same environment (the
+    # owner approves the run) and the identity npm trades for a short-lived credential. It reads the repository
+    # and writes nothing to it.
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-26.04
 
     steps:
@@ -491,15 +524,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
+          node-version: 24.22.1
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
 
+      - name: Install the npm that publishes
+        run: |
+          npm install --global npm@11.21.1 --ignore-scripts
+          [ "$(npm --version)" = "11.21.1" ] || { echo "ERROR: npm is $(npm --version), expected 11.21.1"; exit 1; }
+
       - name: Move next to latest where it is below
         run: bun scripts/release/release-gates.ts heal-next
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}

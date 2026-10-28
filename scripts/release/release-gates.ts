@@ -94,6 +94,11 @@ export const unresolvedProtocols = (opts: { manifest: unknown }): string[] => {
   return found;
 };
 
+/** Only `bun pm pack` resolves `catalog:` and `workspace:`; npm then publishes that tarball with a provenance. */
+export const isTrustedPublishWorkflow = (opts: { workflow: string }): boolean =>
+  /^\s*\(cd .*&& bun pm pack\b/m.test(opts.workflow) &&
+  /^\s*npm publish .*--provenance\b/m.test(opts.workflow);
+
 export const parseChainReleased = (opts: { value: string }): string[] =>
   opts.value
     .split(',')

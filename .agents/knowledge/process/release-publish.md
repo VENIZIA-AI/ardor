@@ -15,6 +15,7 @@ tags: [process, release, ci]
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Gates, bump, publish, record](#gates-bump-publish-record)
+- [Trusted publishing (no npm token)](#trusted-publishing-no-npm-token)
 - [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
 - [Changelog entry required](#changelog-entry-required)
@@ -39,7 +40,7 @@ the dispatched ref, checks out that ref, and validates the inputs against it. `g
 defaults to the DEFAULT branch, `main`, so an unpinned run would build `main`; the workflow now runs only for `develop`, so such a dispatch runs nothing. `scripts/release/release.ts` passes `--ref develop`, and a hand-run dispatch needs it
 too. Every job checks out the dispatched commit (`github.sha`), never a branch name, and the run name carries it.
 
-**The guards of the workflow.** Workflow permissions are read-only; only the `release` job, which pushes the release commit and the tag, has `contents: write`. A `test` job with no secret runs the build, the package tests, the repository script tests and the gates that need no registry credential (lint, purity, clean-install, catalog, and the preset smoke against the VULCAN version the root `package.json` pins); the `release` job `needs` it, so a failing test publishes nothing. The `release` job keeps the gates of the tree it publishes (links, build, artifacts, pack, protocols, registry). Both jobs and the `heal-next` job run only for `develop`. The registry credential appears only in the publish and dist-tag steps. `bun` has an exact version and every action is pinned by its full commit with the tag in a comment: a bump is a deliberate pull request. `scripts/release/__tests__/release-gates.test.ts` reads the workflow as text and fails when one guard is removed (one mutation per guard); it stops accidents, not an author who removes the guard and the test together. Known limit: the `test` job and the `release` job each refresh the catalog to the highest IGNIS, so the tested tree is the published tree only if no IGNIS version appears between them.
+**The guards of the workflow.** Workflow permissions are read-only; only the `release` job, which pushes the release commit and the tag, has `contents: write`. A `test` job with no secret runs the build, the package tests, the repository script tests and the gates that need no registry credential (lint, purity, clean-install, catalog, and the preset smoke against the VULCAN version the root `package.json` pins); the `release` job `needs` it, so a failing test publishes nothing. The `release` job keeps the gates of the tree it publishes (links, build, artifacts, pack, protocols, registry). All three jobs run only for `develop`. There is no npm token and no secret in the workflow: the `release` and `heal-next` jobs, the two that talk to npm, name the environment `npm-release` (every run waits there for the owner's approval before its first step) and hold `id-token: write`; the `test` job holds neither (see [Trusted publishing](#trusted-publishing-no-npm-token)). `bun`, Node and npm have exact versions and every action is pinned by its full commit with the tag in a comment: a bump is a deliberate pull request. `scripts/release/__tests__/release-gates.test.ts` reads the workflow as text and fails when one guard is removed (one mutation per guard); it stops accidents, not an author who removes the guard and the test together. Known limit: the `test` job and the `release` job each refresh the catalog to the highest IGNIS, so the tested tree is the published tree only if no IGNIS version appears between them.
 
 There is no fan-out step that releases every package in one dispatch: each package is released with
 its own run. See [Monorepo layout](/overview/monorepo-layout.md) for how the packages map to
@@ -94,7 +95,7 @@ bun run --filter "@venizia/*" force-update highest
   package before the later package's own release runs.
 - This applies to dependencies outside the repository. The packages of THIS repository name each
   other as `workspace:*` (react -> kernel; admin -> kernel and react; ardor -> all three), which
-  `force-update` skips (a protocol specifier) and `bun pm pack` / `bun publish` write as the
+  `force-update` skips (a protocol specifier) and `bun pm pack` writes as the
   sibling's own version: `@venizia/ardor` X needs `ardor-*` X exactly. A caret here let a fresh install
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
@@ -116,8 +117,8 @@ Before the bump, after the install (see [Build system](/process/build-system.md)
    isolated) with its siblings from the registry, and import every entry with Bun, Node ESM and a
    browser build. A consumer-side packaging bug fails here, before anything is published.
 5. `release-gates.ts artifacts` - every file the package's `exports` map names exists (derived from the map, never a hand-written list).
-6. `make catalog-check`, and an assertion that the workflow still publishes with `bun publish`.
-7. `release-gates.ts pack`, `protocols` and `registry` - the tarball is packed once; its manifest has no
+6. `make catalog-check`.
+7. `release-gates.ts pack`, `protocols` and `registry` - the tarball is packed once (a check before any mutation; the tarball that is published is packed again at step 9a); its manifest has no
    `catalog:` or `workspace:` left; and every runtime dependency can be installed (some published
    version satisfies its range). A sibling this chain published seconds ago is named in the
    `chain_released` input and checked against its workspace version, because npm can take minutes to list it.
@@ -127,12 +128,12 @@ Then the mutations, in this order:
 
 9. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package folder, then
    `git pull` of `develop`, then (ardor) `bun scripts/preset/vulcan-preset.ts`.
-10. **Publish first.** `bun publish --access public --tag $NPM_TAG --ignore-scripts`, where `NPM_TAG` is
+9a. **Pack the tarball to publish.** `bun pm pack --quiet --filename "$TARBALLS/package.tgz"` (one folder, `.agents/local/tmp/release-tarballs`, absolute because npm reads a relative `.agents/x/y.tgz` as a package spec), after the bump and the preset write so it carries both. Its manifest goes through `release-gates.ts protocols`, must carry the version this run releases, and the sha256 of the file is recorded in `SHA256SUMS`. Only `bun pm pack` resolves `catalog:` and `workspace:`: npm packs those specifiers verbatim and the package cannot be installed.
+10. **Publish first.** `sha256sum --check` of the tarball, then `npm publish "$TARBALLS/package.tgz" --access public --tag $NPM_TAG --ignore-scripts --provenance`, where `NPM_TAG` is
     `latest` for `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or
-    version (`scripts/release/release-version.ts tag`). `IS_PUBLISHED` is set before the call, because a publish
-    that succeeds and loses its response still leaves npm holding the version. Never `npm publish`: npm
-    packs `catalog:` and `workspace:` specifiers verbatim and the package cannot be installed.
-11. `npm dist-tag add <package>@<version> highest` (non-fatal), then **the `next` tag is kept at or above
+    version (`scripts/release/release-version.ts tag`). `IS_PUBLISHED` is set between the two, because a publish
+    that succeeds and loses its response still leaves npm holding the version, and a checksum mismatch attempted nothing. There is no `bun publish`: bun has no trusted publishing.
+11. `npm dist-tag add <package>@<version> highest` (non-fatal, over OIDC), then **the `next` tag is kept at or above
     `latest`** for every `@venizia/ardor*` package, not only the one released (`release-gates.ts heal-next --published <name>@<version> --tag <tag>`;
     a missing or semver-lower `next` is moved to `latest`; non-fatal and loud). The package just published is passed
     in and counts as the current value of its tag: npm can serve the old tags for minutes after a publish, and the
@@ -149,7 +150,17 @@ records the old version, or only the tag is missing) and how to finish it by han
 force-pushes `develop`; a failure before the publish touched neither the registry nor git.
 Only one release runs at a time (`concurrency: npm-release`). A dispatch with the `heal_only` input runs just the
 heal (a second job, `Heal next tags`): it publishes nothing, ignores the other inputs (pick any package), and is how
-a stale `next` is fixed by hand.
+a stale `next` is fixed by hand. It moves a dist-tag, so it is a trusted-publisher action too: the same environment (the owner approves that run as well), `id-token: write` and `contents: read`, and the same exact npm.
+
+## Trusted publishing (no npm token)
+
+The workflow holds no npm token. npm exchanges the identity of the `release` or `heal-next` job for a short-lived credential, which needs three things in the workflow and one on npmjs.com:
+
+- **In the workflow.** The environment `npm-release` on both jobs (its reviewers and its ref rule are GitHub settings that only the owner writes; the workflow line is what makes the job subject to them), `id-token: write` on both and on nothing else, and an exact npm of at least 11.21.0 (11.5.1 can publish, 11.21.0 is the first that can move a dist-tag over OIDC; the npm that ships with Node 24 is older), installed and asserted next to an exact Node.
+- **On npmjs.com.** Each of `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin` and `@venizia/ardor` has a **trusted publisher** (package Settings, Trusted Publisher, GitHub Actions): organisation `VENIZIA-AI`, repository `ardor`, workflow filename `package-release.yml`, environment `npm-release`, and the allowed actions `npm publish` and `npm dist-tag`. The owner makes the entries; npm does not validate one when it is saved, so a typo shows only at the first publish, and an entry that has seen no successful publish within two days expires.
+- **In each `package.json`.** `repository.url` must match this repository (`git+https://github.com/VENIZIA-AI/ardor.git`, with the package `directory`), and the repository and the packages must be public. Provenance is then automatic and npmjs.com shows "Built and signed on GitHub Actions".
+
+A failed first run is safe: nothing is published before the first package authenticates. The repository secret `NPM_ACCESS_TOKEN` is already deleted, so there is no token to fall back to: the four trusted-publisher entries are all the owner still has to make before the first release. After a release has passed, the owner may set each package's Publishing access to "Require two-factor authentication and disallow tokens". `scripts/release/__tests__/release-gates.test.ts` keeps the workflow side: no token in any form and no secret, the environment and `id-token` where they belong, `npm publish --provenance` of a tarball packed by `bun pm pack`, the sha256 check before the publish, exact Node and npm, and that npm is installed before the first step that uses it. `scripts/release/release.ts` refuses to dispatch a workflow that no longer packs with bun and publishes with a provenance. VULCAN's own release workflow (#537) is the model.
 
 ## The VULCAN preset (ardor only)
 
