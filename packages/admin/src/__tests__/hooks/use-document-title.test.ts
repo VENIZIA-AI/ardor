@@ -112,3 +112,104 @@ describe('useDocumentTitle', () => {
     expect(document.title).toBe(ORIGINAL_TITLE);
   });
 });
+
+describe('useDocumentTitle with fallback', () => {
+  beforeEach(() => {
+    document.title = ORIGINAL_TITLE;
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const Layout = (props: { appTitle: string; children?: React.ReactNode }) => {
+    useDocumentTitle({ title: undefined, appTitle: props.appTitle, fallback: true });
+    return React.createElement(React.Fragment, null, props.children);
+  };
+
+  const Screen = (props: { title: string }) => {
+    useDocumentTitle({ title: props.title, appTitle: 'Manager' });
+    return null;
+  };
+
+  const layoutWith = (screen?: React.ReactNode, appTitle = 'Manager') =>
+    React.createElement(Layout, { appTitle }, screen);
+
+  test('shows the fallback alone, and puts back the original title on unmount', () => {
+    const { unmount } = render(layoutWith());
+    expect(document.title).toBe('Manager');
+
+    unmount();
+
+    expect(document.title).toBe(ORIGINAL_TITLE);
+  });
+
+  test('lets the screen win on the first mount although the layout effect runs last', () => {
+    render(layoutWith(React.createElement(Screen, { title: 'Orders' })));
+
+    expect(document.title).toBe('Orders · Manager');
+  });
+
+  test('shows the fallback again when the screen unmounts, not the original title', () => {
+    const view = render(layoutWith(React.createElement(Screen, { title: 'Orders' })));
+
+    view.rerender(layoutWith());
+
+    expect(document.title).toBe('Manager');
+  });
+
+  test('follows a screen title change, then shows the fallback', () => {
+    const view = render(layoutWith(React.createElement(Screen, { title: 'Orders' })));
+
+    view.rerender(layoutWith(React.createElement(Screen, { title: 'Invoices' })));
+    expect(document.title).toBe('Invoices · Manager');
+
+    view.rerender(layoutWith());
+    expect(document.title).toBe('Manager');
+  });
+
+  test('follows a fallback change while a screen is mounted, and shows it after the screen', () => {
+    const view = render(
+      layoutWith(React.createElement(Screen, { title: 'Orders' }), 'BANA - Manager'),
+    );
+
+    view.rerender(layoutWith(React.createElement(Screen, { title: 'Orders' }), 'BANA - Quản lý'));
+    expect(document.title).toBe('Orders · Manager');
+
+    view.rerender(layoutWith(undefined, 'BANA - Quản lý'));
+    expect(document.title).toBe('BANA - Quản lý');
+  });
+
+  test('shows the later of two fallbacks, then the earlier one, then the original title', () => {
+    const Inner = () => {
+      useDocumentTitle({ title: undefined, appTitle: 'Inner', fallback: true });
+      return null;
+    };
+    const tree = (withInner: boolean) =>
+      React.createElement(
+        Layout,
+        { appTitle: 'Outer' },
+        withInner ? React.createElement(Inner) : null,
+      );
+
+    const view = render(tree(false));
+    expect(document.title).toBe('Outer');
+
+    view.rerender(tree(true));
+    expect(document.title).toBe('Inner');
+
+    view.rerender(tree(false));
+    expect(document.title).toBe('Outer');
+
+    view.unmount();
+    expect(document.title).toBe(ORIGINAL_TITLE);
+  });
+
+  test('leaves the title untouched when a fallback is disabled', () => {
+    renderHook(() => {
+      useDocumentTitle({ title: undefined, appTitle: 'Manager', fallback: true, enabled: false });
+    });
+
+    expect(document.title).toBe(ORIGINAL_TITLE);
+  });
+});
