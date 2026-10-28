@@ -10,7 +10,7 @@ packages: []
 
 <Badge type="info" text="Tooling" />
 
-**In one line.** A project that reads ARDOR through atlas had to build ARDOR's index itself. ARDOR now publishes a signed one for `main`, `develop` and the release tags. Nothing changes for an app or a package. Planned for 0.4.5.
+**In one line.** A project that reads ARDOR through atlas had to build ARDOR's index itself. ARDOR now publishes a signed one for `main`, `develop` and the release tags. Nothing changes for an app or a package. In ARDOR 0.4.5.
 
 ## What changed
 

@@ -10,7 +10,7 @@ packages: []
 
 <Badge type="info" text="Tooling" />
 
-**In one line.** The workflow that publishes ARDOR is stricter about where it runs, what it can write and what it must pass first. How a release is started does not change. Planned for 0.4.5.
+**In one line.** The workflow that publishes ARDOR is stricter about where it runs, what it can write and what it must pass first. How a release is started does not change. In ARDOR 0.4.5.
 
 ## What changed
 
