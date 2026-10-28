@@ -10,7 +10,7 @@ packages: []
 
 <Badge type="info" text="Tooling" />
 
-**In one line.** ARDOR kept its own copies of the two wiki gates and a theme entry the three Venizia wikis share. Both now come from VULCAN, so a fix lands once. Nothing changes for an app or a package. Planned for 0.4.5.
+**In one line.** ARDOR kept its own copies of the two wiki gates and a theme entry the three Venizia wikis share. Both now come from VULCAN, so a fix lands once. Nothing changes for an app or a package. In ARDOR 0.4.5.
 
 ## What changed
 

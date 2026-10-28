@@ -108,7 +108,8 @@ bare `class PricingService extends BaseService {}` registers fine and throws on 
 An `HttpRepository` has no model, so it is declared
 `@repository({ type: RepositoryTypes.REMOTE, dataSource })` (IGNIS kernel 0.2.0-46 and later;
 `RepositoryTypes` is re-exported by ARDOR). `@repository` injects the datasource into constructor
-parameter 0 under `datasources.<ClassName>`. The two modes mix: an `@inject({ target })` there on a
+parameter 0 and resolves it by class: the key recorded on the class wins, so a pinned `binding`
+holds in a minified build (see below). The two modes mix: an `@inject({ target })` there on a
 datasource registered by hand is accepted from kernel 0.2.0-47, which judges a class with no key
 yet by its class instead of throwing at import.
 

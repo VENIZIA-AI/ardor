@@ -10,7 +10,7 @@ packages: ['@venizia/ardor']
 
 <Badge type="info" text="Documentation" />
 
-**In one line.** `skipBindings` leaves bindings of the five checked namespaces unresolved. It does not reach the provider step, and the docs now say so. Nothing changes in the code. Planned for 0.4.5.
+**In one line.** `skipBindings` leaves bindings of the five checked namespaces unresolved. It does not reach the provider step, and the docs now say so. Nothing changes in the code. In ARDOR 0.4.5.
 
 ## What changed
 

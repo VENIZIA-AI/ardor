@@ -10,7 +10,7 @@ packages: []
 
 <Badge type="info" text="Documentation" />
 
-**In one line.** The preset keeps `output.strictExecutionOrder: true`, and the Vite setup guide now states what it costs, how to measure it for your app and when it is safe to turn it off. Nothing changes in the preset or the packages. Planned for 0.4.5.
+**In one line.** The preset keeps `output.strictExecutionOrder: true`, and the Vite setup guide now states what it costs, how to measure it for your app and when it is safe to turn it off. Nothing changes in the preset or the packages. In ARDOR 0.4.5.
 
 ## What changed
 
