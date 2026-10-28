@@ -15,8 +15,8 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 ```tsx
 import { useDocumentTitle } from '@venizia/ardor';
 
-useDocumentTitle({ title: undefined, appTitle: appNameForLocale, fallback: true }); // in the layout
-useDocumentTitle({ title: 'Orders', appTitle: appNameForLocale }); // in a screen
+useDocumentTitle({ title: undefined, appTitle: 'Back Office', fallback: true }); // in the layout
+useDocumentTitle({ title: 'Orders', appTitle: 'Back Office' }); // in a screen
 ```
 
 ## What changed
