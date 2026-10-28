@@ -122,12 +122,12 @@ Before the bump, after the install (see [Build system](/process/build-system.md)
    `catalog:` or `workspace:` left; and every runtime dependency can be installed (some published
    version satisfies its range). A sibling this chain published seconds ago is named in the
    `chain_released` input and checked against its workspace version, because npm can take minutes to list it.
-8. `make preset-smoke` for `ardor` (below).
+8. The preset smoke for `ardor` is not a step of the `release` job: the `test` job runs it first (below).
 
 Then the mutations, in this order:
 
 9. `npm version $TARGET --no-git-tag-version --workspaces-update=false` inside the package folder, then
-   `git pull` of `develop`, then (ardor) `bun scripts/preset/vulcan-preset.ts`.
+   then (ardor) `bun scripts/preset/vulcan-preset.ts`. The checkout is the dispatched commit and is not pulled again: the driver dispatches each package after the previous one was pushed, so the earlier releases of the chain are already in it. The only `git pull` is the rebase retry of step 12.
 9a. **Pack the tarball to publish.** `bun pm pack --quiet --filename "$TARBALLS/package.tgz"` (one folder, `.agents/local/tmp/release-tarballs`, absolute because npm reads a relative `.agents/x/y.tgz` as a package spec), after the bump and the preset write so it carries both. Its manifest goes through `release-gates.ts protocols`, must carry the version this run releases, and the sha256 of the file is recorded in `SHA256SUMS`. Only `bun pm pack` resolves `catalog:` and `workspace:`: npm packs those specifiers verbatim and the package cannot be installed.
 10. **Publish first.** `sha256sum --check` of the tarball, then `npm publish "$TARBALLS/package.tgz" --access public --tag $NPM_TAG --ignore-scripts --provenance`, where `NPM_TAG` is
     `latest` for `patch|minor|major` or a stable explicit version and `next` for any pre-release mode or
@@ -164,7 +164,7 @@ A failed first run is safe: nothing is published before the first package authen
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs before the version bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` after the bump and after the sync that brings in the earlier releases of the chain, before the publish. The smoke runs VULCAN from the registry (`@venizia/vulcan@latest`); a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `release` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the `release` job, after the bump and before the publish. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`; a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 
