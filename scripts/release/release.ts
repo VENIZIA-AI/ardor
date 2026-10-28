@@ -21,6 +21,7 @@
  * gate installs the one before it.
  */
 
+import { isTrustedPublishWorkflow } from './release-gates';
 import { countChangedSinceRelease, withDependents } from './release-scope';
 import {
   assertAbove,
@@ -29,7 +30,7 @@ import {
   readReleaseArgs,
   type TReleaseTarget,
 } from './release-version';
-import { waitForTarball } from './release-wait';
+import { waitForCompletion, waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
@@ -114,7 +115,7 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
       publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
       changedFiles: countChangedSinceRelease({ name }),
-      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter(dep =>
+      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter((dep) =>
         dep.startsWith('@venizia/ardor'),
       ),
     });
@@ -169,13 +170,16 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
     );
   }
 
-  // npm ships `catalog:` and `workspace:` verbatim, so a package published with it installs as
+  // npm ships `catalog:` and `workspace:` verbatim, so a package published from npm's own pack installs as
   // `lodash@catalog: failed to resolve` on every consumer. The check below asserts it about the YAML
-  // this script dispatches: four packages shipped broken before anyone tried to install one.
+  // this script dispatches: four packages shipped broken before anyone tried to install one. Only
+  // `bun pm pack` resolves them, and npm then publishes that tarball with a provenance.
   const workflowPath = '.github/workflows/package-release.yml';
   const workflow = await Bun.file(workflowPath).text();
-  if (!/^\s*bun publish\b/m.test(workflow)) {
-    complain(`${workflowPath} must publish with \`bun publish\` - npm ships catalog: verbatim.`);
+  if (!isTrustedPublishWorkflow({ workflow })) {
+    complain(
+      `${workflowPath} must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
+    );
   }
 };
 
@@ -198,7 +202,7 @@ const resolveLatestRunId = async (): Promise<string> => {
   return runs[0] ? String(runs[0].databaseId) : '';
 };
 
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Polls until a run newer than `previousRunId` appears, so we watch OUR dispatch and not an older one. */
 const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> => {
@@ -214,20 +218,21 @@ const waitForNewRun = async (opts: { previousRunId: string }): Promise<string> =
   throw new Error('Dispatched, but no new workflow run appeared within two minutes.');
 };
 
-const waitForCompletion = async (opts: { runId: string }): Promise<string> => {
-  for (;;) {
-    const { stdout } = await run({
-      command: ['gh', 'run', 'view', opts.runId, '--json', 'status,conclusion'],
-    });
+const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
+  waitForCompletion({
+    runId: opts.runId,
+    readRun: async ({ runId }) => {
+      const { stdout } = await run({
+        command: ['gh', 'run', 'view', runId, '--json', 'status,conclusion'],
+      });
 
-    const { status, conclusion } = JSON.parse(stdout) as { status: string; conclusion: string };
-    if (status === 'completed') {
-      return conclusion;
-    }
-
-    await sleep(10_000);
-  }
-};
+      return JSON.parse(stdout) as { status: string; conclusion: string };
+    },
+    // The release job waits for an approval in the Actions page; say so, and keep waiting.
+    onWaiting: ({ runId }) => {
+      console.log(`  run ${runId} is waiting for an approval in the Actions page - still waiting`);
+    },
+  });
 
 /**
  * A green workflow is not proof of a publish. Verified against the registry, because the release
@@ -239,7 +244,7 @@ const assertPublished = async (opts: { state: IPackageState }): Promise<string> 
   // `next` where it was. Four minutes, because the registry can lag the publish.
   for (let attempt = 0; attempt < 48; attempt += 1) {
     const versions = await listPublishedVersions({ packageName: opts.state.packageName });
-    const fresh = versions.find(version => !opts.state.publishedVersions.includes(version));
+    const fresh = versions.find((version) => !opts.state.publishedVersions.includes(version));
 
     if (fresh) {
       return fresh;
@@ -294,7 +299,7 @@ const releasePackage = async (opts: {
   const runId = await waitForNewRun({ previousRunId });
   console.log(`  run ${runId} - waiting...`);
 
-  const conclusion = await waitForCompletion({ runId });
+  const conclusion = await waitForRunCompletion({ runId });
   if (conclusion !== 'success') {
     throw new Error(
       `Run ${runId} finished '${conclusion}'. See: gh run view ${runId} --log-failed`,
@@ -319,9 +324,9 @@ const main = async (): Promise<void> => {
   const isConfirmed = args.includes('--yes');
   const { target, positional: requested, issue } = readReleaseArgs({ argv: args });
   const candidates =
-    requested.length > 0 ? RELEASE_ORDER.filter(n => requested.includes(n)) : RELEASE_ORDER;
+    requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
 
-  const unknown = requested.filter(name => !RELEASE_ORDER.includes(name as never));
+  const unknown = requested.filter((name) => !RELEASE_ORDER.includes(name as never));
   if (unknown.length > 0) {
     throw new Error(
       `Unknown package(s): ${unknown.join(', ')}. Known: ${RELEASE_ORDER.join(', ')}`,

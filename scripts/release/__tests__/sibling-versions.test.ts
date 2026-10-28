@@ -26,14 +26,14 @@ type TManifest = {
 
 const readManifests = (): Array<TManifest> => {
   return readdirSync(PACKAGES_DIR)
-    .map(dir => join(PACKAGES_DIR, dir, 'package.json'))
-    .map(file => JSON.parse(readFileSync(file, 'utf8')) as TManifest)
-    .filter(manifest => !manifest.private);
+    .map((dir) => join(PACKAGES_DIR, dir, 'package.json'))
+    .map((file) => JSON.parse(readFileSync(file, 'utf8')) as TManifest)
+    .filter((manifest) => !manifest.private);
 };
 
 const manifests = readManifests();
-const siblingNames = new Set(manifests.map(manifest => manifest.name));
-const versionOf = new Map(manifests.map(manifest => [manifest.name, manifest.version]));
+const siblingNames = new Set(manifests.map((manifest) => manifest.name));
+const versionOf = new Map(manifests.map((manifest) => [manifest.name, manifest.version]));
 
 const versionFor = (name: string): string => {
   const version = versionOf.get(name);
@@ -68,9 +68,9 @@ describe('sibling dependencies in the committed manifests', () => {
   });
 
   test('the repository has siblings that depend on each other, so the rule is exercised', () => {
-    const edges = manifests.flatMap(manifest => {
-      return Object.keys({ ...manifest.dependencies, ...manifest.peerDependencies }).filter(name =>
-        siblingNames.has(name),
+    const edges = manifests.flatMap((manifest) => {
+      return Object.keys({ ...manifest.dependencies, ...manifest.peerDependencies }).filter(
+        (name) => siblingNames.has(name),
       );
     });
 
@@ -78,7 +78,7 @@ describe('sibling dependencies in the committed manifests', () => {
   });
 
   test('a dependency outside this repository keeps its range', () => {
-    const ignisRanges = manifests.flatMap(manifest => {
+    const ignisRanges = manifests.flatMap((manifest) => {
       return Object.entries({ ...manifest.peerDependencies }).filter(([name]) => {
         return name.startsWith('@venizia/ignis-');
       });
@@ -108,7 +108,7 @@ describe('the packed manifest of each package', () => {
       );
     }
 
-    const tarball = readdirSync(out).find(file => file.endsWith('.tgz'));
+    const tarball = readdirSync(out).find((file) => file.endsWith('.tgz'));
     if (!tarball) {
       throw new Error(`bun pm pack made no tarball in ${opts.dir}`);
     }

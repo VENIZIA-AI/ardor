@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
 import { Logger } from '@venizia/ardor-kernel';
 import { act, renderHook } from '@testing-library/react';
 import { useAutosave } from '@/hooks/use-autosave';
@@ -100,6 +100,15 @@ describe('useConfirm', () => {
 });
 
 describe('hooks log through the application logger', () => {
+  // A fake clock, not a sleep: the debounce fires when the test says so, on any runner.
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('useAutosave reports a failed save to the logger, not to console', async () => {
     const logger = Logger.getInstance({ scope: 'useAutosave' });
     const loggerSpy = spyOn(logger, 'error').mockImplementation(() => {});
@@ -112,7 +121,9 @@ describe('hooks log through the application logger', () => {
         { initialProps: { data: 'a' } },
       );
       rerender({ data: 'b' });
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      await act(async () => {
+        jest.advanceTimersByTime(5);
+      });
 
       expect(loggerSpy).toHaveBeenCalled();
       expect(consoleSpy).not.toHaveBeenCalled();

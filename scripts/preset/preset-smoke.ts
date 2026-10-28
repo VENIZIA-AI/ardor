@@ -26,8 +26,8 @@
  * Needs `make build-all` first (a package is packed with its dist).
  *
  * Usage: bun scripts/preset/preset-smoke.ts [solo|refusal|pair|lib|docker]   (default: every scenario that can run)
- * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@latest`; before VULCAN 0.3.0 is
- *                    on npm: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
+ * Env:   VULCAN_CMD  how to run VULCAN (default `bun x @venizia/vulcan@<the version the root package.json pins>`,
+ *                    never `latest`; to try a checkout: `bun <vulcan checkout>/packages/cli/src/cli.ts`)
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
  *                    used instead of the registry's
  *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed), for the pair scenario; without it
@@ -301,8 +301,26 @@ const downloadLatest = async (opts: { name: string; destination: string }): Prom
   return path;
 };
 
+/** The VULCAN the repository pins: the smoke runs what the repository runs, never the newest release. */
+const pinnedVulcan = (): string => {
+  const manifest: { devDependencies?: Record<string, string> } = JSON.parse(
+    readFileSync(join(ROOT, 'package.json'), 'utf8'),
+  );
+  const version = manifest.devDependencies?.['@venizia/vulcan'];
+
+  if (version === undefined || !/^\d+\.\d+\.\d+/.test(version)) {
+    throw new Error(
+      `[preset-smoke] the root package.json must pin @venizia/vulcan to an exact version (found ${version})`,
+    );
+  }
+
+  return version;
+};
+
 const vulcanCommand = (): string[] =>
-  (process.env.VULCAN_CMD ?? 'bun x @venizia/vulcan@latest').split(/\s+/).filter(Boolean);
+  (process.env.VULCAN_CMD ?? `bun x @venizia/vulcan@${pinnedVulcan()}`)
+    .split(/\s+/)
+    .filter(Boolean);
 
 const vulcan = (opts: {
   cwd: string;

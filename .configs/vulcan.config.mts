@@ -74,5 +74,8 @@ export default {
     // Tags default to `<dir>-v<version>` and release commits to IGNIS's template; ARDOR uses both.
     // IGNIS's committed manifest on develop, so the atlas answers over the kernel ARDOR builds on.
     sources: [{ name: 'ignis', repo: 'VENIZIA-AI/ignis', ref: 'develop' }],
+    // The prebuilt index of this repository is signed with the private key in the Actions secret ATLAS_INDEX_KEY;
+    // this is its public half, which a reader that declares ARDOR as a source trusts (a key list, so a key can rotate).
+    index: { keys: ['gqQ8Wtlk6KiZpnCDafb3deR/VqhW2aBaDqqnKJLblZc='] },
   },
 } satisfies VulcanConfig;
