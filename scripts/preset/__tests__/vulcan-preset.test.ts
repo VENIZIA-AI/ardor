@@ -314,3 +314,33 @@ describe('buildPreset, a preset built on a prerelease catalog', () => {
     });
   });
 });
+
+// #436: a peer range such as ^0.4.1 never matches a prerelease, so a package that lists an IGNIS package
+// only as a peer gets the stable copy beside the prerelease the rest of the repository uses. Both kinds
+// declare all six themselves, from the catalog.
+describe('the real presets declare the six IGNIS packages they build on (#436)', () => {
+  const IGNIS = [
+    '@venizia/ignis-boot',
+    '@venizia/ignis-connectors',
+    '@venizia/ignis-filter',
+    '@venizia/ignis-helpers',
+    '@venizia/ignis-inversion',
+    '@venizia/ignis-kernel',
+  ];
+  const declared = (kind: 'app' | 'lib'): Record<string, string> => {
+    const preset = JSON.parse(
+      readFileSync(join(import.meta.dir, '..', '..', '..', 'presets', kind, 'preset.json'), 'utf8'),
+    );
+
+    return { ...preset.dependencies, ...preset.devDependencies };
+  };
+
+  test.each(['app', 'lib'] as const)(
+    'the %s preset lists each as a catalog: dependency',
+    (kind) => {
+      const found = declared(kind);
+
+      expect(IGNIS.filter((name) => found[name] !== 'catalog:')).toEqual([]);
+    },
+  );
+});
