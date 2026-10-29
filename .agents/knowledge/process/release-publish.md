@@ -155,7 +155,7 @@ A failed first run is safe: nothing is published before the first package authen
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `release` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`; a 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `release` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`. A VULCAN bump moves the pin in four places in one change: the root `package.json`, the lockfile, `VULCAN_CMD` and the commit with its `# v<version>` comment of the VULCAN action in `atlas-index.yml` (two tests read them). A 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 
