@@ -45,6 +45,9 @@ const harness = (opts: {
   failWait?: boolean;
   shaChanges?: boolean;
   packedVersion?: string;
+  /** `merge-base --is-ancestor`: true when develop already holds the release commit. */
+  developHolds?: boolean;
+  builtOn?: string;
 }): IHarness => {
   const events: string[] = [];
   const states: string[] = [];
@@ -62,6 +65,12 @@ const harness = (opts: {
       }
       if (inScope() && opts.fail?.(text)) {
         return { exitCode: 1, stdout: '' };
+      }
+      if (text === 'git rev-parse HEAD') {
+        return { exitCode: 0, stdout: 'abc1234567\n' };
+      }
+      if (text.includes('merge-base --is-ancestor')) {
+        return { exitCode: opts.developHolds ? 0 : 1, stdout: '' };
       }
       if (text.startsWith('tar -xzOf')) {
         return {
@@ -103,6 +112,7 @@ const harness = (opts: {
       events.push(`sleep ${ms}`);
     },
     log: () => {},
+    ...(opts.builtOn === undefined ? {} : { readBuiltOn: () => opts.builtOn as string }),
   };
 
   return {
@@ -470,7 +480,7 @@ describe('runChain: stops', () => {
 describe('runChain: steps that never stop the chain', () => {
   test('a failing highest tag or heal is a warning, and the chain goes on', async () => {
     const h = harness({
-      fail: (command) => command.includes('dist-tag add') || command.includes('heal-next'),
+      fail: (command) => command.includes('tag-highest') || command.includes('heal-next'),
     });
     const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
 
@@ -611,5 +621,312 @@ describe('the tarball folder', () => {
       labels.indexOf('kernel: pack the tarball to publish'),
     );
     expect(labels[0]).toBe('make the tarball folder');
+  });
+});
+
+const stableOptions = (names: string[], extra: Partial<IChainOptions> = {}): IChainOptions =>
+  optionsOf(names, { version: '0.4.9', npmTag: 'latest', targetBranch: 'main', ...extra });
+
+const aWorkspaceAfterASync = (names: string[]): Record<string, string> =>
+  Object.fromEntries(names.map((name) => [name, '0.4.9-1']));
+
+describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
+  const names = ['kernel', 'react', 'admin', 'ardor'];
+  const stable = ReleaseChain.plan({ options: stableOptions(names) });
+  const prerelease = ReleaseChain.plan({ options: optionsOf(names) });
+  const commandOf = (steps: typeof stable.phaseB, label: string): string[] => {
+    const step = steps.find((candidate) => candidate.label === label);
+
+    return step !== undefined && 'command' in step ? step.command : [];
+  };
+
+  test('the npm tag is latest for a stable and next for a prerelease', () => {
+    expect(commandOf(stable.phaseB, 'react: publish')).toContain('latest');
+    expect(commandOf(prerelease.phaseB, 'react: publish')).toContain('next');
+  });
+
+  test('a stable pushes its release commits to main, a prerelease to develop', () => {
+    expect(commandOf(stable.phaseB, 'react: push')).toEqual(['git', 'push', 'origin', 'HEAD:main']);
+    expect(commandOf(prerelease.phaseB, 'react: push')).toEqual([
+      'git',
+      'push',
+      'origin',
+      'HEAD:develop',
+    ]);
+  });
+
+  test('a stable checks its packed manifest and its preset for an IGNIS prerelease; a prerelease does not', () => {
+    expect(stable.phaseA).toHaveLength(28);
+    expect(stable.phaseA.filter((step) => step.label.endsWith(': stable-deps'))).toHaveLength(4);
+    expect(commandOf(stable.phaseB, 'ardor: check the preset names only stable versions')).toEqual([
+      'bun',
+      'scripts/release/release-gates.ts',
+      'stable-deps',
+      'packages/ardor/dist/presets',
+    ]);
+    expect(prerelease.phaseA).toHaveLength(24);
+    expect(
+      prerelease.phaseB.some((step) => step.label.includes('names only stable versions')),
+    ).toBe(false);
+  });
+
+  test('highest moves through the gate, which only moves it up', () => {
+    expect(commandOf(stable.phaseB, 'react: tag highest')).toEqual([
+      'bun',
+      'scripts/release/release-gates.ts',
+      'tag-highest',
+      '--published',
+      '@venizia/ardor-react@0.4.9',
+    ]);
+  });
+
+  test('the tag message records what the build used when it is known, and nothing when it is not', () => {
+    const withLine = ReleaseChain.plan({
+      options: stableOptions(names, {
+        builtOn: '@venizia/ignis-kernel=0.4.6, @venizia/ignis-boot=0.4.6',
+      }),
+    });
+
+    expect(commandOf(withLine.phaseB, 'react: annotate the tag')[5]).toBe(
+      '@venizia/ardor-react v0.4.9\nbuilt on: @venizia/ignis-kernel=0.4.6, @venizia/ignis-boot=0.4.6',
+    );
+    expect(commandOf(stable.phaseB, 'react: annotate the tag')[5]).toBe(
+      '@venizia/ardor-react v0.4.9',
+    );
+  });
+
+  test('a stable has a merge back after the last package; a prerelease has none', () => {
+    expect(stable.phaseC.map((step) => step.label)).toEqual(['merge back: main into develop']);
+    expect(prerelease.phaseC).toEqual([]);
+  });
+});
+
+describe('runChain for a stable: the plan binds the run (S4.6)', () => {
+  const run = async (extra: Partial<IChainOptions>) => {
+    const h = harness({
+      manifests: aWorkspaceAfterASync(['kernel']),
+      packedVersion: '0.4.9',
+      developHolds: true,
+    });
+    const result = await runChain({ options: stableOptions(['kernel'], extra), ports: h.ports });
+
+    return { result, h };
+  };
+
+  test('a plan for another version stops the run before anything runs', async () => {
+    const { result, h } = await run({ plan: { version: '0.5.0', kind: 'stable' } });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain('the plan approved 0.5.0 but this run would publish 0.4.9');
+    expect(h.commands()).toEqual([]);
+  });
+
+  test('a plan of another kind stops the run', async () => {
+    const { result } = await run({ plan: { version: '0.4.9', kind: 'prerelease' } });
+
+    expect(result.report).toContain('the plan said prerelease but this run is a stable');
+  });
+
+  test('a stable aimed at develop, and a prerelease aimed at main, stop the run', async () => {
+    expect((await run({ targetBranch: 'develop' })).result.report).toContain(
+      'a stable (0.4.9) is released from main, not develop',
+    );
+
+    const h = harness({});
+    const prerelease = await runChain({
+      options: optionsOf(['kernel'], { targetBranch: 'main' }),
+      ports: h.ports,
+    });
+
+    expect(prerelease.report).toContain(
+      'a prerelease (0.4.6-0) is released from develop, not main',
+    );
+    expect(h.commands()).toEqual([]);
+  });
+
+  test('a kind that disagrees with the version stops the run', async () => {
+    expect((await run({ kind: 'prerelease' })).result.report).toContain(
+      'the kind is prerelease but 0.4.9 is a stable',
+    );
+  });
+
+  test('a plan that agrees lets the run through', async () => {
+    const { result } = await run({ plan: { version: '0.4.9', kind: 'stable' } });
+
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('runChain for a stable: the merge back (C3.3b, S4.1)', () => {
+  const names = ['kernel', 'react'];
+  const releasing = (extra: Parameters<typeof harness>[0] = {}) =>
+    harness({
+      manifests: aWorkspaceAfterASync(names),
+      packedVersion: '0.4.9',
+      ...extra,
+    });
+  const mergeCommands = (commands: string[]): string[] =>
+    commands.filter(
+      (command) =>
+        command.includes('worktree') ||
+        command.includes('merge-back') ||
+        command.includes('merge-base') ||
+        command.startsWith('git fetch origin develop') ||
+        command.startsWith('git push origin HEAD:develop'),
+    );
+
+  test('after the last tag it merges in a clean worktree of origin/develop with a copy of the script, and pushes develop', async () => {
+    const h = releasing();
+    const result = await runChain({
+      options: stableOptions(names, { statePath: '/work/state.json' }),
+      ports: h.ports,
+    });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(mergeCommands(commands)).toEqual([
+      'git fetch origin develop',
+      'git merge-base --is-ancestor abc1234567 origin/develop',
+      'git worktree add --detach /work/tmp/merge-back-develop origin/develop',
+      'cp scripts/release/merge-back.ts /work/tmp/merge-back-main.ts',
+      'bun /work/tmp/merge-back-main.ts apply --from abc1234567 --repo /work/tmp/merge-back-develop --message chore(release): merge main into develop after v0.4.9',
+      'git push origin HEAD:develop',
+      'git worktree remove /work/tmp/merge-back-develop',
+    ]);
+    expect(indexOfCommand(commands, 'git fetch origin develop')).toBeGreaterThan(
+      indexOfCommand(commands, 'git push origin ardor-v') + 0,
+    );
+    expect(JSON.parse(h.states.at(-1) as string).mergeBack).toBe('done');
+  });
+
+  test('it comes after the tag of the last package', async () => {
+    const h = releasing();
+
+    await runChain({ options: stableOptions(names), ports: h.ports });
+    const commands = h.commands();
+    const lastTag = commands.lastIndexOf('git push origin react-v0.4.9');
+
+    expect(lastTag).toBeGreaterThan(-1);
+    expect(indexOfCommand(commands, 'git fetch origin develop')).toBeGreaterThan(lastTag);
+  });
+
+  test('it is skipped when develop already holds the last release commit', async () => {
+    const h = releasing({ developHolds: true });
+    const result = await runChain({
+      options: stableOptions(names, { statePath: '/work/state.json' }),
+      ports: h.ports,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(h.commands().some((command) => command.includes('worktree add'))).toBe(false);
+    expect(JSON.parse(h.states.at(-1) as string).mergeBack).toBe('done');
+  });
+
+  test.each([
+    ['the merge stops', 'merge-back-main.ts apply'],
+    ['the push to develop is rejected', 'git push origin HEAD:develop'],
+  ])(
+    'when %s the run ends, the state says none and the report names the repair',
+    async (_name, failing) => {
+      const h = releasing({ fail: (command) => command.includes(failing) });
+      const result = await runChain({
+        options: stableOptions(names, { statePath: '/work/state.json' }),
+        ports: h.ports,
+      });
+      const state = JSON.parse(h.states.at(-1) as string);
+
+      expect(result.ok).toBe(false);
+      expect(result.report?.startsWith('Report - published, merge back not done.')).toBe(true);
+      expect(result.report).toContain('Dispatch the same version again: only the merge back runs.');
+      expect(result.report).toContain('git push origin develop');
+      expect(state.mergeBack).toBe('none');
+      expect(state.stopped.failed).toBe('merge back');
+      expect(state.states.every((entry: { stage: string }) => entry.stage === 'tagged')).toBe(true);
+      expect(h.commands().at(-1)).toBe('git worktree remove /work/tmp/merge-back-develop');
+      expect(ReleaseChain.reportFromState({ state })).toBe(result.report as string);
+    },
+  );
+
+  test('when every package is already released, the re-dispatch runs only the merge back', async () => {
+    const h = releasing({
+      manifests: { kernel: '0.4.9', react: '0.4.9' },
+      onNpm: ['@venizia/ardor-kernel', '@venizia/ardor-react'],
+      tagged: ['kernel-v0.4.9', 'react-v0.4.9'],
+    });
+    const result = await runChain({ options: stableOptions(names), ports: h.ports });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(commands.some((command) => command.includes('npm publish'))).toBe(false);
+    expect(commands.some((command) => command.includes('worktree add'))).toBe(true);
+  });
+
+  test('a prerelease never merges back, also when every package is already released', async () => {
+    const h = harness({
+      manifests: { kernel: '0.4.6-0' },
+      onNpm: ['@venizia/ardor-kernel'],
+      tagged: ['kernel-v0.4.6-0'],
+    });
+    const result = await runChain({ options: optionsOf(['kernel']), ports: h.ports });
+
+    expect(result.ok).toBe(true);
+    expect(h.commands()).toEqual([]);
+  });
+
+  test('the tag message carries the catalog the build read through the port', async () => {
+    const h = releasing({ builtOn: '@venizia/ignis-kernel=0.4.6', developHolds: true });
+
+    await runChain({ options: stableOptions(['kernel']), ports: h.ports });
+
+    expect(
+      h.commands().find((command) => command.startsWith('git tag -a kernel-v0.4.9')),
+    ).toContain('built on: @venizia/ignis-kernel=0.4.6');
+  });
+});
+
+describe('ReleaseChain.reportFromState for a stable', () => {
+  const tagged = ['kernel', 'react'].map((name) => ({
+    name,
+    packageName: NAMES[name] as string,
+    stage: 'tagged' as const,
+    skipped: false,
+    warnings: [],
+  }));
+
+  test('a stop in a package names the target branch, not develop', () => {
+    const text = ReleaseChain.reportFromState({
+      state: {
+        version: '0.4.9',
+        targetBranch: 'main',
+        states: [{ ...tagged[0]!, stage: 'committed' }],
+        stopped: { failed: 'kernel', label: 'kernel: push' },
+      },
+    });
+
+    expect(text).toContain('the push to main did not land');
+    expect(text).toContain('Pull main');
+    expect(text).not.toContain('develop');
+  });
+
+  test('a job cancelled in the middle of the packages is not reported as a merge back', () => {
+    const text = ReleaseChain.reportFromState({
+      state: {
+        version: '0.4.9',
+        targetBranch: 'main',
+        mergeBack: 'none',
+        states: [tagged[0]!, { ...tagged[1]!, stage: 'published' }],
+      },
+    });
+
+    expect(text).not.toContain('merge back not done');
+    expect(text).toContain('react');
+  });
+
+  test('a job cancelled after the last tag, before the merge back finished, is a merge back report', () => {
+    const text = ReleaseChain.reportFromState({
+      state: { version: '0.4.9', targetBranch: 'main', mergeBack: 'none', states: tagged },
+    });
+
+    expect(text.startsWith('Report - published, merge back not done.')).toBe(true);
   });
 });

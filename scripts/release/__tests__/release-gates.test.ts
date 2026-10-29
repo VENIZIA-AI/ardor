@@ -13,6 +13,8 @@ import {
   missingFromRegistry,
   nextTagsToHeal,
   parseChainReleased,
+  prereleaseRanges,
+  shouldMoveHighest,
   TARBALL_LAG_DELAYS_SECONDS,
   unresolvedProtocols,
   parsePublished,
@@ -1202,7 +1204,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       file: 'chain',
       mutate: (text) =>
         text.replace(
-          "command: ['git', 'push', 'origin', 'HEAD:develop'],",
+          "command: ['git', 'push', 'origin', `HEAD:${targetBranch}`],",
           "command: ['git', 'pull', '--rebase', 'origin', 'develop'],",
         ),
     },
@@ -1328,5 +1330,94 @@ describe('isTrustedPublishWorkflow: the files make release may dispatch', () => 
         chain,
       }),
     ).toBe(false);
+  });
+});
+
+describe('the stable gates (S4.3, S4.4, C3.4)', () => {
+  test('highest moves only to a semver-greater version', () => {
+    expect(shouldMoveHighest({ published: '0.4.9', current: '0.4.10-0' })).toBe(false);
+    expect(shouldMoveHighest({ published: '0.4.10-0', current: '0.4.9' })).toBe(true);
+    expect(shouldMoveHighest({ published: '0.4.9', current: '0.4.9' })).toBe(false);
+    expect(shouldMoveHighest({ published: '0.4.9-1', current: '0.4.9' })).toBe(false);
+    expect(shouldMoveHighest({ published: '0.4.9', current: undefined })).toBe(true);
+  });
+
+  test('a stable leaves next where it is when next is ahead, and moves it when next is behind', () => {
+    expect(
+      nextTagsToHeal({ packages: [{ name: '@venizia/ardor', latest: '0.4.9', next: '0.4.10-0' }] }),
+    ).toEqual([]);
+    expect(
+      nextTagsToHeal({ packages: [{ name: '@venizia/ardor', latest: '0.4.9', next: '0.4.8-3' }] }),
+    ).toEqual([{ name: '@venizia/ardor', latest: '0.4.9' }]);
+  });
+
+  test('a prerelease range of an IGNIS package fails stable-deps, a stable range passes', () => {
+    expect(
+      prereleaseRanges({ manifest: { dependencies: { '@venizia/ignis-kernel': '^0.4.6-1' } } }),
+    ).toEqual(['@venizia/ignis-kernel@^0.4.6-1']);
+    expect(
+      prereleaseRanges({ manifest: { dependencies: { '@venizia/ignis-kernel': '^0.4.5' } } }),
+    ).toEqual([]);
+  });
+
+  test('every block that names packages is read, a preset included', () => {
+    expect(
+      prereleaseRanges({
+        manifest: {
+          devDependencies: { '@venizia/ignis-boot': '0.4.6-0' },
+          peerDependencies: { '@venizia/ignis-helpers': '~0.4.6-rc.1' },
+          peers: { '@venizia/ignis-filter': '0.4.6-2' },
+          optionalDependencies: { '@venizia/ignis-inversion': '0.4.6-1' },
+        },
+      }),
+    ).toHaveLength(4);
+  });
+
+  test('the ARDOR siblings and other packages are not its business', () => {
+    expect(
+      prereleaseRanges({
+        manifest: {
+          dependencies: {
+            '@venizia/ardor-kernel': '0.4.9-1',
+            react: '^19.0.0-rc.1',
+            lodash: '^4.0.0',
+          },
+        },
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe('release-gates.ts stable-deps on a preset folder (found by the stable rehearsal)', () => {
+  const folderWith = (opts: { range: string }): string => {
+    const root = makeScratch({ prefix: 'stable-deps-' });
+    roots.push(root);
+    mkdirSync(join(root, 'app', 'files'), { recursive: true });
+    writeFileSync(
+      join(root, 'app', 'preset.json'),
+      JSON.stringify({ dependencies: { '@venizia/ignis-kernel': opts.range } }),
+    );
+    // The templates are not manifests: a tsconfig has comments, which is not JSON.
+    writeFileSync(
+      join(root, 'app', 'files', 'tsconfig.json'),
+      '// a comment\n{ "compilerOptions": {} }\n',
+    );
+
+    return root;
+  };
+  const gate = (path: string) =>
+    Bun.spawnSync(['bun', join(ROOT, 'scripts/release/release-gates.ts'), 'stable-deps', path], {
+      cwd: ROOT,
+    });
+
+  test('the templates are skipped and a stable range passes', () => {
+    expect(gate(folderWith({ range: '0.4.5' })).exitCode).toBe(0);
+  });
+
+  test('a prerelease range in preset.json fails and is named', () => {
+    const result = gate(folderWith({ range: '0.4.6-1' }));
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr.toString()).toContain('@venizia/ignis-kernel@0.4.6-1');
   });
 });
