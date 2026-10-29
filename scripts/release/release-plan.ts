@@ -4,9 +4,24 @@
  * `release.ts` runs the release; this file holds the rules it follows, so a test can reach them. All
  * four ARDOR packages share one version per run: the umbrella pins its siblings by exact version, and a
  * subset at different versions is a release nobody can install.
+ *
+ * The workflow runs the `resolve` command below in both of its jobs, before any build:
+ *
+ *   bun scripts/release/release-plan.ts resolve --packages kernel,react --version 0.4.6-0
+ *   bun scripts/release/release-plan.ts resolve --packages kernel,react,admin,ardor --mode prerelease
+ *
+ * It prints the one version of the run, or fails naming the cause (unknown or out-of-order package,
+ * packages at different versions under a mode, a package above an explicit version).
  */
 
-import { isReleaseMode, isReleaseVersion, type TReleaseTarget } from './release-version';
+import { readFileSync } from 'node:fs';
+
+import {
+  isReleaseMode,
+  isReleaseVersion,
+  readReleaseArgs,
+  type TReleaseTarget,
+} from './release-version';
 
 /** A package of the plan, by workspace folder name, with the version its manifest holds. */
 export interface IPlannedPackage {
@@ -238,6 +253,30 @@ export class ReleasePlan {
     };
   }
 
+  /** The version of a run read from the manifests of its packages: the `resolve` command. */
+  static resolveFromManifests(opts: { argv: string[]; root?: string }): string {
+    const { argv } = opts;
+    const root = opts.root ?? '.';
+    const flag = (name: string): string | undefined => {
+      const index = argv.indexOf(name);
+      return index === -1 ? undefined : argv[index + 1];
+    };
+    const names = (flag('--packages') ?? '').split(',').filter(Boolean);
+    ReleasePlan.validate({ packages: names });
+
+    const { target } = readReleaseArgs({ argv: argv.filter((arg) => arg !== '--packages') });
+    const packages = names.map((name) => ({
+      name,
+      localVersion: (
+        JSON.parse(readFileSync(`${root}/packages/${name}/package.json`, 'utf8')) as {
+          version: string;
+        }
+      ).version,
+    }));
+
+    return ReleasePlan.resolveVersion({ target, packages }).version;
+  }
+
   /** The single dispatch of a run: what `gh workflow run` is sent, and nothing else. */
   static dispatch(opts: { plan: readonly string[]; version: string; issue?: string }): IDispatch {
     ReleasePlan.validate({ packages: opts.plan });
@@ -274,5 +313,18 @@ export class ReleasePlan {
     const issue = inputs.issue === undefined ? '' : ` issue=${inputs.issue}`;
 
     return `1 dispatch of ${workflow} on ${ref}: packages=${inputs.packages} version=${inputs.version}${issue}`;
+  }
+}
+
+if (import.meta.main) {
+  try {
+    const [command, ...rest] = Bun.argv.slice(2);
+    if (command !== 'resolve') {
+      throw new Error(`[release-plan] unknown command '${command ?? ''}' | use resolve`);
+    }
+    console.log(ReleasePlan.resolveFromManifests({ argv: rest }));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
   }
 }

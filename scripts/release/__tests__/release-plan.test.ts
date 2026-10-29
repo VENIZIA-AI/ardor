@@ -1,6 +1,8 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, describe, expect, test } from 'bun:test';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import { makeScratch } from '../../scratch';
 import { ReleasePlan } from '../release-plan';
 
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
@@ -213,5 +215,79 @@ describe('release.ts', () => {
     expect(proc.exitCode).toBe(0);
     expect(proc.stdout.toString()).toBe('');
     expect(proc.stderr.toString()).toBe('');
+  });
+});
+
+describe('ReleasePlan.resolveFromManifests', () => {
+  const scratch = (versions: Record<string, string>): string => {
+    const root = makeScratch({ prefix: 'release-plan-' });
+    for (const [name, version] of Object.entries(versions)) {
+      mkdirSync(join(root, 'packages', name), { recursive: true });
+      writeFileSync(join(root, 'packages', name, 'package.json'), JSON.stringify({ version }));
+    }
+    scratches.push(root);
+
+    return root;
+  };
+  const scratches: string[] = [];
+  const all = (version: string) => ({
+    kernel: version,
+    react: version,
+    admin: version,
+    ardor: version,
+  });
+
+  afterAll(() => {
+    for (const root of scratches) {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('a mode over four packages at one version gives the one version', () => {
+    const root = scratch(all('0.4.5'));
+
+    expect(
+      ReleasePlan.resolveFromManifests({
+        root,
+        argv: ['--packages', 'kernel,react,admin,ardor', '--version', '', '--mode', 'prerelease'],
+      }),
+    ).toBe('0.4.6-0');
+  });
+
+  test('a mode over packages at different versions fails and names --version', () => {
+    const root = scratch({ ...all('0.4.5'), kernel: '0.4.6-0' });
+
+    expect(() =>
+      ReleasePlan.resolveFromManifests({
+        root,
+        argv: ['--packages', 'kernel,react,admin,ardor', '--mode', 'patch'],
+      }),
+    ).toThrow('--version');
+  });
+
+  test('an explicit version is the version, and a package above it fails', () => {
+    const root = scratch({ ...all('0.4.5'), ardor: '0.5.0' });
+
+    expect(
+      ReleasePlan.resolveFromManifests({
+        root,
+        argv: ['--packages', 'kernel,react', '--version', '0.4.6'],
+      }),
+    ).toBe('0.4.6');
+    expect(() =>
+      ReleasePlan.resolveFromManifests({
+        root,
+        argv: ['--packages', 'ardor', '--version', '0.4.6'],
+      }),
+    ).toThrow('ardor is at 0.5.0, above 0.4.6');
+  });
+
+  test('a list out of dependency order fails before any manifest is read', () => {
+    expect(() =>
+      ReleasePlan.resolveFromManifests({
+        root: '/nowhere',
+        argv: ['--packages', 'react,kernel', '--mode', 'patch'],
+      }),
+    ).toThrow('not in dependency order');
   });
 });
