@@ -3,12 +3,19 @@
  *
  * One dispatch is one run for every package it names: the workflow releases them in dependency order at
  * one version (`release-chain.ts`), so there is nothing to wait for between packages here. This script
- * plans the run (the packages, the one version), sends exactly one `gh workflow run` on `develop`,
- * waits for the run to finish, reads the registry for every package of the plan and pulls `develop`.
+ * plans the run (the packages, the one version, the kind), sends exactly one `gh workflow run`, waits for the
+ * run to finish, reads the registry for every package of the plan and brings `develop` up to date.
+ *
+ * The kind of the version picks the branch (`ReleasePlan.branchOf`): a prerelease (`prerelease`, `prepatch`,
+ * `preminor`, `premajor`, or a version with a prerelease part) runs from `develop`, a stable (`patch`, `minor`,
+ * `major`, or a version without one) from `main`. Versions and workflow files are read from `origin/<branch>`,
+ * so a stable needs no local checkout of `main`. A stable waits for one approval on the `release-approval`
+ * environment, given in the run on GitHub; after it the workflow merges `main` back into `develop` and this
+ * script fast-forwards the local `develop`.
  *
  *   bun scripts/release/release.ts                      # the four packages, as a prerelease
  *   bun scripts/release/release.ts --dry-run            # print the dispatch, send nothing
- *   bun scripts/release/release.ts --mode patch         # default is prerelease
+ *   bun scripts/release/release.ts --mode patch         # a stable, from main; default is prerelease
  *   bun scripts/release/release.ts --version 0.4.7      # an explicit version; overrides --mode
  *   bun scripts/release/release.ts kernel react --version 0.4.7   # resume: only these, still ordered
  *   bun scripts/release/release.ts --issue 138          # the release commits say [#138]
@@ -23,7 +30,7 @@
  */
 
 import { isTrustedPublishWorkflow } from './release-gates';
-import { type IPlannedPackage, ReleasePlan } from './release-plan';
+import { type IPlannedPackage, ReleaseKinds, ReleasePlan, type TReleaseKind } from './release-plan';
 import { isReleaseVersion, readReleaseArgs } from './release-version';
 import { ReleaseVerify } from './release-verify';
 import { waitForCompletion } from './release-wait';
@@ -35,7 +42,6 @@ interface IPackageState extends IPlannedPackage {
   publishedVersions: string[];
 }
 
-const BRANCH = ReleasePlan.REF;
 const WORKFLOW_PATH = `.github/workflows/${ReleasePlan.WORKFLOW}`;
 const CHAIN_PATH = 'scripts/release/release-chain.ts';
 
@@ -55,8 +61,14 @@ const run = async (opts: {
   return { stdout: stdout.trim(), exitCode };
 };
 
-const readJson = async (path: string): Promise<Record<string, string>> => {
-  return JSON.parse(await Bun.file(path).text());
+/** A file as the branch holds it on the remote: what the workflow builds, whatever is checked out here. Empty when the branch has none. */
+const readFromRemote = async (opts: { branch: string; path: string }): Promise<string> => {
+  const { stdout, exitCode } = await run({
+    command: ['git', 'show', `origin/${opts.branch}:${opts.path}`],
+    allowFailure: true,
+  });
+
+  return exitCode === 0 ? stdout : '';
 };
 
 /** The published `next` version, or null when the package has never been released. */
@@ -83,16 +95,23 @@ const listPublishedVersions = async (opts: { packageName: string }): Promise<str
   return Array.isArray(parsed) ? parsed : [parsed];
 };
 
-const collectState = async (opts: { names: readonly string[] }): Promise<IPackageState[]> => {
+const collectState = async (opts: {
+  names: readonly string[];
+  branch: string;
+}): Promise<IPackageState[]> => {
   const states: IPackageState[] = [];
 
   for (const name of opts.names) {
     const manifestPath = `packages/${name}/package.json`;
-    if (!(await Bun.file(manifestPath).exists())) {
+    const shown = await run({
+      command: ['git', 'show', `origin/${opts.branch}:${manifestPath}`],
+      allowFailure: true,
+    });
+    if (shown.exitCode !== 0) {
       continue;
     }
 
-    const manifest = await readJson(manifestPath);
+    const manifest = JSON.parse(shown.stdout) as Record<string, string>;
 
     states.push({
       name,
@@ -108,10 +127,13 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
 
 /**
  * Refuses to start from a tree that would publish something other than what the operator is looking
- * at. The workflow checks out the BRANCH, not the local HEAD, so anything uncommitted or unpushed is
- * simply not in the release.
+ * at. The workflow checks out the branch, not the local HEAD, so anything uncommitted or unpushed is
+ * simply not in the release. A stable reads only `origin/main`, so it has no local tree to check.
  */
-const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
+const assertReleasable = async (opts: { isDryRun: boolean; branch: string }): Promise<void> => {
+  const { branch: target } = opts;
+  const isStable = target === ReleasePlan.STABLE_REF;
+
   // Reported rather than thrown on a dry run: it publishes nothing, and it is most useful WHILE the
   // tree is still dirty - refusing to plan a release until the work is committed is backwards.
   const complain = (message: string): void => {
@@ -126,30 +148,32 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
   // checkout is what makes the repo and the registry look like they disagree when they do not.
   await run({ command: ['git', 'fetch', 'origin', '--quiet'] });
 
-  const { stdout: branch } = await run({ command: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'] });
-  if (branch !== BRANCH) {
-    complain(`On '${branch}', not '${BRANCH}'. The workflow releases from '${BRANCH}'.`);
-  }
+  if (!isStable) {
+    const { stdout: branch } = await run({ command: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'] });
+    if (branch !== target) {
+      complain(`On '${branch}', not '${target}'. The workflow releases from '${target}'.`);
+    }
 
-  const { stdout: dirty } = await run({ command: ['git', 'status', '--porcelain'] });
-  if (dirty) {
-    complain(
-      `Working tree is not clean - ${dirty.split('\n').length} path(s). The workflow builds from the remote, so uncommitted work would NOT be released.`,
-    );
-  }
+    const { stdout: dirty } = await run({ command: ['git', 'status', '--porcelain'] });
+    if (dirty) {
+      complain(
+        `Working tree is not clean - ${dirty.split('\n').length} path(s). The workflow builds from the remote, so uncommitted work would NOT be released.`,
+      );
+    }
 
-  const { stdout: counts } = await run({
-    command: ['git', 'rev-list', '--left-right', '--count', `HEAD...origin/${BRANCH}`],
-  });
-  const [ahead, behind] = counts.split(/\s+/).map(Number);
+    const { stdout: counts } = await run({
+      command: ['git', 'rev-list', '--left-right', '--count', `HEAD...origin/${target}`],
+    });
+    const [ahead, behind] = counts.split(/\s+/).map(Number);
 
-  if (ahead > 0) {
-    complain(`${ahead} commit(s) not pushed. The workflow builds origin/${BRANCH}; push first.`);
-  }
-  if (behind > 0) {
-    complain(
-      `${behind} commit(s) behind origin/${BRANCH}. Pull first, or you will read stale versions.`,
-    );
+    if (ahead > 0) {
+      complain(`${ahead} commit(s) not pushed. The workflow builds origin/${target}; push first.`);
+    }
+    if (behind > 0) {
+      complain(
+        `${behind} commit(s) behind origin/${target}. Pull first, or you will read stale versions.`,
+      );
+    }
   }
 
   // npm ships `catalog:` and `workspace:` verbatim, so a package published from npm's own pack installs as
@@ -157,11 +181,11 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
   // this script dispatches: four packages shipped broken before anyone tried to install one. Only
   // `bun pm pack` resolves them, and npm then publishes that tarball with a provenance. The workflow
   // calls the chain and the chain holds the pack and the publish, so both are read.
-  const workflow = await Bun.file(WORKFLOW_PATH).text();
-  const chain = await Bun.file(CHAIN_PATH).text();
+  const workflow = await readFromRemote({ branch: target, path: WORKFLOW_PATH });
+  const chain = await readFromRemote({ branch: target, path: CHAIN_PATH });
   if (!isTrustedPublishWorkflow({ workflow, chain })) {
     complain(
-      `${WORKFLOW_PATH} must run ${CHAIN_PATH}, which must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
+      `origin/${target} must hold a ${WORKFLOW_PATH} that runs ${CHAIN_PATH}, which must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
     );
   }
 };
@@ -217,10 +241,24 @@ const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
     },
   });
 
+/** Brings the local `develop` to the remote's: the merge back of a stable put commits there. */
+const fastForwardDevelop = async (): Promise<void> => {
+  const { stdout: current } = await run({ command: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'] });
+  const develop = ReleasePlan.REF;
+
+  await run({
+    command:
+      current === develop
+        ? ['git', 'pull', '--ff-only', '--quiet', 'origin', develop]
+        : ['git', 'fetch', '--quiet', 'origin', `${develop}:${develop}`],
+  });
+};
+
 /** The one dispatch of the run, then the run's end and the registry. */
 const releaseRun = async (opts: {
   dispatch: ReturnType<typeof ReleasePlan.dispatch>;
   states: IPackageState[];
+  kind: TReleaseKind;
 }): Promise<void> => {
   const previousRunId = await resolveLatestRunId();
 
@@ -230,6 +268,11 @@ const releaseRun = async (opts: {
 
   const runId = await waitForNewRun({ previousRunId });
   console.log(`  run ${runId} - waiting...`);
+  if (opts.kind === ReleaseKinds.STABLE) {
+    console.log(
+      `  one approval is waiting on release-approval: approve the deployment in the run on GitHub (gh run view ${runId} --web)`,
+    );
+  }
 
   const conclusion = await waitForRunCompletion({ runId });
   if (conclusion !== 'success') {
@@ -243,9 +286,7 @@ const releaseRun = async (opts: {
   const published = await ReleaseVerify.verifyRun({
     states: opts.states,
     listVersions: listPublishedVersions,
-    pull: async () => {
-      await run({ command: ['git', 'pull', '--ff-only', '--quiet', 'origin', BRANCH] });
-    },
+    pull: fastForwardDevelop,
   });
 
   for (const [packageName, version] of Object.entries(published)) {
@@ -273,18 +314,44 @@ const main = async (): Promise<void> => {
       : [...ReleasePlan.ORDER];
   ReleasePlan.validate({ packages: named });
 
-  await assertReleasable({ isDryRun });
+  const kind = ReleasePlan.kindOfTarget({ target });
+  const branch = ReleasePlan.branchOf({ kind });
 
-  const states = await collectState({ names: named });
-  const resolved = ReleasePlan.resolveVersion({ target, packages: states });
-  const plan = states.filter((state) => resolved.plan.includes(state.name));
+  await assertReleasable({ isDryRun, branch });
 
-  if (plan.length === 0) {
+  const states = await collectState({ names: named, branch });
+  const { plan: resolved, problems } = ReleasePlan.plan({
+    target,
+    packages: states,
+    ref: `refs/heads/${branch}`,
+    issue,
+  });
+
+  if (resolved === undefined || problems.length > 0) {
+    throw new Error(`The run may not be dispatched:\n  - ${problems.join('\n  - ')}`);
+  }
+
+  const plan = states.filter((state) => resolved.packages.includes(state.name));
+  const isStable = kind === ReleaseKinds.STABLE;
+
+  // A stable whose packages are all out can still owe the merge back: a run that stopped after the last
+  // tag. The same version dispatched again runs only that, so it is not "nothing to release".
+  const mergeBackOwed =
+    isStable &&
+    plan.length === 0 &&
+    (await run({
+      command: ['git', 'merge-base', '--is-ancestor', 'origin/main', 'origin/develop'],
+      allowFailure: true,
+    }).then((result) => result.exitCode !== 0));
+
+  if (plan.length === 0 && !mergeBackOwed) {
     console.log(`Nothing to release - every package is already at ${resolved.version}.`);
     return;
   }
 
-  console.log(`Release plan (${target} -> ${resolved.version}), in dependency order:\n`);
+  console.log(
+    `Release plan (${target} -> ${resolved.version}, a ${kind} from ${branch}), in dependency order:\n`,
+  );
   for (const state of states) {
     const note = resolved.skipped.includes(state.name) ? 'already there, left alone' : 'to release';
     console.log(
@@ -292,8 +359,22 @@ const main = async (): Promise<void> => {
     );
   }
 
-  const dispatch = ReleasePlan.dispatch({ plan: resolved.plan, version: resolved.version, issue });
+  if (mergeBackOwed) {
+    console.log(
+      `\nEvery package is at ${resolved.version}, but main is not in develop: the dispatch runs only the merge back.`,
+    );
+  }
+
+  const dispatch = ReleasePlan.dispatch({
+    plan: mergeBackOwed ? named : resolved.packages,
+    version: resolved.version,
+    issue,
+    ref: branch,
+  });
   console.log(`\n${ReleasePlan.describe({ dispatch })}`);
+  if (isStable) {
+    console.log('A stable waits for one approval on release-approval, given in the run on GitHub.');
+  }
 
   if (isDryRun) {
     console.log('\n--dry-run: nothing dispatched.');
@@ -301,11 +382,13 @@ const main = async (): Promise<void> => {
   }
 
   if (!isConfirmed) {
-    console.log(`\nThis publishes ${plan.length} package(s) to npm. Re-run with --yes to proceed.`);
+    console.log(
+      `\nThis publishes ${plan.length} package(s) to npm${isStable ? ' after one approval' : ''}. Re-run with --yes to proceed.`,
+    );
     return;
   }
 
-  await releaseRun({ dispatch, states: plan });
+  await releaseRun({ dispatch, states: plan, kind });
 
   console.log(`\n✓ Released ${plan.length} package(s).`);
 };

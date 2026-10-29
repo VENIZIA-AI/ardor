@@ -107,6 +107,9 @@ export class ReleasePlan {
   /** A prerelease run is dispatched on this ref. */
   static readonly REF = 'develop';
 
+  /** A stable run is dispatched on this ref. */
+  static readonly STABLE_REF = 'main';
+
   static readonly DEVELOP_REF = 'refs/heads/develop';
 
   static readonly MAIN_REF = 'refs/heads/main';
@@ -331,6 +334,25 @@ export class ReleasePlan {
     return opts.version.includes('-') ? ReleaseKinds.PRERELEASE : ReleaseKinds.STABLE;
   }
 
+  /**
+   * The kind a target gives, before any version is read: `patch`, `minor`, `major` and a version with no
+   * prerelease part are a stable, every other mode and version a prerelease.
+   */
+  static kindOfTarget(opts: { target: TReleaseTarget }): TReleaseKind {
+    const { target } = opts;
+
+    if (isReleaseMode({ value: target })) {
+      return target.startsWith('pre') ? ReleaseKinds.PRERELEASE : ReleaseKinds.STABLE;
+    }
+
+    return ReleasePlan.kindOf({ version: target });
+  }
+
+  /** The branch a run of this kind is dispatched on and reads its versions from. */
+  static branchOf(opts: { kind: TReleaseKind }): string {
+    return opts.kind === ReleaseKinds.STABLE ? ReleasePlan.STABLE_REF : ReleasePlan.REF;
+  }
+
   /** Why a version of this kind may not run from this ref; empty when it may. */
   static checkRef(opts: { ref: string; kind: TReleaseKind }): string[] {
     const { DEVELOP_REF, MAIN_REF } = ReleasePlan;
@@ -373,9 +395,16 @@ export class ReleasePlan {
         (planned) => ReleasePlan.kindOf({ version: planned.localVersion }) === ReleaseKinds.STABLE,
       );
 
-      return stable.map(
-        (planned) =>
-          `main is at ${planned.localVersion} (${planned.name}), a stable: a stable bump promotes a prerelease, so there is nothing to promote (a stable already exists for it)`,
+      const versions = [...new Set(stable.map((planned) => planned.localVersion))];
+
+      return versions.map(
+        (version) =>
+          `main is at ${version} (${stable
+            .filter((planned) => planned.localVersion === version)
+            .map((planned) => planned.name)
+            .join(
+              ', ',
+            )}), a stable: a stable bump promotes a prerelease, so there is nothing to promote (a stable already exists for it)`,
       );
     }
 
@@ -528,12 +557,18 @@ export class ReleasePlan {
   }
 
   /** The single dispatch of a run: what `gh workflow run` is sent, and nothing else. */
-  static dispatch(opts: { plan: readonly string[]; version: string; issue?: string }): IDispatch {
+  static dispatch(opts: {
+    plan: readonly string[];
+    version: string;
+    issue?: string;
+    /** The branch to dispatch on; `develop` when absent. */
+    ref?: string;
+  }): IDispatch {
     ReleasePlan.validate({ packages: opts.plan });
 
     return {
       workflow: ReleasePlan.WORKFLOW,
-      ref: ReleasePlan.REF,
+      ref: opts.ref ?? ReleasePlan.REF,
       inputs: {
         packages: opts.plan.join(','),
         version: opts.version,

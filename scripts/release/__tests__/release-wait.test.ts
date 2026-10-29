@@ -95,18 +95,19 @@ describe('waitForTarball', () => {
 // The wiring of release.ts is checked in its source: one dispatch, then the end of the run, then the
 // registry for every package, then one pull. The wait for each tarball is the chain's (release-chain.ts).
 describe('release.ts', () => {
-  test('dispatches once, waits for the run, then verifies the registry and pulls', async () => {
+  test('dispatches once, waits for the run, then verifies the registry and brings develop up to date', async () => {
     const source = await Bun.file(`${import.meta.dir}/../release.ts`).text();
 
     const dispatched = source.indexOf('ReleasePlan.dispatchArgs({');
     const finished = source.indexOf('await waitForRunCompletion({');
     const verified = source.indexOf('await ReleaseVerify.verifyRun({');
-    const pulled = source.indexOf("command: ['git', 'pull', '--ff-only'");
+    const pulled = source.indexOf('pull: fastForwardDevelop');
 
     expect(dispatched).toBeGreaterThan(-1);
     expect(finished).toBeGreaterThan(dispatched);
     expect(verified).toBeGreaterThan(finished);
     expect(pulled).toBeGreaterThan(verified);
+    expect(source).toContain("'pull', '--ff-only'");
     expect(source.split('ReleasePlan.dispatchArgs({')).toHaveLength(2);
     expect(source).not.toContain('waitForTarball');
   });
