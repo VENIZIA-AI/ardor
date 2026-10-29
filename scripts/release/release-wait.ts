@@ -57,14 +57,14 @@ const waitForTarball = async (opts: {
   );
 };
 
-/** How often a run that waits for approval is reported again: every thirty polls, five minutes at the default interval. */
+/** How often a run that waits is reported again: every thirty polls, five minutes at the default interval. */
 const WAITING_REPORT_EVERY = 30;
 
 /**
- * Polls a run until it completes and returns its conclusion. A run that waits for a person to approve
- * it (status `waiting`) is waited for as long as it waits: there is no deadline, because the approval
- * is a human step. The first poll of the wait and every thirty polls after it are reported, so the
- * operator sees what the driver is waiting for.
+ * Polls a run until it completes and returns its conclusion. A run that waits (queued behind another
+ * release, or held by a protected environment) is waited for as long as it waits: there is no deadline.
+ * The first poll of the wait and every thirty polls after it are reported, so the operator sees what
+ * the driver is waiting for.
  */
 const waitForCompletion = async (opts: {
   runId: string;
