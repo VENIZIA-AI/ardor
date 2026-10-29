@@ -289,7 +289,7 @@ const inOrder = (opts: { labels: string[]; order: string[] }): boolean => {
 describe('package-release.yml and release-chain.ts follow IGNIS: gates first, publish first, no force-push', () => {
   const workflow = workflowText;
   const testJob = jobsOf(workflow).test ?? '';
-  const releaseJob = jobsOf(workflow).release ?? '';
+  const releaseJob = jobsOf(workflow).publish ?? '';
   const loops = 'for package in ${PACKAGES//,/ }; do';
 
   test.each([
@@ -321,15 +321,15 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     expect(chainPlan.phaseB.some((step) => step.label === 'react: clean-install')).toBe(true);
   });
 
-  test('the release job plans, installs, releases and reports, in that order', () => {
+  test('the publish job checks the branches, installs, releases and reports, in that order', () => {
     const names = stepsOf(releaseJob).map((step) => step.name);
 
     expect(
       inOrder({
         labels: names,
         order: [
+          'Refuse a stable when a branch moved since the plan',
           'Install the npm that publishes',
-          'Plan the run',
           'Force update workspace',
           'Install',
           'Release the packages',
@@ -453,8 +453,8 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
   test('the ARDOR-only steps stay: the preset, the version input, the catalog refresh', () => {
     expect(workflow).toContain('make preset-smoke');
-    expect(workflow).toContain('scripts/release/release-plan.ts resolve');
-    expect(workflow).toContain('scripts/build/refresh-catalog.ts highest');
+    expect(workflow).toContain('scripts/release/release-plan.ts plan');
+    expect(workflow).toContain('scripts/build/refresh-catalog.ts "$CATALOG_TAG"');
     expect(chainText).toContain('scripts/preset/vulcan-preset.ts');
   });
 });
@@ -647,13 +647,13 @@ describe('the workflow passes what it published, and can heal alone', () => {
     ]);
   });
 
-  test('a heal_only dispatch runs only the heal job; a release skips it', () => {
+  test('a heal_only dispatch runs only the heal job, on either branch; a release skips it (S4.5)', () => {
     expect(workflow).toMatch(/\n      heal_only:\n\s+type: boolean/);
     expect(workflow).toMatch(
-      /\n  heal-next:\n\s+name: Heal next tags\n\s+if: \$\{\{ github.ref == 'refs\/heads\/develop' && inputs.heal_only == true \}\}/,
+      /\n  heal-next:\n\s+name: Heal next tags\n\s+if: \$\{\{ \(github.ref == 'refs\/heads\/develop' \|\| github.ref == 'refs\/heads\/main'\) && inputs.heal_only == true \}\}/,
     );
     expect(workflow).toMatch(
-      /\n  release:\n\s+name: NPM Release\n\s+needs: test\n\s+if: \$\{\{ github.ref == 'refs\/heads\/develop' && inputs.heal_only != true \}\}/,
+      /\n  plan:\n\s+name: Plan\n\s+if: \$\{\{ inputs.heal_only != true \}\}/,
     );
   });
 });
@@ -682,38 +682,175 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   const MINIMUM_NPM = '11.21.0';
   const INSTALL_NPM_STEP = 'Install the npm that publishes';
   const RELEASE_STEP = 'Release the packages';
+  const BRANCHES_MOVED_STEP = 'Refuse a stable when a branch moved since the plan';
+
+  /** The publish condition of the workflow, evaluated: does the job run for these results? */
+  const publishRuns = (opts: { plan: string; test: string; approve: string; kind: string }) =>
+    opts.plan === 'success' &&
+    opts.test === 'success' &&
+    (opts.approve === 'success' || (opts.approve === 'skipped' && opts.kind === 'prerelease'));
+  const PUBLISH_CASES: Array<[string, string, string, string, boolean]> = [
+    ['success', 'success', 'skipped', 'prerelease', true],
+    ['success', 'success', 'success', 'stable', true],
+    ['success', 'success', 'skipped', 'stable', false],
+    ['success', 'success', 'failure', 'stable', false],
+    ['success', 'success', 'cancelled', 'stable', false],
+    ['success', 'failure', 'skipped', 'prerelease', false],
+    ['failure', 'success', 'skipped', 'prerelease', false],
+  ];
   const REPORT_STEP = 'Report the run';
   const LOOP = 'for package in ${PACKAGES//,/ }; do';
 
   const guards = {
-    // C1: the release, test and heal jobs run only for develop.
-    developOnly: ({ workflow }: IFiles): boolean => {
+    // S4.5, C3.5: a heal runs on develop or main and nowhere else; a release is planned unless it is a heal.
+    healBranches: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
 
-      return ['test', 'release', 'heal-next'].every((name) =>
-        /\n {4}if: .*github\.ref == 'refs\/heads\/develop'/.test(jobs[name] ?? ''),
+      return (
+        /\n {4}if: .*github\.ref == 'refs\/heads\/develop'.*github\.ref == 'refs\/heads\/main'.*inputs\.heal_only == true/.test(
+          jobs['heal-next'] ?? '',
+        ) && /\n {4}if: \$\{\{ inputs\.heal_only != true \}\}\n/.test(jobs.plan ?? '')
       );
     },
-    // C2: read-only by default; only the release job writes.
+    // C2: read-only by default; only the publish job writes.
     minimalPermissions: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
 
       return (
         /\npermissions:\n {2}contents: read\n/.test(headOf(workflow)) &&
-        /\n {4}permissions:\n {6}contents: write\n/.test(jobs.release ?? '') &&
-        !(jobs.test ?? '').includes('contents: write') &&
-        !(jobs['heal-next'] ?? '').includes('contents: write')
+        /\n {4}permissions:\n {6}contents: write\n/.test(jobs.publish ?? '') &&
+        ['plan', 'test', 'approve', 'heal-next'].every(
+          (name) => !(jobs[name] ?? '').includes('contents: write'),
+        )
       );
     },
-    // C3: the release job needs a test job that has no secret.
-    testJobNeeded: ({ workflow }: IFiles): boolean => {
+    // C2.2-b, C3: test, approve and publish each need the plan; publish needs all three; the test job has no secret.
+    jobGraph: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
 
       return (
-        /\n {4}needs: test\n/.test(jobs.release ?? '') &&
+        /\n {4}needs: plan\n/.test(jobs.test ?? '') &&
+        /\n {4}needs: \[plan, test\]\n/.test(jobs.approve ?? '') &&
+        /\n {4}needs: \[plan, test, approve\]\n/.test(jobs.publish ?? '') &&
         (jobs.test ?? '').length > 0 &&
         !(jobs.test ?? '').includes('secrets.') &&
         !(jobs.test ?? '').includes('contents: write')
+      );
+    },
+    // C3.5-a, C25: the approval is one job, for a stable only, with the environment release-approval and no
+    // permission; nothing else names that environment, and nothing waits after the publish.
+    approveOnce: ({ workflow }: IFiles): boolean => {
+      const jobs = jobsOf(workflow);
+      const approve = jobs.approve ?? '';
+      const naming = Object.entries(jobs).filter(([, job]) =>
+        withoutComments(job).includes('release-approval'),
+      );
+
+      return (
+        /\n {4}environment: release-approval\n/.test(approve) &&
+        /\n {4}permissions: \{\}\n/.test(approve) &&
+        /\n {4}if: \$\{\{ needs\.plan\.outputs\.kind == 'stable' \}\}\n/.test(approve) &&
+        naming.length === 1 &&
+        naming[0]?.[0] === 'approve' &&
+        !withoutComments(jobs.publish ?? '').includes('release-approval')
+      );
+    },
+    // C3.7, C26: the publish condition is written out, and its truth table holds.
+    publishCondition: ({ workflow }: IFiles): boolean => {
+      const condition = (jobsOf(workflow).publish ?? '').match(
+        /\n {4}if: >-\n((?: {6}[^\n]*\n)+)/,
+      )?.[1];
+
+      if (condition === undefined) {
+        return false;
+      }
+
+      const expected =
+        "${{ !cancelled() && needs.plan.result == 'success' && needs.test.result == 'success' && (needs.approve.result == 'success' || (needs.approve.result == 'skipped' && needs.plan.outputs.kind == 'prerelease')) }}";
+
+      return (
+        condition.trim().split(/\s+/).join(' ') === expected &&
+        PUBLISH_CASES.every(
+          ([plan, test, approve, kind, runs]) =>
+            publishRuns({ plan, test, approve, kind }) === runs,
+        )
+      );
+    },
+    // C3.3c, C27: a stable checks, before the version work and the publish, that main and develop are where the plan saw them.
+    branchMoved: ({ workflow }: IFiles): boolean => {
+      const steps = stepsOf(jobsOf(workflow).publish ?? '');
+      const names = steps.map((step) => step.name);
+      const guard = steps.find((step) => step.name === BRANCHES_MOVED_STEP)?.text ?? '';
+
+      return (
+        guard.includes("if: ${{ needs.plan.outputs.kind == 'stable' }}") &&
+        guard.includes('git rev-parse origin/main') &&
+        guard.includes('"$GITHUB_SHA"') &&
+        guard.includes('git rev-parse origin/develop') &&
+        guard.includes('"$PLAN_DEVELOP_SHA"') &&
+        names.indexOf(BRANCHES_MOVED_STEP) > -1 &&
+        names.indexOf(BRANCHES_MOVED_STEP) < names.indexOf(INSTALL_NPM_STEP) &&
+        names.indexOf(BRANCHES_MOVED_STEP) < names.indexOf(RELEASE_STEP)
+      );
+    },
+    // C3.3a, C30: the plan job tries the merge back of a stable and hands develop's head on.
+    planTrial: ({ workflow }: IFiles): boolean => {
+      const plan = jobsOf(workflow).plan ?? '';
+
+      return (
+        /release-plan\.ts plan .*--merge-trial/.test(plan) &&
+        /\n {6}develop_sha: \$\{\{ steps\.plan\.outputs\.develop_sha \}\}/.test(plan) &&
+        /fetch-depth: 0/.test(plan)
+      );
+    },
+    // S4.6: the publish job takes the plan's version and kind, never works them out, and passes them to the chain.
+    publishUsesThePlan: ({ workflow }: IFiles): boolean => {
+      const publish = jobsOf(workflow).publish ?? '';
+      const release = stepsOf(publish).find((step) => step.name === RELEASE_STEP)?.text ?? '';
+
+      return (
+        publish.includes('PLAN_VERSION: ${{ needs.plan.outputs.version }}') &&
+        publish.includes('PLAN_KIND: ${{ needs.plan.outputs.kind }}') &&
+        release.includes('--version "$PLAN_VERSION"') &&
+        release.includes('--plan-version "$PLAN_VERSION"') &&
+        release.includes('--plan-kind "$PLAN_KIND"') &&
+        release.includes('--target-branch "$GITHUB_REF_NAME"') &&
+        !publish.includes('release-plan.ts') &&
+        !publish.includes('RELEASE_VERSION')
+      );
+    },
+    // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
+    catalogTagFromPlan: ({ workflow }: IFiles): boolean => {
+      const jobs = jobsOf(workflow);
+
+      return ['test', 'publish'].every((name) => {
+        const job = jobs[name] ?? '';
+
+        return (
+          job.includes('CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}') &&
+          job.includes('refresh-catalog.ts "$CATALOG_TAG"') &&
+          job.includes('force-update "$CATALOG_TAG"') &&
+          !job.includes('refresh-catalog.ts highest')
+        );
+      });
+    },
+    // C29: nothing force-pushes, moves or deletes a tag, or deletes a branch, in the workflow or the chain.
+    noDestructiveGit: ({ workflow, chain }: IFiles): boolean =>
+      !/--force|--delete|push [^\n]*(?: |')\+|push origin :|'push', 'origin', ':|git tag -[fd]\b|'tag', '-[fd]'|branch -[dD]\b/.test(
+        withoutComments(`${workflow}\n${chain}`),
+      ),
+    // C28: the merge back runs from a copy of this checkout's script on a worktree of develop; the checkout never moves to develop.
+    mergeBackFromCopy: ({ workflow, chain }: IFiles): boolean => {
+      const code = withoutComments(chain);
+
+      return (
+        code.includes("'cp', 'scripts/release/merge-back.ts'") &&
+        code.includes("'worktree', 'add', '--detach'") &&
+        code.includes("'apply', '--from'") &&
+        code.includes("'--repo'") &&
+        !/git (?:checkout|switch) develop|'(?:checkout|switch)', 'develop'/.test(
+          withoutComments(`${workflow}\n${chain}`),
+        )
       );
     },
     // C5: an exact bun in every setup.
@@ -730,7 +867,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       const caches = [...workflow.matchAll(/package-manager-cache: (.+)/g)].map(
         (match) => match[1] ?? '',
       );
-      const npmIsPinned = ['release', 'heal-next'].every((name) => {
+      const npmIsPinned = ['publish', 'heal-next'].every((name) => {
         const run = stepsOf(jobs[name] ?? '').find((step) => step.name === INSTALL_NPM_STEP)?.text;
         const version = run?.match(/npm install --global npm@(\d+\.\d+\.\d+)(?:\s|$)/)?.[1];
 
@@ -760,9 +897,11 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       const jobs = jobsOf(workflow);
 
       return (
-        ['release', 'heal-next'].every((name) =>
+        ['publish', 'heal-next'].every((name) =>
           /\n {4}environment: npm-release\n/.test(jobs[name] ?? ''),
-        ) && !(jobs.test ?? '').includes('environment:')
+        ) &&
+        !(jobs.test ?? '').includes('environment:') &&
+        !(jobs.plan ?? '').includes('environment:')
       );
     },
     // C20: id-token: write is what trusted publishing signs with: on the jobs that talk to npm, nowhere else.
@@ -770,11 +909,13 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       const jobs = jobsOf(workflow);
 
       return (
-        ['release', 'heal-next'].every((name) =>
+        ['publish', 'heal-next'].every((name) =>
           /\n {4}permissions:\n(?: {6}[\w-]+: \w+\n)* {6}id-token: write\n/.test(jobs[name] ?? ''),
         ) &&
         !withoutComments(headOf(workflow)).includes('id-token') &&
-        !withoutComments(jobs.test ?? '').includes('id-token')
+        ['plan', 'test', 'approve'].every(
+          (name) => !withoutComments(jobs[name] ?? '').includes('id-token'),
+        )
       );
     },
     // C21: the workflow runs the chain, and the chain publishes the tarball bun packed, with npm and a
@@ -786,7 +927,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     npmInstalledBeforeUse: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
       const firstUse: Record<string, string> = {
-        release: RELEASE_STEP,
+        publish: RELEASE_STEP,
         'heal-next': 'Move next to latest where it is below',
       };
 
@@ -869,7 +1010,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     },
     // S1b.3: the release job ends with a report that runs even when the job is cancelled or times out.
     reportAlways: ({ workflow }: IFiles): boolean => {
-      const steps = stepsOf(jobsOf(workflow).release ?? '');
+      const steps = stepsOf(jobsOf(workflow).publish ?? '');
       const last = steps[steps.length - 1];
 
       return (
@@ -892,22 +1033,23 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     mutate: (text: string) => string;
   }> = [
     {
-      guard: 'developOnly',
-      name: 'the heal job loses the develop condition',
+      guard: 'healBranches',
+      name: 'the heal job loses the branch condition',
       mutate: (text) =>
         text.replace(
-          "github.ref == 'refs/heads/develop' && inputs.heal_only == true",
+          "(github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && inputs.heal_only == true",
           'inputs.heal_only == true',
         ),
     },
     {
-      guard: 'developOnly',
-      name: 'the release job loses the develop condition',
-      mutate: (text) =>
-        text.replace(
-          "github.ref == 'refs/heads/develop' && inputs.heal_only != true",
-          'inputs.heal_only != true',
-        ),
+      guard: 'healBranches',
+      name: 'the heal job no longer covers main',
+      mutate: (text) => text.replace(" || github.ref == 'refs/heads/main'", ''),
+    },
+    {
+      guard: 'healBranches',
+      name: 'the plan runs for a heal',
+      mutate: (text) => text.replace('    if: ${{ inputs.heal_only != true }}\n', ''),
     },
     {
       guard: 'minimalPermissions',
@@ -917,16 +1059,35 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     },
     {
       guard: 'minimalPermissions',
-      name: 'the release job loses its write grant',
+      name: 'the publish job loses its write grant',
       mutate: (text) => text.replace('    permissions:\n      contents: write\n', ''),
     },
     {
-      guard: 'testJobNeeded',
-      name: 'the release job no longer needs the test job',
-      mutate: (text) => text.replace('    needs: test\n', ''),
+      guard: 'minimalPermissions',
+      name: 'the plan job can write',
+      mutate: (text) =>
+        text.replace(
+          '    permissions:\n      contents: read\n    outputs:',
+          '    permissions:\n      contents: write\n    outputs:',
+        ),
     },
     {
-      guard: 'testJobNeeded',
+      guard: 'jobGraph',
+      name: 'the publish job no longer needs the approval',
+      mutate: (text) => text.replace('needs: [plan, test, approve]', 'needs: [plan, test]'),
+    },
+    {
+      guard: 'jobGraph',
+      name: 'the test job no longer needs the plan',
+      mutate: (text) => text.replace('    needs: plan\n', ''),
+    },
+    {
+      guard: 'jobGraph',
+      name: 'the approval no longer waits for the gates',
+      mutate: (text) => text.replace('    needs: [plan, test]\n', '    needs: [plan]\n'),
+    },
+    {
+      guard: 'jobGraph',
       name: 'the test job reads the registry credential',
       mutate: (text) =>
         text.replace(
@@ -946,6 +1107,151 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         text.replace(
           '      - name: Plan the run\n',
           '      - name: Plan the run\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}\n',
+        ),
+    },
+    {
+      guard: 'approveOnce',
+      name: 'the approval runs for a prerelease too',
+      mutate: (text) =>
+        text.replace(
+          "    if: ${{ needs.plan.outputs.kind == 'stable' }}\n    environment: release-approval",
+          '    environment: release-approval',
+        ),
+    },
+    {
+      guard: 'approveOnce',
+      name: 'the approval job loses its environment',
+      mutate: (text) => text.replace('    environment: release-approval\n', ''),
+    },
+    {
+      guard: 'approveOnce',
+      name: 'the approval job gains a permission',
+      mutate: (text) =>
+        text.replace('    permissions: {}\n', '    permissions:\n      contents: read\n'),
+    },
+    {
+      guard: 'approveOnce',
+      name: 'the publish job asks for the approval environment as well',
+      mutate: (text) =>
+        text.replace(
+          '    environment: npm-release\n    env:\n      PLAN_VERSION',
+          '    environment: release-approval\n    env:\n      PLAN_VERSION',
+        ),
+    },
+    {
+      guard: 'publishCondition',
+      name: 'a skipped approval lets a stable publish',
+      mutate: (text) => text.replace(" && needs.plan.outputs.kind == 'prerelease'", ''),
+    },
+    {
+      guard: 'publishCondition',
+      name: 'the publish ignores a failed gate',
+      mutate: (text) => text.replace(" && needs.test.result == 'success'", ''),
+    },
+    {
+      guard: 'publishCondition',
+      name: 'the publish runs after a cancel',
+      mutate: (text) => text.replace('!cancelled() && ', ''),
+    },
+    {
+      guard: 'branchMoved',
+      name: 'the branch check no longer compares main with the dispatched commit',
+      mutate: (text) => text.replace('"$(git rev-parse origin/main)" != "$GITHUB_SHA"', 'true'),
+    },
+    {
+      guard: 'branchMoved',
+      name: 'the branch check no longer compares develop with the plan',
+      mutate: (text) => text.replace('"$PLAN_DEVELOP_SHA"', 'true'),
+    },
+    {
+      guard: 'branchMoved',
+      name: 'the branch check runs after the npm install',
+      mutate: (text) => text.replace(BRANCHES_MOVED_STEP, 'Check the branches late'),
+    },
+    {
+      guard: 'planTrial',
+      name: 'the plan stops trying the merge back',
+      mutate: (text) => text.replace(' --merge-trial', ''),
+    },
+    {
+      guard: 'planTrial',
+      name: 'the plan stops handing develop on',
+      mutate: (text) =>
+        text.replace('      develop_sha: ${{ steps.plan.outputs.develop_sha }}\n', ''),
+    },
+    {
+      guard: 'publishUsesThePlan',
+      name: 'the chain is given another version',
+      mutate: (text) => text.replace('--version "$PLAN_VERSION"', '--version "$VERSION"'),
+    },
+    {
+      guard: 'publishUsesThePlan',
+      name: 'the chain is not told the plan',
+      mutate: (text) => text.replace(' --plan-kind "$PLAN_KIND"', ''),
+    },
+    {
+      guard: 'publishUsesThePlan',
+      name: 'the chain is not told the branch',
+      mutate: (text) => text.replace(' --target-branch "$GITHUB_REF_NAME"', ''),
+    },
+    {
+      guard: 'catalogTagFromPlan',
+      name: 'the publish refreshes the catalog on the highest line again',
+      mutate: (text) =>
+        text.replace(
+          /bun scripts\/build\/refresh-catalog\.ts "\$CATALOG_TAG"/g,
+          'bun scripts/build/refresh-catalog.ts highest',
+        ),
+    },
+    {
+      guard: 'catalogTagFromPlan',
+      name: 'the test job stops reading the plan tag',
+      mutate: (text) =>
+        text.replace('    env:\n      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}\n', ''),
+    },
+    {
+      guard: 'noDestructiveGit',
+      name: 'a push is forced',
+      file: 'chain',
+      mutate: (text) =>
+        text.replace(
+          "'push', 'origin', `HEAD:${targetBranch}`",
+          "'push', '--force', 'origin', `HEAD:${targetBranch}`",
+        ),
+    },
+    {
+      guard: 'noDestructiveGit',
+      name: 'a tag is replaced',
+      file: 'chain',
+      mutate: (text) =>
+        text.replace(
+          "command: ['git', 'tag', '-a', tag",
+          "command: ['git', 'tag', '-f', '-a', tag",
+        ),
+    },
+    {
+      guard: 'noDestructiveGit',
+      name: 'a branch is deleted by the workflow',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Release the packages\n',
+          '      - name: Clean up\n        run: git push origin --delete release-old\n\n      - name: Release the packages\n',
+        ),
+    },
+    {
+      guard: 'mergeBackFromCopy',
+      name: 'the merge back runs the script of the checkout in place',
+      file: 'chain',
+      mutate: (text) =>
+        text.replace("copy: ['cp', 'scripts/release/merge-back.ts', script],", "copy: ['true'],"),
+    },
+    {
+      guard: 'mergeBackFromCopy',
+      name: 'the workflow moves the checkout to develop',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Release the packages\n',
+          '      - name: Move\n        run: git checkout develop\n\n      - name: Release the packages\n',
         ),
     },
     {
@@ -969,7 +1275,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     },
     {
       guard: 'publishEnvironment',
-      name: 'the release job loses the environment',
+      name: 'the publish job loses the environment',
       mutate: (text) => text.replace('    environment: npm-release\n', ''),
     },
     {
@@ -983,13 +1289,13 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       name: 'the test job joins the environment',
       mutate: (text) =>
         text.replace(
-          '    runs-on: ubuntu-26.04\n\n    steps:\n      # -------------------------------------------------------------------------\n      # SETUP',
-          '    runs-on: ubuntu-26.04\n    environment: npm-release\n\n    steps:\n      # -------------------------------------------------------------------------\n      # SETUP',
+          '    needs: plan\n    runs-on: ubuntu-26.04\n',
+          '    needs: plan\n    runs-on: ubuntu-26.04\n    environment: npm-release\n',
         ),
     },
     {
       guard: 'idTokenOnPublishJobs',
-      name: 'the release job loses id-token',
+      name: 'the publish job loses id-token',
       mutate: (text) => text.replace('      id-token: write\n', ''),
     },
     {
@@ -1039,7 +1345,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     },
     {
       guard: 'npmInstalledBeforeUse',
-      name: 'the release job installs npm after the release step',
+      name: 'the publish job installs npm after the release step',
       mutate: (text) => {
         const block =
           /      # Trusted publishing needs npm[^\n]*\n      # that ships[^\n]*\n      - name: Install the npm that publishes\n        run: \|\n(?: {10}[^\n]*\n)+/.exec(
@@ -1249,8 +1555,10 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
 
   test('a guard needs the jobs it reads', () => {
     expect(Object.keys(jobsOf(files.workflow)).toSorted()).toEqual([
+      'approve',
       'heal-next',
-      'release',
+      'plan',
+      'publish',
       'test',
     ]);
   });
