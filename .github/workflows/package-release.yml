@@ -188,7 +188,7 @@ jobs:
         if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
-          VULCAN_CMD: bun x @venizia/vulcan@0.4.6
+          VULCAN_CMD: bun x @venizia/vulcan@0.4.7
         run: make preset-smoke
 
   release:
