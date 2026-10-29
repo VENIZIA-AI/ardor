@@ -12,6 +12,7 @@ tags: [process, release, ci]
 - [What triggers it](#what-triggers-it)
 - [Driving a run](#driving-a-run)
 - [Release order](#release-order)
+- [The plan (kind, branch, promotion)](#the-plan-kind-branch-promotion)
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Gates, bump, publish, record](#gates-bump-publish-record)
@@ -65,6 +66,20 @@ Because `admin` depends on `react`, `react` depends on `kernel`, and `ardor` bun
 packages of a run release in dependency order: **kernel, then react, then admin, then ardor**. Releasing
 out of order means a downstream package builds against a stale floor for its own dependency, and the
 force-update step below cannot invent a published version that does not exist yet.
+
+## The plan (kind, branch, promotion)
+
+`bun scripts/release/release-plan.ts plan --packages <list> (--version <x.y.z> | --mode <mode>) --ref <refs/heads/...>` decides, before anything is built, what a dispatch would release and whether it may. `ReleasePlan.plan` is the tested core; the command adds the reads of the repository and the registry.
+
+| Rule | Detail |
+|---|---|
+| Kind | A version with a prerelease part is a prerelease (npm tag `next`, IGNIS line `highest`, no approval). Any other is a stable (`latest`, IGNIS `latest`, one approval). |
+| Branch | A prerelease runs only from `refs/heads/develop`, a stable only from `refs/heads/main`. Any other ref is refused. |
+| Promotion (main only) | A stable bump mode (`patch`, `minor`, `major`) needs every package at a prerelease. An explicit stable version `X` needs every package at a prerelease whose `patch`, `minor` or `major` increment is `X`, or already at `X` (a run that stopped half way). A stable nobody tested on `next` is refused. |
+| One version | The four packages share one version: a mode over packages at different versions is refused. All four already at the version is an empty plan, which is accepted. |
+| IGNIS stable first | For a stable, the tag of the prerelease (`ardor-v<version>`, the last tag of its run) carries a `built on: <package>=<version>, ...` line. The plan refuses when a listed package has no `latest`, or a `latest` below the version in the line, or when the tag has no such line (a prerelease made before the line existed: publish a new one). |
+
+The command prints `plan: <version> (<kind>) from <target> on <ref>`, writes `version`, `kind`, `npm_tag` and `catalog_tag` to `GITHUB_OUTPUT` and a summary to `GITHUB_STEP_SUMMARY`, and prints every reason with `ERROR |` before it exits 1. The workflow does not call it yet, and the chain does not write the `built on:` line yet: later slices of the stable flow.
 
 ## Version line
 

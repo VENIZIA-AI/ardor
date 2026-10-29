@@ -347,7 +347,7 @@ export const fetchPackument = async (opts: { name: string }): Promise<IPackument
   return { ok: true, versions };
 };
 
-const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> => {
+export const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> => {
   const response = await fetch(`${REGISTRY}/-/package/${opts.name.replace('/', '%2F')}/dist-tags`);
 
   if (!response.ok) {
