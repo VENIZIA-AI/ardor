@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**81 targets.**
+**83 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -34,11 +34,13 @@ generated:
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
+| `make gates` | - | The Test job of the release workflow, locally: links, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
+| `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
