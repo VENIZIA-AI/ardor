@@ -79,7 +79,16 @@ force-update step below cannot invent a published version that does not exist ye
 | One version | The four packages share one version: a mode over packages at different versions is refused. All four already at the version is an empty plan, which is accepted. |
 | IGNIS stable first | For a stable, the tag of the prerelease (`ardor-v<version>`, the last tag of its run) carries a `built on: <package>=<version>, ...` line. The plan refuses when a listed package has no `latest`, or a `latest` below the version in the line, or when the tag has no such line (a prerelease made before the line existed: publish a new one). |
 
-The command prints `plan: <version> (<kind>) from <target> on <ref>`, writes `version`, `kind`, `npm_tag` and `catalog_tag` to `GITHUB_OUTPUT` and a summary to `GITHUB_STEP_SUMMARY`, and prints every reason with `ERROR |` before it exits 1. The workflow does not call it yet, and the chain does not write the `built on:` line yet: later slices of the stable flow.
+The command prints `plan: <version> (<kind>) from <target> on <ref>`, writes `version`, `kind`, `npm_tag` and `catalog_tag` to `GITHUB_OUTPUT` and a summary to `GITHUB_STEP_SUMMARY`, and prints every reason with `ERROR |` before it exits 1. With `--merge-trial`, a stable also rehearses the merge back (see below) and `develop_sha` holds the head of `develop` it read. The workflow does not call the command yet, and the chain does not write the `built on:` line yet: later slices of the stable flow.
+
+### The merge back into develop
+
+After a stable, `main` holds the release commits and `develop` does not, so `main` is merged back into `develop`. The script is `scripts/release/merge-back.ts`, copied from VULCAN (`fe4c6771`, header names it); a defect is fixed in VULCAN first. ARDOR changes the scratch root only (the runner temp folder, else `.agents/local/tmp`).
+
+- **`trial`** runs in the plan job, before the approval. In throwaway worktrees it makes the release commit the run would make (the four manifests at the version, `bun.lock`), merges it into `develop` and reports. The checkout is untouched. `--versions kernel=X,react=X,admin=X,ardor=X` names the four packages; each manifest needs a two-space top-level `"version"`.
+- **`apply --from <commit> --repo <worktree of develop>`** runs in the publish job, from a copy of the script taken from the dispatched `main` checkout, so no file of `develop` (a `bunfig.toml`, a `.env`) configures it.
+- **The conflict rule.** A conflict is resolved only when it is the `version` field of a `package.json` (the semver-greater wins: stable `0.4.9` beats `0.4.9-3`, `0.4.10-0` beats `0.4.9`) or `bun.lock`, which is regenerated after the manifests and checked to differ from `develop`'s only in workspace versions. Anything else stops the merge, names the file, and leaves the checkout as it was. Nothing is force-pushed.
+- **`sync-pr.ts`** cuts the Sync (`open --tag ardor-v<prerelease>`, a real tag only; it reads the version at the tag from `packages/ardor/package.json`) and `verify` checks the tree of `main` equals the tree of the tag. It pushes a branch and opens a pull request, so it runs on the owner's word.
 
 ## Version line
 
