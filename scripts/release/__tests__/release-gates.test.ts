@@ -6,6 +6,7 @@ import { makeScratch } from '../../scratch';
 import { ReleaseChain, type TStep } from '../release-chain';
 
 import {
+  duplicateCopies,
   exportTargets,
   isTarballLag,
   isTrustedPublishWorkflow,
@@ -1008,6 +1009,20 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         /\n {8}if: .*',ardor,'/.test(smoke)
       );
     },
+    // #434: one copy of every @venizia package is checked in the test job, after the install and before the build,
+    // so a stable IGNIS copy next to a prerelease is named before it surfaces as a type error.
+    oneCopy: ({ workflow }: IFiles): boolean => {
+      const names = stepsOf(jobsOf(workflow).test ?? '').map((step) => step.name);
+      const step = stepsOf(jobsOf(workflow).test ?? '').find(
+        (candidate) => candidate.name === 'Assert one copy of every @venizia package',
+      );
+
+      return (
+        step?.text.includes('bun scripts/release/release-gates.ts single-copy') === true &&
+        names.indexOf('Install') < names.indexOf('Assert one copy of every @venizia package') &&
+        names.indexOf('Assert one copy of every @venizia package') < names.indexOf('Build')
+      );
+    },
     // S1b.3: the release job ends with a report that runs even when the job is cancelled or times out.
     reportAlways: ({ workflow }: IFiles): boolean => {
       const steps = stepsOf(jobsOf(workflow).publish ?? '');
@@ -1471,6 +1486,29 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         ),
     },
     {
+      guard: 'oneCopy',
+      name: 'the copies gate runs after the build',
+      mutate: (text) =>
+        text
+          .replace(
+            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
+            '',
+          )
+          .replace(
+            '      - name: Lint\n',
+            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n\n      - name: Lint\n',
+          ),
+    },
+    {
+      guard: 'oneCopy',
+      name: 'the copies gate is removed',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
+          '',
+        ),
+    },
+    {
       guard: 'testJobLoops',
       name: 'a gate of the test job names one package',
       mutate: (text) =>
@@ -1727,5 +1765,79 @@ describe('release-gates.ts stable-deps on a preset folder (found by the stable r
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr.toString()).toContain('@venizia/ignis-kernel@0.4.6-1');
+  });
+});
+
+describe('duplicateCopies: one @venizia package resolves to one version (#434)', () => {
+  const manifest = (name: string, version: string): string => JSON.stringify({ name, version });
+
+  /** A bun-style store: packages/<member> link into the store, and each store entry links its own dependencies. */
+  const tree = (opts: { ardorKernel: string; ardor: string }): string => {
+    const root = temp();
+    const store = (name: string, version: string): string =>
+      join(
+        root,
+        'node_modules',
+        '.bun',
+        `@venizia+${name}@${version}`,
+        'node_modules',
+        '@venizia',
+        name,
+      );
+    const link = (member: string, name: string, version: string) => {
+      write(root, `packages/${member}/package.json`, '{}');
+      write(
+        root,
+        `node_modules/.bun/@venizia+${name}@${version}/node_modules/@venizia/${name}/package.json`,
+        manifest(`@venizia/${name}`, version),
+      );
+      mkdirSync(join(root, 'packages', member, 'node_modules', '@venizia'), { recursive: true });
+      symlinkSync(
+        store(name, version),
+        join(root, 'packages', member, 'node_modules', '@venizia', name),
+      );
+    };
+
+    link('kernel', 'ignis-inversion', opts.ardorKernel);
+    link('ardor', 'ignis-inversion', opts.ardor);
+
+    return root;
+  };
+
+  test('members that agree pass', () => {
+    expect(duplicateCopies({ root: tree({ ardorKernel: '0.4.5-0', ardor: '0.4.5-0' }) })).toEqual(
+      [],
+    );
+  });
+
+  test('a member on the stable copy next to a prerelease is named with both versions', () => {
+    const copies = duplicateCopies({ root: tree({ ardorKernel: '0.4.5-0', ardor: '0.4.4' }) });
+
+    expect(copies).toEqual([
+      '@venizia/ignis-inversion - 0.4.4 (packages/ardor) | 0.4.5-0 (packages/kernel)',
+    ]);
+  });
+
+  test('an old version left in the store, that nobody resolves, is not a duplicate', () => {
+    const root = tree({ ardorKernel: '0.4.5-0', ardor: '0.4.5-0' });
+    write(
+      root,
+      'node_modules/.bun/@venizia+ignis-inversion@0.3.5/node_modules/@venizia/ignis-inversion/package.json',
+      manifest('@venizia/ignis-inversion', '0.3.5'),
+    );
+
+    expect(duplicateCopies({ root })).toEqual([]);
+  });
+
+  test('the command line exits 1 on a duplicate and names it, and 0 on a clean tree', () => {
+    const run = (root: string) =>
+      Bun.spawnSync(['bun', join(ROOT, 'scripts/release/release-gates.ts'), 'single-copy', root], {
+        cwd: ROOT,
+      });
+    const broken = run(tree({ ardorKernel: '0.4.5-0', ardor: '0.4.4' }));
+
+    expect(broken.exitCode).toBe(1);
+    expect(broken.stderr.toString()).toContain('@venizia/ignis-inversion');
+    expect(run(tree({ ardorKernel: '0.4.5-0', ardor: '0.4.5-0' })).exitCode).toBe(0);
   });
 });

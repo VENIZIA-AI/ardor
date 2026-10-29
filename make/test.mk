@@ -8,7 +8,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
 CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 
-.PHONY: test test-all test-scripts gates links-check purity purity-test clean-install layer-check cycles-check \
+.PHONY: test test-all test-scripts gates links-check copies-check purity purity-test clean-install layer-check cycles-check \
         size-check $(TEST_TARGETS) $(PURITY_TARGETS) $(CLEAN_INSTALL_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -36,7 +36,7 @@ test-scripts:
 # scripts/release/__tests__/gates-twin.test.ts keeps the two lists equal. Needs `bun install`. Run it
 # without -j: the order is the point.
 # ----------------------------------------------------------------------------
-GATE_TARGETS := links-check $(PACKAGES) $(addprefix lint-,$(PACKAGES)) $(addprefix test-,$(PACKAGES)) \
+GATE_TARGETS := links-check copies-check $(PACKAGES) $(addprefix lint-,$(PACKAGES)) $(addprefix test-,$(PACKAGES)) \
                 test-scripts purity-test $(addprefix purity-,$(PACKAGES)) catalog-check preset-smoke
 
 gates:
@@ -45,6 +45,10 @@ gates:
 # Every ARDOR sibling resolves to the workspace, never to a registry tarball (the first gate of the Test job).
 links-check:
 	@$(foreach p,$(PACKAGES),bun scripts/release/release-gates.ts links packages/$(p) &&) true
+
+# Every @venizia/* package resolves to one version, never a stable copy next to a prerelease (the second gate of the Test job).
+copies-check:
+	@bun scripts/release/release-gates.ts single-copy
 
 # ----------------------------------------------------------------------------
 # PURITY TARGETS

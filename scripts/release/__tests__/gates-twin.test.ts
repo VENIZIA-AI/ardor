@@ -30,13 +30,17 @@ const runsOf = (job: string): string[] =>
         .join('\n'),
     );
 
-/** The make targets one `run:` block names, with the package loop expanded; the links gate is `links-check`. */
+/** The make targets one `run:` block names, with the package loop expanded; the links gate is `links-check`, the copies gate `copies-check`. */
 const targetsOf = (run: string): string[] => {
   const targets: string[] = [];
   const looped = run.includes(LOOP);
 
   if (run.includes('release-gates.ts links')) {
     return ['links-check'];
+  }
+
+  if (run.includes('release-gates.ts single-copy')) {
+    return ['copies-check'];
   }
 
   for (const line of run.split('\n')) {
@@ -54,9 +58,12 @@ const targetsOf = (run: string): string[] => {
   return targets;
 };
 
-/** The first line `make -n gates` prints is the chain of sub-makes: one `make --no-print-directory <target>` each. */
+/**
+ * The first line `make -n gates` prints is the chain of sub-makes: one `make --no-print-directory <target>` each.
+ * `--no-print-directory` keeps a parent make (`make test-scripts`) from putting `make[1]: Entering directory` first.
+ */
 const gateTargets = (): string[] => {
-  const proc = Bun.spawnSync(['make', '-n', 'gates'], { cwd: ROOT });
+  const proc = Bun.spawnSync(['make', '-n', '--no-print-directory', 'gates'], { cwd: ROOT });
   const first = proc.stdout.toString().split('\n')[0] ?? '';
 
   return first
@@ -76,6 +83,7 @@ describe('make gates is the local twin of the Test job of package-release.yml (S
   test('the Test job names every gate it runs (a guard against an empty comparison)', () => {
     expect(fromWorkflow).toEqual([
       'links-check',
+      'copies-check',
       ...PACKAGES,
       ...PACKAGES.map((name) => `lint-${name}`),
       ...PACKAGES.map((name) => `test-${name}`),

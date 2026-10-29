@@ -184,6 +184,12 @@ jobs:
             bun scripts/release/release-gates.ts links "packages/$package"
           done
 
+      # One copy of every @venizia/* package. A workspace member that does not declare an IGNIS package
+      # itself gets the stable copy for its peer range (it excludes the prerelease), and two copies of
+      # inversion are two sets of types: the build fails far from the cause. This names the member.
+      - name: Assert one copy of every @venizia package
+        run: bun scripts/release/release-gates.ts single-copy
+
       # -------------------------------------------------------------------------
       # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
       # -------------------------------------------------------------------------
