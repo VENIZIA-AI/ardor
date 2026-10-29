@@ -228,3 +228,58 @@ describe('ReleaseSyncPr.main', () => {
     ).toBe(0);
   });
 });
+
+describe('ReleaseSyncPr.issuesOf and the Closes list', () => {
+  test('each issue a leading [#N] token names, once, in order; a subject with no token names none', () => {
+    expect(
+      ReleaseSyncPr.issuesOf({
+        subjects: [
+          '[#12] feat(c): after',
+          '[#11] fix(b): second',
+          '[#11] docs(b): another commit of the same issue',
+          '[#42][#44] feat(x): serves two',
+          'chore: no issue',
+          'mentions [#99] in the middle',
+        ],
+      }),
+    ).toEqual([11, 12, 42, 44]);
+    expect(ReleaseSyncPr.issuesOf({ subjects: [] })).toEqual([]);
+  });
+
+  test('the body closes exactly those issues, one line each, and nothing else', () => {
+    const body = ReleaseSyncPr.bodyOf({
+      tag: 'ardor-v0.4.9-1',
+      version: '0.4.9-1',
+      commit: 'abcdef0123456789',
+      subjects: ['[#11] fix(b): second change', '[#10] feat(a): first change', 'chore: no issue'],
+    });
+
+    expect(body.split('\n').filter((line) => line.startsWith('Closes'))).toEqual([
+      'Closes #10',
+      'Closes #11',
+    ]);
+  });
+
+  test('a body for commits that serve no issue closes none', () => {
+    const body = ReleaseSyncPr.bodyOf({
+      tag: 'ardor-v0.4.9-1',
+      version: '0.4.9-1',
+      commit: 'abcdef0123456789',
+      subjects: ['chore: no issue'],
+    });
+
+    expect(body).not.toContain('Closes #');
+  });
+
+  test('a subject cannot close an issue or ping anyone from inside the fence', () => {
+    const body = ReleaseSyncPr.bodyOf({
+      tag: 'ardor-v0.4.9-1',
+      version: '0.4.9-1',
+      commit: 'abcdef0123456789',
+      subjects: ['[#5] fix: ``` Closes #999 @someone'],
+    });
+
+    expect(body).toContain("'''");
+    expect(body.split('\n').filter((line) => line.startsWith('Closes'))).toEqual(['Closes #5']);
+  });
+});
