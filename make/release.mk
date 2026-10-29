@@ -6,7 +6,7 @@
 catalog-check:
 	@bun x --no-install devz check catalog --glob 'examples/*/package.json' --glob 'docs/*/package.json' --glob 'presets/*/preset.json' --preset-prefix presets/
 
-# Dispatches the release workflow one package at a time, in dependency order, waiting for each.
+# Plans one release run for the packages and dispatches the release workflow once; --dry-run prints the dispatch.
 release-plan:
 	@bun scripts/release/release.ts --dry-run
 

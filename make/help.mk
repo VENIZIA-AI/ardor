@@ -75,7 +75,7 @@ help:
 	@echo ""
 	@echo "Release and dependencies:"
 	@$(HELP_ROW) "release-plan" "Print the release plan (dependency order), dispatch nothing."
-	@$(HELP_ROW) "release ARGS=\"...\"" "Dispatch the release workflow per package, e.g. ARGS=\"--yes\"."
+	@$(HELP_ROW) "release ARGS=\"...\"" "Dispatch the release workflow once for the four packages, e.g. ARGS=\"--yes\"."
 	@$(HELP_ROW) "catalog-check" "Gate: every catalogued dep is referenced as \"catalog:\", none drifted."
 	@echo ""
 	@echo "Development (use bun run directly):"

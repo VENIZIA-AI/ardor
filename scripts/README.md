@@ -6,12 +6,15 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 
 | Group | Script | What it does | Called by |
 |---|---|---|---|
-| `release/` | `release.ts` | Plans and dispatches the NPM Release workflow one package at a time, in dependency order | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
-| `release/` | `release-scope.ts` | Decides which files make a package need a release | `release.ts` |
-| `release/` | `release-version.ts` | The release version (a semver bump or an explicit one) and the dist-tag rule | `release.ts`, `package-release.yml`, step "Resolve release target" |
-| `release/` | `release-wait.ts` | Waits until a published tarball answers 200, and for a run to complete (a run that waits for approval is waited for, and reported) | `release.ts` |
-| `release/` | `release-gates.ts` | The gates between build and publish: artifacts, links, pack, protocols, registry, and healing the `next` tag | `package-release.yml`, `preset/preset-smoke.ts` (imports it) |
-| `preset/` | `vulcan-preset.ts` | Writes the VULCAN presets (`presets/app`, `presets/lib`) into `packages/ardor/dist/presets` with exact versions | `make preset-build`, `package-release.yml`, `preset-smoke.ts` |
+| `release/` | `release.ts` | Plans one release run, sends the one dispatch of the NPM Release workflow, then checks the registry and pulls | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
+| `release/` | `release-plan.ts` | What one run releases: the packages in dependency order and the one version (`resolve`), and the dispatch | `release.ts`, `package-release.yml`, step "Plan the run" |
+| `release/` | `release-chain.ts` | Releases the packages of a run in order: the checks, then per package the clean-install, bump, pack, publish, wait, commit, push and tag; `report` prints the stop report from its state file | `package-release.yml`, steps "Release the packages" and "Report the run" |
+| `release/` | `release-verify.ts` | After a run: the registry holds a new version of every package, then `develop` is pulled | `release.ts` |
+| `release/` | `release-scope.ts` | Decides which files make a package need a release (a run now releases the four packages, so `release.ts` no longer reads it) | its test only |
+| `release/` | `release-version.ts` | The release version (a semver bump or an explicit one) and the dist-tag rule | `release-plan.ts`, `release-chain.ts`, `package-release.yml`, step "Plan the run" |
+| `release/` | `release-wait.ts` | Waits until a published tarball answers 200, and for a run to complete (a run that waits is waited for, and reported) | `release-chain.ts` (the tarball), `release.ts` (the run) |
+| `release/` | `release-gates.ts` | The gates between build and publish: artifacts, links, pack, protocols, registry, and healing the `next` tag | `release-chain.ts`, `package-release.yml`, `preset/preset-smoke.ts` (imports it) |
+| `preset/` | `vulcan-preset.ts` | Writes the VULCAN presets (`presets/app`, `presets/lib`) into `packages/ardor/dist/presets` with exact versions | `make preset-build`, `release-chain.ts`, `preset-smoke.ts` |
 | `preset/` | `preset-smoke.ts` | Creates an app and a library from the packed preset and runs their checks | `make preset-smoke` (CI, release workflow) |
 | `checks/` | `layer-boundaries.ts` | No package imports a layer above it | `make layer-check` (CI) |
 | `checks/` | `atlas-smoke.ts` | Proves the atlas MCP server answers over this checkout | `make atlas-smoke` (CI, build job) |
