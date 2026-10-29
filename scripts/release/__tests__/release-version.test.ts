@@ -228,8 +228,9 @@ describe('the command line the workflow calls', () => {
   });
 });
 
-describe('package-release.yml uses the same module', () => {
+describe('package-release.yml and release-chain.ts use the same module', () => {
   const workflow = readFileSync(join(ROOT, '.github/workflows/package-release.yml'), 'utf8');
+  const chain = readFileSync(join(ROOT, 'scripts/release/release-chain.ts'), 'utf8');
 
   test('it declares an optional version input', () => {
     expect(workflow).toMatch(
@@ -237,18 +238,18 @@ describe('package-release.yml uses the same module', () => {
     );
   });
 
-  test('it resolves the target and the dist-tag through scripts/release/release-version.ts', () => {
-    expect(workflow).toContain('scripts/release/release-version.ts target');
+  test('it resolves the version through release-plan.ts and the dist-tag through release-version.ts', () => {
+    expect(workflow).toContain('scripts/release/release-plan.ts resolve');
     expect(workflow).toContain('scripts/release/release-version.ts tag');
   });
 
-  test('it bumps to the resolved target, not to build_mode', () => {
-    expect(workflow).toContain('npm version $TARGET --no-git-tag-version');
+  test('the chain bumps to the resolved version, not to build_mode', () => {
+    expect(chain).toContain("command: ['npm', 'version', version, '--no-git-tag-version'");
     expect(workflow).not.toContain('npm version $BUILD_MODE');
   });
 
-  test('it publishes under the resolved tag', () => {
-    expect(workflow).toContain('--tag $NPM_TAG');
+  test('the chain publishes under the tag of the resolved version', () => {
+    expect(chain).toContain('npmTagFor({ target: args.version })');
     expect(workflow).not.toContain('case $BUILD_MODE');
   });
 });

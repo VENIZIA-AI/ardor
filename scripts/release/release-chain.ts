@@ -7,6 +7,11 @@
  *
  *   bun scripts/release/release-chain.ts --packages kernel,react,admin,ardor --version 0.4.6-0
  *       [--issue N] [--branch release-123] [--tarballs <dir>] [--tmp <dir>] [--state <file>] [--dry-run]
+ *   bun scripts/release/release-chain.ts report --state <file>
+ *
+ * `report` prints the report of a run from its state file and appends it to `$GITHUB_STEP_SUMMARY`; the
+ * workflow runs it in a final `if: always()` step, because a job that was cancelled or timed out runs
+ * no script of its own.
  *
  * Phase A checks every package that will be released, before the first publish: links, build,
  * artifacts, pack, protocols and registry. Phase B releases one package at a time: clean-install (its
@@ -21,7 +26,7 @@
  * pull commits the tests never saw into the tree that later packages are built and published from.
  */
 
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { npmTagFor } from './release-version';
@@ -94,6 +99,20 @@ export interface IPackageState {
   warnings: string[];
 }
 
+/** Why a run stopped: kept in the state file, so a step that runs after the job can print the report. */
+export interface IChainStop {
+  failed: string;
+  label: string;
+  detail?: string;
+}
+
+/** The state file: what a later step reads when the process that wrote it is gone. */
+export interface IChainState {
+  version: string;
+  states: IPackageState[];
+  stopped?: IChainStop;
+}
+
 export interface IChainResult {
   ok: boolean;
   states: IPackageState[];
@@ -161,6 +180,17 @@ export class ReleaseChain {
     const subject = `${options.issue === undefined ? '' : `[#${options.issue}] `}chore(${pkg.name}): release v${version} [${version}]`;
 
     return [
+      // `bun pm pack --filename` does not create the folder it writes to.
+      ...(first
+        ? [
+            {
+              kind: 'run',
+              label: 'make the tarball folder',
+              command: ['mkdir', '-p', tarballs],
+              fatal: true,
+            } as TStep,
+          ]
+        : []),
       {
         kind: 'run',
         label: `${pkg.name}: clean-install`,
@@ -327,6 +357,41 @@ export class ReleaseChain {
     return step.label;
   }
 
+  /**
+   * The report of a run read back from its state file. A run that stopped on its own carries the step; a
+   * job that was cancelled or timed out does not, so the package left half done is named instead.
+   */
+  static reportFromState(opts: { state: IChainState }): string {
+    const { state } = opts;
+    const { version, states, stopped } = state;
+    const named = stopped && states.find((candidate) => candidate.name === stopped.failed);
+    const halfDone = states.find(
+      (candidate) => candidate.stage !== 'none' && candidate.stage !== 'tagged',
+    );
+    const failed = named ?? halfDone;
+
+    if (failed === undefined) {
+      const done = states.filter((candidate) => candidate.stage === 'tagged');
+      return stopped
+        ? ReleaseChain.report({
+            states,
+            failed: states[0] as IPackageState,
+            label: stopped.label,
+            version,
+            detail: stopped.detail,
+          })
+        : `No package was left half done (${done.length} of ${states.length} released at ${version}).`;
+    }
+
+    return ReleaseChain.report({
+      states,
+      failed,
+      label: stopped?.label ?? 'the job ended before the run finished',
+      version,
+      detail: stopped?.detail,
+    });
+  }
+
   /** What the operator reads when a run stops: the package, the step, who is done, and the repair. */
   static report(opts: {
     states: readonly IPackageState[];
@@ -410,21 +475,26 @@ export const runChain = async (opts: {
   const stateOf = (name: string): IPackageState =>
     states.find((state) => state.name === name) as IPackageState;
 
+  let stopped: IChainStop | undefined;
+
   const persist = async (): Promise<void> => {
     if (options.statePath !== undefined) {
+      const state: IChainState = { version, states, ...(stopped ? { stopped } : {}) };
       await ports.writeFile({
         path: options.statePath,
-        content: `${JSON.stringify({ version, states }, null, 2)}\n`,
+        content: `${JSON.stringify(state, null, 2)}\n`,
       });
     }
   };
 
-  const stop = (stopOpts: {
+  const stop = async (stopOpts: {
     failed: IPackageState;
     label: string;
     detail?: string;
-  }): IChainResult => {
+  }): Promise<IChainResult> => {
     const report = ReleaseChain.report({ states, version, ...stopOpts });
+    stopped = { failed: stopOpts.failed.name, label: stopOpts.label, detail: stopOpts.detail };
+    await persist();
     ports.log(report);
     return { ok: false, states, report };
   };
@@ -674,7 +744,35 @@ const realPorts = (): IChainPorts => ({
   log: (line) => console.log(line),
 });
 
+const reportMain = async (opts: { argv: string[] }): Promise<void> => {
+  const index = opts.argv.indexOf('--state');
+  const statePath = index === -1 ? undefined : opts.argv[index + 1];
+  if (!statePath) {
+    throw new Error('[release-chain] use: report --state <file>');
+  }
+
+  // No file means the chain step never ran (an earlier step failed): there is nothing to report.
+  if (!(await Bun.file(statePath).exists())) {
+    console.log('No release state was written: the release step did not start.');
+    return;
+  }
+
+  const state = JSON.parse(readFileSync(statePath, 'utf8')) as IChainState;
+  const text = ReleaseChain.reportFromState({ state });
+  console.log(text);
+
+  const summary = process.env.GITHUB_STEP_SUMMARY;
+  if (summary) {
+    appendFileSync(summary, `\n\`\`\`\n${text}\n\`\`\`\n`);
+  }
+};
+
 const main = async (): Promise<void> => {
+  if (Bun.argv[2] === 'report') {
+    await reportMain({ argv: Bun.argv.slice(3) });
+    return;
+  }
+
   const args = readArgs({ argv: Bun.argv.slice(2) });
   const ports = realPorts();
   const packages: IChainPackage[] = args.names.map((name) => ({

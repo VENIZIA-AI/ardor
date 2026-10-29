@@ -513,3 +513,103 @@ describe('ReleaseChain.report', () => {
     expect(report).toContain('--version');
   });
 });
+
+describe('the state file and the report read back from it', () => {
+  test('a stop writes the step it stopped at, with the packages, to the state file', async () => {
+    const h = harness({ fail: (command) => command.includes('npm publish') });
+    await runChain({
+      options: optionsOf(['kernel'], { statePath: '/work/state.json' }),
+      ports: h.ports,
+    });
+    const written = JSON.parse(h.states.at(-1) as string);
+
+    expect(written.version).toBe('0.4.6-0');
+    expect(written.stopped).toEqual({
+      failed: 'kernel',
+      label: 'kernel: publish',
+      detail: 'exit 1',
+    });
+    expect(written.states[0].stage).toBe('attempted');
+  });
+
+  test('a clean run writes no stop', async () => {
+    const h = harness({});
+    await runChain({
+      options: optionsOf(['kernel'], { statePath: '/work/state.json' }),
+      ports: h.ports,
+    });
+
+    expect(JSON.parse(h.states.at(-1) as string).stopped).toBeUndefined();
+  });
+
+  test('the report of a stop is the one the chain printed', async () => {
+    const h = harness({ fail: (command) => command.includes('npm publish') });
+    const result = await runChain({
+      options: optionsOf(['kernel'], { statePath: '/work/state.json' }),
+      ports: h.ports,
+    });
+    const state = JSON.parse(h.states.at(-1) as string);
+
+    expect(ReleaseChain.reportFromState({ state })).toBe(result.report as string);
+  });
+
+  test('a job that ended mid-run names the package left half done and says why it is unknown', () => {
+    const report = ReleaseChain.reportFromState({
+      state: {
+        version: '0.4.6-0',
+        states: [
+          {
+            name: 'kernel',
+            packageName: NAMES.kernel as string,
+            stage: 'tagged',
+            skipped: false,
+            warnings: [],
+          },
+          {
+            name: 'react',
+            packageName: NAMES.react as string,
+            stage: 'published',
+            skipped: false,
+            warnings: [],
+          },
+        ],
+      },
+    });
+
+    expect(report).toContain('the job ended before the run finished');
+    expect(report).toContain('Done: kernel');
+    expect(report).toContain('@venizia/ardor-react@0.4.6-0 is published but not committed');
+  });
+
+  test('a run with nothing half done says so', () => {
+    const report = ReleaseChain.reportFromState({
+      state: {
+        version: '0.4.6-0',
+        states: [
+          {
+            name: 'kernel',
+            packageName: NAMES.kernel as string,
+            stage: 'tagged',
+            skipped: false,
+            warnings: [],
+          },
+        ],
+      },
+    });
+
+    expect(report).toBe('No package was left half done (1 of 1 released at 0.4.6-0).');
+  });
+});
+
+describe('the tarball folder', () => {
+  test('the first package makes it before it packs, the next ones do not', () => {
+    const { phaseB } = ReleaseChain.plan({ options: optionsOf(['kernel', 'react']) });
+    const labels = phaseB.map((step) => step.label);
+
+    expect(labels.filter((label) => label === 'make the tarball folder')).toHaveLength(1);
+    expect(labels.indexOf('make the tarball folder')).toBeLessThan(
+      labels.indexOf('kernel: pack the tarball to publish'),
+    );
+    expect(labels[0]).toBe('make the tarball folder');
+  });
+});

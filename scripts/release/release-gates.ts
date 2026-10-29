@@ -94,10 +94,25 @@ export const unresolvedProtocols = (opts: { manifest: unknown }): string[] => {
   return found;
 };
 
-/** Only `bun pm pack` resolves `catalog:` and `workspace:`; npm then publishes that tarball with a provenance. */
-export const isTrustedPublishWorkflow = (opts: { workflow: string }): boolean =>
-  /^\s*\(cd .*&& bun pm pack\b/m.test(opts.workflow) &&
-  /^\s*npm publish .*--provenance\b/m.test(opts.workflow);
+/** The text of a file without its comment lines (YAML `#`, TypeScript `//` and block comments). */
+const withoutCommentLines = (opts: { text: string }): string =>
+  opts.text.replace(/^\s*(#|\/\/|\*|\/\*).*$/gm, '');
+
+/**
+ * Only `bun pm pack` resolves `catalog:` and `workspace:`; npm then publishes that tarball with a provenance.
+ * The workflow runs the chain in one step and the chain holds the pack and the publish, so the preflight reads
+ * both: the workflow must call the chain, and the chain must pack with bun and publish with a provenance.
+ */
+export const isTrustedPublishWorkflow = (opts: { workflow: string; chain: string }): boolean => {
+  const workflow = withoutCommentLines({ text: opts.workflow });
+  const chain = withoutCommentLines({ text: opts.chain });
+
+  return (
+    /^\s*bun scripts\/release\/release-chain\.ts (?!report\b)/m.test(workflow) &&
+    /'bun',\s*'pm',\s*'pack'/.test(chain) &&
+    /'npm',\s*'publish',[^\]]*'--provenance'/.test(chain)
+  );
+};
 
 export const parseChainReleased = (opts: { value: string }): string[] =>
   opts.value

@@ -1,53 +1,43 @@
 /**
- * Drives the NPM Release workflow one package at a time, in dependency order, waiting for each run
- * to finish before dispatching the next.
+ * Dispatches the NPM Release workflow once and checks what it did.
  *
- * The waiting is the whole point. `package-release.yml` runs `force-update` over the WHOLE workspace
- * (`--filter "@venizia/*"`), so a range that goes stale mid-flight fails the run. Dispatching by
- * hand invites exactly that.
+ * One dispatch is one run for every package it names: the workflow releases them in dependency order at
+ * one version (`release-chain.ts`), so there is nothing to wait for between packages here. This script
+ * plans the run (the packages, the one version), sends exactly one `gh workflow run` on `develop`,
+ * waits for the run to finish, reads the registry for every package of the plan and pulls `develop`.
  *
- *   bun scripts/release/release.ts                      # every package that needs one, in order
- *   bun scripts/release/release.ts kernel react         # just these, still ordered and still sequential
- *   bun scripts/release/release.ts --dry-run            # print the plan, dispatch nothing
+ *   bun scripts/release/release.ts                      # the four packages, as a prerelease
+ *   bun scripts/release/release.ts --dry-run            # print the dispatch, send nothing
  *   bun scripts/release/release.ts --mode patch         # default is prerelease
- *   bun scripts/release/release.ts --version 0.3.0      # an explicit version, for every package below it; overrides --mode
+ *   bun scripts/release/release.ts --version 0.4.7      # an explicit version; overrides --mode
+ *   bun scripts/release/release.ts kernel react --version 0.4.7   # resume: only these, still ordered
  *   bun scripts/release/release.ts --issue 138          # the release commits say [#138]
  *   bun scripts/release/release.ts --yes                # skip the confirmation prompt
  *
- * Atlas computes the release table from the tags each run pushes, so a chain leaves nothing to refresh.
+ * A mode needs the four packages at one current version, because the same mode over different versions
+ * gives different results; the plan resolves it to an explicit version before it dispatches. Naming
+ * packages is the way to resume a run that stopped half way: it needs `--version`, plans the packages
+ * below it and leaves the ones already at it.
  *
- * Each package is also waited for until its TARBALL answers 200 (`release-wait.ts`), not only its
- * dist-tag: the packument is listed minutes before the tarball, and the next package's clean-install
- * gate installs the one before it.
+ * Atlas computes the release table from the tags each run pushes, so a run leaves nothing to refresh.
  */
 
 import { isTrustedPublishWorkflow } from './release-gates';
-import { ReleasePlan } from './release-plan';
-import { countChangedSinceRelease, withDependents } from './release-scope';
-import {
-  assertAbove,
-  isReleaseVersion,
-  packagesForVersion,
-  readReleaseArgs,
-  type TReleaseTarget,
-} from './release-version';
+import { type IPlannedPackage, ReleasePlan } from './release-plan';
+import { isReleaseVersion, readReleaseArgs } from './release-version';
 import { ReleaseVerify } from './release-verify';
-import { waitForCompletion, waitForTarball } from './release-wait';
+import { waitForCompletion } from './release-wait';
 
-const WORKFLOW = 'package-release.yml';
-const BRANCH = 'develop';
-
-interface IPackageState {
-  name: string;
+interface IPackageState extends IPlannedPackage {
   packageName: string;
-  localVersion: string;
   publishedVersion: string | null;
   /** Every version on the registry before dispatch; a new one is the proof of a publish. */
   publishedVersions: string[];
-  changedFiles: number;
-  /** The `@venizia/*` workspace packages this one depends on, by package name. */
-  internalDependencies: string[];
 }
+
+const BRANCH = ReleasePlan.REF;
+const WORKFLOW_PATH = `.github/workflows/${ReleasePlan.WORKFLOW}`;
+const CHAIN_PATH = 'scripts/release/release-chain.ts';
 
 const run = async (opts: {
   command: string[];
@@ -110,10 +100,6 @@ const collectState = async (opts: { names: readonly string[] }): Promise<IPackag
       localVersion: manifest.version,
       publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
       publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
-      changedFiles: countChangedSinceRelease({ name }),
-      internalDependencies: Object.keys(manifest.dependencies ?? {}).filter((dep) =>
-        dep.startsWith('@venizia/ardor'),
-      ),
     });
   }
 
@@ -167,14 +153,15 @@ const assertReleasable = async (opts: { isDryRun: boolean }): Promise<void> => {
   }
 
   // npm ships `catalog:` and `workspace:` verbatim, so a package published from npm's own pack installs as
-  // `lodash@catalog: failed to resolve` on every consumer. The check below asserts it about the YAML
+  // `lodash@catalog: failed to resolve` on every consumer. The check below asserts it about the files
   // this script dispatches: four packages shipped broken before anyone tried to install one. Only
-  // `bun pm pack` resolves them, and npm then publishes that tarball with a provenance.
-  const workflowPath = '.github/workflows/package-release.yml';
-  const workflow = await Bun.file(workflowPath).text();
-  if (!isTrustedPublishWorkflow({ workflow })) {
+  // `bun pm pack` resolves them, and npm then publishes that tarball with a provenance. The workflow
+  // calls the chain and the chain holds the pack and the publish, so both are read.
+  const workflow = await Bun.file(WORKFLOW_PATH).text();
+  const chain = await Bun.file(CHAIN_PATH).text();
+  if (!isTrustedPublishWorkflow({ workflow, chain })) {
     complain(
-      `${workflowPath} must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
+      `${WORKFLOW_PATH} must run ${CHAIN_PATH}, which must publish a tarball packed by \`bun pm pack\` with \`npm publish --provenance\` - npm ships catalog: verbatim.`,
     );
   }
 };
@@ -186,7 +173,7 @@ const resolveLatestRunId = async (): Promise<string> => {
       'gh',
       'run',
       'list',
-      `--workflow=${WORKFLOW}`,
+      `--workflow=${ReleasePlan.WORKFLOW}`,
       '--limit',
       '1',
       '--json',
@@ -224,49 +211,22 @@ const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
 
       return JSON.parse(stdout) as { status: string; conclusion: string };
     },
-    // The release job waits for an approval in the Actions page; say so, and keep waiting.
+    // A run can wait in the queue behind another release (one at a time, repository-wide); keep waiting.
     onWaiting: ({ runId }) => {
-      console.log(`  run ${runId} is waiting for an approval in the Actions page - still waiting`);
+      console.log(`  run ${runId} is waiting to start - still waiting`);
     },
   });
 
-const releasePackage = async (opts: {
-  state: IPackageState;
-  target: TReleaseTarget;
-  issue?: string;
-  /** The npm names this run published earlier; the workflow's registry gate trusts their workspace version. */
-  chainReleased: string[];
+/** The one dispatch of the run, then the run's end and the registry. */
+const releaseRun = async (opts: {
+  dispatch: ReturnType<typeof ReleasePlan.dispatch>;
+  states: IPackageState[];
 }): Promise<void> => {
-  const { state, target } = opts;
-
-  console.log(`\n▶ ${state.name} (${state.localVersion} -> ${target})`);
-
   const previousRunId = await resolveLatestRunId();
 
   // `--ref` is not optional: without it `gh` dispatches against the DEFAULT branch, and GitHub
-  // validates the inputs against that branch's copy of the workflow. `main` still carries the
-  // pre-ARDOR dropdown, so the dispatch comes back HTTP 422.
-  await run({
-    command: [
-      'gh',
-      'workflow',
-      'run',
-      WORKFLOW,
-      '--ref',
-      BRANCH,
-      '-f',
-      `package=${state.name}`,
-      '-f',
-      // An explicit version rides its own input; the workflow lets it replace the bump type.
-      isReleaseVersion({ value: target }) ? `version=${target}` : `build_mode=${target}`,
-      // The previous package is published but npm may not show it yet: name it, so the next run's
-      // registry gate checks its workspace version instead of waiting for the registry.
-      ...(opts.chainReleased.length > 0
-        ? ['-f', `chain_released=${opts.chainReleased.join(',')}`]
-        : []),
-      ...(opts.issue === undefined ? [] : ['-f', `issue=${opts.issue}`]),
-    ],
-  });
+  // validates the inputs against that branch's copy of the workflow. `ReleasePlan.dispatchArgs` carries it.
+  await run({ command: ReleasePlan.dispatchArgs({ dispatch: opts.dispatch }) });
 
   const runId = await waitForNewRun({ previousRunId });
   console.log(`  run ${runId} - waiting...`);
@@ -278,19 +238,19 @@ const releasePackage = async (opts: {
     );
   }
 
-  const published = await ReleaseVerify.assertPublished({
-    state,
+  // The chain waited for each tarball to answer 200 before it moved on. What is left to check here is that
+  // the registry holds every version the run claims, and that `develop` has the commits it pushed.
+  const published = await ReleaseVerify.verifyRun({
+    states: opts.states,
     listVersions: listPublishedVersions,
+    pull: async () => {
+      await run({ command: ['git', 'pull', '--ff-only', '--quiet', 'origin', BRANCH] });
+    },
   });
-  console.log(`  published ${state.packageName}@${published} - waiting for its tarball...`);
 
-  // The next package installs this one. Its packument is listed before its tarball answers.
-  await waitForTarball({ packageName: state.packageName, version: published });
-  console.log('  tarball installable');
-
-  // The workflow pushes its own release commit. Without this the next package reads a stale local
-  // version and the operator reads a repo that disagrees with the registry.
-  await run({ command: ['git', 'pull', '--ff-only', '--quiet', 'origin', BRANCH] });
+  for (const [packageName, version] of Object.entries(published)) {
+    console.log(`  published ${packageName}@${version}`);
+  }
 };
 
 const main = async (): Promise<void> => {
@@ -298,53 +258,42 @@ const main = async (): Promise<void> => {
   const isDryRun = args.includes('--dry-run');
   const isConfirmed = args.includes('--yes');
   const { target, positional: requested, issue } = readReleaseArgs({ argv: args });
-  const candidates =
-    requested.length > 0
-      ? ReleasePlan.ORDER.filter((n) => requested.includes(n))
-      : ReleasePlan.ORDER;
 
-  const unknown = requested.filter((name) => !ReleasePlan.ORDER.includes(name as never));
-  if (unknown.length > 0) {
+  if (requested.length > 0 && !isReleaseVersion({ value: target })) {
     throw new Error(
-      `Unknown package(s): ${unknown.join(', ')}. Known: ${ReleasePlan.ORDER.join(', ')}`,
+      `Naming packages (${requested.join(', ')}) resumes a run and needs --version <x.y.z>: a mode releases all of ${ReleasePlan.ORDER.join(', ')}.`,
     );
   }
+
+  // Named packages are put in dependency order; a name that is not a package still fails in validate.
+  const order: readonly string[] = ReleasePlan.ORDER;
+  const named =
+    requested.length > 0
+      ? [...requested].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+      : [...ReleasePlan.ORDER];
+  ReleasePlan.validate({ packages: named });
 
   await assertReleasable({ isDryRun });
 
-  const states = await collectState({ names: candidates });
-  // An explicit request is honoured as given; a full sweep releases what changed AND every package
-  // depending on one of those. A prerelease falls outside a dependent's caret range (`^0.1.1` does
-  // not admit `0.1.2-0`), so an unreleased dependent drags in a second copy of the old dependency.
-  // An explicit version is shared by every package, so a sweep takes each package still below it,
-  // changed or not; a named package must be below it too.
-  let plan = requested.length > 0 ? states : withDependents({ states });
-
-  if (isReleaseVersion({ value: target })) {
-    plan = requested.length > 0 ? states : packagesForVersion({ states, version: target });
-
-    for (const state of plan) {
-      assertAbove({ version: target, current: state.localVersion });
-    }
-  }
+  const states = await collectState({ names: named });
+  const resolved = ReleasePlan.resolveVersion({ target, packages: states });
+  const plan = states.filter((state) => resolved.plan.includes(state.name));
 
   if (plan.length === 0) {
-    console.log(
-      'Nothing to release - no package has changed its code, manifest or build config since its last release.',
-    );
+    console.log(`Nothing to release - every package is already at ${resolved.version}.`);
     return;
   }
 
-  console.log(`Release plan (${target}), in dependency order:\n`);
-  for (const state of plan) {
-    const changed =
-      state.changedFiles === Number.POSITIVE_INFINITY
-        ? 'never released'
-        : `${state.changedFiles} file(s)`;
+  console.log(`Release plan (${target} -> ${resolved.version}), in dependency order:\n`);
+  for (const state of states) {
+    const note = resolved.skipped.includes(state.name) ? 'already there, left alone' : 'to release';
     console.log(
-      `  ${state.name.padEnd(13)} ${state.localVersion.padEnd(10)} npm:${(state.publishedVersion ?? '-').padEnd(10)} ${changed}`,
+      `  ${state.name.padEnd(13)} ${state.localVersion.padEnd(10)} npm:${(state.publishedVersion ?? '-').padEnd(10)} ${note}`,
     );
   }
+
+  const dispatch = ReleasePlan.dispatch({ plan: resolved.plan, version: resolved.version, issue });
+  console.log(`\n${ReleasePlan.describe({ dispatch })}`);
 
   if (isDryRun) {
     console.log('\n--dry-run: nothing dispatched.');
@@ -356,12 +305,7 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  const chainReleased: string[] = [];
-
-  for (const state of plan) {
-    await releasePackage({ state, target, issue, chainReleased });
-    chainReleased.push(state.packageName);
-  }
+  await releaseRun({ dispatch, states: plan });
 
   console.log(`\n✓ Released ${plan.length} package(s).`);
 };

@@ -1,18 +1,14 @@
 name: 'NPM Release'
-run-name: "NPM Release | ${{ inputs.heal_only && 'heal the next tags' || format('package: {0} | release: {1}', inputs.package, inputs.version || inputs.build_mode) }} | ${{ github.sha }}"
+run-name: "${{ inputs.heal_only && 'heal the next tags' || format('packages: {0} | release: {1}', inputs.packages, inputs.version || inputs.build_mode) }} | ${{ github.sha }}"
 
 on:
   workflow_dispatch:
     inputs:
-      package:
-        type: choice
-        description: Package to release
-        options:
-          - kernel
-          - react
-          - admin
-          - ardor
+      packages:
+        type: string
+        description: 'Packages to release in this one run, comma-separated and in dependency order (kernel,react,admin,ardor)'
         required: true
+        default: 'kernel,react,admin,ardor'
       build_mode:
         type: choice
         description: 'Version bump type (patch | minor | major | pre*)'
@@ -33,21 +29,16 @@ on:
         default: ''
       issue:
         type: string
-        description: 'Issue number the release commit serves (prefixes it with [#N])'
+        description: 'Issue number the release commits serve (prefixes each with [#N])'
         required: false
         default: ''
       heal_only:
         type: boolean
-        description: 'Only move the next tag to latest for every ARDOR package: publishes nothing, ignores the other inputs (pick any package)'
+        description: 'Only move the next tag to latest for every ARDOR package: publishes nothing, ignores the other inputs'
         required: false
         default: false
-      chain_released:
-        type: string
-        description: 'Comma-separated @venizia/* names published earlier in this chain - the registry gate trusts their workspace version'
-        required: false
-        default: ''
 
-# The workflow can write nothing by default; the one job that pushes the release commit and the tag says so.
+# The workflow can write nothing by default; the one job that pushes the release commits and the tags says so.
 # Every job runs only for the develop branch and checks out the commit that was dispatched, so the test
 # job, the release job and the run name all name the same commit. The release job needs the test job,
 # which has no secret: a failing test publishes nothing. There is no npm token anywhere: the release
@@ -57,10 +48,11 @@ on:
 permissions:
   contents: read
 
-# Build order comes from the Makefile chain (kernel -> react -> admin -> ardor). The umbrella `ardor`
-# depends on the other three by exact version, so all three must be published before it or the
-# registry-existence check fails. Every sibling is `workspace:*`, so `bun pm pack` writes its exact
-# version into the tarball.
+# One run releases every package it names, in dependency order (kernel -> react -> admin -> ardor), at one
+# version. The umbrella `ardor` depends on the other three by exact version, so they publish first or the
+# registry-existence check fails. Every sibling is `workspace:*`, so `bun pm pack` writes its exact version
+# into the tarball. The per-package steps are not YAML: scripts/release/release-chain.ts runs them, so a
+# test can fail each step and see what is left behind.
 #
 # One release at a time, repository-wide. A release mutates a shared branch and the registry, and
 # the packages form a dependency chain, so two runs must never interleave. `cancel-in-progress: false`
@@ -73,15 +65,17 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  PACKAGE: ${{ github.event.inputs.package }}
+  PACKAGES: ${{ github.event.inputs.packages }}
   BUILD_MODE: ${{ github.event.inputs.build_mode }}
   VERSION: ${{ github.event.inputs.version }}
-  # The tarball bun packs, the checks read and npm publishes: one folder inside the workspace (gitignored).
+  # The tarballs bun packs, the checks read and npm publishes: one folder inside the workspace (gitignored).
   # Absolute, because npm reads `.agents/x/y.tgz` as a package spec and `/abs/y.tgz` as a file.
   TARBALLS: ${{ github.workspace }}/.agents/local/tmp/release-tarballs
 
 jobs:
-  # Everything that needs no secret, on the dispatched commit: the release job needs it.
+  # Everything that needs no secret, on the dispatched commit: the release job needs it. Each gate loops
+  # over the packages of the run. The clean-install gate is not here: it installs the siblings a package
+  # ships with, and before the bump those are the old versions. The chain runs it after the sibling is out.
   test:
     name: Test
     if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only != true }}
@@ -116,43 +110,23 @@ jobs:
       # -------------------------------------------------------------------------
       # PREPARE
       # -------------------------------------------------------------------------
-      - name: Get package info
+      # What this run releases AS, decided in one tested place (scripts/release/release-plan.ts): the explicit
+      # version when one is given, else the bump type. A list that is not in dependency order, packages at
+      # different versions under a bump type, or a package above the version fails here, before any build.
+      # A stable target publishes to latest, a prerelease to next.
+      - name: Plan the run
         run: |
-          # Map package input to actual folder path
-          case $PACKAGE in
-            *) PACKAGE_PATH="packages/$PACKAGE" ;;
-          esac
+          RELEASE_VERSION=$(bun scripts/release/release-plan.ts resolve --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE")
+          NPM_TAG=$(bun scripts/release/release-version.ts tag "$RELEASE_VERSION")
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+          echo ">>> packages: $PACKAGES -> $RELEASE_VERSION (npm tag: $NPM_TAG)"
 
-          PACKAGE_NAME=$(jq -r .name "$PACKAGE_PATH/package.json")
-          CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
-
-          echo "PACKAGE_PATH=$PACKAGE_PATH" >> $GITHUB_ENV
-          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-
-          echo "┌─────────────────────────────────────────────────"
-          echo "│ Package:     $PACKAGE_NAME"
-          echo "│ Path:        $PACKAGE_PATH"
-          echo "│ Version:     $CURRENT_VERSION → ${VERSION:-$BUILD_MODE}"
-          echo "└─────────────────────────────────────────────────"
-
-      # What this release is released AS, decided in one tested place (scripts/release/release-version.ts): the
-      # explicit version when one is given, else the bump type. A version that is malformed or not above
-      # the current one fails here, before any build. A stable target publishes to latest, a prerelease
-      # to next.
-      - name: Resolve release target
-        run: |
-          CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
-          TARGET=$(bun scripts/release/release-version.ts target --version "$VERSION" --mode "$BUILD_MODE" --current "$CURRENT_VERSION")
-          NPM_TAG=$(bun scripts/release/release-version.ts tag "$TARGET")
-          echo "TARGET=$TARGET" >> $GITHUB_ENV
-          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
-          echo ">>> $CURRENT_VERSION -> $TARGET (npm tag: $NPM_TAG)"
-
-      # BEFORE the install, and across the WHOLE workspace - not just the package being released.
+      # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
       # `force-update` rewrites version ranges; an install that ran first has already resolved the
       # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
       # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
-      # per-package script refreshes any range the catalog does not own.
+      # per-package script refreshes any range the catalog does not own. Once per job, not per package:
+      # four refreshes could give four different catalogs inside one run.
       - name: Force update workspace
         run: |
           bun scripts/build/refresh-catalog.ts highest
@@ -165,19 +139,31 @@ jobs:
       # always wrong: the build would validate code that is not in this repository. The failure mode is
       # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
       - name: Assert internal dependencies link to the workspace
-        run: bun scripts/release/release-gates.ts links $PACKAGE_PATH
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            bun scripts/release/release-gates.ts links "packages/$package"
+          done
 
       # -------------------------------------------------------------------------
       # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
       # -------------------------------------------------------------------------
       - name: Build
-        run: make $PACKAGE
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            make "$package"
+          done
 
       - name: Lint
-        run: make lint-$PACKAGE
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            make "lint-$package"
+          done
 
       - name: Test the package
-        run: make test-$PACKAGE
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            make "test-$package"
+          done
 
       - name: Test the repository scripts
         run: make test-scripts
@@ -188,11 +174,10 @@ jobs:
         run: make purity-test
 
       - name: Purity gate
-        run: make purity-$PACKAGE
-
-      # Siblings come from the registry here, as a consumer installs them next to this release.
-      - name: Clean-install gate
-        run: make clean-install-$PACKAGE
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            make "purity-$package"
+          done
 
       - name: Check dependency catalog
         run: make catalog-check
@@ -200,7 +185,7 @@ jobs:
       # An app created from the PACKED preset typechecks, lints, builds and starts without a warning.
       # Before the bump and the publish: a preset that cannot create a working app must not ship.
       - name: VULCAN preset smoke
-        if: ${{ env.PACKAGE == 'ardor' }}
+        if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
           VULCAN_CMD: bun x @venizia/vulcan@0.4.6
@@ -210,11 +195,10 @@ jobs:
     name: NPM Release
     needs: test
     if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only != true }}
-    # Every run waits here for the owner's approval before any step of the job starts, and only a run on
-    # develop can enter. The environment's reviewers and ref rule are GitHub settings, not this file's: this
-    # line is what makes the job subject to them. The trusted publisher on npmjs.com names it too.
+    # The environment is what the trusted publisher on npmjs.com names, and its ref rule lets only a run
+    # on develop or main enter. It has no reviewers: the owner's dispatch of this workflow is the approval.
     environment: npm-release
-    # The release pushes the release commit and the tag: it writes contents. `id-token` is what trusted
+    # The release pushes the release commits and the tags: it writes contents. `id-token` is what trusted
     # publishing signs with: npm exchanges the job's identity for a short-lived publish credential, so the
     # release holds no npm token at all. The test job has neither grant.
     permissions:
@@ -258,43 +242,23 @@ jobs:
       # -------------------------------------------------------------------------
       # PREPARE
       # -------------------------------------------------------------------------
-      - name: Get package info
+      # What this run releases AS, decided in one tested place (scripts/release/release-plan.ts): the explicit
+      # version when one is given, else the bump type. A list that is not in dependency order, packages at
+      # different versions under a bump type, or a package above the version fails here, before any build.
+      # A stable target publishes to latest, a prerelease to next.
+      - name: Plan the run
         run: |
-          # Map package input to actual folder path
-          case $PACKAGE in
-            *) PACKAGE_PATH="packages/$PACKAGE" ;;
-          esac
+          RELEASE_VERSION=$(bun scripts/release/release-plan.ts resolve --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE")
+          NPM_TAG=$(bun scripts/release/release-version.ts tag "$RELEASE_VERSION")
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+          echo ">>> packages: $PACKAGES -> $RELEASE_VERSION (npm tag: $NPM_TAG)"
 
-          PACKAGE_NAME=$(jq -r .name "$PACKAGE_PATH/package.json")
-          CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
-
-          echo "PACKAGE_PATH=$PACKAGE_PATH" >> $GITHUB_ENV
-          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-
-          echo "┌─────────────────────────────────────────────────"
-          echo "│ Package:     $PACKAGE_NAME"
-          echo "│ Path:        $PACKAGE_PATH"
-          echo "│ Version:     $CURRENT_VERSION → ${VERSION:-$BUILD_MODE}"
-          echo "└─────────────────────────────────────────────────"
-
-      # What this release is released AS, decided in one tested place (scripts/release/release-version.ts): the
-      # explicit version when one is given, else the bump type. A version that is malformed or not above
-      # the current one fails here, before any build. A stable target publishes to latest, a prerelease
-      # to next.
-      - name: Resolve release target
-        run: |
-          CURRENT_VERSION=$(jq -r .version "$PACKAGE_PATH/package.json")
-          TARGET=$(bun scripts/release/release-version.ts target --version "$VERSION" --mode "$BUILD_MODE" --current "$CURRENT_VERSION")
-          NPM_TAG=$(bun scripts/release/release-version.ts tag "$TARGET")
-          echo "TARGET=$TARGET" >> $GITHUB_ENV
-          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
-          echo ">>> $CURRENT_VERSION -> $TARGET (npm tag: $NPM_TAG)"
-
-      # BEFORE the install, and across the WHOLE workspace - not just the package being released.
+      # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
       # `force-update` rewrites version ranges; an install that ran first has already resolved the
       # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
       # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
-      # per-package script refreshes any range the catalog does not own.
+      # per-package script refreshes any range the catalog does not own. Once per job, not per package:
+      # four refreshes could give four different catalogs inside one run.
       - name: Force update workspace
         run: |
           bun scripts/build/refresh-catalog.ts highest
@@ -303,212 +267,37 @@ jobs:
       - name: Install
         run: bun install
 
-      # Every ARDOR sibling is a member of this workspace, so resolving one to a registry tarball is
-      # always wrong: the build would validate code that is not in this repository. The failure mode is
-      # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
-      - name: Assert internal dependencies link to the workspace
-        run: bun scripts/release/release-gates.ts links $PACKAGE_PATH
-
       # -------------------------------------------------------------------------
-      # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
+      # RELEASE - every gate, bump, publish and git write of every package, in release-chain.ts
       # -------------------------------------------------------------------------
-      - name: Build
-        run: make $PACKAGE
-
-      # Derived from the package's own `exports` map, never a hand-written list: checking every
-      # PUBLISHED target is strictly stronger than checking one index - a sub-path whose file never got
-      # emitted fails here instead of at a consumer's first import.
-      - name: Validate build artifacts
-        run: bun scripts/release/release-gates.ts artifacts $PACKAGE_PATH
-
-      # Packed once, read by every validator below: they all see the SAME manifest - the one npm
-      # receives, not the one in the working tree. A check before any mutation: the tarball that is
-      # published is packed again after the bump (Pack the tarball to publish).
-      - name: Pack the release tarball
-        run: bun scripts/release/release-gates.ts pack $PACKAGE_PATH "$RUNNER_TEMP/packed-manifest.json"
-
-      - name: Validate packed manifest
-        run: bun scripts/release/release-gates.ts protocols "$RUNNER_TEMP/packed-manifest.json"
-
-      # The check above only rejects an *unresolved* protocol. A `workspace:*` on a package that was
-      # never published resolves cleanly to a literal version while packing, so the tarball would name
-      # a package the registry has never heard of and every `npm install` of the release would fail.
-      # In a release chain the previous package went out seconds ago and npm can take minutes to show
-      # it. Such a package - and only such a package, named in chain_released by the run that
-      # published it - is checked against its workspace version instead of the registry.
-      - name: Validate dependencies exist on the registry
-        env:
-          CHAIN_RELEASED: ${{ github.event.inputs.chain_released }}
-        run: bun scripts/release/release-gates.ts registry "$RUNNER_TEMP/packed-manifest.json" --chain-released "$CHAIN_RELEASED"
-
-      # -------------------------------------------------------------------------
-      # VERSION & GIT
-      # -------------------------------------------------------------------------
-      - name: Version bump
-        run: |
-          cd $PACKAGE_PATH
-          npm version $TARGET --no-git-tag-version --workspaces-update=false
-
-          NEW_VERSION=$(jq -r .version package.json)
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "TAG_NAME=$PACKAGE-v$NEW_VERSION" >> $GITHUB_ENV
-          echo ">>> New version: $NEW_VERSION"
-
-      # The preset names the versions this release ships with, so it is written after the bump. The chain's
-      # earlier releases are already in the dispatched commit: the driver dispatches each package after the
-      # previous one was pushed.
-      - name: Write the VULCAN preset
-        if: ${{ env.PACKAGE == 'ardor' }}
-        run: bun scripts/preset/vulcan-preset.ts
-
-      # The file that gets published, packed once, after the bump and the preset it carries. Only `bun pm pack`
-      # resolves `catalog:` and `workspace:` while packing (npm ships them verbatim and breaks every consumer), so
-      # bun packs; the publish step publishes this very file after checking its sha256. Its manifest is checked
-      # here: no unresolved protocol, and the version this run releases.
-      - name: Pack the tarball to publish
-        run: |
-          rm -rf "$TARBALLS"
-          mkdir -p "$TARBALLS"
-
-          (cd "$PACKAGE_PATH" && bun pm pack --quiet --filename "$TARBALLS/package.tgz" > /dev/null)
-          tar -xzOf "$TARBALLS/package.tgz" package/package.json > "$RUNNER_TEMP/published-manifest.json"
-          bun scripts/release/release-gates.ts protocols "$RUNNER_TEMP/published-manifest.json"
-
-          PACKED_VERSION=$(jq -r .version "$RUNNER_TEMP/published-manifest.json")
-          [ "$PACKED_VERSION" = "$NEW_VERSION" ] \
-            || { echo "ERROR: the tarball is $PACKED_VERSION, this run releases $NEW_VERSION"; exit 1; }
-
-          (cd "$TARBALLS" && sha256sum package.tgz > SHA256SUMS)
-
-      # -------------------------------------------------------------------------
-      # PUBLISH - deliberately ahead of every git write
-      # -------------------------------------------------------------------------
-      # The publish is the only step that cannot be undone, so it runs FIRST among the mutations.
-      # Publishing last meant the COMMON failure - a rejected publish - was repaired by force-pushing
-      # a shared branch back one commit, mid-release, while sibling releases were running. This way a
-      # failed publish leaves git untouched and there is nothing to roll back. The cost is the rarer
-      # inverse - the publish lands and the follow-up push fails - which is both safe and loud:
-      # develop keeps the old version, so the next release retries this one and the registry refuses
-      # it as a duplicate.
-      - name: Publish to NPM
-        run: |
-          # What is published is what was packed and checked: the same file, byte for byte. A mismatch
-          # stops here, before any publish was attempted.
-          (cd "$TARBALLS" && sha256sum --check --quiet SHA256SUMS)
-
-          # BEFORE the publish, not after: a publish that succeeds and loses its response leaves npm
-          # permanently holding the version while this step fails, and the failure reports would then
-          # say nothing about a release that is live. The flag means "a publish was attempted", which
-          # is exactly what those reports have to assume.
-          echo "IS_PUBLISHED=true" >> $GITHUB_ENV
-
-          # Trusted publishing: no token; npm signs in with this job's identity and writes the provenance.
-          # --ignore-scripts: the build above already ran.
-          npm publish "$TARBALLS/package.tgz" --access public --tag $NPM_TAG --ignore-scripts --provenance
-
-          echo "✓ Published $PACKAGE_NAME@$NEW_VERSION ($NPM_TAG)"
-
-      - name: Tag highest version on NPM
-        run: |
-          # Publishes are monotonic, so the just-published version is always the highest (semver:
-          # x.y.z > x.y.z-N) - point `highest` at it for the README badge, non-fatal
-          npm dist-tag add "$PACKAGE_NAME@$NEW_VERSION" highest \
-            && echo "✓ Tagged $PACKAGE_NAME@$NEW_VERSION as 'highest'" \
-            || echo "⚠️  Could not set 'highest' dist-tag (non-fatal)"
-
-      # The package just published is passed in: npm can serve the old tags for minutes after a publish,
-      # and a heal that read them moved `next` to a stale `latest`.
-      #
-      # The `next` tag is never below `latest`: a release that moves `latest` past it would leave
-      # `bun add pkg@next` installing an older version than a plain `bun add pkg`. Every ARDOR package
-      # is looked at, not only this one, so a package that was not released also heals. Non-fatal and loud.
-      - name: Keep the next tag at or above latest
-        continue-on-error: true
-        run: bun scripts/release/release-gates.ts heal-next --published "$PACKAGE_NAME@$NEW_VERSION" --tag "$NPM_TAG"
-
-      # -------------------------------------------------------------------------
-      # RECORD IN GIT
-      # -------------------------------------------------------------------------
-      # The checkout is the dispatched commit, so HEAD is detached; a branch of its own lets the push below rebase.
-      - name: Name the release branch
-        run: git switch -c "release-${{ github.run_id }}"
-
-      - name: Commit release
-        run: |
-          # The bump moves this workspace's entry in bun.lock. Re-lock in a scratch copy of HEAD so the
-          # catalog refresh from "Force update workspace" never reaches the committed lockfile.
-          SCRATCH=$(mktemp -d)
-          git archive HEAD | tar -x -C "$SCRATCH"
-          cp "$PACKAGE_PATH/package.json" "$SCRATCH/$PACKAGE_PATH/package.json"
-          (cd "$SCRATCH" && bun install --lockfile-only)
-          cp "$SCRATCH/bun.lock" bun.lock
-
-          git add "$PACKAGE_PATH/package.json" bun.lock
-          SUBJECT="chore($PACKAGE): release v$NEW_VERSION [$TARGET]"
-          if [ -n "$RELEASE_ISSUE" ]; then
-            SUBJECT="[#$RELEASE_ISSUE] $SUBJECT"
-          fi
-          git commit -m "$SUBJECT"
+      # Phase A checks every package before the first publish. Phase B then takes the packages one at a time:
+      # clean-install, bump, preset, pack, checksum, publish, wait until the tarball answers 200, dist-tags,
+      # release commit, push, tag. The publish runs ahead of every git write of its package: a failed publish
+      # leaves git untouched. The push is never rebased, and a failure is reported, never repaired by a
+      # force-push: npm cannot un-publish. The state of every package is written to a file after each step.
+      - name: Release the packages
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
-
-      # Separate from the commit above so the run tells you WHICH half failed: a rejected push is a
-      # race or a permissions problem, a failed commit is an empty diff or a hook.
-      - name: Push release
         run: |
-          # develop can move between the dispatch and this push - a human merge, or the previous package
-          # of a release chain. The version is already on the registry by now, so rebase and retry
-          # once instead of leaving develop behind a release that really happened.
-          git push origin HEAD:develop || {
-            git pull --rebase origin develop
-            git push origin HEAD:develop
-          }
+          ARGS=(--packages "$PACKAGES" --version "$RELEASE_VERSION" --branch "release-${{ github.run_id }}" --tarballs "$TARBALLS" --tmp "$RUNNER_TEMP" --state "$RUNNER_TEMP/release-state.json")
+          if [ -n "$RELEASE_ISSUE" ]; then
+            ARGS+=(--issue "$RELEASE_ISSUE")
+          fi
+          bun scripts/release/release-chain.ts "${ARGS[@]}"
 
-          echo "IS_PUSHED=true" >> $GITHUB_ENV
-
-      - name: Create tag
-        run: |
-          git tag -a "$TAG_NAME" -m "$PACKAGE_NAME v$NEW_VERSION"
-
-          # GitHub can reject a tag push with a bare "(failed)" and no reason. Retry before failing.
-          for attempt in 1 2 3; do
-            git push origin "$TAG_NAME" && exit 0
-            echo ">>> Tag push attempt $attempt failed"
-            sleep $((attempt * 10))
-          done
-          exit 1
-
-      # -------------------------------------------------------------------------
-      # FAILURE REPORTS
-      # -------------------------------------------------------------------------
-      # No rollback remains to perform. Nothing reaches the registry or the remote until the publish
-      # succeeds, so a failed run either touched neither, or it published and only bookkeeping is
-      # left undone. Both are REPORTED, never repaired: npm cannot un-publish, and force-pushing
-      # develop to chase a live version does more damage than the mismatch it would fix.
-      - name: Report - published, develop not updated
-        if: failure() && env.IS_PUBLISHED == 'true' && env.IS_PUSHED != 'true'
-        run: |
-          echo "⚠️  $PACKAGE_NAME@$NEW_VERSION was published, but develop still records the old version"
-          echo "    confirm first:  npm view $PACKAGE_NAME versions"
-          echo "    if it IS live, bump develop by hand so the next release does not retry $NEW_VERSION:"
-          echo "      cd $PACKAGE_PATH && npm version $NEW_VERSION --no-git-tag-version --workspaces-update=false"
-          echo "    if it is NOT live, nothing to clean up - re-run this workflow"
-
-      - name: Report - published and pushed, tag missing
-        if: failure() && env.IS_PUBLISHED == 'true' && env.IS_PUSHED == 'true'
-        run: |
-          echo "⚠️  $PACKAGE_NAME@$NEW_VERSION is published and develop is updated - only the git tag is missing"
-          echo "    create it by hand:"
-          echo "      git tag -a $TAG_NAME -m \"$PACKAGE_NAME v$NEW_VERSION\" && git push origin $TAG_NAME"
+      # A job that was cancelled or timed out runs no script of its own, so the report is a step of its own,
+      # read from the state file: which package stopped, which are done, and the repair that fits.
+      - name: Report the run
+        if: ${{ always() }}
+        run: bun scripts/release/release-chain.ts report --state "$RUNNER_TEMP/release-state.json"
 
   # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
-  # ARDOR package without publishing anything (the same step a release runs after its publish).
+  # ARDOR package without publishing anything (the same check a release runs after each publish).
   heal-next:
     name: Heal next tags
     if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only == true }}
-    # It moves a dist-tag, so it is a trusted-publisher action like the release: the same environment (the
-    # owner approves the run) and the identity npm trades for a short-lived credential. It reads the repository
-    # and writes nothing to it.
+    # It moves a dist-tag, so it is a trusted-publisher action like the release: the same environment and the
+    # identity npm trades for a short-lived credential. It reads the repository and writes nothing to it.
     environment: npm-release
     permissions:
       contents: read
