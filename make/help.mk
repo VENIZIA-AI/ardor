@@ -38,6 +38,8 @@ help:
 	@$(HELP_ROW) "lint-all" "lint-packages, lint-wiki, lint-scripts and lint-files."
 	@$(HELP_ROW) "lint-fix / lint-fix-packages" "lint-fix-<pkg> for every package."
 	@$(HELP_ROW) "test / test-all" "test-<pkg> for every package; one with no suite says so and passes."
+	@$(HELP_ROW) "gates" "The Test job of the release workflow, locally: links, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j."
+	@$(HELP_ROW) "links-check" "Gate: every ARDOR sibling resolves to the workspace, not to the registry."
 	@$(HELP_ROW) "purity" "Gate: every entry claimed browser-pure has no node builtin or global."
 	@$(HELP_ROW) "clean-install" "Load every published sub-path from packed tarballs in an empty project."
 	@$(HELP_ROW) "layer-check" "Gate: no package imports a layer above it."
