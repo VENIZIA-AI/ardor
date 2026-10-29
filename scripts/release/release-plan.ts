@@ -20,13 +20,18 @@
  *
  *   bun scripts/release/release-plan.ts plan --packages kernel,react,admin,ardor --mode patch --ref refs/heads/main
  *
- * It prints the resolved version, writes `version`, `kind`, `npm_tag` and `catalog_tag` to GITHUB_OUTPUT
- * and a summary to GITHUB_STEP_SUMMARY, and exits 1 with every reason when it refuses.
+ * It prints the resolved version, writes `version`, `kind`, `npm_tag`, `catalog_tag` and `develop_sha` to
+ * GITHUB_OUTPUT and a summary to GITHUB_STEP_SUMMARY, and exits 1 with every reason when it refuses.
+ *
+ * With `--merge-trial`, a stable also tries the merge of main back into develop (merge-back.ts) and refuses
+ * when it would stop, before anyone is asked to approve; `develop_sha` is the head of develop that trial read
+ * (empty for a prerelease, which has no merge back).
  */
 
 import { appendFileSync, readFileSync } from 'node:fs';
 
 import { fetchDistTags } from './release-gates';
+import { MergeBackConstants, ReleaseMergeBack } from './merge-back';
 import {
   isReleaseMode,
   isReleaseVersion,
@@ -613,6 +618,37 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
     }
   }
 
+  const summary = process.env.GITHUB_STEP_SUMMARY;
+  let developSha = '';
+
+  // The merge back of a stable is tried here, before the approval: a stop after the click would need a second click.
+  if (
+    plan?.kind === ReleaseKinds.STABLE &&
+    problems.length === 0 &&
+    argv.includes('--merge-trial')
+  ) {
+    const trial = ReleaseMergeBack.trial({
+      cwd: process.cwd(),
+      versions: Object.fromEntries(names.map((name) => [name, plan.version])),
+      main: process.env.GITHUB_SHA ?? MergeBackConstants.DEFAULT_MAIN,
+      develop: MergeBackConstants.DEFAULT_DEVELOP,
+      scratchRoot: process.env.RUNNER_TEMP ?? MergeBackConstants.SCRATCH_ROOT,
+    });
+
+    developSha = trial.developHead;
+    problems.push(...trial.problems.map((problem) => `merge back: ${problem}`));
+
+    if (summary !== undefined) {
+      appendFileSync(summary, ReleaseMergeBack.summaryOf({ result: trial, version: plan.version }));
+    }
+
+    if (trial.problems.length === 0) {
+      console.log(
+        `plan: the merge of main into develop goes through (resolved: ${trial.resolved.join(', ') || 'none'})`,
+      );
+    }
+  }
+
   for (const problem of problems) {
     console.error(`ERROR | ${problem}`);
   }
@@ -622,11 +658,10 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
   }
 
   const output = process.env.GITHUB_OUTPUT;
-  const summary = process.env.GITHUB_STEP_SUMMARY;
   if (output !== undefined) {
     appendFileSync(
       output,
-      `version=${plan.version}\nkind=${plan.kind}\nnpm_tag=${plan.npmTag}\ncatalog_tag=${plan.catalogTag}\n`,
+      `version=${plan.version}\nkind=${plan.kind}\nnpm_tag=${plan.npmTag}\ncatalog_tag=${plan.catalogTag}\ndevelop_sha=${developSha}\n`,
     );
   }
   if (summary !== undefined) {

@@ -555,7 +555,7 @@ describe('release-plan.ts plan', () => {
       'plan: 0.4.9-2 (prerelease) from prerelease on refs/heads/develop',
     );
     expect(await Bun.file(result.outputPath).text()).toBe(
-      'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\n',
+      'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\ndevelop_sha=\n',
     );
   });
 
