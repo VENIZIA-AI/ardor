@@ -8,7 +8,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
 CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 
-.PHONY: test test-all test-scripts gates links-check copies-check purity purity-test clean-install layer-check cycles-check \
+.PHONY: test test-all test-scripts gates gates-refreshed links-check copies-check purity purity-test clean-install layer-check cycles-check \
         size-check $(TEST_TARGETS) $(PURITY_TARGETS) $(CLEAN_INSTALL_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -41,6 +41,11 @@ GATE_TARGETS := links-check copies-check $(PACKAGES) $(addprefix lint-,$(PACKAGE
 
 gates:
 	@$(foreach target,$(GATE_TARGETS),$(MAKE) --no-print-directory $(target) &&) true
+
+# `gates` after the Test job's catalog refresh, in a scratch copy under .agents/local/tmp: what a plain checkout cannot see.
+# The commands come from the workflow (scripts/release/__tests__/gates-refreshed.test.ts). About two minutes; run it before every dispatch.
+gates-refreshed:
+	@bun scripts/release/gates-refreshed.ts
 
 # Every ARDOR sibling resolves to the workspace, never to a registry tarball (the first gate of the Test job).
 links-check:

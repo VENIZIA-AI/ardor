@@ -139,6 +139,7 @@ bun run --filter "@venizia/*" force-update highest
   job runs `release-gates.ts single-copy` right after the install; it walks what the root and each
   member resolve and names the member that holds the older copy. It takes any folder, so a consumer of
   ARDOR runs the same command in its own checkout: `bun scripts/release/release-gates.ts single-copy`.
+- `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree; run it before every dispatch (see [Testing](testing.md)).
 
 ## Gates, bump, publish, record
 
