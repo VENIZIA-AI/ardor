@@ -567,3 +567,56 @@ describe('release-plan.ts plan', () => {
     expect(await Bun.file(result.outputPath).exists()).toBe(false);
   });
 });
+
+describe('the driver picks the branch by the kind of the target (C1.5c)', () => {
+  const refOf = (target: string): string => {
+    const kind = ReleasePlan.kindOfTarget({ target });
+    const dispatch = ReleasePlan.dispatch({
+      plan: ALL,
+      version: '0.4.9',
+      ref: ReleasePlan.branchOf({ kind }),
+    });
+
+    return (
+      ReleasePlan.dispatchArgs({ dispatch })[
+        ReleasePlan.dispatchArgs({ dispatch }).indexOf('--ref') + 1
+      ] ?? ''
+    );
+  };
+
+  test.each(['patch', 'minor', 'major', '0.4.9', '1.0.0'])(
+    '%s is a stable: --ref main',
+    (target) => {
+      expect(ReleasePlan.kindOfTarget({ target })).toBe('stable');
+      expect(refOf(target)).toBe('main');
+    },
+  );
+
+  test.each(['prerelease', 'prepatch', 'preminor', 'premajor', '0.4.9-0', '1.0.0-rc.1'])(
+    '%s is a prerelease: --ref develop',
+    (target) => {
+      expect(ReleasePlan.kindOfTarget({ target })).toBe('prerelease');
+      expect(refOf(target)).toBe('develop');
+    },
+  );
+
+  test('the dispatch carries the ref it is given, and describe names it', () => {
+    const dispatch = ReleasePlan.dispatch({ plan: ALL, version: '0.4.9', ref: 'main' });
+
+    expect(dispatch.ref).toBe('main');
+    expect(ReleasePlan.describe({ dispatch })).toContain('on main:');
+  });
+
+  test('release-scope.ts is gone: no script imports it (C3.8)', () => {
+    const found = Bun.spawnSync(['grep', '-rl', 'release-scope', 'scripts', '--include=*.ts'], {
+      cwd: ROOT,
+    });
+
+    expect(
+      found.stdout
+        .toString()
+        .split('\n')
+        .filter((line) => !line.endsWith('release-plan.test.ts') && line !== ''),
+    ).toEqual([]);
+  });
+});

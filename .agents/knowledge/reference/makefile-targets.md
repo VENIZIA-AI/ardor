@@ -72,7 +72,7 @@ generated:
 | `make purity-react` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-test` | - | Run the purity gate's regression tests (the shared engine on ARDOR's fixtures). |
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
-| `make release` | - | Dispatch the release workflow once for the four packages, e.g. ARGS="--yes". |
+| `make release` | - | Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
 | `make setup-hooks` | - | Configure git to use .githooks directory. |
 | `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |

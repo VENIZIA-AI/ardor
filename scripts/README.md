@@ -12,7 +12,6 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | `release/` | `merge-back.ts` | The merge back of a stable: `main`, with the release commits, flows into `develop`. `trial` rehearses it in throwaway worktrees (the plan job), `apply` makes it. Copied from VULCAN | `release-plan.ts` (`plan --merge-trial`) |
 | `release/` | `sync-pr.ts` | The Sync PR: `main` takes the exact commit of the prerelease tag BANA passed (`open --tag ardor-v<x>`), then `verify` checks the trees are equal. Copied from VULCAN | run by hand on the owner's word |
 | `release/` | `release-verify.ts` | After a run: the registry holds a new version of every package, then `develop` is pulled | `release.ts` |
-| `release/` | `release-scope.ts` | Decides which files make a package need a release (a run now releases the four packages, so `release.ts` no longer reads it) | its test only |
 | `release/` | `release-version.ts` | The release version (a semver bump or an explicit one) and the dist-tag rule | `release-plan.ts`, `release-chain.ts`, `package-release.yml`, step "Plan the run" |
 | `release/` | `release-wait.ts` | Waits until a published tarball answers 200, and for a run to complete (a run that waits is waited for, and reported) | `release-chain.ts` (the tarball), `release.ts` (the run) |
 | `release/` | `release-gates.ts` | The gates between build and publish: artifacts, links, pack, protocols, registry, and healing the `next` tag | `release-chain.ts`, `package-release.yml`, `preset/preset-smoke.ts` (imports it) |
