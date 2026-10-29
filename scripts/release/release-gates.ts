@@ -4,6 +4,7 @@
  *
  *   bun scripts/release/release-gates.ts artifacts <package-dir>        every file the `exports` map names exists
  *   bun scripts/release/release-gates.ts links <package-dir>            every ARDOR sibling resolves to the workspace
+ *   bun scripts/release/release-gates.ts single-copy [<root>]           every @venizia/* package resolves to one version
  *   bun scripts/release/release-gates.ts pack <package-dir> <out.json>  packs, writes the manifest npm will receive
  *   bun scripts/release/release-gates.ts protocols <manifest.json>      no catalog: or workspace: survives packing
  *   bun scripts/release/release-gates.ts registry <manifest.json> [--chain-released a,b]
@@ -334,6 +335,88 @@ export const workspaceStrays = (opts: {
   return strays;
 };
 
+/**
+ * One `@venizia/*` package must resolve to one version in the installed graph. Two copies of IGNIS
+ * inversion are two nominal sets of types: the install succeeds, and the lie surfaces as an
+ * `Application` that is "not assignable to IContainer". A peer range without a prerelease part
+ * (`^0.4.1`) never matches `0.4.5-0`, so a workspace that does not declare the package itself gets
+ * the stable copy next to the prerelease the rest of the tree uses.
+ *
+ * Walks what resolves, not what sits in the store (`node_modules/.bun` keeps every version ever
+ * installed): the packages the root and each workspace member see, then the siblings each of those
+ * sees. Returns one line per package with more than one version, naming who resolves each.
+ */
+export const duplicateCopies = (opts: { root: string }): string[] => {
+  const seen = new Map<string, Map<string, Set<string>>>();
+  const visited = new Set<string>();
+  const queue: { directory: string; via: string; member: boolean }[] = [
+    { directory: opts.root, via: '.', member: true },
+    ...[...new Bun.Glob('packages/*/package.json').scanSync({ cwd: opts.root })].map((file) => ({
+      directory: join(opts.root, file, '..'),
+      via: file.replace(/\/package\.json$/, ''),
+      member: true,
+    })),
+  ];
+
+  while (queue.length > 0) {
+    const { directory, via, member } = queue.shift() ?? { directory: '', via: '', member: false };
+    const scope = join(directory, 'node_modules', '@venizia');
+
+    if (!existsSync(scope)) {
+      continue;
+    }
+
+    for (const entry of readdirSync(scope)) {
+      const real = realpathSync(join(scope, entry));
+      const manifestPath = join(real, 'package.json');
+
+      if (!existsSync(manifestPath)) {
+        continue;
+      }
+
+      const { name, version } = readJson({ path: manifestPath });
+
+      if (typeof name !== 'string' || typeof version !== 'string') {
+        continue;
+      }
+
+      const versions = seen.get(name) ?? new Map<string, Set<string>>();
+      const viaSet = versions.get(version) ?? new Set<string>();
+
+      // A workspace member is what a person fixes; a store package is only named when no member resolves it.
+      if (member) {
+        viaSet.add(via);
+      }
+
+      versions.set(version, viaSet);
+      seen.set(name, versions);
+
+      // A store entry sits at <store>/node_modules/@venizia/<name>: the folder it came from is the
+      // scope its own dependencies are linked in. A workspace member is a root of its own.
+      const home = join(real, '..');
+
+      if (real.includes(`${sep}node_modules${sep}`) && !visited.has(home)) {
+        visited.add(home);
+        queue.push({ directory: join(home, '..', '..'), via: `${name}@${version}`, member: false });
+      }
+    }
+  }
+
+  return [...seen.entries()]
+    .filter(([, versions]) => versions.size > 1)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(
+      ([name, versions]) =>
+        `${name} - ${[...versions.entries()]
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(
+            ([version, via]) =>
+              `${version} (${via.size > 0 ? [...via].sort().join(', ') : 'through another package'})`,
+          )
+          .join(' | ')}`,
+    );
+};
+
 export const readWorkspaceVersions = (opts: { root: string }): Map<string, string> => {
   const versions = new Map<string, string>();
 
@@ -457,6 +540,23 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ every ARDOR sibling links to the workspace');
+    return;
+  }
+
+  if (command === 'single-copy') {
+    const copies = duplicateCopies({ root: first ?? root });
+
+    if (copies.length > 0) {
+      fail({
+        lines: [
+          'ERROR: a @venizia/* package resolves to more than one version:',
+          ...copies.map((copy) => `  ${copy}`),
+          'Declare the package as a catalog: devDependency in the workspace member that resolves the older copy.',
+        ],
+      });
+    }
+
+    console.log('    ✓ every @venizia/* package resolves to one version');
     return;
   }
 

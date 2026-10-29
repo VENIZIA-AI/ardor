@@ -49,7 +49,7 @@ too. Every job checks out the dispatched commit (`github.sha`), never a branch n
 | Job | Runs | What it does |
 |---|---|---|
 | `plan` | unless `heal_only`; `contents: read`, full history | `release-plan.ts plan --merge-trial`: the version, the kind, the npm tag, the IGNIS line (`catalog_tag`); refuses a pairing that may not run (see [The plan](#the-plan-kind-branch-promotion)); for a stable also tries the merge back and outputs `develop_sha`. |
-| `test` | after `plan` | The gates that need no registry credential: build, lint, package tests, repository script tests, purity, catalog, and the preset smoke against the pinned VULCAN when the run holds `ardor`, each looped over the packages of the run. It refreshes the catalog with the plan's `catalog_tag`. It holds no secret and cannot write. |
+| `test` | after `plan` | The gates that need no registry credential: the workspace links and one copy of every `@venizia/*` package (`release-gates.ts links` and `single-copy`, right after the install: a workspace member that does not declare an IGNIS package itself gets the stable copy for its peer range, which excludes a prerelease, and the build then fails on two sets of inversion types), build, lint, package tests, repository script tests, purity, catalog, and the preset smoke against the pinned VULCAN when the run holds `ardor`, each looped over the packages of the run. It refreshes the catalog with the plan's `catalog_tag`. It holds no secret and cannot write. |
 | `approve` | only for a stable; after `plan` and `test` | The one human stop: environment `release-approval` (reviewer: the owner; branch: `main` only), `permissions: {}`, one `echo`. Its name carries the version. A prerelease skips it and nobody is asked. |
 | `publish` | after `plan`, `test` and `approve` (skipped only for a prerelease) | Environment `npm-release` (no reviewers), `contents: write`, `id-token: write`. For a stable its first step stops the run when `main` is not at the dispatched commit or `develop` is not at the `develop_sha` the plan tested. It takes the plan's version and kind, never works them out again, and passes them to the chain with `--target-branch "$GITHUB_REF_NAME"`; the chain stops when they disagree. The `if` is written out so that a skipped `approve` on a stable stops the job. |
 | `heal-next` | only for `heal_only`, on `develop` or `main` | Moves a stale `next` tag; publishes nothing. Same environment and `id-token` as `publish`. |
@@ -132,6 +132,13 @@ bun run --filter "@venizia/*" force-update highest
   sibling's own version: `@venizia/ardor` X needs `ardor-*` X exactly. A caret here let a fresh install
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
+- Every workspace member declares the IGNIS packages it builds on as `catalog:` devDependencies, next to the
+  peer range. The peer range (`^0.4.1`) has no prerelease part, so it never matches `0.4.5-0`: a member
+  that lists the package only as a peer gets the stable copy from bun, beside the prerelease the other
+  members use, and two copies of inversion are two sets of types (run 40903260601, issue #434). The Test
+  job runs `release-gates.ts single-copy` right after the install; it walks what the root and each
+  member resolve and names the member that holds the older copy. It takes any folder, so a consumer of
+  ARDOR runs the same command in its own checkout: `bun scripts/release/release-gates.ts single-copy`.
 
 ## Gates, bump, publish, record
 
@@ -144,7 +151,7 @@ publish, and only then any git write. The `publish` job does its own setup (chec
 
 **Phase A, before the first publish, for every package of the run** (see [Build system](/process/build-system.md) and [Makefile targets](/reference/makefile-targets.md)):
 
-1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball.
+1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball. (The Test job also runs `single-copy`, once, before the build: see the force-update section.)
 2. `make <package>` - the build.
 3. `release-gates.ts artifacts` - every file the package's `exports` map names exists (derived from the map, never a hand-written list).
 4. `release-gates.ts pack` - the tarball is packed once, as a check before any mutation (the tarball that is published is packed again in phase B).

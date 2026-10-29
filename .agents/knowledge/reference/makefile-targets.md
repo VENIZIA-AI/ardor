@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**83 targets.**
+**84 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -30,11 +30,12 @@ generated:
 | `make clean-install-ardor` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-kernel` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make copies-check` | - | Gate: every @venizia/* package resolves to one version (no stable IGNIS copy next to a prerelease). |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
-| `make gates` | - | The Test job of the release workflow, locally: links, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
+| `make gates` | - | The Test job of the release workflow, locally: links, copies, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |

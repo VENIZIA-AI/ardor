@@ -20,11 +20,12 @@ packages: []
 - **Merge back.** A stable pushes its release commits and tags to `main`. The chain then merges `main` into `develop` in a clean worktree. A conflict on the `version` field of a `package.json` takes the greater version, `bun.lock` is regenerated, and any other conflict stops the run, before the approval when the plan can see it. If the merge back stops after the last tag, the report reads "Report - published, merge back not done" and gives the repair; dispatching the same version again runs only the merge back.
 - **`highest` only goes up.** A stable `0.4.9` published after `0.4.10-0` leaves the `highest` tag where it is.
 - **`make gates`** runs the checks of the test job locally, in the same order; a test fails when the two lists differ.
+- **One copy of every `@venizia/*` package.** The test job runs `release-gates.ts single-copy` after the install and fails, naming the workspace package, when one package resolves to two versions. `packages/ardor` now declares the IGNIS packages as `catalog:` devDependencies like its siblings: the first prerelease run stopped at the build because it got the stable IGNIS copy for its `^0.4.1` peer, beside the prerelease (issue #434).
 - **VULCAN** is pinned at 0.4.7.
 
 ## Who is affected
 
-- **An app or a package.** Nothing.
+- **An app or a package.** Declare every IGNIS package yourself (see [Setup](../guides/get-started/setup)): a peer range never matches a prerelease, so a package that lists none gets the stable copy next to your prerelease.
 - **Whoever runs a release.** `make release-plan` prints the plan and the ref. `make release ARGS="--mode prerelease --yes"` is a prerelease from `develop`. `--mode patch|minor|major`, or an explicit version without a prerelease part, is a stable from `main` and needs the approval in the run on GitHub. Merge nothing into `main` or `develop` while a stable run is open.
 - **A contributor.** The workflow guards in `scripts/release/__tests__/release-gates.test.ts` follow the new job graph, and `scripts/release/merge-back.ts` and `sync-pr.ts` are VULCAN's, copied.
 
