@@ -92,13 +92,13 @@ describe('waitForTarball', () => {
   });
 });
 
-// release.ts runs `main()` on import, so the wiring is checked in its source: the chain must wait
-// for the tarball after the registry lists the version and before it moves to the next package.
+// The wiring of release.ts is checked in its source: the chain must wait for the tarball after the
+// registry lists the version and before it moves to the next package.
 describe('release.ts', () => {
   test('waits for the tarball between the publish check and the next package', async () => {
     const source = await Bun.file(`${import.meta.dir}/../release.ts`).text();
 
-    const published = source.indexOf('await assertPublished({ state })');
+    const published = source.indexOf('await ReleaseVerify.assertPublished({');
     const tarball = source.indexOf('await waitForTarball({');
     const pulled = source.indexOf("command: ['git', 'pull', '--ff-only'");
 
