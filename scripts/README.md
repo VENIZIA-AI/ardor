@@ -7,7 +7,7 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | Group | Script | What it does | Called by |
 |---|---|---|---|
 | `release/` | `release.ts` | Plans one release run, sends the one dispatch of the NPM Release workflow, then checks the registry and pulls | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
-| `release/` | `release-plan.ts` | What one run releases: the packages in dependency order and the one version (`resolve`), and the dispatch | `release.ts`, `package-release.yml`, step "Plan the run" |
+| `release/` | `release-plan.ts` | What one run releases: the packages in dependency order and the one version (`resolve`), its kind, branch and promotion (`plan`), and the dispatch | `release.ts`, `package-release.yml`, step "Plan the run" |
 | `release/` | `release-chain.ts` | Releases the packages of a run in order: the checks, then per package the clean-install, bump, pack, publish, wait, commit, push and tag; `report` prints the stop report from its state file | `package-release.yml`, steps "Release the packages" and "Report the run" |
 | `release/` | `release-verify.ts` | After a run: the registry holds a new version of every package, then `develop` is pulled | `release.ts` |
 | `release/` | `release-scope.ts` | Decides which files make a package need a release (a run now releases the four packages, so `release.ts` no longer reads it) | its test only |

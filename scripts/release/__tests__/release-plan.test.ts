@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { makeScratch } from '../../scratch';
-import { ReleasePlan } from '../release-plan';
+import { ReleasePlan, type IPlannedPackage } from '../release-plan';
 
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 
@@ -289,5 +289,281 @@ describe('ReleasePlan.resolveFromManifests', () => {
         argv: ['--packages', 'react,kernel', '--mode', 'patch'],
       }),
     ).toThrow('not in dependency order');
+  });
+});
+
+const MAIN = 'refs/heads/main';
+const DEVELOP = 'refs/heads/develop';
+const ALL = ['kernel', 'react', 'admin', 'ardor'];
+
+describe('ReleasePlan.kindOf and checkRef', () => {
+  test('a version with a prerelease part is a prerelease, anything else a stable', () => {
+    expect(ReleasePlan.kindOf({ version: '0.4.9-0' })).toBe('prerelease');
+    expect(ReleasePlan.kindOf({ version: '0.4.9' })).toBe('stable');
+  });
+
+  test.each([
+    [DEVELOP, 'prerelease', []],
+    [MAIN, 'stable', []],
+    [MAIN, 'prerelease', ['a prerelease runs from develop, not main']],
+    [DEVELOP, 'stable', ['a stable release runs from main, not develop']],
+  ] as const)('%s with a %s version: %j', (ref, kind, expected) => {
+    expect(ReleasePlan.checkRef({ ref, kind })).toEqual([...expected]);
+  });
+
+  test('another ref is refused', () => {
+    expect(ReleasePlan.checkRef({ ref: 'refs/heads/feature/x', kind: 'prerelease' })[0]).toContain(
+      'not refs/heads/feature/x',
+    );
+  });
+});
+
+describe('ReleasePlan.plan (C2.2-a, C3.1a, C3.1b, C3.8)', () => {
+  const planOf = (opts: { target: string; versions: string | string[]; ref: string }) => {
+    const packages: IPlannedPackage[] = ALL.map((name, index) => ({
+      name,
+      localVersion: Array.isArray(opts.versions) ? (opts.versions[index] ?? '') : opts.versions,
+    }));
+
+    return ReleasePlan.plan({ target: opts.target, packages, ref: opts.ref });
+  };
+
+  test.each(['patch', 'minor', 'major'])(
+    'the stable bump %s over a prerelease on main is accepted, and the four are planned',
+    (mode) => {
+      const result = planOf({ target: mode, versions: '0.4.9-1', ref: MAIN });
+
+      expect(result.problems).toEqual([]);
+      expect(result.plan?.kind).toBe('stable');
+      expect(result.plan?.npmTag).toBe('latest');
+      expect(result.plan?.catalogTag).toBe('latest');
+      expect(result.plan?.packages).toEqual(ALL);
+    },
+  );
+
+  test('the resolved version is the promotion: 0.4.9-1 gives 0.4.9, 0.5.0, 1.0.0; 0.4.0-3 and minor give 0.4.0', () => {
+    expect(planOf({ target: 'patch', versions: '0.4.9-1', ref: MAIN }).plan?.version).toBe('0.4.9');
+    expect(planOf({ target: 'minor', versions: '0.4.9-1', ref: MAIN }).plan?.version).toBe('0.5.0');
+    expect(planOf({ target: 'major', versions: '0.4.9-1', ref: MAIN }).plan?.version).toBe('1.0.0');
+    expect(planOf({ target: 'minor', versions: '0.4.0-3', ref: MAIN }).plan?.version).toBe('0.4.0');
+  });
+
+  test.each(['prerelease', 'prepatch', 'preminor', 'premajor'])(
+    'the prerelease mode %s runs on develop and never on main',
+    (mode) => {
+      const onDevelop = planOf({ target: mode, versions: '0.4.9-1', ref: DEVELOP });
+      const onMain = planOf({ target: mode, versions: '0.4.9-1', ref: MAIN });
+
+      expect(onDevelop.problems).toEqual([]);
+      expect(onDevelop.plan?.npmTag).toBe('next');
+      expect(onDevelop.plan?.catalogTag).toBe('highest');
+      expect(onMain.problems).toEqual(['a prerelease runs from develop, not main']);
+    },
+  );
+
+  test.each(['patch', 'minor', 'major'])('the stable bump %s on develop is refused', (mode) => {
+    expect(planOf({ target: mode, versions: '0.4.9-1', ref: DEVELOP }).problems).toEqual([
+      'a stable release runs from main, not develop',
+    ]);
+  });
+
+  test('a stable bump over a stable on main is refused: nothing to promote', () => {
+    const { problems } = planOf({ target: 'patch', versions: '0.4.9', ref: MAIN });
+
+    expect(problems[0]).toContain('nothing to promote');
+    expect(problems[0]).toContain('0.4.9');
+  });
+
+  test('an explicit stable is accepted over the prerelease it promotes and refused over any other', () => {
+    expect(planOf({ target: '0.4.9', versions: '0.4.9-1', ref: MAIN }).problems).toEqual([]);
+    expect(planOf({ target: '0.5.0', versions: '0.4.9-1', ref: MAIN }).problems).toEqual([]);
+
+    const refused = planOf({ target: '0.4.10', versions: '0.4.9-1', ref: MAIN });
+    expect(refused.problems[0]).toContain('is not the promotion of a prerelease');
+    expect(refused.problems[0]).toContain('kernel is at 0.4.9-1');
+  });
+
+  test('a run that stopped half way is accepted by its version: the packages below it are planned', () => {
+    const result = planOf({
+      target: '0.4.9',
+      versions: ['0.4.9', '0.4.9', '0.4.9-1', '0.4.9-1'],
+      ref: MAIN,
+    });
+
+    expect(result.problems).toEqual([]);
+    expect(result.plan?.packages).toEqual(['admin', 'ardor']);
+    expect(result.plan?.skipped).toEqual(['kernel', 'react']);
+  });
+
+  test('every package already at the version gives an empty plan that is still accepted', () => {
+    const result = planOf({ target: '0.4.9', versions: '0.4.9', ref: MAIN });
+
+    expect(result.problems).toEqual([]);
+    expect(result.plan?.packages).toEqual([]);
+    expect(result.plan?.skipped).toEqual(ALL);
+  });
+
+  test('packages at different versions under a mode are refused', () => {
+    const { plan, problems } = planOf({
+      target: 'patch',
+      versions: ['0.4.9-1', '0.4.9-1', '0.4.9-2', '0.4.9-1'],
+      ref: MAIN,
+    });
+
+    expect(plan).toBeUndefined();
+    expect(problems[0]).toContain('different versions');
+  });
+
+  test('an explicit stable version over a stable below it is refused: it was never a prerelease', () => {
+    expect(planOf({ target: '0.4.9', versions: '0.4.8', ref: MAIN }).problems[0]).toContain(
+      'is not the promotion of a prerelease',
+    );
+  });
+
+  test('an issue that is not a number is refused', () => {
+    const packages = ALL.map((name) => ({ name, localVersion: '0.4.9-1' }));
+
+    expect(
+      ReleasePlan.plan({ target: 'prerelease', packages, ref: DEVELOP, issue: '--x' }).problems,
+    ).toEqual(["the issue must be a number, not '--x'"]);
+  });
+});
+
+describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
+  const message =
+    'ardor v0.4.9-1\nbuilt on: @venizia/ignis-kernel=0.4.6-1, @venizia/ignis-boot=0.4.6-1';
+  const latest = (versions: Record<string, string | undefined>) => async (opts: { name: string }) =>
+    versions[opts.name];
+
+  test('the prerelease tag is the last planned package that is still a prerelease', () => {
+    expect(
+      ReleasePlan.prereleaseTagOf({
+        packages: [
+          { name: 'admin', localVersion: '0.4.9-1' },
+          { name: 'ardor', localVersion: '0.4.9-1' },
+        ],
+      }),
+    ).toBe('ardor-v0.4.9-1');
+    expect(
+      ReleasePlan.prereleaseTagOf({ packages: [{ name: 'ardor', localVersion: '0.4.9' }] }),
+    ).toBeUndefined();
+  });
+
+  test('the built on line is parsed into name and version pairs', () => {
+    expect(ReleasePlan.parseBuiltOn({ message })).toEqual([
+      { name: '@venizia/ignis-kernel', version: '0.4.6-1' },
+      { name: '@venizia/ignis-boot', version: '0.4.6-1' },
+    ]);
+    expect(ReleasePlan.parseBuiltOn({ message: 'ardor v0.4.9-1' })).toEqual([]);
+  });
+
+  test('it passes when every latest is at least what the prerelease was built on', async () => {
+    expect(
+      await ReleasePlan.checkBuiltOn({
+        tag: 'ardor-v0.4.9-1',
+        message,
+        latestOf: latest({ '@venizia/ignis-kernel': '0.4.6', '@venizia/ignis-boot': '0.4.7' }),
+      }),
+    ).toEqual([]);
+  });
+
+  test('it names a package whose latest is below', async () => {
+    const problems = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.9-1',
+      message,
+      latestOf: latest({ '@venizia/ignis-kernel': '0.4.5', '@venizia/ignis-boot': '0.4.6' }),
+    });
+
+    expect(problems).toEqual([
+      'IGNIS stable is not out: @venizia/ignis-kernel latest 0.4.5, the prerelease was built on 0.4.6-1',
+    ]);
+  });
+
+  test('it names a package with no latest', async () => {
+    const problems = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.9-1',
+      message,
+      latestOf: latest({ '@venizia/ignis-kernel': '0.4.6' }),
+    });
+
+    expect(problems).toEqual([
+      'IGNIS stable is not out: @venizia/ignis-boot has no latest, the prerelease was built on 0.4.6-1',
+    ]);
+  });
+
+  test('a tag with no built on line, or no message, is refused', async () => {
+    for (const noLine of ['ardor v0.4.9-1', undefined]) {
+      const problems = await ReleasePlan.checkBuiltOn({
+        tag: 'ardor-v0.4.9-1',
+        message: noLine,
+        latestOf: latest({}),
+      });
+
+      expect(problems[0]).toContain('has no');
+      expect(problems[0]).toContain('built on');
+    }
+  });
+});
+
+describe('release-plan.ts plan', () => {
+  const scratches: string[] = [];
+  const dispatch = (opts: { versions: string; argv: string[] }) => {
+    const root = makeScratch({ prefix: 'release-plan-cli-' });
+    scratches.push(root);
+    for (const name of ALL) {
+      mkdirSync(join(root, 'packages', name), { recursive: true });
+      writeFileSync(
+        join(root, 'packages', name, 'package.json'),
+        JSON.stringify({ version: opts.versions }),
+      );
+    }
+    const output = join(root, 'output.txt');
+    const proc = Bun.spawnSync(
+      [
+        'bun',
+        join(ROOT, 'scripts/release/release-plan.ts'),
+        'plan',
+        '--packages',
+        ALL.join(','),
+        ...opts.argv,
+      ],
+      { cwd: root, env: { ...process.env, GITHUB_OUTPUT: output } },
+    );
+
+    return {
+      code: proc.exitCode,
+      stdout: proc.stdout.toString(),
+      stderr: proc.stderr.toString(),
+      outputPath: output,
+    };
+  };
+
+  afterAll(() => {
+    for (const root of scratches) {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('a prerelease on develop prints the plan and writes the job outputs', async () => {
+    const result = dispatch({
+      versions: '0.4.9-1',
+      argv: ['--mode', 'prerelease', '--ref', DEVELOP],
+    });
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain(
+      'plan: 0.4.9-2 (prerelease) from prerelease on refs/heads/develop',
+    );
+    expect(await Bun.file(result.outputPath).text()).toBe(
+      'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\n',
+    );
+  });
+
+  test('a stable on develop exits 1 with the reason and writes no output', async () => {
+    const result = dispatch({ versions: '0.4.9-1', argv: ['--mode', 'patch', '--ref', DEVELOP] });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('ERROR | a stable release runs from main, not develop');
+    expect(await Bun.file(result.outputPath).exists()).toBe(false);
   });
 });
