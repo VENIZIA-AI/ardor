@@ -272,3 +272,45 @@ describe('buildPreset, a library preset', () => {
     expect(() => build(root)).toThrow(/nothing/);
   });
 });
+
+// run 40906705541: the Test job builds the preset on the IGNIS prerelease, and `vulcan add` refused the catalog
+// `vulcan init` had written, because ^0.4.1 does not meet 0.4.6-0.
+describe('buildPreset, a preset built on a prerelease catalog', () => {
+  const peers = { '@venizia/ignis-kernel': 'peer:', react: '^19.0.0' };
+  const peersOf = (
+    catalog: Record<string, string>,
+    template: Record<string, string> = peers,
+  ): Record<string, string> | undefined => {
+    const root = repository({ template: { peers: template }, catalog });
+    buildPreset({
+      root,
+      packageDirectory: 'packages/umbrella',
+      presetsDirectory: 'presets',
+      outDirectory: join(root, 'packages/umbrella/dist/presets'),
+    });
+
+    return JSON.parse(
+      readFileSync(join(root, 'packages/umbrella/dist/presets/app/preset.json'), 'utf8'),
+    ).peers;
+  };
+
+  test('the peer range also accepts the exact prerelease the catalog pins', () => {
+    expect(peersOf({ '@venizia/ignis-kernel': '^0.2.3-1', react: '^19.2.7' })).toEqual({
+      '@venizia/ignis-kernel': '^0.2.2 || 0.2.3-1',
+      react: '^19.0.0',
+    });
+  });
+
+  test('a stable catalog leaves every range as it is', () => {
+    expect(peersOf({ '@venizia/ignis-kernel': '^0.2.3', react: '^19.2.7' })).toEqual({
+      '@venizia/ignis-kernel': '^0.2.2',
+      react: '^19.0.0',
+    });
+  });
+
+  test('a prerelease the range already meets is not widened', () => {
+    expect(peersOf({ react: '^19.3.0-rc.1' }, { react: '>=19.3.0-rc.0' })).toEqual({
+      react: '>=19.3.0-rc.0',
+    });
+  });
+});

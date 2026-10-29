@@ -21,6 +21,7 @@ packages: []
 - **`highest` only goes up.** A stable `0.4.9` published after `0.4.10-0` leaves the `highest` tag where it is.
 - **`make gates`** runs the checks of the test job locally, in the same order; a test fails when the two lists differ.
 - **One copy of every `@venizia/*` package.** The test job runs `release-gates.ts single-copy` after the install and fails, naming the workspace package, when one package resolves to two versions. `packages/ardor` now declares the IGNIS packages as `catalog:` devDependencies like its siblings: the first prerelease run stopped at the build because it got the stable IGNIS copy for its `^0.4.1` peer, beside the prerelease (issue #434).
+- **A preset built on a prerelease accepts it.** The Test job builds the preset after refreshing the catalog to the IGNIS prerelease, and `vulcan add` refused the catalog `vulcan init` wrote from it (`^0.4.1` does not meet `0.4.6-0`). The `peers` of the preset now read `<range> || <the exact prerelease>` for such an entry; a stable build and the published `peerDependencies` are unchanged.
 - **VULCAN** is pinned at 0.4.7.
 
 ## Who is affected
