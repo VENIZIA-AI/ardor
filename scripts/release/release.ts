@@ -22,6 +22,7 @@
  */
 
 import { isTrustedPublishWorkflow } from './release-gates';
+import { ReleasePlan } from './release-plan';
 import { countChangedSinceRelease, withDependents } from './release-scope';
 import {
   assertAbove,
@@ -30,16 +31,11 @@ import {
   readReleaseArgs,
   type TReleaseTarget,
 } from './release-version';
+import { ReleaseVerify } from './release-verify';
 import { waitForCompletion, waitForTarball } from './release-wait';
 
 const WORKFLOW = 'package-release.yml';
 const BRANCH = 'develop';
-
-/**
- * Dependency order, not alphabetical. A package must publish after everything it depends on, or the
- * release's own registry-existence gate fails on a version that is not out yet.
- */
-const RELEASE_ORDER = ['kernel', 'react', 'admin', 'ardor'] as const;
 
 interface IPackageState {
   name: string;
@@ -234,30 +230,6 @@ const waitForRunCompletion = (opts: { runId: string }): Promise<string> =>
     },
   });
 
-/**
- * A green workflow is not proof of a publish. Verified against the registry, because the release
- * publishes BEFORE it commits: a run can put a version on npm and still fail afterwards, and the
- * reverse - a green run whose publish silently did nothing - is exactly what this catches.
- */
-const assertPublished = async (opts: { state: IPackageState }): Promise<string> => {
-  // A version absent before dispatch, not a dist-tag: a stable release goes to `latest` and leaves
-  // `next` where it was. Four minutes, because the registry can lag the publish.
-  for (let attempt = 0; attempt < 48; attempt += 1) {
-    const versions = await listPublishedVersions({ packageName: opts.state.packageName });
-    const fresh = versions.find((version) => !opts.state.publishedVersions.includes(version));
-
-    if (fresh) {
-      return fresh;
-    }
-
-    await sleep(5_000);
-  }
-
-  throw new Error(
-    `${opts.state.packageName} shows no new version on the registry after four minutes. Check \`npm view ${opts.state.packageName} versions\` before assuming it failed - the registry may simply be lagging.`,
-  );
-};
-
 const releasePackage = async (opts: {
   state: IPackageState;
   target: TReleaseTarget;
@@ -306,7 +278,10 @@ const releasePackage = async (opts: {
     );
   }
 
-  const published = await assertPublished({ state });
+  const published = await ReleaseVerify.assertPublished({
+    state,
+    listVersions: listPublishedVersions,
+  });
   console.log(`  published ${state.packageName}@${published} - waiting for its tarball...`);
 
   // The next package installs this one. Its packument is listed before its tarball answers.
@@ -324,12 +299,14 @@ const main = async (): Promise<void> => {
   const isConfirmed = args.includes('--yes');
   const { target, positional: requested, issue } = readReleaseArgs({ argv: args });
   const candidates =
-    requested.length > 0 ? RELEASE_ORDER.filter((n) => requested.includes(n)) : RELEASE_ORDER;
+    requested.length > 0
+      ? ReleasePlan.ORDER.filter((n) => requested.includes(n))
+      : ReleasePlan.ORDER;
 
-  const unknown = requested.filter((name) => !RELEASE_ORDER.includes(name as never));
+  const unknown = requested.filter((name) => !ReleasePlan.ORDER.includes(name as never));
   if (unknown.length > 0) {
     throw new Error(
-      `Unknown package(s): ${unknown.join(', ')}. Known: ${RELEASE_ORDER.join(', ')}`,
+      `Unknown package(s): ${unknown.join(', ')}. Known: ${ReleasePlan.ORDER.join(', ')}`,
     );
   }
 
@@ -389,6 +366,9 @@ const main = async (): Promise<void> => {
   console.log(`\n✓ Released ${plan.length} package(s).`);
 };
 
-await main();
+// Only a run of the file releases: an import (a test) reaches the helpers without side effects.
+if (import.meta.main) {
+  await main();
+}
 
 export {};
