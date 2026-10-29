@@ -238,9 +238,10 @@ describe('package-release.yml and release-chain.ts use the same module', () => {
     );
   });
 
-  test('it resolves the version through release-plan.ts and the dist-tag through release-version.ts', () => {
-    expect(workflow).toContain('scripts/release/release-plan.ts resolve');
-    expect(workflow).toContain('scripts/release/release-version.ts tag');
+  test("the plan job resolves the version and the dist-tag through release-plan.ts; the chain takes the plan's version", () => {
+    expect(workflow).toContain('scripts/release/release-plan.ts plan');
+    expect(workflow).toContain('--version "$PLAN_VERSION"');
+    expect(workflow).not.toContain('scripts/release/release-plan.ts resolve');
   });
 
   test('the chain bumps to the resolved version, not to build_mode', () => {

@@ -11,17 +11,17 @@ on:
         default: 'kernel,react,admin,ardor'
       build_mode:
         type: choice
-        description: 'Version bump type (patch | minor | major | pre*)'
+        description: 'Version bump type: pre* from develop (a prerelease, no approval), patch | minor | major from main (a stable, one approval)'
         options:
-          - patch
-          - minor
-          - major
+          - prerelease
           - prepatch
           - preminor
           - premajor
-          - prerelease
+          - patch
+          - minor
+          - major
         required: true
-        default: 'patch'
+        default: 'prerelease'
       version:
         type: string
         description: 'Explicit version (x.y.z or x.y.z-pre); when set it replaces the bump type'
@@ -39,11 +39,19 @@ on:
         default: false
 
 # The workflow can write nothing by default; the one job that pushes the release commits and the tags says so.
-# Every job runs only for the develop branch and checks out the commit that was dispatched, so the test
-# job, the release job and the run name all name the same commit. The release job needs the test job,
-# which has no secret: a failing test publishes nothing. There is no npm token anywhere: the release
-# publishes through npm trusted publishing, so the two jobs that talk to npm (release, heal-next) name the
-# environment npm-release and hold id-token: write, and the test job holds neither.
+# Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
+# name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
+# publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
+# id-token: write, and no other job holds either.
+#
+# Four jobs for a release. `plan` decides what this dispatch would release and refuses a ref and a version
+# that do not belong together (a prerelease runs from develop, a stable from main and only over a prerelease,
+# and on IGNIS stable) before anything is built; for a stable it also tries the merge of main back into develop,
+# so a merge that would stop stops before the approval. `test` runs the gates and has no secret. `approve` is the
+# one human stop and exists for a stable only: environment release-approval, whose reviewer is the owner.
+# `publish` is the only job with the publish identity; it runs after `approve` succeeded, or after `approve` was
+# skipped because the plan says prerelease. A prerelease commits its releases to develop. A stable commits them
+# to main and the chain then merges main back into develop; nothing waits for a second approval after the click.
 # scripts/release/__tests__/release-gates.test.ts fails when one of these guards is removed.
 permissions:
   contents: read
@@ -73,13 +81,56 @@ env:
   TARBALLS: ${{ github.workspace }}/.agents/local/tmp/release-tarballs
 
 jobs:
-  # Everything that needs no secret, on the dispatched commit: the release job needs it. Each gate loops
-  # over the packages of the run. The clean-install gate is not here: it installs the siblings a package
+  # What this dispatch would release, from the inputs and the ref, before anything is built: the one version,
+  # its kind (a prerelease needs no approval, a stable needs one), the dist-tag and the IGNIS line to build
+  # on. It refuses a ref and a version that do not belong together. The logic is scripts/release/release-plan.ts,
+  # which has its own tests.
+  plan:
+    name: Plan
+    if: ${{ inputs.heal_only != true }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      kind: ${{ steps.plan.outputs.kind }}
+      npm_tag: ${{ steps.plan.outputs.npm_tag }}
+      catalog_tag: ${{ steps.plan.outputs.catalog_tag }}
+      # The head of develop the merge trial read (empty for a prerelease): the publish job stops if develop moved.
+      develop_sha: ${{ steps.plan.outputs.develop_sha }}
+
+    steps:
+      # Full history: the merge trial of a stable needs the branches and their common ancestor, and the plan
+      # reads the tag of the prerelease it promotes.
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      # A list that is not in dependency order, packages at different versions under a bump type, a stable that
+      # is not the promotion of a prerelease, an IGNIS stable that is not out, a merge back that would stop:
+      # each fails here, with every reason, before any build and before anyone is asked to approve.
+      - name: Plan the run
+        id: plan
+        env:
+          RELEASE_ISSUE: ${{ inputs.issue }}
+        run: bun scripts/release/release-plan.ts plan --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE" --ref "$GITHUB_REF" --issue "$RELEASE_ISSUE" --merge-trial
+
+  # Everything that needs no secret, on the dispatched commit: the approve and publish jobs need it. Each gate
+  # loops over the packages of the run. The clean-install gate is not here: it installs the siblings a package
   # ships with, and before the bump those are the old versions. The chain runs it after the sibling is out.
   test:
     name: Test
-    if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only != true }}
+    needs: plan
     runs-on: ubuntu-26.04
+    env:
+      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}
 
     steps:
       # -------------------------------------------------------------------------
@@ -110,27 +161,16 @@ jobs:
       # -------------------------------------------------------------------------
       # PREPARE
       # -------------------------------------------------------------------------
-      # What this run releases AS, decided in one tested place (scripts/release/release-plan.ts): the explicit
-      # version when one is given, else the bump type. A list that is not in dependency order, packages at
-      # different versions under a bump type, or a package above the version fails here, before any build.
-      # A stable target publishes to latest, a prerelease to next.
-      - name: Plan the run
-        run: |
-          RELEASE_VERSION=$(bun scripts/release/release-plan.ts resolve --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE")
-          NPM_TAG=$(bun scripts/release/release-version.ts tag "$RELEASE_VERSION")
-          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-          echo ">>> packages: $PACKAGES -> $RELEASE_VERSION (npm tag: $NPM_TAG)"
-
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
       # `force-update` rewrites version ranges; an install that ran first has already resolved the
-      # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
-      # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
-      # per-package script refreshes any range the catalog does not own. Once per job, not per package:
-      # four refreshes could give four different catalogs inside one run.
+      # old ones. A prerelease tracks the HIGHEST published IGNIS line (prerelease included), a stable the IGNIS
+      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range, so it is refreshed
+      # first, then the per-package script refreshes any range the catalog does not own. Once per job, not per
+      # package: four refreshes could give four different catalogs inside one run.
       - name: Force update workspace
         run: |
-          bun scripts/build/refresh-catalog.ts highest
-          bun run --filter "@venizia/*" force-update highest
+          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
+          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install
@@ -191,13 +231,42 @@ jobs:
           VULCAN_CMD: bun x @venizia/vulcan@0.4.7
         run: make preset-smoke
 
-  release:
+  # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
+  # the gates, so the owner never approves a release that fails them, and its name carries the target version. The
+  # environment release-approval holds the reviewer and its ref rule (main only); its settings are GitHub's, not this
+  # file's, and this line is what makes the job subject to them. The job holds no permission and runs nothing but an
+  # echo: the approval is the click.
+  approve:
+    name: Approve ${{ needs.plan.outputs.version }}
+    needs: [plan, test]
+    if: ${{ needs.plan.outputs.kind == 'stable' }}
+    environment: release-approval
+    permissions: {}
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Approved
+        run: echo "approved - $PLAN_VERSION"
+        env:
+          PLAN_VERSION: ${{ needs.plan.outputs.version }}
+
+  publish:
     name: NPM Release
-    needs: test
-    if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only != true }}
-    # The environment is what the trusted publisher on npmjs.com names, and its ref rule lets only a run
-    # on develop or main enter. It has no reviewers: the owner's dispatch of this workflow is the approval.
+    needs: [plan, test, approve]
+    # A prerelease has no approval, so `approve` is skipped for it and publish still runs; a stable runs only after
+    # `approve` succeeded. A skipped `approve` on a stable stops it. A job whose `needs` was skipped is skipped
+    # unless its `if` says otherwise, so both cases are written out; a failed or cancelled dependency stops it too.
+    if: >-
+      ${{ !cancelled() && needs.plan.result == 'success' && needs.test.result == 'success'
+      && (needs.approve.result == 'success'
+      || (needs.approve.result == 'skipped' && needs.plan.outputs.kind == 'prerelease')) }}
+    # The environment is what the trusted publisher on npmjs.com names, and its ref rule lets only a run on develop
+    # or main enter. It has no reviewers: the owner's approval is the `approve` job's, and only a stable has one.
     environment: npm-release
+    env:
+      PLAN_VERSION: ${{ needs.plan.outputs.version }}
+      PLAN_KIND: ${{ needs.plan.outputs.kind }}
+      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}
     # The release pushes the release commits and the tags: it writes contents. `id-token` is what trusted
     # publishing signs with: npm exchanges the job's identity for a short-lived publish credential, so the
     # release holds no npm token at all. The test job has neither grant.
@@ -214,6 +283,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -232,6 +302,26 @@ jobs:
           git config user.name "venizia-ci"
           git config user.email "developer@venizia.ai"
 
+      # A stable is approved against what the plan saw: main where the dispatch left it, and the head of develop the
+      # merge trial read. Either moving means the approved merge is not the one that would run, so nothing is
+      # published; it is checked before the first mutation.
+      - name: Refuse a stable when a branch moved since the plan
+        if: ${{ needs.plan.outputs.kind == 'stable' }}
+        env:
+          PLAN_DEVELOP_SHA: ${{ needs.plan.outputs.develop_sha }}
+        run: |
+          git fetch --quiet origin main develop
+
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "ERROR: main moved since this run was dispatched ($GITHUB_SHA, now $(git rev-parse origin/main)) - nothing is published"
+            exit 1
+          fi
+
+          if [ "$(git rev-parse origin/develop)" != "$PLAN_DEVELOP_SHA" ]; then
+            echo "ERROR: develop moved since the plan tested the merge back ($PLAN_DEVELOP_SHA, now $(git rev-parse origin/develop)) - nothing is published; dispatch again"
+            exit 1
+          fi
+
       # Trusted publishing needs npm 11.5.1 or later to publish and 11.21.0 or later to move a dist-tag; the npm
       # that ships with this Node is older. An exact version, never `latest`, asserted.
       - name: Install the npm that publishes
@@ -242,17 +332,8 @@ jobs:
       # -------------------------------------------------------------------------
       # PREPARE
       # -------------------------------------------------------------------------
-      # What this run releases AS, decided in one tested place (scripts/release/release-plan.ts): the explicit
-      # version when one is given, else the bump type. A list that is not in dependency order, packages at
-      # different versions under a bump type, or a package above the version fails here, before any build.
-      # A stable target publishes to latest, a prerelease to next.
-      - name: Plan the run
-        run: |
-          RELEASE_VERSION=$(bun scripts/release/release-plan.ts resolve --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE")
-          NPM_TAG=$(bun scripts/release/release-version.ts tag "$RELEASE_VERSION")
-          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-          echo ">>> packages: $PACKAGES -> $RELEASE_VERSION (npm tag: $NPM_TAG)"
-
+      # The version, the kind and the IGNIS line were decided by the plan job and are not worked out again here:
+      # the chain gets the plan's version and kind and refuses a run that would publish another.
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
       # `force-update` rewrites version ranges; an install that ran first has already resolved the
       # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
@@ -261,8 +342,8 @@ jobs:
       # four refreshes could give four different catalogs inside one run.
       - name: Force update workspace
         run: |
-          bun scripts/build/refresh-catalog.ts highest
-          bun run --filter "@venizia/*" force-update highest
+          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
+          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install
@@ -274,12 +355,14 @@ jobs:
       # clean-install, bump, preset, pack, checksum, publish, wait until the tarball answers 200, dist-tags,
       # release commit, push, tag. The publish runs ahead of every git write of its package: a failed publish
       # leaves git untouched. The push is never rebased, and a failure is reported, never repaired by a
-      # force-push: npm cannot un-publish. The state of every package is written to a file after each step.
+      # force-push: npm cannot un-publish. A stable then merges main back into develop, in a worktree of its own
+      # and from a copy of this checkout's merge-back.ts. The state of every package is written to a file after
+      # each step.
       - name: Release the packages
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
         run: |
-          ARGS=(--packages "$PACKAGES" --version "$RELEASE_VERSION" --branch "release-${{ github.run_id }}" --tarballs "$TARBALLS" --tmp "$RUNNER_TEMP" --state "$RUNNER_TEMP/release-state.json")
+          ARGS=(--packages "$PACKAGES" --version "$PLAN_VERSION" --plan-version "$PLAN_VERSION" --plan-kind "$PLAN_KIND" --target-branch "$GITHUB_REF_NAME" --branch "release-${{ github.run_id }}" --tarballs "$TARBALLS" --tmp "$RUNNER_TEMP" --state "$RUNNER_TEMP/release-state.json")
           if [ -n "$RELEASE_ISSUE" ]; then
             ARGS+=(--issue "$RELEASE_ISSUE")
           fi
@@ -295,7 +378,7 @@ jobs:
   # ARDOR package without publishing anything (the same check a release runs after each publish).
   heal-next:
     name: Heal next tags
-    if: ${{ github.ref == 'refs/heads/develop' && inputs.heal_only == true }}
+    if: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && inputs.heal_only == true }}
     # It moves a dist-tag, so it is a trusted-publisher action like the release: the same environment and the
     # identity npm trades for a short-lived credential. It reads the repository and writes nothing to it.
     environment: npm-release
