@@ -9,8 +9,12 @@
  *   bun scripts/release/release-gates.ts registry <manifest.json> [--chain-released a,b]
  *                                                               every runtime dependency can be installed
  *   bun scripts/release/release-gates.ts heal-next [--published <name>@<version> --tag <tag>] [--dry-run]          `next` is never below `latest`, for every ARDOR package
+ *   bun scripts/release/release-gates.ts tag-highest --published <name>@<version> [--dry-run]
+ *                                                               `highest` moves only to a semver-greater version
+ *   bun scripts/release/release-gates.ts stable-deps <manifest.json | folder>
+ *                                                               no non-ARDOR @venizia/* range has a prerelease part
  */
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
 import { isReleaseVersion, NpmTags, type TNpmTag } from './release-version';
@@ -193,7 +197,17 @@ export interface IDistTags {
   name: string;
   latest?: string;
   next?: string;
+  highest?: string;
 }
+
+/** The blocks of a manifest or a preset that name packages and the ranges they ask for. */
+const RANGE_SECTIONS = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+  'peers',
+] as const;
 
 export interface IPublished {
   name: string;
@@ -357,8 +371,47 @@ export const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> 
   const body: unknown = await response.json();
   const tags = toStringRecord(body);
 
-  return { name: opts.name, latest: tags.latest, next: tags.next };
+  return { name: opts.name, latest: tags.latest, next: tags.next, highest: tags.highest };
 };
+
+/**
+ * `highest` is the newest version of a package whatever its dist-tag, and it only goes up: a stable
+ * `0.4.9` published after `0.4.10-0` must not pull it down. No `highest` yet means it is set.
+ */
+export const shouldMoveHighest = (opts: {
+  published: string;
+  current: string | undefined;
+}): boolean => opts.current === undefined || Bun.semver.order(opts.published, opts.current) > 0;
+
+/**
+ * A stable ships on IGNIS stable: every `@venizia/*` range that is not one of this repository's own
+ * (`@venizia/ardor*`) must be free of a prerelease part. Returns `name@range` for each that is not.
+ */
+export const prereleaseRanges = (opts: { manifest: Record<string, unknown> }): string[] =>
+  RANGE_SECTIONS.flatMap((section) =>
+    Object.entries(toStringRecord(opts.manifest[section])).filter(
+      ([name, range]) =>
+        name.startsWith('@venizia/') &&
+        !name.startsWith(SIBLING_PREFIX) &&
+        /\d+\.\d+\.\d+-/.test(range),
+    ),
+  ).map(([name, range]) => `${name}@${range}`);
+
+/**
+ * The files that name packages: the file itself, or every `preset.json` under a folder. A preset's
+ * `files/` folder holds templates (a `tsconfig.json` with comments), which are not manifests.
+ */
+const presetFilesUnder = (opts: { path: string }): string[] =>
+  readdirSync(opts.path, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory()
+      ? presetFilesUnder({ path: join(opts.path, entry.name) })
+      : entry.name === 'preset.json'
+        ? [join(opts.path, entry.name)]
+        : [],
+  );
+
+const manifestFilesOf = (opts: { path: string }): string[] =>
+  statSync(opts.path).isDirectory() ? presetFilesUnder({ path: opts.path }) : [opts.path];
 
 const fail = (opts: { lines: string[] }): never => {
   for (const line of opts.lines) {
@@ -479,6 +532,62 @@ const main = async (): Promise<void> => {
     return;
   }
 
+  if (command === 'stable-deps' && first !== undefined) {
+    const found = manifestFilesOf({ path: first }).flatMap((path) =>
+      prereleaseRanges({ manifest: readJson({ path }) }).map((entry) => `${path}: ${entry}`),
+    );
+
+    if (found.length > 0) {
+      fail({
+        lines: [
+          'ERROR: a stable must not ship an IGNIS prerelease:',
+          ...found.map((entry) => `  ${entry}`),
+          'Publish the IGNIS stable first, then dispatch again.',
+        ],
+      });
+    }
+
+    console.log('    ✓ no @venizia/* range asks for a prerelease');
+    return;
+  }
+
+  if (command === 'tag-highest') {
+    const args = Bun.argv.slice(3);
+    const value = readFlag({ argv: args, flag: '--published' }) ?? '';
+    const at = value.lastIndexOf('@');
+    const name = at > 0 ? value.slice(0, at) : '';
+    const version = at > 0 ? value.slice(at + 1) : '';
+
+    if (name === '' || !isReleaseVersion({ value: version })) {
+      throw new Error(
+        `[tag-highest] --published '${value}' is not <name>@<version> with a semver version`,
+      );
+    }
+
+    const { highest } = await fetchDistTags({ name });
+
+    if (!shouldMoveHighest({ published: version, current: highest })) {
+      console.log(`    ✓ highest stays at ${highest ?? '-'} (${version} is not above it)`);
+      return;
+    }
+
+    const moved = Bun.spawnSync(
+      args.includes('--dry-run')
+        ? ['echo', 'dry run:', 'npm', 'dist-tag', 'add', `${name}@${version}`, 'highest']
+        : ['npm', 'dist-tag', 'add', `${name}@${version}`, 'highest'],
+      { stdout: 'pipe', stderr: 'pipe' },
+    );
+
+    if (moved.exitCode !== 0) {
+      fail({
+        lines: [`ERROR: could not move highest of ${name} to ${version}`, moved.stderr.toString()],
+      });
+    }
+
+    console.log(`    ✓ highest of ${name} moved from ${highest ?? '-'} to ${version}`);
+    return;
+  }
+
   if (command === 'heal-next') {
     const args = Bun.argv.slice(3);
     const dryRun = args.includes('--dry-run');
@@ -522,7 +631,7 @@ const main = async (): Promise<void> => {
   }
 
   throw new Error(
-    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | heal-next [--dry-run]',
+    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
   );
 };
 

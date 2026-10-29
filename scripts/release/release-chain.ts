@@ -7,6 +7,7 @@
  *
  *   bun scripts/release/release-chain.ts --packages kernel,react,admin,ardor --version 0.4.6-0
  *       [--issue N] [--branch release-123] [--tarballs <dir>] [--tmp <dir>] [--state <file>] [--dry-run]
+ *       [--target-branch develop|main] [--plan-version <v> --plan-kind prerelease|stable]
  *   bun scripts/release/release-chain.ts report --state <file>
  *
  * `report` prints the report of a run from its state file and appends it to `$GITHUB_STEP_SUMMARY`; the
@@ -19,6 +20,14 @@
  * preset (ardor), the tarball that is published, its sha256, the publish, the wait for the tarball to
  * answer 200, the dist-tags, then the release commit, the push and the tag. After any stop git equals
  * the registry: a package has its commit and its tag, or it was not published.
+ *
+ * A stable (a version without a prerelease part) runs from `main`: the release commits are pushed to
+ * `main` and, after the last package is tagged, one run-level step merges `main` back into `develop` in
+ * a clean worktree of `origin/develop` with a copy of `merge-back.ts` from this checkout. The step is
+ * skipped when `develop` already holds the last release commit, and it runs alone when every package is
+ * already released (a re-dispatch of a run that stopped after its last tag). A prerelease runs from
+ * `develop` and has no merge back. The version, the kind and the branch must agree with each other and
+ * with the plan the workflow made (`--plan-version`, `--plan-kind`), or the run stops before it builds.
  *
  * The publish is the one step that cannot be undone, so it runs before every git write of its package,
  * and the "a publish was attempted" state is recorded BEFORE the call (a lost response still leaves npm
@@ -44,6 +53,8 @@ const STAGES: readonly TStage[] = [
   'tagged',
 ];
 
+export type TChainKind = 'prerelease' | 'stable';
+
 export type TStep =
   | { kind: 'run'; label: string; command: string[]; cwd?: string; fatal: boolean; stage?: TStage }
   | { kind: 'manifest'; label: string; tarball: string; out: string }
@@ -51,7 +62,8 @@ export type TStep =
   | { kind: 'verify-sha'; label: string; tarball: string }
   | { kind: 'publish'; label: string; command: string[]; cwd?: string }
   | { kind: 'wait'; label: string }
-  | { kind: 'push-tag'; label: string; tag: string };
+  | { kind: 'push-tag'; label: string; tag: string }
+  | { kind: 'merge-back'; label: string };
 
 export interface IChainPackage {
   /** The workspace folder name: kernel, react, admin, ardor. */
@@ -75,6 +87,14 @@ export interface IChainOptions {
   statePath?: string;
   /** The planned packages, as the registry gate may trust them (their workspace version). */
   chainReleased?: readonly string[];
+  /** What the version is: a stable runs from `main` and ends with the merge back. Derived from the version when absent. */
+  kind?: TChainKind;
+  /** The branch the release commits are pushed to. `main` for a stable, `develop` for a prerelease, when absent. */
+  targetBranch?: string;
+  /** What the plan job decided; the run stops before it builds when its own version or kind differs. */
+  plan?: { version: string; kind: TChainKind };
+  /** The `name=version` pairs the tag message records as `built on:` (read from the refreshed catalog). */
+  builtOn?: string;
 }
 
 export interface IChainPorts {
@@ -88,6 +108,8 @@ export interface IChainPorts {
   writeFile: (opts: { path: string; content: string }) => Promise<void>;
   sleep: (ms: number) => Promise<void>;
   log: (line: string) => void;
+  /** The IGNIS versions this build uses, as `name=version, ...`, read after the catalog refresh. */
+  readBuiltOn?: () => string;
 }
 
 export interface IPackageState {
@@ -111,6 +133,10 @@ export interface IChainState {
   version: string;
   states: IPackageState[];
   stopped?: IChainStop;
+  /** The branch the release commits go to, for a report that names it. */
+  targetBranch?: string;
+  /** A stable's merge back: `none` until it is done (or found already done). Absent for a prerelease. */
+  mergeBack?: 'none' | 'done';
 }
 
 export interface IChainResult {
@@ -123,8 +149,57 @@ export interface IChainResult {
 export class ReleaseChain {
   static readonly PUSH_ATTEMPTS = 3;
 
+  /** The branch the merge back goes into. */
+  static readonly DEVELOP = 'develop';
+
   static gate(opts: { args: string[] }): string[] {
     return ['bun', 'scripts/release/release-gates.ts', ...opts.args];
+  }
+
+  /** A version with a prerelease part is a prerelease, anything else a stable. */
+  static kindOf(opts: { options: Pick<IChainOptions, 'version' | 'kind'> }): TChainKind {
+    return opts.options.kind ?? (opts.options.version.includes('-') ? 'prerelease' : 'stable');
+  }
+
+  static targetBranchOf(opts: {
+    options: Pick<IChainOptions, 'version' | 'kind' | 'targetBranch'>;
+  }): string {
+    return (
+      opts.options.targetBranch ??
+      (ReleaseChain.kindOf({ options: opts.options }) === 'stable' ? 'main' : ReleaseChain.DEVELOP)
+    );
+  }
+
+  /** Why the run may not start: the version, the kind and the branch must agree, and with the plan. */
+  static checkBinding(opts: { options: IChainOptions }): string[] {
+    const { options } = opts;
+    const problems: string[] = [];
+    const given = ReleaseChain.kindOf({ options });
+    const fromVersion = options.version.includes('-') ? 'prerelease' : 'stable';
+    const branch = ReleaseChain.targetBranchOf({ options });
+
+    if (given !== fromVersion) {
+      problems.push(`the kind is ${given} but ${options.version} is a ${fromVersion}`);
+    }
+
+    if (branch !== (fromVersion === 'stable' ? 'main' : ReleaseChain.DEVELOP)) {
+      problems.push(
+        `a ${fromVersion} (${options.version}) is released from ${fromVersion === 'stable' ? 'main' : ReleaseChain.DEVELOP}, not ${branch}`,
+      );
+    }
+
+    if (options.plan !== undefined) {
+      if (options.plan.version !== options.version) {
+        problems.push(
+          `the plan approved ${options.plan.version} but this run would publish ${options.version}`,
+        );
+      }
+      if (options.plan.kind !== given) {
+        problems.push(`the plan said ${options.plan.kind} but this run is a ${given}`);
+      }
+    }
+
+    return problems;
   }
 
   /** Phase A for one package: every check that needs no new sibling. */
@@ -160,6 +235,16 @@ export class ReleaseChain {
         command: ReleaseChain.gate({ args: ['protocols', packed] }),
         fatal: true,
       },
+      ...(ReleaseChain.kindOf({ options }) === 'stable'
+        ? [
+            {
+              kind: 'run',
+              label: `${pkg.name}: stable-deps`,
+              command: ReleaseChain.gate({ args: ['stable-deps', packed] }),
+              fatal: true,
+            } as TStep,
+          ]
+        : []),
       {
         kind: 'run',
         label: `${pkg.name}: registry`,
@@ -176,6 +261,9 @@ export class ReleaseChain {
     const dir = `packages/${pkg.name}`;
     const tarball = join(tarballs, `${pkg.name}.tgz`);
     const tag = `${pkg.name}-v${version}`;
+    const targetBranch = ReleaseChain.targetBranchOf({ options });
+    const isStable = ReleaseChain.kindOf({ options }) === 'stable';
+    const tagMessage = `${pkg.packageName} v${version}${options.builtOn ? `\nbuilt on: ${options.builtOn}` : ''}`;
     const scratch = join(tmp, `relock-${pkg.name}`);
     const subject = `${options.issue === undefined ? '' : `[#${options.issue}] `}chore(${pkg.name}): release v${version} [${version}]`;
 
@@ -212,6 +300,18 @@ export class ReleaseChain {
               command: ['bun', 'scripts/preset/vulcan-preset.ts'],
               fatal: true,
             } as TStep,
+            ...(isStable
+              ? [
+                  {
+                    kind: 'run',
+                    label: 'ardor: check the preset names only stable versions',
+                    command: ReleaseChain.gate({
+                      args: ['stable-deps', 'packages/ardor/dist/presets'],
+                    }),
+                    fatal: true,
+                  } as TStep,
+                ]
+              : []),
           ]
         : []),
       {
@@ -248,7 +348,9 @@ export class ReleaseChain {
       {
         kind: 'run',
         label: `${pkg.name}: tag highest`,
-        command: ['npm', 'dist-tag', 'add', `${pkg.packageName}@${version}`, 'highest'],
+        command: ReleaseChain.gate({
+          args: ['tag-highest', '--published', `${pkg.packageName}@${version}`],
+        }),
         fatal: false,
       },
       {
@@ -322,14 +424,14 @@ export class ReleaseChain {
       {
         kind: 'run',
         label: `${pkg.name}: push`,
-        command: ['git', 'push', 'origin', 'HEAD:develop'],
+        command: ['git', 'push', 'origin', `HEAD:${targetBranch}`],
         fatal: true,
         stage: 'pushed',
       },
       {
         kind: 'run',
         label: `${pkg.name}: annotate the tag`,
-        command: ['git', 'tag', '-a', tag, '-m', `${pkg.packageName} v${version}`],
+        command: ['git', 'tag', '-a', tag, '-m', tagMessage],
         fatal: true,
       },
       { kind: 'push-tag', label: `${pkg.name}: push the tag`, tag },
@@ -337,7 +439,11 @@ export class ReleaseChain {
   }
 
   /** The whole sequence, as the dry run prints it. */
-  static plan(opts: { options: IChainOptions }): { phaseA: TStep[]; phaseB: TStep[] } {
+  static plan(opts: { options: IChainOptions }): {
+    phaseA: TStep[];
+    phaseB: TStep[];
+    phaseC: TStep[];
+  } {
     const { options } = opts;
 
     return {
@@ -345,7 +451,72 @@ export class ReleaseChain {
       phaseB: options.packages.flatMap((pkg, index) =>
         ReleaseChain.release({ pkg, options, first: index === 0 }),
       ),
+      phaseC: ReleaseChain.mergeBack({ options }),
     };
+  }
+
+  /** Phase C: after the last package, a stable merges `main` back into `develop`. A prerelease has none. */
+  static mergeBack(opts: { options: IChainOptions }): TStep[] {
+    return ReleaseChain.kindOf({ options: opts.options }) === 'stable'
+      ? [{ kind: 'merge-back', label: 'merge back: main into develop' }]
+      : [];
+  }
+
+  /**
+   * The commands of the merge back, in order. `apply` is a copy of this checkout's `merge-back.ts`, run on a
+   * clean worktree of `origin/develop`, so no file of `develop` configures the publishing job.
+   */
+  static mergeBackCommands(opts: { options: IChainOptions; head: string }): {
+    contained: string[];
+    fetch: string[];
+    add: string[];
+    copy: string[];
+    apply: string[];
+    push: string[];
+    remove: string[];
+    worktree: string;
+  } {
+    const { options, head } = opts;
+    const worktree = join(options.tmp, 'merge-back-develop');
+    const script = join(options.tmp, 'merge-back-main.ts');
+    const prefix = options.issue === undefined ? '' : `[#${options.issue}] `;
+    const message = `${prefix}chore(release): merge ${ReleaseChain.targetBranchOf({ options })} into develop after v${options.version}`;
+
+    return {
+      fetch: ['git', 'fetch', 'origin', ReleaseChain.DEVELOP],
+      contained: ['git', 'merge-base', '--is-ancestor', head, `origin/${ReleaseChain.DEVELOP}`],
+      add: ['git', 'worktree', 'add', '--detach', worktree, `origin/${ReleaseChain.DEVELOP}`],
+      copy: ['cp', 'scripts/release/merge-back.ts', script],
+      apply: ['bun', script, 'apply', '--from', head, '--repo', worktree, '--message', message],
+      push: ['git', 'push', 'origin', `HEAD:${ReleaseChain.DEVELOP}`],
+      remove: ['git', 'worktree', 'remove', worktree],
+      worktree,
+    };
+  }
+
+  /**
+   * Every package is out and tagged, and only the merge back of the stable is missing: the report says so
+   * and gives the repair.
+   */
+  static mergeBackReport(opts: {
+    states: readonly IPackageState[];
+    version: string;
+    label: string;
+    detail?: string;
+    targetBranch: string;
+  }): string {
+    const { states, version, label, detail, targetBranch } = opts;
+    const done = states.map((state) => state.name).join(', ');
+
+    return [
+      'Report - published, merge back not done.',
+      `The run stopped at "${label}"${detail ? `: ${detail}` : ''}.`,
+      `Every package is released and tagged on ${targetBranch} at ${version} (${done}). Only the merge back of ${targetBranch} into ${ReleaseChain.DEVELOP} is missing.`,
+      'Dispatch the same version again: only the merge back runs. Or by hand:',
+      `  git fetch origin && git switch ${ReleaseChain.DEVELOP} && git pull --ff-only origin ${ReleaseChain.DEVELOP}`,
+      `  git merge --no-ff origin/${targetBranch}   (keep the greater version in each package.json, regenerate bun.lock)`,
+      `  git push origin ${ReleaseChain.DEVELOP}`,
+    ].join('\n');
   }
 
   static describe(opts: { step: TStep }): string {
@@ -364,6 +535,23 @@ export class ReleaseChain {
   static reportFromState(opts: { state: IChainState }): string {
     const { state } = opts;
     const { version, states, stopped } = state;
+    const targetBranch = state.targetBranch ?? ReleaseChain.DEVELOP;
+
+    const allTagged = states.every((candidate) => candidate.stage === 'tagged');
+
+    if (
+      stopped?.failed === 'merge back' ||
+      (state.mergeBack === 'none' && stopped === undefined && allTagged)
+    ) {
+      return ReleaseChain.mergeBackReport({
+        states,
+        version,
+        label: stopped?.label ?? 'the job ended before the merge back finished',
+        detail: stopped?.detail,
+        targetBranch,
+      });
+    }
+
     const named = stopped && states.find((candidate) => candidate.name === stopped.failed);
     const halfDone = states.find(
       (candidate) => candidate.stage !== 'none' && candidate.stage !== 'tagged',
@@ -379,6 +567,7 @@ export class ReleaseChain {
             label: stopped.label,
             version,
             detail: stopped.detail,
+            targetBranch,
           })
         : `No package was left half done (${done.length} of ${states.length} released at ${version}).`;
     }
@@ -389,6 +578,7 @@ export class ReleaseChain {
       label: stopped?.label ?? 'the job ended before the run finished',
       version,
       detail: stopped?.detail,
+      targetBranch,
     });
   }
 
@@ -399,8 +589,11 @@ export class ReleaseChain {
     label: string;
     version: string;
     detail?: string;
+    /** The branch the release commits go to; `develop` when absent. */
+    targetBranch?: string;
   }): string {
     const { states, failed, label, version, detail } = opts;
+    const target = opts.targetBranch ?? ReleaseChain.DEVELOP;
     const done = states
       .filter((state) => state.stage === 'tagged' || state.skipped)
       .map((s) => s.name);
@@ -435,14 +628,14 @@ export class ReleaseChain {
       }
       case 'committed': {
         lines.push(
-          `${name}@${version} is published and committed locally, but the push to develop did not land (the chain never rebases).`,
-          'Pull develop, then push the release commit by hand, then create the tag.',
+          `${name}@${version} is published and committed locally, but the push to ${target} did not land (the chain never rebases).`,
+          `Pull ${target}, then push the release commit by hand, then create the tag.`,
         );
         break;
       }
       default: {
         lines.push(
-          `${name}@${version} is published and develop is updated; only the tag is missing. Create it by hand:`,
+          `${name}@${version} is published and ${target} is updated; only the tag is missing. Create it by hand:`,
           `  git tag -a ${tag} -m "${name} v${version}" && git push origin ${tag}`,
         );
       }
@@ -475,11 +668,20 @@ export const runChain = async (opts: {
   const stateOf = (name: string): IPackageState =>
     states.find((state) => state.name === name) as IPackageState;
 
+  const isStable = ReleaseChain.kindOf({ options }) === 'stable';
+  const targetBranch = ReleaseChain.targetBranchOf({ options });
   let stopped: IChainStop | undefined;
+  let mergeBack: 'none' | 'done' = 'none';
 
   const persist = async (): Promise<void> => {
     if (options.statePath !== undefined) {
-      const state: IChainState = { version, states, ...(stopped ? { stopped } : {}) };
+      const state: IChainState = {
+        version,
+        states,
+        targetBranch,
+        ...(isStable ? { mergeBack } : {}),
+        ...(stopped ? { stopped } : {}),
+      };
       await ports.writeFile({
         path: options.statePath,
         content: `${JSON.stringify(state, null, 2)}\n`,
@@ -492,12 +694,17 @@ export const runChain = async (opts: {
     label: string;
     detail?: string;
   }): Promise<IChainResult> => {
-    const report = ReleaseChain.report({ states, version, ...stopOpts });
+    const report = ReleaseChain.report({ states, version, targetBranch, ...stopOpts });
     stopped = { failed: stopOpts.failed.name, label: stopOpts.label, detail: stopOpts.detail };
     await persist();
     ports.log(report);
     return { ok: false, states, report };
   };
+
+  const unbound = ReleaseChain.checkBinding({ options });
+  if (unbound.length > 0) {
+    return stop({ failed: states[0] as IPackageState, label: 'plan', detail: unbound.join('; ') });
+  }
 
   // What each package already is, read fresh before anything changes (D5).
   const toRelease: IChainPackage[] = [];
@@ -548,6 +755,7 @@ export const runChain = async (opts: {
 
   const planned = {
     ...options,
+    builtOn: options.builtOn ?? ports.readBuiltOn?.(),
     packages: toRelease,
     chainReleased: options.chainReleased ?? toRelease.map((p) => p.packageName),
   };
@@ -648,6 +856,56 @@ export const runChain = async (opts: {
         }
         return { ok: false, detail: 'the tag push failed three times' };
       }
+      case 'merge-back': {
+        const head = (await ports.run({ command: ['git', 'rev-parse', 'HEAD'] })).stdout.trim();
+        const commands = ReleaseChain.mergeBackCommands({ options: planned, head });
+        const fetched = await ports.run({ command: commands.fetch });
+        if (fetched.exitCode !== 0) {
+          return {
+            ok: false,
+            detail: `could not fetch ${ReleaseChain.DEVELOP} (exit ${fetched.exitCode})`,
+          };
+        }
+
+        // 0: develop already holds the last release commit; 1: it does not; anything else is an error.
+        const contained = await ports.run({ command: commands.contained });
+        if (contained.exitCode === 0) {
+          ports.log(
+            `merge back: ${ReleaseChain.DEVELOP} already holds ${head.slice(0, 7)} - skipped`,
+          );
+          return { ok: true };
+        }
+        if (contained.exitCode !== 1) {
+          return {
+            ok: false,
+            detail: `could not compare with ${ReleaseChain.DEVELOP} (exit ${contained.exitCode})`,
+          };
+        }
+
+        try {
+          const sequence: Array<{ command: string[]; cwd?: string; what: string }> = [
+            { command: commands.add, what: 'could not make the worktree of develop' },
+            { command: commands.copy, what: 'could not copy merge-back.ts' },
+            { command: commands.apply, what: 'the merge stops' },
+            {
+              command: commands.push,
+              cwd: commands.worktree,
+              what: 'the push to develop was rejected',
+            },
+          ];
+
+          for (const { command, cwd, what } of sequence) {
+            const result = await ports.run({ command, cwd });
+            if (result.exitCode !== 0) {
+              return { ok: false, detail: `${what} (exit ${result.exitCode})` };
+            }
+          }
+        } finally {
+          await ports.run({ command: commands.remove });
+        }
+
+        return { ok: true };
+      }
       default: {
         return { ok: false, detail: 'unknown step' };
       }
@@ -680,6 +938,26 @@ export const runChain = async (opts: {
     }
   }
 
+  // Phase C: a stable merges main back into develop, also when every package was already released.
+  for (const step of ReleaseChain.mergeBack({ options: planned })) {
+    const outcome = await execute(step, undefined);
+    if (!outcome.ok) {
+      const report = ReleaseChain.mergeBackReport({
+        states,
+        version,
+        label: step.label,
+        detail: outcome.detail,
+        targetBranch,
+      });
+      stopped = { failed: 'merge back', label: step.label, detail: outcome.detail };
+      await persist();
+      ports.log(report);
+      return { ok: false, states, report };
+    }
+    mergeBack = 'done';
+    await persist();
+  }
+
   return { ok: true, states };
 };
 
@@ -692,7 +970,7 @@ const readArgs = (opts: { argv: string[] }) => {
   const version = value('--version');
   if (!packages || !version) {
     throw new Error(
-      '[release-chain] use: --packages kernel,react --version <x.y.z[-pre]> [--issue N] [--branch name] [--tarballs dir] [--tmp dir] [--state file] [--dry-run]',
+      '[release-chain] use: --packages kernel,react --version <x.y.z[-pre]> [--issue N] [--branch name] [--tarballs dir] [--tmp dir] [--state file] [--target-branch develop|main] [--plan-version v --plan-kind prerelease|stable] [--dry-run]',
     );
   }
 
@@ -704,6 +982,9 @@ const readArgs = (opts: { argv: string[] }) => {
     tarballs: resolve(value('--tarballs') ?? '.agents/local/tmp/release-tarballs'),
     tmp: resolve(value('--tmp') ?? process.env.RUNNER_TEMP ?? '.agents/local/tmp'),
     state: value('--state'),
+    targetBranch: value('--target-branch'),
+    planVersion: value('--plan-version'),
+    planKind: value('--plan-kind'),
     dryRun: opts.argv.includes('--dry-run'),
   };
 };
@@ -742,6 +1023,16 @@ const realPorts = (): IChainPorts => ({
   },
   sleep: (ms) => new Promise<void>((done) => setTimeout(done, ms)),
   log: (line) => console.log(line),
+  readBuiltOn: () => {
+    const root = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      workspaces?: { catalog?: Record<string, string> };
+    };
+
+    return Object.entries(root.workspaces?.catalog ?? {})
+      .filter(([name]) => name.startsWith('@venizia/'))
+      .map(([name, version]) => `${name}=${version}`)
+      .join(', ');
+  },
 });
 
 const reportMain = async (opts: { argv: string[] }): Promise<void> => {
@@ -789,14 +1080,23 @@ const main = async (): Promise<void> => {
     tmp: args.tmp,
     statePath: args.state,
     chainReleased: packages.map((pkg) => pkg.packageName),
+    targetBranch: args.targetBranch,
+    plan:
+      args.planVersion !== undefined &&
+      (args.planKind === 'prerelease' || args.planKind === 'stable')
+        ? { version: args.planVersion, kind: args.planKind }
+        : undefined,
+    builtOn: ports.readBuiltOn?.(),
   };
 
   if (args.dryRun) {
-    const { phaseA, phaseB } = ReleaseChain.plan({ options });
+    const { phaseA, phaseB, phaseC } = ReleaseChain.plan({ options });
     console.log('Phase A: the checks before the first publish');
     for (const step of phaseA) console.log(`  ${ReleaseChain.describe({ step })}`);
     console.log('Phase B: one package at a time');
     for (const step of phaseB) console.log(`  ${ReleaseChain.describe({ step })}`);
+    if (phaseC.length > 0) console.log('Phase C: after the last package');
+    for (const step of phaseC) console.log(`  ${ReleaseChain.describe({ step })}`);
     return;
   }
 
