@@ -37,7 +37,13 @@ beforeAll(() => {
     port: 0,
     fetch: async (req) => {
       const url = new URL(req.url);
-      const text = req.method === 'GET' ? '' : await req.text();
+      let text = '';
+
+      if (req.method !== 'GET') {
+        const result = await req.text();
+        text = result;
+      }
+
       recorded.push({
         method: req.method,
         pathname: url.pathname,

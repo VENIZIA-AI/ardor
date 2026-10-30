@@ -235,7 +235,8 @@ const main = async (): Promise<number> => {
   const keep = args.includes('--keep');
   const tokens = args.filter((arg) => !arg.startsWith('--'));
 
-  if (!(await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT })).ok) {
+  const result2 = await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT });
+  if (!result2.ok) {
     throw new Error('[clean-install] `node` is not on PATH - the Node checks cannot run');
   }
 
@@ -316,7 +317,8 @@ const main = async (): Promise<number> => {
       for (const duplicate of findDuplicateCopies({ lock })) {
         failures.push(`${manifest.name} [${linker}] copies: ${duplicate}`);
       }
-      for (const problem of await findSplitPeers({ name: manifest.name, sandbox })) {
+      const splitPeers = await findSplitPeers({ name: manifest.name, sandbox });
+      for (const problem of splitPeers) {
         failures.push(`${manifest.name} [${linker}] peers: ${problem}`);
       }
 
@@ -355,4 +357,5 @@ const main = async (): Promise<number> => {
   return 0;
 };
 
-process.exit(await main());
+const result2 = await main();
+process.exit(result2);

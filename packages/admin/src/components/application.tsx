@@ -64,7 +64,7 @@ const useFeatureMessagesReady = (opts: {
 
   React.useEffect(() => {
     if (state.isReady) {
-      return;
+      return () => {};
     }
 
     let isLive = true;

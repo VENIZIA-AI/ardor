@@ -47,7 +47,8 @@ export const readJsonFile = async (opts: { path: string }): Promise<unknown> => 
   let text: string;
 
   try {
-    text = await readFile(opts.path, 'utf8');
+    const result = await readFile(opts.path, 'utf8');
+    text = result;
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       return undefined;

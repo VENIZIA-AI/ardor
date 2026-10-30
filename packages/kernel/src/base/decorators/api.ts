@@ -12,7 +12,8 @@ export const api = () => {
       ...args: AnyType[]
     ) {
       try {
-        return await Reflect.apply(originalMethod, this, args);
+        const result = await Reflect.apply(originalMethod, this, args);
+        return result;
       } catch (error) {
         this.logger.error(
           '[%s] resource: %s | error: %o',

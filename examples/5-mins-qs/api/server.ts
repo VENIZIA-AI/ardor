@@ -23,7 +23,8 @@ const server = Bun.serve({
 
     // IGNIS's sign-in route and body: `{ identifier: { scheme, value }, credential: { scheme, value } }`.
     if (url.pathname === '/api/auth/sign-in' && request.method === 'POST') {
-      const body = (await request.json()) as {
+      const result = await request.json();
+      const body = result as {
         identifier?: { value?: string };
         credential?: { value?: string };
       };

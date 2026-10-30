@@ -40,7 +40,8 @@ describe('AuthRecovery.refresh', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     release(true);
 
-    expect(await Promise.all(callers)).toEqual([true, true, true]);
+    const result = await Promise.all(callers);
+    expect(result).toEqual([true, true, true]);
     expect(refresh).toHaveBeenCalledTimes(1);
 
     await recovery.refresh();
@@ -50,14 +51,16 @@ describe('AuthRecovery.refresh', () => {
   test('false from the refresh is no refresh, not a failure', async () => {
     const { recovery, onFailure } = create({ refresh: () => Promise.resolve(false) });
 
-    expect(await recovery.refresh()).toBe(false);
+    const result = await recovery.refresh();
+    expect(result).toBe(false);
     expect(onFailure).not.toHaveBeenCalled();
   });
 
   test('a refresh that rejects runs onFailure once and answers false', async () => {
     const { recovery, onFailure } = create({ refresh: () => Promise.reject(new Error('expired')) });
 
-    expect(await Promise.all([recovery.refresh(), recovery.refresh()])).toEqual([false, false]);
+    const result = await Promise.all([recovery.refresh(), recovery.refresh()]);
+    expect(result).toEqual([false, false]);
     expect(onFailure).toHaveBeenCalledTimes(1);
   });
 
@@ -68,7 +71,8 @@ describe('AuthRecovery.refresh', () => {
       },
     });
 
-    expect(await recovery.refresh()).toBe(false);
+    const result = await recovery.refresh();
+    expect(result).toBe(false);
     expect(onFailure).toHaveBeenCalledTimes(1);
   });
 
@@ -78,7 +82,8 @@ describe('AuthRecovery.refresh', () => {
       onFailure: () => Promise.reject(new Error('hook failed')),
     });
 
-    expect(await recovery.refresh()).toBe(false);
+    const result = await recovery.refresh();
+    expect(result).toBe(false);
   });
 });
 

@@ -29,11 +29,12 @@ beforeAll(() => {
         await new Promise((resolve) => setTimeout(resolve, 600));
       }
 
+      const result = await request.arrayBuffer();
       recorded.push({
         method: request.method,
         search: url.search,
         headers: request.headers,
-        bytes: new Uint8Array(await request.arrayBuffer()),
+        bytes: new Uint8Array(result),
       });
 
       return Response.json({ ok: true });
@@ -124,16 +125,15 @@ describe('abort signals', () => {
     setTimeout(() => controller.abort(), 50);
     const startedAt = Date.now();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/delay`,
-          method: 'get',
-          timeout: 5000,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await rejectionOf(
+      fetcher.send({
+        url: `${baseUrl}/delay`,
+        method: 'get',
+        timeout: 5000,
+        signal: controller.signal,
+      }),
+    );
+    expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
   });
@@ -143,16 +143,15 @@ describe('abort signals', () => {
     const controller = new AbortController();
     controller.abort();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/echo`,
-          method: 'get',
-          timeout: 5000,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await rejectionOf(
+      fetcher.send({
+        url: `${baseUrl}/echo`,
+        method: 'get',
+        timeout: 5000,
+        signal: controller.signal,
+      }),
+    );
+    expect(result).toBeDefined();
   });
 
   test('the timeout still aborts when the caller passes a signal that never fires', async () => {
@@ -160,16 +159,15 @@ describe('abort signals', () => {
     const controller = new AbortController();
     const startedAt = Date.now();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/delay`,
-          method: 'get',
-          timeout: 50,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await rejectionOf(
+      fetcher.send({
+        url: `${baseUrl}/delay`,
+        method: 'get',
+        timeout: 50,
+        signal: controller.signal,
+      }),
+    );
+    expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
   });
@@ -177,9 +175,10 @@ describe('abort signals', () => {
   test('the timeout alone still aborts', async () => {
     const fetcher = createFetcher({ name: 'node-fetch-timeout-only-test' });
 
-    expect(
-      await rejectionOf(fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 })),
-    ).toBeDefined();
+    const result = await rejectionOf(
+      fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 }),
+    );
+    expect(result).toBeDefined();
   });
 });
 

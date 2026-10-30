@@ -188,7 +188,8 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
     declareMinified({});
     declareMinified({});
 
-    expect(await rejectionOf(new TestApplication().start())).toMatchObject({
+    const result = await rejectionOf(new TestApplication().start());
+    expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[registerArtifacts\] Two classes derive the binding key 'services\.Minified'.*pin 'binding/,
       ),

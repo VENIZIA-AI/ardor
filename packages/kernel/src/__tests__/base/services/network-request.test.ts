@@ -177,7 +177,8 @@ describe('DefaultNetworkRequestService', () => {
         const contentType = req.headers.get('content-type') ?? '';
         if (contentType.includes('application/json')) {
           try {
-            jsonBody = await req.json();
+            const result = await req.json();
+            jsonBody = result;
           } catch (err: unknown) {
             console.error('[server.fetch] Failed to parse JSON body', err);
             jsonBody = undefined;
@@ -880,15 +881,14 @@ describe('DefaultNetworkRequestService', () => {
     test('throws an error when baseUrl is empty', async () => {
       const emptyBaseService = createService({ baseUrl: '' });
 
-      expect(
-        await rejectionOf(
-          emptyBaseService.doRequest({
-            paths: ['items'],
-            method: RequestMethods.GET,
-            type: RequestTypes.GET_ONE,
-          }),
-        ),
-      ).toMatchObject({
+      const result = await rejectionOf(
+        emptyBaseService.doRequest({
+          paths: ['items'],
+          method: RequestMethods.GET,
+          type: RequestTypes.GET_ONE,
+        }),
+      );
+      expect(result).toMatchObject({
         message: expect.stringContaining('[doRequest] Invalid baseUrl to send request!'),
       });
     });
@@ -1374,7 +1374,8 @@ describe('DefaultNetworkRequestService', () => {
         resource: 'tickets',
       });
 
-      expect(await rejectionOf(tickets.find({ filter: {} }))).toMatchObject({ statusCode: 401 });
+      const result = await rejectionOf(tickets.find({ filter: {} }));
+      expect(result).toMatchObject({ statusCode: 401 });
       expect(recordedRequests).toHaveLength(1);
       expect(recordedRequests[0].headers.authorization).toBe('Bearer stale-token');
     });
@@ -1475,7 +1476,8 @@ describe('DefaultNetworkRequestService', () => {
 
       const signIn = createRepository({ service, resource: 'sign-in' });
 
-      expect(await rejectionOf(signIn.find({ filter: {} }))).toMatchObject({ statusCode: 401 });
+      const result = await rejectionOf(signIn.find({ filter: {} }));
+      expect(result).toMatchObject({ statusCode: 401 });
       expect(refreshToken).not.toHaveBeenCalled();
       expect(recordedRequests).toHaveLength(1);
     });
@@ -1495,9 +1497,10 @@ describe('DefaultNetworkRequestService', () => {
           { status: 409 },
         );
 
-      expect(
-        await rejectionOf(createRepository({ service, resource: 'users' }).find({ filter: {} })),
-      ).toMatchObject({
+      const result = await rejectionOf(
+        createRepository({ service, resource: 'users' }).find({ filter: {} }),
+      );
+      expect(result).toMatchObject({
         statusCode: 409,
         normalized: { code: 'user.name.taken', args: { name: 'an' } },
       });
@@ -1599,7 +1602,8 @@ describe('DefaultNetworkRequestService', () => {
       const service = createService();
       service.setAuthRecovery({ onAuthFailure: failures });
 
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
       expect(failures).not.toHaveBeenCalled();
     });
 
@@ -1607,7 +1611,8 @@ describe('DefaultNetworkRequestService', () => {
       const service = createService();
       service.setAuthRecovery({ refreshToken: async () => {} });
 
-      expect(await service.refresh()).toBe(true);
+      const result = await service.refresh();
+      expect(result).toBe(true);
     });
 
     test('a refreshToken that throws resolves false and runs onAuthFailure once', async () => {
@@ -1618,7 +1623,8 @@ describe('DefaultNetworkRequestService', () => {
         onAuthFailure: failures,
       });
 
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
       expect(failures).toHaveBeenCalledTimes(1);
     });
 
@@ -1632,7 +1638,8 @@ describe('DefaultNetworkRequestService', () => {
         onAuthFailure: failures,
       });
 
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
       expect(failures).toHaveBeenCalledTimes(1);
     });
 
@@ -1661,7 +1668,8 @@ describe('DefaultNetworkRequestService', () => {
         },
       });
 
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
     });
   });
 

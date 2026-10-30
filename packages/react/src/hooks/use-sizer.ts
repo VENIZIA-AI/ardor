@@ -18,7 +18,7 @@ export const useSizer = (opts: IUseSizerOptions): IUseSizerReturn => {
   React.useEffect(() => {
     const container = document.getElementById(containerId);
     if (!container) {
-      return;
+      return () => {};
     }
 
     const sizeObserver = new ResizeObserver(() => {

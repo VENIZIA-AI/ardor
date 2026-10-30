@@ -289,7 +289,7 @@
     "@types/node": "^25.0.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@venizia/dev-configs": "0.4.4",
+    "@venizia/dev-configs": "0.4.7-0",
     "@venizia/ignis-boot": "0.4.4",
     "@venizia/ignis-connectors": "0.4.4",
     "@venizia/ignis-filter": "0.4.4",
@@ -798,7 +798,7 @@
 
     "@venizia/ardor-react": ["@venizia/ardor-react@workspace:packages/react"],
 
-    "@venizia/dev-configs": ["@venizia/dev-configs@0.4.4", "", { "dependencies": { "@eslint/js": "^10.0.1", "eslint-plugin-n": "^18.5.0", "eslint-plugin-unicorn": "^78.0.0", "typescript-eslint": "^8.72.0" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxlint": ">=1.89.0", "oxlint-tsgolint": ">=7.0.2004", "typescript": "^5.0.0 || ^6.0.0" }, "optionalPeers": ["eslint", "oxlint", "oxlint-tsgolint", "typescript"], "bin": { "devz": "dist/cli/index.js" } }, "sha512-JMUAIOmKmDKM0e1Suvc6Y/3MxFgw/yIbJ6MORGzzPyhIb4U6nSBAu2WZlQraC0/y7oCEcLHsE7M/0pOq19TONw=="],
+    "@venizia/dev-configs": ["@venizia/dev-configs@0.4.7-0", "", { "dependencies": { "@eslint/js": "^10.0.1", "eslint-plugin-n": "^18.5.0", "eslint-plugin-unicorn": "^78.0.0", "typescript-eslint": "^8.72.0" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxlint": ">=1.89.0", "oxlint-tsgolint": ">=7.0.2004", "typescript": "^5.0.0 || ^6.0.0" }, "optionalPeers": ["eslint", "oxlint", "oxlint-tsgolint", "typescript"], "bin": { "devz": "dist/cli/index.js" } }, "sha512-0YLgSIVbTPNZeSIhsWi0qCPgO5lvndq55LMMMIL16MvsvPVwcwXSWGZ22HwSor3irRkSQyXZdpukLwA9Sk6r0g=="],
 
     "@venizia/ignis-boot": ["@venizia/ignis-boot@0.4.4", "", { "dependencies": { "@venizia/ignis-helpers": "0.4.4", "@venizia/ignis-inversion": "0.4.4" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/esm/clis/artifacts.js" } }, "sha512-Ce81ZVOZHXbSaCedc4RXJVhF7+5S9GiyKX58ema/K31ZI1NVXPtXa/u9Y9FaYoscII1I6Y9mz2upH+rsOq5w2w=="],
 

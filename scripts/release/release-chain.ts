@@ -817,7 +817,8 @@ export const runChain = async (opts: {
       }
       case 'record-sha': {
         if (state) {
-          state.sha = await ports.sha256({ path: step.tarball });
+          const result2 = await ports.sha256({ path: step.tarball });
+          state.sha = result2;
         }
         return { ok: true };
       }
@@ -868,7 +869,8 @@ export const runChain = async (opts: {
         return { ok: false, detail: 'the tag push failed three times' };
       }
       case 'merge-back': {
-        const head = (await ports.run({ command: ['git', 'rev-parse', 'HEAD'] })).stdout.trim();
+        const result3 = await ports.run({ command: ['git', 'rev-parse', 'HEAD'] });
+        const head = result3.stdout.trim();
         const commands = ReleaseChain.mergeBackCommands({ options: planned, head });
         const fetched = await ports.run({ command: commands.fetch });
         if (fetched.exitCode !== 0) {
@@ -1027,8 +1029,11 @@ const realPorts = (): IChainPorts => ({
     return proc.exitCode === 0 && proc.stdout.toString().trim().length > 0;
   },
   waitForTarball: (waitOpts) => waitForTarball(waitOpts),
-  sha256: async ({ path }) =>
-    new Bun.CryptoHasher('sha256').update(await Bun.file(path).bytes()).digest('hex'),
+  sha256: async ({ path }) => {
+    const bytes = await Bun.file(path).bytes();
+
+    return new Bun.CryptoHasher('sha256').update(bytes).digest('hex');
+  },
   writeFile: async ({ path, content }) => {
     await Bun.write(path, content);
   },
@@ -1051,7 +1056,8 @@ const reportMain = async (opts: { argv: string[] }): Promise<void> => {
   }
 
   // No file means the chain step never ran (an earlier step failed): there is nothing to report.
-  if (!(await Bun.file(statePath).exists())) {
+  const result = await Bun.file(statePath).exists();
+  if (!result) {
     console.log('No release state was written: the release step did not start.');
     return;
   }

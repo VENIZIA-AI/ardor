@@ -45,12 +45,14 @@ describe('reading from disk', () => {
   });
 
   test('readJsonFile: a missing file is undefined', async () => {
-    expect(await readJsonFile({ path: join(root, 'empty', 'package.json') })).toBeUndefined();
+    const result = await readJsonFile({ path: join(root, 'empty', 'package.json') });
+    expect(result).toBeUndefined();
   });
 
   test('readJsonFile: a broken file is an error that names the file and never quotes its content', async () => {
     const path = join(root, 'broken', 'package.json');
-    const message = String(await getRejection({ task: readJsonFile({ path }) }));
+    const result = await getRejection({ task: readJsonFile({ path }) });
+    const message = String(result);
 
     expect(message).toContain(path);
     expect(message).toContain('is not valid JSON');
@@ -60,9 +62,12 @@ describe('reading from disk', () => {
   test('findInstalledVersion walks up the node_modules folders like Node does', async () => {
     const app = join(root, 'apps', 'shop');
 
-    expect(await findInstalledVersion({ root: app, name: '@venizia/ardor' })).toBe('0.4.3');
-    expect(await findInstalledVersion({ root: app, name: '@venizia/ignis-boot' })).toBe('0.4.3');
-    expect(await findInstalledVersion({ root: app, name: '@venizia/nothing' })).toBeUndefined();
+    const result = await findInstalledVersion({ root: app, name: '@venizia/ardor' });
+    expect(result).toBe('0.4.3');
+    const result2 = await findInstalledVersion({ root: app, name: '@venizia/ignis-boot' });
+    expect(result2).toBe('0.4.3');
+    const result3 = await findInstalledVersion({ root: app, name: '@venizia/nothing' });
+    expect(result3).toBeUndefined();
   });
 
   test('readFrameworkVersions lists the installed versions, the ones not installed and the invalid names', async () => {
@@ -80,7 +85,8 @@ describe('reading from disk', () => {
   test('readFrameworkVersions without a package.json is an error that says where to look', async () => {
     const task = readFrameworkVersions({ root: join(root, 'empty'), scope: '@venizia/' });
 
-    expect(String(await getRejection({ task }))).toContain('root option');
+    const result = await getRejection({ task });
+    expect(String(result)).toContain('root option');
   });
 });
 

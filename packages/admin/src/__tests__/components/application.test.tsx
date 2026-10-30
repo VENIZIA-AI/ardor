@@ -61,7 +61,8 @@ describe('ArdorApplication with features', () => {
     );
 
     expect(screen.getByText('loading')).toBeDefined();
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     expect(load).toHaveBeenCalledTimes(1);
   });
 
@@ -79,7 +80,8 @@ describe('ArdorApplication with features', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
   });
 
   test('resolves the providers once per container, however often it renders', async () => {
@@ -100,7 +102,8 @@ describe('ArdorApplication with features', () => {
     );
 
     const { rerender } = render(tree('one'));
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     rerender(tree('two'));
     rerender(tree('three'));
 
@@ -156,24 +159,29 @@ describe('ArdorApplication features prop', () => {
 
   test('mounts every bound feature when no list is passed', async () => {
     renderAt({ path: '/reports' });
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/invoices' });
-    expect(await screen.findByText('Open invoices')).toBeDefined();
+    const result2 = await screen.findByText('Open invoices');
+    expect(result2).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders' });
-    expect(await screen.findByText('Reminders')).toBeDefined();
+    const result3 = await screen.findByText('Reminders');
+    expect(result3).toBeDefined();
   });
 
   test("mounts only the passed list's resources and routes", async () => {
     renderAt({ path: '/invoices', features: [invoices] });
-    expect(await screen.findByText('Open invoices')).toBeDefined();
+    const result = await screen.findByText('Open invoices');
+    expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders', features: [invoices] });
-    expect(await screen.findByText('Reminders')).toBeDefined();
+    const result2 = await screen.findByText('Reminders');
+    expect(result2).toBeDefined();
     cleanup();
 
     // The container still binds `reports`; the list left it out, so its page is not mounted.

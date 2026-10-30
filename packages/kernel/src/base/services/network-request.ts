@@ -397,14 +397,16 @@ export class DefaultNetworkRequestService extends BaseService {
           ],
         });
 
-        fetched = await sendOnce(retryHeaders);
+        const result = await sendOnce(retryHeaders);
+        fetched = result;
       }
     }
 
     const status = fetched.status;
 
     if (status < 200 || status >= 300) {
-      throw await ResponseReader.toError({ response: fetched });
+      const result2 = await ResponseReader.toError({ response: fetched });
+      throw result2;
     }
 
     return ResponseReader.read<TResult>({ response: fetched, type, requestCountData });

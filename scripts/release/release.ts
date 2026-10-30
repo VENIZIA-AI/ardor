@@ -113,12 +113,14 @@ const collectState = async (opts: {
 
     const manifest = JSON.parse(shown.stdout) as Record<string, string>;
 
+    const result = await resolvePublishedVersion({ packageName: manifest.name });
+    const result2 = await listPublishedVersions({ packageName: manifest.name });
     states.push({
       name,
       packageName: manifest.name,
       localVersion: manifest.version,
-      publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
-      publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
+      publishedVersion: result,
+      publishedVersions: result2,
     });
   }
 
@@ -336,13 +338,16 @@ const main = async (): Promise<void> => {
 
   // A stable whose packages are all out can still owe the merge back: a run that stopped after the last
   // tag. The same version dispatched again runs only that, so it is not "nothing to release".
-  const mergeBackOwed =
-    isStable &&
-    plan.length === 0 &&
-    (await run({
+  let mergeBackOwed = false;
+
+  if (isStable && plan.length === 0) {
+    const ancestry = await run({
       command: ['git', 'merge-base', '--is-ancestor', 'origin/main', 'origin/develop'],
       allowFailure: true,
-    }).then((result) => result.exitCode !== 0));
+    });
+
+    mergeBackOwed = ancestry.exitCode !== 0;
+  }
 
   if (plan.length === 0 && !mergeBackOwed) {
     console.log(`Nothing to release - every package is already at ${resolved.version}.`);
@@ -371,18 +376,23 @@ const main = async (): Promise<void> => {
   // The commit in the label is the head the dispatch will run, so it is read fresh: a branch that moved since the
   // start would make the plan job refuse the label.
   await run({ command: ['git', 'fetch', '--quiet', 'origin', branch], allowFailure: true });
-  const label = ReleasePlan.declaresLabel({
-    workflow: await readFromRemote({ branch, path: WORKFLOW_PATH }),
-  })
-    ? ReleasePlan.labelOf({
-        version: resolved.version,
-        kind,
-        packages,
-        issue,
-        sha: (await run({ command: ['git', 'rev-parse', `origin/${branch}`], allowFailure: true }))
-          .stdout,
-      })
-    : undefined;
+  const result2 = await readFromRemote({ branch, path: WORKFLOW_PATH });
+  let label: string | undefined;
+
+  if (ReleasePlan.declaresLabel({ workflow: result2 })) {
+    const head = await run({
+      command: ['git', 'rev-parse', `origin/${branch}`],
+      allowFailure: true,
+    });
+
+    label = ReleasePlan.labelOf({
+      version: resolved.version,
+      kind,
+      packages,
+      issue,
+      sha: head.stdout,
+    });
+  }
   const dispatch = ReleasePlan.dispatch({
     plan: packages,
     version: resolved.version,

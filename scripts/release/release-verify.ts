@@ -71,13 +71,14 @@ export class ReleaseVerify {
     const published: Record<string, string> = {};
 
     for (const state of states) {
-      published[state.packageName] = await ReleaseVerify.assertPublished({
+      const result = await ReleaseVerify.assertPublished({
         state,
         listVersions,
         sleepFn,
         attempts,
         intervalMs,
       });
+      published[state.packageName] = result;
     }
 
     await pull();

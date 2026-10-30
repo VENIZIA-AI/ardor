@@ -157,7 +157,8 @@ describe('the dev server', () => {
   beforeAll(async () => {
     root = makeScratch({ prefix: 'build-info-dev-' });
     writeFiles({ root, files: appFiles });
-    server = await startServer({ sources: makeFakeSources() });
+    const result = await startServer({ sources: makeFakeSources() });
+    server = result;
     origin = server.resolvedUrls?.local[0] ?? '';
   });
 
@@ -173,11 +174,14 @@ describe('the dev server', () => {
     expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-length')).toBe(String(Buffer.byteLength(EXPECTED_TEXT)));
-    expect(await response.text()).toBe(EXPECTED_TEXT);
+    const result = await response.text();
+    expect(result).toBe(EXPECTED_TEXT);
   });
 
   test('a query string does not change the answer', async () => {
-    expect(await (await fetch(`${origin}build-info.json?t=1`)).text()).toBe(EXPECTED_TEXT);
+    const result2 = await fetch(`${origin}build-info.json?t=1`);
+    const result = await result2.text();
+    expect(result).toBe(EXPECTED_TEXT);
   });
 
   test('HEAD answers with the same headers and no body', async () => {
@@ -185,7 +189,8 @@ describe('the dev server', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-length')).toBe(String(Buffer.byteLength(EXPECTED_TEXT)));
-    expect(await response.text()).toBe('');
+    const result = await response.text();
+    expect(result).toBe('');
   });
 
   test('any other method is refused, and says which are allowed', async () => {
@@ -196,14 +201,17 @@ describe('the dev server', () => {
   });
 
   test('another path is left to the rest of the dev server', async () => {
-    expect((await fetch(`${origin}other.json`)).status).toBe(404);
+    const result = await fetch(`${origin}other.json`);
+    expect(result.status).toBe(404);
   });
 
   test('the file lives under the base of the dev server', async () => {
     const underBase = await startServer({ sources: makeFakeSources(), base: '/app/' });
 
     try {
-      expect(await (await fetch(getUrl({ started: underBase }))).text()).toBe(EXPECTED_TEXT);
+      const result2 = await fetch(getUrl({ started: underBase }));
+      const result = await result2.text();
+      expect(result).toBe(EXPECTED_TEXT);
     } finally {
       await underBase.close();
     }
@@ -224,7 +232,8 @@ describe('the dev server', () => {
       const second = await fetch(getUrl({ started: failing }));
 
       expect(second.status).toBe(200);
-      expect(await second.text()).toBe(EXPECTED_TEXT);
+      const result = await second.text();
+      expect(result).toBe(EXPECTED_TEXT);
     } finally {
       await failing.close();
     }
@@ -296,9 +305,8 @@ describe('the build', () => {
       sources: makeFakeSources({ record: withoutCommit() }),
     });
 
-    expect(String(await getRejection({ task: buildApp({ plugin }) }))).toContain(
-      'APP_BUILD_COMMIT',
-    );
+    const result = await getRejection({ task: buildApp({ plugin }) });
+    expect(String(result)).toContain('APP_BUILD_COMMIT');
   });
 
   test('with the unspecified policy the build keeps going', async () => {

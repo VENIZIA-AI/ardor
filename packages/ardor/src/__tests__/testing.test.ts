@@ -97,7 +97,8 @@ describe('assertArdorApplicationBoots', () => {
       ],
     });
 
-    expect(await assertArdorApplicationBoots(application)).toBe(application);
+    const result = await assertArdorApplicationBoots(application);
+    expect(result).toBe(application);
   });
 
   test('rejects when a service injects a key nobody bound, naming the key and who needs it', async () => {
@@ -228,9 +229,8 @@ describe('assertArdorApplicationBoots', () => {
 
     expect(seen).toBeDefined();
     expect(seen).not.toBe(originalFetch);
-    expect(await messageOf((seen as typeof fetch)('http://localhost/x'))).toContain(
-      'never reaches the network',
-    );
+    const result = await messageOf((seen as typeof fetch)('http://localhost/x'));
+    expect(result).toContain('never reaches the network');
     expect(globalThis.fetch).toBe(originalFetch);
   });
 

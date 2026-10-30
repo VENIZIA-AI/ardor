@@ -32,7 +32,7 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
   React.useEffect(() => {
     if (initialRender.current) {
       initialRender.current = false;
-      return;
+      return () => {};
     }
     Promise.resolve(handleSave.current(debouncedValueToSave)).catch((error: unknown) => {
       logger.error('[useAutosave] Failed to save debounced value | error: %s', error);

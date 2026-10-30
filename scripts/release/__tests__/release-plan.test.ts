@@ -458,13 +458,12 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
   });
 
   test('it passes when every latest is at least what the prerelease was built on', async () => {
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.9-1',
-        message,
-        latestOf: latest({ '@venizia/ignis-kernel': '0.4.6', '@venizia/ignis-boot': '0.4.7' }),
-      }),
-    ).toEqual([]);
+    const result = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.9-1',
+      message,
+      latestOf: latest({ '@venizia/ignis-kernel': '0.4.6', '@venizia/ignis-boot': '0.4.7' }),
+    });
+    expect(result).toEqual([]);
   });
 
   test('it names a package whose latest is below', async () => {
@@ -537,20 +536,18 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
         '@venizia/ignis-kernel': opts.kernel,
       });
 
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.6-0',
-        message: realTag,
-        latestOf: stableOf({ kernel: '0.4.6' }),
-      }),
-    ).toEqual([]);
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.6-0',
-        message: realTag,
-        latestOf: stableOf({ kernel: '0.4.5' }),
-      }),
-    ).toEqual([
+    const result = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.6-0',
+      message: realTag,
+      latestOf: stableOf({ kernel: '0.4.6' }),
+    });
+    expect(result).toEqual([]);
+    const result2 = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.6-0',
+      message: realTag,
+      latestOf: stableOf({ kernel: '0.4.5' }),
+    });
+    expect(result2).toEqual([
       'IGNIS stable is not out: @venizia/ignis-kernel latest 0.4.5, the prerelease was built on 0.4.6-0',
     ]);
   });
@@ -605,7 +602,8 @@ describe('release-plan.ts plan', () => {
     expect(result.stdout).toContain(
       'plan: 0.4.9-2 (prerelease) from prerelease on refs/heads/develop',
     );
-    expect(await Bun.file(result.outputPath).text()).toBe(
+    const result2 = await Bun.file(result.outputPath).text();
+    expect(result2).toBe(
       'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\ndevelop_sha=\n',
     );
   });
@@ -615,7 +613,8 @@ describe('release-plan.ts plan', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('ERROR | a stable release runs from main, not develop');
-    expect(await Bun.file(result.outputPath).exists()).toBe(false);
+    const result2 = await Bun.file(result.outputPath).exists();
+    expect(result2).toBe(false);
   });
 
   describe('the run title is the dispatcher label, and the plan holds it to the truth (#453)', () => {
@@ -633,7 +632,8 @@ describe('release-plan.ts plan', () => {
       const result = run(own);
 
       expect(result.code).toBe(0);
-      expect(await Bun.file(result.outputPath).text()).toContain('version=0.4.9-2\n');
+      const result2 = await Bun.file(result.outputPath).text();
+      expect(result2).toContain('version=0.4.9-2\n');
       expect(run('').code).toBe(0);
     });
 
@@ -649,7 +649,8 @@ describe('release-plan.ts plan', () => {
 
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('is not what the plan computes');
-      expect(await Bun.file(result.outputPath).exists()).toBe(false);
+      const result2 = await Bun.file(result.outputPath).exists();
+      expect(result2).toBe(false);
     });
 
     test('a hostile label is refused, quoted, and writes nothing to the job outputs', async () => {
@@ -669,7 +670,8 @@ describe('release-plan.ts plan', () => {
         const result = run(label);
 
         expect(result.code).toBe(1);
-        expect(await Bun.file(result.outputPath).exists()).toBe(false);
+        const result2 = await Bun.file(result.outputPath).exists();
+        expect(result2).toBe(false);
         // The refusal prints the label quoted, so no line of the log starts with `::` or carries the text raw.
         expect(result.stderr.split('\n').some((line) => line.startsWith('::'))).toBe(false);
         expect(result.stderr).toContain('ERROR | the label "');
