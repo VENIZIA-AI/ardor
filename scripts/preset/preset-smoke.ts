@@ -31,7 +31,8 @@
  *        VULCAN_TGZ  comma-separated packed tarballs of @venizia/vulcan, vulcan-atlas and vulcan-okf,
  *                    used instead of the registry's
  *        IGNIS_DIR   an IGNIS checkout, built (read only: it is only packed), for the pair scenario; without it
- *                    the pair scenario takes the latest @venizia/ignis from the registry
+ *                    the pair scenario takes @venizia/ignis from the registry, at the dist-tag CATALOG_TAG names
+ *                    (the Test job sets it: `highest` for a prerelease), else `latest`
  */
 import {
   copyFileSync,
@@ -269,10 +270,14 @@ const fetchRegistry = async (opts: {
   throw new Error(`[preset-smoke] the registry did not answer ${opts.url} | ${failure}`);
 };
 
-/** The latest release of a package, downloaded from the registry as a tarball. */
-const downloadLatest = async (opts: { name: string; destination: string }): Promise<string> => {
+/** The release a dist-tag of a package points at, downloaded from the registry as a tarball. */
+const downloadTagged = async (opts: {
+  name: string;
+  tag: string;
+  destination: string;
+}): Promise<string> => {
   const answer = await fetchRegistry({
-    url: `https://registry.npmjs.org/${opts.name}/latest`,
+    url: `https://registry.npmjs.org/${opts.name}/${opts.tag}`,
     accept: (body) => {
       try {
         JSON.parse(new TextDecoder().decode(body));
@@ -293,7 +298,7 @@ const downloadLatest = async (opts: { name: string; destination: string }): Prom
   mkdirSync(opts.destination, { recursive: true });
   const path = join(
     opts.destination,
-    `${opts.name.replace(/^@/, '').replace('/', '-')}-latest.tgz`,
+    `${opts.name.replace(/^@/, '').replace('/', '-')}-${opts.tag}.tgz`,
   );
 
   writeFileSync(path, await fetchRegistry({ url: dist.tarball, accept: () => true }));
@@ -1672,8 +1677,10 @@ const main = async () => {
           : packAll({ directory: ignisDirectory, destination: join(tempFolder, 'ignis-tgz') });
       const ignisTarball =
         ignisDirectory === undefined
-          ? await downloadLatest({
+          ? await downloadTagged({
               name: '@venizia/ignis',
+              // The line the catalog was refreshed to: IGNIS stable beside an ARDOR prerelease is two copies.
+              tag: process.env.CATALOG_TAG ?? 'latest',
               destination: join(tempFolder, 'ignis-tgz'),
             })
           : ignisTarballs.get('@venizia/ignis');
