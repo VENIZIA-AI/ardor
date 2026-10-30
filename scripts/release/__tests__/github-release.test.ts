@@ -123,6 +123,7 @@ const stubGh = (opts: {
   existing?: boolean;
   createFails?: boolean;
   tagMissing?: boolean;
+  tagLookupFails?: boolean;
 }): IStubGh => {
   const calls: string[][] = [];
   let notes = '';
@@ -135,6 +136,14 @@ const stubGh = (opts: {
       calls.push(args);
 
       if (args[0] === 'api') {
+        if (opts.tagLookupFails === true) {
+          return {
+            status: 1,
+            stdout: '',
+            stderr: 'HTTP 403: Resource not accessible by integration',
+          };
+        }
+
         return opts.tagMissing === true
           ? { status: 1, stdout: '', stderr: 'HTTP 404' }
           : { status: 0, stdout: '', stderr: '' };
@@ -498,5 +507,151 @@ describe('GithubRelease.main', () => {
     expect(GithubRelease.main({ ...base, gh: stubGh({ createFails: true }).gh })).toBe(1);
     expect(GithubRelease.main({ ...base, gh: stubGh({ tagMissing: true }).gh })).toBe(0);
     expect(GithubRelease.main({ ...base, gh: stubGh({ existing: true }).gh })).toBe(0);
+  });
+});
+
+describe('GithubRelease.create: the findings of the security review', () => {
+  test("Latest is the repository's: a stable run that does not end in the umbrella never takes it", () => {
+    const root = fixture();
+
+    commit({ root, message: '[#40] chore(react): release v0.4.8 [0.4.8]' });
+    tagRun({ root, version: '0.4.8', dirs: ['kernel', 'react'] });
+
+    const stub = stubGh({});
+    const outcome = make({
+      root,
+      kind: 'stable',
+      version: '0.4.8',
+      stub,
+      dirs: ['kernel', 'react'],
+    });
+
+    expect(outcome.state).toBe('created');
+    expect(stub.created()).toContain('react-v0.4.8');
+    expect(stub.created()).toContain('--latest=false');
+    expect(stub.created()).not.toContain('--latest');
+  });
+
+  test('a tag lookup that fails for another reason than a 404 is a failure, not a quiet skip', () => {
+    const outcome = make({
+      root: fixture(),
+      kind: 'stable',
+      version: '0.4.6',
+      stub: stubGh({ tagLookupFails: true }),
+    });
+
+    expect(outcome.state).toBe('failed');
+    expect(outcome.message).toContain('HTTP 403');
+  });
+
+  test('refuses a version that is not plain semver before any gh call', () => {
+    for (const version of ['0.4.7/../../x', '0.4', '0.4.6+build', '', "1$&$'x", 'v0.4.6']) {
+      const stub = stubGh({});
+      const outcome = make({ root: fixture(), kind: 'stable', version, stub });
+
+      expect(outcome.state).toBe('refused');
+      expect(stub.calls).toEqual([]);
+    }
+  });
+
+  test('a stray tag cannot make a comparison throw: it names no version', () => {
+    const root = fixture();
+
+    for (const name of ['ardor-v9zzz', 'ardor-v0.4.6.1', 'ardor-v99.0.0+x', 'ardor-v00.4.6']) {
+      tag({ root, name });
+    }
+
+    const stub = stubGh({});
+    const outcome = make({ root, kind: 'stable', version: '0.4.6', stub });
+
+    expect(outcome.state).toBe('created');
+    expect(stub.created()).toContain('--latest');
+    expect(stub.notes()).toContain('B body line.');
+  });
+
+  test('tagOf takes a value as text, not as a replacement pattern', () => {
+    expect(GithubRelease.tagOf({ pattern: PATTERN, dir: 'ardor', version: "1$&$'x" })).toBe(
+      "ardor-v1$&$'x",
+    );
+  });
+
+  test('a subject longer than 300 characters is cut', () => {
+    const [capped] = GithubRelease.cappedSubjects({ subjects: ['[#1] ' + 'x'.repeat(1000)] });
+
+    expect(capped?.length).toBe(GithubReleaseConstants.MAX_SUBJECT_LENGTH);
+    expect(capped?.endsWith('...')).toBe(true);
+  });
+
+  test('the notes of a stable that would not fit GitHub are cut with a closing line', () => {
+    const root = fixture();
+
+    commit({
+      root,
+      message: '[#50] feat(a): a very long entry',
+      files: {
+        'docs/changelogs/2026-10-29-long.md': entry({
+          title: 'Long',
+          body: 'word '.repeat(40_000),
+        }),
+      },
+    });
+    commit({ root, message: '[#51] chore(ardor): release v0.4.7 [0.4.7]' });
+    tagRun({ root, version: '0.4.7' });
+
+    const stub = stubGh({});
+
+    make({ root, kind: 'stable', version: '0.4.7', stub });
+    expect(stub.notes().length).toBeLessThan(120_000);
+    expect(stub.notes()).toContain('... the notes are cut here');
+    expect(stub.notes()).toContain('## Packages');
+  });
+
+  test('a dry run prints its notes indented, so no line of them can be a runner command', () => {
+    const root = fixture();
+
+    commit({
+      root,
+      message: '[#60] feat(a): a command-like entry',
+      files: {
+        'docs/changelogs/2026-10-30-cmd.md': entry({ title: 'Cmd', body: '::error::forged' }),
+      },
+    });
+    commit({ root, message: '[#61] chore(ardor): release v0.4.7 [0.4.7]' });
+    tagRun({ root, version: '0.4.7' });
+
+    const lines: string[] = [];
+    const original = console.log;
+
+    console.log = (message: string) => {
+      lines.push(message);
+    };
+
+    try {
+      GithubRelease.main({
+        args: [
+          'create',
+          '--version',
+          '0.4.7',
+          '--kind',
+          'stable',
+          '--packages',
+          ALL.join(','),
+          '--dry-run',
+        ],
+        env: {},
+        cwd: root,
+        gh: stubGh({}).gh,
+      });
+    } finally {
+      console.log = original;
+    }
+
+    expect(
+      lines
+        .join('\n')
+        .split('\n')
+        .some((line) => line.startsWith('::')),
+    ).toBe(false);
+    expect(lines.join('\n')).toContain('  ::error::forged');
   });
 });

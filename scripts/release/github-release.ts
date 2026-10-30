@@ -30,12 +30,17 @@ import { join } from 'node:path';
 
 import { ReleaseMergeBack } from './merge-back';
 import { ReleaseKinds, type TReleaseKind } from './release-plan';
+import { isReleaseVersion } from './release-version';
 
 export class GithubReleaseConstants {
   /** The release the atlas index publishes its pairs to. */
   static readonly ATLAS_INDEX_TAG = 'atlas-index';
   static readonly MANIFEST = '.agents/vulcan.manifest.json';
   static readonly MAX_PRERELEASE_SUBJECTS = 30;
+  /** A subject longer than this is cut: the whole body must stay under GitHub's 125000 characters. */
+  static readonly MAX_SUBJECT_LENGTH = 300;
+  /** The notes of a stable longer than this are cut with a closing line. */
+  static readonly MAX_NOTES_LENGTH = 100000;
   static readonly DATED_ENTRY = /^\d{4}-\d{2}-\d{2}-.*\.md$/;
   static readonly FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n/;
   static readonly DATE_HEADING = /^# Changelog - \d{4}-\d{2}-\d{2}\s*$/m;
@@ -152,17 +157,29 @@ export class GithubRelease {
 
   /** The tag a package names a version with: the manifest's pattern with the package and the version put in. */
   static tagOf(opts: { pattern: string; dir: string; version: string }): string {
-    return opts.pattern.replace('<dir>', opts.dir).replace('<version>', opts.version);
+    // Replacer functions: a `$&` or `$'` in a value is text, not a replacement pattern.
+    return opts.pattern.replace('<dir>', () => opts.dir).replace('<version>', () => opts.version);
   }
 
-  /** The version a tag names for one package, when it starts with a digit. */
+  /** Whether a version is plain semver (`x.y.z` or `x.y.z-pre`): no build metadata, no padding, nothing to split on. */
+  static isStrictVersion(opts: { version: string }): boolean {
+    return isReleaseVersion({ value: opts.version }) && !opts.version.includes('+');
+  }
+
+  /**
+   * The version a tag names for one package. A tag whose version is not plain semver (`ardor-v9zzz`,
+   * `ardor-v0.4.6.1`) names none: a stray tag cannot make a comparison throw and stop every Release.
+   */
   static versionOfTag(opts: { tag: string; pattern: string; dir: string }): string | undefined {
     const escaped = opts.pattern
-      .replace('<dir>', opts.dir)
+      .replace('<dir>', () => opts.dir)
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       .replace('<version>', '(\\d\\S*)');
+    const version = new RegExp(`^${escaped}$`).exec(opts.tag)?.[1];
 
-    return new RegExp(`^${escaped}$`).exec(opts.tag)?.[1];
+    return version !== undefined && GithubRelease.isStrictVersion({ version })
+      ? version
+      : undefined;
   }
 
   /** The highest tag of this package below `version`: of stables only when `stableOnly`, of every kind otherwise. */
@@ -293,10 +310,14 @@ export class GithubRelease {
   /** At most `MAX_PRERELEASE_SUBJECTS` subjects, with a closing line that says how many were left out. */
   static cappedSubjects(opts: { subjects: string[] }): string[] {
     const max = GithubReleaseConstants.MAX_PRERELEASE_SUBJECTS;
+    const length = GithubReleaseConstants.MAX_SUBJECT_LENGTH;
+    const subjects = opts.subjects.map((subject) =>
+      subject.length > length ? `${subject.slice(0, length - 3)}...` : subject,
+    );
 
-    return opts.subjects.length <= max
-      ? opts.subjects
-      : [...opts.subjects.slice(0, max), `... and ${opts.subjects.length - max} more`];
+    return subjects.length <= max
+      ? subjects
+      : [...subjects.slice(0, max), `... and ${subjects.length - max} more`];
   }
 
   static packagesOf(opts: { names: string[]; version: string }): string[] {
@@ -375,6 +396,10 @@ export class GithubRelease {
     scratchRoot: string;
     dryRun?: boolean;
   }): IGithubReleaseOutcome {
+    if (!GithubRelease.isStrictVersion({ version: opts.version })) {
+      return { state: 'refused', message: `'${opts.version}' is not a plain semver version` };
+    }
+
     const manifest = GithubRelease.manifestOf({ cwd: opts.cwd });
     const run = opts.dirs.map((dir) => manifest.packages.find((entry) => entry.dir === dir));
     const unknown = opts.dirs.filter((_dir, index) => run[index] === undefined);
@@ -410,12 +435,16 @@ export class GithubRelease {
       return { state: 'exists', message: `${tag} already has a Release - skipped` };
     }
 
-    // The run tags its packages in order; the last tag is missing when the run stopped before it.
-    if (
-      opts.gh({ args: ['api', `repos/{owner}/{repo}/git/ref/tags/${tag}`, '--silent'] }).status !==
-      0
-    ) {
-      return { state: 'skipped', message: `${tag} was not made by this run - no Release` };
+    // The run tags its packages in order; the last tag is missing from the remote when the run stopped before it.
+    // Only a 404 means that: a missing right or a server error is a failure, not a quiet skip.
+    const remoteTag = opts.gh({
+      args: ['api', `repos/{owner}/{repo}/git/ref/tags/${tag}`, '--silent'],
+    });
+
+    if (remoteTag.status !== 0) {
+      return /\b404\b|Not Found/i.test(remoteTag.stderr)
+        ? { state: 'skipped', message: `${tag} is not on the remote - no Release` }
+        : { state: 'failed', message: `could not look up ${tag}: ${remoteTag.stderr.trim()}` };
     }
 
     const stable = opts.kind === ReleaseKinds.STABLE;
@@ -441,6 +470,10 @@ export class GithubRelease {
       notes = GithubReleaseConstants.NO_USER_CHANGES;
     }
 
+    if (notes.length > GithubReleaseConstants.MAX_NOTES_LENGTH) {
+      notes = `${notes.slice(0, GithubReleaseConstants.MAX_NOTES_LENGTH)}\n\n... the notes are cut here: see the changelog`;
+    }
+
     const subjects = stable ? [] : GithubRelease.subjectsOf({ cwd: opts.cwd, from, to: tag });
     const body = GithubRelease.bodyOf({
       kind: opts.kind,
@@ -449,8 +482,11 @@ export class GithubRelease {
       subjects: GithubRelease.cappedSubjects({ subjects }),
       packages: packages.map((entry) => entry.name),
     });
+    // Latest is the repository's, not a package's: only a run that ends in the umbrella (the last live package)
+    // may take it, so a run of the first packages alone never moves it.
     const latest =
       stable &&
+      last.dir === manifest.packages.at(-1)?.dir &&
       GithubRelease.isNewestStable({
         tags,
         pattern: manifest.tagPattern,
@@ -543,7 +579,10 @@ export class GithubRelease {
           dryRun: opts.args.includes('--dry-run'),
         });
 
-        console.log(`github-release: ${outcome.state} - ${outcome.message}`);
+        // Indented: a line of notes that starts with `::` would be a workflow command if this ran in CI.
+        const shown = outcome.message.split('\n').join('\n  ');
+
+        console.log(`github-release: ${outcome.state} - ${shown}`);
 
         if (summary !== undefined) {
           appendFileSync(summary, GithubRelease.summaryOf({ outcome }));

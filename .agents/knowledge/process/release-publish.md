@@ -217,11 +217,11 @@ Every release run, prerelease and stable, makes one GitHub Release for the run, 
 |---|---|---|
 | The tag | the tag of the last package of the run: `ardor-v<version>` for a full run, the umbrella | the same |
 | Title | `ARDOR <version>` | `ARDOR <version>` |
-| Flag | Latest only when no higher stable `ardor-v*` tag exists (`--latest=false` otherwise) | Pre-release, never Latest |
+| Flag | Latest only for a run that ends in the umbrella `ardor` and only when no higher stable `ardor-v*` tag exists (`--latest=false` otherwise, so a run of the first packages never moves Latest) | Pre-release, never Latest |
 | Body | the changelog entries added since the previous stable tag, with the front matter, the date heading and an `ARDOR X.Y.Z:` prefix removed; `No change for users of the packages in this release.` when there is none | `Install: npm install @venizia/ardor@next` (the last package of the run) and up to 30 `[#N]` subjects since the previous tag, fenced, without the release commits |
-| Both | a `Packages` list of the run, each linked to its npm version page | |
+| Both | a `Packages` list of this run (a resume run lists only the packages it released), each linked to its npm version page | |
 
-A tag that already has a Release is skipped; so is a tag the run did not make (the chain stopped before it). The step is `continue-on-error`, bounded to 5 minutes, runs even when the chain stopped (the tags it made stand) and uses the job token: a failure is written to the run summary and never fails or undoes a publish. The script never touches the `atlas-index` release. `--dry-run` prints the tag, whether it would be Latest and the notes, and writes nothing. The guard `githubRelease` (C34) in `release-gates.test.ts` pins the step; `github-release.test.ts` runs the script on a real repository with a stand-in for `gh`.
+A tag that already has a Release is skipped; so is a tag that is not on the remote (the chain stopped before it, or an earlier run made it: a re-dispatch after a failed Release step makes the missing Release). Only a 404 means that: another answer of GitHub (a missing right, a server error) is a failure in the summary. A tag whose version is not plain semver (`ardor-v9zzz`) names no version, and a version that is not plain semver is refused. A stable's notes are cut at 100000 characters and a subject at 300. The step is `continue-on-error`, bounded to 5 minutes, runs even when the chain stopped (the tags it made stand) and uses the job token: a failure is written to the run summary and never fails or undoes a publish. The script never touches the `atlas-index` release. `--dry-run` prints the tag, whether it would be Latest and the notes, and writes nothing. The guard `githubRelease` (C34) in `release-gates.test.ts` pins the step; `github-release.test.ts` runs the script on a real repository with a stand-in for `gh`.
 
 ## Trusted publishing (no npm token)
 
