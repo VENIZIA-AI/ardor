@@ -498,7 +498,8 @@ export class ReleasePlan {
           .map((pair) => {
             const at = pair.lastIndexOf('=');
 
-            return { name: pair.slice(0, at), version: pair.slice(at + 1) };
+            // A tag made before the chain wrote bare versions holds the catalog range (`^0.4.6-0`).
+            return { name: pair.slice(0, at), version: pair.slice(at + 1).replace(/^[\^~]/, '') };
           });
   }
 
