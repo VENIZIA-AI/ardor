@@ -1,5 +1,4 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
-import { withMermaid } from 'vitepress-plugin-mermaid';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
 import { venziaCodeTheme } from './theme/shared/code-theme.ts';
 import { VENIZIA_LOGO_SVG } from './theme/shared/venizia-logo.ts';
@@ -120,7 +119,6 @@ const config = defineConfig({
   },
   srcDir: '../content',
   outDir: './.vitepress/dist',
-  srcExclude: ['**/template/**'],
   title: 'ARDOR',
   description:
     'Admin consoles on react-admin, with the same dependency injection and filter language as IGNIS, plus sign-in and i18n.',
@@ -188,29 +186,12 @@ const config = defineConfig({
     ],
   ],
   vite: {
-    // mermaid pulls in dayjs/esm, whose extensionless imports break Node's native ESM resolver during
-    // SSR. Bundle them through Vite (noExternal) so Vite's resolver handles the resolution.
-    ssr: { noExternal: ['vitepress-plugin-mermaid', 'mermaid', 'dayjs'] },
-    optimizeDeps: { include: ['mermaid', 'dayjs'] },
     build: {
       target: 'es2022',
-      // mermaid is a legitimately large dependency (~3 MB); isolated into its own lazy chunk below.
-      // Keep the warning limit above its size so the advisory only fires for unexpected app bloat.
-      chunkSizeWarningLimit: 3500,
       rollupOptions: {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // Isolate mermaid (+ its heavy deps) - large and only needed on pages with diagrams.
-              if (
-                id.includes('mermaid') ||
-                id.includes('cytoscape') ||
-                id.includes('dagre') ||
-                id.includes('d3') ||
-                id.includes('khroma')
-              ) {
-                return 'mermaid';
-              }
               // Split search functionality
               if (id.includes('minisearch') || id.includes('mark.js')) {
                 return 'search';
@@ -249,4 +230,4 @@ const config = defineConfig({
   },
 });
 
-export default withMermaid(config);
+export default config;

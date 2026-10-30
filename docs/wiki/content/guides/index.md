@@ -30,6 +30,10 @@ ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](
   <h3>Quickstart</h3>
   <p>Write a small admin by hand against a stub API: a datasource, a repository, a list page and a login</p>
 </a>
+<a href="./get-started/vite-setup" class="guide-card">
+  <h3>Vite setup</h3>
+  <p>What an app needs in its Vite 8 config: the chunk order flag the preset sets, and buildInfoFile for an About page</p>
+</a>
 <a href="./tutorials/build-an-admin" class="guide-card">
   <h3>Build an Admin</h3>
   <p>Create a complete administration console with list, create, edit and delete pages for one resource</p>

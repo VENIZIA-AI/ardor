@@ -2,7 +2,7 @@
 
 # =============================================================================
 # Pre-commit Hook
-# Lints the packages, the wiki and scripts/, then the examples (which make does not drive).
+# Runs `make lint-all`: the packages, the wiki, scripts/ and the format of the files outside the projects (the examples among them).
 # The examples resolve the packages through dist, so run `make build-all` after a pull.
 # =============================================================================
 
