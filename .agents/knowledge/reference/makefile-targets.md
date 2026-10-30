@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**81 targets.**
+**85 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -30,15 +30,19 @@ generated:
 | `make clean-install-ardor` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-kernel` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make copies-check` | - | Gate: every @venizia/* package resolves to one version (no stable IGNIS copy next to a prerelease). |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
+| `make gates` | - | The Test job of the release workflow, locally: links, copies, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
+| `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), in a scratch copy. About two minutes; run before every dispatch. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
+| `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
@@ -70,7 +74,7 @@ generated:
 | `make purity-react` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-test` | - | Run the purity gate's regression tests (the shared engine on ARDOR's fixtures). |
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
-| `make release` | - | Dispatch the release workflow per package, e.g. ARGS="--yes". |
+| `make release` | - | Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
 | `make setup-hooks` | - | Configure git to use .githooks directory. |
 | `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |

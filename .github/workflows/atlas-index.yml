@@ -53,6 +53,6 @@ jobs:
         run: bun install
 
       - name: Publish the atlas index
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@411757f4ff02e9ac285df288bb85218fec4c8e26 # v0.4.6
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@1833cc40cab4d36181f857543f1235fd2004a7a0 # v0.4.7
         env:
           ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}

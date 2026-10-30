@@ -22,6 +22,7 @@ const KINDS = ['app', 'lib'] as const;
 const LIB_SHARED = ['.configs/lints', '.configs/formatters'];
 const EXACT_SCOPE = '@venizia/';
 const RANGE_PREFIX = /^[\^~]/;
+const PRERELEASE = /^\d+\.\d+\.\d+-/;
 
 type TRecord = Record<string, unknown>;
 
@@ -81,6 +82,27 @@ export interface IBuildPresetResult {
   /** One `name -> value` line per marker that was resolved, sorted. */
   resolved: string[];
 }
+
+/**
+ * A preset built on a prerelease (the Test job refreshes the catalog to the IGNIS `highest`) asks for a range
+ * that prerelease does not meet: a prerelease sorts before its release, so `^0.4.1` rejects `0.4.6-0`. Then
+ * `vulcan add` refuses the very catalog `vulcan init` wrote from the same preset. The `peers` of the preset
+ * also accept the exact version it was built on. A stable build, and the package's own `peerDependencies`
+ * (what a consumer installs against), are not touched.
+ */
+const acceptBuiltOn = (opts: {
+  peers: Record<string, string>;
+  catalog: Record<string, string>;
+}): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(opts.peers).map(([name, range]) => {
+      const pinned = opts.catalog[name]?.replace(RANGE_PREFIX, '');
+      const widen =
+        pinned !== undefined && PRERELEASE.test(pinned) && !Bun.semver.satisfies(pinned, range);
+
+      return [name, widen ? `${range} || ${pinned}` : range];
+    }),
+  );
 
 export const buildPreset = (opts: {
   root: string;
@@ -157,6 +179,10 @@ export const buildPreset = (opts: {
           resolveRange({ name, range }),
         ]),
       );
+    }
+
+    if (kind === 'app' && output.peers !== undefined) {
+      output.peers = acceptBuiltOn({ peers: toStringRecord({ value: output.peers }), catalog });
     }
 
     const kindOut = join(outDirectory, kind);

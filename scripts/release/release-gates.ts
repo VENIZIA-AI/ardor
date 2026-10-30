@@ -4,13 +4,18 @@
  *
  *   bun scripts/release/release-gates.ts artifacts <package-dir>        every file the `exports` map names exists
  *   bun scripts/release/release-gates.ts links <package-dir>            every ARDOR sibling resolves to the workspace
+ *   bun scripts/release/release-gates.ts single-copy [<root>]           every @venizia/* package resolves to one version
  *   bun scripts/release/release-gates.ts pack <package-dir> <out.json>  packs, writes the manifest npm will receive
  *   bun scripts/release/release-gates.ts protocols <manifest.json>      no catalog: or workspace: survives packing
  *   bun scripts/release/release-gates.ts registry <manifest.json> [--chain-released a,b]
  *                                                               every runtime dependency can be installed
  *   bun scripts/release/release-gates.ts heal-next [--published <name>@<version> --tag <tag>] [--dry-run]          `next` is never below `latest`, for every ARDOR package
+ *   bun scripts/release/release-gates.ts tag-highest --published <name>@<version> [--dry-run]
+ *                                                               `highest` moves only to a semver-greater version
+ *   bun scripts/release/release-gates.ts stable-deps <manifest.json | folder>
+ *                                                               no non-ARDOR @venizia/* range has a prerelease part
  */
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
 import { isReleaseVersion, NpmTags, type TNpmTag } from './release-version';
@@ -94,10 +99,25 @@ export const unresolvedProtocols = (opts: { manifest: unknown }): string[] => {
   return found;
 };
 
-/** Only `bun pm pack` resolves `catalog:` and `workspace:`; npm then publishes that tarball with a provenance. */
-export const isTrustedPublishWorkflow = (opts: { workflow: string }): boolean =>
-  /^\s*\(cd .*&& bun pm pack\b/m.test(opts.workflow) &&
-  /^\s*npm publish .*--provenance\b/m.test(opts.workflow);
+/** The text of a file without its comment lines (YAML `#`, TypeScript `//` and block comments). */
+const withoutCommentLines = (opts: { text: string }): string =>
+  opts.text.replace(/^\s*(#|\/\/|\*|\/\*).*$/gm, '');
+
+/**
+ * Only `bun pm pack` resolves `catalog:` and `workspace:`; npm then publishes that tarball with a provenance.
+ * The workflow runs the chain in one step and the chain holds the pack and the publish, so the preflight reads
+ * both: the workflow must call the chain, and the chain must pack with bun and publish with a provenance.
+ */
+export const isTrustedPublishWorkflow = (opts: { workflow: string; chain: string }): boolean => {
+  const workflow = withoutCommentLines({ text: opts.workflow });
+  const chain = withoutCommentLines({ text: opts.chain });
+
+  return (
+    /^\s*bun scripts\/release\/release-chain\.ts (?!report\b)/m.test(workflow) &&
+    /'bun',\s*'pm',\s*'pack'/.test(chain) &&
+    /'npm',\s*'publish',[^\]]*'--provenance'/.test(chain)
+  );
+};
 
 export const parseChainReleased = (opts: { value: string }): string[] =>
   opts.value
@@ -178,7 +198,17 @@ export interface IDistTags {
   name: string;
   latest?: string;
   next?: string;
+  highest?: string;
 }
+
+/** The blocks of a manifest or a preset that name packages and the ranges they ask for. */
+const RANGE_SECTIONS = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+  'peers',
+] as const;
 
 export interface IPublished {
   name: string;
@@ -305,6 +335,201 @@ export const workspaceStrays = (opts: {
   return strays;
 };
 
+/**
+ * The workspace member folders of a repository, relative to `root`, from the `workspaces` field of its
+ * root `package.json` (an array, or `{ packages: [...] }`; a `!` pattern excludes). Any layout works:
+ * `packages/*` here, `apps/*` and `libs/*` in a consumer. No `workspaces` field means no member.
+ */
+export const workspaceMembers = (opts: { root: string }): string[] => {
+  const manifestPath = join(opts.root, 'package.json');
+
+  if (!existsSync(manifestPath)) {
+    return [];
+  }
+
+  const { workspaces } = readJson({ path: manifestPath });
+  const patterns = Array.isArray(workspaces)
+    ? workspaces
+    : isRecord(workspaces) && Array.isArray(workspaces.packages)
+      ? workspaces.packages
+      : [];
+  const globs = patterns.filter((pattern): pattern is string => typeof pattern === 'string');
+  const excluded = globs
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => new Bun.Glob(pattern.slice(1).replace(/\/$/, '')));
+  const members = new Set<string>();
+
+  for (const pattern of globs.filter((glob) => !glob.startsWith('!'))) {
+    const glob = `${pattern.replace(/\/$/, '')}/package.json`;
+
+    for (const file of new Bun.Glob(glob).scanSync({ cwd: opts.root })) {
+      const member = file.replace(/\/package\.json$/, '');
+
+      if (
+        member.split('/').includes('node_modules') ||
+        excluded.some((exclusion) => exclusion.match(member))
+      ) {
+        continue;
+      }
+
+      members.add(member);
+    }
+  }
+
+  return [...members].sort();
+};
+
+/**
+ * The `name -> versions` that `bun.lock` holds, or `undefined` when the repository has no lock. The
+ * first item of every `packages` entry is `name@version`; a workspace entry (`name@workspace:path`)
+ * has no registry version.
+ */
+export const lockedVersions = (opts: { root: string }): Map<string, Set<string>> | undefined => {
+  const lockPath = join(opts.root, 'bun.lock');
+
+  if (!existsSync(lockPath)) {
+    return undefined;
+  }
+
+  const lock: unknown = Bun.JSONC.parse(readFileSync(lockPath, 'utf8'));
+  const held = new Map<string, Set<string>>();
+
+  if (!isRecord(lock) || !isRecord(lock.packages)) {
+    return held;
+  }
+
+  for (const entry of Object.values(lock.packages)) {
+    const id = Array.isArray(entry) ? entry[0] : undefined;
+    const at = typeof id === 'string' ? id.lastIndexOf('@') : -1;
+
+    if (typeof id !== 'string' || at <= 0 || id.slice(at + 1).startsWith('workspace:')) {
+      continue;
+    }
+
+    const name = id.slice(0, at);
+    held.set(name, (held.get(name) ?? new Set<string>()).add(id.slice(at + 1)));
+  }
+
+  return held;
+};
+
+export interface ICopyVersion {
+  version: string;
+  /** The workspace members that resolve this version. */
+  via: string[];
+  /** Installed, but `bun.lock` does not hold it and it is no workspace link: a leftover of an older install. */
+  stale: boolean;
+}
+
+export interface ICopy {
+  name: string;
+  versions: ICopyVersion[];
+}
+
+/**
+ * One `@venizia/*` package must resolve to one version in the installed graph. Two copies of IGNIS
+ * inversion are two nominal sets of types: the install succeeds, and the lie surfaces as an
+ * `Application` that is "not assignable to IContainer". A peer range without a prerelease part
+ * (`^0.4.1`) never matches `0.4.5-0`, so a workspace that does not declare the package itself gets
+ * the stable copy next to the prerelease the rest of the tree uses.
+ *
+ * Walks what resolves, not what sits in the store (`node_modules/.bun` keeps every version ever
+ * installed): the packages the root and each workspace member see, then the siblings each of those
+ * sees. Returns one entry per package with more than one version, naming who resolves each.
+ *
+ * Each version is checked against `bun.lock`: `bun install` does not prune a symlink an older install
+ * left in a member's `node_modules`, and no declaration fixes that, only a clean install.
+ */
+export const findCopies = (opts: { root: string }): ICopy[] => {
+  const seen = new Map<string, Map<string, Set<string>>>();
+  const linked = new Set<string>();
+  const locked = lockedVersions({ root: opts.root });
+  const visited = new Set<string>();
+  const queue: { directory: string; via: string; member: boolean }[] = [
+    { directory: opts.root, via: '.', member: true },
+    ...workspaceMembers({ root: opts.root }).map((member) => ({
+      directory: join(opts.root, member),
+      via: member,
+      member: true,
+    })),
+  ];
+
+  while (queue.length > 0) {
+    const { directory, via, member } = queue.shift() ?? { directory: '', via: '', member: false };
+    const scope = join(directory, 'node_modules', '@venizia');
+
+    if (!existsSync(scope)) {
+      continue;
+    }
+
+    for (const entry of readdirSync(scope)) {
+      const real = realpathSync(join(scope, entry));
+      const manifestPath = join(real, 'package.json');
+
+      if (!existsSync(manifestPath)) {
+        continue;
+      }
+
+      const { name, version } = readJson({ path: manifestPath });
+
+      if (typeof name !== 'string' || typeof version !== 'string') {
+        continue;
+      }
+
+      const versions = seen.get(name) ?? new Map<string, Set<string>>();
+      const viaSet = versions.get(version) ?? new Set<string>();
+
+      // A workspace member is what a person fixes; a store package is only named when no member resolves it.
+      if (member) {
+        viaSet.add(via);
+      }
+
+      versions.set(version, viaSet);
+      seen.set(name, versions);
+
+      // A store entry sits at <store>/node_modules/@venizia/<name>: the folder it came from is the
+      // scope its own dependencies are linked in. A workspace member is a root of its own.
+      const home = join(real, '..');
+
+      if (!real.includes(`${sep}node_modules${sep}`)) {
+        linked.add(`${name}@${version}`);
+      } else if (!visited.has(home)) {
+        visited.add(home);
+        queue.push({ directory: join(home, '..', '..'), via: `${name}@${version}`, member: false });
+      }
+    }
+  }
+
+  return [...seen.entries()]
+    .filter(([, versions]) => versions.size > 1)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, versions]) => ({
+      name,
+      versions: [...versions.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([version, via]) => ({
+          version,
+          via: [...via].sort(),
+          stale:
+            locked !== undefined &&
+            !linked.has(`${name}@${version}`) &&
+            locked.get(name)?.has(version) !== true,
+        })),
+    }));
+};
+
+/** The copies as one line per package, a leftover marked `stale install`. */
+export const duplicateCopies = (opts: { root: string }): string[] =>
+  findCopies(opts).map(
+    ({ name, versions }) =>
+      `${name} - ${versions
+        .map(
+          ({ version, via, stale }) =>
+            `${version} (${via.length > 0 ? via.join(', ') : 'through another package'})${stale ? ' stale install' : ''}`,
+        )
+        .join(' | ')}`,
+  );
+
 export const readWorkspaceVersions = (opts: { root: string }): Map<string, string> => {
   const versions = new Map<string, string>();
 
@@ -332,7 +557,7 @@ export const fetchPackument = async (opts: { name: string }): Promise<IPackument
   return { ok: true, versions };
 };
 
-const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> => {
+export const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> => {
   const response = await fetch(`${REGISTRY}/-/package/${opts.name.replace('/', '%2F')}/dist-tags`);
 
   if (!response.ok) {
@@ -342,8 +567,47 @@ const fetchDistTags = async (opts: { name: string }): Promise<IDistTags> => {
   const body: unknown = await response.json();
   const tags = toStringRecord(body);
 
-  return { name: opts.name, latest: tags.latest, next: tags.next };
+  return { name: opts.name, latest: tags.latest, next: tags.next, highest: tags.highest };
 };
+
+/**
+ * `highest` is the newest version of a package whatever its dist-tag, and it only goes up: a stable
+ * `0.4.9` published after `0.4.10-0` must not pull it down. No `highest` yet means it is set.
+ */
+export const shouldMoveHighest = (opts: {
+  published: string;
+  current: string | undefined;
+}): boolean => opts.current === undefined || Bun.semver.order(opts.published, opts.current) > 0;
+
+/**
+ * A stable ships on IGNIS stable: every `@venizia/*` range that is not one of this repository's own
+ * (`@venizia/ardor*`) must be free of a prerelease part. Returns `name@range` for each that is not.
+ */
+export const prereleaseRanges = (opts: { manifest: Record<string, unknown> }): string[] =>
+  RANGE_SECTIONS.flatMap((section) =>
+    Object.entries(toStringRecord(opts.manifest[section])).filter(
+      ([name, range]) =>
+        name.startsWith('@venizia/') &&
+        !name.startsWith(SIBLING_PREFIX) &&
+        /\d+\.\d+\.\d+-/.test(range),
+    ),
+  ).map(([name, range]) => `${name}@${range}`);
+
+/**
+ * The files that name packages: the file itself, or every `preset.json` under a folder. A preset's
+ * `files/` folder holds templates (a `tsconfig.json` with comments), which are not manifests.
+ */
+const presetFilesUnder = (opts: { path: string }): string[] =>
+  readdirSync(opts.path, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory()
+      ? presetFilesUnder({ path: join(opts.path, entry.name) })
+      : entry.name === 'preset.json'
+        ? [join(opts.path, entry.name)]
+        : [],
+  );
+
+const manifestFilesOf = (opts: { path: string }): string[] =>
+  statSync(opts.path).isDirectory() ? presetFilesUnder({ path: opts.path }) : [opts.path];
 
 const fail = (opts: { lines: string[] }): never => {
   for (const line of opts.lines) {
@@ -389,6 +653,36 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ every ARDOR sibling links to the workspace');
+    return;
+  }
+
+  if (command === 'single-copy') {
+    const copies = findCopies({ root: first ?? root });
+
+    if (copies.length > 0) {
+      const versions = copies.flatMap((copy) => copy.versions);
+      const lines = duplicateCopies({ root: first ?? root });
+
+      fail({
+        lines: [
+          'ERROR: a @venizia/* package resolves to more than one version:',
+          ...lines.map((line) => `  ${line}`),
+          ...(versions.some((entry) => entry.stale)
+            ? [
+                'stale install: bun.lock does not hold the versions marked above; run a clean install (remove node_modules).',
+              ]
+            : []),
+          // Once the leftovers are gone, a package that still has two versions is a missing declaration.
+          ...(copies.some((copy) => copy.versions.filter((entry) => !entry.stale).length > 1)
+            ? [
+                'Declare the package as a catalog: devDependency in the workspace member that resolves the older copy.',
+              ]
+            : []),
+        ],
+      });
+    }
+
+    console.log('    ✓ every @venizia/* package resolves to one version');
     return;
   }
 
@@ -464,6 +758,62 @@ const main = async (): Promise<void> => {
     return;
   }
 
+  if (command === 'stable-deps' && first !== undefined) {
+    const found = manifestFilesOf({ path: first }).flatMap((path) =>
+      prereleaseRanges({ manifest: readJson({ path }) }).map((entry) => `${path}: ${entry}`),
+    );
+
+    if (found.length > 0) {
+      fail({
+        lines: [
+          'ERROR: a stable must not ship an IGNIS prerelease:',
+          ...found.map((entry) => `  ${entry}`),
+          'Publish the IGNIS stable first, then dispatch again.',
+        ],
+      });
+    }
+
+    console.log('    ✓ no @venizia/* range asks for a prerelease');
+    return;
+  }
+
+  if (command === 'tag-highest') {
+    const args = Bun.argv.slice(3);
+    const value = readFlag({ argv: args, flag: '--published' }) ?? '';
+    const at = value.lastIndexOf('@');
+    const name = at > 0 ? value.slice(0, at) : '';
+    const version = at > 0 ? value.slice(at + 1) : '';
+
+    if (name === '' || !isReleaseVersion({ value: version })) {
+      throw new Error(
+        `[tag-highest] --published '${value}' is not <name>@<version> with a semver version`,
+      );
+    }
+
+    const { highest } = await fetchDistTags({ name });
+
+    if (!shouldMoveHighest({ published: version, current: highest })) {
+      console.log(`    ✓ highest stays at ${highest ?? '-'} (${version} is not above it)`);
+      return;
+    }
+
+    const moved = Bun.spawnSync(
+      args.includes('--dry-run')
+        ? ['echo', 'dry run:', 'npm', 'dist-tag', 'add', `${name}@${version}`, 'highest']
+        : ['npm', 'dist-tag', 'add', `${name}@${version}`, 'highest'],
+      { stdout: 'pipe', stderr: 'pipe' },
+    );
+
+    if (moved.exitCode !== 0) {
+      fail({
+        lines: [`ERROR: could not move highest of ${name} to ${version}`, moved.stderr.toString()],
+      });
+    }
+
+    console.log(`    ✓ highest of ${name} moved from ${highest ?? '-'} to ${version}`);
+    return;
+  }
+
   if (command === 'heal-next') {
     const args = Bun.argv.slice(3);
     const dryRun = args.includes('--dry-run');
@@ -507,7 +857,7 @@ const main = async (): Promise<void> => {
   }
 
   throw new Error(
-    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | heal-next [--dry-run]',
+    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
   );
 };
 
