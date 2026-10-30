@@ -1,6 +1,6 @@
 ---
 title: ArdorApplication takes a features prop, so a shell mounts a filtered list
-description: ArdorApplication has a new optional features prop, the list of features to mount; a shell that serves several kinds of user filters Features.read and passes the result instead of mounting every bound feature.
+description: ArdorApplication has a new optional features prop, the list of features to mount, so a shell can mount a filtered list.
 packages: ['@venizia/ardor', '@venizia/ardor-admin']
 ---
 
@@ -36,17 +36,15 @@ export const renderShell = (application: BaseArdorApplication, reduxStore: Store
 ## What changed
 
 - **`features`, an optional prop of `ArdorApplication`.** The features to mount: their `resources` and `routes` are mounted after the application's own, in the order given. Absent, every bound feature is mounted, as before.
-- **ARDOR reads no context.** There is no predicate and no workspace concept. The shell decides which features it mounts, with its own rule and its own extension on `Features.define`, and passes the result.
+- **ARDOR reads no context.** There is no predicate and no workspace concept. The shell decides which features it mounts and passes the result.
 
 ## Who is affected
 
 - **An app that does not pass `features`.** Nothing changes.
-- **A shell that wants a subset** (by industry, plan, role, tenant). Filter `Features.read({ container })` and pass the list. Keep the array the same until the rule's input changes, and remount the application with a `key` when it does: a merchant switch is the app's job, ARDOR does not re-read the list.
+- **A shell that wants a subset** (by industry, plan, role, tenant). Filter `Features.read({ container })` and pass the list. Keep the array the same until the rule's input changes, and remount the application with a `key` when it does: ARDOR does not re-read the list.
 
 ## What it does not do
 
-A feature left out of `features` is not unbound. The container still holds the feature's configurations, and the i18n provider still holds its messages (a lazy bundle loads when a mounted feature needs the locale, or on a locale change). A message key two features both define still throws, even if one of them is not mounted.
+A feature left out of `features` is not unbound. The container still holds the feature's configurations, and the i18n provider still holds its messages. A message key two features both define still throws, even if one of them is not mounted.
 
-## Details
-
-- The wiki page [Features](../references/features) has the steps; [Application](../references/application) lists the prop.
+See [Features](../references/features) and [Application](../references/application).

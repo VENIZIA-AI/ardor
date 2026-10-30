@@ -16,7 +16,7 @@ packages: ['@venizia/ardor']
 
 Before, `getDataSourceAuth()` shared only the token and the 401 refresh. Headers were read once, when the datasource was built, so a merchant or locale switched later never reached a repository call. A sign-in route got the bearer token, and a `401` there started a refresh. A server error wrapped under `error` reached the app as `core.system_error`.
 
-`getDataSourceAuth()` now returns four settings, and IGNIS runs the hooks on every send, the retry after a refresh included:
+`getDataSourceAuth()` now returns four settings, applied on every send, the retry after a refresh included:
 
 | Setting | What it does |
 |---|---|
@@ -54,4 +54,4 @@ export class ApiDataSource extends HttpDataSource {
 - **Code that called `getDataSourceAuth().authTokenResolver()` or `.onUnauthorized()` itself.** Both now take the request context, `{ paths }`.
 
 > [!WARNING]
-> A `@repository` whose constructor has no `@inject` at parameter 0 takes its datasource key from the datasource's class name, built when the class is decorated (IGNIS kernel `0.2.1-2`). When the datasource pins its key with `binding`, a minified build renames the class and the repository asks for a key nothing is bound under. This was fixed the next day, in IGNIS kernel `0.2.1-3`: the repository now resolves its datasource by class and the pinned key wins, so no `@inject` is needed. See [Class identity survives a minifier](./2026-10-07-class-identity-and-container) and [Repositories](../references/repository).
+> A `@repository` whose constructor has no `@inject` at parameter 0 takes its datasource key from the datasource's class name. When the datasource pins its key with `binding`, a minified build renames the class and the repository asks for a key nothing is bound under. This is fixed in IGNIS kernel `0.2.1-3`: the repository resolves its datasource by class and the pinned key wins, so no `@inject` is needed. See [Class identity survives a minifier](./2026-10-07-class-identity-and-container) and [Repositories](../references/repository).

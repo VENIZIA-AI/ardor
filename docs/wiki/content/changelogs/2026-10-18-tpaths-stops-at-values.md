@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-kernel']
 
 <Badge type="info" text="Bug Fix" />
 
-**In one line.** `TPaths` treated every object type as a tree, so the members of a value type passed as paths; it now stops at those values (issue #92).
+**In one line.** `TPaths` treated every object type as a tree, so the members of a value type passed as paths. It now stops at those values.
 
 ```typescript
 import type { TPaths } from '@venizia/ardor';
@@ -27,13 +27,9 @@ export const accepted: Array<TPaths<IOrder>> = ['createdAt', 'tags', 'customer',
 ## What changed
 
 - **A leaf stops the path.** A `Date`, `RegExp`, `Set`, `Map`, `Promise`, function or `any` field is named by its own key only. Before, `createdAt.getTime`, `tags.size` and a path under an `any` field type-checked.
-- **Nothing else changes.** Arrays still stop the walk, nested objects are still walked, and the default depth is still 10. `tsc` and `bun check` give the same answer.
+- **Nothing else changes.** Arrays still stop the walk, nested objects are still walked, and the default depth is still 10.
 
 ## Who is affected
 
-- **A caller that used a path into one of those values.** It no longer compiles; use the key of the field.
+- **A caller that used a path into one of those values.** It no longer compiles. Use the key of the field.
 - **Everyone else.** No action needed.
-
-| File | Package |
-|------|---------|
-| `src/common/types.ts` | kernel |

@@ -99,9 +99,9 @@ verified by `make surface-check`) from the built `.d.ts` of the packages `.confi
 lists - the same tool IGNIS uses for its own packages. The snapshot is
 [Public surface](/reference/public-surface.md).
 
-**Changelog entry** - a per-release file describing what changed, who is affected, and any breaking
-changes, following the IGNIS `content/changelogs/YYYY-MM-DD-<slug>.md` template. See
-[Release and publish](/process/release-publish.md).
+**Changelog entry** - a file describing a change a user of the published packages sees or can use: what
+changed, who is affected, and any breaking changes with their upgrade step. Internal work gets none. See
+[Writing a changelog entry](/process/writing-a-changelog-entry.md).
 
 **Highest line** - the newest published version of a `@venizia/*` dependency, prerelease included,
 which ARDOR tracks instead of npm's `latest` tag because a feature shipped on the IGNIS prerelease

@@ -1,6 +1,6 @@
 ---
 title: Types, hooks and utilities follow IGNIS house style
-description: Kernel utilities take one options object, React hooks take opts with an enabled flag, and features are defined through Features. One old-to-new table per package.
+description: Kernel utilities take one options object, React hooks take opts with an enabled flag, and features are defined through Features.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin']
 ---
 
@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 <Badge type="warning" text="Behavior Change" />
 
-**In one line.** Utilities take one options object, hooks take `opts` with an `enabled` flag, and a feature is defined with `Features.define` (issue #83):
+**In one line.** Utilities take one options object, hooks take `opts` with an `enabled` flag, and a feature is defined with `Features.define` :
 
 ```typescript
 import { Features, isNumber, useDebounce } from '@venizia/ardor';
@@ -41,7 +41,6 @@ Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaul
 | `Authentication`, `RequestChannel`, `RequestCountData`, `LocalStorageKeys` | each gains `SCHEME_SET` and `static isValid(value: string): boolean` (additive); the `isValid` parameter of the other const classes is renamed `input` -> `value` |
 | `TLogLevel = 'debug' \| ...` | `LogLevels` const class (`DEBUG`, `INFO`, `WARN`, `ERROR`, `SCHEME_SET`, `isValid`), `TLogLevel = TConstValue<typeof LogLevels>` |
 | `new Logger({ scope, enableDebug })`, `logger.toggleDebug({ state })` | `new Logger({ scope })`; the one way to set debug is `Logger.getInstance({ scope, enableDebug })` (process-wide, as before); `toggleDebug` removed |
-| `BaseService` a copy of `BaseHelper` | `BaseService extends BaseHelper` |
 | `SocketIOClientHelper.unsubscribe({ events })` removed only by event name and leaked wrappers | `unsubscribe({ events, handler? })` removes one handler; subscribing the same handler twice no longer duplicates the listener; `TSocketIOEventHandler` exported |
 | `isNumber(value, exact?)` | `isNumber({ value })` (the loose reading, as before); the exact reading is `typeof value === 'number'` |
 | `isObject(value)`, `isValidDate(value)`, `isEditableTarget(target)` | `isObject({ value })`, `isValidDate({ value })`, `isEditableTarget({ target })` |
@@ -78,7 +77,7 @@ Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaul
 | `IApplication.customRoutes: { routes }` | `IApplication.routes` (the same name as `TFeature.routes`) |
 | `II18nProviderOptions.listLanguages` | `II18nProviderOptions.languages` |
 
-Internally, the `api` decorator is now an arrow function; its use is unchanged.
+`isDefined`, `isString` and `isBrowser` keep their signatures.
 
 ## Who is affected
 
@@ -88,13 +87,3 @@ Internally, the `api` decorator is now an arrow function; its use is unchanged.
 - **An application with `customRoutes` or `listLanguages`.** Move the value to `routes` or `languages`.
 - **An application that builds the `ApplicationContext` value by hand**, in a provider or a test wrapper. Drop `registry`: it held the same container as `container`, and an object literal that keeps it no longer type-checks.
 - **An application that types a component with `SyncFC`.** Rename it to `ISyncFC`.
-
-## Details
-
-`isDefined`, `isString` and `isBrowser` stay as they were and are not part of this change. `isDefined` and `isString` are type guards, and an options object would lose the narrowing on the caller's variable; `isBrowser()` takes no argument and returns a boolean.
-
-| File | Package |
-|------|---------|
-| `src/common/**`, `src/utilities/**`, `src/helpers/**`, `src/base/**` | kernel |
-| `src/hooks/**`, `src/contexts/application.ts`, `src/common/types.ts` | react |
-| `src/features/**`, `src/components/application.tsx`, `src/common/types.ts`, `src/hooks/use-features.ts`, `src/providers/i18n.ts` | admin |

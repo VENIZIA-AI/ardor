@@ -19,7 +19,7 @@ tags: [process, release, ci]
 - [Trusted publishing (no npm token)](#trusted-publishing-no-npm-token)
 - [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
-- [Changelog entry required](#changelog-entry-required)
+- [Changelog entry for a user-visible release](#changelog-entry-for-a-user-visible-release)
 <!-- okf:generated:contents end -->
 
 ## What triggers it
@@ -238,11 +238,13 @@ project internally as BANA - rather than relying on the package's own test suite
    `IGNIS`/`Application` surface looks like. An undocumented error is a signal to fix the package,
    not the consumer.
 
-## Changelog entry required
+## Changelog entry for a user-visible release
 
-Every release - regardless of package or bump size - needs a changelog entry describing what
-changed and why, before or alongside the version bump commit. This is what lets a later `tsc` error
-in the consumer be traced back to an intended change instead of a regression. See
+A release that changes what a user of the published packages sees or can use needs a changelog entry
+describing what changed and what to do about it, before or alongside the version bump commit. This is what
+lets a later `tsc` error in the consumer be traced back to an intended change instead of a regression. A
+release of internal work only (release tooling, CI, refactors, tests) has no entry: see
+[Writing a changelog entry](/process/writing-a-changelog-entry.md) for what counts. See
 [Git workflow](/process/git-workflow.md) for where that entry lives in the commit flow and
 [Testing](/process/testing.md) for the test expectations a package must meet before it is a release
 candidate.

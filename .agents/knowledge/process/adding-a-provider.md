@@ -56,7 +56,7 @@ Providers commonly call out to HTTP. Write unit tests using `Bun.serve` to stand
 Once the provider works and is tested:
 
 - Add or update a docs page describing the provider, its options, and its binding key, following [Docs writing style](/conventions/docs-writing-style.md).
-- Add a changelog entry per [Release and publish](/process/release-publish.md).
+- Add a changelog entry (a new provider is something a user can use), per [Writing a changelog entry](/process/writing-a-changelog-entry.md).
 - Re-run surface generation so the new provider and its exported types show up in [Public surface](/reference/public-surface.md) and [Providers](/reference/providers.md).
 
 Skipping the surface-gen step is a common mistake - the provider will work at runtime but won't be discoverable in the reference docs, which breaks downstream consumers relying on the generated surface.
