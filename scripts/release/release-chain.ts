@@ -156,6 +156,17 @@ export class ReleaseChain {
     return ['bun', 'scripts/release/release-gates.ts', ...opts.args];
   }
 
+  /**
+   * The `built on:` pairs of a tag: each IGNIS package of the catalog and the version it resolved to. The
+   * refreshed catalog holds ranges (`^0.4.6-0`); the line holds the version, which the stable gate compares.
+   */
+  static builtOnOf(opts: { catalog: Record<string, string> }): string {
+    return Object.entries(opts.catalog)
+      .filter(([name]) => name.startsWith('@venizia/'))
+      .map(([name, range]) => `${name}=${range.replace(/^[\^~]/, '')}`)
+      .join(', ');
+  }
+
   /** A version with a prerelease part is a prerelease, anything else a stable. */
   static kindOf(opts: { options: Pick<IChainOptions, 'version' | 'kind'> }): TChainKind {
     return opts.options.kind ?? (opts.options.version.includes('-') ? 'prerelease' : 'stable');
@@ -1028,10 +1039,7 @@ const realPorts = (): IChainPorts => ({
       workspaces?: { catalog?: Record<string, string> };
     };
 
-    return Object.entries(root.workspaces?.catalog ?? {})
-      .filter(([name]) => name.startsWith('@venizia/'))
-      .map(([name, version]) => `${name}=${version}`)
-      .join(', ');
+    return ReleaseChain.builtOnOf({ catalog: root.workspaces?.catalog ?? {} });
   },
 });
 

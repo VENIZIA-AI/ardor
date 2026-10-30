@@ -930,3 +930,21 @@ describe('ReleaseChain.reportFromState for a stable', () => {
     expect(text.startsWith('Report - published, merge back not done.')).toBe(true);
   });
 });
+
+// #439: the refreshed catalog holds ranges; the built on line of a tag holds the versions, which the stable gate compares.
+describe('ReleaseChain.builtOnOf', () => {
+  test('each IGNIS entry of the catalog is written as the version its range names', () => {
+    expect(
+      ReleaseChain.builtOnOf({
+        catalog: {
+          react: '^19.2.7',
+          '@venizia/ignis-kernel': '^0.4.6-0',
+          '@venizia/ignis-filter': '~0.4.5-0',
+          '@venizia/dev-configs': '0.4.4',
+        },
+      }),
+    ).toBe(
+      '@venizia/ignis-kernel=0.4.6-0, @venizia/ignis-filter=0.4.5-0, @venizia/dev-configs=0.4.4',
+    );
+  });
+});

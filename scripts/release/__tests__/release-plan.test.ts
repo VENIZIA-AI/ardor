@@ -503,6 +503,57 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
       expect(problems[0]).toContain('built on');
     }
   });
+
+  // The message of the real tag ardor-v0.4.6-0 (run 40908809282): the chain copied the catalog ranges (#439).
+  const realTag = [
+    '@venizia/ardor v0.4.6-0',
+    'built on: @venizia/dev-configs=^0.4.6-0, @venizia/ignis-boot=^0.4.6-0, @venizia/ignis-connectors=^0.4.6-0, @venizia/ignis-filter=^0.4.5-0, @venizia/ignis-helpers=^0.4.6-0, @venizia/ignis-inversion=^0.4.5-0, @venizia/ignis-kernel=^0.4.6-0',
+  ].join('\n');
+
+  test('a tag that holds catalog ranges is read as the versions they name', () => {
+    const parsed = ReleasePlan.parseBuiltOn({ message: realTag });
+
+    expect(parsed).toHaveLength(7);
+    expect(parsed.map((pair) => pair.version)).toEqual([
+      '0.4.6-0',
+      '0.4.6-0',
+      '0.4.6-0',
+      '0.4.5-0',
+      '0.4.6-0',
+      '0.4.5-0',
+      '0.4.6-0',
+    ]);
+  });
+
+  test('the stable gate compares the real tag: below is named, at or above passes', async () => {
+    const stableOf = (opts: { kernel: string }) =>
+      latest({
+        '@venizia/dev-configs': '0.4.6',
+        '@venizia/ignis-boot': '0.4.6',
+        '@venizia/ignis-connectors': '0.4.6',
+        '@venizia/ignis-filter': '0.4.5',
+        '@venizia/ignis-helpers': '0.4.6',
+        '@venizia/ignis-inversion': '0.4.5',
+        '@venizia/ignis-kernel': opts.kernel,
+      });
+
+    expect(
+      await ReleasePlan.checkBuiltOn({
+        tag: 'ardor-v0.4.6-0',
+        message: realTag,
+        latestOf: stableOf({ kernel: '0.4.6' }),
+      }),
+    ).toEqual([]);
+    expect(
+      await ReleasePlan.checkBuiltOn({
+        tag: 'ardor-v0.4.6-0',
+        message: realTag,
+        latestOf: stableOf({ kernel: '0.4.5' }),
+      }),
+    ).toEqual([
+      'IGNIS stable is not out: @venizia/ignis-kernel latest 0.4.5, the prerelease was built on 0.4.6-0',
+    ]);
+  });
 });
 
 describe('release-plan.ts plan', () => {

@@ -718,6 +718,11 @@ const install = async (opts: {
   apps: Array<{ folder: string; checks: string[]; firstRun?: boolean }>;
 }) => {
   run({ cwd: opts.project, command: ['bun', 'install'] });
+  // One copy of every @venizia/* package: a member that lacks a direct declaration resolves an older one.
+  run({
+    cwd: opts.project,
+    command: ['bun', join(ROOT, 'scripts/release/release-gates.ts'), 'single-copy', opts.project],
+  });
   run({
     cwd: opts.project,
     command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'sync'],
@@ -1094,6 +1099,9 @@ const main = async () => {
       : [];
     const importsOfLib = isRecord(manifestOfLib.imports) ? Object.keys(manifestOfLib.imports) : [];
     const exportsOfLib = isRecord(manifestOfLib.exports) ? manifestOfLib.exports : {};
+    const devDependencyNames = isRecord(manifestOfLib.devDependencies)
+      ? Object.keys(manifestOfLib.devDependencies)
+      : [];
 
     assert({
       condition: manifestOfLib.name === '@acme/merchant',
@@ -1117,6 +1125,13 @@ const main = async () => {
       ].every((name) => peerNames.includes(name)),
       message:
         '@venizia/ardor, react, react-dom, react-router-dom and reflect-metadata are peer dependencies',
+    });
+    assert({
+      condition: ['boot', 'connectors', 'filter', 'helpers', 'inversion', 'kernel'].every((name) =>
+        devDependencyNames.includes(`@venizia/ignis-${name}`),
+      ),
+      message:
+        'the six @venizia/ignis-* packages are devDependencies, so the library resolves one copy of each',
     });
     assert({
       condition: scripts.join(',') === ['clean', 'lint', 'lint:fix', 'test', 'typecheck'].join(','),
