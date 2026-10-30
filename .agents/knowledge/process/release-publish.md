@@ -43,8 +43,8 @@ dependency order, at one version.** The inputs:
 (version, kind, packages, issue, short commit). A workflow names its run before the plan job exists, and an expression
 can neither work these out nor cut a commit short, so `release.ts` works the label out (`ReleasePlan.labelOf`) and sends it,
 and the plan job passes it to `release-plan.ts plan --label` (through a step env, never through the script text), which
-refuses a label that is not the one it computes (`ReleasePlan.labelProblems`). The title cannot name a release the run does
-not make. A dispatch by hand has no label: the title is `Release · <version or mode> · <packages> · #<issue> · <whole commit>`.
+refuses a label that is not the one it computes (`ReleasePlan.labelProblems`, which writes control and bidirectional characters as escapes in the log). The title cannot name a release the run does
+not use (a version, kind, issue or commit); the packages are the ones dispatched. It is only what was sent until the plan job has passed, so a queued or refused run shows that. A dispatch by hand has no label: the title is `Release · <version or mode> · <packages> · #<issue> · <whole commit>`.
 A heal-only run has no plan job, so it ignores a label: `Release · heal the next tags · <commit>`.
 `release.ts` sends a label only to a branch whose workflow declares the input (`ReleasePlan.declaresLabel`): GitHub refuses
 an input the ref's workflow does not know, so a stable dispatched on `main` before the Sync that brings the input is titled by
@@ -220,7 +220,7 @@ A failed first run is safe: nothing is published before the first package authen
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `publish` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`. A VULCAN bump moves the pin in four places in one change: the root `package.json`, the lockfile, `VULCAN_CMD` and the commit with its `# v<version>` comment of the VULCAN action in `atlas-index.yml` (two tests read them). A 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `publish` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`. A VULCAN bump moves the pin in four places in one change: the root `package.json`, the lockfile, `VULCAN_CMD` and the commit with its `# v<version>` comment of the VULCAN action in the `atlas-index` job of `deploy-docs.yml` (the guards and `docs-workflow.test.ts` read them). A 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 

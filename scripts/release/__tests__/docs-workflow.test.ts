@@ -1,6 +1,8 @@
-import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { afterAll, describe, expect, test } from 'bun:test';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { makeScratch } from '../../scratch';
 
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 const PATH = join(ROOT, '.github/workflows/deploy-docs.yml');
@@ -61,6 +63,91 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
     expect(jobs['deploy']).toContain('name: github-pages');
   });
 
+  describe('the step of the changes job, run on a fixture repository', () => {
+    const step = (jobs['changes'] ?? '')
+      .split(/\n {6}- name: /)
+      .find((chunk) => chunk.startsWith('Does the wiki need a deploy'));
+    const script = (step?.split(/\n {8}run: \|\n/)[1] ?? '')
+      .split('\n')
+      .map((line) => line.replace(/^ {10}/, ''))
+      .join('\n');
+    const root = makeScratch({ prefix: 'docs-workflow-' });
+    const git = (...args: string[]) =>
+      Bun.spawnSync(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
+        cwd: root,
+      })
+        .stdout.toString()
+        .trim();
+    const commit = (file: string, message: string): string => {
+      mkdirSync(join(root, file, '..'), { recursive: true });
+      writeFileSync(join(root, file), `${message}\n`);
+      git('add', '-A');
+      git('commit', '-q', '-m', message);
+
+      return git('rev-parse', 'HEAD');
+    };
+
+    git('init', '-q');
+    const first = commit('docs/wiki/a.md', 'one');
+    const second = commit('packages/x.txt', 'two');
+    const third = commit('docs/wiki/a.md', 'three');
+
+    afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+    const run = (env: Record<string, string>): string => {
+      const output = join(root, 'out.txt');
+
+      writeFileSync(output, '');
+      Bun.spawnSync(['bash', '-ec', script], {
+        cwd: root,
+        env: { ...process.env, ...env, GITHUB_OUTPUT: output },
+      });
+
+      return readFileSync(output, 'utf8').trim();
+    };
+
+    test('the step is found, and no expression is written into its script', () => {
+      expect(script).toContain('docs=false');
+      expect(script).not.toContain('${{');
+    });
+
+    test('a manual run builds the wiki', () => {
+      expect(run({ EVENT: 'workflow_dispatch', REF: 'refs/heads/develop', BEFORE: '' })).toBe(
+        'docs=true',
+      );
+    });
+
+    test('a push to develop builds it only when docs/wiki changed between the heads', () => {
+      const push = (before: string, sha: string) =>
+        run({ EVENT: 'push', REF: 'refs/heads/develop', BEFORE: before, GITHUB_SHA: sha });
+
+      expect(push(first, second)).toBe('docs=false');
+      expect(push(second, third)).toBe('docs=true');
+      expect(push('0'.repeat(40), second)).toBe('docs=true');
+      expect(push('f'.repeat(40), second)).toBe('docs=true');
+    });
+
+    test('a push to main, or of a tag, never builds it', () => {
+      for (const ref of ['refs/heads/main', 'refs/tags/v1.0.0']) {
+        expect(run({ EVENT: 'push', REF: ref, BEFORE: second, GITHUB_SHA: third })).toBe(
+          'docs=false',
+        );
+      }
+    });
+
+    test('a hostile BEFORE is data, not a command', () => {
+      const result = run({
+        EVENT: 'push',
+        REF: 'refs/heads/develop',
+        BEFORE: `x; touch ${join(root, 'PWNED')}`,
+        GITHUB_SHA: third,
+      });
+
+      expect(result).toBe('docs=true');
+      expect(existsSync(join(root, 'PWNED'))).toBe(false);
+    });
+  });
+
   test('the atlas index runs on a push only, as it did', () => {
     expect(jobs['atlas-index']).toMatch(/\n {4}if: github\.event_name == 'push'\n/);
     expect(jobs['atlas-index']).toMatch(/group: atlas-index-\$\{\{ github\.ref \}\}\n/);
@@ -87,10 +174,12 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
     expect([...workflow.matchAll(/id-token: write/g)]).toHaveLength(2);
   });
 
-  test('the Pages deployments queue in one group', () => {
-    expect(jobs['deploy']).toMatch(
-      /concurrency:\n {6}group: pages\n {6}cancel-in-progress: false\n/,
-    );
+  test('the wiki builds and deploys queue in one group, so an older push cannot deploy last', () => {
+    for (const id of ['build', 'deploy']) {
+      expect(jobs[id]).toMatch(/concurrency:\n {6}group: pages\n {6}cancel-in-progress: false\n/);
+    }
+
+    expect(head).not.toContain('concurrency:');
   });
 
   test('the key is read only by the step that publishes', () => {
@@ -103,6 +192,8 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
     expect(
       [...workflow.matchAll(/secrets\.(\w+)/g)].every((match) => match[1] === 'ATLAS_INDEX_KEY'),
     ).toBe(true);
+    // Once in the whole file: no other job, step or env holds the key.
+    expect([...workflow.matchAll(/secrets\./g)]).toHaveLength(1);
   });
 
   test('the actions of the atlas job are pinned by their full commit, VULCAN at the commit of the installed release', () => {

@@ -723,6 +723,13 @@ describe('ReleasePlan.labelOf, labelProblems, takeLabel and declaresLabel (#453)
     ]);
   });
 
+  test('quoted writes control, zero-width and bidirectional characters as escapes', () => {
+    const text = `a${String.fromCodePoint(0x202e)}b${String.fromCodePoint(0x200b)}c${String.fromCodePoint(0xe0041)}\n"d"`;
+
+    expect(ReleasePlan.quoted({ text })).toBe('"a\\u202eb\\u200bc\\u{e0041}\\n\\"d\\""');
+    expect(ReleasePlan.quoted({ text: '0.4.6 stable · ardor' })).toBe('"0.4.6 stable · ardor"');
+  });
+
   test('takeLabel reads the value as given and takes both words out', () => {
     expect(ReleasePlan.takeLabel({ argv: ['--mode', 'patch'] })).toEqual({
       label: undefined,

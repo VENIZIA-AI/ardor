@@ -70,6 +70,11 @@ jobs:
       contents: read
       pages: write
       id-token: write
+    # The group the whole old workflow ran in: a newer push builds after an older one has deployed, never beside
+    # it, so the older docs cannot be deployed last.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3

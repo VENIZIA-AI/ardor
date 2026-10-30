@@ -368,6 +368,9 @@ const main = async (): Promise<void> => {
   const packages = mergeBackOwed ? named : resolved.packages;
   // The run title: the workflow cannot work it out when it names the run, so it is sent, and the plan job
   // refuses one that is not its own. Only a workflow that declares the input can be sent one.
+  // The commit in the label is the head the dispatch will run, so it is read fresh: a branch that moved since the
+  // start would make the plan job refuse the label.
+  await run({ command: ['git', 'fetch', '--quiet', 'origin', branch], allowFailure: true });
   const label = ReleasePlan.declaresLabel({
     workflow: await readFromRemote({ branch, path: WORKFLOW_PATH }),
   })

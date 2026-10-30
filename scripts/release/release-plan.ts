@@ -580,13 +580,27 @@ export class ReleasePlan {
     return [`${opts.version} ${opts.kind}`, opts.packages.join(','), ...issue, ...sha].join(' · ');
   }
 
+  /**
+   * Text a person typed, quoted for the job log: a JSON string, with the characters that change how a line reads
+   * (control, zero-width and bidirectional ones) written as `\uXXXX` too, so the log shows what was sent.
+   */
+  static quoted(opts: { text: string }): string {
+    return JSON.stringify(opts.text).replace(/[\p{C}\p{Zl}\p{Zp}]/gu, (char) => {
+      const code = char.codePointAt(0) ?? 0;
+
+      return code > 0xffff
+        ? `\\u{${code.toString(16)}}`
+        : `\\u${code.toString(16).padStart(4, '0')}`;
+    });
+  }
+
   /** Why a label is not the one the plan gives; empty when it is, or when there is none (a dispatch by hand). */
   static labelProblems(opts: { label: string | undefined; expected: string }): string[] {
     return opts.label === undefined || opts.label === '' || opts.label === opts.expected
       ? []
       : [
-          // Quoted: the label is text a person typed, and the job log reads a line that starts with `::` as a command.
-          `the label ${JSON.stringify(opts.label)} is not what the plan computes: ${JSON.stringify(opts.expected)}`,
+          // Quoted: the job log reads a line that starts with `::` as a command.
+          `the label ${ReleasePlan.quoted({ text: opts.label })} is not what the plan computes: ${ReleasePlan.quoted({ text: opts.expected })}`,
         ];
   }
 

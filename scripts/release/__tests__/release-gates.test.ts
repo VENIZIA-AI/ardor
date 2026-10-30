@@ -991,13 +991,14 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         /\n {8}run: bun scripts\/release\/release-plan\.ts plan .* --label "\$RELEASE_LABEL"\n/.test(
           planStep,
         ) &&
-        !/inputs\.label/.test(planStep.replace(/\n {10}RELEASE_LABEL: .*\n/, '')) &&
+        // The label is read in two places and nowhere else in the file: the title, and the env of the plan step.
         !/inputs\.label/.test(
-          Object.entries(jobsOf(workflow))
-            .filter(([name]) => name !== 'plan')
-            .map(([, job]) => job)
-            .join('\n'),
-        )
+          workflow
+            .replace(/^run-name: .*$/m, '')
+            .replace(/\n {10}RELEASE_LABEL: \$\{\{ inputs\.label \}\}\n/, '\n'),
+        ) &&
+        // A plan step that may fail without failing the job would let a refused label through.
+        !/continue-on-error/.test(plan)
       );
     },
     // D6: every action by its full commit, with the tag in a comment.
@@ -1512,6 +1513,33 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       guard: 'labelVerified',
       name: 'the label input is gone',
       mutate: (text) => text.replace(/\n {6}label:\n[\s\S]*?(?=\n {6}heal_only:\n)/, ''),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'an extra step of the plan job writes the label into a script',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n',
+          '      - name: Show the label\n        run: echo "${{ inputs.label }}"\n\n      - name: Plan the run\n',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the workflow reads the label in its top-level env',
+      mutate: (text) =>
+        text.replace(
+          'env:\n  FORCE_JAVASCRIPT',
+          'env:\n  TITLE: ${{ inputs.label }}\n  FORCE_JAVASCRIPT',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the plan step may fail without failing the job',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n        id: plan\n',
+          '      - name: Plan the run\n        id: plan\n        continue-on-error: true\n',
+        ),
     },
     {
       guard: 'labelVerified',
