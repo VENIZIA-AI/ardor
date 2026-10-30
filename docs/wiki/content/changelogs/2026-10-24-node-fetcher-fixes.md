@@ -1,6 +1,6 @@
 ---
 title: The fetcher no longer logs secrets, and four request bugs are fixed
-description: NodeFetcher stops writing every request's headers and body to the console, keeps the caller's abort signal when a timeout is set, sends Blob, buffer and string bodies as they are, and joins params to a url that already has a query.
+description: NodeFetcher stops logging request headers and bodies, keeps your abort signal with a timeout, sends bodies as they are, and joins params to a url with a query.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 ---
 
@@ -15,9 +15,9 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 ## What changed
 
 - **No secrets in the console.** `send` logged the whole request at info level: every header, an Authorization token included, and the body, the sign-in password included. It now logs at debug level, never logs the body, and redacts the headers.
-- **A timeout keeps the caller's signal.** With a `timeout` set, the `signal` you passed was dropped, so you could not cancel the request. The two are combined: the request aborts on either, also when your signal was already aborted.
+- **A timeout keeps the caller's signal.** With a `timeout` set, the `signal` you passed was dropped, so you could not cancel the request. The two are now combined: the request aborts on either, also when your signal was already aborted.
 - **Bodies are sent as they are.** A `Blob`, an `ArrayBuffer`, a typed array or a `ReadableStream` was sent as `{}` or as an object of its indexes, and a string was encoded a second time. They now go out unchanged; a plain object or array is still JSON-encoded.
-- **Params on a url with a query.** `params` were appended with `?` even when the url already had a query string. They are now joined with `&`, and an empty `params` leaves the url exactly as given.
+- **Params on a url with a query.** `params` were appended with `?` even when the url already had a query string. They are now joined with `&`, and an empty `params` leaves the url as given.
 
 ## Who is affected
 

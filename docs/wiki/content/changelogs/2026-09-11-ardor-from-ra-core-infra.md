@@ -14,22 +14,22 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor', '@venizia/ardor-kernel', '@
 
 ## What changed
 
-- **Package architecture split.** The codebase is partitioned along dependency seams into `@venizia/ardor-kernel` (isomorphic core), `@venizia/ardor-react` (React context and hooks), and `@venizia/ardor-admin` (react-admin adapter), all re-exported by `@venizia/ardor`.
-- **Four symbol renames.** `AbstractRaApplication`, `BaseRaApplication`, `CoreRaApplication`, and `ICoreRaApplication` were renamed to match the ARDOR naming convention.
-- **DIContainer dropped.** `DIContainer` has been removed in favor of the inversion `Container` provided via IGNIS.
-- **Module augmentation targets moved.** Interface augmentations must now target the declaring package (`@venizia/ardor-react` or `@venizia/ardor-admin`) instead of the umbrella import.
-- **IGNIS dependency bumped.** ARDOR requires `@venizia/ignis-inversion` version `>=0.2.0-7` to support metadata-based target resolution.
-- **Vietnamese message bundle updated.** `vietnameseMessages` now includes `ra.validation.unique` required by `ra-core` 5.15.3.
-- **Logger toggle fix.** `Logger.toggleDebug({ state: false })` now explicitly disables debug logging instead of toggling the state.
+- **Four packages.** `@venizia/ardor-kernel` (isomorphic core), `@venizia/ardor-react` (React context and hooks) and `@venizia/ardor-admin` (react-admin adapter), all re-exported by `@venizia/ardor`.
+- **Four symbol renames.** `AbstractRaApplication`, `BaseRaApplication`, `CoreRaApplication` and `ICoreRaApplication` follow the ARDOR naming convention.
+- **`DIContainer` dropped.** Use the inversion `Container` provided via IGNIS.
+- **Module augmentation targets moved.** Augment the declaring package (`@venizia/ardor-react` or `@venizia/ardor-admin`), not the umbrella import.
+- **IGNIS dependency.** ARDOR requires `@venizia/ignis-inversion` `>=0.2.0-7`.
+- **Vietnamese messages.** `vietnameseMessages` now includes `ra.validation.unique`, required by `ra-core` 5.15.3.
+- **Logger toggle fix.** `Logger.toggleDebug({ state: false })` now disables debug logging instead of toggling it.
 
 ## Who is affected
 
-- **All consumers of `@minimaltech/ra-core-infra`.** Action required: migrate by hand following the guide, and update the dependency to `@venizia/ardor`. See `../guides/migrations/from-ra-core-infra`.
+- **All consumers of `@minimaltech/ra-core-infra`.** Migrate by hand following the guide and change the dependency to `@venizia/ardor`. See `../guides/migrations/from-ra-core-infra`. The old package is frozen at `0.0.3-18`.
 
 ## Breaking changes
 
 > [!WARNING]
-> All consumers importing from `@minimaltech/ra-core-infra` must update their package dependencies, symbol names, and TypeScript module augmentations.
+> Update your package dependency, the symbol names and your TypeScript module augmentations.
 
 **Before:**
 
@@ -74,15 +74,3 @@ declare module '@venizia/ardor-admin' {
   interface IUseTranslateKeysOverrides extends ITranslateKeys {}
 }
 ```
-
-## Details
-
-- `@minimaltech/ra-core-infra` is permanently frozen at `0.0.3-18`; all future development and fixes live in the ARDOR packages.
-- The migration guide lists the four edits a consumer makes: the import specifier, the symbol renames, the `declare module` retargeting, and the `package.json` dependency.
-
-| Package | Role |
-|---------|------|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, logger, network fetchers, socket client |
-| `@venizia/ardor-react` | Application context, inversion hooks, typed Redux hook factories, UI hooks |
-| `@venizia/ardor-admin` | react-admin adapter: REST data provider, auth provider, i18n provider, `ArdorApplication` root |
-| `@venizia/ardor` | Umbrella package re-exporting kernel, react, and admin packages |

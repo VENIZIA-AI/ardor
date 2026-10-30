@@ -1,6 +1,6 @@
 ---
 title: The network service is split into small parts, and its types are closed
-description: DefaultNetworkRequestService stays the class you extend, but the token store, the body encoder, the response reader and the auth recovery live in their own files, and the request types lose their open index signatures.
+description: DefaultNetworkRequestService stays the class you extend, its request types are closed, and the fetcher and socket client now come from IGNIS.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 ---
 
@@ -10,46 +10,38 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 
 <Badge type="warning" text="Breaking Change" />
 
-**In one line.** `DefaultNetworkRequestService` keeps its constructor and its protected hooks, but the code behind it is in separate files, and the request types no longer accept any key.
+**In one line.** `DefaultNetworkRequestService` keeps its constructor and its protected hooks, but the code behind it is in separate classes, the request types no longer accept any key, and the fetcher and the socket client now come from IGNIS.
 
 ## What changed
 
-- **One auth token store.** `AuthTokenStore.read()` and `AuthTokenStore.write()` are the one place that reads and writes the token under `LocalStorageKeys.KEY_AUTH_TOKEN`, with the `localStorage` guard and the rule that only the error name of a corrupt value is logged. `DefaultAuthService.getAuth()` and `saveAuth()` use it, and so does `DefaultNetworkRequestService.readAuthTokenFromStorage()`, which stays as a one-line delegate.
-- **The token types are in `common/types.ts`.** `IAuthTokenRecord`, `IDataSourceRequestContext` and `IDataSourceAuth` moved there from the network service file. The package root exports them as before.
-- **The body encoder is its own class.** `RequestBodyEncoder.encode({ bodyType, body })` returns the body and the content type to send (none for multipart, so `fetch` adds the boundary). `getRequestProps` keeps its signature and result and asks the new protected hook `encodeBody`, which delegates to it: override that to encode another way.
-- **The response reader is its own class.** `ResponseReader.read`, `convert` and `toError` read a response by the request type, take the total from `Content-Range` and build the `ApplicationError` of a failed one; `ResponseReader.ERROR_ROOT_KEY` is the key the data source auth shares. `doRequest` keeps its signature, now typed `Promise<INetworkResponse<TResult>>` (a new type in `common/types.ts`, the same fields), and `convertResponse` stays on the service as a delegate.
-- **The auth recovery is its own class.** `AuthRecovery` holds the refresh shared by every 401 in flight and the rule for which paths recover. The service builds one with callbacks that call its protected hooks when they run, so a subclass that overrides `refreshToken`, `onAuthFailure` or `isNoAuthPath` keeps working. `refresh()` stays public on the service as a delegate and `authRecovery` stays a protected field.
-- **The list filter builder is its own helper.** `ListFilterBuilder.build({ params })` turns react-admin's list params into the IGNIS filter, the query and the list extras, and `ListFilterBuilder.extractQueryParams` replaces the `filter.params` loop that `getOne` and `getMany` repeated. `DefaultRestDataProvider.buildListFilter` stays a protected hook and delegates to it. Admin gains `ListFilterBuilder` in its public surface.
-- **One `request()` for the data provider.** The ten `DefaultRestDataProvider` methods each repeated a `getRequestProps` call and a `doRequest` call; they now call the protected `request({ resource, type, method, paths?, body?, bodyType?, query?, extra?, headers?, requestCountData? })` (typed `IRestRequestOptions`, new). Headers named in `headers` win over the computed ones. Override `request()` to move every method, `send()` included, to another transport.
-- **`requestList` replaces `getListHelper`.** The list GET, with the extras a route answered as `meta.extra`, is the protected `requestList({ resource, type, queryKey, filter, extra? })`. `CountRestDataProvider` overrides it and asks `request()` for `/count` without extras, so its `withoutExtraHeader` workaround is gone.
-- **The unused parse utilities are gone.** Nothing in ARDOR or in the BANA frontend used them, and IGNIS already has the helpers a project needs. The kernel loses its only runtime dependency, `lodash`.
-- **The request types name every field.** `ISendParams` and `IApplicationInfo` no longer end in `[key]: any`, so a typo is a compile error instead of a field that is silently dropped. `ISendParams.body` is `unknown` and `query` is `Record<string, unknown>`; `extra` (the list extras `send()` already passed on) is named. `ISendResponse` is the `INetworkResponse` it duplicated.
-- **The provider types come from ra-core.** `IReactAdminDataProvider` is the nine data methods of ra-core's `DataProvider`, and `IReactAdminAuthProvider` the auth methods of its `AuthProvider` (with `getPermissions` required), taken with `Pick`: a ra-core upgrade changes them, and they cannot drift from it.
+- **Split into classes.** `AuthTokenStore` (the one reader and writer of the stored token), `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery` and, in admin, `ListFilterBuilder` (react-admin list params to the IGNIS filter, the query and the list extras). The service and `DefaultRestDataProvider` delegate to them. A subclass that overrides `refreshToken`, `onAuthFailure` or `isNoAuthPath` keeps working; `refresh()` and `convertResponse` stay on the service. `IAuthTokenRecord`, `IDataSourceRequestContext`, `IDataSourceAuth` and the new `INetworkResponse` are exported from the package root.
+- **New hooks to override.** `encodeBody({ bodyType, body })` on the service (returns `{ body, contentType? }`) encodes a body another way. `request({ resource, type, method, paths?, body?, bodyType?, query?, extra?, headers?, requestCountData? })` on `DefaultRestDataProvider` (typed `IRestRequestOptions`) is called by all ten methods; override it to move every method, `send()` included, to another transport. Headers named in `headers` win over the computed ones.
+- **`requestList` replaces `getListHelper`.** The list GET, with the extras a route answered as `meta.extra`, is the protected `requestList({ resource, type, queryKey, filter, extra? })`. `CountRestDataProvider` overrides it, so its `withoutExtraHeader` workaround is gone.
+- **The request types name every field.** `ISendParams` and `IApplicationInfo` no longer end in `[key]: any`, so a typo is a compile error instead of a field that is silently dropped. `ISendParams.body` is `unknown` and `query` is `Record<string, unknown>`; `extra` is named. `ISendResponse` is the `INetworkResponse` it duplicated.
+- **The provider types come from ra-core.** `IReactAdminDataProvider` is the nine data methods of ra-core's `DataProvider`, and `IReactAdminAuthProvider` the auth methods of its `AuthProvider` (with `getPermissions` required), so a ra-core upgrade changes them.
 - **`refreshToken` answers a boolean.** `IAuthProvider.refreshToken`, `DefaultAuthProvider.refreshToken` and `useRefreshToken` are `Promise<boolean>`: `true` when the session was refreshed, `false` when there is no refresh to make (`useRefreshToken` also answers `false` with no auth provider, where it answered `undefined`).
 - **`AnyType` leaves the signatures.** `send()`, `request()`, `doRequest()`, `ISendResponse` and `INetworkResponse` default to `unknown` data (name the type: `send<TSignInResponse>(...)`); the record generics of the data provider methods default to `RaRecord`; the auth hooks take `ILoginParams` or `unknown`; the list filter is a named `IListFilter`; `i18nSources` is `Record<string, object>`; the `Logger` takes `unknown` arguments; `useService`, `useProvider`, `useComponent`, `useConfiguration` and `useRepository` default to `unknown`.
-- **`useTranslate()` is typed in every case.** It used to return a union with an `(key: any) => any` fallback, so a plain `string` key and a translated text assigned to a key-typed prop both compiled; it returns `TUseTranslateFn`, and `translate()` returns `string`.
-- **The transport is IGNIS's.** `DefaultNetworkRequestService` sends through `NodeFetchNetworkRequest` from `@venizia/ignis-helpers/core`, configured with `queryString: { nullish: 'skip', nested: 'json' }` (a filter is one JSON parameter and a null is left out), and passes its `Logger` to `send`. ARDOR's own copies of the fetcher, the base request, `toQueryString` and the socket client are deleted. Request behaviour is unchanged: the same query, bodies, headers, timeout with the caller's signal, multipart boundary and redacted debug log, now pinned by service-level tests.
+- **`useTranslate()` is typed in every case.** It returns `TUseTranslateFn`, and `translate()` returns `string`. Before, a plain `string` key and a translated text assigned to a key-typed prop both compiled.
+- **The transport is IGNIS's.** `DefaultNetworkRequestService` sends through `NodeFetchNetworkRequest` from `@venizia/ignis-helpers/core`, with `queryString: { nullish: 'skip', nested: 'json' }` (a filter is one JSON parameter and a null is left out). Request behaviour is unchanged: the same query, bodies, headers, timeout with the caller's signal and multipart boundary.
 - **The socket client is IGNIS's too.** Use `SocketIOClientHelper` from `@venizia/ignis-helpers/socket-io/client` and hand it `module: { io }` from your own `socket.io-client` import. `socket.io-client` is no longer a peer of ARDOR.
 - **The kernel needs a newer `@venizia/ignis-helpers`.** The peer range moves to the release that carries the browser-ready fetcher, query-string options and socket client.
+- **The kernel loses `lodash`,** its only runtime dependency, with the unused parse utilities listed below.
 
 ## Who is affected
 
-- **A subclass of `DefaultNetworkRequestService`.** No action needed for this part: nothing it overrides changed.
-- **A log reader.** A corrupt stored token is logged once, as a warning with scope `AuthTokenStore`, whichever reader meets it. `getAuth()` used to log an error under the scope `DefaultAuthService`, and also for an empty string; an empty string is now nothing stored.
+- **A subclass of `DefaultNetworkRequestService`.** No action for the split itself: nothing it overrides changed, except the protected helpers listed under Breaking changes.
+- **A log reader.** A corrupt stored token is logged once, as a warning with scope `AuthTokenStore`. `getAuth()` used to log an error under the scope `DefaultAuthService`, and also for an empty string; an empty string is now nothing stored.
 - **Code that imports from the file path.** `IAuthTokenRecord` and the two data source types are no longer declared in `base/services/network-request`; import them from the package root.
+- **Code that uses the removed exports,** the `./socket-io` sub-paths or untyped `send()` calls. See below.
 
 ## Breaking changes
 
 > [!WARNING]
-> This affects only a subclass of `DefaultNetworkRequestService` that overrides or calls the protected body helpers.
+> Most of this affects a subclass of `DefaultNetworkRequestService` or `DefaultRestDataProvider`, code that imports the removed exports, and type-checking. Nothing changes at run time except the `useRefreshToken` result with no auth provider and the `/count` request id.
 
-The protected methods `isFileList`, `encodeFormValue` and `appendFormDataValue` are gone from `DefaultNetworkRequestService`; their logic is private to `RequestBodyEncoder`. To change how a body is encoded, override `encodeBody({ bodyType, body })`, which returns `{ body, contentType? }`.
+**Protected members removed from `DefaultNetworkRequestService`.** `isFileList`, `encodeFormValue` and `appendFormDataValue` are gone; to change how a body is encoded, override `encodeBody`. `parseFilenameFromContentDisposition` is gone; `ResponseReader` reads the file name of a response with the same rules (`filename*` before a quoted, before a bare `filename`). The private members `canRecover` and `refreshing` are gone, which matters only to code that reached them through a cast.
 
-The protected method `parseFilenameFromContentDisposition` is gone from `DefaultNetworkRequestService`; the file name of a response is read by `ResponseReader`, which keeps the same rules (`filename*` before a quoted, before a bare `filename`).
-
-The private members `canRecover` and `refreshing` are gone from `DefaultNetworkRequestService`, which matters only to code that reached them through a cast.
-
-`getListHelper` is gone from `DefaultRestDataProvider` and `CountRestDataProvider`: it was public, took a `requestProps` argument, and is now the protected `requestList` with `extra` in its place.
+**`getListHelper` is gone** from `DefaultRestDataProvider` and `CountRestDataProvider`: it was public, took a `requestProps` argument, and is now the protected `requestList` with `extra` in its place.
 
 ```ts no-check
 // Before
@@ -59,15 +51,15 @@ override getListHelper(opts: { resource; type; queryKey; filter; requestProps })
 protected override requestList(opts: { resource; type; queryKey; filter; extra? }) { ... }
 ```
 
-A subclass that overrode the ten methods one by one to change the transport can override `request()` instead.
+A subclass that overrode the ten methods one by one to change the transport can override `request()` instead. The `/count` request of `CountRestDataProvider` now builds its own headers, so it has its own `x-request-id`; it shared the list's.
 
-The `/count` request of `CountRestDataProvider` now builds its own headers, so it has its own `x-request-id`; it shared the list's.
+**Removed from `@venizia/ardor-kernel` and `@venizia/ardor`: the parse utilities.** `NumberParseMethods`, `TNumberParseMethod`, `INTL_0_DIGITS_FORMATTER`, `INTL_2_DIGITS_FORMATTER`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue` and `parseQueryString`. Replace `parseQueryString({ search })` with `Object.fromEntries(new URLSearchParams(search))`; for the rest, use the IGNIS helpers (`@venizia/ignis-helpers`) or your own.
 
-These exports are removed from `@venizia/ardor-kernel` and `@venizia/ardor`: `NumberParseMethods`, `TNumberParseMethod`, `INTL_0_DIGITS_FORMATTER`, `INTL_2_DIGITS_FORMATTER`, `generateUniqueId`, `toCamelCase`, `keysToCamelCase`, `isInteger`, `isFloat`, `toInteger`, `toFloat`, `toBoolean`, `toStringDecimal`, `getNumberValue` and `parseQueryString`. Replace `parseQueryString({ search })` with `Object.fromEntries(new URLSearchParams(search))`; for the rest, use the IGNIS helpers (`@venizia/ignis-helpers`) or your own.
+**Removed from the same packages: the fetcher and the socket client.** `AbstractNetworkFetchableHelper`, `BaseNetworkRequest`, `IFetchable`, `IFetcherRequestOptions`, `INodeFetchNetworkOptions`, `INodeFetchRequestOptions`, `IRequestOptions`, `ISocketIOClientOptions`, `NodeFetcher`, `NodeFetchNetworkRequest`, `SocketIOClientHelper`, `TFetcherResponse`, `TFetcherVariant`, `TFetcherWorker`, `TSocketIOEventHandler` and `toQueryString`; and the sub-paths `@venizia/ardor-kernel/socket-io` and `@venizia/ardor/socket-io`. Import the fetcher, `BaseNetworkRequest`, `IFetchable`, `toQueryString` and `NodeFetchNetworkRequest` from `@venizia/ignis-helpers/core`, and the socket client from `@venizia/ignis-helpers/socket-io/client` (its handlers receive the payload, not the socket; `emit` takes `data`, not `message`; see [Socket.IO client](../extensions/socket-client)). A service subclass that assigns `networkRequest` assigns an IGNIS one.
 
-`ISendParams` loses the index signature and the unused `id` and `file`; `IApplicationInfo` loses the index signature; the unused `IRequestProps` is removed. Code that passed an extra key to either now fails to compile: delete the key, or carry the value another way (a header in `headers`, a path in `resource`).
+**Closed request types.** `ISendParams` loses the index signature and the unused `id` and `file`; `IApplicationInfo` loses the index signature; the unused `IRequestProps` is removed. Code that passed an extra key to either now fails to compile: delete the key, or carry the value another way (a header in `headers`, a path in `resource`).
 
-Type-level only; nothing changes at run time except the `useRefreshToken` result with no auth provider. Name the type on `send()` and resolve `true` from a `refreshToken` override:
+**Type-level changes.** Name the type on `send()` and resolve `true` from a `refreshToken` override:
 
 ```diff
 -.send({ resource, params })
@@ -79,7 +71,3 @@ Type-level only; nothing changes at run time except the `useRefreshToken` result
 - A subclass of `DefaultAuthProvider` that overrides `refreshToken` must return `Promise<boolean>`.
 - A call to `send()` or `doRequest()` without a type argument gets `unknown` data: pass the type.
 - A value that is a translated text must not be typed as `TUseTranslateKeys`, and a key built at run time must be typed as one.
-
-These exports are removed from `@venizia/ardor-kernel` and `@venizia/ardor`: `AbstractNetworkFetchableHelper`, `BaseNetworkRequest`, `IFetchable`, `IFetcherRequestOptions`, `INodeFetchNetworkOptions`, `INodeFetchRequestOptions`, `IRequestOptions`, `ISocketIOClientOptions`, `NodeFetcher`, `NodeFetchNetworkRequest`, `SocketIOClientHelper`, `TFetcherResponse`, `TFetcherVariant`, `TFetcherWorker`, `TSocketIOEventHandler` and `toQueryString`; and the sub-paths `@venizia/ardor-kernel/socket-io` and `@venizia/ardor/socket-io`. Import the fetcher, `BaseNetworkRequest`, `IFetchable`, `toQueryString` and `NodeFetchNetworkRequest` from `@venizia/ignis-helpers/core`, and the socket client from `@venizia/ignis-helpers/socket-io/client` (its handlers receive the payload, not the socket; `emit` takes `data`, not `message`; see [Socket.IO client](../extensions/socket-client)). A service subclass that assigns `networkRequest` assigns an IGNIS one.
-
-The rest of the breaking parts of this series are listed here as they land.

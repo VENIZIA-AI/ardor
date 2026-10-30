@@ -1,16 +1,16 @@
 ---
-title: Registration by hand, useRepository, and a clean-install gate
-description: Register artifacts by stereotype or by hand as in IGNIS, resolve repositories by class, BaseApiService removed, packages proven installable.
+title: Registration by hand, useRepository, and installs that load
+description: Register artifacts by stereotype or by hand as in IGNIS, resolve repositories by class, BaseApiService removed, packages load under Node ESM.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-react']
 ---
 
 # Changelog - 2026-09-23
 
-## Registration by hand, useRepository, and a clean-install gate
+## Registration by hand, useRepository, and installs that load
 
 <Badge type="warning" text="Breaking Change" /> <Badge type="tip" text="New Feature" /> <Badge type="info" text="Bug Fix" />
 
-**In one line.** An application registers its classes the two ways IGNIS does, by stereotype or by hand, and both resolve by class; `useRepository` is new, `BaseApiService` is gone, and every package is now proven to install and load in an empty project before it is released.
+**In one line.** An application registers its classes the two ways IGNIS does, by stereotype or by hand, and both resolve by class; `useRepository` is new, `BaseApiService` is gone, and the packages now load under Node ESM and install with strict linkers.
 
 This entry covers everything since `0.1.1-3`.
 
@@ -18,10 +18,10 @@ This entry covers everything since `0.1.1-3`.
 
 ### New
 
-- **Two ways to register, as in IGNIS.** Discovery is unchanged: a class marked `@service()` (or another stereotype) is bound when the application starts. By hand, `bindContext()` calls `this.service(X)`, `this.repository(X)`, `this.dataSource(X)` or `this.component(X)`. Each returns the `Binding` and takes `{ binding, scope, allowOverride }`.
+- **Two ways to register, as in IGNIS.** A class marked `@service()` (or another stereotype) is still bound when the application starts. By hand, `bindContext()` calls `this.service(X)`, `this.repository(X)`, `this.dataSource(X)` or `this.component(X)`. Each returns the `Binding` and takes `{ binding, scope, allowOverride }`.
 - **Every path records the key on the class.** A class registered by hand, through `bindingList()` or through `injectable()` now resolves by `{ target }`, in a hook and in `@inject({ target })`. Before, only a stereotyped class did.
 - **`useRepository`.** Resolves a repository by class and checks that it is bound under `repositories`, like `useService` does for `services`.
-- **`registerArtifacts()` honours a stereotype's `scope`.** It used to bind every discovered class as a singleton whatever the stereotype declared. The default is still singleton.
+- **Stereotype `scope` is honoured.** Discovered classes used to bind as singletons whatever the stereotype declared. The default is still singleton.
 
 ### Fixed
 
@@ -73,57 +73,6 @@ For reads over HTTP, prefer an `HttpRepository`; see [Repositories](../reference
 
 ## Details
 
-```ts
-import 'reflect-metadata';
-
-import {
-  BaseArdorApplication,
-  DefaultNetworkRequestService,
-  useRepository,
-  type IApplicationInfo,
-} from '@venizia/ardor';
-import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
-import { inject } from '@venizia/ignis-inversion';
-
-export class ApiDataSource extends HttpDataSource {
-  constructor() {
-    super({ baseUrl: 'https://api.example.com', authTokenResolver: DefaultNetworkRequestService.readAuthTokenFromStorage });
-  }
-}
-
-export class TicketRepository extends HttpRepository<{ id: string; status: string }> {
-  constructor(@inject({ target: ApiDataSource }) dataSource: ApiDataSource) {
-    super({ dataSource, resource: 'tickets' });
-  }
-}
-
-export class Application extends BaseArdorApplication {
-  getAppInfo(): IApplicationInfo {
-    return { name: 'desk', version: '1.0.0', description: 'Help desk' };
-  }
-
-  bindContext(): void {
-    this.dataSource(ApiDataSource); // datasources.ApiDataSource
-    this.repository(TicketRepository); // repositories.TicketRepository
-  }
-}
-
-export const useTickets = () => useRepository({ target: TicketRepository });
-```
-
 - Every kind binds a singleton by default, discovery included. IGNIS's server defaults services and repositories to transient; a React hook resolves on every render, so a transient repository would give each render a new instance.
 - The key is `opts.binding`, else the stereotype's `binding`, else `<namespace>.<ClassName>`. `allowOverride: false` throws when the key is already bound.
 - Discovery of an `HttpRepository` arrived a day later, with IGNIS kernel 0.2.0-46: see [2026-09-24](./2026-09-24-remote-repositories-and-relative-base-url).
-- `make clean-install` packs every package, installs the tarballs into empty projects under the hoisted and the isolated linker, and imports every published entry with Bun, Node ESM and a browser build. CI runs it, and the release workflow runs it for the package before the version bump. It found the three fixes above.
-- A lint rule refuses `crypto.randomUUID` in package and example code: browsers define it only on a secure origin.
-- The release commit now carries `bun.lock` with `package.json`, so a local install after a release no longer leaves a stray lockfile diff.
-
-| File | Package |
-|------|---------|
-| `src/base/applications/abstract.ts` (registration by hand) | kernel |
-| `src/base/decorators/api.ts`; `src/base/services/api.ts` deleted | kernel |
-| `src/hooks/use-artifact.ts` (`useRepository`) | react |
-| `tsconfig.build.json` (`resolveFullPaths`), lodash imports | all |
-| `package.json` peers and engines | kernel, react, admin, ardor |
-| `scripts/clean-install/`, `scripts/eslint/secure-context.mjs` | repository |
-| `.github/workflows/ci.yml`, `package-release.yml` | repository |

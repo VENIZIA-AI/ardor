@@ -14,10 +14,9 @@ packages: ['@venizia/ardor']
 
 ## What changed
 
-- **A repository resolves its datasource by class.** Without `@inject` on its first parameter, `@repository` used to ask for `datasources.<ClassName>`, read from the class name at decoration, so a datasource with a pinned `binding` broke in a minified build. It now records the class, and the key recorded on it wins: `@datasource({ binding })`, `bindingList()` and `dataSource(X, { binding })` all hold. A raw `bind({ key }).toClass(X)` falls back to the derived key, as before.
-- **`start()` refuses a derived key collision.** `registerArtifacts()` throws `[registerArtifacts] Two classes derive the binding key '<key>' ...` when two different discovered classes derive one key from their name. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check runs at `start()`, never at decoration, so a hot reload is not an error.
-- **One key derivation.** `service()`, `repository()`, `dataSource()`, `component()` and `injectable()` derive their key through IGNIS's `ArtifactBindingKeys.resolve`, re-exported from `@venizia/ardor`, instead of two ARDOR copies.
-- **Peers.** Every IGNIS peer leaves the caret range, which never admits a prerelease, and the floors rise to the IGNIS releases that carry the container fixes this change relies on:
+- **A repository resolves its datasource by class.** Without `@inject` on its first parameter, `@repository` used to ask for `datasources.<ClassName>`, so a datasource with a pinned `binding` broke in a minified build. The key recorded on the class now wins: `@datasource({ binding })`, `bindingList()` and `dataSource(X, { binding })` all hold. A raw `bind({ key }).toClass(X)` falls back to the derived key, as before.
+- **`start()` refuses a derived key collision.** It throws `[registerArtifacts] Two classes derive the binding key '<key>' ...` when two different discovered classes derive one key from their name. A pinned `binding` is never counted, nor is a subclass discovered after its same-named parent. The check runs at `start()`, never at decoration, so a hot reload is not an error.
+- **Peers.** Every IGNIS peer leaves the caret range, which never admits a prerelease, and the floors rise to the IGNIS releases that carry the container fixes:
 
 | Package | Before | Now |
 |---|---|---|

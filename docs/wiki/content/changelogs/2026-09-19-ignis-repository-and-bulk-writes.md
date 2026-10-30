@@ -25,7 +25,7 @@ This entry covers everything since `0.1.1-2`.
 
 ### Fixed
 
-- **Plain-http origins work.** `x-request-id` came from `crypto.randomUUID`, which browsers only expose on https and localhost. Every request carries that header, so an app opened at `http://<lan-ip>` failed on every call. It now uses `uuidV4` from `@venizia/ignis-helpers/uuid`.
+- **Plain-http origins work.** `x-request-id` came from `crypto.randomUUID`, which browsers only expose on https and localhost, so an app opened at `http://<lan-ip>` failed on every call. It now uses `uuidV4` from `@venizia/ignis-helpers/uuid`.
 - **`updateMany` works against IGNIS.** It sent `filter.where` in the query, which a generated IGNIS bulk route does not read, so every call answered `400`.
 - **Header overrides replace instead of joining.** Header names are matched case-insensitively. `X-Request-Count` beside `x-request-count` used to reach the server as `"1, 0"`. `removeHeaders` also removes a header whatever case it was set in.
 - **No `x-auth-provider: undefined`.** A token that names no provider now sends no `x-auth-provider` header at all.
@@ -75,20 +75,6 @@ bun add @venizia/ignis-kernel @venizia/ignis-helpers
 ## Details
 
 ```ts
-import { service, useService } from '@venizia/ardor';
-
-@service()
-export class AuditService {
-  record(opts: { action: string }): string {
-    return `audit:${opts.action}`;
-  }
-}
-
-// Typed as AuditService - no generic, no string key.
-export const useAudit = () => useService({ target: AuditService });
-```
-
-```ts
 import { DefaultNetworkRequestService } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
@@ -105,18 +91,3 @@ const tickets = new HttpRepository<{ id: string; title: string; status: string }
 // `count` reads the total from Content-Range, and throws if the server reported none.
 export const countOpen = () => tickets.count({ where: { status: 'OPEN' } });
 ```
-
-- ARDOR's contract suite runs these behaviours against the published connector: a `records */N` total, a list body opened from the `{ count, data }` envelope, a refused `x-request-count` setting, and two spellings of one header name collapsing to one value.
-- `uuidV4` counts inside the kernel's 7.7 kB budget, and the kernel still shrank from 6.42 to 6.33 kB. The `ardor-react` budget moved from 2.0 to 2.5 kB; the package itself did not grow.
-- Nothing lints against another secure-context-only API. Any new call to one has to be caught in review.
-
-| File | Package |
-|------|---------|
-| `src/base/applications/abstract.ts` (`registerArtifacts`) | kernel |
-| `src/base/metadata/index.ts` (stereotype re-exports) | kernel |
-| `src/base/repositories/index.ts` (`./repository`) | kernel, ardor |
-| `src/base/services/network-request.ts` | kernel |
-| `src/common/constants.ts` (`HeaderConsts`) | kernel |
-| `src/hooks/use-artifact.ts`, `src/hooks/use-injectable.ts` | react |
-| `src/providers/rest-data.ts` | admin |
-| `package.json` peers and exports | kernel, react, admin, ardor |

@@ -1,16 +1,16 @@
 ---
-title: PATCH in upper case, log levels, getManyReference without pagination, no NaN count
-description: Four kernel and admin fixes found in the IGNIS alignment audit - the fetcher verb shortcuts send upper-case methods, each log level reaches its own console method, getManyReference accepts a missing pagination, and a missing count header gives undefined instead of NaN.
+title: PATCH in upper case, log levels, no pagination, no NaN count
+description: "Four fixes: upper-case fetcher methods, one console method per log level, getManyReference without pagination, no NaN count."
 packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 ---
 
 # Changelog - 2026-10-17
 
-## PATCH in upper case, log levels, getManyReference without pagination, no NaN count
+## PATCH in upper case, log levels, no pagination, no NaN count
 
 <Badge type="info" text="Bug Fix" />
 
-**In one line.** Four defects found in the IGNIS alignment audit (issue #27) are fixed. None of them changes a public signature.
+**In one line.** Four defects are fixed. None of them changes a public signature.
 
 ```typescript
 import { Logger } from '@venizia/ardor';
@@ -31,8 +31,3 @@ logger.error('[create] Failed | id: %s', orderId); // now console.error, not con
 
 - **An application that filters the console by level.** Debug lines now go to `console.debug`, which browsers hide under the default filter, so enable the Verbose level to see them. Errors now show under the Errors filter.
 - **Everyone else.** No action needed.
-
-| File | Package |
-|------|---------|
-| `src/helpers/networks/fetchers/abstract.ts`, `src/helpers/logger.ts`, `src/base/services/network-request.ts` | kernel |
-| `src/providers/rest-data.ts` | admin |
