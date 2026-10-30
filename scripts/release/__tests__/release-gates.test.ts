@@ -963,11 +963,42 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       );
       const runName = workflow.match(/^run-name: (.+)$/m)?.[1] ?? '';
 
+      // The title carries the verified label first and the whole commit when there is none: the whole
+      // expression is pinned, not a substring, so `inputs.label` cannot be dropped or reordered away.
       return (
         checkouts.length >= 3 &&
         checkouts.every((step) => /\n {10}ref: \$\{\{ github\.sha \}\}/.test(step.text)) &&
         !/git checkout develop|git pull origin develop|git switch develop/.test(workflow) &&
-        runName.includes('github.sha')
+        /^"Release · \$\{\{ inputs\.heal_only && .*github\.sha\) \|\| inputs\.label \|\| format\(.*, github\.sha\) \}\}"$/.test(
+          runName,
+        )
+      );
+    },
+    // C33: the title is the dispatcher's `label` input, and the plan job (not the title) decides whether it is true:
+    // the plan is handed the label through the step env, never through the script text, and it is the last flag.
+    labelVerified: ({ workflow }: IFiles): boolean => {
+      const plan = jobsOf(workflow).plan ?? '';
+      const planStep = stepsOf(plan).find((step) => step.name === 'Plan the run')?.text ?? '';
+      const input =
+        workflow
+          .split(/\njobs:\n/)[0]
+          ?.match(/\n {6}label:\n([\s\S]*?)(?=\n {6}\w+:\n|\n\S)/)?.[1] ?? '';
+
+      return (
+        /type: string/.test(input) &&
+        /default: ''/.test(input) &&
+        /\n {10}RELEASE_LABEL: \$\{\{ inputs\.label \}\}\n/.test(planStep) &&
+        /\n {8}run: bun scripts\/release\/release-plan\.ts plan .* --label "\$RELEASE_LABEL"\n/.test(
+          planStep,
+        ) &&
+        // The label is read in two places and nowhere else in the file: the title, and the env of the plan step.
+        !/inputs\.label/.test(
+          workflow
+            .replace(/^run-name: .*$/m, '')
+            .replace(/\n {10}RELEASE_LABEL: \$\{\{ inputs\.label \}\}\n/, '\n'),
+        ) &&
+        // A plan step that may fail without failing the job would let a refused label through.
+        !/continue-on-error/.test(plan)
       );
     },
     // D6: every action by its full commit, with the tag in a comment.
@@ -1452,7 +1483,72 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     {
       guard: 'dispatchedCommit',
       name: 'the run name drops the commit',
-      mutate: (text) => text.replace(/^(run-name: .*) \| \$\{\{ github\.sha \}\}/m, '$1'),
+      mutate: (text) => text.replace(/, github\.sha\) \}\}"$/m, ') }}"'),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the run name drops the label',
+      mutate: (text) => text.replace(' || inputs.label ||', ' ||'),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the run name is the old NPM Release one',
+      mutate: (text) =>
+        text.replace(
+          /^run-name: .*$/m,
+          "run-name: \"${{ inputs.heal_only && 'heal the next tags' || format('packages: {0}', inputs.packages) }} | ${{ github.sha }}\"",
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the plan no longer gets the label',
+      mutate: (text) => text.replace(' --label "$RELEASE_LABEL"', ''),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the label is written into the script text',
+      mutate: (text) => text.replace('--label "$RELEASE_LABEL"', '--label "${{ inputs.label }}"'),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the label input is gone',
+      mutate: (text) => text.replace(/\n {6}label:\n[\s\S]*?(?=\n {6}heal_only:\n)/, ''),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'an extra step of the plan job writes the label into a script',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n',
+          '      - name: Show the label\n        run: echo "${{ inputs.label }}"\n\n      - name: Plan the run\n',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the workflow reads the label in its top-level env',
+      mutate: (text) =>
+        text.replace(
+          'env:\n  FORCE_JAVASCRIPT',
+          'env:\n  TITLE: ${{ inputs.label }}\n  FORCE_JAVASCRIPT',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the plan step may fail without failing the job',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n        id: plan\n',
+          '      - name: Plan the run\n        id: plan\n        continue-on-error: true\n',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'another job reads the label',
+      mutate: (text) =>
+        text.replace(
+          '    needs: plan\n    runs-on: ubuntu-26.04\n',
+          '    needs: plan\n    runs-on: ubuntu-26.04\n    env:\n      TITLE: ${{ inputs.label }}\n',
+        ),
     },
     {
       guard: 'actionsByCommit',

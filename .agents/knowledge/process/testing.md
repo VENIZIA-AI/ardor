@@ -42,7 +42,7 @@ A script, a docs script (`docs/wiki/scripts/check-snippets.mts`) or a test that 
 
 ## What CI runs
 
-CI (`.github/workflows/ci.yml`) is manual-only (`workflow_dispatch`), by deliberate decision - the rationale lives in that workflow's header comment. It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing. Every workflow runs on `ubuntu-26.04`, named rather than `ubuntu-latest`, so the OS under the release workflow changes only with a commit; GitHub-hosted runners have no Debian image.
+Checks (`.github/workflows/ci.yml`, named CI before) is manual-only (`workflow_dispatch`), by deliberate decision - the rationale lives in that workflow's header comment. It used to run on every pull request and every push, which meant a four-package release chain paid for four extra full runs; nothing enforces this workflow as a required status check, so running it on demand blocks nothing. Every workflow runs on `ubuntu-26.04`, named rather than `ubuntu-latest`, so the OS under the release workflow changes only with a commit; GitHub-hosted runners have no Debian image.
 
 Two jobs:
 

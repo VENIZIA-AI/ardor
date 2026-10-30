@@ -45,7 +45,7 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | `.configs/` | `vulcan.config.mts` - the one VULCAN config (every project of the repository keeps its own `.configs/` with `lints/` and, where it builds, `builders/`; an example and the presets also keep `formatters/`, until `devz` reads the root `bunfig.toml`): rule slot, project hooks, knowledge roots, atlas packages |
 | `.mcp.json` (gitignored) | Registers the `atlas` MCP server (VULCAN's atlas run against this checkout); `vulcan sync` writes it on each machine - see [Atlas MCP server](/reference/atlas-mcp.md) |
 | `.githooks/` | `pre-commit` runs `make lint-all`; enabled by `make setup-hooks` |
-| `.github/workflows/` | `ci.yml` (gates, build, tests, lint), `package-release.yml` (one dispatch releases the packages it names), `deploy-docs.yml` |
+| `.github/workflows/` | Three own workflows: `ci.yml` (Checks: gates, build, tests, lint), `package-release.yml` (Release: one dispatch releases the packages it names), `deploy-docs.yml` (Docs: the wiki deploy and the atlas index as jobs) |
 | `bunfig.toml` | Bun's config for commands run at the root: only `telemetry = false`. Bun reads it only from the directory a command runs in, and no `minimumReleaseAge`: it would refuse the young versions that the floors at the latest need |
 | `Makefile`, `make/` | Every entry point; one job per `make/*.mk` file, `make/project.mk` is the per-package include; a bare `make` lists them |
 

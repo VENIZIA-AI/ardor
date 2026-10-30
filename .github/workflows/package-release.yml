@@ -1,5 +1,11 @@
-name: 'NPM Release'
-run-name: "${{ inputs.heal_only && 'heal the next tags' || format('packages: {0} | release: {1}', inputs.packages, inputs.version || inputs.build_mode) }} | ${{ github.sha }}"
+name: Release
+# The title of the run. `release.ts` sends `label` (`0.4.6-1 prerelease · kernel,react,admin,ardor · #450 · 207ce41`:
+# version, kind, packages, issue, short commit) and the plan job refuses a label that is not what it computed, so the
+# title cannot name a version, kind, issue or commit the run does not use (the packages are the ones dispatched).
+# Until the plan job has passed it is only what was sent: a queued or a refused run shows that. A dispatch by hand
+# has no label: the title is the version or the bump, the packages, the issue and the whole commit (an expression
+# cannot cut a commit short). A heal-only run has no plan job to check a label, so it ignores one.
+run-name: "Release · ${{ inputs.heal_only && format('heal the next tags · {0}', github.sha) || inputs.label || format('{0} · {1}{2} · {3}', inputs.version || inputs.build_mode, inputs.packages, inputs.issue && format(' · #{0}', inputs.issue) || '', github.sha) }}"
 
 on:
   workflow_dispatch:
@@ -30,6 +36,11 @@ on:
       issue:
         type: string
         description: 'Issue number the release commits serve (prefixes each with [#N])'
+        required: false
+        default: ''
+      label:
+        type: string
+        description: 'The run title, filled in by scripts/release/release.ts; the plan job refuses one that is not its own (empty = titled by the inputs)'
         required: false
         default: ''
       heal_only:
@@ -120,7 +131,8 @@ jobs:
         id: plan
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
-        run: bun scripts/release/release-plan.ts plan --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE" --ref "$GITHUB_REF" --issue "$RELEASE_ISSUE" --merge-trial
+          RELEASE_LABEL: ${{ inputs.label }}
+        run: bun scripts/release/release-plan.ts plan --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE" --ref "$GITHUB_REF" --issue "$RELEASE_ISSUE" --merge-trial --label "$RELEASE_LABEL"
 
   # Everything that needs no secret, on the dispatched commit: the approve and publish jobs need it. Each gate
   # loops over the packages of the run. The clean-install gate is not here: it installs the siblings a package
