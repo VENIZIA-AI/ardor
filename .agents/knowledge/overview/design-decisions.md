@@ -54,7 +54,7 @@ No runtime entry of kernel, react, admin or ardor may reach a Node builtin or an
 
 ## Water palette, same design system
 
-ARDOR's visual identity - the docs site, described in `docs/wiki/DESIGN-SYSTEM.md` - uses a water-themed palette rather than IGNIS's fire theme, but it is built on the same design-system structure as IGNIS (one brand, one light accent for links, two decorators, a display gradient, a glow) - same structure, different color story. This keeps ARDOR visually distinct as a frontend framework while staying a sibling of IGNIS rather than an unrelated project.
+ARDOR's visual identity - the docs site, described in `docs/wiki/DESIGN-SYSTEM.md` - uses a water-themed palette rather than IGNIS's fire theme, but it is built on the same design-system structure as IGNIS (one brand, one light accent for links) - same structure, different color story. This keeps ARDOR visually distinct as a frontend framework while staying a sibling of IGNIS rather than an unrelated project.
 
 ## Where to go next
 
