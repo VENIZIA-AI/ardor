@@ -19,7 +19,7 @@ import { buildInfoFile } from '@venizia/ardor/vite';
 ## What changed
 
 - **`output.strictExecutionOrder: true` in the preset.** Rolldown can run a split-off chunk before the module a DI package depends on, and a build then fails in the browser with `Reflect.getMetadata is not a function` while `vite dev` works ([vitejs/vite#21866](https://github.com/vitejs/vite/issues/21866)). The flag is the fix the Vite team gives. It costs about 3.4% of the gzip size of a four-chunk app, all in the cached `vendor` chunk. See [Vite setup](../guides/get-started/vite-setup).
-- **`buildInfoFile` in `@venizia/ardor/vite`.** It emits `build-info.json` into the build and serves it on the dev server: `service`, `version`, `commit`, `branch`, `builtAt` from the pipeline variables or git, and `frameworks`, the installed version of each `@venizia/*` dependency, sorted. A build with no commit in the pipeline or in git fails and says how to fix it; the dev server serves what it has and warns.
+- **`buildInfoFile` in `@venizia/ardor/vite`.** It emits `build-info.json` into the build and serves it on the dev server: `service`, `version`, `commit`, `branch`, `builtAt` from the pipeline variables or git, and `frameworks`, the installed version of each `@venizia/*` dependency, sorted. The text is the same for the same input. A build with no commit in the pipeline or in git fails and says how to fix it; the dev server serves what it has and warns.
 - **`IBuildInfoFile`** in `@venizia/ardor-kernel` and `@venizia/ardor` is the type of the file, for the code that reads it.
 - **Optional peers of `@venizia/ardor`:** `vite` (`>=8.3.5`) and `@venizia/ignis-boot` (`^0.4.1`), needed only by `./vite`.
 

@@ -21,7 +21,7 @@ bun add @venizia/ardor
 | Kind | Change | Packages | In | Entry |
 |------|--------|----------|----|-------|
 | New feature | `getRuntimeConfig({ key, required: true })` returns a `string` and throws, naming the key, when no value is set | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.2 | [getRuntimeConfig can require a value](./2026-10-25-runtime-config-required) |
-| New feature, security | The preset image gzips text, answers `/health`, sends three security headers on every response, and writes the `/api` proxy only when `API_UPSTREAM` is set | `@venizia/ardor` (the preset) | 0.4.2 | [The preset image compresses, answers /health, sends security headers and can drop /api](./2026-10-25-preset-nginx) |
+| New feature, security | The preset image gzips text, answers `/health`, sends three security headers on every response, and writes the `/api` proxy only when `API_UPSTREAM` is set | `@venizia/ardor` (the preset) | 0.4.2 | [The preset image compresses, answers /health and sends security headers](./2026-10-25-preset-nginx) |
 | Enhancement | The error of `required: true` has the code `RUNTIME_CONFIG_REQUIRED_CODE` and the key in `extra.key` | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.3 | [getRuntimeConfig can require a value](./2026-10-25-runtime-config-required) |
 | Enhancement | The repository sub-path exports `HttpReadShapes` and `THttpReadShape` from IGNIS 0.4.3 | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.3 | [The repository sub-path exports HttpReadShapes](./2026-10-26-ignis-0-4-3-repository-exports) |
 

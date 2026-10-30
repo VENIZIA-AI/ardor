@@ -45,6 +45,6 @@ export const renderShell = (application: BaseArdorApplication, reduxStore: Store
 
 ## What it does not do
 
-A feature left out of `features` is not unbound. The container still holds the feature's configurations, and the i18n provider still holds its messages. A message key two features both define still throws, even if one of them is not mounted.
+A feature left out of `features` is not unbound. The container still holds the feature's configurations, and the i18n provider still holds its messages (a lazy bundle loads when a mounted feature needs the locale, or on a locale change). A message key two features both define still throws, even if one of them is not mounted.
 
 See [Features](../references/features) and [Application](../references/application).

@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 <Badge type="warning" text="Behavior Change" />
 
-**In one line.** Utilities take one options object, hooks take `opts` with an `enabled` flag, and a feature is defined with `Features.define` :
+**In one line.** Utilities take one options object, hooks take `opts` with an `enabled` flag, and a feature is defined with `Features.define`:
 
 ```typescript
 import { Features, isNumber, useDebounce } from '@venizia/ardor';
@@ -40,6 +40,7 @@ Notice the flag flips: `disabled: x` becomes `enabled: !x`, and `enabled` defaul
 | `ClassProps`, `ClassType`, `TStatusFromClass` | removed: `TClass` from `@venizia/ignis-inversion`, and `TStringConstValue` / `TConstValue` (`TRequestMethod`, `TEnvironment` keep their names) |
 | `Authentication`, `RequestChannel`, `RequestCountData`, `LocalStorageKeys` | each gains `SCHEME_SET` and `static isValid(value: string): boolean` (additive); the `isValid` parameter of the other const classes is renamed `input` -> `value` |
 | `TLogLevel = 'debug' \| ...` | `LogLevels` const class (`DEBUG`, `INFO`, `WARN`, `ERROR`, `SCHEME_SET`, `isValid`), `TLogLevel = TConstValue<typeof LogLevels>` |
+| `BaseService` a copy of `BaseHelper` | `BaseService extends BaseHelper` |
 | `new Logger({ scope, enableDebug })`, `logger.toggleDebug({ state })` | `new Logger({ scope })`; the one way to set debug is `Logger.getInstance({ scope, enableDebug })` (process-wide, as before); `toggleDebug` removed |
 | `SocketIOClientHelper.unsubscribe({ events })` removed only by event name and leaked wrappers | `unsubscribe({ events, handler? })` removes one handler; subscribing the same handler twice no longer duplicates the listener; `TSocketIOEventHandler` exported |
 | `isNumber(value, exact?)` | `isNumber({ value })` (the loose reading, as before); the exact reading is `typeof value === 'number'` |

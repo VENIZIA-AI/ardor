@@ -14,7 +14,7 @@ packages: ['@venizia/ardor-kernel']
 
 ## What changed
 
-- **A real error.** The body is read under the `error` root key and mapped like IGNIS `HttpDataSource`, so a repository and the data provider throw the same fields. `useNotifyError` already typed its argument as an `ApplicationError`; it now gets one.
+- **A real error.** The body is read under the `error` root key and mapped like IGNIS `HttpDataSource`, so a repository and the data provider throw the same fields. Unlike `HttpDataSource`, `message` is the server's text and not a log line, because react-admin shows `error.message`. `useNotifyError` already typed its argument as an `ApplicationError`; it now gets one.
 - **What the fields hold.**
   - `statusCode` is the HTTP status, always set.
   - `message` and `normalized.text` are the server's `normalized.text`, else its `message`, else `HTTP <status>`.

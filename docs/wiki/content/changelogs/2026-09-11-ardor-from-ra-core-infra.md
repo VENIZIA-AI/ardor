@@ -24,7 +24,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor', '@venizia/ardor-kernel', '@
 
 ## Who is affected
 
-- **All consumers of `@minimaltech/ra-core-infra`.** Migrate by hand following the guide and change the dependency to `@venizia/ardor`. See `../guides/migrations/from-ra-core-infra`. The old package is frozen at `0.0.3-18`.
+- **All consumers of `@minimaltech/ra-core-infra`.** Migrate by hand following the guide and change the dependency to `@venizia/ardor`. See `../guides/migrations/from-ra-core-infra`. The old package is permanently frozen at `0.0.3-18`; fixes land only in the ARDOR packages.
 
 ## Breaking changes
 

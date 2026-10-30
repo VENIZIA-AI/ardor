@@ -14,7 +14,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 ## What changed
 
-- **An async `getAppInfo`.** `preConfigure` now waits for it, so `APPLICATION_INFO` holds the info and not a promise. A synchronous `getAppInfo` keeps `preConfigure` synchronous.
+- **An async `getAppInfo`.** `preConfigure` now waits for it, so `APPLICATION_INFO` holds the info and not a promise. A synchronous `getAppInfo` keeps `preConfigure` synchronous. The signature is unchanged.
 - **A response body that is not an object.** `convertResponse` with `requestCountData=1` throws the documented error for `null` and for a primitive body, instead of a `TypeError`.
 - **Errors are no longer swallowed.** A failed token refresh, a failing `onAuthFailure`, an invalid `noAuthPathRegex` pattern, a stored token that is not JSON, and a JWT payload that cannot be decoded are now logged. The last two log the error name only, because a JSON parse error message quotes the token.
 - **Data-provider methods reject.** `getList`, `getOne`, `getMany`, `getManyReference`, `create`, `update`, `updateMany`, `delete`, `deleteMany` and `send` of the REST data provider are `async`: a failure while the request is being built is a rejected promise, as react-admin expects, not a synchronous throw.
