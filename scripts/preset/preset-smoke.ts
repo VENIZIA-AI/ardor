@@ -699,7 +699,8 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
       let forwardedText = '';
 
       if (forwarded?.ok === true) {
-        forwardedText = await forwarded.text();
+        const result2 = await forwarded.text();
+        forwardedText = result2;
       }
 
       assert({
@@ -1713,12 +1714,13 @@ const main = async () => {
       let ignisTarball = ignisTarballs.get('@venizia/ignis');
 
       if (ignisDirectory === undefined) {
-        ignisTarball = await downloadTagged({
+        const result10 = await downloadTagged({
           name: '@venizia/ignis',
           // The line the catalog was refreshed to: IGNIS stable beside an ARDOR prerelease is two copies.
           tag: process.env.CATALOG_TAG ?? 'latest',
           destination: join(tempFolder, 'ignis-tgz'),
         });
+        ignisTarball = result10;
       }
 
       if (ignisTarball === undefined) {

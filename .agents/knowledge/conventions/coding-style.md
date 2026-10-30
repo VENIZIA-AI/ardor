@@ -16,6 +16,7 @@ tags: [conventions, style]
 - [switch + default over if-else chains](#switch--default-over-if-else-chains)
 - [Strict TypeScript, avoid any](#strict-typescript-avoid-any)
 - [State belongs to a class, not to the module](#state-belongs-to-a-class-not-to-the-module)
+- [Async style](#async-style)
 - [Comments state constraints, not history or narration](#comments-state-constraints-not-history-or-narration)
 - [Related](#related)
 <!-- okf:generated:contents end -->
@@ -111,6 +112,16 @@ class, the way `getError` delegates to `ApplicationError.getError`.
 
 Inside a class, reach for statics by class name, not `this` - a static called through a detached
 reference has no `this`.
+
+## Async style
+
+Two house rules from `@venizia/dev-configs` (`asyncStyleConfigs`, and `reactAsyncStyleConfigs` in a React project) run in every ARDOR lint config, tests included:
+
+- `await` stands alone: as a statement or as the whole initializer of a declaration (`const result = await f();`), never inside an expression (`expect(await f())`, a ternary, a template literal). `venizia/no-inline-await`.
+- A function returns the promise: `return f()`, not `return await f()`; inside a `try` that must catch it, `const result = await f(); return result;`. `venizia/no-return-await`.
+- A hook never gets an async function (`venizia/no-async-hook-callback`), and an effect callback returns a cleanup on every path or on none (`venizia/effect-cleanup-consistency`; `() => {}` for an early exit).
+
+`bun x devz codemod async-style [paths] [--write | --check]` applies the safe fixes of the first two; it is a dry run unless `--write`.
 
 ## Comments state constraints, not history or narration
 
