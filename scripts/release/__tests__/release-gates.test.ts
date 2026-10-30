@@ -250,6 +250,16 @@ const jobsOf = (text: string): Record<string, string> => {
   );
 };
 
+/** The keys of a step's `env:` block (ten spaces deep), in order. */
+const envKeysOf = (step: string): string[] => {
+  const block = step.split(/\n {8}env:\n/)[1] ?? '';
+
+  return block
+    .split('\n')
+    .filter((line) => /^ {10}\S/.test(line) && !line.trimStart().startsWith('#'))
+    .map((line) => line.trim().split(':')[0] ?? '');
+};
+
 /** The steps of a job, each with its name and its text. */
 const stepsOf = (job: string): Array<{ name: string; text: string }> =>
   job
@@ -702,6 +712,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     ['failure', 'success', 'skipped', 'prerelease', false],
   ];
   const REPORT_STEP = 'Report the run';
+  const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
   const LOOP = 'for package in ${PACKAGES//,/ }; do';
 
   const guards = {
@@ -820,6 +831,36 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         release.includes('--target-branch "$GITHUB_REF_NAME"') &&
         !publish.includes('release-plan.ts') &&
         !publish.includes('RELEASE_VERSION')
+      );
+    },
+    // C34 (VULCAN's C31): the publish job makes the GitHub Release after the chain and cannot fail the run for it.
+    githubRelease: ({ workflow }: IFiles): boolean => {
+      const publish = jobsOf(workflow).publish ?? '';
+      const steps = stepsOf(publish);
+      const names = steps.map((step) => step.name);
+      const release = steps.find((step) => step.name === GITHUB_RELEASE_STEP)?.text ?? '';
+
+      return (
+        names.indexOf(GITHUB_RELEASE_STEP) > names.indexOf(RELEASE_STEP) &&
+        names.indexOf(RELEASE_STEP) > -1 &&
+        names.indexOf(GITHUB_RELEASE_STEP) < names.indexOf(REPORT_STEP) &&
+        /\n {8}if: \$\{\{ !cancelled\(\) \}\}\n/.test(release) &&
+        /\n {8}continue-on-error: true\n/.test(release) &&
+        /\n {8}timeout-minutes: 5\n/.test(release) &&
+        /\n {10}GH_TOKEN: \$\{\{ github\.token \}\}\n/.test(release) &&
+        /\n {8}run: bun scripts\/release\/github-release\.ts create --version "\$PLAN_VERSION" --kind "\$PLAN_KIND" --packages "\$PACKAGES"\n/.test(
+          release,
+        ) &&
+        // Exactly one step of that name, and its env holds the job token and nothing else: a step-level PLAN_KIND,
+        // PLAN_VERSION or PACKAGES, a GH_REPO or a GH_HOST would redirect what the step releases or where.
+        names.filter((name) => name === GITHUB_RELEASE_STEP).length === 1 &&
+        envKeysOf(release).join(',') === 'GH_TOKEN' &&
+        !/\n {8}(working-directory|shell|uses):/.test(release) &&
+        // The job token is the only credential: no secret, and no other step or the job holds a GitHub token.
+        !/secrets\./.test(release) &&
+        steps.filter((step) => /GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(step.text)).length ===
+          1 &&
+        !/GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(publish.split(/\n {4}steps:\n/)[0] ?? '')
       );
     },
     // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
@@ -1226,6 +1267,123 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       name: 'the plan stops handing develop on',
       mutate: (text) =>
         text.replace('      develop_sha: ${{ steps.plan.outputs.develop_sha }}\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step may fail the run',
+      mutate: (text) =>
+        text.replace('        continue-on-error: true\n        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not bounded in time',
+      mutate: (text) => text.replace('        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step comes before the chain',
+      mutate: (text) => {
+        const block =
+          /( {6}- name: Create the GitHub Release\n[\s\S]*?)(?= {6}# A job that was cancelled)/.exec(
+            text,
+          )?.[1];
+
+        return block === undefined
+          ? text
+          : text
+              .replace(block, '')
+              .replace(
+                '      - name: Release the packages\n',
+                `${block}      - name: Release the packages\n`,
+              );
+      },
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step stops running after a failed chain',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Create the GitHub Release\n        if: ${{ !cancelled() }}\n',
+          '      - name: Create the GitHub Release\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step uses a secret instead of the job token',
+      mutate: (text) =>
+        text.replace('GH_TOKEN: ${{ github.token }}', 'GH_TOKEN: ${{ secrets.GITHUB_PAT }}'),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not told the packages of the run',
+      mutate: (text) =>
+        text.replace(
+          ' --packages "$PACKAGES"\n\n      # A job that was cancelled',
+          '\n\n      # A job that was cancelled',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step overrides the plan kind in its own env',
+      mutate: (text) =>
+        text.replace(
+          '          GH_TOKEN: ${{ github.token }}\n        run: bun scripts/release/github-release.ts',
+          '          GH_TOKEN: ${{ github.token }}\n          PLAN_KIND: stable\n        run: bun scripts/release/github-release.ts',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is pointed at another repository',
+      mutate: (text) =>
+        text.replace(
+          '          GH_TOKEN: ${{ github.token }}\n        run: bun scripts/release/github-release.ts',
+          '          GH_TOKEN: ${{ github.token }}\n          GH_REPO: evil/x\n        run: bun scripts/release/github-release.ts',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the publish job holds a GitHub token for every step',
+      mutate: (text) =>
+        text.replace(
+          '      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}\n    # The release pushes',
+          '      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}\n      GH_TOKEN: ${{ github.token }}\n    # The release pushes',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'another step holds a GitHub token',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Report the run\n        if: ${{ always() }}\n',
+          '      - name: Report the run\n        if: ${{ always() }}\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step runs somewhere else',
+      mutate: (text) =>
+        text.replace(
+          '        timeout-minutes: 5\n        env:',
+          '        timeout-minutes: 5\n        working-directory: /tmp\n        env:',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'a second step of the same name does something else',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Report the run\n',
+          '      - name: Create the GitHub Release\n        run: echo other\n\n      - name: Report the run\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is gone',
+      mutate: (text) =>
+        text.replace(
+          / {6}- name: Create the GitHub Release\n[\s\S]*?(?= {6}# A job that was cancelled)/,
+          '',
+        ),
     },
     {
       guard: 'publishUsesThePlan',
