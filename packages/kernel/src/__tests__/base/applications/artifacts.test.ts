@@ -12,7 +12,7 @@ import {
 } from '@venizia/ignis-kernel/metadata';
 import { BindingScopes } from '@venizia/ignis-inversion';
 import type { IApplicationInfo } from '@/common';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 class TestApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {

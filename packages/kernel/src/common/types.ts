@@ -22,9 +22,12 @@ import type {
   RequestTypes,
 } from './constants';
 
+/** @deprecated Use `number`. Removed in 0.5. */
 export type NumberIdType = number;
+/** @deprecated Use `string`. Removed in 0.5. */
 export type StringIdType = string;
 export type IdType = string | number;
+/** @deprecated Write `undefined | null`. Removed in 0.5. */
 export type NullableType = undefined | null | void;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
@@ -286,6 +289,7 @@ export interface IBuildInfoFile extends TBuildInfoRecord {
   frameworks: Record<string, string>;
 }
 
+/** @deprecated Nothing in ARDOR uses it: declare the shape you need. Removed in 0.5. */
 export type TDataCount<T> = {
   data: T;
   count?: number;

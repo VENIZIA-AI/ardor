@@ -33,6 +33,7 @@ export const isValidDate = (opts: { value: string | number | Date }): boolean =>
   return !Number.isNaN(date.valueOf());
 };
 
+/** @deprecated Nothing in ARDOR calls it: check the event target in your own code. Removed in 0.5. */
 export const isEditableTarget = (opts: { target: EventTarget | null }): boolean => {
   const { target } = opts;
 

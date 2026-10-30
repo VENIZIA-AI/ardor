@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import type { IApplicationInfo, IRestDataProviderOptions } from '@venizia/ardor-kernel';
 
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 

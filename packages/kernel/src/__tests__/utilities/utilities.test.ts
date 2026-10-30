@@ -7,7 +7,7 @@ import {
   isString,
   isValidDate,
 } from '@/utilities/boolean';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { toDataUrl } from '@/utilities/file';
 
 describe('boolean utilities', () => {

@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { LocalStorageKeys } from '@/common';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 /**
  * ARDOR's contract with the HTTP repository it re-exports from `@venizia/ignis-connectors/http`.
