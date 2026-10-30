@@ -26,6 +26,11 @@
  * With `--merge-trial`, a stable also tries the merge of main back into develop (merge-back.ts) and refuses
  * when it would stop, before anyone is asked to approve; `develop_sha` is the head of develop that trial read
  * (empty for a prerelease, which has no merge back).
+ *
+ * With `--label` (the run title the dispatcher sent), a label that is not `<version> <kind> · <packages> ·
+ * #<issue> · <short sha>` as this job computes it is refused; an empty label is a dispatch by hand. The
+ * workflow names the run before the plan exists, so the dispatcher says the title and this job holds it to
+ * the truth.
  */
 
 import { appendFileSync, readFileSync } from 'node:fs';
@@ -57,7 +62,7 @@ export interface IResolvedRun {
 export interface IDispatch {
   workflow: string;
   ref: string;
-  inputs: { packages: string; version: string; issue?: string };
+  inputs: { packages: string; version: string; issue?: string; label?: string };
 }
 
 export class ReleaseKinds {
@@ -557,11 +562,66 @@ export class ReleasePlan {
     ].join('\n');
   }
 
+  /**
+   * The run title the dispatcher sends and the plan job checks: `0.4.6-1 prerelease · kernel,react,admin,ardor ·
+   * #450 · 207ce41` (version, kind, packages as dispatched, issue when there is one, short commit when known).
+   * An Actions expression cannot work these out or cut a commit short, so the short commit is part of the label.
+   */
+  static labelOf(opts: {
+    version: string;
+    kind: TReleaseKind;
+    packages: readonly string[];
+    issue?: string;
+    sha?: string;
+  }): string {
+    const issue = opts.issue === undefined || opts.issue === '' ? [] : [`#${opts.issue}`];
+    const sha = opts.sha === undefined || opts.sha === '' ? [] : [opts.sha.slice(0, 7)];
+
+    return [`${opts.version} ${opts.kind}`, opts.packages.join(','), ...issue, ...sha].join(' · ');
+  }
+
+  /** Why a label is not the one the plan gives; empty when it is, or when there is none (a dispatch by hand). */
+  static labelProblems(opts: { label: string | undefined; expected: string }): string[] {
+    return opts.label === undefined || opts.label === '' || opts.label === opts.expected
+      ? []
+      : [
+          // Quoted: the label is text a person typed, and the job log reads a line that starts with `::` as a command.
+          `the label ${JSON.stringify(opts.label)} is not what the plan computes: ${JSON.stringify(opts.expected)}`,
+        ];
+  }
+
+  /**
+   * Whether a workflow file declares the `label` input. A dispatch that sends an input the ref's workflow does not
+   * declare is refused by GitHub, so a branch that has not received the input yet (main, until the next Sync)
+   * is dispatched without a label and the run is titled by its inputs.
+   */
+  static declaresLabel(opts: { workflow: string }): boolean {
+    return /^ {6}label:\s*$/m.test(opts.workflow.split(/\njobs:\n/)[0] ?? '');
+  }
+
+  /** The `--label` of an argument list read as given, and the list without it and its value. */
+  static takeLabel(opts: { argv: string[] }): { label: string | undefined; rest: string[] } {
+    const at = opts.argv.indexOf('--label');
+
+    if (at === -1) {
+      return { label: undefined, rest: opts.argv };
+    }
+
+    // The value is whatever follows, even a word that looks like a flag: it must not be read as one, and it
+    // must not stay in the list for the other flags to find.
+    return {
+      label: opts.argv[at + 1] ?? '',
+      rest: opts.argv.filter((_, index) => index !== at && index !== at + 1),
+    };
+  }
+
   /** The single dispatch of a run: what `gh workflow run` is sent, and nothing else. */
   static dispatch(opts: {
     plan: readonly string[];
     version: string;
     issue?: string;
+    /** The run title; the plan job refuses one that is not its own. Left out when empty. */
+    label?: string;
     /** The branch to dispatch on; `develop` when absent. */
     ref?: string;
   }): IDispatch {
@@ -574,6 +634,7 @@ export class ReleasePlan {
         packages: opts.plan.join(','),
         version: opts.version,
         ...(opts.issue === undefined ? {} : { issue: opts.issue }),
+        ...(opts.label === undefined || opts.label === '' ? {} : { label: opts.label }),
       },
     };
   }
@@ -604,7 +665,8 @@ export class ReleasePlan {
 
 /** The `plan` command: print the plan, write the job outputs, and exit 1 with every reason it refuses. */
 const runPlan = async (opts: { argv: string[] }): Promise<number> => {
-  const { argv } = opts;
+  // The label is text a person can type: it is taken out first, so no other flag reads it and it reads none.
+  const { label, rest: argv } = ReleasePlan.takeLabel({ argv: opts.argv });
   const flag = (name: string): string | undefined => {
     const index = argv.indexOf(name);
     return index === -1 ? undefined : argv[index + 1];
@@ -632,6 +694,20 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
 
   if (plan !== undefined) {
     console.log(`plan: ${plan.version} (${plan.kind}) from ${target} on ${ref}`);
+
+    // The run is already titled; the title may not name a release this run does not make.
+    problems.push(
+      ...ReleasePlan.labelProblems({
+        label,
+        expected: ReleasePlan.labelOf({
+          version: plan.version,
+          kind: plan.kind,
+          packages: names,
+          issue,
+          sha: process.env.GITHUB_SHA,
+        }),
+      }),
+    );
   }
 
   if (plan?.kind === ReleaseKinds.STABLE && problems.length === 0) {

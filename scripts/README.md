@@ -6,7 +6,7 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 
 | Group | Script | What it does | Called by |
 |---|---|---|---|
-| `release/` | `release.ts` | Plans one release run, sends the one dispatch of the NPM Release workflow, then checks the registry and pulls | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
+| `release/` | `release.ts` | Plans one release run, sends the one dispatch of the Release workflow (with the run title as its `label`), then checks the registry and pulls | `make release`, `make release-plan`, `bun scripts/release/release.ts` (dry run first) |
 | `release/` | `release-plan.ts` | What one run releases: the packages in dependency order and the one version (`resolve`), its kind, branch and promotion (`plan`), and the dispatch | `release.ts`, `package-release.yml`, step "Plan the run" |
 | `release/` | `release-chain.ts` | Releases the packages of a run in order: the checks, then per package the clean-install, bump, pack, publish, wait, commit, push and tag, then for a stable the merge back of `main` into `develop`; `report` prints the stop report from its state file | `package-release.yml`, steps "Release the packages" and "Report the run" |
 | `release/` | `merge-back.ts` | The merge back of a stable: `main`, with the release commits, flows into `develop`. `trial` rehearses it in throwaway worktrees (the plan job), `apply` makes it. Copied from VULCAN | `release-plan.ts` (`plan --merge-trial`) |

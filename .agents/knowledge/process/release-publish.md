@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Release and publish
-description: How to run the manually-triggered NPM Release workflow, which releases the ARDOR packages in one run, and validate it against a consumer before publishing.
+description: How to run the manually-triggered Release workflow, which releases the ARDOR packages in one run, and validate it against a consumer before publishing.
 resource: .github/workflows/package-release.yml
 tags: [process, release, ci]
 ---
@@ -24,7 +24,8 @@ tags: [process, release, ci]
 
 ## What triggers it
 
-The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workflow_dispatch` only -
+The "Release" workflow (`.github/workflows/package-release.yml`; its file name and its job `NPM Release` are unchanged,
+npm trusted publishing and the environments refer to them) is a `workflow_dispatch` only -
 it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
 `scripts/release/release.ts` (below). **One dispatch is one run: it releases every package it names, in
 dependency order, at one version.** The inputs:
@@ -35,9 +36,19 @@ dependency order, at one version.** The inputs:
 - `version` (optional): an explicit version, `x.y.z` or `x.y.z-pre`. When set it replaces `build_mode`
   (see [Version line](#version-line)).
 - `issue` (optional): the issue number the release commits serve; each commit subject is prefixed `[#N]`.
+- `label` (optional): the run title, filled in by `release.ts` (see below); leave it empty for a dispatch by hand.
 - `heal_only` (optional): run only the `next` tag heal, publish nothing.
 
-The run name is `packages: <list> | release: <version or mode> | <commit>`.
+**The run title** is `Release · <label>`, for example `Release · 0.4.6-1 prerelease · kernel,react,admin,ardor · #450 · 207ce41`
+(version, kind, packages, issue, short commit). A workflow names its run before the plan job exists, and an expression
+can neither work these out nor cut a commit short, so `release.ts` works the label out (`ReleasePlan.labelOf`) and sends it,
+and the plan job passes it to `release-plan.ts plan --label` (through a step env, never through the script text), which
+refuses a label that is not the one it computes (`ReleasePlan.labelProblems`). The title cannot name a release the run does
+not make. A dispatch by hand has no label: the title is `Release · <version or mode> · <packages> · #<issue> · <whole commit>`.
+A heal-only run has no plan job, so it ignores a label: `Release · heal the next tags · <commit>`.
+`release.ts` sends a label only to a branch whose workflow declares the input (`ReleasePlan.declaresLabel`): GitHub refuses
+an input the ref's workflow does not know, so a stable dispatched on `main` before the Sync that brings the input is titled by
+its inputs. The guards `dispatchedCommit` (C17) and `labelVerified` (C33) in `release-gates.test.ts` pin both.
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`

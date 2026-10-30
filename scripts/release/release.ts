@@ -1,5 +1,5 @@
 /**
- * Dispatches the NPM Release workflow once and checks what it did.
+ * Dispatches the Release workflow once and checks what it did.
  *
  * One dispatch is one run for every package it names: the workflow releases them in dependency order at
  * one version (`release-chain.ts`), so there is nothing to wait for between packages here. This script
@@ -365,13 +365,32 @@ const main = async (): Promise<void> => {
     );
   }
 
+  const packages = mergeBackOwed ? named : resolved.packages;
+  // The run title: the workflow cannot work it out when it names the run, so it is sent, and the plan job
+  // refuses one that is not its own. Only a workflow that declares the input can be sent one.
+  const label = ReleasePlan.declaresLabel({
+    workflow: await readFromRemote({ branch, path: WORKFLOW_PATH }),
+  })
+    ? ReleasePlan.labelOf({
+        version: resolved.version,
+        kind,
+        packages,
+        issue,
+        sha: (await run({ command: ['git', 'rev-parse', `origin/${branch}`], allowFailure: true }))
+          .stdout,
+      })
+    : undefined;
   const dispatch = ReleasePlan.dispatch({
-    plan: mergeBackOwed ? named : resolved.packages,
+    plan: packages,
     version: resolved.version,
     issue,
+    label,
     ref: branch,
   });
   console.log(`\n${ReleasePlan.describe({ dispatch })}`);
+  if (label !== undefined) {
+    console.log(`The run is titled: Release · ${label}`);
+  }
   if (isStable) {
     console.log('A stable waits for one approval on release-approval, given in the run on GitHub.');
   }
