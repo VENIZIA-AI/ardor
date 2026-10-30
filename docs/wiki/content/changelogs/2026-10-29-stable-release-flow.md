@@ -24,6 +24,7 @@ packages: []
 - **A preset built on a prerelease accepts it.** The Test job builds the preset after refreshing the catalog to the IGNIS prerelease, and `vulcan add` refused the catalog `vulcan init` wrote from it (`^0.4.1` does not meet `0.4.6-0`). The `peers` of the preset now read `<range> || <the exact prerelease>` for such an entry; a stable build and the published `peerDependencies` are unchanged.
 - **The `built on:` line holds versions.** The first prerelease tag wrote the catalog ranges (`^0.4.6-0`), which the stable gate cannot compare. New tags carry the bare version, and the plan reads a leading `^` or `~` away, so that first tag still works.
 - **The library preset declares the six IGNIS packages.** `vulcan add --preset ardor --lib` now writes `@venizia/ignis-boot`, `-connectors`, `-filter`, `-helpers`, `-inversion` and `-kernel` as `catalog:` devDependencies, as the app preset does, so a new library no longer starts without them (issue #436). The preset smoke asserts them in the generated library and runs `single-copy` after every install.
+- **`make gates-refreshed`** runs `make gates` after the Test job's catalog refresh (the IGNIS `highest` line), in a scratch copy of the tree. Run it before every dispatch: a plain `make gates` cannot see what the refresh moves.
 - **VULCAN** is pinned at 0.4.7.
 
 ## Who is affected
