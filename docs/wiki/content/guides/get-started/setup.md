@@ -51,7 +51,7 @@ Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-b
 
 Declare every IGNIS package yourself, in every workspace package that uses ARDOR; do not rely on the peer alone. A peer range such as `^0.4.1` never matches a prerelease (`0.4.5-0`), so a package that lists no IGNIS dependency gets the stable copy from the install, next to the prerelease the rest of the repository uses. Two copies of `@venizia/ignis-inversion` are two sets of types, and the build fails with `Type 'Application' is not assignable to type 'IContainer'`. In a monorepo, put the versions in the root `workspaces.catalog` and write `"catalog:"` in each package.
 
-To check a checkout, run the ARDOR gate against it (it prints each package that resolves to two versions and the workspace package that holds the older one):
+To check a checkout, run the ARDOR gate against it (it walks the members your root `workspaces` field lists, and prints each package that resolves to two versions and the workspace package that holds the older one):
 
 ```bash
 bun <ardor-checkout>/scripts/release/release-gates.ts single-copy .

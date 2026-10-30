@@ -336,6 +336,50 @@ export const workspaceStrays = (opts: {
 };
 
 /**
+ * The workspace member folders of a repository, relative to `root`, from the `workspaces` field of its
+ * root `package.json` (an array, or `{ packages: [...] }`; a `!` pattern excludes). Any layout works:
+ * `packages/*` here, `apps/*` and `libs/*` in a consumer. No `workspaces` field means no member.
+ */
+export const workspaceMembers = (opts: { root: string }): string[] => {
+  const manifestPath = join(opts.root, 'package.json');
+
+  if (!existsSync(manifestPath)) {
+    return [];
+  }
+
+  const { workspaces } = readJson({ path: manifestPath });
+  const patterns = Array.isArray(workspaces)
+    ? workspaces
+    : isRecord(workspaces) && Array.isArray(workspaces.packages)
+      ? workspaces.packages
+      : [];
+  const globs = patterns.filter((pattern): pattern is string => typeof pattern === 'string');
+  const excluded = globs
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => new Bun.Glob(pattern.slice(1).replace(/\/$/, '')));
+  const members = new Set<string>();
+
+  for (const pattern of globs.filter((glob) => !glob.startsWith('!'))) {
+    const glob = `${pattern.replace(/\/$/, '')}/package.json`;
+
+    for (const file of new Bun.Glob(glob).scanSync({ cwd: opts.root })) {
+      const member = file.replace(/\/package\.json$/, '');
+
+      if (
+        member.split('/').includes('node_modules') ||
+        excluded.some((exclusion) => exclusion.match(member))
+      ) {
+        continue;
+      }
+
+      members.add(member);
+    }
+  }
+
+  return [...members].sort();
+};
+
+/**
  * One `@venizia/*` package must resolve to one version in the installed graph. Two copies of IGNIS
  * inversion are two nominal sets of types: the install succeeds, and the lie surfaces as an
  * `Application` that is "not assignable to IContainer". A peer range without a prerelease part
@@ -351,9 +395,9 @@ export const duplicateCopies = (opts: { root: string }): string[] => {
   const visited = new Set<string>();
   const queue: { directory: string; via: string; member: boolean }[] = [
     { directory: opts.root, via: '.', member: true },
-    ...[...new Bun.Glob('packages/*/package.json').scanSync({ cwd: opts.root })].map((file) => ({
-      directory: join(opts.root, file, '..'),
-      via: file.replace(/\/package\.json$/, ''),
+    ...workspaceMembers({ root: opts.root }).map((member) => ({
+      directory: join(opts.root, member),
+      via: member,
       member: true,
     })),
   ];
