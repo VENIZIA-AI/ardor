@@ -4,7 +4,7 @@ import { Container } from '@venizia/ignis-inversion';
 import { Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 const inventory = Features.define({
   name: 'inventory',

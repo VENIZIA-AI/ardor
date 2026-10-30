@@ -1,5 +1,6 @@
 import type { TConstValue } from '@/common';
 
+/** @deprecated Use `LogLevels` from `@venizia/ignis-helpers/core`. Removed in 0.5. */
 export class LogLevels {
   static readonly DEBUG = 'debug';
   static readonly INFO = 'info';
@@ -13,8 +14,10 @@ export class LogLevels {
   }
 }
 
+/** @deprecated Use `TLogLevel` from `@venizia/ignis-helpers/core`. Removed in 0.5. */
 export type TLogLevel = TConstValue<typeof LogLevels>;
 
+/** @deprecated Use `ILogger` from `@venizia/ignis-helpers/core`. Removed in 0.5. */
 export interface ILogger {
   debug(message: string, ...args: unknown[]): void;
   info(message: string, ...args: unknown[]): void;
@@ -22,6 +25,7 @@ export interface ILogger {
   error(message: string, ...args: unknown[]): void;
 }
 
+/** @deprecated Use `ConsoleLogger` from `@venizia/ignis-helpers/core`, the logger a browser bundle can reach. Removed in 0.5. */
 export class Logger implements ILogger {
   private static instances = new Map<string, Logger>();
   private static debugEnabled = false;

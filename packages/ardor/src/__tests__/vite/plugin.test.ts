@@ -16,7 +16,7 @@ import {
   parseBuildInfoFileOptions,
 } from '@/vite/plugin';
 
-import { getRejection } from '../rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { makeScratch, removeScratch, writeFiles } from './fixture';
 
 const STAMP: TBuildInfoRecord = {
@@ -305,7 +305,7 @@ describe('the build', () => {
       sources: makeFakeSources({ record: withoutCommit() }),
     });
 
-    const result = await getRejection({ task: buildApp({ plugin }) });
+    const result = await rejectionOf(buildApp({ plugin }));
     expect(String(result)).toContain('APP_BUILD_COMMIT');
   });
 

@@ -71,6 +71,32 @@ describe('ListFilterBuilder.build', () => {
     expect(filter.noLimit).toBeUndefined();
   });
 
+  test.each([
+    ['no page: page 1', { perPage: 10 }, { limit: 10, skip: 0 }],
+    ['page 0: page 1', { page: 0, perPage: 10 }, { limit: 10, skip: 0 }],
+    ['a negative page: page 1', { page: -3, perPage: 10 }, { limit: 10, skip: 0 }],
+    ['page 3', { page: 3, perPage: 10 }, { limit: 10, skip: 20 }],
+    ['perPage 0: no limit', { page: 2, perPage: 0 }, { limit: undefined, skip: undefined }],
+    [
+      'a negative perPage: no limit',
+      { page: 2, perPage: -5 },
+      { limit: undefined, skip: undefined },
+    ],
+    ['no pagination at all: no limit', undefined, { limit: undefined, skip: undefined }],
+  ])('pagination %s', (_name, pagination, expected) => {
+    const { filter } = ListFilterBuilder.build({
+      params: {
+        pagination: pagination as never,
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      },
+    });
+
+    expect(filter.limit).toBe(expected.limit);
+    expect(filter.skip).toBe(expected.skip);
+    expect(filter.offset).toBeUndefined();
+  });
+
   test('no perPage sends no limit, a page below 1 reads as page 1, and 0 and false stay filters', () => {
     const none = ListFilterBuilder.build({
       params: {

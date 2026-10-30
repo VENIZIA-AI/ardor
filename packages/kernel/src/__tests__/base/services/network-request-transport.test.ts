@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestBodyTypes, RequestTypes } from '@/common';
 import { Logger } from '@/helpers';

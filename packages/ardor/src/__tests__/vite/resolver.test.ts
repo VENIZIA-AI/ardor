@@ -11,7 +11,7 @@ import {
   toBuildInfoFile,
 } from '@/vite/resolver';
 
-import { getRejection } from '../rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 const UNSPECIFIED = BuildInfoRegistry.UNSPECIFIED;
 
@@ -184,7 +184,7 @@ describe('resolveBuildInfo', () => {
         commit: makeNotFound({ reason: 'git rev-parse failed | not a git repository' }),
       }),
     });
-    const result = await getRejection({ task });
+    const result = await rejectionOf(task);
     const message = String(result);
 
     expect(message).toContain('APP_BUILD_COMMIT');

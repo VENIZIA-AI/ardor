@@ -5,7 +5,7 @@ import { describe, expect, test } from 'bun:test';
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { configuration, provide } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 @configuration()
 class InventoryConfiguration {

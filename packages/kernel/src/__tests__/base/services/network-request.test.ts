@@ -19,7 +19,7 @@ import {
   type TNoAuthPathRegex,
   type TRequestMethod,
 } from '@/common';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   method: string;

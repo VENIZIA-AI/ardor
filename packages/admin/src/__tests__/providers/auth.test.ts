@@ -15,7 +15,7 @@ import {
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   readonly method: string;

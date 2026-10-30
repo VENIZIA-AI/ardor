@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import { loadFeatureMessages, resolveApplicationProviders } from '@/components/resolve';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { Container, getError } from '@venizia/ignis-inversion';

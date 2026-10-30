@@ -6,7 +6,7 @@ import { BuildInfoEnvironmentKeys } from '@venizia/ignis-boot/build-info';
 
 import { findInstalledVersion, readFrameworkVersions, readGit, readJsonFile } from '@/vite/sources';
 
-import { getRejection } from '../rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, runNode, writeFiles } from './fixture';
 
 describe('reading from disk', () => {
@@ -51,7 +51,7 @@ describe('reading from disk', () => {
 
   test('readJsonFile: a broken file is an error that names the file and never quotes its content', async () => {
     const path = join(root, 'broken', 'package.json');
-    const result = await getRejection({ task: readJsonFile({ path }) });
+    const result = await rejectionOf(readJsonFile({ path }));
     const message = String(result);
 
     expect(message).toContain(path);
@@ -85,7 +85,7 @@ describe('reading from disk', () => {
   test('readFrameworkVersions without a package.json is an error that says where to look', async () => {
     const task = readFrameworkVersions({ root: join(root, 'empty'), scope: '@venizia/' });
 
-    const result = await getRejection({ task });
+    const result = await rejectionOf(task);
     expect(String(result)).toContain('root option');
   });
 });

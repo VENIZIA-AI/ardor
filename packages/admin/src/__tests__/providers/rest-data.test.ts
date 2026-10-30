@@ -892,88 +892,35 @@ describe('network service creation', () => {
 });
 
 describe('buildListFilter', () => {
-  class ExposedProvider extends DefaultRestDataProvider {
-    public override buildListFilter(
-      opts: Parameters<DefaultRestDataProvider['buildListFilter']>[0],
-    ) {
-      return super.buildListFilter(opts);
+  // The cases of the filter itself are in list-filter.test.ts: buildListFilter is a one-line delegate of
+  // ListFilterBuilder.build. What stays here is what the delegate means for a subclass.
+  test('stays a protected hook: an override is what getList sends', async () => {
+    class OneRowProvider extends DefaultRestDataProvider {
+      protected override buildListFilter(
+        opts: Parameters<DefaultRestDataProvider['buildListFilter']>[0],
+      ) {
+        const built = super.buildListFilter(opts);
+
+        return { ...built, filter: { ...built.filter, limit: 1 } };
+      }
     }
-  }
 
-  const provider = new ExposedProvider(
-    { url: 'http://127.0.0.1:1', noAuthPathRegex: /./ },
-    { name: 'ardor-admin-test', version: '1.0.0', description: 'x' },
-  );
+    const provider = new OneRowProvider(
+      { url: baseUrl, noAuthPathRegex: /./ },
+      { name: 'ardor-admin-test', version: '1.0.0', description: 'x' },
+    );
 
-  test('turns pagination, sort and plain filter keys into the IGNIS filter', () => {
-    const { filter, queryKey, extra } = provider.buildListFilter({
+    recordedRequests.length = 0;
+    await provider.getList({
+      resource: 'posts',
       params: {
-        pagination: { page: 3, perPage: 20 },
-        sort: { field: 'name', order: 'DESC' },
-        filter: { status: 'open' },
-      },
-    });
-
-    expect(filter.where).toEqual({ status: 'open' });
-    expect(filter.order).toEqual(['name DESC']);
-    expect(filter.limit).toBe(20);
-    expect(filter.skip).toBe(40);
-    expect(queryKey).toEqual({});
-    expect(extra).toBeUndefined();
-  });
-
-  test.each([
-    ['no page: page 1', { perPage: 10 }, { limit: 10, skip: 0 }],
-    ['page 0: page 1', { page: 0, perPage: 10 }, { limit: 10, skip: 0 }],
-    ['a negative page: page 1', { page: -3, perPage: 10 }, { limit: 10, skip: 0 }],
-    ['page 3', { page: 3, perPage: 10 }, { limit: 10, skip: 20 }],
-    ['perPage 0: no limit', { page: 2, perPage: 0 }, { limit: undefined, skip: undefined }],
-    [
-      'a negative perPage: no limit',
-      { page: 2, perPage: -5 },
-      { limit: undefined, skip: undefined },
-    ],
-    ['no pagination at all: no limit', undefined, { limit: undefined, skip: undefined }],
-  ])('pagination %s', (_name, pagination, expected) => {
-    const { filter } = provider.buildListFilter({
-      params: {
-        pagination: pagination as never,
+        pagination: { page: 1, perPage: 50 },
         sort: { field: 'id', order: 'ASC' },
         filter: {},
       },
     });
 
-    expect(filter.limit).toBe(expected.limit);
-    expect(filter.skip).toBe(expected.skip);
-    expect(filter.offset).toBeUndefined();
-  });
-
-  test('keeps a where the caller gave, and routes filter.params and meta into the query', () => {
-    const { filter, queryKey, extra } = provider.buildListFilter({
-      params: {
-        pagination: { page: 1, perPage: 10 },
-        sort: { field: 'id', order: 'ASC' },
-        filter: { where: { kind: 'a' }, params: { tenant: 't1' } },
-        meta: { locale: 'vi', extra: { total: true } },
-      },
-    });
-
-    expect(filter.where).toEqual({ kind: 'a' });
-    expect(queryKey).toEqual({ tenant: 't1', locale: 'vi' });
-    expect(extra).toEqual({ total: true });
-  });
-
-  test('noLimit lifts the limit and the skip', () => {
-    const { filter } = provider.buildListFilter({
-      params: {
-        pagination: { page: 2, perPage: 5 },
-        sort: { field: 'id', order: 'ASC' },
-        filter: { noLimit: true },
-      },
-    });
-
-    expect(filter.limit).toBeUndefined();
-    expect(filter.skip).toBeUndefined();
+    expect(parseFilterQuery({ raw: recordedRequests[0].query.filter }).limit).toBe(1);
   });
 
   test('getList and getManyReference send the same filter apart from the reference key', async () => {

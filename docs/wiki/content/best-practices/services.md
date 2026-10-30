@@ -18,7 +18,7 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
 | `HttpRepository` | class | Reads and writes one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
 | `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
-| `Logger` | class | One instance per scope. `getInstance({ scope })`. |
+| `Logger` | class | One instance per scope. `getInstance({ scope })`. **Deprecated, removed in 0.5:** use `ConsoleLogger` from `@venizia/ignis-helpers/core`, as `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` of the kernel are. |
 | `ISendParams` / `ISendResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
 | `useService` / `useRepository` | const | How a component resolves a service or a repository from the container. |
 

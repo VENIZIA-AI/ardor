@@ -5,7 +5,7 @@ import { describe, expect, test } from 'bun:test';
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { component, configuration, service } from '@/base/metadata';
 import type { IApplicationInfo, IArtifactIndex } from '@/common';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 @service()
 class IndexedService {}

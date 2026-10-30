@@ -2,7 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 import { api } from '@/base/decorators/api';
 import { BaseService } from '@/base/services/base';
-import { rejectionOf } from '@/__tests__/rejection';
+import { rejectionOf } from '@venizia/dev-configs/testing';
 
 interface ITestFetchPayload {
   id: string;

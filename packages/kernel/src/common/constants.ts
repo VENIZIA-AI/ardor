@@ -1,6 +1,7 @@
 export class App {
   static readonly TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
   static readonly TIMEZONE_OFFSET = -(new Date().getTimezoneOffset() / 60);
+  /** @deprecated Nothing in ARDOR reads it, and the i18n provider defaults to `en`. Removed in 0.5. */
   static readonly DEFAULT_LOCALE = 'en.UTF-8';
   static readonly DEFAULT_DEBOUNCE_TIME = 500;
 }
@@ -131,12 +132,14 @@ export class HeaderConstants {
   static readonly TIMEZONE_OFFSET = 'timezone-offset';
 
   static readonly REQUEST_TRACING_ID = 'x-request-id';
+  /** @deprecated Nothing in ARDOR sends or reads this header. Removed in 0.5. */
   static readonly REQUEST_DEVICE_INFO = 'x-device-info';
   static readonly REQUEST_CHANNEL = 'x-request-channel';
 
   static readonly REQUEST_COUNT_DATA = 'x-request-count';
   static readonly RESPONSE_COUNT_DATA = 'x-response-count';
 
+  /** @deprecated Nothing in ARDOR sends or reads this header. Removed in 0.5. */
   static readonly RESPONSE_FORMAT = 'x-response-format';
 
   static readonly TEXTUAL_CONTENT_TYPE_RE =
