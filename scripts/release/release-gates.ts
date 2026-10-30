@@ -170,7 +170,8 @@ export const missingFromRegistry = async (opts: {
     let packument: IPackument;
 
     try {
-      packument = await opts.fetchPackument({ name });
+      const result = await opts.fetchPackument({ name });
+      packument = result;
     } catch (error) {
       // A network failure is not "package not found", and it must not wave the release through.
       missing.push(

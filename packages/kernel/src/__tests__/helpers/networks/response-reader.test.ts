@@ -74,9 +74,12 @@ describe('ResponseReader.read', () => {
       });
     };
 
-    expect((await read('attachment; filename="q.csv"')).filename).toBe('q.csv');
-    expect((await read('attachment; filename=bare.csv')).filename).toBe('bare.csv');
-    expect((await read('attachment')).filename).toBeUndefined();
+    const result = await read('attachment; filename="q.csv"');
+    expect(result.filename).toBe('q.csv');
+    const result2 = await read('attachment; filename=bare.csv');
+    expect(result2.filename).toBe('bare.csv');
+    const result3 = await read('attachment');
+    expect(result3.filename).toBeUndefined();
   });
 });
 

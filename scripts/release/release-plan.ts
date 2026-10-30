@@ -734,13 +734,16 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
         .stdout.toString()
         .trim();
 
-      problems.push(
-        ...(await ReleasePlan.checkBuiltOn({
-          tag,
-          message: message === '' ? undefined : message,
-          latestOf: async ({ name }) => (await fetchDistTags({ name })).latest,
-        })),
-      );
+      const result2 = await ReleasePlan.checkBuiltOn({
+        tag,
+        message: message === '' ? undefined : message,
+        latestOf: async ({ name }) => {
+          const tags = await fetchDistTags({ name });
+
+          return tags.latest;
+        },
+      });
+      problems.push(...result2);
     }
   }
 
@@ -803,7 +806,8 @@ if (import.meta.main) {
     if (command === 'resolve') {
       console.log(ReleasePlan.resolveFromManifests({ argv: rest }));
     } else if (command === 'plan') {
-      process.exit(await runPlan({ argv: rest }));
+      const result2 = await runPlan({ argv: rest });
+      process.exit(result2);
     } else {
       throw new Error(`[release-plan] unknown command '${command ?? ''}' | use resolve or plan`);
     }

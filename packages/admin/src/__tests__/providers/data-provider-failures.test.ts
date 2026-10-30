@@ -48,7 +48,8 @@ describe('DefaultRestDataProvider failures', () => {
       }
 
       expect(task).toBeInstanceOf(Promise);
-      expect(await rejectionOf(task as Promise<unknown>)).toBeDefined();
+      const result = await rejectionOf(task as Promise<unknown>);
+      expect(result).toBeDefined();
     },
   );
 });

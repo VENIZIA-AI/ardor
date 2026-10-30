@@ -200,7 +200,8 @@ export class GatesRefreshed {
 
 if (import.meta.main) {
   try {
-    process.exit(await GatesRefreshed.run());
+    const result = await GatesRefreshed.run();
+    process.exit(result);
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

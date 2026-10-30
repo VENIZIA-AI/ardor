@@ -77,7 +77,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       artifacts: [{ ...generated, services: [IndexedService, ForgottenService] }],
     });
 
-    expect(await rejectionOf(application.start())).toMatchObject({
+    const result = await rejectionOf(application.start());
+    expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
       ),
@@ -93,7 +94,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       artifacts: [generated, { configurations: [ForgottenConfiguration] }],
     });
 
-    expect(await rejectionOf(application.start())).toMatchObject({
+    const result = await rejectionOf(application.start());
+    expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[artifacts\] 'configurations' lists ForgottenConfiguration, which was never discovered/,
       ),
@@ -118,7 +120,8 @@ describe('AbstractArdorApplication.artifacts', () => {
         artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
       });
 
-      expect(await rejectionOf(application.start())).toMatchObject({
+      const result = await rejectionOf(application.start());
+      expect(result).toMatchObject({
         message: expect.stringMatching(
           /\[artifacts\] A group has neither content nor resolve.*IgnisArtifactsPlugin/,
         ),
@@ -130,7 +133,8 @@ describe('AbstractArdorApplication.artifacts', () => {
         artifacts: [new FakeArtifactGroup({ services: [ForgottenService] }) as IArtifactIndex],
       });
 
-      expect(await rejectionOf(application.start())).toMatchObject({
+      const result = await rejectionOf(application.start());
+      expect(result).toMatchObject({
         message: expect.stringMatching(
           /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
         ),
@@ -180,7 +184,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       const group = new ResolvingGroup(async () => ({ services: [ForgottenService] }));
       const application = createApplication({ artifacts: [group as IArtifactIndex] });
 
-      expect(await rejectionOf(application.start())).toMatchObject({
+      const result = await rejectionOf(application.start());
+      expect(result).toMatchObject({
         message: expect.stringMatching(
           /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
         ),
@@ -220,7 +225,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       Object.assign(slice, { kinds: ['controllers'] });
       const application = createApplication({ artifacts: [slice as IArtifactIndex] });
 
-      expect(await application.start()).toBeUndefined();
+      const result = await application.start();
+      expect(result).toBeUndefined();
       expect(slice.resolveCalls).toBe(1);
     });
 
@@ -230,7 +236,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       });
       const application = createApplication({ artifacts: [group as IArtifactIndex] });
 
-      expect(await rejectionOf(application.start())).toMatchObject({ message: 'scan failed' });
+      const result = await rejectionOf(application.start());
+      expect(result).toMatchObject({ message: 'scan failed' });
     });
   });
 
@@ -258,7 +265,8 @@ describe('AbstractArdorApplication.artifacts', () => {
       for (const entry of [null, 'IndexedService', 42]) {
         const application = createApplication({ artifacts: [withEntry(entry)] });
 
-        expect(String(await rejectionOf(application.start()))).toContain(
+        const result = await rejectionOf(application.start());
+        expect(String(result)).toContain(
           "[artifacts] 'services' lists an entry that is not a class (position 1)",
         );
       }
@@ -269,9 +277,8 @@ describe('AbstractArdorApplication.artifacts', () => {
         artifacts: [new FakeArtifactGroup(withEntry(undefined)) as IArtifactIndex],
       });
 
-      expect(String(await rejectionOf(application.start()))).toContain(
-        'lists an entry that is not a class',
-      );
+      const result = await rejectionOf(application.start());
+      expect(String(result)).toContain('lists an entry that is not a class');
     });
   });
 });

@@ -113,7 +113,8 @@ describe('the re-exported HTTP repository', () => {
   test('count reads the total from the list range by default', async () => {
     seen.length = 0;
 
-    expect(await tickets.count({ where: {} })).toEqual({ count: 7 });
+    const result = await tickets.count({ where: {} });
+    expect(result).toEqual({ count: 7 });
     expect(seen[0].pathname).toBe('/tickets');
   });
 
@@ -121,7 +122,8 @@ describe('the re-exported HTTP repository', () => {
     const counted = repositoryFor({ server, countPath: 'count' });
     seen.length = 0;
 
-    expect(await counted.count({ where: {} })).toEqual({ count: 2 });
+    const result = await counted.count({ where: {} });
+    expect(result).toEqual({ count: 2 });
     expect(seen[0].pathname).toBe('/tickets/count');
   });
 
@@ -141,10 +143,12 @@ describe('the re-exported HTTP repository', () => {
     try {
       const repository = repositoryFor({ server: bare });
 
-      expect(await rejectionOf(repository.count({ where: {} }))).toMatchObject({
+      const result = await rejectionOf(repository.count({ where: {} }));
+      expect(result).toMatchObject({
         message: expect.stringMatching(/no Content-Range/),
       });
-      expect(await repository.existsWith({ where: {} })).toBe(true);
+      const result2 = await repository.existsWith({ where: {} });
+      expect(result2).toBe(true);
     } finally {
       await bare.stop(true);
     }
@@ -253,7 +257,8 @@ describe('the re-exported HTTP repository', () => {
       });
 
       try {
-        expect(await repositoryFor({ server: empty }).count({ where: {} })).toEqual({ count: 0 });
+        const result = await repositoryFor({ server: empty }).count({ where: {} });
+        expect(result).toEqual({ count: 0 });
       } finally {
         await empty.stop(true);
       }
@@ -276,11 +281,10 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ total: 42 }) });
 
       try {
-        expect(
-          await rejectionOf(
-            repositoryFor({ server: odd, countPath: 'count' }).count({ where: {} }),
-          ),
-        ).toMatchObject({ message: expect.stringMatching(/no numeric count/) });
+        const result = await rejectionOf(
+          repositoryFor({ server: odd, countPath: 'count' }).count({ where: {} }),
+        );
+        expect(result).toMatchObject({ message: expect.stringMatching(/no numeric count/) });
       } finally {
         await odd.stop(true);
       }
@@ -316,9 +320,8 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ data: [{ id: 'a' }], page: 1 }) });
 
       try {
-        expect(
-          await rejectionOf(repositoryFor({ server: odd }).find({ filter: {} })),
-        ).toMatchObject({ message: expect.stringMatching(/neither an array nor/) });
+        const result = await rejectionOf(repositoryFor({ server: odd }).find({ filter: {} }));
+        expect(result).toMatchObject({ message: expect.stringMatching(/neither an array nor/) });
       } finally {
         await odd.stop(true);
       }

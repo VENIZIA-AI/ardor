@@ -90,7 +90,7 @@ export const useDocumentTitle = (opts: IUseDocumentTitleOptions) => {
 
   React.useEffect(() => {
     if (!enabled) {
-      return;
+      return () => {};
     }
 
     const entry: ITitleEntry = { title: documentTitle, isFallback: fallback };

@@ -728,9 +728,8 @@ describe('runChain for a stable: the plan binds the run (S4.6)', () => {
   });
 
   test('a stable aimed at develop, and a prerelease aimed at main, stop the run', async () => {
-    expect((await run({ targetBranch: 'develop' })).result.report).toContain(
-      'a stable (0.4.9) is released from main, not develop',
-    );
+    const result2 = await run({ targetBranch: 'develop' });
+    expect(result2.result.report).toContain('a stable (0.4.9) is released from main, not develop');
 
     const h = harness({});
     const prerelease = await runChain({
@@ -745,9 +744,8 @@ describe('runChain for a stable: the plan binds the run (S4.6)', () => {
   });
 
   test('a kind that disagrees with the version stops the run', async () => {
-    expect((await run({ kind: 'prerelease' })).result.report).toContain(
-      'the kind is prerelease but 0.4.9 is a stable',
-    );
+    const result2 = await run({ kind: 'prerelease' });
+    expect(result2.result.report).toContain('the kind is prerelease but 0.4.9 is a stable');
   });
 
   test('a plan that agrees lets the run through', async () => {

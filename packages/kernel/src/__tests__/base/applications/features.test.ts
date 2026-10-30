@@ -71,7 +71,8 @@ describe('AbstractArdorApplication.features', () => {
   test('throws on two features with one name', async () => {
     const application = createApplication({ features: [inventory, { name: 'inventory' }] });
 
-    expect(await rejectionOf(application.start())).toMatchObject({
+    const result = await rejectionOf(application.start());
+    expect(result).toMatchObject({
       message: expect.stringMatching(/\[features\] Two features are named 'inventory'/),
     });
   });
@@ -81,7 +82,8 @@ describe('AbstractArdorApplication.features', () => {
       features: [{ name: 'billing', configurations: [ForgottenConfiguration] }],
     });
 
-    expect(await rejectionOf(application.start())).toMatchObject({
+    const result = await rejectionOf(application.start());
+    expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[features\] 'billing' lists ForgottenConfiguration, which was never discovered/,
       ),

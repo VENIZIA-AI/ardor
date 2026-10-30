@@ -69,7 +69,14 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
     );
   }
 
-  const target = typeof application === 'function' ? await application() : application;
+  let target: Application;
+
+  if (typeof application === 'function') {
+    const created = await application();
+    target = created;
+  } else {
+    target = application;
+  }
 
   if (
     bootedApplications.has(target) ||

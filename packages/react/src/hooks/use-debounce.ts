@@ -22,7 +22,7 @@ export const useDebounce = <TValue>(
 
   React.useEffect(() => {
     if (!isBrowser() || !enabled) {
-      return;
+      return () => {};
     }
 
     const timer = setTimeout(() => {

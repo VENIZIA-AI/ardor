@@ -91,10 +91,12 @@ describe('useConfirm', () => {
     });
 
     expect(result.current.message).toBe('Second?');
-    expect(await first).toBe(false);
+    const result2 = await first;
+    expect(result2).toBe(false);
 
     act(() => result.current.handleConfirm());
-    expect(await second).toBe(true);
+    const result3 = await second;
+    expect(result3).toBe(true);
     expect(result.current.message).toBeUndefined();
   });
 });
@@ -150,7 +152,8 @@ describe('hooks log through the application logger', () => {
       const { result } = renderHook(() => useCopyToClipboard());
       let copied = true;
       await act(async () => {
-        copied = await result.current.copy({ value: 'x' });
+        const result2 = await result.current.copy({ value: 'x' });
+        copied = result2;
       });
 
       expect(copied).toBe(false);

@@ -308,7 +308,8 @@ describe('useCopyToClipboard', () => {
 
     let copyResult: boolean = false;
     await act(async () => {
-      copyResult = await result.current.copy({ value: 'ARDOR text' });
+      const result2 = await result.current.copy({ value: 'ARDOR text' });
+      copyResult = result2;
     });
 
     expect(copyResult).toBe(true);
@@ -329,7 +330,8 @@ describe('useCopyToClipboard', () => {
 
     let copyResult: boolean = true;
     await act(async () => {
-      copyResult = await result.current.copy({ value: 'IGNIS text' });
+      const result2 = await result.current.copy({ value: 'IGNIS text' });
+      copyResult = result2;
     });
 
     expect(copyResult).toBe(false);

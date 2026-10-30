@@ -98,7 +98,8 @@ describe('useRefreshToken', () => {
 
     let resolvedResult: unknown;
     await act(async (): Promise<void> => {
-      resolvedResult = await result.current();
+      const result2 = await result.current();
+      resolvedResult = result2;
     });
 
     expect(refreshTokenMock).toHaveBeenCalledTimes(1);
@@ -164,7 +165,8 @@ describe('useRefreshToken', () => {
 
     let resolvedResult: unknown;
     await act(async (): Promise<void> => {
-      resolvedResult = await result.current();
+      const result2 = await result.current();
+      resolvedResult = result2;
     });
 
     expect(resolvedResult).toBe(false);
