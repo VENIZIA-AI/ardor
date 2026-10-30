@@ -42,7 +42,7 @@ import { npmTagFor } from './release-version';
 import { waitForTarball } from './release-wait';
 
 /** How far a package got. A report is built from the last stage it reached. */
-export type TStage = 'none' | 'attempted' | 'published' | 'committed' | 'pushed' | 'tagged';
+type TStage = 'none' | 'attempted' | 'published' | 'committed' | 'pushed' | 'tagged';
 
 const STAGES: readonly TStage[] = [
   'none',

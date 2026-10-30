@@ -21,7 +21,6 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "eslint": "catalog:",
     "oxlint": "catalog:",

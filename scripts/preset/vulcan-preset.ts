@@ -78,7 +78,7 @@ const readWorkspaceVersions = (opts: { root: string; manifest: TRecord }): Map<s
   return versions;
 };
 
-export interface IBuildPresetResult {
+interface IBuildPresetResult {
   /** One `name -> value` line per marker that was resolved, sorted. */
   resolved: string[];
 }

@@ -50,7 +50,7 @@ export interface IPlannedPackage {
   localVersion: string;
 }
 
-export interface IResolvedRun {
+interface IResolvedRun {
   /** The one version every planned package is released at. */
   version: string;
   /** The packages to release, in dependency order. */
@@ -86,7 +86,7 @@ export interface IRunPlan {
   skipped: string[];
 }
 
-export interface IPlanResult {
+interface IPlanResult {
   plan: IRunPlan | undefined;
   problems: string[];
 }

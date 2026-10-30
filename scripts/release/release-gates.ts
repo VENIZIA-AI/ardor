@@ -137,7 +137,7 @@ export const isTarballLag = (opts: { output: string }): boolean => TARBALL_LAG.t
 /** Five waits, six tries, about five minutes: the lag measured after a publish is three to sixteen. */
 export const TARBALL_LAG_DELAYS_SECONDS = [30, 60, 60, 60, 60];
 
-export interface IPackument {
+interface IPackument {
   ok: boolean;
   status?: number;
   versions?: string[];
@@ -195,7 +195,7 @@ export const missingFromRegistry = async (opts: {
   return missing;
 };
 
-export interface IDistTags {
+interface IDistTags {
   name: string;
   latest?: string;
   next?: string;
@@ -211,7 +211,7 @@ const RANGE_SECTIONS = [
   'peers',
 ] as const;
 
-export interface IPublished {
+interface IPublished {
   name: string;
   version: string;
   tag: TNpmTag;
@@ -414,7 +414,7 @@ export const lockedVersions = (opts: { root: string }): Map<string, Set<string>>
   return held;
 };
 
-export interface ICopyVersion {
+interface ICopyVersion {
   version: string;
   /** The workspace members that resolve this version. */
   via: string[];
@@ -422,7 +422,7 @@ export interface ICopyVersion {
   stale: boolean;
 }
 
-export interface ICopy {
+interface ICopy {
   name: string;
   versions: ICopyVersion[];
 }
@@ -441,7 +441,7 @@ export interface ICopy {
  * Each version is checked against `bun.lock`: `bun install` does not prune a symlink an older install
  * left in a member's `node_modules`, and no declaration fixes that, only a clean install.
  */
-export const findCopies = (opts: { root: string }): ICopy[] => {
+const findCopies = (opts: { root: string }): ICopy[] => {
   const seen = new Map<string, Map<string, Set<string>>>();
   const linked = new Set<string>();
   const locked = lockedVersions({ root: opts.root });
