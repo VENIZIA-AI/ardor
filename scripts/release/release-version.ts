@@ -41,7 +41,7 @@ export class ReleaseModes {
   }
 }
 
-export type TReleaseMode = TConstValue<typeof ReleaseModes>;
+type TReleaseMode = TConstValue<typeof ReleaseModes>;
 
 /** The npm dist-tag a release goes to. */
 export class NpmTags {
@@ -70,7 +70,7 @@ export const isReleaseMode = (opts: { value: string }): opts is { value: TReleas
 
 export const isReleaseVersion = (opts: { value: string }): boolean => SEMVER.test(opts.value);
 
-export interface IReleaseArgs {
+interface IReleaseArgs {
   target: TReleaseTarget;
   /** The package names, or any other argument that is neither a flag nor a flag's value. */
   positional: string[];

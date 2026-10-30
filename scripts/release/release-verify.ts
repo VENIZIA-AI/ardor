@@ -7,7 +7,7 @@
  * nothing) is exactly what this catches. The registry and the clock are injected so a test can reach it.
  */
 
-export interface IPublishedState {
+interface IPublishedState {
   /** The npm name. */
   packageName: string;
   /** Every version on the registry before the dispatch; a new one is the proof of a publish. */

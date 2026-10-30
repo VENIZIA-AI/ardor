@@ -22,7 +22,7 @@ import { makeScratch } from '../scratch';
 
 const ROOT = resolve(import.meta.dir, '..', '..');
 
-export interface IRefreshStep {
+interface IRefreshStep {
   label: string;
   /** The command, run by `bash -ec` from the scratch folder. */
   script: string;
