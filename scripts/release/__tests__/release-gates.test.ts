@@ -7,6 +7,7 @@ import { ReleaseChain, type TStep } from '../release-chain';
 
 import {
   duplicateCopies,
+  lockedVersions,
   exportTargets,
   isTarballLag,
   isTrustedPublishWorkflow,
@@ -1834,6 +1835,8 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
     ardor: string;
     folders?: [string, string];
     workspaces?: unknown;
+    /** The `name@version` ids a `bun.lock` holds; no lock when left out. */
+    lock?: string[];
   }): string => {
     const root = temp();
     const [kernelFolder, ardorFolder] = opts.folders ?? ['packages/kernel', 'packages/ardor'];
@@ -1865,6 +1868,16 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
     );
     link(kernelFolder, 'ignis-inversion', opts.ardorKernel);
     link(ardorFolder, 'ignis-inversion', opts.ardor);
+
+    if (opts.lock !== undefined) {
+      // bun.lock is JSONC: a trailing comma after the last entry, as bun writes it.
+      const entries = opts.lock.map((id) => `    "${id}": ["${id}", "", {}, "sha512-x"],`);
+      write(
+        root,
+        'bun.lock',
+        `{\n  "lockfileVersion": 1,\n  "packages": {\n${entries.join('\n')}\n  }\n}\n`,
+      );
+    }
 
     return root;
   };
@@ -1911,6 +1924,131 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
     const root = tree({ ardorKernel: '0.4.6-0', ardor: '0.4.5', workspaces: [] });
 
     expect(duplicateCopies({ root })).toEqual([]);
+  });
+
+  describe('a version bun.lock does not hold is a stale install, not a missing declaration (#445)', () => {
+    const run = (root: string) =>
+      Bun.spawnSync(['bun', join(ROOT, 'scripts/release/release-gates.ts'), 'single-copy', root], {
+        cwd: ROOT,
+      });
+
+    test('a version missing from the lock is marked, and the advice is a clean install', () => {
+      const root = tree({
+        ardorKernel: '0.4.5-0',
+        ardor: '0.4.4',
+        lock: ['@venizia/ignis-inversion@0.4.5-0'],
+      });
+      const failed = run(root);
+      const message = failed.stderr.toString();
+
+      expect(duplicateCopies({ root })).toEqual([
+        '@venizia/ignis-inversion - 0.4.4 (packages/ardor) stale install | 0.4.5-0 (packages/kernel)',
+      ]);
+      expect(failed.exitCode).toBe(1);
+      expect(message).toContain('stale install: bun.lock does not hold');
+      expect(message).toContain('remove node_modules');
+      expect(message).not.toContain('catalog: devDependency');
+    });
+
+    test('a version the lock holds keeps the catalog advice', () => {
+      const root = tree({
+        ardorKernel: '0.4.5-0',
+        ardor: '0.4.4',
+        lock: ['@venizia/ignis-inversion@0.4.5-0', '@venizia/ignis-inversion@0.4.4'],
+      });
+      const message = run(root).stderr.toString();
+
+      expect(duplicateCopies({ root })).toEqual([
+        '@venizia/ignis-inversion - 0.4.4 (packages/ardor) | 0.4.5-0 (packages/kernel)',
+      ]);
+      expect(message).toContain('catalog: devDependency');
+      expect(message).not.toContain('stale install');
+    });
+
+    test('a repository without a bun.lock keeps the catalog advice', () => {
+      const message = run(tree({ ardorKernel: '0.4.5-0', ardor: '0.4.4' })).stderr.toString();
+
+      expect(message).toContain('catalog: devDependency');
+      expect(message).not.toContain('stale install');
+    });
+
+    test('a workspace link is never stale, though the lock has no registry version for it', () => {
+      const root = tree({
+        ardorKernel: '0.4.5-0',
+        ardor: '0.4.5-0',
+        lock: ['@venizia/ignis-inversion@0.4.5-0', '@venizia/ardor-kernel@0.4.5'],
+      });
+      write(root, 'package.json', JSON.stringify({ workspaces: ['packages/*', 'apps/*'] }));
+      write(
+        root,
+        'packages/kernel/package.json',
+        JSON.stringify({ name: '@venizia/ardor-kernel', version: '0.4.6-0' }),
+      );
+      write(root, 'apps/web/package.json', '{}');
+      write(
+        root,
+        'node_modules/.bun/@venizia+ardor-kernel@0.4.5/node_modules/@venizia/ardor-kernel/package.json',
+        manifest('@venizia/ardor-kernel', '0.4.5'),
+      );
+      mkdirSync(join(root, 'apps/web/node_modules/@venizia'), { recursive: true });
+      symlinkSync(
+        join(root, 'packages/kernel'),
+        join(root, 'apps/web/node_modules/@venizia/ardor-kernel'),
+      );
+      mkdirSync(join(root, 'packages/ardor/node_modules/@venizia'), { recursive: true });
+      symlinkSync(
+        join(
+          root,
+          'node_modules/.bun/@venizia+ardor-kernel@0.4.5/node_modules/@venizia/ardor-kernel',
+        ),
+        join(root, 'packages/ardor/node_modules/@venizia/ardor-kernel'),
+      );
+
+      expect(duplicateCopies({ root })).toEqual([
+        '@venizia/ardor-kernel - 0.4.5 (packages/ardor) | 0.4.6-0 (apps/web)',
+      ]);
+    });
+
+    test('a leftover next to two real copies gets both advices', () => {
+      const root = tree({
+        ardorKernel: '0.4.5-0',
+        ardor: '0.4.4',
+        lock: ['@venizia/ignis-inversion@0.4.5-0', '@venizia/ignis-inversion@0.4.4'],
+      });
+      // A third member on a version the lock never held, and a workspace entry in the lock.
+      write(root, 'package.json', JSON.stringify({ workspaces: ['packages/*', 'apps/*'] }));
+      write(root, 'apps/web/package.json', '{}');
+      const old = join(
+        root,
+        'node_modules/.bun/@venizia+ignis-inversion@0.3.9/node_modules/@venizia/ignis-inversion',
+      );
+      write(
+        root,
+        `${old.slice(root.length + 1)}/package.json`,
+        manifest('@venizia/ignis-inversion', '0.3.9'),
+      );
+      mkdirSync(join(root, 'apps/web/node_modules/@venizia'), { recursive: true });
+      symlinkSync(old, join(root, 'apps/web/node_modules/@venizia/ignis-inversion'));
+      const message = run(root).stderr.toString();
+
+      expect(duplicateCopies({ root })).toEqual([
+        '@venizia/ignis-inversion - 0.3.9 (apps/web) stale install | 0.4.4 (packages/ardor) | 0.4.5-0 (packages/kernel)',
+      ]);
+      expect(message).toContain('stale install: bun.lock does not hold');
+      expect(message).toContain('catalog: devDependency');
+    });
+  });
+
+  test('lockedVersions reads name@version from every entry and skips a workspace entry (#445)', () => {
+    const root = temp();
+    write(
+      root,
+      'bun.lock',
+      '{ "packages": { "@venizia/ardor": ["@venizia/ardor@workspace:packages/ardor"], "a/@venizia/x": ["@venizia/x@1.2.3-0", "", {}, "h"], }, }',
+    );
+
+    expect(lockedVersions({ root })).toEqual(new Map([['@venizia/x', new Set(['1.2.3-0'])]]));
+    expect(lockedVersions({ root: temp() })).toBeUndefined();
   });
 
   test('the command line exits 1 on a duplicate and names it, and 0 on a clean tree', () => {

@@ -140,7 +140,11 @@ bun run --filter "@venizia/*" force-update highest
   member resolve and names the member that holds the older copy. The members are the folders the
   `workspaces` field of the root `package.json` lists (`packages/*` here, `apps/*` and `libs/*` in a
   consumer), so it takes any folder and any layout: a consumer of ARDOR runs the same command in its
-  own checkout, `bun scripts/release/release-gates.ts single-copy` (issue #443).
+  own checkout, `bun scripts/release/release-gates.ts single-copy` (issue #443). Each version is also
+  checked against `bun.lock`: one the lock does not hold (and that is no workspace link) is a symlink an
+  older install left in a member's `node_modules`, which `bun install` does not prune. It is marked
+  `stale install` and the advice is a clean install, not a declaration; a version the lock holds keeps
+  the catalog advice (issue #445).
 - `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree; run it before every dispatch (see [Testing](testing.md)).
 
 ## Gates, bump, publish, record

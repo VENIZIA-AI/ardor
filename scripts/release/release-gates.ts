@@ -380,6 +380,53 @@ export const workspaceMembers = (opts: { root: string }): string[] => {
 };
 
 /**
+ * The `name -> versions` that `bun.lock` holds, or `undefined` when the repository has no lock. The
+ * first item of every `packages` entry is `name@version`; a workspace entry (`name@workspace:path`)
+ * has no registry version.
+ */
+export const lockedVersions = (opts: { root: string }): Map<string, Set<string>> | undefined => {
+  const lockPath = join(opts.root, 'bun.lock');
+
+  if (!existsSync(lockPath)) {
+    return undefined;
+  }
+
+  const lock: unknown = Bun.JSONC.parse(readFileSync(lockPath, 'utf8'));
+  const held = new Map<string, Set<string>>();
+
+  if (!isRecord(lock) || !isRecord(lock.packages)) {
+    return held;
+  }
+
+  for (const entry of Object.values(lock.packages)) {
+    const id = Array.isArray(entry) ? entry[0] : undefined;
+    const at = typeof id === 'string' ? id.lastIndexOf('@') : -1;
+
+    if (typeof id !== 'string' || at <= 0 || id.slice(at + 1).startsWith('workspace:')) {
+      continue;
+    }
+
+    const name = id.slice(0, at);
+    held.set(name, (held.get(name) ?? new Set<string>()).add(id.slice(at + 1)));
+  }
+
+  return held;
+};
+
+export interface ICopyVersion {
+  version: string;
+  /** The workspace members that resolve this version. */
+  via: string[];
+  /** Installed, but `bun.lock` does not hold it and it is no workspace link: a leftover of an older install. */
+  stale: boolean;
+}
+
+export interface ICopy {
+  name: string;
+  versions: ICopyVersion[];
+}
+
+/**
  * One `@venizia/*` package must resolve to one version in the installed graph. Two copies of IGNIS
  * inversion are two nominal sets of types: the install succeeds, and the lie surfaces as an
  * `Application` that is "not assignable to IContainer". A peer range without a prerelease part
@@ -388,10 +435,15 @@ export const workspaceMembers = (opts: { root: string }): string[] => {
  *
  * Walks what resolves, not what sits in the store (`node_modules/.bun` keeps every version ever
  * installed): the packages the root and each workspace member see, then the siblings each of those
- * sees. Returns one line per package with more than one version, naming who resolves each.
+ * sees. Returns one entry per package with more than one version, naming who resolves each.
+ *
+ * Each version is checked against `bun.lock`: `bun install` does not prune a symlink an older install
+ * left in a member's `node_modules`, and no declaration fixes that, only a clean install.
  */
-export const duplicateCopies = (opts: { root: string }): string[] => {
+export const findCopies = (opts: { root: string }): ICopy[] => {
   const seen = new Map<string, Map<string, Set<string>>>();
+  const linked = new Set<string>();
+  const locked = lockedVersions({ root: opts.root });
   const visited = new Set<string>();
   const queue: { directory: string; via: string; member: boolean }[] = [
     { directory: opts.root, via: '.', member: true },
@@ -439,7 +491,9 @@ export const duplicateCopies = (opts: { root: string }): string[] => {
       // scope its own dependencies are linked in. A workspace member is a root of its own.
       const home = join(real, '..');
 
-      if (real.includes(`${sep}node_modules${sep}`) && !visited.has(home)) {
+      if (!real.includes(`${sep}node_modules${sep}`)) {
+        linked.add(`${name}@${version}`);
+      } else if (!visited.has(home)) {
         visited.add(home);
         queue.push({ directory: join(home, '..', '..'), via: `${name}@${version}`, member: false });
       }
@@ -449,17 +503,32 @@ export const duplicateCopies = (opts: { root: string }): string[] => {
   return [...seen.entries()]
     .filter(([, versions]) => versions.size > 1)
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(
-      ([name, versions]) =>
-        `${name} - ${[...versions.entries()]
-          .sort(([left], [right]) => left.localeCompare(right))
-          .map(
-            ([version, via]) =>
-              `${version} (${via.size > 0 ? [...via].sort().join(', ') : 'through another package'})`,
-          )
-          .join(' | ')}`,
-    );
+    .map(([name, versions]) => ({
+      name,
+      versions: [...versions.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([version, via]) => ({
+          version,
+          via: [...via].sort(),
+          stale:
+            locked !== undefined &&
+            !linked.has(`${name}@${version}`) &&
+            locked.get(name)?.has(version) !== true,
+        })),
+    }));
 };
+
+/** The copies as one line per package, a leftover marked `stale install`. */
+export const duplicateCopies = (opts: { root: string }): string[] =>
+  findCopies(opts).map(
+    ({ name, versions }) =>
+      `${name} - ${versions
+        .map(
+          ({ version, via, stale }) =>
+            `${version} (${via.length > 0 ? via.join(', ') : 'through another package'})${stale ? ' stale install' : ''}`,
+        )
+        .join(' | ')}`,
+  );
 
 export const readWorkspaceVersions = (opts: { root: string }): Map<string, string> => {
   const versions = new Map<string, string>();
@@ -588,14 +657,27 @@ const main = async (): Promise<void> => {
   }
 
   if (command === 'single-copy') {
-    const copies = duplicateCopies({ root: first ?? root });
+    const copies = findCopies({ root: first ?? root });
 
     if (copies.length > 0) {
+      const versions = copies.flatMap((copy) => copy.versions);
+      const lines = duplicateCopies({ root: first ?? root });
+
       fail({
         lines: [
           'ERROR: a @venizia/* package resolves to more than one version:',
-          ...copies.map((copy) => `  ${copy}`),
-          'Declare the package as a catalog: devDependency in the workspace member that resolves the older copy.',
+          ...lines.map((line) => `  ${line}`),
+          ...(versions.some((entry) => entry.stale)
+            ? [
+                'stale install: bun.lock does not hold the versions marked above; run a clean install (remove node_modules).',
+              ]
+            : []),
+          // Once the leftovers are gone, a package that still has two versions is a missing declaration.
+          ...(copies.some((copy) => copy.versions.filter((entry) => !entry.stale).length > 1)
+            ? [
+                'Declare the package as a catalog: devDependency in the workspace member that resolves the older copy.',
+              ]
+            : []),
         ],
       });
     }
