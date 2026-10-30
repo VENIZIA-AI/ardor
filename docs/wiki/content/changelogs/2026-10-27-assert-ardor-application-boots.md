@@ -10,7 +10,7 @@ packages: ['@venizia/ardor', '@venizia/ardor-admin']
 
 <Badge type="tip" text="New Feature" />
 
-**In one line.** A service whose injection nobody registered used to fail at the first render, in a browser. `assertArdorApplicationBoots` fails the same way in a unit test, with no browser and no network. Available in 0.4.4.
+**In one line.** A service whose injection nobody registered used to fail at the first render, in a browser. `assertArdorApplicationBoots` fails the same way in a unit test, with no browser and no network. The entry is browser-pure. Available in 0.4.4.
 
 ```ts
 import { assertArdorApplicationBoots } from '@venizia/ardor/testing';

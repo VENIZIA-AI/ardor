@@ -30,7 +30,7 @@ export class AdminAuthProvider extends DefaultAuthProvider {
 
 ## What changed
 
-- **Roles are stored.** `{ userId, roles?, token: { value, type } }` is the recommended shape of what the application's `signIn` returns. `login` saves the `roles` of the response, else the `roles` claim of the token, where `getRoles()` reads them. A role is a string, or an object named by its `identifier` (IGNIS's role model) or else its `name`.
+- **Roles are stored.** `{ userId, roles?, token: { value, type } }` is the recommended shape of what the application's `signIn` returns. `login` saves the `roles` of the response, else the `roles` claim of the token, where `getRoles()` reads them (`@app/auth/permission`). A role is a string, or an object named by its `identifier` (IGNIS's role model) or else its `name`.
 - **`saveAuth` takes `roles`.** `DefaultAuthService.saveAuth({ ..., roles })` writes them. Called without `roles`, as a token refresh does, it leaves the stored roles alone.
 - **`ISignInSession` is exported** from `@venizia/ardor` and `@venizia/ardor-kernel`.
 - **The behaviour options are gone.** `IAuthProviderOptions` holds data only (`paths`). `signInBody`, `signInUsername`, `onSignIn` and `persistSession` no longer exist, and a key left in an options object is a type error.
@@ -43,7 +43,7 @@ export class AdminAuthProvider extends DefaultAuthProvider {
 | `onSignIn({ session, params })` | `beforeSaveSession({ session, params })`: awaited before the session is saved; a throw or a rejection rejects `login` and nothing is saved |
 | `persistSession: false` | `saveSession({ session, username })`: `authService.saveAuth` by default; override it to do nothing and `login` still resolves |
 
-- **`login` is one sequence.** Post `buildSignInBody`, read the session, await `beforeSaveSession`, `saveSession`, resolve with `redirectTo`.
+- **`login` is one sequence.** Post `buildSignInBody`, read the session, await `beforeSaveSession`, `saveSession`, resolve with `redirectTo`. A form post to `/auth/login` is `paths.signIn` in the options plus a `buildSignInBody` that returns `params`.
 
 ## Who is affected
 

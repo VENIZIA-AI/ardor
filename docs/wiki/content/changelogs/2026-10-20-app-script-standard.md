@@ -22,6 +22,7 @@ packages: ['@venizia/ardor']
 ## Who is affected
 
 - **An app already generated from the preset.** Nothing breaks until you change the scripts. To follow the standard, rename `dev` to `server:dev` and `build` to `compile`, add a `compile` command (`vite build`) and a `clean` command (`rm -rf dist`), and add a `test` script.
+- **A package consumer.** No effect: the published packages are unchanged.
 - **A new app.** It has the new names. It needs VULCAN 0.3.6 or newer for the root `make dev` to run `server:dev`.
 
 ## Breaking changes

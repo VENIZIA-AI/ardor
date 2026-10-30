@@ -44,7 +44,7 @@ packages: ['@venizia/ardor']
 `^0.2.0` does not admit a prerelease, so with the old peers a workspace kept a second, older copy of each IGNIS package. The new ranges accept every 0.2.x stable from 0.2.1 on, and refuse 0.3.0.
 
 > [!WARNING]
-> The `0.1.2-0` and `0.1.2-1` prereleases sent a `getMany` longer than 6,000 encoded characters to `POST /{resource}/find`. On IGNIS kernel `0.2.1-1` that route skipped a controller's overridden `find()`, so a tenant-scoped app could read every tenant's rows (IGNIS #92). Do not deploy either prerelease, and do not run a backend on kernel `0.2.1-1` or connectors `0.2.1-2`. `getMany` is a `GET` to the collection again, and IGNIS `0.2.1-3` removes the route. A very long id list answers `414`/`431` again.
+> The `0.1.2-0` and `0.1.2-1` prereleases sent a `getMany` longer than 6,000 encoded characters to `POST /{resource}/find`. On IGNIS kernel `0.2.1-1` that route skipped a controller's overridden `find()`, so a tenant-scoped app could read every tenant's rows (IGNIS #92). Do not deploy either prerelease, and do not run a backend on kernel `0.2.1-1` or connectors `0.2.1-2`. `getMany` is a `GET` to the collection again, however long the list, and IGNIS `0.2.1-3` removes the route. A very long id list answers `414`/`431` again.
 
 ### Removed
 

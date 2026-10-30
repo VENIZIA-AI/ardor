@@ -27,7 +27,7 @@ declare module '@venizia/ardor' {
 
 ## What changed
 
-- **The old claim was wrong.** `@venizia/ardor` re-exports the two interfaces with `export *`, and TypeScript follows that chain to the declaring package, so an umbrella block merges and undeclared keys are still rejected.
+- **The old claim was wrong.** `@venizia/ardor` re-exports the two interfaces with `export *`, and TypeScript follows that chain to the declaring package, so an umbrella block merges and undeclared keys are still rejected. Checked on `@venizia/ardor@0.1.4-5` with TypeScript 6 and both of Bun's linkers.
 - **The old advice failed under a non-hoisting linker.** An application depends on `@venizia/ardor` alone. With Bun's `isolated` linker (or pnpm) `@venizia/ardor-react` and `@venizia/ardor-admin` are not resolvable from it, so `declare module '@venizia/ardor-react'` fails with TS2664 and the keys are missing. A hoisting linker hides it.
 - **No code change.** ARDOR's packages are unchanged. The guides now say this.
 
