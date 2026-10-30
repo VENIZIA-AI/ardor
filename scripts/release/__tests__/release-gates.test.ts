@@ -20,6 +20,7 @@ import {
   unresolvedProtocols,
   parsePublished,
   withPublished,
+  workspaceMembers,
   workspaceStrays,
 } from '../release-gates';
 
@@ -1768,12 +1769,74 @@ describe('release-gates.ts stable-deps on a preset folder (found by the stable r
   });
 });
 
+describe('workspaceMembers: the member folders come from the root workspaces field (#443)', () => {
+  const repo = (opts: { workspaces?: unknown; folders: string[] }): string => {
+    const root = temp();
+
+    if (opts.workspaces !== undefined) {
+      write(root, 'package.json', JSON.stringify({ workspaces: opts.workspaces }));
+    }
+
+    for (const folder of opts.folders) {
+      write(root, `${folder}/package.json`, '{}');
+    }
+
+    return root;
+  };
+
+  test('an array of globs, any layout', () => {
+    const root = repo({
+      workspaces: ['apps/*', 'libs/*', 'tools/cli'],
+      folders: ['apps/web', 'libs/a', 'libs/b', 'tools/cli', 'other/x'],
+    });
+
+    expect(workspaceMembers({ root })).toEqual(['apps/web', 'libs/a', 'libs/b', 'tools/cli']);
+  });
+
+  test('the object form with a packages array, as ARDOR itself writes it', () => {
+    const root = repo({
+      workspaces: { packages: ['packages/*', 'docs/*'], catalog: { react: '^19.0.0' } },
+      folders: ['packages/kernel', 'docs/wiki', 'apps/web'],
+    });
+
+    expect(workspaceMembers({ root })).toEqual(['docs/wiki', 'packages/kernel']);
+  });
+
+  test('a ! pattern excludes, and a folder under node_modules is never a member', () => {
+    const root = repo({
+      workspaces: ['libs/*', '!libs/legacy'],
+      folders: ['libs/a', 'libs/legacy', 'libs/node_modules'],
+    });
+    write(root, 'libs/a/node_modules/dep/package.json', '{}');
+
+    expect(workspaceMembers({ root })).toEqual(['libs/a']);
+  });
+
+  test('no workspaces field, or no package.json, is no member', () => {
+    expect(
+      workspaceMembers({ root: repo({ workspaces: undefined, folders: ['packages/a'] }) }),
+    ).toEqual([]);
+    expect(workspaceMembers({ root: repo({ workspaces: {}, folders: ['packages/a'] }) })).toEqual(
+      [],
+    );
+  });
+});
+
 describe('duplicateCopies: one @venizia package resolves to one version (#434)', () => {
   const manifest = (name: string, version: string): string => JSON.stringify({ name, version });
 
-  /** A bun-style store: packages/<member> link into the store, and each store entry links its own dependencies. */
-  const tree = (opts: { ardorKernel: string; ardor: string }): string => {
+  /**
+   * A bun-style store: each member links into the store, and each store entry links its own dependencies.
+   * The members default to `packages/kernel` and `packages/ardor`; a consumer repo has other folders.
+   */
+  const tree = (opts: {
+    ardorKernel: string;
+    ardor: string;
+    folders?: [string, string];
+    workspaces?: unknown;
+  }): string => {
     const root = temp();
+    const [kernelFolder, ardorFolder] = opts.folders ?? ['packages/kernel', 'packages/ardor'];
     const store = (name: string, version: string): string =>
       join(
         root,
@@ -1784,22 +1847,24 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
         '@venizia',
         name,
       );
-    const link = (member: string, name: string, version: string) => {
-      write(root, `packages/${member}/package.json`, '{}');
+    const link = (folder: string, name: string, version: string) => {
+      write(root, `${folder}/package.json`, '{}');
       write(
         root,
         `node_modules/.bun/@venizia+${name}@${version}/node_modules/@venizia/${name}/package.json`,
         manifest(`@venizia/${name}`, version),
       );
-      mkdirSync(join(root, 'packages', member, 'node_modules', '@venizia'), { recursive: true });
-      symlinkSync(
-        store(name, version),
-        join(root, 'packages', member, 'node_modules', '@venizia', name),
-      );
+      mkdirSync(join(root, folder, 'node_modules', '@venizia'), { recursive: true });
+      symlinkSync(store(name, version), join(root, folder, 'node_modules', '@venizia', name));
     };
 
-    link('kernel', 'ignis-inversion', opts.ardorKernel);
-    link('ardor', 'ignis-inversion', opts.ardor);
+    write(
+      root,
+      'package.json',
+      JSON.stringify({ workspaces: opts.workspaces ?? { packages: ['packages/*'] } }),
+    );
+    link(kernelFolder, 'ignis-inversion', opts.ardorKernel);
+    link(ardorFolder, 'ignis-inversion', opts.ardor);
 
     return root;
   };
@@ -1825,6 +1890,25 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
       'node_modules/.bun/@venizia+ignis-inversion@0.3.5/node_modules/@venizia/ignis-inversion/package.json',
       manifest('@venizia/ignis-inversion', '0.3.5'),
     );
+
+    expect(duplicateCopies({ root })).toEqual([]);
+  });
+
+  test('a consumer repo with no packages/ folder is walked through its workspaces (#443)', () => {
+    const root = tree({
+      ardorKernel: '0.4.6-0',
+      ardor: '0.4.5',
+      folders: ['apps/web', 'libs/merchant'],
+      workspaces: ['apps/*', 'libs/*'],
+    });
+
+    expect(duplicateCopies({ root })).toEqual([
+      '@venizia/ignis-inversion - 0.4.5 (libs/merchant) | 0.4.6-0 (apps/web)',
+    ]);
+  });
+
+  test('a repo without a workspaces field is the root alone', () => {
+    const root = tree({ ardorKernel: '0.4.6-0', ardor: '0.4.5', workspaces: [] });
 
     expect(duplicateCopies({ root })).toEqual([]);
   });

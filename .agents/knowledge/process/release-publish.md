@@ -137,8 +137,10 @@ bun run --filter "@venizia/*" force-update highest
   that lists the package only as a peer gets the stable copy from bun, beside the prerelease the other
   members use, and two copies of inversion are two sets of types (run 40903260601, issue #434). The Test
   job runs `release-gates.ts single-copy` right after the install; it walks what the root and each
-  member resolve and names the member that holds the older copy. It takes any folder, so a consumer of
-  ARDOR runs the same command in its own checkout: `bun scripts/release/release-gates.ts single-copy`.
+  member resolve and names the member that holds the older copy. The members are the folders the
+  `workspaces` field of the root `package.json` lists (`packages/*` here, `apps/*` and `libs/*` in a
+  consumer), so it takes any folder and any layout: a consumer of ARDOR runs the same command in its
+  own checkout, `bun scripts/release/release-gates.ts single-copy` (issue #443).
 - `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree; run it before every dispatch (see [Testing](testing.md)).
 
 ## Gates, bump, publish, record
