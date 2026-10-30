@@ -702,6 +702,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     ['failure', 'success', 'skipped', 'prerelease', false],
   ];
   const REPORT_STEP = 'Report the run';
+  const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
   const LOOP = 'for package in ${PACKAGES//,/ }; do';
 
   const guards = {
@@ -820,6 +821,29 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         release.includes('--target-branch "$GITHUB_REF_NAME"') &&
         !publish.includes('release-plan.ts') &&
         !publish.includes('RELEASE_VERSION')
+      );
+    },
+    // C34 (VULCAN's C31): the publish job makes the GitHub Release after the chain and cannot fail the run for it.
+    githubRelease: ({ workflow }: IFiles): boolean => {
+      const publish = jobsOf(workflow).publish ?? '';
+      const steps = stepsOf(publish);
+      const names = steps.map((step) => step.name);
+      const release = steps.find((step) => step.name === GITHUB_RELEASE_STEP)?.text ?? '';
+
+      return (
+        names.indexOf(GITHUB_RELEASE_STEP) > names.indexOf(RELEASE_STEP) &&
+        names.indexOf(RELEASE_STEP) > -1 &&
+        names.indexOf(GITHUB_RELEASE_STEP) < names.indexOf(REPORT_STEP) &&
+        /\n {8}if: \$\{\{ !cancelled\(\) \}\}\n/.test(release) &&
+        /\n {8}continue-on-error: true\n/.test(release) &&
+        /\n {8}timeout-minutes: 5\n/.test(release) &&
+        /\n {10}GH_TOKEN: \$\{\{ github\.token \}\}\n/.test(release) &&
+        /\n {8}run: bun scripts\/release\/github-release\.ts create --version "\$PLAN_VERSION" --kind "\$PLAN_KIND" --packages "\$PACKAGES"\n/.test(
+          release,
+        ) &&
+        // The job token is the only credential: no secret, and no other step holds a GitHub token.
+        !/secrets\./.test(release) &&
+        steps.filter((step) => /GH_TOKEN/.test(step.text)).length === 1
       );
     },
     // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
@@ -1226,6 +1250,69 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       name: 'the plan stops handing develop on',
       mutate: (text) =>
         text.replace('      develop_sha: ${{ steps.plan.outputs.develop_sha }}\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step may fail the run',
+      mutate: (text) =>
+        text.replace('        continue-on-error: true\n        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not bounded in time',
+      mutate: (text) => text.replace('        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step comes before the chain',
+      mutate: (text) => {
+        const block =
+          /( {6}- name: Create the GitHub Release\n[\s\S]*?)(?= {6}# A job that was cancelled)/.exec(
+            text,
+          )?.[1];
+
+        return block === undefined
+          ? text
+          : text
+              .replace(block, '')
+              .replace(
+                '      - name: Release the packages\n',
+                `${block}      - name: Release the packages\n`,
+              );
+      },
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step stops running after a failed chain',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Create the GitHub Release\n        if: ${{ !cancelled() }}\n',
+          '      - name: Create the GitHub Release\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step uses a secret instead of the job token',
+      mutate: (text) =>
+        text.replace('GH_TOKEN: ${{ github.token }}', 'GH_TOKEN: ${{ secrets.GITHUB_PAT }}'),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not told the packages of the run',
+      mutate: (text) =>
+        text.replace(
+          ' --packages "$PACKAGES"\n\n      # A job that was cancelled',
+          '\n\n      # A job that was cancelled',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is gone',
+      mutate: (text) =>
+        text.replace(
+          / {6}- name: Create the GitHub Release\n[\s\S]*?(?= {6}# A job that was cancelled)/,
+          '',
+        ),
     },
     {
       guard: 'publishUsesThePlan',

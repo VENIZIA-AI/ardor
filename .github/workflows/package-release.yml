@@ -386,6 +386,24 @@ jobs:
           fi
           bun scripts/release/release-chain.ts "${ARGS[@]}"
 
+      # -------------------------------------------------------------------------
+      # GITHUB RELEASE
+      # -------------------------------------------------------------------------
+      # One Release for the run, on the tag of the last package it released (`ardor-v<version>` for a full run): a
+      # stable is marked Latest only when no higher stable tag exists, with the changelog entries added since the
+      # previous stable (or a line saying there is no change for users); a prerelease is marked Pre-release and
+      # never Latest. A tag that has a Release is skipped, and so is a tag this run did not make. The step runs
+      # after a chain that stopped too, because the tags it made stand. A failure is reported in the run summary
+      # and never fails or undoes a publish. The script refuses the tag of the atlas index, whose release is not a
+      # publish's.
+      - name: Create the GitHub Release
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/release/github-release.ts create --version "$PLAN_VERSION" --kind "$PLAN_KIND" --packages "$PACKAGES"
+
       # A job that was cancelled or timed out runs no script of its own, so the report is a step of its own,
       # read from the state file: which package stopped, which are done, and the repair that fits.
       - name: Report the run

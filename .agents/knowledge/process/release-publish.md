@@ -16,6 +16,7 @@ tags: [process, release, ci]
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Gates, bump, publish, record](#gates-bump-publish-record)
+- [GitHub Releases](#github-releases)
 - [Trusted publishing (no npm token)](#trusted-publishing-no-npm-token)
 - [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
@@ -207,6 +208,20 @@ So after any stop git equals the registry: a package has its commit and its tag,
 Only one release runs at a time (`concurrency: npm-release`). A dispatch with the `heal_only` input runs just the
 heal (a second job, `Heal next tags`): it publishes nothing, ignores the other inputs, and is how
 a stale `next` is fixed by hand. It moves a dist-tag, so it is a trusted-publisher action too: the same environment, `id-token: write` and `contents: read`, and the same exact npm.
+
+## GitHub Releases
+
+Every release run, prerelease and stable, makes one GitHub Release for the run, from the run that follows this change on; no Release is made for an older version. The step `Create the GitHub Release` of the publish job runs `scripts/release/github-release.ts create --version "$PLAN_VERSION" --kind "$PLAN_KIND" --packages "$PACKAGES"` after the chain. It is a port of VULCAN's S9.
+
+| | A stable | A prerelease |
+|---|---|---|
+| The tag | the tag of the last package of the run: `ardor-v<version>` for a full run, the umbrella | the same |
+| Title | `ARDOR <version>` | `ARDOR <version>` |
+| Flag | Latest only when no higher stable `ardor-v*` tag exists (`--latest=false` otherwise) | Pre-release, never Latest |
+| Body | the changelog entries added since the previous stable tag, with the front matter, the date heading and an `ARDOR X.Y.Z:` prefix removed; `No change for users of the packages in this release.` when there is none | `Install: npm install @venizia/ardor@next` (the last package of the run) and up to 30 `[#N]` subjects since the previous tag, fenced, without the release commits |
+| Both | a `Packages` list of the run, each linked to its npm version page | |
+
+A tag that already has a Release is skipped; so is a tag the run did not make (the chain stopped before it). The step is `continue-on-error`, bounded to 5 minutes, runs even when the chain stopped (the tags it made stand) and uses the job token: a failure is written to the run summary and never fails or undoes a publish. The script never touches the `atlas-index` release. `--dry-run` prints the tag, whether it would be Latest and the notes, and writes nothing. The guard `githubRelease` (C34) in `release-gates.test.ts` pins the step; `github-release.test.ts` runs the script on a real repository with a stand-in for `gh`.
 
 ## Trusted publishing (no npm token)
 
