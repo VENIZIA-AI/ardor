@@ -110,7 +110,10 @@ export class GatesRefreshed {
     return found;
   }
 
-  /** The steps in the order the Test job runs them: refresh, install, gates. */
+  /** The label of the step the Test job does not have: the four packages packed and installed together. */
+  static readonly CLEAN_INSTALL_STEP = 'Clean install';
+
+  /** The steps in the order the Test job runs them (refresh, install, gates), then the clean install. */
   static steps(opts: { workflow: string }): IRefreshStep[] {
     return [
       {
@@ -119,6 +122,10 @@ export class GatesRefreshed {
       },
       { label: 'Install', script: 'bun install' },
       { label: 'Gates', script: 'make gates' },
+      // Not in the Test job (the chain installs each package after its sibling is out), but what a dispatch
+      // fails on when the peer ranges name a mix of prerelease and stable IGNIS packages (issue #488): the four
+      // packages packed together and installed from the live registry, like an application would.
+      { label: GatesRefreshed.CLEAN_INSTALL_STEP, script: 'make clean-install' },
     ];
   }
 
@@ -160,7 +167,7 @@ export class GatesRefreshed {
     }
   }
 
-  /** Runs every step in the scratch copy; returns the exit code of the first one that fails, else that of `make gates`. */
+  /** Runs every step in the scratch copy; returns the exit code of the first one that fails, else 0. */
   static async run(): Promise<number> {
     const workflow = readFileSync(resolve(ROOT, GatesRefreshed.WORKFLOW), 'utf8');
     const steps = GatesRefreshed.steps({ workflow });

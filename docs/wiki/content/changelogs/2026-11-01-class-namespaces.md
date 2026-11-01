@@ -107,7 +107,7 @@ What differs:
 > The names in the tables above are gone from `@venizia/ardor`, `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`. The codemod is the upgrade path: commit your work first, then run it.
 
 > [!IMPORTANT]
-> The peer floors rise with it: `@venizia/ignis-helpers` to `^0.4.7-2` on all four packages (the logger is its `LoggerFactory`, in the browser-safe `core` entry), and `@venizia/ignis-inversion` to `^0.4.6-1` on `@venizia/ardor`, whose `./testing` entry needs `BindingVerifier`. Move your `@venizia/ignis-*` packages to the same IGNIS release, and keep one copy of each.
+> The IGNIS peer floors rise with it, on all four packages, to one prerelease family: `@venizia/ignis-helpers`, `-kernel`, `-boot` and `-connectors` `^0.4.7-2` (the logger is `LoggerFactory` of helpers, in the browser-safe `core` entry), `@venizia/ignis-inversion` and `-filter` `^0.4.6-1` (the helpers 0.4.7-2 pins them). A range such as `^0.4.1` never matches a prerelease, so an install that mixed it with `^0.4.7-2` would hold two copies of helpers and inversion. Move all your `@venizia/ignis-*` packages to the same IGNIS release, and keep one copy of each.
 
 **Before:**
 
