@@ -1,6 +1,6 @@
-import { Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 
-const logger = Logger.getInstance({ scope: 'useCopyToClipboard' });
+const logger = new BaseHelper({ scope: 'useCopyToClipboard' }).logger;
 
 export interface IUseCopyToClipboardReturn {
   copy: (opts: { value: string }) => Promise<boolean>;

@@ -13,9 +13,9 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor-kernel']
 **In one line.** Four defects are fixed. None of them changes a public signature.
 
 ```typescript
-import { Logger } from '@venizia/ardor';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 
-const logger = Logger.getInstance({ scope: 'OrderService' });
+const logger = new BaseHelper({ scope: 'OrderService' }).logger;
 const orderId = 'ORD-1';
 logger.error('[create] Failed | id: %s', orderId); // now console.error, not console.info
 ```

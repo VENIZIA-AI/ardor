@@ -4,7 +4,8 @@ import { cleanup, renderHook } from '@testing-library/react';
 
 import { Features, type TFeature } from '@/features/feature';
 import { useFeatures } from '@/hooks/use-features';
-import { CoreBindings, Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
+import { CoreBindings } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -98,7 +99,7 @@ describe('useFeatures', () => {
       React.createElement(
         ApplicationContext.Provider,
         {
-          value: { container, logger: Logger.getInstance({ scope: 'test' }) },
+          value: { container, logger: new BaseHelper({ scope: 'test' }).logger },
         },
         children,
       );

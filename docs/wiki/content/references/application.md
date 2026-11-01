@@ -240,7 +240,7 @@ export class ShopApplication extends BaseArdorApplication {
 | `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
 | `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
 | `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
-| `enableDebug` | `boolean` | No | Enables debug-level logging in the application logger. Default is `false`. |
+| `logger` | `ILogger` (`@venizia/ignis-helpers/core`) | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<RouteProps>` | No | Custom route definitions registered inside `CustomRoutes` before feature routes. |
 | `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list). |
@@ -270,7 +270,6 @@ export function renderAdmin(application: BaseArdorApplication, reduxStore: Store
       container={application}
       reduxStore={reduxStore}
       suspense={<div>Loading...</div>}
-      enableDebug={false}
       resources={[{ name: 'products' }]}
     />
   );

@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { Logger } from '@venizia/ardor-kernel';
+import { describe, expect, spyOn, test } from 'bun:test';
+import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
 
 import { DefaultAuthProvider } from '@/providers/auth';
 
 interface IClaimsReader {
-  logger: Logger;
+  logger: ILogger;
   decodeJwtClaims(opts: { jwt: string }): Record<string, unknown> | undefined;
 }
 
@@ -13,16 +13,12 @@ const scope = 'auth-claims-test';
 /** The provider without its container: `decodeJwtClaims` reads nothing but its input and its logger. */
 const createReader = (): IClaimsReader => {
   const reader = Object.create(DefaultAuthProvider.prototype) as IClaimsReader;
-  reader.logger = Logger.getInstance({ scope, enableDebug: true });
+  reader.logger = new BaseHelper({ scope }).logger;
 
   return reader;
 };
 
 const encode = (value: string): string => btoa(value).replace(/=+$/, '');
-
-afterEach(() => {
-  Logger.getInstance({ scope, enableDebug: false });
-});
 
 const logsOf = (run: () => unknown): string => {
   const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>

@@ -1,12 +1,12 @@
 import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
+import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';
 
-import { Logger } from '@venizia/ardor-kernel';
 import { type TFeature, Features } from '@/features/feature';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -17,23 +17,23 @@ const Wrapper: React.FC<{
   container: Container;
   reduxStore: Store;
   suspense: React.ReactNode;
-  enableDebug?: boolean;
+  logger?: ILogger;
   children: React.ReactNode;
 }> = ({
   applicationName = 'ArdorApplication',
   container,
   reduxStore,
   suspense,
-  enableDebug = false,
+  logger,
   children,
 }) => {
+  // The one the application passed, else a console logger named after it: built once, not per render.
+  const applicationLogger = React.useMemo(() => {
+    return logger ?? new BaseHelper({ scope: applicationName }).logger;
+  }, [logger, applicationName]);
+
   return (
-    <ApplicationContext.Provider
-      value={{
-        container,
-        logger: Logger.getInstance({ scope: applicationName, enableDebug }),
-      }}
-    >
+    <ApplicationContext.Provider value={{ container, logger: applicationLogger }}>
       <ReduxProvider store={reduxStore}>
         <React.Suspense fallback={suspense}>{children}</React.Suspense>
       </ReduxProvider>
@@ -95,7 +95,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     container,
     reduxStore,
     suspense,
-    enableDebug = false,
+    logger,
     resources,
     routes,
     features: selected,
@@ -126,24 +126,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   if (!isMessagesReady) {
     return (
-      <Wrapper
-        container={container}
-        reduxStore={reduxStore}
-        suspense={suspense}
-        enableDebug={enableDebug}
-      >
+      <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
         {suspense}
       </Wrapper>
     );
   }
 
   return (
-    <Wrapper
-      container={container}
-      reduxStore={reduxStore}
-      suspense={suspense}
-      enableDebug={enableDebug}
-    >
+    <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
       <CoreAdmin {...adminProps}>
         {mounted.resources.map((resource) => {
           return <Resource key={resource.name} {...resource} />;

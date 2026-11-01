@@ -1,3 +1,3 @@
-import { BaseHelper } from '@/helpers';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 
 export class BaseService extends BaseHelper {}

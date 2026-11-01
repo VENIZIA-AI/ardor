@@ -5,7 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { cleanup, renderHook } from '@testing-library/react';
 
 import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
-import { CoreBindings, HeaderConstants, Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
+import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -61,7 +62,7 @@ const createTestHarness = (opts: ICreateTestHarnessOptions): ITestHarness => {
       {
         value: {
           container,
-          logger: Logger.getInstance({ scope: 'test' }),
+          logger: new BaseHelper({ scope: 'test' }).logger,
         },
       },
       React.createElement(

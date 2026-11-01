@@ -2,21 +2,19 @@
 type: Playbook
 title: Debugging
 description: How to trace ARDOR issues using scoped loggers, the @api() decorator's error logs, request headers, auth recovery, and running a single test.
-resource: packages/kernel/src/helpers/logger.ts
+resource: packages/kernel/src/base/decorators/api.ts
 tags: [debugging, logging, testing, playbook]
 ---
 
 # Debugging
 
-ARDOR gives you a small set of tools for tracing problems: a per-scope logger, an automatic error log on every API method, header inspection for request tracing, and `bun test -t` for isolating a failing test. This page walks through using them together.
+ARDOR gives you a small set of tools for tracing problems: a per-scope logger (IGNIS's), an automatic error log on every API method, header inspection for request tracing, and `bun test -t` for isolating a failing test. This page walks through using them together.
 
 ## Logger per scope
 
-`Logger.getInstance({ scope, enableDebug })` (`packages/kernel/src/helpers/logger.ts`) returns one logger instance per scope string, cached in a static map. The scope is almost always the class name, so every log line is prefixed with `[scope]` and you can tell at a glance which class emitted it.
+A service or provider reads `this.logger` (`BaseService` and `BaseProvider` are IGNIS's `BaseHelper`, `@venizia/ignis-helpers/core`): an `ILogger` built from the `scope` the class passed to `super({ scope })`. The scope is almost always the class name, so every log line is prefixed with `[scope]` and you can tell at a glance which class emitted it. Outside a class, `new BaseHelper({ scope }).logger` is the same logger.
 
-`enableDebug` is process-wide, not per-instance. Passing `enableDebug: true` from any single call flips a static `debugEnabled` flag that every logger checks - so turning on debug logging anywhere turns it on everywhere. A call without `enableDebug` leaves the flag alone. `debug()` calls are silently dropped unless that flag is set; `info`, `warn`, `error` always print. `Logger.getInstance({ scope, enableDebug })` is the only way to set the flag: `new Logger({ scope })` takes no `enableDebug`, and there is no per-instance toggle.
-
-Each log line is timestamped (`getTimestamp()`) and formatted through `generateLog`. If the message is a string it's inlined into the prefix (`printf`-style with `...args`); if it's an object, the object is passed through as the first arg so `console`'s object inspector renders it.
+There is no debug switch: with no provider registered, each level goes to the console method of the same name, and `debug` lines go to `console.debug`, which a browser hides until its Verbose level is on. To change where lines go, register a provider once at startup (`LoggerFactory.use` from `@venizia/ignis-helpers`); every logger follows it, even one built earlier. A test can replace one instance's logger with `service.logger = ...`. In a Node process with no provider, IGNIS prints one warning to say it is logging to the console.
 
 When debugging, grep for the scope name (the class) rather than the message text - that's the fastest way to find where a log came from.
 
@@ -34,7 +32,7 @@ A 401 doesn't necessarily mean "broken" - ARDOR's auth layer may be running a re
 
 ## useApplicationLogger
 
-On the React side, `useApplicationLogger` (see [Hooks and context](/architecture/hooks-and-context.md)) gives components and hooks access to a logger scoped the same way, without instantiating `Logger` directly. Use it inside hooks/components instead of `console.log` so output stays consistent with the rest of the app and can be filtered by scope the same way service-side logs are.
+On the React side, `useApplicationLogger` (see [Hooks and context](/architecture/hooks-and-context.md)) gives components and hooks the application's `ILogger`: the `logger` prop of `ArdorApplication`, else a console logger named after the application. Use it inside hooks/components instead of `console.log` so output stays consistent with the rest of the app and can be filtered by scope the same way service-side logs are.
 
 ## Running one test
 

@@ -1,7 +1,8 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { AuthRecovery, Logger } from '@/helpers';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
+import { AuthRecovery } from '@/helpers';
 
-const logger = Logger.getInstance({ scope: 'auth-recovery-test' });
+const logger = new BaseHelper({ scope: 'auth-recovery-test' }).logger;
 
 const create = (opts: {
   refresh?: () => Promise<boolean>;

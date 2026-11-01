@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
-import { Logger } from '@/helpers';
+import { AuthTokenStore } from '@/helpers';
 
-const storeLogger = () => Logger.getInstance({ scope: 'AuthTokenStore' });
+// The store's own logger (private), so a test can see the one warning it writes.
+const storeLogger = () => AuthTokenStore['logger'];
 
 describe('saveAuth and credential retrieval', () => {
   beforeEach(() => {

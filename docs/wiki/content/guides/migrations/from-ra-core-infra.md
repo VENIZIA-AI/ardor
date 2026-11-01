@@ -87,8 +87,7 @@ Three removals and one requirement:
 
 One logger change worth knowing about, because it changes the call:
 
-- The per-instance debug toggle is gone. Set debug once, process-wide, with
-  `Logger.getInstance({ scope, enableDebug })`; `new Logger({ scope })` takes no `enableDebug`.
+- The per-instance debug toggle is gone, and so is the kernel `Logger`: a service logs through `this.logger`, an IGNIS `ILogger`, and a debug line goes to `console.debug` (see the [2026-11-01 changelog](/changelogs/2026-11-01-class-namespaces)).
 
 ## Migrating a consumer, by hand
 

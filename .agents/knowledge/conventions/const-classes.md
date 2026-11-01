@@ -61,7 +61,7 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 ```
 
 All four prebuilt unions (`TRequestType`, `TRequestBodyType`, `TRequestMethod`, `TEnvironment`) are
-`TStringConstValue` of their class and inherit the `& {}`. `TLogLevel` (from `LogLevels`) is `TConstValue` of its class.
+`TStringConstValue` of their class and inherit the `& {}`.
 
 The value type is a closed union - no `| (string & {})` escape - because ARDOR owns this vocabulary
 (see [narrowing authority](/conventions/narrowing-authority.md)). The `Extract<..., string>` inside
@@ -69,7 +69,7 @@ The value type is a closed union - no `| (string & {})` escape - because ARDOR o
 
 Every const class carries the `SCHEME_SET` plus `isValid(value: string)` pair: `RequestMethods`,
 `RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`,
-`Authentication`, `LocalStorageKeys` and `LogLevels`. A new one does too, and
+`Authentication` and `LocalStorageKeys`. A new one does too, and
 names the `isValid` parameter `value`. Two are exempt: `HeaderConstants`, the names behind the
 [header protocol](/architecture/header-protocol.md), also holds regexes, and `App` holds runtime
 defaults, so neither has a `SCHEME_SET` or `isValid()`.

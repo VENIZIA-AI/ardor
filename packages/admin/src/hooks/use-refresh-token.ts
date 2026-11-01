@@ -3,10 +3,10 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthProvider } from 'ra-core';
 
-import { Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 import type { IAuthProvider } from '@/common';
 
-const logger = Logger.getInstance({ scope: 'useRefreshToken' });
+const logger = new BaseHelper({ scope: 'useRefreshToken' }).logger;
 
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();

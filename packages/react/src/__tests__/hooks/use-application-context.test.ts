@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 import React from 'react';
 
 import { Container } from '@venizia/ignis-inversion';
-import { Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 
 import { ApplicationContext, type IApplicationContextValue } from '@/contexts/application';
 import { useApplicationContext, useApplicationLogger } from '@/hooks/use-application-context';
@@ -103,7 +103,7 @@ describe('useApplicationLogger', () => {
   });
 
   test('returns the logger inside a provider', () => {
-    const logger = Logger.getInstance({ scope: 'test' });
+    const logger = new BaseHelper({ scope: 'test' }).logger;
 
     const result = renderHookResult({
       hook: useApplicationLogger,

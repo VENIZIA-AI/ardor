@@ -1,4 +1,4 @@
-import type { Logger } from '../logger';
+import type { ILogger } from '@venizia/ignis-helpers/core';
 
 /**
  * What happens after a 401: one refresh shared by every request in flight, and which paths may
@@ -10,7 +10,7 @@ export class AuthRecovery {
 
   constructor(
     private readonly opts: {
-      logger: Logger;
+      logger: ILogger;
       /** Read per request: the service lets its `authRecovery` be set after construction. */
       getRefreshTokenPath: () => string | undefined;
       /** `true`: refreshed, `false`: this service has no refresh, a throw: it failed. */
