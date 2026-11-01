@@ -8,7 +8,9 @@ import { ArdorApplication } from '@/components/application';
 import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
+import { useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings } from '@venizia/ardor-kernel';
+import { ConsoleLogger, type ILogger, LoggerSlot } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
 const ReportList = () => {
@@ -16,10 +18,14 @@ const ReportList = () => {
   return <h1>{translate('reports.title')}</h1>;
 };
 
-const createContainer = (opts: { load: () => Promise<object>; withAuthProvider?: boolean }) => {
+const createContainer = (opts: {
+  load: () => Promise<object>;
+  withAuthProvider?: boolean;
+  list?: () => React.ReactElement;
+}) => {
   const reports = Features.define({
     name: 'reports',
-    resources: [{ name: 'reports', list: ReportList }],
+    resources: [{ name: 'reports', list: opts.list ?? ReportList }],
     messages: { en: opts.load },
   });
 
@@ -198,5 +204,61 @@ describe('ArdorApplication features prop', () => {
 
     expect(screen.queryByText('Open invoices')).toBeNull();
     expect(container.textContent).toBe('');
+  });
+});
+
+// The default logger of an ArdorApplication is built like every other one, from a BaseHelper, so the
+// resolver an application installs at startup (the debugging page shows it) silences its debug lines too.
+describe('ArdorApplication logger', () => {
+  const withoutDebug = (logger: ILogger): ILogger => ({
+    debug: () => undefined,
+    info: (message, ...args) => logger.info(message, ...args),
+    warn: (message, ...args) => logger.warn(message, ...args),
+    error: (message, ...args) => logger.error(message, ...args),
+    emerg: (message, ...args) => logger.emerg(message, ...args),
+    log: (level, message, ...args) => logger.log(level, message, ...args),
+    for: (name) => withoutDebug(logger.for(name)),
+  });
+
+  test('drops debug lines once an application installs a resolver, and keeps the others', async () => {
+    const debug = spyOn(console, 'debug').mockImplementation(() => undefined);
+    const info = spyOn(console, 'log').mockImplementation(() => undefined);
+    const installed = LoggerSlot.resolve;
+
+    const LoggingList = () => {
+      const logger = useApplicationLogger();
+      logger.debug('[LoggingList] hidden');
+      logger.info('[LoggingList] shown');
+
+      return <h1>Logged</h1>;
+    };
+
+    try {
+      LoggerSlot.use({
+        resolver: ({ scopes }) => withoutDebug(ConsoleLogger.get({ scope: scopes.join('-') })),
+      });
+
+      render(
+        <MemoryRouter>
+          <ArdorApplication
+            container={createContainer({
+              load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+              list: LoggingList,
+            })}
+            reduxStore={configureStore({ reducer: () => ({}) })}
+            suspense={<span>loading</span>}
+          />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText('Logged');
+
+      expect(debug).not.toHaveBeenCalled();
+      expect(info).toHaveBeenCalled();
+    } finally {
+      LoggerSlot.resolve = installed;
+      debug.mockRestore();
+      info.mockRestore();
+    }
   });
 });

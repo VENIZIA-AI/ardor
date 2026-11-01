@@ -210,3 +210,69 @@ describe('the move off the kernel logger: the enableDebug prop', () => {
     expect(result.findings).toEqual([]);
   });
 });
+
+// BANA's BaseHelper subclasses extend a copy in kits/core, not ARDOR's: the codemod follows the import
+// source, so a BaseHelper that does not come from an ARDOR package is never touched.
+describe("a BaseHelper or ILogger the file owns is not ARDOR's", () => {
+  test('a BaseHelper from another module is left alone, whatever else the file imports from ARDOR', () => {
+    const text = lines(
+      "import { BaseHelper } from '@/kits/core';",
+      "import { BaseService } from '@venizia/ardor';",
+      '',
+      'export class A extends BaseHelper {}',
+      'export class B extends BaseService {}',
+    );
+    const result = run(text);
+
+    expect(result.text).toBe(text);
+    expect(result.findings).toEqual([]);
+  });
+
+  test("IGNIS's BaseHelper is imported under an alias when the file already imports its own", () => {
+    const result = run(
+      lines(
+        "import { BaseHelper } from '@/kits/core';",
+        "import { Logger } from '@venizia/ardor-kernel';",
+        '',
+        "const logger = Logger.getInstance({ scope: 'A' });",
+        'export class A extends BaseHelper {}',
+      ),
+    );
+
+    expect(result.text).toBe(
+      lines(
+        "import { BaseHelper } from '@/kits/core';",
+        "import { BaseHelper as IgnisBaseHelper } from '@venizia/ignis-helpers/core';",
+        '',
+        "const logger = new IgnisBaseHelper({ scope: 'A' }).logger;",
+        'export class A extends BaseHelper {}',
+      ),
+    );
+  });
+
+  test('the alias is used as well when the file declares BaseHelper or ILogger itself', () => {
+    const result = run(
+      lines(
+        "import { Logger } from '@venizia/ardor-kernel';",
+        '',
+        'class BaseHelper {}',
+        'interface ILogger {}',
+        "const logger = Logger.getInstance({ scope: 'A' });",
+        'export const typed: Logger | null = null;',
+        'export { BaseHelper, type ILogger };',
+      ),
+    );
+
+    expect(result.text).toBe(
+      lines(
+        "import { BaseHelper as IgnisBaseHelper, type ILogger as IgnisILogger } from '@venizia/ignis-helpers/core';",
+        '',
+        'class BaseHelper {}',
+        'interface ILogger {}',
+        "const logger = new IgnisBaseHelper({ scope: 'A' }).logger;",
+        'export const typed: IgnisILogger | null = null;',
+        'export { BaseHelper, type ILogger };',
+      ),
+    );
+  });
+});

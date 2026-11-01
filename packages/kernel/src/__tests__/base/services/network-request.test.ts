@@ -19,7 +19,7 @@ import {
   type TNoAuthPathRegex,
   type TRequestMethod,
 } from '@/common';
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   method: string;
@@ -881,13 +881,13 @@ describe('DefaultNetworkRequestService', () => {
     test('throws an error when baseUrl is empty', async () => {
       const emptyBaseService = createService({ baseUrl: '' });
 
-      const result = await rejectionOf(
-        emptyBaseService.doRequest({
+      const result = await RejectionHelper.rejectionOf({
+        task: emptyBaseService.doRequest({
           paths: ['items'],
           method: RequestMethods.GET,
           type: RequestTypes.GET_ONE,
         }),
-      );
+      });
       expect(result).toMatchObject({
         message: expect.stringContaining('[doRequest] Invalid baseUrl to send request!'),
       });
@@ -1374,7 +1374,7 @@ describe('DefaultNetworkRequestService', () => {
         resource: 'tickets',
       });
 
-      const result = await rejectionOf(tickets.find({ filter: {} }));
+      const result = await RejectionHelper.rejectionOf({ task: tickets.find({ filter: {} }) });
       expect(result).toMatchObject({ statusCode: 401 });
       expect(recordedRequests).toHaveLength(1);
       expect(recordedRequests[0].headers.authorization).toBe('Bearer stale-token');
@@ -1476,7 +1476,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const signIn = createRepository({ service, resource: 'sign-in' });
 
-      const result = await rejectionOf(signIn.find({ filter: {} }));
+      const result = await RejectionHelper.rejectionOf({ task: signIn.find({ filter: {} }) });
       expect(result).toMatchObject({ statusCode: 401 });
       expect(refreshToken).not.toHaveBeenCalled();
       expect(recordedRequests).toHaveLength(1);
@@ -1497,9 +1497,9 @@ describe('DefaultNetworkRequestService', () => {
           { status: 409 },
         );
 
-      const result = await rejectionOf(
-        createRepository({ service, resource: 'users' }).find({ filter: {} }),
-      );
+      const result = await RejectionHelper.rejectionOf({
+        task: createRepository({ service, resource: 'users' }).find({ filter: {} }),
+      });
       expect(result).toMatchObject({
         statusCode: 409,
         normalized: { code: 'user.name.taken', args: { name: 'an' } },

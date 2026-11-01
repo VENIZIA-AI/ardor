@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
+import { BaseHelper, ConsoleLogger, type ILogger, LoggerSlot } from '@venizia/ignis-helpers/core';
 
 import { BaseProvider, BaseService } from '@/base';
 
@@ -67,5 +67,49 @@ describe('BaseService and BaseProvider are IGNIS BaseHelpers', () => {
     provider.value();
 
     expect(lines).toEqual(['[value] computed']);
+  });
+});
+
+/** The recipe the Breaking changelog entry and the debugging page give: the console logger with `debug` a no-op. */
+const withoutDebug = (logger: ILogger): ILogger => ({
+  debug: () => undefined,
+  info: (message, ...args) => logger.info(message, ...args),
+  warn: (message, ...args) => logger.warn(message, ...args),
+  error: (message, ...args) => logger.error(message, ...args),
+  emerg: (message, ...args) => logger.emerg(message, ...args),
+  log: (level, message, ...args) => logger.log(level, message, ...args),
+  for: (name) => withoutDebug(logger.for(name)),
+});
+
+// `enableDebug` is gone, so production silences debug with one resolver installed at startup, before the
+// first log line. `new BaseHelper({ scope }).logger` follows the slot, so the services, the hooks and the
+// ArdorApplication default (all built that way) go quiet together.
+describe('an application silences debug lines through LoggerSlot', () => {
+  test('a resolver installed first drops debug for a service, a provider and a plain helper, and keeps the rest', () => {
+    const debug = spyOn(console, 'debug').mockImplementation(() => undefined);
+    const info = spyOn(console, 'log').mockImplementation(() => undefined);
+    const installed = LoggerSlot.resolve;
+
+    try {
+      LoggerSlot.use({
+        resolver: ({ scopes }) => withoutDebug(ConsoleLogger.get({ scope: scopes.join('-') })),
+      });
+
+      const service = new OrderService();
+      const provider = new PriceProvider();
+      const plain = new BaseHelper({ scope: 'plain' }).logger;
+
+      for (const logger of [service.logger, provider.logger, plain]) {
+        logger.debug('[test] hidden');
+        logger.info('[test] shown');
+      }
+
+      expect(debug).not.toHaveBeenCalled();
+      expect(info).toHaveBeenCalledTimes(3);
+    } finally {
+      LoggerSlot.resolve = installed;
+      debug.mockRestore();
+      info.mockRestore();
+    }
   });
 });

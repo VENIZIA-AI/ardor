@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestBodyTypes, RequestTypes } from '@/common';
 
@@ -121,14 +121,14 @@ describe('abort signals', () => {
     setTimeout(() => controller.abort(), 50);
     const startedAt = Date.now();
 
-    const result = await rejectionOf(
-      fetcher.send({
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
         url: `${baseUrl}/delay`,
         method: 'get',
         timeout: 5000,
         signal: controller.signal,
       }),
-    );
+    });
     expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
@@ -139,14 +139,14 @@ describe('abort signals', () => {
     const controller = new AbortController();
     controller.abort();
 
-    const result = await rejectionOf(
-      fetcher.send({
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
         url: `${baseUrl}/echo`,
         method: 'get',
         timeout: 5000,
         signal: controller.signal,
       }),
-    );
+    });
     expect(result).toBeDefined();
   });
 
@@ -155,14 +155,14 @@ describe('abort signals', () => {
     const controller = new AbortController();
     const startedAt = Date.now();
 
-    const result = await rejectionOf(
-      fetcher.send({
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
         url: `${baseUrl}/delay`,
         method: 'get',
         timeout: 50,
         signal: controller.signal,
       }),
-    );
+    });
     expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
@@ -171,9 +171,9 @@ describe('abort signals', () => {
   test('the timeout alone still aborts', async () => {
     const fetcher = createFetcher({ name: 'node-fetch-timeout-only-test' });
 
-    const result = await rejectionOf(
-      fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 }),
-    );
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 }),
+    });
     expect(result).toBeDefined();
   });
 });

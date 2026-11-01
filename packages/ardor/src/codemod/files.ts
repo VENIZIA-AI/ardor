@@ -43,6 +43,7 @@ export class CodemodFiles {
           stdio: ['ignore', 'pipe', 'ignore'],
         },
       );
+      // eslint-disable-next-line venizia/no-silent-catch -- not a git repository (or no git) is an answer: the caller walks the folder instead
     } catch {
       return undefined;
     }
@@ -96,6 +97,7 @@ export class CodemodFiles {
           maxBuffer: 256 * 1024 * 1024,
           stdio: ['ignore', 'pipe', 'ignore'],
         });
+        // eslint-disable-next-line venizia/no-silent-catch -- git cannot answer for this folder: the caller treats the file as unknown to git
       } catch {
         return undefined;
       }

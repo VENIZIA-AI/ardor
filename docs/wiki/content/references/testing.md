@@ -5,7 +5,7 @@ description: assertArdorApplicationBoots in @venizia/ardor/testing starts an app
 
 # Testing - prove the application boots
 
-A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. Available in 0.4.4; it needs `@venizia/ignis-inversion` 0.4.4 or newer.
+A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. Available in 0.4.4; it needs `@venizia/ignis-inversion` 0.4.6-1 or newer.
 
 ```ts
 import { assertArdorApplicationBoots } from '@venizia/ardor/testing';

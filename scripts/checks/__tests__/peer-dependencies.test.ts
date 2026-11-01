@@ -24,11 +24,11 @@ type TManifest = {
 
 /**
  * A peer the umbrella alone asks for at a higher floor, with the reason. The umbrella's `./testing`
- * entry calls `assertBindingsResolve`, which arrived in `@venizia/ignis-inversion` 0.4.4; the other
- * packages do not use it, so an application on 0.4.1 to 0.4.3 still installs them. A higher floor
+ * entry calls `BindingVerifier.assertResolve`, which arrived in `@venizia/ignis-inversion` 0.4.6-1; the
+ * other packages do not use it, so an application on 0.4.1 to 0.4.5 still installs them. A higher floor
  * narrows what the umbrella accepts and splits no copy: one version satisfies both ranges.
  */
-const UMBRELLA_FLOORS: Record<string, string> = { '@venizia/ignis-inversion': '^0.4.4' };
+const UMBRELLA_FLOORS: Record<string, string> = { '@venizia/ignis-inversion': '^0.4.6-1' };
 
 const directories = readdirSync(PACKAGES_DIR);
 const manifestOf = (directory: string): TManifest => {

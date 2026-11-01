@@ -15,7 +15,7 @@ import {
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   readonly method: string;
@@ -419,7 +419,9 @@ describe('login against the sign-in response shapes', () => {
   test('rejects, and stores nothing, when no user id can be found', async () => {
     loginBody = { token: 'opaque-token' };
 
-    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+    const error = await RejectionHelper.rejectionOf({
+      task: authProvider.login({ username: 'alice', password: 'x' }),
+    });
 
     expect(String(error)).toContain('[login]');
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
@@ -429,7 +431,9 @@ describe('login against the sign-in response shapes', () => {
   test('rejects, and stores nothing, when the response carries no token', async () => {
     loginBody = { userId: 7 };
 
-    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+    const error = await RejectionHelper.rejectionOf({
+      task: authProvider.login({ username: 'alice', password: 'x' }),
+    });
 
     expect(String(error)).toContain('[login]');
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
@@ -438,7 +442,7 @@ describe('login against the sign-in response shapes', () => {
 
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
-    const result = await rejectionOf(authProvider.checkAuth({}));
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
     expect(result).toEqual({
       redirectTo: '/login',
     });
@@ -470,7 +474,7 @@ describe('checkAuth', () => {
     recordedRequests.length = 0;
     whoamiReturnsData = false;
 
-    const result = await rejectionOf(authProvider.checkAuth({}));
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
     expect(result).toEqual({
       redirectTo: '/login',
     });
@@ -493,7 +497,9 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    const result = await rejectionOf(authProvider.checkError({ status: 401 }));
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError({ status: 401 }),
+    });
     expect(result).toEqual({
       redirectTo: '/login',
     });
@@ -512,7 +518,9 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    const result = await rejectionOf(authProvider.checkError({ status: 403 }));
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError({ status: 403 }),
+    });
     expect(result).toEqual({
       redirectTo: '/unauthorized',
       logoutUser: false,
@@ -537,9 +545,9 @@ describe('checkError', () => {
       JSON.stringify({ value: 'jwt', type: 'Bearer' }),
     );
 
-    const result = await rejectionOf(
-      authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
-    );
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
+    });
     expect(result).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
 
@@ -548,9 +556,9 @@ describe('checkError', () => {
     );
     expect(result2).toBeUndefined();
 
-    const result3 = await rejectionOf(
-      authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
-    );
+    const result3 = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
+    });
     expect(result3).toEqual({ redirectTo: '/login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
   });
@@ -586,7 +594,7 @@ describe('getIdentity', () => {
   test('rejects when no userId is stored in identity', async () => {
     expect(authProvider.getIdentity).toBeDefined();
     if (authProvider.getIdentity !== undefined) {
-      const result = await rejectionOf(authProvider.getIdentity({}));
+      const result = await RejectionHelper.rejectionOf({ task: authProvider.getIdentity({}) });
       expect(result).toEqual({
         message: '[getIdentity] No userId to get user identity!',
       });
@@ -819,9 +827,9 @@ describe('login hooks', () => {
       }
     }
 
-    const error = await rejectionOf(
-      signInWith({ providerClass: AdminOnlyAuthProvider }).login({ username: 'alice' }),
-    );
+    const error = await RejectionHelper.rejectionOf({
+      task: signInWith({ providerClass: AdminOnlyAuthProvider }).login({ username: 'alice' }),
+    });
 
     expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
@@ -835,9 +843,9 @@ describe('login hooks', () => {
       }
     }
 
-    const error = await rejectionOf(
-      signInWith({ providerClass: RefusingAuthProvider }).login({ username: 'alice' }),
-    );
+    const error = await RejectionHelper.rejectionOf({
+      task: signInWith({ providerClass: RefusingAuthProvider }).login({ username: 'alice' }),
+    });
 
     expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
@@ -967,13 +975,17 @@ describe('paths as protected getters', () => {
   test('the login page and the unauthorized page are overridable', async () => {
     const provider = signInWith({ providerClass: RenamedAuthProvider });
 
-    const result = await rejectionOf(provider.checkAuth({}));
+    const result = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
     expect(result).toEqual({ redirectTo: '/sign-in-page' });
-    const result2 = await rejectionOf(provider.checkError({ status: 401 }));
+    const result2 = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 401 }),
+    });
     expect(result2).toEqual({
       redirectTo: '/sign-in-page',
     });
-    const result3 = await rejectionOf(provider.checkError({ status: 403 }));
+    const result3 = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 403 }),
+    });
     expect(result3).toEqual({
       redirectTo: '/no-access',
       logoutUser: false,

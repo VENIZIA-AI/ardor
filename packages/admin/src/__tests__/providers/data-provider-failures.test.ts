@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import type { IApplicationInfo, IRestDataProviderOptions } from '@venizia/ardor-kernel';
 
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
@@ -48,7 +48,7 @@ describe('DefaultRestDataProvider failures', () => {
       }
 
       expect(task).toBeInstanceOf(Promise);
-      const result = await rejectionOf(task as Promise<unknown>);
+      const result = await RejectionHelper.rejectionOf({ task: task as Promise<unknown> });
       expect(result).toBeDefined();
     },
   );

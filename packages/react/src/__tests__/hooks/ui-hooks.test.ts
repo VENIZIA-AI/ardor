@@ -265,11 +265,14 @@ describe('useConfirm', () => {
     const { result } = renderHook(() => {
       return useConfirm();
     });
+    let pending: Promise<boolean> | undefined;
 
     act(() => {
-      result.current.confirm({ message: 'Dismissable prompt' }).catch(() => undefined);
+      // The promise stays pending on purpose: the test only closes the prompt.
+      pending = result.current.confirm({ message: 'Dismissable prompt' });
     });
 
+    expect(pending).toBeInstanceOf(Promise);
     expect(result.current.message).toBe('Dismissable prompt');
 
     act(() => {

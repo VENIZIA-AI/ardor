@@ -124,6 +124,7 @@ export class NamespaceCommand {
 
       // TypeScript is CommonJS: Node puts the module on `default`, a bundler may not.
       return loaded.default ?? loaded;
+      // eslint-disable-next-line venizia/no-silent-catch -- no `typescript` installed is an answer, not a failure: the caller prints how to install it
     } catch {
       return undefined;
     }

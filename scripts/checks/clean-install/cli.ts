@@ -18,7 +18,7 @@ import {
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 import { makeScratch } from '../../scratch';
-import { buildManifest } from '@venizia/dev-configs/checks';
+import { PurityManifest } from '@venizia/dev-configs/checks';
 import { PURITY_CLAIMS } from '../purity/manifest';
 import {
   assertEveryPackageClaimed,
@@ -37,7 +37,7 @@ import type { IInstallRow, IPackageManifest } from './manifest';
 const LINKERS = ['hoisted', 'isolated'];
 const GUARD_DIRECTORY = import.meta.dir;
 
-const PURITY_MANIFEST = buildManifest({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
+const PURITY_MANIFEST = PurityManifest.build({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
 
 // Entries run decorators at import, so each check loads the polyfill first, as an application does.
 const LOAD = (specifier: string): string =>

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { getError } from '@venizia/ignis-inversion';
 import { api } from '@/base/decorators/api';
 import { BaseService } from '@/base/services/base';
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface ITestFetchPayload {
   id: string;
@@ -77,7 +77,9 @@ describe('api decorator', () => {
     activeSpy = errorSpy;
     const expectedError = getError({ message: 'ARDOR service failure' });
 
-    const result = await rejectionOf(service.failingMethod({ error: expectedError }));
+    const result = await RejectionHelper.rejectionOf({
+      task: service.failingMethod({ error: expectedError }),
+    });
     expect(result).toBe(expectedError);
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -106,7 +108,9 @@ describe('api decorator', () => {
     activeSpy = errorSpy;
     const expectedError = getError({ message: 'no resource' });
 
-    const result = await rejectionOf(service.fail({ error: expectedError }));
+    const result = await RejectionHelper.rejectionOf({
+      task: service.fail({ error: expectedError }),
+    });
     expect(result).toBe(expectedError);
     expect(errorSpy).toHaveBeenCalledWith(
       '[%s] resource: %s | error: %o',
