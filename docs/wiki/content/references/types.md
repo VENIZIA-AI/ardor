@@ -130,7 +130,7 @@ Source files: `packages/ardor/src/repository.ts` and `packages/kernel/src/base/r
 
 ## @venizia/ardor-react
 
-Source files: `packages/react/src/common/types.ts` and `packages/react/src/hooks/use-injectable.ts`.
+Source file: `packages/react/src/hooks/use-injectable.ts`.
 
 | Type | Kind | Definition and usage |
 |---|---|---|
