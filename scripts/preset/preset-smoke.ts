@@ -364,6 +364,19 @@ const peerRange = (opts: { presetRoot: string; name: string }): string => {
   return isRecord(peers) ? String(peers[opts.name]) : '';
 };
 
+/** The versions the app preset itself lists for a package: VULCAN holds a catalog pin equal to one of them satisfied by construction. */
+const listedVersions = (opts: { presetRoot: string; name: string }): string[] => {
+  const preset = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) });
+
+  return ['dependencies', 'devDependencies']
+    .map((section) => {
+      const listed = preset[section];
+
+      return isRecord(listed) ? listed[opts.name] : undefined;
+    })
+    .filter((version): version is string => typeof version === 'string');
+};
+
 /** Root `overrides`: bun applies a `file:` override to a transitive dependency too. */
 const addOverrides = (opts: {
   project: string;
@@ -1777,7 +1790,11 @@ const main = async () => {
         )?.[devConfigs] ?? '',
       );
 
-      if (!Bun.semver.satisfies(pinned.replace(/^[\^~]/, ''), devConfigsRange)) {
+      // A pin equal to a version the preset lists is no refusal (VULCAN 0.4.9): `init` wrote it from that preset.
+      if (
+        !Bun.semver.satisfies(pinned.replace(/^[\^~]/, ''), devConfigsRange) &&
+        !listedVersions({ presetRoot, name: devConfigs }).includes(pinned)
+      ) {
         const { output } = vulcan({
           cwd: project,
           env: NO_INSTALL,
