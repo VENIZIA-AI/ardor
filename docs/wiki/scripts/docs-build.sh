@@ -13,6 +13,8 @@ bun scripts/check-sidebar.mts
 # does not exist.
 bun scripts/check-snippets.mts
 
-vitepress build site
+# vitepress build site, then what it can hide behind exit 0: a component that threw while it rendered
+# on the server (the page is built without it and the browser reports a hydration mismatch).
+bun scripts/check-build.mts
 
 echo "DONE | Build completed successfully!"
