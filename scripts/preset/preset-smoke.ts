@@ -3,8 +3,9 @@
  * preset is read from the extracted tarball, and the app is created, installed and checked in a
  * scratch folder under `.agents/local/tmp` that is its own git repository. This repository's
  * `node_modules` is still above that folder, so a dependency the app forgot to declare could resolve
- * from it: `assertDeclaredDependenciesInstalled` proves only that every declared one was installed
- * in the project.
+ * from it and every check pass for the wrong reason: `assertDeclaredDependenciesInstalled` proves that
+ * every declared one was installed in the project, and `assertImportsDeclared` that every package the
+ * app imports is declared (declared-imports.ts reads the source, so the folder's place cannot hide it).
  *
  *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
  *             .env copied from .env.example it passes them again and the dev server reads PORT and API_URL
@@ -54,6 +55,7 @@ import { type BrowserContext, chromium } from 'playwright-core';
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from '../release/release-gates';
 import type { TConstValue } from '../const-value';
 import { makeScratch } from '../scratch';
+import { DeclaredImports } from './declared-imports';
 
 const ROOT = resolve(import.meta.dir, '..', '..');
 
@@ -437,6 +439,16 @@ const assertDeclaredDependenciesInstalled = (opts: { project: string; folder: st
   });
 };
 
+/** A package the app imports must be declared in its package.json, not found above the scratch folder. */
+const assertImportsDeclared = (opts: { project: string; folder: string }): void => {
+  const undeclared = DeclaredImports.undeclared({ folder: join(opts.project, opts.folder) });
+
+  assert({
+    condition: undeclared.length === 0,
+    message: `every package ${opts.folder} imports is declared in its package.json (undeclared: ${undeclared.join(', ') || 'none'})`,
+  });
+};
+
 /** install, sync, each app's checks, then the project's own contract. */
 /**
  * The app resolves its own modules through package.json `imports` (`#src/*`), not an alias: no `@/`
@@ -760,6 +772,7 @@ const install = async (opts: {
 
   for (const app of opts.apps) {
     assertDeclaredDependenciesInstalled({ project: opts.project, folder: app.folder });
+    assertImportsDeclared({ project: opts.project, folder: app.folder });
   }
 
   for (const app of opts.apps) {
