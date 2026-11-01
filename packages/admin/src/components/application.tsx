@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
-import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
+import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -29,7 +29,7 @@ const Wrapper: React.FC<{
 }) => {
   // The one the application passed, else a console logger named after it: built once, not per render.
   const applicationLogger = React.useMemo(() => {
-    return logger ?? new BaseHelper({ scope: applicationName }).logger;
+    return logger ?? LoggerFactory.getLogger([applicationName]);
   }, [logger, applicationName]);
 
   return (

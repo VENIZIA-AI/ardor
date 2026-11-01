@@ -29,7 +29,7 @@ export const Orders = () => {
 
 ## Moving to the new names
 
-`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `new BaseHelper({ scope }).logger`, ...) and the removed names with none, and writes nothing; `--write` applies it, `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package.
+`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it, `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package.
 
 ## Quick start
 

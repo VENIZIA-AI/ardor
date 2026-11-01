@@ -171,7 +171,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (35)
+### `@venizia/ardor-admin` (36)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -196,6 +196,7 @@ generated:
 - `ListFilterBuilder` class
 - `TFeature` type
 - `TFeatureMessages` type
+- `TI18nSource` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
@@ -211,7 +212,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (159)
+### `@venizia/ardor` (160)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -327,6 +328,7 @@ generated:
 - `TFeature` type
 - `TFeatureMessages` type
 - `TFullPaths` type
+- `TI18nSource` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
 - `TPaths` type

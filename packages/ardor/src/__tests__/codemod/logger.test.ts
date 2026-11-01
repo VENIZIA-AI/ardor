@@ -57,7 +57,7 @@ describe('the move off the kernel logger: imports that only change package', () 
 });
 
 describe('the move off the kernel logger: Logger', () => {
-  test('Logger.getInstance({ scope }) becomes a BaseHelper logger of that scope', () => {
+  test('Logger.getInstance({ scope }) becomes LoggerFactory.getLogger of that scope', () => {
     const result = run(
       lines(
         "import { Logger } from '@venizia/ardor';",
@@ -72,11 +72,11 @@ describe('the move off the kernel logger: Logger', () => {
 
     expect(result.text).toBe(
       lines(
-        "import { BaseHelper } from '@venizia/ignis-helpers/core';",
+        "import { LoggerFactory } from '@venizia/ignis-helpers/core';",
         '',
-        "const logger = new BaseHelper({ scope: 'Orders' }).logger;",
-        'export const other = new BaseHelper({ scope: Mine.name }).logger;',
-        'export const short = (scope: string) => new BaseHelper({ scope }).logger;',
+        "const logger = LoggerFactory.getLogger(['Orders']);",
+        'export const other = LoggerFactory.getLogger([Mine.name]);',
+        'export const short = (scope: string) => LoggerFactory.getLogger([scope]);',
         'class Mine {}',
         'export { logger, Mine };',
       ),
@@ -93,11 +93,11 @@ describe('the move off the kernel logger: Logger', () => {
       ),
     );
 
-    expect(result.text).toContain("new BaseHelper({ scope: 'A' }).logger");
+    expect(result.text).toContain("LoggerFactory.getLogger(['A'])");
     expect(result.text).not.toContain('enableDebug');
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]?.kind).toBe('note');
-    expect(result.findings[0]?.reason).toContain('console.debug');
+    expect(result.findings[0]?.reason).toContain('LoggerFactory.use({ level: LogLevels.DEBUG })');
     expect(result.findings[0]?.line).toBe(3);
   });
 
@@ -110,7 +110,7 @@ describe('the move off the kernel logger: Logger', () => {
       ),
     );
 
-    expect(result.text).toContain("export const a = new BaseHelper({ scope: 'A' }).logger;");
+    expect(result.text).toContain("export const a = LoggerFactory.getLogger(['A']);");
   });
 
   test('a Logger annotation becomes ILogger, and the import follows', () => {
@@ -150,7 +150,7 @@ describe('the move off the kernel logger: Logger', () => {
       ),
     );
 
-    expect(result.text).toContain("export const ok = new BaseHelper({ scope: 'A' }).logger;");
+    expect(result.text).toContain("export const ok = LoggerFactory.getLogger(['A']);");
     expect(result.text).toContain("import { Logger } from '@venizia/ardor';");
     expect(result.findings.map((finding) => finding.line)).toEqual([4, 5, 6, 7]);
     expect(result.findings.every((finding) => finding.kind === undefined)).toBe(true);
@@ -213,7 +213,7 @@ describe('the move off the kernel logger: the enableDebug prop', () => {
 
 // BANA's BaseHelper subclasses extend a copy in kits/core, not ARDOR's: the codemod follows the import
 // source, so a BaseHelper that does not come from an ARDOR package is never touched.
-describe("a BaseHelper or ILogger the file owns is not ARDOR's", () => {
+describe("a BaseHelper, LoggerFactory or ILogger the file owns is not ARDOR's", () => {
   test('a BaseHelper from another module is left alone, whatever else the file imports from ARDOR', () => {
     const text = lines(
       "import { BaseHelper } from '@/kits/core';",
@@ -228,7 +228,7 @@ describe("a BaseHelper or ILogger the file owns is not ARDOR's", () => {
     expect(result.findings).toEqual([]);
   });
 
-  test("IGNIS's BaseHelper is imported under an alias when the file already imports its own", () => {
+  test('a local BaseHelper does not clash: Logger becomes LoggerFactory and the BaseHelper stays', () => {
     const result = run(
       lines(
         "import { BaseHelper } from '@/kits/core';",
@@ -242,36 +242,58 @@ describe("a BaseHelper or ILogger the file owns is not ARDOR's", () => {
     expect(result.text).toBe(
       lines(
         "import { BaseHelper } from '@/kits/core';",
-        "import { BaseHelper as IgnisBaseHelper } from '@venizia/ignis-helpers/core';",
+        "import { LoggerFactory } from '@venizia/ignis-helpers/core';",
         '',
-        "const logger = new IgnisBaseHelper({ scope: 'A' }).logger;",
+        "const logger = LoggerFactory.getLogger(['A']);",
         'export class A extends BaseHelper {}',
       ),
     );
   });
 
-  test('the alias is used as well when the file declares BaseHelper or ILogger itself', () => {
+  test("IGNIS's LoggerFactory is imported under an alias when the file already has its own", () => {
     const result = run(
       lines(
+        "import { LoggerFactory } from '@/kits/core';",
         "import { Logger } from '@venizia/ardor-kernel';",
         '',
-        'class BaseHelper {}',
-        'interface ILogger {}',
         "const logger = Logger.getInstance({ scope: 'A' });",
-        'export const typed: Logger | null = null;',
-        'export { BaseHelper, type ILogger };',
+        'export const mine = LoggerFactory;',
       ),
     );
 
     expect(result.text).toBe(
       lines(
-        "import { BaseHelper as IgnisBaseHelper, type ILogger as IgnisILogger } from '@venizia/ignis-helpers/core';",
+        "import { LoggerFactory } from '@/kits/core';",
+        "import { LoggerFactory as IgnisLoggerFactory } from '@venizia/ignis-helpers/core';",
         '',
-        'class BaseHelper {}',
+        "const logger = IgnisLoggerFactory.getLogger(['A']);",
+        'export const mine = LoggerFactory;',
+      ),
+    );
+  });
+
+  test('the alias is used as well when the file declares LoggerFactory or ILogger itself', () => {
+    const result = run(
+      lines(
+        "import { Logger } from '@venizia/ardor-kernel';",
+        '',
+        'class LoggerFactory {}',
         'interface ILogger {}',
-        "const logger = new IgnisBaseHelper({ scope: 'A' }).logger;",
+        "const logger = Logger.getInstance({ scope: 'A' });",
+        'export const typed: Logger | null = null;',
+        'export { LoggerFactory, type ILogger };',
+      ),
+    );
+
+    expect(result.text).toBe(
+      lines(
+        "import { LoggerFactory as IgnisLoggerFactory, type ILogger as IgnisILogger } from '@venizia/ignis-helpers/core';",
+        '',
+        'class LoggerFactory {}',
+        'interface ILogger {}',
+        "const logger = IgnisLoggerFactory.getLogger(['A']);",
         'export const typed: IgnisILogger | null = null;',
-        'export { BaseHelper, type ILogger };',
+        'export { LoggerFactory, type ILogger };',
       ),
     );
   });

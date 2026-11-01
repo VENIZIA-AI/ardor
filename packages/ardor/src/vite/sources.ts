@@ -7,7 +7,6 @@ import { BuildInfoResolver } from '@venizia/ignis-boot/build-info';
 import { getError } from '@venizia/ignis-inversion';
 
 import type { IBuildInfoSources, IFrameworkVersions, TGitReadResult } from './common';
-import { useQuietConsoleLogger } from './quiet-logger';
 
 const runFile = promisify(execFile);
 
@@ -156,8 +155,6 @@ export const readGit = async (opts: { root: string; args: string[] }): Promise<T
 
 export const defaultSources: IBuildInfoSources = {
   resolveRecord: (opts) => {
-    useQuietConsoleLogger();
-
     return BuildInfoResolver.getInstance().resolve({ root: opts.root });
   },
   readGit,

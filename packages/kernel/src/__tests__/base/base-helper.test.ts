@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { BaseHelper, ConsoleLogger, type ILogger, LoggerSlot } from '@venizia/ignis-helpers/core';
+import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
 
 import { BaseProvider, BaseService } from '@/base';
 
@@ -70,46 +70,85 @@ describe('BaseService and BaseProvider are IGNIS BaseHelpers', () => {
   });
 });
 
-/** The recipe the Breaking changelog entry and the debugging page give: the console logger with `debug` a no-op. */
-const withoutDebug = (logger: ILogger): ILogger => ({
-  debug: () => undefined,
-  info: (message, ...args) => logger.info(message, ...args),
-  warn: (message, ...args) => logger.warn(message, ...args),
-  error: (message, ...args) => logger.error(message, ...args),
-  emerg: (message, ...args) => logger.emerg(message, ...args),
-  log: (level, message, ...args) => logger.log(level, message, ...args),
-  for: (name) => withoutDebug(logger.for(name)),
-});
-
-// `enableDebug` is gone, so production silences debug with one resolver installed at startup, before the
-// first log line. `new BaseHelper({ scope }).logger` follows the slot, so the services, the hooks and the
-// ArdorApplication default (all built that way) go quiet together.
-describe('an application silences debug lines through LoggerSlot', () => {
-  test('a resolver installed first drops debug for a service, a provider and a plain helper, and keeps the rest', () => {
-    const debug = spyOn(console, 'debug').mockImplementation(() => undefined);
-    const info = spyOn(console, 'log').mockImplementation(() => undefined);
-    const installed = LoggerSlot.resolve;
-
-    try {
-      LoggerSlot.use({
-        resolver: ({ scopes }) => withoutDebug(ConsoleLogger.get({ scope: scopes.join('-') })),
-      });
-
-      const service = new OrderService();
-      const provider = new PriceProvider();
-      const plain = new BaseHelper({ scope: 'plain' }).logger;
-
-      for (const logger of [service.logger, provider.logger, plain]) {
-        logger.debug('[test] hidden');
-        logger.info('[test] shown');
-      }
-
-      expect(debug).not.toHaveBeenCalled();
-      expect(info).toHaveBeenCalledTimes(3);
-    } finally {
-      LoggerSlot.resolve = installed;
-      debug.mockRestore();
-      info.mockRestore();
+/**
+ * The logger state lives on `globalThis` and the debug gate reads the environment once, so each case runs in a
+ * fresh process with the environment it names and prints one `RESULT:` line.
+ */
+const runLines = (opts: { debug?: string; body: string }): string[] => {
+  const script = `
+    const seen = [];
+    for (const method of ['debug', 'log', 'info', 'warn', 'error']) {
+      console[method] = (...parts) => { seen.push(method + ':' + parts.join(' ')); };
     }
+    const { BaseHelper, LoggerFactory, LogLevels } = await import('@venizia/ignis-helpers/core');
+    ${opts.body}
+    process.stdout.write('RESULT:' + JSON.stringify(seen) + '\\n');
+  `;
+  const env: Record<string, string | undefined> = { ...process.env };
+  delete env.DEBUG;
+  delete env.NODE_ENV;
+  if (opts.debug !== undefined) {
+    env.DEBUG = opts.debug;
+  }
+
+  const result = Bun.spawnSync(['bun', '-e', script], {
+    cwd: import.meta.dir,
+    env,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    timeout: 20_000,
+  });
+  const line = result.stdout
+    .toString()
+    .split('\n')
+    .find((entry) => entry.startsWith('RESULT:'));
+
+  if (!line) {
+    throw new Error(`[base-helper-test] no result | stderr: ${result.stderr.toString()}`);
+  }
+
+  return JSON.parse(line.slice('RESULT:'.length));
+};
+
+const LOG_ALL = `
+  const service = new BaseHelper({ scope: 'Service' }).logger;
+  const plain = LoggerFactory.getLogger(['Plain']);
+  for (const logger of [service, plain]) {
+    logger.debug('hidden?');
+    logger.info('shown');
+  }
+`;
+const debugLines = (lines: string[]): string[] => lines.filter((line) => line.startsWith('debug:'));
+
+// `enableDebug` is gone: IGNIS's console logger has its own debug gate, so production needs nothing installed.
+// `this.logger`, the hook loggers and the ArdorApplication default all come from the same factory.
+describe('debug lines are off by default, and LoggerFactory.use decides otherwise', () => {
+  test('with DEBUG unset the logger of a helper and a LoggerFactory logger drop debug and keep info', () => {
+    const lines = runLines({ body: LOG_ALL });
+
+    expect(debugLines(lines)).toEqual([]);
+    expect(lines.filter((line) => line.includes('shown'))).toHaveLength(2);
+  });
+
+  test('DEBUG=1 turns debug on, as it does for every IGNIS provider (a server, not a browser)', () => {
+    const lines = runLines({ debug: '1', body: LOG_ALL });
+
+    expect(debugLines(lines)).toHaveLength(2);
+  });
+
+  test('LoggerFactory.use({ level: LogLevels.INFO }) silences debug whatever DEBUG says', () => {
+    const lines = runLines({
+      debug: '1',
+      body: `LoggerFactory.use({ level: LogLevels.INFO }); ${LOG_ALL}`,
+    });
+
+    expect(debugLines(lines)).toEqual([]);
+    expect(lines.filter((line) => line.includes('shown'))).toHaveLength(2);
+  });
+
+  test('LoggerFactory.use({ level: LogLevels.DEBUG }) turns debug on with DEBUG unset', () => {
+    const lines = runLines({ body: `LoggerFactory.use({ level: LogLevels.DEBUG }); ${LOG_ALL}` });
+
+    expect(debugLines(lines)).toHaveLength(2);
   });
 });

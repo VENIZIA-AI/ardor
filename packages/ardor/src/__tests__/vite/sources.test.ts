@@ -146,3 +146,56 @@ describe('under Node, which is where Vite runs', () => {
     expect(run.exitCode).toBe(0);
   });
 });
+
+// The resolver logs why a folder has no package.json at debug level. A Vite build used to install a quiet
+// provider for that; IGNIS's console logger keeps debug off by itself, so nothing is installed any more.
+describe('resolveRecord and the debug gate', () => {
+  const run = (opts: { debug?: string }): string[] => {
+    const root = makeScratch({ prefix: 'build-info-debug-' });
+    const script = `
+      const seen = [];
+      for (const method of ['debug', 'log', 'info', 'warn', 'error']) {
+        console[method] = (...parts) => { seen.push(method + ':' + parts.join(' ')); };
+      }
+      const { defaultSources } = await import(${JSON.stringify(join(import.meta.dir, '../../vite/sources.ts'))});
+      defaultSources.resolveRecord({ root: ${JSON.stringify(root)} });
+      process.stdout.write('RESULT:' + JSON.stringify(seen) + '\\n');
+    `;
+    const env: Record<string, string | undefined> = { ...process.env };
+    delete env.DEBUG;
+    delete env.NODE_ENV;
+    if (opts.debug !== undefined) {
+      env.DEBUG = opts.debug;
+    }
+
+    try {
+      const result = Bun.spawnSync(['bun', '-e', script], {
+        cwd: import.meta.dir,
+        env,
+        stdout: 'pipe',
+        stderr: 'pipe',
+        timeout: 20_000,
+      });
+      const line = result.stdout
+        .toString()
+        .split('\n')
+        .find((entry) => entry.startsWith('RESULT:'));
+
+      if (!line) {
+        throw new Error(`[sources-test] no result | stderr: ${result.stderr.toString()}`);
+      }
+
+      return JSON.parse(line.slice('RESULT:'.length));
+    } finally {
+      removeScratch({ root });
+    }
+  };
+
+  test('prints no debug line while DEBUG is unset', () => {
+    expect(run({}).filter((line) => line.startsWith('debug:'))).toEqual([]);
+  });
+
+  test('prints the debug line when DEBUG is set, which is the IGNIS gate and no longer ours', () => {
+    expect(run({ debug: '1' }).some((line) => line.startsWith('debug:'))).toBe(true);
+  });
+});

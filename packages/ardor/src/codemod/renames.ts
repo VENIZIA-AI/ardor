@@ -129,8 +129,8 @@ export class LoggerRenames {
   /** Same name, same shape, other package: only the import moves. */
   static readonly MOVED = new Set(['BaseHelper', 'LogLevels', 'ILogger', 'TLogLevel']);
 
-  /** The class the kernel's `Logger` is replaced by in `Logger.getInstance(...)` and `new Logger(...)`. */
-  static readonly HELPER = 'BaseHelper';
+  /** The class the kernel's `Logger` is replaced by in `Logger.getInstance(...)` and `new Logger(...)`: `LoggerFactory.getLogger([scope])`. */
+  static readonly FACTORY = 'LoggerFactory';
 
   /** The type a `Logger` annotation becomes. */
   static readonly TYPE = 'ILogger';

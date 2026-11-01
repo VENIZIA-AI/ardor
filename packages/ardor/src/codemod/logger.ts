@@ -31,8 +31,8 @@ interface IArdorImport {
  * - `BaseHelper`, `LogLevels`, `ILogger` and `TLogLevel` keep their names, so only the import moves
  *   to `@venizia/ignis-helpers/core`.
  * - `Logger.getInstance({ scope })` and `new Logger({ scope })` become
- *   `new BaseHelper({ scope }).logger`. IGNIS's console logger has no debug switch, so an
- *   `enableDebug` option is dropped and noted.
+ *   `LoggerFactory.getLogger([scope])`. IGNIS's console logger has its own debug gate (off unless
+ *   `DEBUG` is set, and always off in a browser), so an `enableDebug` option is dropped and noted.
  * - `Logger` as a type becomes `ILogger`.
  * - The `enableDebug` prop of `ArdorApplication` is removed (pass `logger`): listed.
  *
@@ -185,7 +185,7 @@ export class LoggerTransform {
                   sourceFile.getLineAndCharacterOfPosition(attribute.getStart(sourceFile)).line + 1,
                 name: 'enableDebug',
                 reason:
-                  "removed: IGNIS's console logger has no debug switch; pass `logger={...}` to ArdorApplication to use another logger",
+                  'removed: debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup, or pass `logger={...}` to ArdorApplication',
               });
             }
           }
@@ -210,8 +210,8 @@ export class LoggerTransform {
     taken: Set<string>;
   }): { renamed: number; isFullyMoved: boolean } {
     const { ts, sourceFile, logger, findings, edits, additions, taken } = opts;
-    // A file can already own the name (BANA keeps its own BaseHelper in kits/core): then IGNIS's is imported under an alias.
-    const helper = LoggerTransform.freeName({ taken, name: LoggerRenames.HELPER });
+    // A file can already own the name (a project keeps its own LoggerFactory or BaseHelper): then IGNIS's is imported under an alias.
+    const factory = LoggerTransform.freeName({ taken, name: LoggerRenames.FACTORY });
     const type = LoggerTransform.freeName({ taken, name: LoggerRenames.TYPE });
     const importOf = (name: string, local: string): string =>
       local === name ? name : `${name} as ${local}`;
@@ -229,7 +229,7 @@ export class LoggerTransform {
 
     const scopeOf = (
       call: TS.CallExpression | TS.NewExpression,
-    ): { text: string; debug: boolean; isShorthand: boolean } | undefined => {
+    ): { text: string; debug: boolean } | undefined => {
       const argument = call.arguments?.[0];
 
       if (!argument || !ts.isObjectLiteralExpression(argument)) {
@@ -237,7 +237,6 @@ export class LoggerTransform {
       }
 
       let scope: string | undefined;
-      let isShorthand = false;
       let debug = false;
 
       for (const property of argument.properties) {
@@ -245,7 +244,6 @@ export class LoggerTransform {
           scope = property.initializer.getText(sourceFile);
         } else if (ts.isShorthandPropertyAssignment(property) && property.name.text === 'scope') {
           scope = 'scope';
-          isShorthand = true;
         } else if (
           (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
           property.name.getText(sourceFile) === 'enableDebug'
@@ -256,7 +254,7 @@ export class LoggerTransform {
         }
       }
 
-      return scope === undefined ? undefined : { text: scope, debug, isShorthand };
+      return scope === undefined ? undefined : { text: scope, debug };
     };
 
     const rewriteCall = (call: TS.CallExpression | TS.NewExpression, target: TS.Node): void => {
@@ -265,7 +263,7 @@ export class LoggerTransform {
       if (!parsed) {
         leave(
           target,
-          'Logger is removed; pass an object with a scope to `new BaseHelper({ scope }).logger`, or use your own ILogger',
+          'Logger is removed; pass an object with a scope to `LoggerFactory.getLogger([scope])`, or use your own ILogger',
         );
         return;
       }
@@ -273,9 +271,9 @@ export class LoggerTransform {
       edits.push({
         start: call.getStart(sourceFile),
         end: call.getEnd(),
-        text: `new ${helper}({ ${parsed.text === 'scope' && parsed.isShorthand ? 'scope' : `scope: ${parsed.text}`} }).logger`,
+        text: `${factory}.getLogger([${parsed.text}])`,
       });
-      additions.push(importOf(LoggerRenames.HELPER, helper));
+      additions.push(importOf(LoggerRenames.FACTORY, factory));
       renamed += 1;
 
       if (parsed.debug) {
@@ -283,7 +281,7 @@ export class LoggerTransform {
           line: lineOf(call),
           name: 'enableDebug',
           reason:
-            "note: dropped. IGNIS's console logger has no debug switch: debug lines go to console.debug, which the browser hides unless its Verbose level is on",
+            'note: dropped. debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup',
           kind: 'note',
         });
       }

@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
+import { BaseHelper, type ILogger, LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 
 import { DefaultAuthProvider } from '@/providers/auth';
 
@@ -26,10 +26,14 @@ const logsOf = (run: () => unknown): string => {
   );
 
   try {
+    // The failure is logged at debug level, which is off unless the application turns it on.
+    // oxlint-disable-next-line react-hooks/rules-of-hooks -- LoggerFactory.use sets a level; it is not a React hook
+    LoggerFactory.use({ level: LogLevels.DEBUG });
     run();
 
     return JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
   } finally {
+    LoggerFactory.reset();
     for (const spy of spies) {
       spy.mockRestore();
     }

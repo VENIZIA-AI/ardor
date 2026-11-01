@@ -18,7 +18,7 @@ Moves the names removed from @venizia/ardor to what replaces them:
   hasPendingFeatureMessages, loadFeatureMessages        Features.hasPendingMessages, Features.loadMessages
   NumberIdType, StringIdType, NullableType              number, string, undefined | null | void
   BaseHelper, LogLevels, ILogger, TLogLevel             the same names from @venizia/ignis-helpers/core
-  Logger.getInstance({ scope }), new Logger({ scope })  new BaseHelper({ scope }).logger (enableDebug is dropped, with a note)
+  Logger.getInstance({ scope }), new Logger({ scope })  LoggerFactory.getLogger([scope]) (enableDebug is dropped, with a note)
   Logger (a type)                                       ILogger
 
 Removed with nothing to write in their place, so only listed with their line: isEditableTarget,
