@@ -1,7 +1,7 @@
 ---
 title: Utilities and factories are members of classes
-description: The kernel utilities, the Redux hook factories and the admin boot helpers move into classes; the bare names stay as deprecated aliases until 0.5.
-packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin']
+description: The kernel utilities, the Redux hook factories and the admin boot helpers move into classes, and `Ardor` gathers every hook; the old names keep working.
+packages: ['@venizia/ardor', '@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin']
 ---
 
 # Changelog - 2026-11-01
@@ -24,6 +24,10 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 | `resolveApplicationProviders`, `hasPendingFeatureMessages`, `loadFeatureMessages` | `ApplicationProviders.resolve`, `Features.hasPendingMessages`, `Features.loadMessages` |
 
 Each old name is the same function as its new member, so nothing behaves differently. `inject`, `getError`, the stereotypes, `api`, `ArdorApplication`, `ApplicationContext`, `buildInfoFile` and `assertArdorApplicationBoots` keep their names.
+
+## The `Ardor` hook namespace
+
+`@venizia/ardor` exports `Ardor`, which holds every hook of the react and admin packages: `Ardor.useRepository()`, `Ardor.useTranslate()`, `Ardor.useDocumentTitle(...)`. It is the same function as the bare `useRepository`, the React Rules of Hooks check the call, and it adds no bytes to an app, because a bundler keeps only the hooks you call through it. The bare hooks are not deprecated: they stay exported from `@venizia/ardor`, `@venizia/ardor-react` and `@venizia/ardor-admin`.
 
 ## Who is affected
 

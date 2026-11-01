@@ -235,7 +235,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (182)
+### `@venizia/ardor` (183)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -244,6 +244,7 @@ generated:
 - `App` class
 - `ApplicationContext` const
 - `ApplicationProviders` class
+- `Ardor` namespace
 - `ArdorApplication` const
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class

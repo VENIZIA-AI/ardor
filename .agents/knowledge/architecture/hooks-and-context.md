@@ -16,6 +16,10 @@ ARDOR bridges the IGNIS dependency injection container into the React tree with 
 
 Both fields default to `null`. There is no `registry` field: the container is its own metadata registry (`container.getMetadataRegistry()`). The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
 
+## One name for the hooks
+
+`@venizia/ardor` exports `Ardor`, a module namespace over every hook of the react and admin packages, so `Ardor.useRepository()` is `useRepository()` ([the umbrella package](/packages/ardor.md) explains why it is a namespace and what it costs: nothing in an app bundle). The packages themselves keep their top-level exports.
+
 ## Core context hooks
 
 - `useApplicationContext()` - returns the `container`. Throws if the context has no container, which happens if the hook is called outside an ARDOR-mounted tree.

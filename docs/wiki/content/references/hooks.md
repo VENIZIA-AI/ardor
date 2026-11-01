@@ -16,6 +16,21 @@ export function StatusWidget() {
 }
 ```
 
+## One name for every hook: `Ardor`
+
+`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page, the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function StatusTitle() {
+  Ardor.useDocumentTitle({ title: 'Status', appTitle: 'Back Office' });
+  return <span>Ready</span>;
+}
+```
+
+It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Read a hook through `Ardor.useX` in code; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
+
 ## Which hook do I need?
 
 | I want to... | Hook | Needs in the tree | Returns |

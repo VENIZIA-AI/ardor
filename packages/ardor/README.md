@@ -13,6 +13,20 @@ control comes from `@venizia/ignis-inversion`, and the data layer speaks the que
 bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
+## The `Ardor` namespace
+
+`Ardor` gathers every React hook of the react and admin packages under one name: `Ardor.useRepository(...)`, `Ardor.useTranslate()`. It is the same function as the bare `useRepository`, the Rules of Hooks check the call, and a bundler keeps only the hooks you use, so it adds no bytes to an app.
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export const Orders = () => {
+  const repository = Ardor.useRepository({ key: 'repositories.Orders' });
+
+  return <div>{String(repository)}</div>;
+};
+```
+
 ## Quick start
 
 ```typescript
