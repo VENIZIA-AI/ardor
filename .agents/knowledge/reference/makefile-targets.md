@@ -10,12 +10,11 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**85 targets.**
+**84 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
 | `make admin` | `react` | Rebuild one package, after its dependencies. |
-| `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
 | `make atlas-releases` | - | Print the release table atlas computes from the tags. |
 | `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |

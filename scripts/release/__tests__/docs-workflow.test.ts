@@ -205,7 +205,7 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
 
     expect(uses.length).toBeGreaterThanOrEqual(3);
     expect(
-      uses.every((value) => /^[\w.-]+\/[\w.\/-]+@[0-9a-f]{40} # v\d+(\.\d+)*$/.test(value)),
+      uses.every((value) => /^[\w.-]+\/[\w.\/-]+@[0-9a-f]{40} # v\d+(\.\d+)*(-\d+)?$/.test(value)),
     ).toBe(true);
     expect(uses.find((value) => value.startsWith('VENIZIA-AI/vulcan/'))).toContain(
       `# v${vulcanVersion}`,
