@@ -1,7 +1,6 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
 import { venziaCodeTheme } from './theme/shared/code-theme.ts';
-import { VENIZIA_LOGO_SVG } from './theme/shared/venizia-logo.ts';
 
 // Every page under content/ must be reachable from a sidebar below - scripts/check-sidebar.mts fails
 // the build on an orphan page or a dead link.
@@ -222,10 +221,8 @@ const config = defineConfig({
       '/extensions/': extensionsSidebar,
       '/best-practices/': bestPracticesSidebar,
     },
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/VENIZIA-AI/ardor' },
-      { icon: { svg: VENIZIA_LOGO_SVG }, link: 'https://venizia.ai', ariaLabel: 'Venizia' },
-    ],
+    // The Venizia wordmark and the venizia.ai link are in the top bar (theme/shared/SiteBrand.vue, VeniziaLink.vue).
+    socialLinks: [{ icon: 'github', link: 'https://github.com/VENIZIA-AI/ardor' }],
     outline: { level: [2, 3] },
   },
 });
