@@ -5,6 +5,7 @@ import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
+import type { TI18nSource } from '@/common';
 import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
@@ -22,6 +23,7 @@ const createContainer = (opts: {
   load: () => Promise<object>;
   withAuthProvider?: boolean;
   list?: () => React.ReactElement;
+  i18nSources?: Record<string, TI18nSource>;
 }) => {
   const reports = Features.define({
     name: 'reports',
@@ -43,7 +45,9 @@ const createContainer = (opts: {
   }
   container
     .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-    .toValue(new DefaultI18nProvider({}, [reports]).value(container));
+    .toValue(
+      new DefaultI18nProvider({ i18nSources: opts.i18nSources }, [reports]).value(container),
+    );
 
   return container;
 };
@@ -88,6 +92,53 @@ describe('ArdorApplication with features', () => {
 
     const result = await screen.findByText('Monthly reports');
     expect(result).toBeDefined();
+  });
+
+  test("mounts once the application's lazy messages of the initial locale are loaded", async () => {
+    const loadSource = mock(() => Promise.resolve({ ra: { action: { add: 'Add it' } } }));
+
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={createContainer({
+            load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+            i18nSources: { en: loadSource },
+          })}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('loading')).toBeDefined();
+    await screen.findByText('Monthly reports');
+    expect(loadSource).toHaveBeenCalledTimes(1);
+  });
+
+  test("mounts in English when the application's lazy messages fail to load", async () => {
+    const error = spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      render(
+        <MemoryRouter>
+          <ArdorApplication
+            container={createContainer({
+              load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+              i18nSources: { en: () => Promise.reject(new Error('remote file is down')) },
+            })}
+            reduxStore={configureStore({ reducer: () => ({}) })}
+            suspense={<span>loading</span>}
+          />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText('Monthly reports');
+      expect(error.mock.calls.some((call) => String(call[0]).includes('failed to load'))).toBe(
+        true,
+      );
+    } finally {
+      error.mockRestore();
+    }
   });
 
   test('resolves the providers once per container, however often it renders', async () => {

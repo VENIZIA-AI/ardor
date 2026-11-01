@@ -4,6 +4,7 @@ import type { RouteProps } from 'react-router-dom';
 
 import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
 
+import { LazyLocales } from '@/providers/i18n-sources';
 import { FeatureMessages } from './messages';
 
 /** Per locale: the messages, or a loader for them. */
@@ -76,13 +77,18 @@ export class Features {
     };
   }
 
-  /** Whether a feature loads the provider's current locale lazily, so a first render must wait for it. */
+  /** Whether a feature or the application's own source loads the provider's current locale lazily, so a first render must wait for it. */
   static hasPendingMessages(opts: {
     features: Array<TFeature>;
     i18nProvider: I18nProvider;
   }): boolean {
     const { features, i18nProvider } = opts;
-    return FeatureMessages.hasLoader({ features, locale: i18nProvider.getLocale() });
+    const locale = i18nProvider.getLocale();
+
+    return (
+      FeatureMessages.hasLoader({ features, locale }) ||
+      LazyLocales.isPending({ provider: i18nProvider, locale })
+    );
   }
 
   /**
@@ -97,7 +103,10 @@ export class Features {
     const { features, i18nProvider } = opts;
     const locale = opts.locale ?? i18nProvider.getLocale();
 
-    if (!FeatureMessages.hasLoader({ features, locale })) {
+    if (
+      !FeatureMessages.hasLoader({ features, locale }) &&
+      !LazyLocales.isPending({ provider: i18nProvider, locale })
+    ) {
       return;
     }
 

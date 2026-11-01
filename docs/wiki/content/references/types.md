@@ -150,6 +150,7 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `IReactAdminAuthProvider` | `interface` | Standard react-admin auth provider contract (`login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess`). |
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. |
 | `II18nProviderOptions` | `interface` | i18n configuration options (`i18nSources`, `languages`), bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. |
+| `TI18nSource` | `type` | The messages of one locale: an object, or a loader `() => Promise<object>` called the first time the locale is used. |
 | `IApplication` | `interface` | Props accepted by `<ArdorApplication>` (`container`, `reduxStore`, `suspense`, `resources`, `routes`). |
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. |
