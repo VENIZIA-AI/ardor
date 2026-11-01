@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (103)
+### `@venizia/ardor-kernel` (107)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -31,6 +31,7 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserUtility` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -38,6 +39,7 @@ generated:
 - `DefaultAuthService` class
 - `DefaultNetworkRequestService` class
 - `Environments` class
+- `FileUtility` class
 - `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplicationInfo` interface
@@ -94,6 +96,7 @@ generated:
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
+- `RuntimeConfig` class
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -117,6 +120,7 @@ generated:
 - `ValueOptional` type
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
+- `ValueUtility` class
 
 ### `@venizia/ardor-kernel/repository` (23)
 
@@ -146,11 +150,12 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (35)
+### `@venizia/ardor-react` (37)
 
 - `ApplicationContext` const
 - `createAppDispatch` const
 - `createAppSelectors` const
+- `DispatchHooks` class
 - `IApplicationContextValue` interface
 - `ISyncFC` interface
 - `IUseArtifactByKey` interface
@@ -164,6 +169,7 @@ generated:
 - `IUseInjectableKeysOverrides` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
+- `SelectorHooks` class
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
@@ -186,8 +192,9 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (37)
+### `@venizia/ardor-admin` (38)
 
+- `ApplicationProviders` class
 - `ArdorApplication` const
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
@@ -228,7 +235,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (175)
+### `@venizia/ardor` (182)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -236,6 +243,7 @@ generated:
 - `api` const
 - `App` class
 - `ApplicationContext` const
+- `ApplicationProviders` class
 - `ArdorApplication` const
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
@@ -249,6 +257,7 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserUtility` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -261,9 +270,11 @@ generated:
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
+- `DispatchHooks` class
 - `englishMessages` const
 - `Environments` class
 - `Features` class
+- `FileUtility` class
 - `getRuntimeConfig` const
 - `hasPendingFeatureMessages` const
 - `HeaderConstants` class
@@ -349,6 +360,8 @@ generated:
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
+- `RuntimeConfig` class
+- `SelectorHooks` class
 - `service` const
 - `StringIdType` type
 - `TBindingNamespace` type
@@ -404,6 +417,7 @@ generated:
 - `ValueOptional` type
 - `ValueOptionalExcept` type
 - `ValueOrPromise` type
+- `ValueUtility` class
 - `vietnameseMessages` const
 
 ### `@venizia/ardor/repository` (23)

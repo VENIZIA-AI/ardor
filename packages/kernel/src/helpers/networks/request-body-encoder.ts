@@ -1,7 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 
 import { RequestBodyTypes } from '@/common';
-import { isDefined } from '@/utilities';
+import { ValueUtility } from '@/utilities';
 
 /** A request body as it is sent, with the content type to send it under (none: let `fetch` choose). */
 export interface IEncodedBody {
@@ -18,7 +18,7 @@ export class RequestBodyEncoder {
         const encoded = new URLSearchParams();
 
         for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
-          if (!isDefined(value)) {
+          if (!ValueUtility.isDefined(value)) {
             continue;
           }
 
@@ -84,7 +84,7 @@ export class RequestBodyEncoder {
   private static appendFormValue(opts: { formData: FormData; key: string; value: unknown }): void {
     const { formData, key, value } = opts;
 
-    if (!isDefined(value)) {
+    if (!ValueUtility.isDefined(value)) {
       return;
     }
 

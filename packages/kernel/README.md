@@ -22,7 +22,7 @@ which re-exports this package.
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
 | Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
 | Helpers | `Logger`, `BaseHelper` |
-| Utilities | `isDefined`, `isString`, `isNumber`, `isObject`, `isBrowser`, `isValidDate`, `isEditableTarget`, `toDataUrl` |
+| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get`; the bare names stay as deprecated aliases until 0.5 |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License

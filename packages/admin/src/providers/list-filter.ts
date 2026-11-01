@@ -2,7 +2,7 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import omit from 'lodash/omit.js';
 import type { GetListParams } from 'ra-core';
 
-import { type ICustomParams, isDefined } from '@venizia/ardor-kernel';
+import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
 
 /** The IGNIS filter a list request sends. Any other key of the list params is a filter key too. */
 export interface IListFilter {
@@ -73,7 +73,7 @@ export class ListFilterBuilder {
 
     for (const key in rest) {
       // Skip only undefined and null: `false` and `0` are filters.
-      if (!isDefined(rest[key])) {
+      if (!ValueUtility.isDefined(rest[key])) {
         continue;
       }
 

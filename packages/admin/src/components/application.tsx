@@ -10,11 +10,7 @@ import { Logger } from '@venizia/ardor-kernel';
 import { type TFeature, Features } from '@/features/feature';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
-import {
-  hasPendingFeatureMessages,
-  loadFeatureMessages,
-  resolveApplicationProviders,
-} from './resolve';
+import { ApplicationProviders } from './resolve';
 
 const Wrapper: React.FC<{
   applicationName?: string;
@@ -58,7 +54,7 @@ const useFeatureMessagesReady = (opts: {
 
   const [state, setState] = React.useState<{ isReady: boolean; error?: unknown }>(() => {
     return {
-      isReady: !hasPendingFeatureMessages({ features, i18nProvider }),
+      isReady: !Features.hasPendingMessages({ features, i18nProvider }),
     };
   });
 
@@ -69,7 +65,7 @@ const useFeatureMessagesReady = (opts: {
 
     let isLive = true;
 
-    loadFeatureMessages({ features, i18nProvider }).then(
+    Features.loadMessages({ features, i18nProvider }).then(
       () => {
         if (isLive) {
           setState({ isReady: true });
@@ -118,7 +114,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   // Resolved once per container: the props below are a new object on every render.
   const providers = React.useMemo(() => {
-    return resolveApplicationProviders({ container });
+    return ApplicationProviders.resolve({ container });
   }, [container]);
 
   const adminProps = { ...providers, ...reactAdminProps };

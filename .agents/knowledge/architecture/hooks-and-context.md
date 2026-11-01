@@ -65,7 +65,7 @@ A second group of hooks needs nothing from React context at all - they only use 
 
 ## Redux factories
 
-`createAppDispatch` and `createAppSelectors` are factory functions, not hooks themselves - they return typed hooks (`useAppDispatch`, `useMultipleAppDispatch`, `useAppSelector`, `useShallowEqualSelector`, `useDeepEqualSelector`). The hooks they produce need a react-redux `Provider` in the tree to work. Calling the factories is how an application gets typed Redux hooks bound to its own store shape, following the same options-object and typed-augmentation conventions as the rest of ARDOR - see [Options objects](/conventions/options-objects.md).
+`DispatchHooks.create` and `SelectorHooks.create` (formerly `createAppDispatch` and `createAppSelectors`, deprecated aliases until 0.5) are factory functions, not hooks themselves - they return typed hooks (`useAppDispatch`, `useMultipleAppDispatch`, `useAppSelector`, `useShallowEqualSelector`, `useDeepEqualSelector`). The hooks they produce need a react-redux `Provider` in the tree to work. Calling the factories is how an application gets typed Redux hooks bound to its own store shape, following the same options-object and typed-augmentation conventions as the rest of ARDOR - see [Options objects](/conventions/options-objects.md).
 
 ## Test environment
 

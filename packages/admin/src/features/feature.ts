@@ -1,8 +1,10 @@
 import { getError, type Container } from '@venizia/ignis-inversion';
-import type { ResourceProps } from 'ra-core';
+import type { I18nProvider, ResourceProps } from 'ra-core';
 import type { RouteProps } from 'react-router-dom';
 
 import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
+
+import { FeatureMessages } from './messages';
 
 /** Per locale: the messages, or a loader for them. */
 export type TFeatureMessages = Record<string, object | (() => Promise<object>)>;
@@ -72,5 +74,33 @@ export class Features {
       resources: [...resources, ...features.flatMap((feature) => feature.resources ?? [])],
       routes: [...routes, ...features.flatMap((feature) => feature.routes ?? [])],
     };
+  }
+
+  /** Whether a feature loads the provider's current locale lazily, so a first render must wait for it. */
+  static hasPendingMessages(opts: {
+    features: Array<TFeature>;
+    i18nProvider: I18nProvider;
+  }): boolean {
+    const { features, i18nProvider } = opts;
+    return FeatureMessages.hasLoader({ features, locale: i18nProvider.getLocale() });
+  }
+
+  /**
+   * Loads the lazy messages of the locale: `changeLocale()` to the same locale loads them before
+   * react-admin renders. A failed load, such as a key two features define, rejects.
+   */
+  static async loadMessages(opts: {
+    features: Array<TFeature>;
+    i18nProvider: I18nProvider;
+    locale?: string;
+  }): Promise<void> {
+    const { features, i18nProvider } = opts;
+    const locale = opts.locale ?? i18nProvider.getLocale();
+
+    if (!FeatureMessages.hasLoader({ features, locale })) {
+      return;
+    }
+
+    await i18nProvider.changeLocale(locale);
   }
 }
