@@ -94,6 +94,19 @@ jobs:
         with:
           bun-version: latest
 
+      # The release run's Test job moves the IGNIS catalog to the highest published line before it
+      # installs (package-release.yml, "Force update workspace"); these are the same two commands. Without
+      # them a pull request runs against the catalog as committed, and the preset smoke fails while the
+      # IGNIS monorepo of `latest` is older than the preset needs (0.4.6 against ^0.4.7-2), so this
+      # check and the release gate would not see the same tree. When the IGNIS stable is `latest` and the
+      # committed catalog pins it, delete this step: the plain checkout is then what the smoke needs.
+      - name: Force update workspace
+        env:
+          CATALOG_TAG: highest
+        run: |
+          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
+          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
+
       - name: Install
         id: install
         run: bun install
