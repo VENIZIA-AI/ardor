@@ -27,8 +27,8 @@ tags: [process, git, contributing]
    lint-all` (the four packages, `docs/wiki`, `scripts/`, the manifests and the files outside the projects)
    under `set -e` - any lint failure aborts the commit before it is created. That is the hook's only check - no test step and
    no other gate. The tests and the remaining gates (purity, size-check and the rest) run only in
-   the manually dispatched CI workflow (see [Testing](/process/testing.md)) or when you run them
-   yourself; nothing runs them automatically. The release workflow runs none of them either - it
+   the CI workflow, which runs on a pull request and on demand (see [Testing](/process/testing.md)),
+   or when you run them yourself; no commit runs them, and a push runs them only through an open pull request. The release workflow runs none of them either - it
    rebuilds through the Makefile dependency chain, lints only the released package and checks its
    `dist` artifacts (see [release and publish](/process/release-publish.md)). The gate list lives in
    the Repository gates section of [Build, run, test](/overview/build-run-test.md).

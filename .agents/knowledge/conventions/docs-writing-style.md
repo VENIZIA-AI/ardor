@@ -22,8 +22,7 @@ Rules for anything written in the wiki or in this knowledge bundle:
 This is not just a style preference - `make okf-check` fails on an em-dash, en-dash or the
 title-cased `Ardor` in bundle prose (other wrong casings and a misused `IGNIS` are not caught; code
 spans and fences are stripped first, so the forbidden forms can be quoted in backticks), along with
-frontmatter, link, structural coverage and freshness problems. It runs in the manually dispatched
-CI workflow, not in the pre-commit hook, so run it yourself before landing a bundle change. See [testing](/process/testing.md) for how CI runs and
+frontmatter, link, structural coverage and freshness problems. It runs in the CI workflow (on a pull request and on demand), not in the pre-commit hook, so run it yourself before landing a bundle change. See [testing](/process/testing.md) for how CI runs and
 [build system](/process/build-system.md) for the wider build.
 
 The wiki also runs a snippet gate that compiles every ```ts fence in the docs against the real
