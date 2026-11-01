@@ -35,7 +35,7 @@ generated:
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
 | `make gates` | - | The Test job of the release workflow, locally: links, copies, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
-| `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), in a scratch copy. About two minutes; run before every dispatch. |
+| `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), then clean-install, in a scratch copy. About four minutes; run before every dispatch. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |

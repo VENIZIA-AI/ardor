@@ -157,7 +157,7 @@ bun run --filter "@venizia/*" force-update highest
   older install left in a member's `node_modules`, which `bun install` does not prune. It is marked
   `stale install` and the advice is a clean install, not a declaration; a version the lock holds keeps
   the catalog advice (issue #445).
-- `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree; run it before every dispatch (see [Testing](testing.md)).
+- `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree, then `make clean-install` (the four packages packed together and installed from the live registry, which the Test job does not run: a peer range that mixes a prerelease with a stable one gives two copies of an IGNIS package there, as in issue #488); run it before every dispatch (see [Testing](testing.md)).
 
 ## Gates, bump, publish, record
 
