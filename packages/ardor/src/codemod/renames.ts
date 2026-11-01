@@ -121,3 +121,17 @@ export class RemovedNames {
     return members && Object.hasOwn(members, opts.member) ? members[opts.member] : undefined;
   }
 }
+
+/** The kernel logger stack that IGNIS's browser-safe `core` entry replaces. */
+export class LoggerRenames {
+  static readonly CORE_MODULE = '@venizia/ignis-helpers/core';
+
+  /** Same name, same shape, other package: only the import moves. */
+  static readonly MOVED = new Set(['BaseHelper', 'LogLevels', 'ILogger', 'TLogLevel']);
+
+  /** The class the kernel's `Logger` is replaced by in `Logger.getInstance(...)` and `new Logger(...)`. */
+  static readonly HELPER = 'BaseHelper';
+
+  /** The type a `Logger` annotation becomes. */
+  static readonly TYPE = 'ILogger';
+}

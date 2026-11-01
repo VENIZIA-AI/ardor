@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (94)
+### `@venizia/ardor-kernel` (89)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -26,7 +26,6 @@ generated:
 - `AuthRecovery` class
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
-- `BaseHelper` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
@@ -59,7 +58,6 @@ generated:
 - `IFeatureBase` interface
 - `IGetRequestPropsParams` interface
 - `IGetRequestPropsResult` interface
-- `ILogger` interface
 - `INetworkResponse` interface
 - `inject` const
 - `injectable` const
@@ -70,8 +68,6 @@ generated:
 - `ISendResponse` type
 - `ISignInSession` interface
 - `LocalStorageKeys` class
-- `Logger` class
-- `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
 - `provide` const
@@ -93,7 +89,6 @@ generated:
 - `TConstValue` type
 - `TEnvironment` type
 - `TFullPaths` type
-- `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
 - `TPaths` type
@@ -216,7 +211,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (164)
+### `@venizia/ardor` (159)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -234,7 +229,6 @@ generated:
 - `AuthRecovery` class
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
-- `BaseHelper` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
@@ -280,7 +274,6 @@ generated:
 - `IGetRequestPropsResult` interface
 - `II18nProviderOptions` interface
 - `IListFilter` interface
-- `ILogger` interface
 - `ILoginParams` interface
 - `INetworkResponse` interface
 - `inject` const
@@ -310,8 +303,6 @@ generated:
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
-- `Logger` class
-- `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
 - `provide` const
@@ -336,7 +327,6 @@ generated:
 - `TFeature` type
 - `TFeatureMessages` type
 - `TFullPaths` type
-- `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
 - `TPaths` type

@@ -47,7 +47,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
    - `CoreBindings.DEFAULT_I18N_PROVIDER`: Required `I18nProvider`.
 4. **Verifies internationalization readiness**: Calls `useFeatureMessagesReady`. If a feature supplies lazy translation loaders for the active locale, triggers `i18nProvider.changeLocale()` and renders the `suspense` fallback until ready.
 5. **Wraps the component hierarchy**:
-   - `ApplicationContext.Provider` with `{ container, logger }` (`Logger.getInstance({ scope: applicationName, enableDebug })`).
+   - `ApplicationContext.Provider` with `{ container, logger }` (the `logger` prop, else a console logger named after the application).
    - `ReduxProvider` with `reduxStore`.
    - `React.Suspense` with `suspense`.
 6. **Renders CoreAdmin**: Passes providers and forwarded props, mounting resources as `<Resource key={resource.name} {...resource} />` and routes inside `<CustomRoutes>` as `<Route key={route.id ?? route.path} {...route} />`.
@@ -61,7 +61,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 | `container` | `Container` | Yes | The started IoC container instance (an instance of `BaseArdorApplication`). |
 | `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
 | `suspense` | `ReactNode` | Yes | Fallback React node displayed while components or feature translations load. |
-| `enableDebug` | `boolean` | No | Enables debug-level logging in the application logger. Default is `false`. |
+| `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<RouteProps>` | No | Custom routes registered inside `CustomRoutes` before feature routes. |
 | `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`) passed directly to `CoreAdmin`. |

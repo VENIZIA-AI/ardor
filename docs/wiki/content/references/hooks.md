@@ -43,7 +43,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Resolve a provider from the `providers` namespace | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
 | Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
 | Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
-| Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `Logger` |
+| Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `ILogger` |
 | Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
 | Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 | Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
@@ -223,7 +223,7 @@ export function LoggerButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: `Logger`.
+- **Return value**: `ILogger` from `@venizia/ignis-helpers/core`.
 - **Gotcha**: Throws an error (`[useApplicationLogger] must be used within a ApplicationContextProvider`) if called when no logger is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
 ## Redux
@@ -438,7 +438,7 @@ export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
 
 - **Parameters**: `opts: IUseAutosaveOptions<TData, TReturn>` - `data`, `onSave`, optional `interval` (default `2000`), optional `enableSaveOnUnmount`, optional `enabled` (default `true`).
 - **Return value**: `void`.
-- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged through the application logger (`Logger`, scope `useAutosave`) and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
+- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged through a logger scoped `useAutosave` and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
 
 ### useConfirm
 
@@ -482,7 +482,7 @@ export function CopyShareLink(props: { url: string }) {
 
 - **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
 - **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and logs a warning through the application logger (`Logger`, scope `useCopyToClipboard`) if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 

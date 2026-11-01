@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Logger } from '@venizia/ardor-kernel';
+import { BaseHelper } from '@venizia/ignis-helpers/core';
 
 import { useDebounce } from './use-debounce';
 
@@ -14,7 +14,7 @@ export interface IUseAutosaveOptions<TData, TReturn> {
   enabled?: boolean;
 }
 
-const logger = Logger.getInstance({ scope: 'useAutosave' });
+const logger = new BaseHelper({ scope: 'useAutosave' }).logger;
 
 export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => {
   const { data, onSave, interval = 2000, enableSaveOnUnmount, enabled = true } = opts;

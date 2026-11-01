@@ -10,7 +10,7 @@ A provider in ARDOR is a small class that produces a value the rest of the app d
 
 ## 1. Subclass BaseProvider<T>
 
-`BaseProvider<T>` lives in the kernel (`packages/kernel/src/base/providers/base.ts`) and extends `BaseHelper`, implementing IGNIS's `IProvider<T>` interface. It declares one abstract method:
+`BaseProvider<T>` lives in the kernel (`packages/kernel/src/base/providers/base.ts`) and extends IGNIS's `BaseHelper` (`@venizia/ignis-helpers/core`: `{ scope }` in, `this.logger` out), implementing IGNIS's `IProvider<T>` interface. It declares one abstract method:
 
 ```ts
 export abstract class BaseProvider<T> extends BaseHelper implements IProvider<T> {

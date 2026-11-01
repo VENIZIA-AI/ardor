@@ -28,9 +28,9 @@ ARDOR tracks the IGNIS packages it depends on (the DI container, filtering vocab
 
 The IGNIS container binds transient by default: a bare `bind().toClass()` or `bind().toProvider()` resolves afresh on every `get()`. ARDOR's own registration paths - the stereotype discovery in `registerArtifacts()`, each `@provide({ key })` method of a `@configuration()` class, `service()`/`repository()`/`dataSource()`/`component()`, `bindingList()` and `injectable()` - default to `BindingScopes.SINGLETON`, so a class registered through them is one instance per running application unless a stereotype, a `@provide` decorator or a by-hand call declares another `scope`. This mirrors how application-level services actually behave and means the common case needs no annotation; a binding added with `bind()` in `bindContext()` is a singleton only if it sets the scope itself. See [DI in the browser](/architecture/di-in-the-browser.md) for how binding works.
 
-## Logger per scope
+## Logger per scope, from IGNIS
 
-Logging is obtained per scope rather than through one global logger instance. `Logger.getInstance({ scope })` returns one instance per scope name, so log output is traceable to its source without manual prefixing. The debug switch, however, is process-wide rather than per scope, so scopes cannot be silenced independently - see [Debugging](/process/debugging.md).
+ARDOR has no logger of its own. A class takes a `scope` and reads `this.logger`, an IGNIS `ILogger` (`BaseHelper` of `@venizia/ignis-helpers/core`), so log output is traceable to its source without manual prefixing and an application picks the backend once, with `LoggerFactory.use`; the React tree gets one from `ArdorApplication` (the `logger` prop). The kernel's own `Logger` was removed because the IGNIS one already is the contract, and it is the one a browser bundle can reach - see [Debugging](/process/debugging.md).
 
 ## Stereotypes come from IGNIS
 

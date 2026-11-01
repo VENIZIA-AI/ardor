@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
-import { Logger } from '@venizia/ardor-kernel';
 import { act, renderHook } from '@testing-library/react';
 import { useAutosave } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -111,9 +110,7 @@ describe('hooks log through the application logger', () => {
     jest.useRealTimers();
   });
 
-  test('useAutosave reports a failed save to the logger, not to console', async () => {
-    const logger = Logger.getInstance({ scope: 'useAutosave' });
-    const loggerSpy = spyOn(logger, 'error').mockImplementation(() => {});
+  test('useAutosave reports a failed save through its scoped logger', async () => {
     const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 
     try {
@@ -127,18 +124,15 @@ describe('hooks log through the application logger', () => {
         jest.advanceTimersByTime(5);
       });
 
-      expect(loggerSpy).toHaveBeenCalled();
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(String(consoleSpy.mock.calls[0]?.[0])).toContain('[useAutosave]');
       unmount();
     } finally {
-      loggerSpy.mockRestore();
       consoleSpy.mockRestore();
     }
   });
 
-  test('useCopyToClipboard reports a failure to the logger, not to console', async () => {
-    const logger = Logger.getInstance({ scope: 'useCopyToClipboard' });
-    const loggerSpy = spyOn(logger, 'warn').mockImplementation(() => {});
+  test('useCopyToClipboard reports a failure through its scoped logger', async () => {
     const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const original = navigator.clipboard;
 
@@ -157,15 +151,14 @@ describe('hooks log through the application logger', () => {
       });
 
       expect(copied).toBe(false);
-      expect(loggerSpy).toHaveBeenCalled();
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(String(consoleSpy.mock.calls[0]?.[0])).toContain('[useCopyToClipboard]');
     } finally {
       Object.defineProperty(navigator, 'clipboard', {
         value: original,
         configurable: true,
         writable: true,
       });
-      loggerSpy.mockRestore();
       consoleSpy.mockRestore();
     }
   });

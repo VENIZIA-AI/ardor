@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import * as umbrella from '@/index';
 import { Ardor } from '@/index';
-import { FunctionRenames, HookRenames } from '@/codemod/renames';
+import { FunctionRenames, HookRenames, LoggerRenames } from '@/codemod/renames';
 
 const exported: Record<string, unknown> = umbrella;
 
@@ -31,5 +31,15 @@ describe('the codemod tables match the packages', () => {
     expect(headers.REQUEST_DEVICE_INFO).toBeUndefined();
     expect(headers.RESPONSE_FORMAT).toBeUndefined();
     expect(exported.isEditableTarget).toBeUndefined();
+  });
+});
+
+describe('the logger names the codemod moves are gone', () => {
+  test('Logger and the names that moved to ignis core are no longer exported', () => {
+    expect(exported.Logger).toBeUndefined();
+
+    for (const name of LoggerRenames.MOVED) {
+      expect(exported[name], `${name} is still exported`).toBeUndefined();
+    }
   });
 });

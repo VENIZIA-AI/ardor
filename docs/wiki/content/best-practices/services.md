@@ -18,17 +18,17 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
 | `HttpRepository` | class | Reads and writes one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
 | `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
-| `Logger` | class | One instance per scope. `getInstance({ scope })`. **Deprecated, removed in 0.5:** use `ConsoleLogger` from `@venizia/ignis-helpers/core`, as `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` of the kernel are. |
 | `ISendParams` / `ISendResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
 | `useService` / `useRepository` | const | How a component resolves a service or a repository from the container. |
 
 ## BaseService: scope + logger
 
-`BaseService` does one thing. It takes a `scope` and creates a `Logger` for it. Every line the service writes is prefixed with a timestamp, the level, and that scope.
+`BaseService` is IGNIS's `BaseHelper` (from `@venizia/ignis-helpers/core`). It takes a `scope` and gives the service a `logger`, an IGNIS `ILogger`, that names the scope on every line it writes.
 
 ```ts no-check
 class BaseService {
-  protected logger: Logger;
+  scope: string;
+  logger: ILogger; // IGNIS's, resolved on first use
   constructor(opts: { scope: string });
 }
 ```
@@ -50,7 +50,7 @@ export class ClockService extends BaseService {
 }
 ```
 
-`Logger.getInstance` returns the same instance for the same scope. Two services with the same scope share one logger. Keep scopes unique.
+Without a logger provider the lines go to the console as `[scope] message`. To send them elsewhere, register a provider once at startup with `LoggerFactory.use` from `@venizia/ignis-helpers`; every `this.logger` follows it. A test can install its own logger on one instance: `service.logger = ...`.
 
 ## A resource: HttpRepository
 
@@ -142,7 +142,7 @@ export class PricingService extends BaseService {
 
 ## Throw with `getError`
 
-The kernel throws its own errors with `getError` from `@venizia/ignis-inversion`, using an options object. The `Logger` itself does this when it has no logger to write to:
+The kernel throws its own errors with `getError` from `@venizia/ignis-inversion`, using an options object:
 
 ```ts no-check
 import { getError } from '@venizia/ignis-inversion';
@@ -185,9 +185,8 @@ The component never sees how the class was built. Swap the implementation in the
 
 - **Expecting `@api()` to swallow errors.** It logs and rethrows. The caller still gets the error.
 - **Decorating a sync method.** `@api()` replaces the method with an `async` function. The result is always a promise.
-- **Reusing a scope.** `Logger.getInstance` returns the same logger for the same scope. Two classes with one scope are indistinguishable in the log.
+- **Reusing a scope.** Two classes with one scope are indistinguishable in the log.
 - **Hiding debug lines by accident.** Each level is written through the console method of the same name (`console.debug`, `info`, `warn`, `error`). Browsers hide `console.debug` under the default filter, so enable the Verbose level to see debug output.
-- **Passing `enableDebug` from one service.** It is a process-wide switch. Passing it from any scope flips debug logging for every scope.
 - **Storing request state on the class.** The service is a singleton. State on the instance is shared by every caller.
 
 ## Related

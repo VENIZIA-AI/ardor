@@ -3,7 +3,6 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'b
 import { rejectionOf } from '@venizia/dev-configs/testing';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestBodyTypes, RequestTypes } from '@/common';
-import { Logger } from '@/helpers';
 
 interface IRecorded {
   method: string;
@@ -68,8 +67,6 @@ const decode = (bytes: Uint8Array): string => new TextDecoder().decode(bytes);
 describe('request log', () => {
   test('no Authorization value and no body reaches any console method, at any level', async () => {
     const service = createService();
-    // The service logs through its own scope; the switch is process-wide.
-    Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: true });
 
     const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
       spyOn(console, method).mockImplementation(() => undefined),
@@ -92,7 +89,6 @@ describe('request log', () => {
       for (const spy of spies) {
         spy.mockRestore();
       }
-      Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: false });
     }
 
     // Redaction is for the log only: the server still received the real header and body.

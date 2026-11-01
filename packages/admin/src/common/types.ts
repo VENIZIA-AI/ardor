@@ -1,4 +1,5 @@
 import type { Store } from '@reduxjs/toolkit';
+import type { ILogger } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { AuthProvider, CoreAdminProps, DataProvider, Locale, ResourceProps } from 'ra-core';
@@ -82,7 +83,11 @@ export interface II18nProviderOptions {
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   container: Container;
 
-  enableDebug?: boolean;
+  /**
+   * The logger `useApplicationLogger()` returns. Absent, a console logger named after the application
+   * (IGNIS's, so a provider registered with `LoggerFactory.use` is the one behind it).
+   */
+  logger?: ILogger;
   reduxStore: Store;
   suspense: ReactNode;
 

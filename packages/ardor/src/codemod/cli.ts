@@ -2,7 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
 import { CodemodFiles } from './files';
-import { type IFinding, NamespaceTransform, type TTypeScript } from './transform';
+import { Migration } from './migrate';
+import type { IFinding, TTypeScript } from './transform';
 
 const USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--write | --check]
 
@@ -16,9 +17,13 @@ Moves the names removed from @venizia/ardor to what replaces them:
   resolveApplicationProviders                           ApplicationProviders.resolve
   hasPendingFeatureMessages, loadFeatureMessages        Features.hasPendingMessages, Features.loadMessages
   NumberIdType, StringIdType, NullableType              number, string, undefined | null | void
+  BaseHelper, LogLevels, ILogger, TLogLevel             the same names from @venizia/ignis-helpers/core
+  Logger.getInstance({ scope }), new Logger({ scope })  new BaseHelper({ scope }).logger (enableDebug is dropped, with a note)
+  Logger (a type)                                       ILogger
 
 Removed with nothing to write in their place, so only listed with their line: isEditableTarget,
-TDataCount, ISyncFC, App.DEFAULT_LOCALE, HeaderConstants.REQUEST_DEVICE_INFO, HeaderConstants.RESPONSE_FORMAT.
+TDataCount, ISyncFC, App.DEFAULT_LOCALE, HeaderConstants.REQUEST_DEVICE_INFO, HeaderConstants.RESPONSE_FORMAT,
+the enableDebug prop of ArdorApplication (pass logger instead), and a Logger use with no one-line form.
 
 It rewrites a name imported from @venizia/ardor, @venizia/ardor-kernel, @venizia/ardor-react or
 @venizia/ardor-admin, its uses, and the import. It reads syntax only: a name the file also declares
@@ -140,12 +145,15 @@ export class NamespaceCommand {
     const changes: Array<{ path: string; renamed: number }> = [];
     const refused: string[] = [];
     const left: Array<{ path: string; finding: IFinding }> = [];
+    const notes: Array<{ path: string; finding: IFinding }> = [];
 
     for (const path of files) {
       const text = readFileSync(path, 'utf8');
-      const result = NamespaceTransform.run({ ts, fileName: path, text, hooks });
+      const result = Migration.run({ ts, fileName: path, text, hooks });
 
-      left.push(...result.findings.map((finding) => ({ path, finding })));
+      for (const finding of result.findings) {
+        (finding.kind === 'note' ? notes : left).push({ path, finding });
+      }
 
       if (result.text === text) {
         continue;
@@ -163,7 +171,7 @@ export class NamespaceCommand {
       }
     }
 
-    return NamespaceCommand.report({ root, isWrite, isCheck, changes, refused, left });
+    return NamespaceCommand.report({ root, isWrite, isCheck, changes, refused, left, notes });
   }
 
   private static report(opts: {
@@ -173,8 +181,9 @@ export class NamespaceCommand {
     changes: Array<{ path: string; renamed: number }>;
     refused: string[];
     left: Array<{ path: string; finding: IFinding }>;
+    notes: Array<{ path: string; finding: IFinding }>;
   }): number {
-    const { root, isWrite, isCheck, changes, refused, left } = opts;
+    const { root, isWrite, isCheck, changes, refused, left, notes } = opts;
     const verb = isWrite ? 'changed' : 'would change';
     const show = (path: string): string => relative(root, path) || path;
 
@@ -186,6 +195,11 @@ export class NamespaceCommand {
 
     for (const path of refused) {
       console.error(`refused ${show(path)}: it has local changes; commit or stash it first`);
+    }
+
+    // A note is a change made on purpose that is worth knowing; it is not work left, so --check ignores it.
+    for (const { path, finding } of notes) {
+      console.log(`note ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
     }
 
     for (const { path, finding } of left) {

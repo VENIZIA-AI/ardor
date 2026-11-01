@@ -22,19 +22,19 @@ generated:
 | `features/` | 3 |
 | `components/` | 2 |
 
-## ardor  (17 source files)
+## ardor  (19 source files)
 
 | Subsystem | Files |
 |---|---|
 | `vite/` | 8 |
-| `codemod/` | 5 |
+| `codemod/` | 7 |
 
-## kernel  (32 source files)
+## kernel  (30 source files)
 
 | Subsystem | Files |
 |---|---|
 | `base/` | 13 |
-| `helpers/` | 9 |
+| `helpers/` | 7 |
 | `utilities/` | 5 |
 | `common/` | 4 |
 

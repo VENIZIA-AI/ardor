@@ -21,7 +21,6 @@ which re-exports this package.
 | Bindings | `CoreBindings`, `LocalStorageKeys` |
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
 | Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
-| Helpers | `Logger`, `BaseHelper` |
 | Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
