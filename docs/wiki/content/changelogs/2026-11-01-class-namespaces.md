@@ -133,7 +133,7 @@ export { present, url };
 
 How to update your project:
 
-1. Commit or stash your changes. The `--write` flag will not edit a file that has uncommitted changes, so git can undo any edit.
+1. Commit or stash your changes. The `--write` flag will not edit a file with uncommitted changes, so git can undo the edit. Pass `--allow-dirty` along with `--write` to edit dirty files anyway.
 2. Preview changes without writing files:
 
    ```bash
@@ -146,6 +146,8 @@ How to update your project:
    bun run ardor codemod namespace src --write
    ```
 
-4. Check the warnings that show a file and a line number. Update those manually: names declared in the file itself, re-exports by name, uses of `Logger` that cannot be rewritten automatically (subclasses, `instanceof`, or `Logger.getInstance` without a `{ scope }` object), the `enableDebug` prop on `ArdorApplication`, and removed names with no direct replacement. The tool checks import sources. If your project defines its own `BaseHelper` or `LoggerFactory`, or imports them from somewhere else, it does not touch them. If that same file also uses `Logger` from the kernel, it imports IGNIS's `LoggerFactory` as `LoggerFactory as IgnisLoggerFactory` to avoid name conflicts. Lines marked with `note` are planned changes (such as removing `enableDebug`), not items you still need to fix. Run `--check` in CI; it exits with code 1 if any manual fixes remain.
+   If another codemod like `devz codemod namespace-functions --write` already changed files, your working tree is dirty. Run `bun run ardor codemod namespace src --write --allow-dirty` to apply changes without stashing first.
 
-`bun run ardor` runs the local copy of `@venizia/ardor` in your project and does not download extra packages. The tool uses `typescript`, which is already in your project. Add `--hooks` to also update hook imports from `@venizia/ardor` to `Ardor.useX`. Hooks imported from `@venizia/ardor-react` or `@venizia/ardor-admin` are not changed.
+4. Check the warnings that show a file and a line number. Update those manually: names declared in the file itself, a class name the file already uses for something else, re-exports by name, uses of `Logger` that cannot be rewritten automatically (subclasses, `instanceof`, or `Logger.getInstance` without a `{ scope }` object), the `enableDebug` prop on `ArdorApplication`, and removed names with no direct replacement. The tool checks import sources. If your project defines its own `BaseHelper` or `LoggerFactory`, or imports them from somewhere else, it does not touch them. If that same file also uses `Logger` from the kernel, it imports IGNIS's `LoggerFactory` as `LoggerFactory as IgnisLoggerFactory` to avoid name conflicts. Lines marked with `note` are planned changes (such as removing `enableDebug`), not items you still need to fix. Run `--check` in CI; it exits with code 1 if any manual fixes remain.
+
+`bun run ardor` runs the local copy of `@venizia/ardor` in your project and does not download extra packages. `bun run ardor` only works in a package whose `package.json` depends on `@venizia/ardor`. In any other package, run the binary from a package that has it by relative path: `bun ../app/node_modules/@venizia/ardor/dist/codemod/bin.js codemod namespace src` (replace `../app` with the path to that package). The tool uses `typescript`, which is already in your project. Add `--hooks` to also update hook imports from `@venizia/ardor` to `Ardor.useX`. Hooks imported from `@venizia/ardor-react` or `@venizia/ardor-admin` are not changed.

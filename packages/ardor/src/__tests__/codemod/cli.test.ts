@@ -131,6 +131,53 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('refused src/a.ts');
   });
 
+  // The BANA case: another codemod already changed a file, so the tree is dirty when this one runs.
+  describe('a file another codemod already changed', () => {
+    const OTHER = `${OLD}// changed by another codemod\n`;
+    const OTHER_NEW = `${NEW}// changed by another codemod\n`;
+
+    beforeEach(() => {
+      seed({ 'src/b.ts': OLD });
+      writeFileSync(join(root, 'src/a.ts'), OTHER);
+    });
+
+    test('a refusal is listed by name with the way to proceed, counted in the summary, and exits 1', async () => {
+      const dry = await run([]);
+      expect(dry).toBe(0);
+      expect(output.join('\n')).toContain('2 files would change, 0 left for you');
+
+      output = [];
+      errors = [];
+
+      const result = await run(['--write']);
+      expect(result).toBe(1);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OTHER);
+      expect(readFileSync(join(root, 'src/b.ts'), 'utf8')).toBe(NEW);
+      expect(errors.join('\n')).toContain('refused src/a.ts');
+      expect(errors.join('\n')).toContain('--allow-dirty');
+      // one fewer than the dry run, and the line says why
+      expect(output.join('\n')).toContain(
+        '1 file changed, 1 refused (listed above), 0 left for you',
+      );
+    });
+
+    test('--allow-dirty writes the file, keeps the other codemod edits, and matches the dry run', async () => {
+      const result = await run(['--write', '--allow-dirty']);
+      expect(result).toBe(0);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OTHER_NEW);
+      expect(readFileSync(join(root, 'src/b.ts'), 'utf8')).toBe(NEW);
+      expect(errors).toEqual([]);
+      expect(output.join('\n')).toContain('2 files changed, 0 left for you');
+    });
+
+    test('--allow-dirty without --write is a usage error and writes nothing', async () => {
+      const result = await run(['--allow-dirty']);
+      expect(result).toBe(2);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OTHER);
+      expect(errors.join('\n')).toContain('--allow-dirty only goes with --write');
+    });
+  });
+
   test('inside git it reads only the files git knows, so an ignored folder is never touched', async () => {
     seed({ '.gitignore': 'ignored/\n' });
     writeFiles({ root, files: { 'ignored/c.ts': OLD } });

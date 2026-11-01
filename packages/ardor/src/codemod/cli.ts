@@ -5,7 +5,7 @@ import { CodemodFiles } from './files';
 import { Migration } from './migrate';
 import type { IFinding, TTypeScript } from './transform';
 
-const USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--write | --check]
+const USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--write [--allow-dirty] | --check]
 
 Moves the names removed from @venizia/ardor to what replaces them:
 
@@ -33,12 +33,17 @@ itself, a re-export by name and a class name already taken are listed with their
              becomes Ardor.useRepository()). A hook imported from @venizia/ardor-react or
              @venizia/ardor-admin is never touched: those packages cannot import Ardor.
   --write    write the changed files (without it, nothing is written)
+  --allow-dirty  with --write, also write a file that has local changes, such as one another codemod
+             just changed (devz codemod namespace-functions --write leaves the tree dirty)
   --check    dry run that exits 1 when anything would change or is left (for CI)
   --help     print this text and exit
 
 With no flag it lists what would change and writes nothing. Inside a git repository it reads the
 files git knows (tracked, or untracked and not ignored), and --write refuses a file with local
-changes (changed, staged or untracked): commit or stash it first, so git can undo the codemod.
+changes (changed, staged or untracked), so git can undo the codemod: the file is listed as "refused"
+with its path, the summary counts it and the run exits 1. Commit or stash it and run again, or run
+again with --allow-dirty to write it anyway (it keeps the other codemod's edits). To run two codemods
+one after the other in a dirty tree, give this one --write --allow-dirty.
 Run your formatter afterwards: the new names are appended to the import they join.`;
 
 /** A usage error: nothing was read or written. */
@@ -48,6 +53,7 @@ class CodemodFlags {
   static readonly WRITE = '--write';
   static readonly CHECK = '--check';
   static readonly HOOKS = '--hooks';
+  static readonly ALLOW_DIRTY = '--allow-dirty';
   static readonly HELP = '--help';
   static readonly HELP_SHORT = '-h';
 
@@ -55,6 +61,7 @@ class CodemodFlags {
     this.WRITE,
     this.CHECK,
     this.HOOKS,
+    this.ALLOW_DIRTY,
     this.HELP,
     this.HELP_SHORT,
   ]);
@@ -101,6 +108,16 @@ export class NamespaceCommand {
       return USAGE_ERROR_CODE;
     }
 
+    const isAllowDirty = args.includes(CodemodFlags.ALLOW_DIRTY);
+
+    if (isAllowDirty && !isWrite) {
+      console.error(
+        `ardor codemod: ${CodemodFlags.ALLOW_DIRTY} only goes with ${CodemodFlags.WRITE}: a dry run writes nothing\n${USAGE}`,
+      );
+
+      return USAGE_ERROR_CODE;
+    }
+
     const ts = await NamespaceCommand.loadTypeScript();
 
     if (!ts) {
@@ -115,7 +132,7 @@ export class NamespaceCommand {
     const targets = (paths.length > 0 ? paths : ['.']).map((path) => resolve(root, path));
     const hooks = args.includes(CodemodFlags.HOOKS);
 
-    return NamespaceCommand.sweep({ root, ts, targets, hooks, isWrite, isCheck });
+    return NamespaceCommand.sweep({ root, ts, targets, hooks, isWrite, isCheck, isAllowDirty });
   }
 
   private static async loadTypeScript(): Promise<TTypeScript | undefined> {
@@ -137,12 +154,14 @@ export class NamespaceCommand {
     hooks: boolean;
     isWrite: boolean;
     isCheck: boolean;
+    isAllowDirty: boolean;
   }): number {
-    const { root, ts, targets, hooks, isWrite, isCheck } = opts;
+    const { root, ts, targets, hooks, isWrite, isCheck, isAllowDirty } = opts;
     const files = [...new Set(targets.flatMap((target) => CodemodFiles.collect({ target })))];
-    const dirty = isWrite
-      ? new Set(targets.flatMap((target) => [...(CodemodFiles.dirty({ target }) ?? [])]))
-      : new Set<string>();
+    const dirty =
+      isWrite && !isAllowDirty
+        ? new Set(targets.flatMap((target) => [...(CodemodFiles.dirty({ target }) ?? [])]))
+        : new Set<string>();
     const changes: Array<{ path: string; renamed: number }> = [];
     const refused: string[] = [];
     const left: Array<{ path: string; finding: IFinding }> = [];
@@ -195,7 +214,9 @@ export class NamespaceCommand {
     }
 
     for (const path of refused) {
-      console.error(`refused ${show(path)}: it has local changes; commit or stash it first`);
+      console.error(
+        `refused ${show(path)}: it has local changes, so git cannot undo the codemod there; commit or stash it and run again, or run again with ${CodemodFlags.ALLOW_DIRTY}`,
+      );
     }
 
     // A note is a change made on purpose that is worth knowing; it is not work left, so --check ignores it.
@@ -207,8 +228,10 @@ export class NamespaceCommand {
       console.error(`left ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
     }
 
+    const refusedNote = refused.length > 0 ? `, ${refused.length} refused (listed above)` : '';
+
     console.log(
-      `${changes.length} file${changes.length === 1 ? '' : 's'} ${verb}, ${left.length} left for you${isWrite || changes.length === 0 ? '' : '. Run again with --write to apply.'}`,
+      `${changes.length} file${changes.length === 1 ? '' : 's'} ${verb}${refusedNote}, ${left.length} left for you${isWrite || changes.length === 0 ? '' : '. Run again with --write to apply.'}`,
     );
 
     if (refused.length > 0) {
