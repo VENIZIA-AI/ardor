@@ -57,13 +57,10 @@ export class RuntimeConfig {
       throw getError({
         messageCode: RUNTIME_CONFIG_REQUIRED_CODE,
         extra: { key },
-        message: `[getRuntimeConfig] '${key}' is required and not set | Write it to config.js (a VITE_ variable of the container, listed in APP_REQUIRED_ENV), or pass it in buildTimeEnv or defaultValue`,
+        message: `[RuntimeConfig.get] '${key}' is required and not set | Write it to config.js (a VITE_ variable of the container, listed in APP_REQUIRED_ENV), or pass it in buildTimeEnv or defaultValue`,
       });
     }
 
     return value;
   }
 }
-
-/** @deprecated Use `RuntimeConfig.get`. Removed in 0.5. */
-export const getRuntimeConfig: typeof RuntimeConfig.get = RuntimeConfig.get;

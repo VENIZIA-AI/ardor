@@ -1,4 +1,4 @@
-import { useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
+import { Ardor, useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
 
 // A type-level check, never imported or run: `tsc` (the `typecheck` script) is the test. The
 // application augments `@venizia/ardor`, which re-exports the two override interfaces; the claim
@@ -23,4 +23,10 @@ export const checkAugmentation = () => {
 
   // @ts-expect-error - 'services.Missing' is not a declared injectable key
   useInjectable<unknown>({ key: 'services.Missing' });
+
+  // The `Ardor` namespace holds the same functions, so the same keys apply through it.
+  Ardor.useInjectable<unknown>({ key: 'services.AugmentationProbe' });
+
+  // @ts-expect-error - 'services.Missing' is not a declared injectable key
+  Ardor.useInjectable<unknown>({ key: 'services.Missing' });
 };

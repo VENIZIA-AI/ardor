@@ -12,7 +12,7 @@ ARDOR 0.4.3 gives you:
 - **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
 - **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
 - **An HTTP repository** from IGNIS on `@venizia/ardor/repository`, which can share the data provider's token and 401 refresh through `getDataSourceAuth()`.
-- **Runtime configuration.** `getRuntimeConfig` reads `window.__APP_CONFIG__`, so one built image serves every environment; with `required: true` it throws an error that carries a code. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
+- **Runtime configuration.** `RuntimeConfig.get` reads `window.__APP_CONFIG__`, so one built image serves every environment; with `required: true` it throws an error that carries a code. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
 - **A VULCAN preset** that generates an admin with Tailwind, an nginx image (gzip, `/health`, security headers) and that runtime configuration.
 
 ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).

@@ -3,7 +3,6 @@ import type { I18nProvider } from 'ra-core';
 
 import { CoreBindings } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IDataProvider } from '@/common';
-import { Features } from '@/features/feature';
 
 export class ApplicationProviders {
   /**
@@ -33,12 +32,3 @@ export class ApplicationProviders {
     return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider };
   }
 }
-
-/** @deprecated Use `ApplicationProviders.resolve`. Removed in 0.5. */
-export const resolveApplicationProviders = ApplicationProviders.resolve;
-
-/** @deprecated Use `Features.hasPendingMessages`. Removed in 0.5. */
-export const hasPendingFeatureMessages = Features.hasPendingMessages;
-
-/** @deprecated Use `Features.loadMessages`. Removed in 0.5. */
-export const loadFeatureMessages = Features.loadMessages;

@@ -55,7 +55,7 @@ What ARDOR adds to ra-core:
 | Package | Contents |
 |---|---|
 | `@venizia/ardor` | Umbrella: re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository` sub-path and the VULCAN preset (`dist/presets`). |
-| `@venizia/ardor-kernel` | Container and service foundation, with no UI: application base classes, decorators and metadata, `CoreBindings`, the network request service, `getRuntimeConfig`, and the `/repository` sub-path (IGNIS's HTTP repository). |
+| `@venizia/ardor-kernel` | Container and service foundation, with no UI: application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository). |
 | `@venizia/ardor-react` | React bindings: application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `createAppDispatch` and `createAppSelectors`. |
 | `@venizia/ardor-admin` | ra-core adapter: `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`). |
 

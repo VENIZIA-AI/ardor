@@ -5,9 +5,9 @@ import {
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
-  getRuntimeConfig,
   inject,
   provide,
+  RuntimeConfig,
 } from '@venizia/ardor';
 
 // The two providers an application without sign-in needs. start() binds each @provide method under its
@@ -24,7 +24,7 @@ export class AdminConfiguration {
     // No sign-in: no request carries an Authorization header. The API is `/api` (the image's nginx
     // forwards it to API_UPSTREAM) unless VITE_API_URL says otherwise: set in .env in dev, or written to
     // config.js when the container starts, so one built image serves every environment.
-    const url = getRuntimeConfig({
+    const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
       buildTimeEnv: import.meta.env,
       defaultValue: '/api',

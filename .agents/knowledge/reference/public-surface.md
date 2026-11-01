@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (107)
+### `@venizia/ardor-kernel` (94)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -40,7 +40,6 @@ generated:
 - `DefaultNetworkRequestService` class
 - `Environments` class
 - `FileUtility` class
-- `getRuntimeConfig` const
 - `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
@@ -67,23 +66,14 @@ generated:
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
-- `isBrowser` const
-- `isDefined` const
-- `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` type
 - `ISignInSession` interface
-- `isNumber` const
-- `isObject` const
-- `isString` const
-- `isValidDate` const
 - `LocalStorageKeys` class
 - `Logger` class
 - `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
-- `NullableType` type
-- `NumberIdType` type
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -98,17 +88,14 @@ generated:
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `service` const
-- `StringIdType` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
-- `TDataCount` type
 - `TEnvironment` type
 - `TFullPaths` type
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
-- `toDataUrl` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type
@@ -150,14 +137,11 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (37)
+### `@venizia/ardor-react` (34)
 
 - `ApplicationContext` const
-- `createAppDispatch` const
-- `createAppSelectors` const
 - `DispatchHooks` class
 - `IApplicationContextValue` interface
-- `ISyncFC` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface
@@ -192,7 +176,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (38)
+### `@venizia/ardor-admin` (35)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -202,7 +186,6 @@ generated:
 - `DefaultRestDataProvider` class
 - `englishMessages` const
 - `Features` class
-- `hasPendingFeatureMessages` const
 - `IApplication` interface
 - `IAuthProvider` interface
 - `IDataProvider` interface
@@ -216,8 +199,6 @@ generated:
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
-- `loadFeatureMessages` const
-- `resolveApplicationProviders` const
 - `TFeature` type
 - `TFeatureMessages` type
 - `TUseTranslateFn` type
@@ -235,7 +216,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (183)
+### `@venizia/ardor` (164)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -263,8 +244,6 @@ generated:
 - `configuration` const
 - `CoreBindings` class
 - `CountRestDataProvider` class
-- `createAppDispatch` const
-- `createAppSelectors` const
 - `datasource` const
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
@@ -276,8 +255,6 @@ generated:
 - `Environments` class
 - `Features` class
 - `FileUtility` class
-- `getRuntimeConfig` const
-- `hasPendingFeatureMessages` const
 - `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationContextValue` interface
@@ -314,17 +291,9 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
-- `isBrowser` const
-- `isDefined` const
-- `isEditableTarget` const
 - `ISendParams` interface
 - `ISendResponse` type
 - `ISignInSession` interface
-- `isNumber` const
-- `isObject` const
-- `isString` const
-- `isValidDate` const
-- `ISyncFC` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface
@@ -340,14 +309,11 @@ generated:
 - `IUseSizerReturn` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
-- `loadFeatureMessages` const
 - `LocalStorageKeys` class
 - `Logger` class
 - `LogLevels` class
 - `model` const
 - `NetworkHeaders` class
-- `NullableType` type
-- `NumberIdType` type
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -357,18 +323,15 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
-- `resolveApplicationProviders` const
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `SelectorHooks` class
 - `service` const
-- `StringIdType` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
-- `TDataCount` type
 - `TEnvironment` type
 - `TFeature` type
 - `TFeatureMessages` type
@@ -376,7 +339,6 @@ generated:
 - `TLogLevel` type
 - `TNoAuthPathRegex` type
 - `TNumberConstValue` type
-- `toDataUrl` const
 - `TPaths` type
 - `TPrettify` type
 - `TRepositoryType` type

@@ -1,11 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import {
-  ApplicationProviders,
-  hasPendingFeatureMessages,
-  loadFeatureMessages,
-  resolveApplicationProviders,
-} from '@/components/resolve';
+import { ApplicationProviders } from '@/components/resolve';
 import { rejectionOf } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings } from '@venizia/ardor-kernel';
@@ -112,15 +107,5 @@ describe('Features.loadMessages', () => {
     );
 
     expect((error as Error).message).toContain('key defined twice');
-  });
-});
-
-describe('the bare names stay as deprecated aliases until 0.5', () => {
-  test.each([
-    ['resolveApplicationProviders', resolveApplicationProviders, ApplicationProviders.resolve],
-    ['hasPendingFeatureMessages', hasPendingFeatureMessages, Features.hasPendingMessages],
-    ['loadFeatureMessages', loadFeatureMessages, Features.loadMessages],
-  ])('%s is the same function as its class member', (_name, alias, member) => {
-    expect(alias).toBe(member);
   });
 });

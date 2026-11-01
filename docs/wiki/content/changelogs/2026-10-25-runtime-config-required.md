@@ -19,15 +19,15 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 - **The error has a code (0.4.3).** It is an `ApplicationError` from `@venizia/ignis-inversion`. Its `normalized.code` is `RUNTIME_CONFIG_REQUIRED_CODE` (value `ardor.runtime_config.required`), exported from `@venizia/ardor` and `@venizia/ardor-kernel`, and `extra.key` holds the name of the missing key. It never holds a value. The message is unchanged.
 
 ```typescript
-import { getRuntimeConfig, RUNTIME_CONFIG_REQUIRED_CODE } from '@venizia/ardor';
+import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 // string, not string | undefined; an app also passes buildTimeEnv: import.meta.env
-const apiUrl = getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+const apiUrl = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
 
 // Detect the error by its code instead of its message.
 try {
-  getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+  RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
 } catch (error) {
   if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
     console.error('missing config key', error.extra?.key);

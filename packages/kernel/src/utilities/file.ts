@@ -11,6 +11,3 @@ export class FileUtility {
     });
   }
 }
-
-/** @deprecated Use `FileUtility.toDataUrl`. Removed in 0.5. */
-export const toDataUrl = FileUtility.toDataUrl;

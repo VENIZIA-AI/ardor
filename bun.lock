@@ -150,6 +150,9 @@
     "packages/ardor": {
       "name": "@venizia/ardor",
       "version": "0.4.6",
+      "bin": {
+        "ardor": "./dist/codemod/bin.js",
+      },
       "dependencies": {
         "@venizia/ardor-admin": "workspace:*",
         "@venizia/ardor-kernel": "workspace:*",
@@ -190,11 +193,13 @@
         "react-redux": ">=9.3.0",
         "react-router-dom": ">=7.18.4",
         "reflect-metadata": ">=0.2.2",
+        "typescript": ">=5.0.0",
         "vite": ">=8.3.5",
       },
       "optionalPeers": [
         "@venizia/ignis-boot",
         "@venizia/ignis-connectors",
+        "typescript",
         "vite",
       ],
     },

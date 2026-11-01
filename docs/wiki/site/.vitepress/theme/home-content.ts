@@ -9,7 +9,7 @@
 import pkg from '../../../../../packages/ardor/package.json';
 import type { THomeContent, TSiteInfo } from './shared/home-types';
 
-export const COUNTS = { packages: 4, examples: 3, testFiles: 53, nodeBuiltins: 0 };
+export const COUNTS = { packages: 4, examples: 3, testFiles: 57, nodeBuiltins: 0 };
 
 export const VERSION: string = pkg.version;
 
@@ -57,9 +57,9 @@ export const HOME: THomeContent = {
   configuration,
   CoreBindings,
   DefaultRestDataProvider,
-  getRuntimeConfig,
   inject,
   provide,
+  RuntimeConfig,
 } from '@venizia/ardor';
 
 @configuration()
@@ -71,7 +71,7 @@ export class AdminConfiguration {
 
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
-    const url = getRuntimeConfig({
+    const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
       buildTimeEnv: import.meta.env,
       defaultValue: '/api',
@@ -179,7 +179,7 @@ createRoot(document.getElementById('root')!).render(
     {
       name: 'features',
       title: 'Features and runtime config',
-      text: 'Features.define packages configurations, resources, routes and messages. getRuntimeConfig lets one image serve every environment.',
+      text: 'Features.define packages configurations, resources, routes and messages. RuntimeConfig.get lets one image serve every environment.',
       href: '/references/features',
     },
     {

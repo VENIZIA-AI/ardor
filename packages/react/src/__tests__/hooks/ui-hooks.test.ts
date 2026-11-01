@@ -10,8 +10,8 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { useBeforeUnload, type IUseBeforeUnloadOptions } from '@/hooks/use-before-unload';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
 import { useSizer, type IUseSizerOptions } from '@/hooks/use-sizer';
-import { createAppDispatch, DispatchHooks } from '@/hooks/redux/use-app-dispatch';
-import { createAppSelectors, SelectorHooks } from '@/hooks/redux/use-app-selector';
+import { DispatchHooks } from '@/hooks/redux/use-app-dispatch';
+import { SelectorHooks } from '@/hooks/redux/use-app-selector';
 
 // A fake clock, not a sleep: the debounce fires when the test says so, on any runner.
 const useFakeClock = (): void => {
@@ -517,10 +517,6 @@ const createCounterWrapper = ({ store }: { store: TCounterStore }) => {
 describe('DispatchHooks.create', () => {
   const { useAppDispatch, useMultipleAppDispatch } = DispatchHooks.create<TTestDispatch>();
 
-  test('createAppDispatch stays as a deprecated alias until 0.5', () => {
-    expect(createAppDispatch).toBe(DispatchHooks.create);
-  });
-
   test('useAppDispatch dispatches single action to the store', () => {
     const store = createCounterStore();
 
@@ -627,10 +623,6 @@ const createSelectorWrapper = ({ store }: { store: TSelectorStore }) => {
 };
 
 describe('SelectorHooks.create', () => {
-  test('createAppSelectors stays as a deprecated alias until 0.5', () => {
-    expect(createAppSelectors).toBe(SelectorHooks.create);
-  });
-
   const { useShallowEqualSelector, useDeepEqualSelector } =
     SelectorHooks.create<TRootSelectorState>();
 
