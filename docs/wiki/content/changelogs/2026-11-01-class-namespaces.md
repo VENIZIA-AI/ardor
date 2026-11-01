@@ -12,6 +12,27 @@ packages: ['@venizia/ardor', '@venizia/ardor-kernel', '@venizia/ardor-react', '@
 
 **In one line.** Exported functions now live as static members of a class, the way `React.useCallback` lives on `React`, `Ardor` holds every hook, and the logger is IGNIS's `ILogger`. The old names, and a few exports nothing used, are removed; `bun run ardor codemod namespace` moves your code.
 
+## Before you upgrade: where debug lines go
+
+<Badge type="warning" text="Check this" />
+
+`enableDebug` is gone. IGNIS's console logger, the default, has a debug gate of its own, so there is nothing to install to keep debug lines out of a production browser: a `debug` line is written only when `DEBUG` is truthy and `NODE_ENV` allows it, and a browser without a `process` global (Vite, esbuild) never writes one. A debug call that logs a payload, a token or any decrypted data stays off your users' consoles after the upgrade, as `enableDebug: false` kept it before.
+
+Two cases are worth one line at startup:
+
+- **A Node process with `DEBUG` set** (a server-side render, a script, a test run) does write them. A level set once decides whatever the environment says.
+- **A browser you develop in** writes none by default. The level `debug` turns them on.
+
+```ts
+import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
+
+declare const isProduction: boolean; // your bundler's flag
+
+LoggerFactory.use({ level: isProduction ? LogLevels.INFO : LogLevels.DEBUG });
+```
+
+Call it once, from a module that is not a component and before the first log line. `react-hooks/rules-of-hooks` reads a PascalCase `.use(...)` call as a hook; disable the rule on that line.
+
 ## What changed
 
 Functions that became class members:
@@ -51,10 +72,10 @@ ARDOR no longer has a logger of its own. `Logger`, `LogLevels`, `ILogger`, `TLog
 | Before | Now |
 |---|---|
 | `BaseHelper`, `LogLevels`, `ILogger`, `TLogLevel` of ARDOR | the same names from `@venizia/ignis-helpers/core`; only the import changes |
-| `Logger.getInstance({ scope })`, `new Logger({ scope })` | `new BaseHelper({ scope }).logger` |
+| `Logger.getInstance({ scope })`, `new Logger({ scope })` | `LoggerFactory.getLogger([scope])` from `@venizia/ignis-helpers/core` |
 | `Logger` as a type | `ILogger` |
 | `ApplicationContext.logger`, `useApplicationLogger()` returning `Logger` | an `ILogger` |
-| `<ArdorApplication enableDebug />` | `<ArdorApplication logger={...} />`; absent, a console logger named after the application |
+| `<ArdorApplication enableDebug />` | `<ArdorApplication logger={...} />`; absent, `LoggerFactory.getLogger([applicationName])` |
 
 What stays the same, so most code needs no change:
 
@@ -64,10 +85,10 @@ What stays the same, so most code needs no change:
 
 What differs:
 
-- **There is no debug switch.** `enableDebug` is gone (from `Logger.getInstance` and from `ArdorApplication`). Debug lines always go to `console.debug`, which a browser hides until its Verbose level is on; a line used to be dropped until `enableDebug` was set.
+- **`enableDebug` is gone, and debug is off by default.** From `Logger.getInstance` and from `ArdorApplication`. The console logger writes `debug` only when `DEBUG` is truthy and `NODE_ENV` allows it, and never in a browser without `process`; `LoggerFactory.use({ level })` overrides that either way (see "Before you upgrade", above).
 - **`ILogger` takes a string first argument, then format arguments** (`logger.info('[x] value: %o', value)`). The old `Logger` also accepted an object or any other value as the first argument and passed it through to the console; pass it after a format string instead.
-- **The line format is IGNIS's:** `[scope] message`, with no timestamp and level in the text (the console adds its own). `generateLog`, `getTimestamp` and the static `getInstance` cache are gone, and `Logger.getInstance` returned one shared object per scope while `new BaseHelper({ scope }).logger` builds a new one: keep a logger you want to spy on in a constant.
-- **To send the lines elsewhere,** register a provider once at startup with `LoggerFactory.use` from `@venizia/ignis-helpers`; every `this.logger` follows it, even one built earlier. Pass `logger` to `ArdorApplication` for the React tree.
+- **The line format is IGNIS's:** `[scope] message`, with no timestamp and level in the text (the console adds its own). `generateLog`, `getTimestamp` and the static `getInstance` cache are gone. `LoggerFactory.getLogger([scope])` hands out one logger per scope, as `Logger.getInstance` did, and so does `new BaseHelper({ scope }).logger`: a `spyOn` on such a logger is shared by everything that logs under that scope, so restore it after the test.
+- **To send the lines elsewhere,** choose a provider once at startup with `LoggerFactory.use({ provider })` from `@venizia/ignis-helpers/core`; every logger follows it, even one built earlier. Pass `logger` to `ArdorApplication` for the React tree.
 
 ## The `Ardor` hook namespace
 
@@ -84,6 +105,9 @@ What differs:
 
 > [!WARNING]
 > The names in the tables above are gone from `@venizia/ardor`, `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`. The codemod is the upgrade path: commit your work first, then run it.
+
+> [!IMPORTANT]
+> The peer floors rise with it: `@venizia/ignis-helpers` to `^0.4.7-2` on all four packages (the logger is its `LoggerFactory`, in the browser-safe `core` entry), and `@venizia/ignis-inversion` to `^0.4.6-1` on `@venizia/ardor`, whose `./testing` entry needs `BindingVerifier`. Move your `@venizia/ignis-*` packages to the same IGNIS release, and keep one copy of each.
 
 **Before:**
 
@@ -122,6 +146,6 @@ To move a project:
    bun run ardor codemod namespace src --write
    ```
 
-4. Fix what it lists with a file and line: a name the file also declares itself, a re-export by name, a `Logger` use with no one-line form (a subclass, `instanceof`, a `Logger.getInstance` whose argument is not an object with a `scope`), the `enableDebug` prop of `ArdorApplication`, and the removed names with nothing to put in their place. A line it prints with `note` is a change it made on purpose (a dropped `enableDebug` option) and does not count as left. `--check` exits 1 while anything is left, for CI.
+4. Fix what it lists with a file and line: a name the file also declares itself, a re-export by name, a `Logger` use with no one-line form (a subclass, `instanceof`, a `Logger.getInstance` whose argument is not an object with a `scope`), the `enableDebug` prop of `ArdorApplication`, and the removed names with nothing to put in their place. It follows the import source: a `BaseHelper` or `LoggerFactory` your project defines itself, or imports from another module, is not touched, and when such a file also uses the kernel's `Logger`, IGNIS's `LoggerFactory` is imported as `LoggerFactory as IgnisLoggerFactory` so the two names do not clash. A line it prints with `note` is a change it made on purpose (a dropped `enableDebug` option) and does not count as left. `--check` exits 1 while anything is left, for CI.
 
 `bun run ardor` runs the `@venizia/ardor` installed in your project and never downloads another package; the codemod needs the `typescript` package, which your project has. Add `--hooks` to also move the hooks you import from `@venizia/ardor` to `Ardor.useX`; hooks imported from `@venizia/ardor-react` or `@venizia/ardor-admin` are never touched.

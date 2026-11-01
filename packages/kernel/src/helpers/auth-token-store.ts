@@ -1,11 +1,11 @@
-import { BaseHelper } from '@venizia/ignis-helpers/core';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import { type IAuthTokenRecord, LocalStorageKeys } from '@/common';
 
 /** The one place that reads and writes the stored auth token, with the browser guard. */
 export class AuthTokenStore {
-  private static readonly logger = new BaseHelper({ scope: 'AuthTokenStore' }).logger;
+  private static readonly logger = LoggerFactory.getLogger(['AuthTokenStore']);
 
   /** The stored token, or `undefined` when none is stored, it is unusable, or there is no `localStorage`. */
   static read(): IAuthTokenRecord | undefined {

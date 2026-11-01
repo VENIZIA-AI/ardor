@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Layout: [monorepo layout](/overview/monorepo-layout.md).
 
-**92 source files across 4 packages.**
+**91 source files across 4 packages.**
 
 ## admin  (26 source files)
 
@@ -22,12 +22,12 @@ generated:
 | `features/` | 3 |
 | `components/` | 2 |
 
-## ardor  (19 source files)
+## ardor  (18 source files)
 
 | Subsystem | Files |
 |---|---|
-| `vite/` | 8 |
 | `codemod/` | 7 |
+| `vite/` | 7 |
 
 ## kernel  (30 source files)
 

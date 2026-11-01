@@ -1,6 +1,6 @@
-import { BaseHelper } from '@venizia/ignis-helpers/core';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 
-const logger = new BaseHelper({ scope: 'useCopyToClipboard' }).logger;
+const logger = LoggerFactory.getLogger(['useCopyToClipboard']);
 
 export interface IUseCopyToClipboardReturn {
   copy: (opts: { value: string }) => Promise<boolean>;

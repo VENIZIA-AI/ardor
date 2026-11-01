@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
-import { uuidV4 } from '@venizia/ignis-helpers/uuid';
+import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
@@ -139,7 +139,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /** The tracing id of a request, sent in `x-request-tracing-id`. Default `<application name>_<uuid>`. */
   protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
-    return `${opts.applicationInfo.name}_${uuidV4()}`;
+    return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
   }
 
   // --- No-auth and recovery --------------------------------------------------------------------

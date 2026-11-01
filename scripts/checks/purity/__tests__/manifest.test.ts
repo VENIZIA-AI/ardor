@@ -1,17 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  assertNoWorkspaceExternal,
-  buildManifest,
-  deriveEntries,
-} from '@venizia/dev-configs/checks';
+import { PurityManifest } from '@venizia/dev-configs/checks';
 import type { IPurityEntry } from '@venizia/dev-configs/checks';
 import { PURITY_CLAIMS } from '../manifest';
 
 const REPOSITORY_ROOT = join(__dirname, '../../../..');
 
-const PURITY_MANIFEST = buildManifest({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
+const PURITY_MANIFEST = PurityManifest.build({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
 
 /** Entries that run in Node, in the build of an app: they carry no browser claim, and nothing else is exempt. */
 const NODE_ONLY_ENTRIES = ['packages/ardor/dist/vite/index.js'];
@@ -48,7 +44,9 @@ const readPublishedTargets = (opts: { package: string }): string[] => {
 
 describe('assertNoWorkspaceExternal', () => {
   test('the real manifest passes - nothing externalises a workspace package', () => {
-    expect(() => assertNoWorkspaceExternal(PURITY_MANIFEST)).not.toThrow();
+    expect(() =>
+      PurityManifest.assertNoWorkspaceExternal({ manifest: PURITY_MANIFEST }),
+    ).not.toThrow();
   });
 
   // The motivating case: this is exactly the escape hatch that would silently hide a real
@@ -63,9 +61,15 @@ describe('assertNoWorkspaceExternal', () => {
       },
     ];
 
-    expect(() => assertNoWorkspaceExternal(poisoned)).toThrow(/workspace package/);
-    expect(() => assertNoWorkspaceExternal(poisoned)).toThrow(/poisoned/);
-    expect(() => assertNoWorkspaceExternal(poisoned)).toThrow(/@venizia\/ardor-kernel/);
+    expect(() => PurityManifest.assertNoWorkspaceExternal({ manifest: poisoned })).toThrow(
+      /workspace package/,
+    );
+    expect(() => PurityManifest.assertNoWorkspaceExternal({ manifest: poisoned })).toThrow(
+      /poisoned/,
+    );
+    expect(() => PurityManifest.assertNoWorkspaceExternal({ manifest: poisoned })).toThrow(
+      /@venizia\/ardor-kernel/,
+    );
   });
 
   test('does not reject a third-party external', () => {
@@ -78,7 +82,7 @@ describe('assertNoWorkspaceExternal', () => {
       },
     ];
 
-    expect(() => assertNoWorkspaceExternal(clean)).not.toThrow();
+    expect(() => PurityManifest.assertNoWorkspaceExternal({ manifest: clean })).not.toThrow();
   });
 
   test('rejects a workspace package buried behind an earlier third-party entry', () => {
@@ -91,7 +95,9 @@ describe('assertNoWorkspaceExternal', () => {
       },
     ];
 
-    expect(() => assertNoWorkspaceExternal(mixed)).toThrow(/@venizia\/ignis-kernel/);
+    expect(() => PurityManifest.assertNoWorkspaceExternal({ manifest: mixed })).toThrow(
+      /@venizia\/ignis-kernel/,
+    );
   });
 });
 
@@ -150,7 +156,7 @@ describe('PURITY_MANIFEST derivation', () => {
 
   test('a claimed sub-path that the exports map no longer publishes fails the derivation', () => {
     expect(() =>
-      deriveEntries({
+      PurityManifest.deriveEntries({
         claim: { package: 'kernel', subpaths: ['./renamed-away'] },
         root: REPOSITORY_ROOT,
       }),
@@ -159,7 +165,7 @@ describe('PURITY_MANIFEST derivation', () => {
 
   test('an external declared for a sub-path that is gone fails the derivation', () => {
     expect(() =>
-      deriveEntries({
+      PurityManifest.deriveEntries({
         claim: { package: 'admin', external: { './renamed-away': ['ra-core'] } },
         root: REPOSITORY_ROOT,
       }),

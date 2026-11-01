@@ -9,7 +9,9 @@ import type { TI18nSource } from '@/common';
 import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
+import { useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings } from '@venizia/ardor-kernel';
+import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
 const ReportList = () => {
@@ -20,11 +22,12 @@ const ReportList = () => {
 const createContainer = (opts: {
   load: () => Promise<object>;
   withAuthProvider?: boolean;
+  list?: () => React.ReactElement;
   i18nSources?: Record<string, TI18nSource>;
 }) => {
   const reports = Features.define({
     name: 'reports',
-    resources: [{ name: 'reports', list: ReportList }],
+    resources: [{ name: 'reports', list: opts.list ?? ReportList }],
     messages: { en: opts.load },
   });
 
@@ -252,5 +255,63 @@ describe('ArdorApplication features prop', () => {
 
     expect(screen.queryByText('Open invoices')).toBeNull();
     expect(container.textContent).toBe('');
+  });
+});
+
+// The default logger of an ArdorApplication is built like every other one, from a BaseHelper, so the
+// resolver an application installs at startup (the debugging page shows it) silences its debug lines too.
+// The default logger of an ArdorApplication comes from LoggerFactory like every other one, so the level an
+// application sets at startup (the debugging page shows it) decides its debug lines too.
+describe('ArdorApplication logger', () => {
+  const LoggingList = () => {
+    const logger = useApplicationLogger();
+    logger.debug('[LoggingList] debug');
+    logger.info('[LoggingList] info');
+
+    return <h1>Logged</h1>;
+  };
+
+  const mountAndRead = async (opts: { level: typeof LogLevels.DEBUG | typeof LogLevels.INFO }) => {
+    const debug = spyOn(console, 'debug').mockImplementation(() => undefined);
+    const info = spyOn(console, 'log').mockImplementation(() => undefined);
+
+    try {
+      // oxlint-disable-next-line react-hooks/rules-of-hooks -- LoggerFactory.use sets a level; it is not a React hook
+      LoggerFactory.use({ level: opts.level });
+
+      render(
+        <MemoryRouter>
+          <ArdorApplication
+            container={createContainer({
+              load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+              list: LoggingList,
+            })}
+            reduxStore={configureStore({ reducer: () => ({}) })}
+            suspense={<span>loading</span>}
+          />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText('Logged');
+
+      return { debug: debug.mock.calls.length, info: info.mock.calls.length };
+    } finally {
+      LoggerFactory.reset();
+      debug.mockRestore();
+      info.mockRestore();
+    }
+  };
+
+  test('drops its debug lines under LoggerFactory.use({ level: LogLevels.INFO }) and keeps the others', async () => {
+    const calls = await mountAndRead({ level: LogLevels.INFO });
+
+    expect(calls.debug).toBe(0);
+    expect(calls.info).toBeGreaterThan(0);
+  });
+
+  test('writes its debug lines under LoggerFactory.use({ level: LogLevels.DEBUG })', async () => {
+    const calls = await mountAndRead({ level: LogLevels.DEBUG });
+
+    expect(calls.debug).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
 import type { TI18nSource } from '@/common';
@@ -127,6 +127,14 @@ describe('DefaultI18nProvider hooks', () => {
 
 describe('DefaultI18nProvider lazy sources', () => {
   const vietnamese = { ra: { action: { add: 'Them' } } };
+  // A logger is shared by scope, so a spy on it is taken off after each test.
+  const spies: Array<{ mockRestore: () => void }> = [];
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) {
+      spy.mockRestore();
+    }
+  });
 
   /** A provider that starts in `locale`, as the browser's language would decide. */
   const startingIn = (opts: { locale: string; sources: Record<string, TI18nSource> }) => {
@@ -144,6 +152,7 @@ describe('DefaultI18nProvider lazy sources', () => {
       ],
     });
     const error = spyOn(provider.logger, 'error').mockImplementation(() => undefined);
+    spies.push(error);
 
     return { provider, error, i18n: provider.value(new Container()) };
   };
@@ -248,7 +257,7 @@ describe('DefaultI18nProvider lazy sources', () => {
       },
       [reports],
     );
-    spyOn(provider.logger, 'error').mockImplementation(() => undefined);
+    spies.push(spyOn(provider.logger, 'error').mockImplementation(() => undefined));
     const i18n = provider.value(new Container());
 
     await i18n.changeLocale('vi');

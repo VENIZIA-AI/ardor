@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import { ApplicationProviders } from '@/components/resolve';
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { Container, getError } from '@venizia/ignis-inversion';
@@ -99,12 +99,12 @@ describe('Features.loadMessages', () => {
       changeLocale: () => Promise.reject(getError({ message: 'key defined twice' })),
     };
 
-    const error = await rejectionOf(
-      Features.loadMessages({
+    const error = await RejectionHelper.rejectionOf({
+      task: Features.loadMessages({
         features: [featureWithLazyEnglish],
         i18nProvider: i18nProvider as never,
       }),
-    );
+    });
 
     expect((error as Error).message).toContain('key defined twice');
   });

@@ -75,7 +75,6 @@ help:
 	@$(HELP_ROW) "atlas-smoke" "Gate: VULCAN's atlas serves this checkout over MCP."
 	@$(HELP_ROW) "vulcan-sync" "Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links."
 	@$(HELP_ROW) "vulcan-doctor" "Gate: the project follows VULCAN (config, layout, rules, make, adapters, style)."
-	@$(HELP_ROW) "agent-setup" "Alias of vulcan-sync."
 	@echo ""
 	@echo "Release and dependencies:"
 	@$(HELP_ROW) "release-plan" "Print the release plan (dependency order), dispatch nothing."

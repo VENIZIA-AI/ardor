@@ -5,7 +5,7 @@ import { describe, expect, test } from 'bun:test';
 import { BaseArdorApplication } from '@/base/applications/abstract';
 import { configuration, provide } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
-import { rejectionOf } from '@venizia/dev-configs/testing';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 @configuration()
 class InventoryConfiguration {
@@ -71,7 +71,7 @@ describe('AbstractArdorApplication.features', () => {
   test('throws on two features with one name', async () => {
     const application = createApplication({ features: [inventory, { name: 'inventory' }] });
 
-    const result = await rejectionOf(application.start());
+    const result = await RejectionHelper.rejectionOf({ task: application.start() });
     expect(result).toMatchObject({
       message: expect.stringMatching(/\[features\] Two features are named 'inventory'/),
     });
@@ -82,7 +82,7 @@ describe('AbstractArdorApplication.features', () => {
       features: [{ name: 'billing', configurations: [ForgottenConfiguration] }],
     });
 
-    const result = await rejectionOf(application.start());
+    const result = await RejectionHelper.rejectionOf({ task: application.start() });
     expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[features\] 'billing' lists ForgottenConfiguration, which was never discovered/,

@@ -31,8 +31,8 @@ interface IArdorImport {
  * - `BaseHelper`, `LogLevels`, `ILogger` and `TLogLevel` keep their names, so only the import moves
  *   to `@venizia/ignis-helpers/core`.
  * - `Logger.getInstance({ scope })` and `new Logger({ scope })` become
- *   `new BaseHelper({ scope }).logger`. IGNIS's console logger has no debug switch, so an
- *   `enableDebug` option is dropped and noted.
+ *   `LoggerFactory.getLogger([scope])`. IGNIS's console logger has its own debug gate (off unless
+ *   `DEBUG` is set, and always off in a browser), so an `enableDebug` option is dropped and noted.
  * - `Logger` as a type becomes `ILogger`.
  * - The `enableDebug` prop of `ArdorApplication` is removed (pass `logger`): listed.
  *
@@ -70,6 +70,7 @@ export class LoggerTransform {
     const edits: ITextEdit[] = [];
     const additions: string[] = [];
     const removed = new Set<TS.ImportSpecifier>(moved.map((entry) => entry.specifier));
+    const taken = LoggerTransform.takenNames({ ts, sourceFile, moved: removed });
     let renamed = moved.length;
 
     for (const entry of moved) {
@@ -88,6 +89,7 @@ export class LoggerTransform {
         findings,
         edits,
         additions,
+        taken,
       });
 
       renamed += outcome.renamed;
@@ -183,7 +185,7 @@ export class LoggerTransform {
                   sourceFile.getLineAndCharacterOfPosition(attribute.getStart(sourceFile)).line + 1,
                 name: 'enableDebug',
                 reason:
-                  "removed: IGNIS's console logger has no debug switch; pass `logger={...}` to ArdorApplication to use another logger",
+                  'removed: debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup, or pass `logger={...}` to ArdorApplication',
               });
             }
           }
@@ -205,8 +207,14 @@ export class LoggerTransform {
     findings: IFinding[];
     edits: ITextEdit[];
     additions: string[];
+    taken: Set<string>;
   }): { renamed: number; isFullyMoved: boolean } {
-    const { ts, sourceFile, logger, findings, edits, additions } = opts;
+    const { ts, sourceFile, logger, findings, edits, additions, taken } = opts;
+    // A file can already own the name (a project keeps its own LoggerFactory or BaseHelper): then IGNIS's is imported under an alias.
+    const factory = LoggerTransform.freeName({ taken, name: LoggerRenames.FACTORY });
+    const type = LoggerTransform.freeName({ taken, name: LoggerRenames.TYPE });
+    const importOf = (name: string, local: string): string =>
+      local === name ? name : `${name} as ${local}`;
     let renamed = 0;
     let isFullyMoved = true;
     const handled = new Set<TS.Node>();
@@ -221,7 +229,7 @@ export class LoggerTransform {
 
     const scopeOf = (
       call: TS.CallExpression | TS.NewExpression,
-    ): { text: string; debug: boolean; isShorthand: boolean } | undefined => {
+    ): { text: string; debug: boolean } | undefined => {
       const argument = call.arguments?.[0];
 
       if (!argument || !ts.isObjectLiteralExpression(argument)) {
@@ -229,7 +237,6 @@ export class LoggerTransform {
       }
 
       let scope: string | undefined;
-      let isShorthand = false;
       let debug = false;
 
       for (const property of argument.properties) {
@@ -237,7 +244,6 @@ export class LoggerTransform {
           scope = property.initializer.getText(sourceFile);
         } else if (ts.isShorthandPropertyAssignment(property) && property.name.text === 'scope') {
           scope = 'scope';
-          isShorthand = true;
         } else if (
           (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
           property.name.getText(sourceFile) === 'enableDebug'
@@ -248,7 +254,7 @@ export class LoggerTransform {
         }
       }
 
-      return scope === undefined ? undefined : { text: scope, debug, isShorthand };
+      return scope === undefined ? undefined : { text: scope, debug };
     };
 
     const rewriteCall = (call: TS.CallExpression | TS.NewExpression, target: TS.Node): void => {
@@ -257,7 +263,7 @@ export class LoggerTransform {
       if (!parsed) {
         leave(
           target,
-          'Logger is removed; pass an object with a scope to `new BaseHelper({ scope }).logger`, or use your own ILogger',
+          'Logger is removed; pass an object with a scope to `LoggerFactory.getLogger([scope])`, or use your own ILogger',
         );
         return;
       }
@@ -265,9 +271,9 @@ export class LoggerTransform {
       edits.push({
         start: call.getStart(sourceFile),
         end: call.getEnd(),
-        text: `new ${LoggerRenames.HELPER}({ ${parsed.text === 'scope' && parsed.isShorthand ? 'scope' : `scope: ${parsed.text}`} }).logger`,
+        text: `${factory}.getLogger([${parsed.text}])`,
       });
-      additions.push(LoggerRenames.HELPER);
+      additions.push(importOf(LoggerRenames.FACTORY, factory));
       renamed += 1;
 
       if (parsed.debug) {
@@ -275,7 +281,7 @@ export class LoggerTransform {
           line: lineOf(call),
           name: 'enableDebug',
           reason:
-            "note: dropped. IGNIS's console logger has no debug switch: debug lines go to console.debug, which the browser hides unless its Verbose level is on",
+            'note: dropped. debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup',
           kind: 'note',
         });
       }
@@ -309,9 +315,9 @@ export class LoggerTransform {
           edits.push({
             start: node.getStart(sourceFile),
             end: node.getEnd(),
-            text: LoggerRenames.TYPE,
+            text: type,
           });
-          additions.push(`type ${LoggerRenames.TYPE}`);
+          additions.push(`type ${importOf(LoggerRenames.TYPE, type)}`);
           renamed += 1;
         } else if (ts.isExportSpecifier(parent) && parent.propertyName && parent.name === node) {
           return;
@@ -331,6 +337,67 @@ export class LoggerTransform {
     visit(sourceFile);
 
     return { renamed, isFullyMoved };
+  }
+
+  /** The top-level names the file already owns, other than the IGNIS ones it imports and the ARDOR ones being moved. */
+  private static takenNames(opts: {
+    ts: TTypeScript;
+    sourceFile: TS.SourceFile;
+    moved: Set<TS.ImportSpecifier>;
+  }): Set<string> {
+    const { ts, sourceFile, moved } = opts;
+    const taken = new Set<string>();
+
+    for (const statement of sourceFile.statements) {
+      if (ts.isImportDeclaration(statement)) {
+        const clause = statement.importClause;
+        const named = clause?.namedBindings;
+
+        if (
+          !clause ||
+          (ts.isStringLiteral(statement.moduleSpecifier) &&
+            statement.moduleSpecifier.text === LoggerRenames.CORE_MODULE)
+        ) {
+          continue;
+        }
+
+        if (clause.name) {
+          taken.add(clause.name.text);
+        }
+
+        if (named && ts.isNamespaceImport(named)) {
+          taken.add(named.name.text);
+        } else if (named) {
+          for (const element of named.elements) {
+            if (!moved.has(element)) {
+              taken.add(element.name.text);
+            }
+          }
+        }
+      } else if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (ts.isIdentifier(declaration.name)) {
+            taken.add(declaration.name.text);
+          }
+        }
+      } else if (
+        (ts.isClassDeclaration(statement) ||
+          ts.isFunctionDeclaration(statement) ||
+          ts.isInterfaceDeclaration(statement) ||
+          ts.isTypeAliasDeclaration(statement) ||
+          ts.isEnumDeclaration(statement)) &&
+        statement.name
+      ) {
+        taken.add(statement.name.text);
+      }
+    }
+
+    return taken;
+  }
+
+  /** `name` when the file does not own it, else `Ignis<name>`. */
+  private static freeName(opts: { taken: Set<string>; name: string }): string {
+    return opts.taken.has(opts.name) ? `Ignis${opts.name}` : opts.name;
   }
 
   /** The ARDOR import lines without the moved names, and `@venizia/ignis-helpers/core` with them. */
