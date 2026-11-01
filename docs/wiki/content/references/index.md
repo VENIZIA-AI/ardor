@@ -42,7 +42,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 
 ## Runtime config
 
-`getRuntimeConfig` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
+`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
@@ -54,11 +54,11 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 Without `required` the result is `string | undefined`. With `required: true` and no value anywhere, it throws an `ApplicationError` from `@venizia/ignis-inversion`. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
 
 ```typescript
-import { getRuntimeConfig, RUNTIME_CONFIG_REQUIRED_CODE } from '@venizia/ardor';
+import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 try {
-  getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+  RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
 } catch (error) {
   if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
     console.error('missing config key', error.extra?.key);

@@ -1,19 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { rejectionOf } from '@venizia/dev-configs/testing';
-import {
-  BrowserUtility,
-  FileUtility,
-  getRuntimeConfig,
-  isBrowser,
-  isDefined,
-  isNumber,
-  isObject,
-  isString,
-  isValidDate,
-  RuntimeConfig,
-  toDataUrl,
-  ValueUtility,
-} from '@/utilities';
+import { BrowserUtility, FileUtility, ValueUtility } from '@/utilities';
 
 describe('boolean utilities', () => {
   test('isDefined rejects null and undefined only', () => {
@@ -144,20 +131,5 @@ describe('file utilities', () => {
 
       expect((error as Error).message).toBe('read failed');
     });
-  });
-});
-
-describe('the bare names stay as deprecated aliases until 0.5', () => {
-  test.each([
-    ['isDefined', isDefined, ValueUtility.isDefined],
-    ['isString', isString, ValueUtility.isString],
-    ['isNumber', isNumber, ValueUtility.isNumber],
-    ['isObject', isObject, ValueUtility.isObject],
-    ['isValidDate', isValidDate, ValueUtility.isValidDate],
-    ['isBrowser', isBrowser, BrowserUtility.isBrowser],
-    ['toDataUrl', toDataUrl, FileUtility.toDataUrl],
-    ['getRuntimeConfig', getRuntimeConfig, RuntimeConfig.get],
-  ])('%s is the same function as its class member', (_name, alias, member) => {
-    expect(alias).toBe(member);
   });
 });

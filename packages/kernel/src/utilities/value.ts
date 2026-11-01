@@ -30,18 +30,3 @@ export class ValueUtility {
     return !Number.isNaN(date.valueOf());
   }
 }
-
-/** @deprecated Use `ValueUtility.isDefined`. Removed in 0.5. */
-export const isDefined = ValueUtility.isDefined;
-
-/** @deprecated Use `ValueUtility.isString`. Removed in 0.5. */
-export const isString = ValueUtility.isString;
-
-/** @deprecated Use `ValueUtility.isNumber`. Removed in 0.5. */
-export const isNumber = ValueUtility.isNumber;
-
-/** @deprecated Use `ValueUtility.isObject`. Removed in 0.5. */
-export const isObject = ValueUtility.isObject;
-
-/** @deprecated Use `ValueUtility.isValidDate`. Removed in 0.5. */
-export const isValidDate = ValueUtility.isValidDate;

@@ -33,6 +33,3 @@ export class DispatchHooks {
     };
   }
 }
-
-/** @deprecated Use `DispatchHooks.create`. Removed in 0.5. */
-export const createAppDispatch = DispatchHooks.create;

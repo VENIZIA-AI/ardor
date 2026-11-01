@@ -44,8 +44,8 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
 | Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
 | Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `Logger` |
-| Build typed dispatch hooks for a Redux store | `createAppDispatch` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
-| Build typed selector hooks for Redux state | `createAppSelectors` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
+| Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
+| Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 | Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
 | Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
@@ -228,15 +228,15 @@ export function LoggerButton() {
 
 ## Redux
 
-### createAppDispatch
+### DispatchHooks.create
 
 ```ts
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
-import { createAppDispatch } from '@venizia/ardor';
+import { DispatchHooks } from '@venizia/ardor';
 
 type AppDispatch = Dispatch<UnknownAction>;
 
-export const { useAppDispatch, useMultipleAppDispatch } = createAppDispatch<AppDispatch>();
+export const { useAppDispatch, useMultipleAppDispatch } = DispatchHooks.create<AppDispatch>();
 
 export function useResetAction() {
   const dispatch = useAppDispatch();
@@ -252,10 +252,10 @@ export function useResetAction() {
 - **Return value**: `{ useAppDispatch, useMultipleAppDispatch }` - typed `useDispatch` hook returning `TDispatch`, and callback `(...actions) => void` dispatching non-falsy actions in sequential order.
 - **Gotcha**: Requires a react-redux `Provider` in the tree. Falsy action arguments passed to `useMultipleAppDispatch` are skipped. Defined in `packages/react/src/hooks/redux/use-app-dispatch.ts`.
 
-### createAppSelectors
+### SelectorHooks.create
 
 ```ts
-import { createAppSelectors } from '@venizia/ardor';
+import { SelectorHooks } from '@venizia/ardor';
 
 interface RootState {
   user: { name: string };
@@ -263,7 +263,7 @@ interface RootState {
 }
 
 export const { useAppSelector, useShallowEqualSelector, useDeepEqualSelector } =
-  createAppSelectors<RootState>();
+  SelectorHooks.create<RootState>();
 
 export function useUserState() {
   const userName = useAppSelector((state) => state.user.name);
@@ -421,7 +421,7 @@ export function ProductSearch() {
 
 - **Parameters**: `opts: IUseDebounceOptions<TValue>` - `value`, optional `delay` (default `App.DEFAULT_DEBOUNCE_TIME` = 500 ms), optional `enabled` (default `true`).
 - **Return value**: `IUseDebounceReturn<TValue>` containing `{ debouncedValue: TValue }`.
-- **Gotcha**: When `enabled` is `false` or outside the browser (`!isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
+- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
 
 ### useAutosave
 

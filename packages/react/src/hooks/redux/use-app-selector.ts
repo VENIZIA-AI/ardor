@@ -21,6 +21,3 @@ export class SelectorHooks {
     };
   }
 }
-
-/** @deprecated Use `SelectorHooks.create`. Removed in 0.5. */
-export const createAppSelectors = SelectorHooks.create;
