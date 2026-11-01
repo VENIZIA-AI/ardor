@@ -1,6 +1,6 @@
 import * as inversion from '@venizia/ignis-inversion';
 
-import { Features, loadFeatureMessages, resolveApplicationProviders } from '@venizia/ardor-admin';
+import { ApplicationProviders, Features } from '@venizia/ardor-admin';
 import { CoreBindings, type BaseArdorApplication } from '@venizia/ardor-kernel';
 
 /** A class (matched exactly), a class name, or a binding key; the shape the shared core takes. */
@@ -107,10 +107,10 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
       scope: SCOPE,
     });
 
-    const { i18nProvider } = resolveApplicationProviders({ container: target });
+    const { i18nProvider } = ApplicationProviders.resolve({ container: target });
     const features = Features.read({ container: target });
     Features.mount({ features });
-    await loadFeatureMessages({ features, i18nProvider, locale });
+    await Features.loadMessages({ features, i18nProvider, locale });
 
     // A skip that matched is a binding that exists: the core rejects one that matched nothing.
     const hasBindings = verification.verified.length > 0 || (skipBindings?.length ?? 0) > 0;

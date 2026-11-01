@@ -1,6 +1,11 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { loadFeatureMessages, resolveApplicationProviders } from '@/components/resolve';
+import {
+  ApplicationProviders,
+  hasPendingFeatureMessages,
+  loadFeatureMessages,
+  resolveApplicationProviders,
+} from '@/components/resolve';
 import { rejectionOf } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings } from '@venizia/ardor-kernel';
@@ -26,9 +31,9 @@ const createContainer = (opts: { withAuthProvider: boolean; withI18nProvider?: b
   return container;
 };
 
-describe('resolveApplicationProviders', () => {
+describe('ApplicationProviders.resolve', () => {
   test('returns the data, auth and i18n providers the application bound', () => {
-    const providers = resolveApplicationProviders({
+    const providers = ApplicationProviders.resolve({
       container: createContainer({ withAuthProvider: true }),
     });
 
@@ -38,7 +43,7 @@ describe('resolveApplicationProviders', () => {
   });
 
   test('leaves the auth provider out when the application has no sign-in', () => {
-    const providers = resolveApplicationProviders({
+    const providers = ApplicationProviders.resolve({
       container: createContainer({ withAuthProvider: false }),
     });
 
@@ -49,21 +54,21 @@ describe('resolveApplicationProviders', () => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({});
 
-    expect(() => resolveApplicationProviders({ container })).toThrow(
+    expect(() => ApplicationProviders.resolve({ container })).toThrow(
       CoreBindings.DEFAULT_REST_DATA_PROVIDER,
     );
   });
 
   test('throws when the i18n provider is unbound', () => {
     expect(() =>
-      resolveApplicationProviders({
+      ApplicationProviders.resolve({
         container: createContainer({ withAuthProvider: true, withI18nProvider: false }),
       }),
     ).toThrow(CoreBindings.DEFAULT_I18N_PROVIDER);
   });
 });
 
-describe('loadFeatureMessages', () => {
+describe('Features.loadMessages', () => {
   const featureWithLazyEnglish = Features.define({
     name: 'reports',
     messages: { en: () => Promise.resolve({ reports: { title: 'Reports' } }) },
@@ -73,7 +78,7 @@ describe('loadFeatureMessages', () => {
     const changeLocale = mock(() => Promise.resolve());
     const i18nProvider = { getLocale: () => 'en', changeLocale };
 
-    await loadFeatureMessages({
+    await Features.loadMessages({
       features: [featureWithLazyEnglish],
       i18nProvider: i18nProvider as never,
     });
@@ -85,7 +90,7 @@ describe('loadFeatureMessages', () => {
     const changeLocale = mock(() => Promise.resolve());
     const i18nProvider = { getLocale: () => 'fr', changeLocale };
 
-    await loadFeatureMessages({
+    await Features.loadMessages({
       features: [featureWithLazyEnglish],
       i18nProvider: i18nProvider as never,
     });
@@ -100,12 +105,22 @@ describe('loadFeatureMessages', () => {
     };
 
     const error = await rejectionOf(
-      loadFeatureMessages({
+      Features.loadMessages({
         features: [featureWithLazyEnglish],
         i18nProvider: i18nProvider as never,
       }),
     );
 
     expect((error as Error).message).toContain('key defined twice');
+  });
+});
+
+describe('the bare names stay as deprecated aliases until 0.5', () => {
+  test.each([
+    ['resolveApplicationProviders', resolveApplicationProviders, ApplicationProviders.resolve],
+    ['hasPendingFeatureMessages', hasPendingFeatureMessages, Features.hasPendingMessages],
+    ['loadFeatureMessages', loadFeatureMessages, Features.loadMessages],
+  ])('%s is the same function as its class member', (_name, alias, member) => {
+    expect(alias).toBe(member);
   });
 });

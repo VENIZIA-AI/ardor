@@ -32,7 +32,7 @@ import {
   type INetworkResponse,
   type ICustomParams,
   type IRestDataProviderOptions,
-  isDefined,
+  ValueUtility,
   NetworkHeaders,
   type ISendParams,
   type ISendResponse,
@@ -289,7 +289,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     }
 
     // The body's `where` is the row selector, so a `where` field in the data is refused.
-    if (isDefined(data) && Object.prototype.hasOwnProperty.call(data, 'where')) {
+    if (ValueUtility.isDefined(data) && Object.prototype.hasOwnProperty.call(data, 'where')) {
       throw getError({
         message:
           '[updateMany] data carries a "where" field, which the bulk route reads as the row selector and never writes. Update those records with update() instead.',

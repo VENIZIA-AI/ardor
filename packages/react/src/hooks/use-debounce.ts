@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { App, isBrowser } from '@venizia/ardor-kernel';
+import { App, BrowserUtility } from '@venizia/ardor-kernel';
 
 export interface IUseDebounceOptions<TValue> {
   value: TValue;
@@ -21,7 +21,7 @@ export const useDebounce = <TValue>(
   const [debouncedValue, setDebouncedValue] = React.useState<TValue>(value);
 
   React.useEffect(() => {
-    if (!isBrowser() || !enabled) {
+    if (!BrowserUtility.isBrowser() || !enabled) {
       return () => {};
     }
 
