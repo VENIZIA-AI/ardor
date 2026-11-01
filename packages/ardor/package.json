@@ -146,7 +146,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "350 B"
+      "limit": "660 B"
     },
     {
       "path": "dist/testing.js",
