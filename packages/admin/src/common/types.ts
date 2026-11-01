@@ -74,9 +74,16 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
   refreshToken: () => Promise<boolean>;
 }
 
+/**
+ * The messages of one locale: an object, or a loader called the first time the locale is used, so a
+ * bundler splits the catalogue out of the boot bundle (`() => import('./vi')`, whose default export
+ * is the messages). A loader that fails leaves that locale on the English messages.
+ */
+export type TI18nSource = object | (() => Promise<object>);
+
 export interface II18nProviderOptions {
-  /** Messages by locale, merged over the English ones: a source may hold only the keys it relabels. */
-  i18nSources?: Record<string, object>;
+  /** Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed. */
+  i18nSources?: Record<string, TI18nSource>;
   languages?: Array<Locale>;
 }
 
