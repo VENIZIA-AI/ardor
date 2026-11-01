@@ -65,7 +65,7 @@ What stays the same, so most code needs no change:
 What differs:
 
 - **There is no debug switch.** `enableDebug` is gone (from `Logger.getInstance` and from `ArdorApplication`). Debug lines always go to `console.debug`, which a browser hides until its Verbose level is on; a line used to be dropped until `enableDebug` was set.
-- **`ILogger` takes a `string` message.** The old `Logger` accepted any value as the message; pass it as an argument instead (`logger.info('[x] value: %o', value)`).
+- **`ILogger` takes a string first argument, then format arguments** (`logger.info('[x] value: %o', value)`). The old `Logger` also accepted an object or any other value as the first argument and passed it through to the console; pass it after a format string instead.
 - **The line format is IGNIS's:** `[scope] message`, with no timestamp and level in the text (the console adds its own). `generateLog`, `getTimestamp` and the static `getInstance` cache are gone, and `Logger.getInstance` returned one shared object per scope while `new BaseHelper({ scope }).logger` builds a new one: keep a logger you want to spy on in a constant.
 - **To send the lines elsewhere,** register a provider once at startup with `LoggerFactory.use` from `@venizia/ignis-helpers`; every `this.logger` follows it, even one built earlier. Pass `logger` to `ArdorApplication` for the React tree.
 
