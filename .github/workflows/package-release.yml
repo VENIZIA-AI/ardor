@@ -49,7 +49,8 @@ on:
         required: false
         default: false
 
-# The workflow can write nothing by default; the one job that pushes the release commits and the tags says so.
+# The workflow can write nothing by default; the jobs that write say so: `publish` pushes the release commits and
+# the tags, and `atlas-index` uploads the signed atlas pair of each tag, with no npm identity.
 # Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
 # name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
 # publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
@@ -423,6 +424,8 @@ jobs:
     needs: [plan, publish]
     if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}
     continue-on-error: true
+    # A hung install or upload must not hold the repository-wide `npm-release` lock until GitHub stops it (6 hours).
+    timeout-minutes: 15
     permissions:
       contents: write
     env:

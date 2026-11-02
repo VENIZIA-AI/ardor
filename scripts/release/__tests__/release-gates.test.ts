@@ -2398,6 +2398,10 @@ describe('package-release.yml publishes the atlas pair of each release tag, in a
       names.indexOf('Find the tags this run pushed'),
     );
     expect(find).toContain('tag="$package-v$PLAN_VERSION"');
+    // Without the id or the output line every step below is skipped, the run stays green and nothing is published.
+    expect(find).toContain('id: tags');
+    expect(find).toContain('echo "$package=$tag" >> "$GITHUB_OUTPUT"');
+    expect(job).toMatch(/\n {4}timeout-minutes: 15\n/);
     expect(find).toContain('git rev-parse --verify --quiet "refs/tags/$tag"');
     expect(job).toContain('PLAN_VERSION: ${{ needs.plan.outputs.version }}');
   });
