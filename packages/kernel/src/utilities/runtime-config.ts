@@ -6,7 +6,7 @@ import { getError } from '@venizia/ignis-inversion';
  */
 export const RUNTIME_CONFIG_GLOBAL = '__APP_CONFIG__';
 
-/** The `normalized.code` of the error `getRuntimeConfig` throws for a required value that is not set; the key is in its `extra.key`. */
+/** The `normalized.code` of the error `RuntimeConfig.get` throws for a required value that is not set; the key is in its `extra.key`. */
 export const RUNTIME_CONFIG_REQUIRED_CODE = 'ardor.runtime_config.required';
 
 const readString = (opts: { source: unknown; key: string }): string | undefined => {

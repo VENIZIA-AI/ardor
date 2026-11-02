@@ -10,6 +10,9 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="warning" text="Behavior Change" />
 
+> [!NOTE]
+> Since ARDOR 0.4.7, `getRuntimeConfig` is `RuntimeConfig.get`, with the same arguments and the same result. The code samples below use the old name. See [Utilities move to classes](./2026-11-01-class-namespaces).
+
 **In one line.** Nothing here breaks an application on ARDOR 0.4.1. Two additions in the kernel (`getRuntimeConfig` can require a value, and its error carries a code) and one in the preset image (nginx). ARDOR 0.4.2 carried the first and the third; ARDOR 0.4.3 adds the error code and the IGNIS 0.4.3 exports, and all four packages are 0.4.3.
 
 ```bash

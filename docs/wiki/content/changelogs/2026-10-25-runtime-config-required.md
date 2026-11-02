@@ -10,6 +10,9 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 
 <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" />
 
+> [!NOTE]
+> Since ARDOR 0.4.7, `getRuntimeConfig` is `RuntimeConfig.get`, with the same arguments and the same result. The code samples below use the old name. See [Utilities move to classes](./2026-11-01-class-namespaces).
+
 **In one line.** An app that cannot run without a configuration value passes `required: true` to `getRuntimeConfig` and gets a `string` back, or a clear error at start instead of an `undefined` that fails later. `required: true` is in 0.4.2; the error code is in 0.4.3.
 
 ## What changed

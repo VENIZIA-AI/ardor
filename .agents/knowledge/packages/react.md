@@ -10,13 +10,12 @@ tags: [react, hooks, context, package, injection, module-augmentation]
 
 ## Role
 
-Applications rarely install this package directly - most install [ardor](/packages/ardor.md), which re-exports it. But `react` is where the actual context and hooks are implemented. It sits between the kernel (which defines binding keys, `Logger`, and core types) and any UI package built on top, including admin.
+Applications rarely install this package directly - most install [ardor](/packages/ardor.md), which re-exports it. But `react` is where the actual context and hooks are implemented. It sits between the kernel (which defines binding keys and core types) and any UI package built on top, including admin.
 
 ## Exports
 
-The package barrel (`src/index.ts`) re-exports three groups:
+The package barrel (`src/index.ts`) re-exports two groups:
 
-- **common** - `ISyncFC`.
 - **contexts** - `ApplicationContext` and its value type `IApplicationContextValue`.
 - **hooks** - everything else: `useApplicationContext` and `useApplicationLogger`; the DI hooks `useInjectable`, `useInjectableContainer`, `useService`, `useProvider`, `useComponent` and `useConfiguration`, together with the `TUseInjectableKeys`/`IUseInjectableKeysOverrides` types; the UI hooks `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer` and `useWindowDimensions`; and the Redux factories `DispatchHooks.create` and `SelectorHooks.create` (formerly `createAppDispatch` and `createAppSelectors`, removed), for binding a typed `RootState`/`AppDispatch` pair.
 
