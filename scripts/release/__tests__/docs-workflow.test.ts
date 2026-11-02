@@ -28,6 +28,17 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
   const head = workflow.split(/\njobs:\n/)[0] ?? '';
   const jobs = jobsOf({ workflow });
 
+  // The other tests read the file as text, so a quote that breaks the YAML would pass them all and fail on GitHub.
+  test('the file is valid YAML, and its jobs and inputs read back', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<string, unknown>;
+      on: { workflow_dispatch: { inputs: Record<string, unknown> } };
+    };
+
+    expect(Object.keys(parsed.jobs)).toEqual(['changes', 'build', 'deploy', 'atlas-index']);
+    expect(Object.keys(parsed.on.workflow_dispatch.inputs)).toEqual(['job', 'ref']);
+  });
+
   test('the workflow exists, is named Docs and is titled by its branch', () => {
     expect(workflow.length).toBeGreaterThan(0);
     expect(head).toMatch(/^name: Docs\n/);
@@ -61,11 +72,15 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
     expect(atlas).toContain(
       "if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.job == 'atlas-index')",
     );
-    expect(atlas).toContain('group: atlas-index-${{ inputs.ref || github.ref }}');
+    expect(atlas).toContain('group: atlas-index-${{ inputs.ref || github.ref_name }}');
     // The input reaches the action as an input of its own, never as text of a script of this workflow.
     expect(atlas).toMatch(
       /uses: VENIZIA-AI\/vulcan\/\.github\/actions\/atlas-index@[0-9a-f]{40} # v\S+\n {8}with:\n {10}ref: \$\{\{ inputs\.ref \}\}\n {8}env:\n/,
     );
+
+    // `ref: ${{ inputs.ref }}` is how a checkout would take the input and run what a stranger named, with the key: it
+    // appears once in the file, as the input of the atlas action checked above.
+    expect([...workflow.matchAll(/ref: \$\{\{ inputs\.ref \}\}/g)]).toHaveLength(1);
 
     for (const [id, text] of Object.entries(jobs)) {
       for (const line of text.split('\n').filter((value) => value.includes('inputs.'))) {
@@ -145,6 +160,8 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
         run({ EVENT: 'workflow_dispatch', REF: 'refs/heads/develop', BEFORE: '', JOB: job });
 
       expect(manual('docs')).toBe('docs=true');
+      // A run that sent no job (defaults not applied) builds nothing.
+      expect(manual('')).toBe('docs=false');
       expect(manual('atlas-index')).toBe('docs=false');
     });
 
@@ -181,7 +198,7 @@ describe('deploy-docs.yml (the Docs workflow)', () => {
 
   test('the atlas index queues per ref and never cancels a run that is publishing', () => {
     expect(jobs['atlas-index']).toMatch(
-      /group: atlas-index-\$\{\{ inputs\.ref \|\| github\.ref \}\}\n/,
+      /group: atlas-index-\$\{\{ inputs\.ref \|\| github\.ref_name \}\}\n/,
     );
     expect(jobs['atlas-index']).toMatch(/cancel-in-progress: false/);
   });
