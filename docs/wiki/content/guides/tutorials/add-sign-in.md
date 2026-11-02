@@ -232,7 +232,7 @@ Register `AppRestDataProvider` under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, 
 
 ## 6. Sign out and error handling
 
-To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invokes `DefaultAuthService.cleanUp()`, deleting all keys starting with `@app/auth/` or `@app/oauth2/` from `localStorage`.
+To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invokes `DefaultAuthService.cleanUp()`, deleting all keys starting with `@app/auth/` from `localStorage`.
 
 `DefaultAuthProvider.checkError` evaluates HTTP errors raised by the data provider or react-admin:
 

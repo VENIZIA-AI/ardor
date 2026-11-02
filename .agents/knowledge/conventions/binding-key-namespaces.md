@@ -182,8 +182,8 @@ for the declaration and for the `any`-widening trap that silently turns the unio
 `LocalStorageKeys` in the same `keys.ts` names browser storage rather than container bindings:
 `@app/auth/token`, `@app/auth/identity`, `@app/auth/permission`. The prefix is load-bearing.
 `DefaultAuthService.cleanUp()` in `packages/kernel/src/base/services/auth.ts` clears only keys
-starting with `@app/auth/` or `@app/oauth2/`, so anything an application stores outside those two
-prefixes survives a logout - intentional for a UI preference, a leak for anything user-scoped.
+starting with `@app/auth/`, so anything an application stores outside that prefix
+survives a logout - intentional for a UI preference, a leak for anything user-scoped.
 
 ## Related
 

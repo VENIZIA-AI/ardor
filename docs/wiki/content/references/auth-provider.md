@@ -134,7 +134,7 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | Method | What it calls | What it returns |
 | --- | --- | --- |
 | `login(params)` | Posts credentials to `signInPath` via `restDataProvider.send()`, parses session with `readSignInSession()`, runs `beforeSaveSession()`, and persists via `saveSession()` | `Promise<{ ...response, redirectTo: string }>` redirecting to `afterLoginPath` (default `'/'`) |
-| `logout(params)` | Invokes `authService.cleanUp()`, clearing all `localStorage` keys starting with `@app/auth/` or `@app/oauth2/` | `Promise<void>` |
+| `logout(params)` | Invokes `authService.cleanUp()`, clearing all `localStorage` keys starting with `@app/auth/` | `Promise<void>` |
 | `checkAuth(params)` | Reads `authService.getAuth()`. Rejects if no token value is stored. When `paths.checkAuth` is set, sends a `GET` request to that path and rejects if response data is missing | `Promise<void>` (resolves on success, rejects with `{ redirectTo: loginPagePath }` on failure) |
 | `checkError(params)` | Reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, calls `authService.cleanUp()` and rejects with `{ redirectTo: loginPagePath }`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }` | `Promise<void>` (resolves for any status other than 401 or 403) |
 | `getIdentity(params)` | Reads stored identity from `authService.getUser()`. Rejects if `userId` is absent | `Promise<UserIdentity>` returning `{ userId, username, referenceId, provider }` |
