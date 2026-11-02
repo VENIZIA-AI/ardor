@@ -2344,6 +2344,27 @@ describe('package-release.yml publishes the atlas pair of each release tag, in a
   // The packages one run releases; a tag is `<package>-v<version>` (the manifest's tagPattern).
   const PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
 
+  // The other tests read the file as text, so a quote that breaks the YAML would pass them all and fail on GitHub.
+  test('the file is valid YAML, and the new job reads back', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; permissions?: Record<string, string>; steps?: { name: string }[] }
+      >;
+    };
+    const atlas = parsed.jobs['atlas-index'];
+
+    expect(atlas?.needs).toEqual(['plan', 'publish']);
+    expect(atlas?.permissions).toEqual({ contents: 'write' });
+    expect(atlas?.steps?.map((step) => step.name)).toEqual([
+      'Checkout',
+      'Setup Bun',
+      'Install',
+      'Find the tags this run pushed',
+      ...PACKAGES.map((name) => `Publish the atlas index of the ${name} tag`),
+    ]);
+  });
+
   test('the job runs after publish, also after a chain that stopped, and never fails the run', () => {
     expect(Object.keys(jobs)).toEqual([
       'plan',
