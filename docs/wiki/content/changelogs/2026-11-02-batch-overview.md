@@ -22,6 +22,7 @@ bun add @venizia/ardor
 |------|--------|----------|----|-------|
 | Breaking Change | Utility functions and factories are static members of classes, and the old bare names, `isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE` and two `HeaderConstants` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces) |
 | Breaking Change | The logger is `ILogger` from IGNIS, `enableDebug` is replaced by the `logger` prop, and the kernel `Logger`, `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-logger-from-ignis) |
+| Breaking Change | Sign-out removes only keys under `@app/auth/`, and `LocalStorageKeys.PREFIX_OAUTH2` is removed | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.7 | [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix) |
 | New feature | `Ardor` holds all 23 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
 | New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
 | Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
@@ -51,6 +52,7 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 - **A project that uses `buildInfoFile` in its Vite config.** Step 7.
 - **A project with a subclass of `DefaultI18nProvider`.** Step 8.
 - **An app made from the preset.** Step 9.
+- **An app that stores OAuth2 state under `@app/oauth2/`.** Step 10.
 
 ## Upgrade checklist
 
@@ -70,6 +72,7 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 7. **If your Vite config uses `buildInfoFile`:** it no longer installs a quiet logger. With `DEBUG` set, the IGNIS git lines print. Nothing else changes.
 8. **If you subclass `DefaultI18nProvider`:** read a locale through `this.localeSources.readNow({ locale })`, not `i18nProviderOptions.i18nSources[locale]`, which can now be a loader. `Features.hasPendingMessages` and `Features.loadMessages` also wait for lazy application sources.
 9. **If your app was made from the preset:** copy two changes by hand. In `src/configurations/admin.configuration.ts`, replace `getRuntimeConfig({ ... })` with `RuntimeConfig.get({ ... })` and import `RuntimeConfig`. In `src/application.test.ts`, write `const result = await restUrlOf(); expect(result)` instead of `expect(await restUrlOf())`, if you use the async-style lint rules below.
-10. **Optional: the async-style lint rules.** `@venizia/dev-configs` `0.4.7` has `asyncStyleConfigs` (`no-inline-await`, `no-return-await`, `no-await-promise-chain`, `no-silent-catch`) and `reactAsyncStyleConfigs` (`no-async-hook-callback`, `effect-cleanup-consistency`). They are off until you spread them next to `houseConfigs` or `reactHouseConfigs` in your ESLint config. The preset does not turn them on, and ARDOR's behavior does not depend on them.
-11. **Optional: lazy i18n sources.** Turn a catalogue the first screen does not need into `() => import('./vi')`. See [Lazy i18n sources](./2026-11-01-lazy-i18n-sources).
+10. **If your app keeps keys under `@app/oauth2/`:** sign-out no longer removes them, and `LocalStorageKeys.PREFIX_OAUTH2` is gone. Clear those keys yourself when the user signs out. See [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix).
+11. **Optional: the async-style lint rules.** `@venizia/dev-configs` `0.4.7` has `asyncStyleConfigs` (`no-inline-await`, `no-return-await`, `no-await-promise-chain`, `no-silent-catch`) and `reactAsyncStyleConfigs` (`no-async-hook-callback`, `effect-cleanup-consistency`). They are off until you spread them next to `houseConfigs` or `reactHouseConfigs` in your ESLint config. The preset does not turn them on, and ARDOR's behavior does not depend on them.
+12. **Optional: lazy i18n sources.** Turn a catalogue the first screen does not need into `() => import('./vi')`. See [Lazy i18n sources](./2026-11-01-lazy-i18n-sources).
 
