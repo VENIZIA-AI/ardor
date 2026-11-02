@@ -1,0 +1,75 @@
+---
+title: Everything since ARDOR 0.4.6 in one place, with an upgrade checklist
+description: A table of every change since 0.4.6 linked to its entry, the peer versions, and the ordered checklist an application follows to move to ARDOR 0.4.7.
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin', '@venizia/ardor']
+---
+
+# Changelog - 2026-11-02
+
+## Everything since ARDOR 0.4.6 in one place, with an upgrade checklist
+
+<Badge type="warning" text="Breaking Change" /> <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" />
+
+**In one line.** ARDOR 0.4.7 removes the old bare names and the kernel logger, so an application on 0.4.6 does not compile until it runs the codemod. It also moves the IGNIS peers to one prerelease family, adds the `Ardor` namespace and adds lazy i18n sources.
+
+```bash
+bun add @venizia/ardor
+```
+
+## What changed
+
+| Kind | Change | Packages | In | Entry |
+|------|--------|----------|----|-------|
+| Breaking Change | Utility functions and factories are static members of classes, and the old bare names, `isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE` and two `HeaderConstants` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces) |
+| Breaking Change | The logger is `ILogger` from IGNIS, `enableDebug` is replaced by the `logger` prop, and the kernel `Logger`, `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-logger-from-ignis) |
+| New feature | `Ardor` holds all 23 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
+| New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
+| Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
+
+Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 660 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.5 KB (lazy sources).
+
+| Package | ARDOR 0.4.6 | ARDOR 0.4.7 |
+|---------|-------------|-------------|
+| `@venizia/ardor` | 0.4.6 | 0.4.7 |
+| `@venizia/ardor-kernel` | 0.4.6 | 0.4.7 |
+| `@venizia/ardor-react`, `@venizia/ardor-admin` | 0.4.6 | 0.4.7 |
+
+| Peer | 0.4.6 | 0.4.7 |
+|------|-------|-------|
+| `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.1` | `^0.4.7-2` |
+| `@venizia/ignis-inversion`, `-filter` | `^0.4.1` | `^0.4.6-1` |
+| `typescript` (`@venizia/ardor`, optional) | none | `>=5.0.0` |
+
+IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helpers, kernel, connectors and boot. It does satisfy `^0.4.6-1` of inversion and filter.
+
+## Who is affected
+
+- **An application on 0.4.6 that uses a removed name, the kernel `Logger` or `BaseHelper`, or `enableDebug`.** It does not compile until you update. Steps 1 to 3.
+- **A class that `implements ILogger`, or code that passes a logger to `AuthRecovery`.** Step 4.
+- **An application that only calls `this.logger`, or only uses hooks.** Steps 1 and 5 only.
+- **A project with a test that calls `assertArdorApplicationBoots`.** Step 6.
+- **A project that uses `buildInfoFile` in its Vite config.** Step 7.
+- **A project with a subclass of `DefaultI18nProvider`.** Step 8.
+- **An app made from the preset.** Step 9.
+
+## Upgrade checklist
+
+1. **Move the four ARDOR packages together** to `0.4.7`, and every `@venizia/ignis-*` package to one IGNIS family: helpers, kernel, connectors and boot at `^0.4.7-2` or newer, inversion and filter at `^0.4.6-1` or newer. A range such as `^0.4.1` never matches a prerelease, so a mix installs two copies.
+2. **Run the codemod.** Install `typescript` (`>=5.0.0`, an optional peer of `@venizia/ardor`; without it the tool exits with code 2), commit your work, then preview, write, and run your formatter:
+
+   ```bash
+   bun run ardor codemod namespace src
+   bun run ardor codemod namespace src --write
+   ```
+
+   Add `--allow-dirty` after another codemod, `--hooks` to move hooks to `Ardor.useX`, and `--check` in CI. The tool reads `.ts`, `.tsx`, `.mts` and `.cts` files only. See [how to update your project](./2026-11-01-class-namespaces#how-to-upgrade).
+3. **Fix what the codemod only lists:** a name the file declares itself, re-exports by name, `Logger` subclasses and `instanceof`, `Logger.getInstance` without a `{ scope }` object, `enableDebug` on `ArdorApplication` or on a wrapper component of your own, and the removed names that have no replacement.
+4. **Check your loggers.** The IGNIS `ILogger` adds `emerg`, `log(level, ...)` and `for(methodName)`, so a class that `implements ILogger` needs those three. The `logger` option of `AuthRecovery` is an IGNIS `ILogger`.
+5. **Check debug logs.** The IGNIS console logger writes `debug` lines only when `DEBUG` is truthy and `NODE_ENV` allows it. See [debug logs in production and development](./2026-11-01-class-namespaces#before-you-update-debug-logs-in-production-and-development).
+6. **If a test calls `assertArdorApplicationBoots`:** it needs `@venizia/ignis-inversion` `0.4.6-1` or newer, and an older copy fails with a new message. Step 1 already covers it.
+7. **If your Vite config uses `buildInfoFile`:** it no longer installs a quiet logger. With `DEBUG` set, the IGNIS git lines print. Nothing else changes.
+8. **If you subclass `DefaultI18nProvider`:** read a locale through `this.localeSources.readNow({ locale })`, not `i18nProviderOptions.i18nSources[locale]`, which can now be a loader. `Features.hasPendingMessages` and `Features.loadMessages` also wait for lazy application sources.
+9. **If your app was made from the preset:** copy two changes by hand. In `src/configurations/admin.configuration.ts`, replace `getRuntimeConfig({ ... })` with `RuntimeConfig.get({ ... })` and import `RuntimeConfig`. In `src/application.test.ts`, write `const result = await restUrlOf(); expect(result)` instead of `expect(await restUrlOf())`, if you use the async-style lint rules below.
+10. **Optional: the async-style lint rules.** `@venizia/dev-configs` `0.4.7` has `asyncStyleConfigs` (`no-inline-await`, `no-return-await`, `no-await-promise-chain`, `no-silent-catch`) and `reactAsyncStyleConfigs` (`no-async-hook-callback`, `effect-cleanup-consistency`). They are off until you spread them next to `houseConfigs` or `reactHouseConfigs` in your ESLint config. The preset does not turn them on, and ARDOR's behavior does not depend on them.
+11. **Optional: lazy i18n sources.** Turn a catalogue the first screen does not need into `() => import('./vi')`. See [Lazy i18n sources](./2026-11-01-lazy-i18n-sources).
+

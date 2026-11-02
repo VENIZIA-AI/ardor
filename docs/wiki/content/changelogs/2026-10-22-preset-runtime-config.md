@@ -10,6 +10,9 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 
 <Badge type="tip" text="New Feature" />
 
+> [!NOTE]
+> Since ARDOR 0.4.7, `getRuntimeConfig` is `RuntimeConfig.get`, with the same arguments and the same result. The code samples below use the old name. See [Utilities move to classes](./2026-11-01-class-namespaces).
+
 **In one line.** An app made by `vulcan init --preset ardor` reads its API address when the container starts, so one built image runs in every environment, and it can refuse to start when a variable it needs is missing.
 
 ## What changed
