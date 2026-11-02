@@ -38,16 +38,6 @@ socketHelper.emit({ topic: 'order.ack', data: { id: 1 } });
 
 The methods are `subscribe({ event, handler })`, `subscribeMany({ events })`, `unsubscribe({ event, handler? })`, `unsubscribeMany({ events })`, `emit({ topic, data })`, `connect()`, `disconnect()`, `getSocketClient()`, `joinRooms`, `leaveRooms` and `shutdown()`. A handler receives the payload (`handler(data)`), not the socket: call `getSocketClient()` for the socket. Its documentation is IGNIS's.
 
-## From ARDOR's old helper
-
-| ARDOR (removed) | IGNIS |
-| --- | --- |
-| `import ... from '@venizia/ardor/socket-io'` | `import ... from '@venizia/ignis-helpers/socket-io/client'` |
-| `new SocketIOClientHelper({ identifier, host, options })` | the same, plus `module: { io }` from your own `import` |
-| `subscribe({ events, ignoreDuplicate })`, handler `(client, ...args)` | `subscribeMany({ events })` or `subscribe({ event, handler })`, handler `(data)` |
-| `unsubscribe({ events, handler? })` | `unsubscribe({ event, handler? })` or `unsubscribeMany({ events })` |
-| `emit({ topic, message })` | `emit({ topic, data })` |
-
 ## Binding it
 
 The helper is a plain class. Create one instance where you configure your application, bind it under a key you own, and resolve it with `useInjectable` where you need it; declare the key through `IUseInjectableKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)).

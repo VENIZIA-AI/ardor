@@ -5,7 +5,7 @@ description: Technical API reference for ARDOR container classes, providers, bin
 
 # ARDOR API References
 
-ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`getRuntimeConfig`) has its own section below.
+ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get`) has its own section below.
 
 <div class="guide-cards">
 <a href="./application" class="guide-card"><h3>Application</h3><p>Container lifecycle, configuration, and ArdorApplication component</p></a>

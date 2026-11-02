@@ -7,7 +7,7 @@ description: Getting started tutorials, core architecture concepts, and migratio
 
 ARDOR is the browser framework of [VENIZIA](https://venizia.ai). It structures ra-core applications inside an IGNIS inversion-of-control container. These guides take you from a first project to the core concepts and a migration path.
 
-ARDOR 0.4.3 gives you:
+ARDOR gives you:
 
 - **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
 - **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
