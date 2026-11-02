@@ -83,6 +83,44 @@ describe('ResponseReader.read', () => {
   });
 });
 
+describe('ResponseReader.readFilename', () => {
+  const read = (header?: string) => {
+    const headers = new Headers(header === undefined ? {} : { 'content-disposition': header });
+
+    return ResponseReader.readFilename({ headers });
+  };
+
+  test('filename* is UTF-8 decoded and wins over filename', () => {
+    expect(
+      read('attachment; filename="fallback.txt"; filename*=UTF-8\'\'b%C3%A1o%20c%C3%A1o.pdf'),
+    ).toBe('báo cáo.pdf');
+    expect(read("attachment; filename*=UTF-8''a%20b.txt")).toBe('a b.txt');
+  });
+
+  test('a quoted or a bare filename is read', () => {
+    expect(read('attachment; filename="q.csv"')).toBe('q.csv');
+    expect(read('attachment; filename=bare.csv')).toBe('bare.csv');
+  });
+
+  test('no header, no name, or a bad escape gives undefined or the raw text, never a throw', () => {
+    expect(read()).toBeUndefined();
+    expect(read('attachment')).toBeUndefined();
+    expect(read("attachment; filename*=UTF-8''100%.txt")).toBe('100%.txt');
+  });
+
+  test('it names the same file as read does', async () => {
+    const response = new Response('x', {
+      headers: {
+        'content-type': 'text/plain',
+        'content-disposition': 'attachment; filename="q.csv"',
+      },
+    });
+    const result = await ResponseReader.read({ response, type: RequestTypes.SEND });
+
+    expect(ResponseReader.readFilename({ headers: response.headers })).toBe(result.filename);
+  });
+});
+
 describe('ResponseReader.convert', () => {
   const headers = new Headers();
 
