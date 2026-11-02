@@ -1142,6 +1142,8 @@ export const runChain = async (opts: {
 
   // The packages whose bump has run: a package an earlier dispatch published is recorded only after its bump.
   const prepared = new Set<string>();
+  /** A package whose tarball did not answer in time: the record does not wait for it a second time. */
+  const unserved = new Set<string>();
 
   // Records the published packages one after another, in the order they were published: the first failure stops.
   let branchMade = false;
@@ -1151,7 +1153,7 @@ export const runChain = async (opts: {
     for (const pkg of toRelease) {
       const state = stateOf(pkg.name);
       const wants = pkg.mode === 'tag' ? state.stage === 'pushed' : state.stage === 'published';
-      if (!wants || (pkg.mode === 'record' && !prepared.has(pkg.name))) {
+      if (!wants || unserved.has(pkg.name) || (pkg.mode === 'record' && !prepared.has(pkg.name))) {
         continue;
       }
 
@@ -1233,6 +1235,7 @@ export const runChain = async (opts: {
     const outcome = await execute(ReleaseChain.settle({ pkg }), stateOf(pkg.name));
     await persist();
     if (!outcome.ok) {
+      unserved.add(pkg.name);
       return stopAfterRecording({
         failed: stateOf(pkg.name),
         label: ReleaseChain.settle({ pkg }).label,

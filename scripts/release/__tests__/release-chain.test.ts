@@ -73,6 +73,8 @@ const harness = (opts: {
   packedDependencies?: Record<string, string>;
   /** The peerDependencies the packed manifest of the package in scope carries. */
   packedPeerDependencies?: Record<string, string>;
+  /** The optionalDependencies the packed manifest of the package in scope carries. */
+  packedOptionalDependencies?: Record<string, string>;
 }): IHarness => {
   const events: string[] = [];
   const states: string[] = [];
@@ -108,6 +110,9 @@ const harness = (opts: {
               : {}),
             ...(inScope() && opts.packedPeerDependencies !== undefined
               ? { peerDependencies: opts.packedPeerDependencies }
+              : {}),
+            ...(inScope() && opts.packedOptionalDependencies !== undefined
+              ? { optionalDependencies: opts.packedOptionalDependencies }
               : {}),
           }),
         };
@@ -796,6 +801,15 @@ describe('runChain: a heal run, with the first package already published', () =>
     expect(waitAt).toBeLessThan(installAt);
   });
 
+  test('a package published earlier whose tarball never answers stops the run in phase P, and is waited for once', async () => {
+    const h = healed({ failWait: true });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+    expect(h.events.filter((event) => event === 'wait @venizia/ardor-kernel')).toHaveLength(1);
+  });
+
   test('the release branch is made once, also when the first package recorded is only tagged', async () => {
     const h = harness({
       manifests: { kernel: '0.4.6-0' },
@@ -873,6 +887,19 @@ describe('runChain: the exact pins on the siblings of the run', () => {
     expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
   });
 
+  test('a wrong pin in the dependencies is not hidden by a right pin in the peers of the same name', async () => {
+    const h = pinned({
+      packedDependencies: { '@venizia/ardor-kernel': '0.4.4' },
+      packedPeerDependencies: { '@venizia/ardor-kernel': '0.4.5' },
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+  });
+
   test('a wrong pin in the peers is not hidden by a right pin in the dependencies of the same name', async () => {
     const h = pinned({ packedPeerDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
     const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
@@ -881,6 +908,17 @@ describe('runChain: the exact pins on the siblings of the run', () => {
     expect(result.report).toContain(
       '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
     );
+  });
+
+  test('a wrong pin in the optional dependencies is refused too', async () => {
+    const h = pinned({ packedOptionalDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
   });
 
   test('a package that depends on one released after it stops the run before anything is published', async () => {
