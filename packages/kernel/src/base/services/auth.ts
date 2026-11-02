@@ -102,10 +102,7 @@ export class DefaultAuthService extends BaseService {
     }
 
     Object.keys(localStorage).forEach((key) => {
-      if (
-        !key.startsWith(LocalStorageKeys.PREFIX_AUTH) &&
-        !key.startsWith(LocalStorageKeys.PREFIX_OAUTH2)
-      ) {
+      if (!key.startsWith(LocalStorageKeys.PREFIX_AUTH)) {
         return;
       }
 
