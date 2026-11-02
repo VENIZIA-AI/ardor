@@ -364,6 +364,14 @@ export class ReleaseChain {
     ];
   }
 
+  /** A package an earlier dispatch published is read from the registry by the clean-install gate: wait until it is served. */
+  static settle(opts: { pkg: IChainPackage }): TStep {
+    return {
+      kind: 'wait',
+      label: `${opts.pkg.name}: wait for the tarball to answer 200 before the clean-install`,
+    };
+  }
+
   /**
    * The one clean-install gate of the run, after every package is bumped and packed and before the first publish. It
    * packs the named packages again from the tree and installs them with the others as local tarballs, so no sibling
@@ -543,13 +551,18 @@ export class ReleaseChain {
   } {
     const { options } = opts;
     const packages = options.packages.map((pkg) => ({ ...pkg, mode: pkg.mode ?? 'full' }));
+    /** The tarball folder is made by the first package that packs, not by the first package. */
+    const firstFull = packages.find((pkg) => pkg.mode === 'full')?.name;
 
     return {
       phaseA: packages.flatMap((pkg) => ReleaseChain.checks({ pkg, options })),
       phaseP: [
-        ...packages.flatMap((pkg, index) =>
-          ReleaseChain.prepare({ pkg, options, first: index === 0 }),
+        ...packages.flatMap((pkg) =>
+          ReleaseChain.prepare({ pkg, options, first: pkg.name === firstFull }),
         ),
+        ...packages
+          .filter((pkg) => pkg.mode === 'record' && firstFull !== undefined)
+          .map((pkg) => ReleaseChain.settle({ pkg })),
         ...ReleaseChain.install({
           names: packages.filter((pkg) => pkg.mode === 'full').map((pkg) => pkg.name),
         }),
@@ -739,7 +752,7 @@ export class ReleaseChain {
         lines.push(
           `A publish of ${name}@${version} was attempted and its outcome is unknown (a lost response still leaves npm holding the version).`,
           `Confirm first:  npm view ${name} versions`,
-          'If it is live, bump the manifest by hand so the next dispatch does not retry it; if it is not live, dispatch again.',
+          'Dispatch the same version again either way: if it is live the run records it without a second publish, if it is not the run publishes it.',
         );
         break;
       }
@@ -944,6 +957,7 @@ export const runChain = async (opts: {
           version?: string;
           dependencies?: Record<string, string>;
           peerDependencies?: Record<string, string>;
+          optionalDependencies?: Record<string, string>;
         };
         if (packed.version !== version) {
           return {
@@ -952,14 +966,16 @@ export const runChain = async (opts: {
           };
         }
 
-        // bun writes the exact version of every workspace sibling into the tarball: a different pin means the pack did
-        // not see this run's bump, and a pin on a package released after this one is an order bug.
+        // bun writes the exact version of every workspace sibling into the tarball (they are all `workspace:*`): a
+        // different pin means the pack did not see this run's bump, and a pin on a package released after this one is
+        // an order bug. A sibling declared with a caret range would be refused here; that is the point of the exact pin.
         const problems: string[] = [];
         const pins: Record<string, string> = {};
-        for (const [name, pinned] of Object.entries({
-          ...packed.dependencies,
-          ...packed.peerDependencies,
-        })) {
+        for (const [name, pinned] of [
+          ...Object.entries(packed.dependencies ?? {}),
+          ...Object.entries(packed.peerDependencies ?? {}),
+          ...Object.entries(packed.optionalDependencies ?? {}),
+        ]) {
           const sibling = ReleaseChain.WORKSPACE.find((dir) => workspaceNames.get(dir) === name);
           if (sibling === undefined || sibling === state?.name) {
             continue;
@@ -1191,22 +1207,38 @@ export const runChain = async (opts: {
 
   // Phase P: bump, pack and check every package, then one clean-install over the tarballs of the run. Nothing is
   // published yet, so a stop here leaves npm as it was.
-  let firstPrepared = true;
   for (const pkg of toRelease) {
     if (pkg.mode === 'tag') {
       continue;
     }
 
     const state = stateOf(pkg.name);
-    for (const step of ReleaseChain.prepare({ pkg, options: planned, first: firstPrepared })) {
+    for (const step of ReleaseChain.prepare({
+      pkg,
+      options: planned,
+      first: pkg.name === full[0]?.name,
+    })) {
       const outcome = await execute(step, state);
       await persist();
       if (!outcome.ok) {
         return stopAfterRecording({ failed: state, label: step.label, detail: outcome.detail });
       }
     }
-    firstPrepared = false;
     prepared.add(pkg.name);
+  }
+  // Packages published by an earlier dispatch are installed from the registry by the gate below: wait until it serves them.
+  for (const pkg of toRelease.filter(
+    (candidate) => candidate.mode === 'record' && full.length > 0,
+  )) {
+    const outcome = await execute(ReleaseChain.settle({ pkg }), stateOf(pkg.name));
+    await persist();
+    if (!outcome.ok) {
+      return stopAfterRecording({
+        failed: stateOf(pkg.name),
+        label: ReleaseChain.settle({ pkg }).label,
+        detail: outcome.detail,
+      });
+    }
   }
   for (const step of ReleaseChain.install({ names: full.map((pkg) => pkg.name) })) {
     const outcome = await execute(step, undefined);

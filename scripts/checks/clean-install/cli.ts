@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
  * Installs packed tarballs into empty projects (hoisted and isolated) and loads every published
- * sub-path with Bun, Node ESM and a browser build. Named packages are packed alone, their siblings
- * taken from the registry.
+ * sub-path with Bun, Node ESM and a browser build. Named packages are packed together and installed
+ * as each other's local tarballs; a sibling that is not named is taken from the registry.
  *
  * Usage: bun scripts/checks/clean-install/cli.ts [package ...] [--keep]
  */

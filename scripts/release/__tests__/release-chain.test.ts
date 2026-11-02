@@ -71,6 +71,8 @@ const harness = (opts: {
   noReleaseCommit?: boolean;
   /** The dependencies the packed manifest of the package in scope carries. */
   packedDependencies?: Record<string, string>;
+  /** The peerDependencies the packed manifest of the package in scope carries. */
+  packedPeerDependencies?: Record<string, string>;
 }): IHarness => {
   const events: string[] = [];
   const states: string[] = [];
@@ -103,6 +105,9 @@ const harness = (opts: {
             version: (inScope() ? opts.packedVersion : undefined) ?? '0.4.6-0',
             ...(inScope() && opts.packedDependencies !== undefined
               ? { dependencies: opts.packedDependencies }
+              : {}),
+            ...(inScope() && opts.packedPeerDependencies !== undefined
+              ? { peerDependencies: opts.packedPeerDependencies }
               : {}),
           }),
         };
@@ -696,6 +701,7 @@ describe('runChain: stops', () => {
     expect(result.states[0]?.stage).toBe('attempted');
     expect(result.report).toContain('its outcome is unknown');
     expect(result.report).toContain('npm view @venizia/ardor-kernel versions');
+    expect(result.report).toContain('records it without a second publish');
   });
 
   test('a changed tarball stops before the publish was attempted', async () => {
@@ -741,6 +747,108 @@ describe('runChain: stops', () => {
   });
 });
 
+describe('runChain: a heal run, with the first package already published', () => {
+  const healed = (extra: Parameters<typeof harness>[0] = {}) =>
+    harness({ onNpm: ['@venizia/ardor-kernel'], ...extra });
+
+  test('the tarball folder is made for the first package that packs, also when the first package is only recorded', async () => {
+    const h = healed();
+    const result = await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor']),
+      ports: h.ports,
+    });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(commands.filter((command) => command === 'mkdir -p /work/tarballs')).toHaveLength(1);
+    expect(indexOfCommand(commands, 'mkdir -p /work/tarballs')).toBeLessThan(
+      indexOfCommand(commands, 'react.tgz'),
+    );
+  });
+
+  test('the plan makes the folder in the first package that packs, too', () => {
+    const plan = ReleaseChain.plan({
+      options: {
+        ...optionsOf(['kernel', 'react']),
+        packages: [
+          { name: 'kernel', packageName: NAMES.kernel as string, mode: 'record' },
+          { name: 'react', packageName: NAMES.react as string, mode: 'full' },
+        ],
+      },
+    });
+    const labels = plan.phaseP.map((step) => step.label);
+
+    expect(labels.indexOf('make the tarball folder')).toBeGreaterThan(
+      labels.indexOf('kernel: bump'),
+    );
+    expect(labels.indexOf('make the tarball folder')).toBeLessThan(
+      labels.indexOf('react: pack the tarball to publish'),
+    );
+  });
+
+  test('a package published earlier is waited for before the clean-install gate reads it from the registry', async () => {
+    const h = healed();
+    await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+    const waitAt = h.events.indexOf('wait @venizia/ardor-kernel');
+    const installAt = h.events.findIndex((event) => event.includes('clean-install/cli.ts'));
+
+    expect(waitAt).toBeGreaterThan(-1);
+    expect(waitAt).toBeLessThan(installAt);
+  });
+
+  test('the release branch is made once, also when the first package recorded is only tagged', async () => {
+    const h = harness({
+      manifests: { kernel: '0.4.6-0' },
+      onNpm: ['@venizia/ardor-kernel'],
+      tagged: [],
+    });
+    const result = await runChain({
+      options: optionsOf(['kernel', 'react', 'admin'], { branch: 'release-7' }),
+      ports: h.ports,
+    });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(commands.filter((command) => command === 'git switch -c release-7')).toHaveLength(1);
+    expect(indexOfCommand(commands, 'git switch -c release-7')).toBeLessThan(
+      indexOfCommand(commands, 'git commit -m chore(react)'),
+    );
+  });
+});
+
+describe('runChain: what each commit holds', () => {
+  test('the release stages one package.json and the lockfile, never a whole tree that holds later bumps', async () => {
+    const h = harness({});
+    await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor'], { branch: 'release-3' }),
+      ports: h.ports,
+    });
+    const adds = h.commands().filter((command) => command.startsWith('git add'));
+
+    expect(adds).toEqual([
+      'git add packages/kernel/package.json bun.lock',
+      'git add packages/react/package.json bun.lock',
+      'git add packages/admin/package.json bun.lock',
+      'git add packages/ardor/package.json bun.lock',
+    ]);
+    expect(h.commands().filter((command) => /git (add -A|add \.|commit -a)/.test(command))).toEqual(
+      [],
+    );
+  });
+
+  test('the release branch is made once, at run time', async () => {
+    const h = harness({});
+    await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor'], { branch: 'release-3' }),
+      ports: h.ports,
+    });
+
+    expect(h.commands().filter((command) => command.startsWith('git switch -c'))).toEqual([
+      'git switch -c release-3',
+    ]);
+  });
+});
+
 // bun writes the exact version of every workspace sibling into the packed manifest. The fake workspace is at 0.4.5.
 describe('runChain: the exact pins on the siblings of the run', () => {
   const pinned = (extra: Parameters<typeof harness>[0]) =>
@@ -763,6 +871,16 @@ describe('runChain: the exact pins on the siblings of the run', () => {
       '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
     );
     expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+  });
+
+  test('a wrong pin in the peers is not hidden by a right pin in the dependencies of the same name', async () => {
+    const h = pinned({ packedPeerDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
   });
 
   test('a package that depends on one released after it stops the run before anything is published', async () => {
