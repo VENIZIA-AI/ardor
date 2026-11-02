@@ -56,11 +56,11 @@ What ARDOR adds to ra-core:
 |---|---|
 | `@venizia/ardor` | Umbrella: re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository` sub-path and the VULCAN preset (`dist/presets`). |
 | `@venizia/ardor-kernel` | Container and service foundation, with no UI: application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository). |
-| `@venizia/ardor-react` | React bindings: application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `createAppDispatch` and `createAppSelectors`. |
+| `@venizia/ardor-react` | React bindings: application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `DispatchHooks.create` and `SelectorHooks.create`. |
 | `@venizia/ardor-admin` | ra-core adapter: `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`). |
 
 The three layers use no Node builtins, so they run in the browser. Take `@venizia/ardor` unless you want only one layer.
 
 ## Where ARDOR is today
 
-ARDOR is at 0.4.3, before 1.0. A minor release in the 0.x line can break: 0.4.1 carried breaking changes, and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers at `^0.4.1`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+ARDOR is before 1.0. A minor release in the 0.x line can break: some 0.4.x releases carried breaking changes (0.4.1 and 0.4.7), and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers on the 0.4 line; the exact ranges are in each `package.json`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.

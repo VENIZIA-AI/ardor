@@ -7,9 +7,8 @@ tags: [process, knowledge, knowledge-sync]
 ---
 
 VULCAN ships the `knowledge-sync` skill (`node_modules/@venizia/vulcan/base/skills/knowledge-sync/`);
-its Step 1 builds one verifier target per changed code area. **Use this map in ARDOR, not the table
-inside the shipped skill** - VULCAN 0.1.0-0 still carries IGNIS's areas there (`packages/core-server`,
-`packages/connectors`), none of which exist in ARDOR.
+its Step 1 builds one verifier target per changed code area, taken from this map (`knowledge.syncAreas`
+in `.configs/vulcan.config.mts`).
 
 Extend the map when a new area appears, and keep it in step with the concepts it names.
 

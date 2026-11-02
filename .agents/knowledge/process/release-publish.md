@@ -146,7 +146,7 @@ bun run --filter "@venizia/*" force-update highest
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
 - Every workspace member declares the IGNIS packages it builds on as `catalog:` devDependencies, next to the
-  peer range. The peer range (`^0.4.1`) has no prerelease part, so it never matches `0.4.5-0`: a member
+  peer range. A peer range with no prerelease part (such as `^0.4.1`) never matches `0.4.5-0`: a member
   that lists the package only as a peer gets the stable copy from bun, beside the prerelease the other
   members use, and two copies of inversion are two sets of types (run 40903260601, issue #434). The Test
   job runs `release-gates.ts single-copy` right after the install; it walks what the root and each

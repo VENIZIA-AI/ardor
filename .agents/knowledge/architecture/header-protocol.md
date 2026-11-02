@@ -55,7 +55,7 @@ The `content-type` header is chosen from the request's declared `bodyType`, usin
 
 ## x-locale
 
-The `x-locale` header carries the active UI locale. It is opt-in: nothing is sent until the application mounts `useRequestHeaderLocale`, which pushes react-admin's current locale through `setHeaders({ headers })` - see [i18n](/architecture/i18n.md) for the mechanism. `App.DEFAULT_LOCALE` (`en.UTF-8`) is declared but read nowhere - it is not a fallback.
+The `x-locale` header carries the active UI locale. It is opt-in: nothing is sent until the application mounts `useRequestHeaderLocale`, which pushes react-admin's current locale through `setHeaders({ headers })` - see [i18n](/architecture/i18n.md) for the mechanism.
 
 ## setHeaders / removeHeaders
 

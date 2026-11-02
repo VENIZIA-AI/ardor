@@ -28,11 +28,6 @@ ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulc
 files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle instead.
 Re-run the sync after any pull that touched `.configs/` or `.agents/`.
 
-VULCAN 0.1.0-0 needs up to three syncs on a `settings.json` that already carries `$schema`
-first; run it until every line reads `unchanged`. A checkout set up before VULCAN keeps a
-SessionStart entry for the deleted session hook under `.agents/plugin/` - delete that
-entry from `.claude/settings.json` by hand.
-
 ## Step 3: build, in dependency order
 
 `make build` rebuilds every package in dependency order: kernel, then react and admin, then the
