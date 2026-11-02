@@ -2,9 +2,9 @@
  * Waiting for a published package to be installable.
  *
  * `npm view <pkg>@next version` reads the packument, and the packument is listed minutes before the
- * tarball answers: `bun install` on the version fails with a 404 in that window. The next package
- * of a release chain runs its clean-install gate against the one before it, so the chain waits for
- * the tarball itself, not for the dist-tag.
+ * tarball answers: `bun install` on the version fails with a 404 in that window. A git record of a
+ * release chain (the tag) must mean installable, so the chain waits for the tarball itself, not for
+ * the dist-tag, once after every package is published.
  */
 
 const REGISTRY = 'https://registry.npmjs.org';

@@ -331,7 +331,9 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
   test("clean-install is the chain's, after the sibling is out, and not the test job's", () => {
     expect(testJob).not.toContain('clean-install');
-    expect(chainPlan.phaseB.some((step) => step.label === 'react: clean-install')).toBe(true);
+    expect(
+      chainPlan.phaseP.some((step) => step.label.startsWith('clean-install: kernel, react')),
+    ).toBe(true);
   });
 
   test('the publish job checks the branches, installs, releases and reports, in that order', () => {
@@ -383,12 +385,36 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     );
   });
 
+  test('every package is published before the first wait, and nothing is committed or tagged before the last publish', () => {
+    const all = [...chainPlan.phaseP, ...chainPlan.phaseB, ...chainPlan.phaseR].map(
+      (step) => step.label,
+    );
+    const publishes = ['kernel', 'react', 'admin', 'ardor'].map((name) =>
+      all.indexOf(`${name}: publish`),
+    );
+    const firstWait = all.findIndex((label) =>
+      label.endsWith('wait for the tarball to answer 200'),
+    );
+    const firstGitWrite = all.findIndex((label) => /: (commit|push|annotate the tag)$/.test(label));
+
+    expect(publishes).toEqual([...publishes].sort((a, b) => a - b));
+    expect(publishes[0]).toBeGreaterThan(-1);
+    expect(firstWait).toBeGreaterThan(publishes[3] as number);
+    expect(firstGitWrite).toBeGreaterThan(publishes[3] as number);
+    // The one clean-install gate runs before the first publish, from the tarballs of the run.
+    expect(all.findIndex((label) => label.startsWith('clean-install:'))).toBeLessThan(
+      publishes[0] as number,
+    );
+  });
+
   test('the bump comes before the pack, the publish before any git write', () => {
     expect(
       inOrder({
-        labels: labelsOf({ steps: chainPlan.phaseB, name: 'react' }),
+        labels: labelsOf({
+          steps: [...chainPlan.phaseP, ...chainPlan.phaseB, ...chainPlan.phaseR],
+          name: 'react',
+        }),
         order: [
-          'clean-install',
           'bump',
           'pack the tarball to publish',
           'check the packed manifest',
@@ -409,8 +435,8 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
   test('the preset is written after the bump and before the pack, for ardor only', () => {
     const indexOfLabel = (label: string): number =>
-      chainPlan.phaseB.findIndex((step) => step.label === label);
-    const presets = chainPlan.phaseB.filter((step) => step.label.includes('VULCAN preset'));
+      chainPlan.phaseP.findIndex((step) => step.label === label);
+    const presets = chainPlan.phaseP.filter((step) => step.label.includes('VULCAN preset'));
 
     expect(presets).toHaveLength(1);
     expect(indexOfLabel('ardor: write the VULCAN preset')).toBeGreaterThan(
@@ -431,7 +457,9 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   });
 
   test('the dist-tag and the next heal come after the publish and never stop the chain', () => {
-    const steps = chainPlan.phaseB.filter((step) => step.label.startsWith('react: '));
+    const steps = [...chainPlan.phaseB, ...chainPlan.phaseR].filter((step) =>
+      step.label.startsWith('react: '),
+    );
     const publish = steps.findIndex((step) => step.kind === 'publish');
     const highest = steps.find((step) => step.label === 'react: tag highest');
     const heal = steps.find((step) => step.label === 'react: keep next at or above latest');
@@ -645,7 +673,7 @@ describe('the workflow passes what it published, and can heal alone', () => {
   const workflow = workflowText;
 
   test('the heal step of the chain is given the published package, version and tag', () => {
-    const heal = chainPlan.phaseB.find(
+    const heal = chainPlan.phaseR.find(
       (step) => step.label === 'kernel: keep next at or above latest',
     );
 
@@ -990,7 +1018,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     // C24: the tarball that was packed and checked is the tarball that is published: its checksum is
     // recorded, then checked, before the publish, and the check compares against the record.
     tarballChecksum: ({ chain }: IFiles): boolean => {
-      const body = chain.slice(chain.indexOf('static release('));
+      const body = chain.slice(chain.indexOf('static prepare('));
       const record = body.indexOf("kind: 'record-sha'");
       const verify = body.indexOf("kind: 'verify-sha'");
       const publish = body.indexOf("kind: 'publish'");

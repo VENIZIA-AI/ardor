@@ -34,6 +34,25 @@ interface IHarness {
   states: string[];
 }
 
+/** The package a command is about: its folder, its tarball, its relock folder, its commit or its tag. */
+const currentOf = (text: string, cwd?: string): string | undefined => {
+  const subject = `${cwd ?? ''} ${text}`;
+  for (const pattern of [
+    /packages\/(kernel|react|admin|ardor)\b/,
+    /\/(kernel|react|admin|ardor)\.tgz/,
+    /relock-(kernel|react|admin|ardor)\b/,
+    /chore\((kernel|react|admin|ardor)\)/,
+    /\b(kernel|react|admin|ardor)-v\d/,
+  ]) {
+    const found = pattern.exec(subject);
+    if (found) {
+      return found[1];
+    }
+  }
+
+  return undefined;
+};
+
 /** Fake ports: every call is recorded in order; `fail` makes a matching command exit 1. */
 const harness = (opts: {
   manifests?: Record<string, string>;
@@ -48,6 +67,14 @@ const harness = (opts: {
   /** `merge-base --is-ancestor`: true when develop already holds the release commit. */
   developHolds?: boolean;
   builtOn?: string;
+  /** `git log --grep` finds no release commit. */
+  noReleaseCommit?: boolean;
+  /** The dependencies the packed manifest of the package in scope carries. */
+  packedDependencies?: Record<string, string>;
+  /** The peerDependencies the packed manifest of the package in scope carries. */
+  packedPeerDependencies?: Record<string, string>;
+  /** The optionalDependencies the packed manifest of the package in scope carries. */
+  packedOptionalDependencies?: Record<string, string>;
 }): IHarness => {
   const events: string[] = [];
   const states: string[] = [];
@@ -56,13 +83,10 @@ const harness = (opts: {
   const inScope = () => opts.scope === undefined || opts.scope === current;
 
   const ports: IChainPorts = {
-    run: async ({ command }) => {
+    run: async ({ command, cwd }) => {
       const text = command.join(' ');
       events.push(`run ${text}`);
-      const started = /^make clean-install-(\w+)$/.exec(text);
-      if (started) {
-        current = started[1] as string;
-      }
+      current = currentOf(text, cwd) ?? current;
       if (inScope() && opts.fail?.(text)) {
         return { exitCode: 1, stdout: '' };
       }
@@ -72,12 +96,24 @@ const harness = (opts: {
       if (text.includes('merge-base --is-ancestor')) {
         return { exitCode: opts.developHolds ? 0 : 1, stdout: '' };
       }
+      if (text.startsWith('git log -1 --format=%H')) {
+        return { exitCode: 0, stdout: opts.noReleaseCommit ? '' : 'deadbeef00\n' };
+      }
       if (text.startsWith('tar -xzOf')) {
         return {
           exitCode: 0,
           stdout: JSON.stringify({
             name: 'x',
             version: (inScope() ? opts.packedVersion : undefined) ?? '0.4.6-0',
+            ...(inScope() && opts.packedDependencies !== undefined
+              ? { dependencies: opts.packedDependencies }
+              : {}),
+            ...(inScope() && opts.packedPeerDependencies !== undefined
+              ? { peerDependencies: opts.packedPeerDependencies }
+              : {}),
+            ...(inScope() && opts.packedOptionalDependencies !== undefined
+              ? { optionalDependencies: opts.packedOptionalDependencies }
+              : {}),
           }),
         };
       }
@@ -94,13 +130,16 @@ const harness = (opts: {
     tagOnOrigin: async ({ tag }) => (opts.tagged ?? []).includes(tag),
     waitForTarball: async ({ packageName }) => {
       events.push(`wait ${packageName}`);
+      current = Object.keys(NAMES).find((key) => NAMES[key] === packageName) ?? current;
       if (opts.failWait && inScope()) {
         throw new Error('still 404');
       }
     },
-    sha256: async () => {
-      shaCalls[current] = (shaCalls[current] ?? 0) + 1;
-      return opts.shaChanges && inScope() && (shaCalls[current] ?? 0) > 1 ? 'changed' : 'abc';
+    sha256: async ({ path }) => {
+      const key = path.split('/').pop() ?? '';
+      shaCalls[key] = (shaCalls[key] ?? 0) + 1;
+      const scoped = opts.scope === undefined || key === `${opts.scope}.tgz`;
+      return opts.shaChanges && scoped && (shaCalls[key] ?? 0) > 1 ? 'changed' : 'abc';
     },
     writeFile: async ({ path, content }) => {
       events.push(`write ${path}`);
@@ -127,12 +166,13 @@ const indexOfCommand = (commands: string[], needle: string, from = 0): number =>
   commands.findIndex((command, index) => index >= from && command.includes(needle));
 
 describe('ReleaseChain.plan', () => {
-  const { phaseA, phaseB } = ReleaseChain.plan({
+  const { phaseA, phaseP, phaseB, phaseR } = ReleaseChain.plan({
     options: optionsOf(['kernel', 'react', 'admin', 'ardor'], {
       chainReleased: ['@venizia/ardor-kernel'],
     }),
   });
   const labels = (steps: typeof phaseA) => steps.map((step) => step.label);
+  const text = (steps: typeof phaseA) => steps.map((step) => ReleaseChain.describe({ step }));
 
   test('phase A holds no publish and no git write', () => {
     for (const step of phaseA) {
@@ -162,17 +202,47 @@ describe('ReleaseChain.plan', () => {
     );
   });
 
-  test('phase B of a package runs in the order of the card', () => {
-    const order = labels(phaseB).filter((label) => label.startsWith('react:'));
-
-    expect(order).toEqual([
-      'react: clean-install',
+  test('phase P prepares a package: bump, pack, check the manifest and the pins, record the sha', () => {
+    expect(labels(phaseP).filter((label) => label.startsWith('react:'))).toEqual([
       'react: bump',
       'react: pack the tarball to publish',
       'react: check the packed manifest',
       'react: record the sha256',
+    ]);
+  });
+
+  test('phase P ends with one clean-install over the tarballs of the whole run, and publishes nothing', () => {
+    const installs = labels(phaseP).filter((label) => label.startsWith('clean-install'));
+
+    expect(installs).toEqual([
+      'clean-install: kernel, react, admin, ardor from their own tarballs',
+    ]);
+    expect(labels(phaseP).at(-1)).toBe(installs[0]);
+    expect(text(phaseP).at(-1)).toContain(
+      'bun scripts/checks/clean-install/cli.ts kernel react admin ardor',
+    );
+    for (const line of text(phaseP)) {
+      expect(line).not.toContain('npm publish');
+      expect(line).not.toContain('git commit');
+      expect(line).not.toContain('git push');
+      expect(line).not.toContain('git tag');
+    }
+  });
+
+  test('phase B only checks the sha and publishes: no wait, no dist-tag, no git write', () => {
+    expect(labels(phaseB).filter((label) => label.startsWith('react:'))).toEqual([
       'react: check the sha256',
       'react: publish',
+    ]);
+    expect(phaseB.some((step) => step.kind === 'wait')).toBe(false);
+    for (const line of text(phaseB)) {
+      expect(line).not.toContain('tag-highest');
+      expect(line).not.toContain('git ');
+    }
+  });
+
+  test('phase R records a package: the wait, the dist-tags, the release commit, the push and the tag', () => {
+    expect(labels(phaseR).filter((label) => label.startsWith('react:'))).toEqual([
       'react: wait for the tarball to answer 200',
       'react: tag highest',
       'react: keep next at or above latest',
@@ -191,17 +261,17 @@ describe('ReleaseChain.plan', () => {
   });
 
   test('the preset is written for ardor only, after the bump and before the pack', () => {
-    const ardor = labels(phaseB).filter((label) => label.startsWith('ardor:'));
+    const all = labels(phaseP);
 
-    expect(labels(phaseB).filter((label) => label.includes('preset'))).toEqual([
+    expect(all.filter((label) => label.includes('preset'))).toEqual([
       'ardor: write the VULCAN preset',
     ]);
-    expect(ardor.indexOf('ardor: bump')).toBeLessThan(ardor.length);
-    const all = labels(phaseB);
     expect(all.indexOf('ardor: bump')).toBeLessThan(all.indexOf('ardor: write the VULCAN preset'));
     expect(all.indexOf('ardor: write the VULCAN preset')).toBeLessThan(
       all.indexOf('ardor: pack the tarball to publish'),
     );
+    // Every package is bumped before the preset names their versions.
+    expect(all.indexOf('admin: bump')).toBeLessThan(all.indexOf('ardor: write the VULCAN preset'));
   });
 
   test('the publish is a provenance publish of an absolute tarball, with the dist-tag', () => {
@@ -213,7 +283,7 @@ describe('ReleaseChain.plan', () => {
   });
 
   test('the chain never pulls or rebases', () => {
-    const everything = [...phaseA, ...phaseB]
+    const everything = [...phaseA, ...phaseP, ...phaseB, ...phaseR]
       .map((step) => ReleaseChain.describe({ step }))
       .join('\n');
 
@@ -222,7 +292,7 @@ describe('ReleaseChain.plan', () => {
   });
 
   test('the release branch is made once, before the first commit', () => {
-    const { phaseB: withBranch } = ReleaseChain.plan({
+    const { phaseR: withBranch } = ReleaseChain.plan({
       options: optionsOf(['kernel', 'react'], { branch: 'release-42' }),
     });
     const switches = labels(withBranch).filter((label) => label === 'switch to the release branch');
@@ -234,7 +304,7 @@ describe('ReleaseChain.plan', () => {
   });
 
   test('the commit subject carries the issue and the version', () => {
-    const { phaseB: withIssue } = ReleaseChain.plan({
+    const { phaseR: withIssue } = ReleaseChain.plan({
       options: optionsOf(['kernel'], { issue: '412' }),
     });
     const commit = withIssue.find((step) => step.label === 'kernel: commit');
@@ -242,6 +312,35 @@ describe('ReleaseChain.plan', () => {
     expect(commit && 'command' in commit && commit.command.at(-1)).toBe(
       '[#412] chore(kernel): release v0.4.6-0 [0.4.6-0]',
     );
+  });
+
+  test('a package that only lacks its tag gets the wait and the tag on the release commit, nothing else', () => {
+    const plan = ReleaseChain.plan({
+      options: {
+        ...optionsOf(['kernel']),
+        packages: [{ name: 'kernel', packageName: '@venizia/ardor-kernel', mode: 'tag' }],
+      },
+    });
+
+    expect(labels(plan.phaseR)).toEqual([
+      'kernel: wait for the tarball to answer 200',
+      'kernel: annotate the tag on the release commit',
+      'kernel: push the tag',
+    ]);
+    expect(plan.phaseR[1]).toMatchObject({ grep: 'chore(kernel): release v0.4.6-0 ' });
+  });
+
+  test('a package an earlier dispatch published is only bumped and recorded', () => {
+    const plan = ReleaseChain.plan({
+      options: {
+        ...optionsOf(['kernel']),
+        packages: [{ name: 'kernel', packageName: '@venizia/ardor-kernel', mode: 'record' }],
+      },
+    });
+
+    expect(labels(plan.phaseP)).toEqual(['kernel: bump']);
+    expect(plan.phaseB).toEqual([]);
+    expect(labels(plan.phaseR)).toContain('kernel: commit');
   });
 });
 
@@ -263,7 +362,52 @@ describe('runChain: a clean run', () => {
     }
   });
 
-  test('each package is waited for, committed, pushed and tagged before the next one starts', async () => {
+  test('every package is published before any is waited for, committed or tagged', async () => {
+    const h = harness({});
+    await runChain({ options: optionsOf(['kernel', 'react', 'admin', 'ardor']), ports: h.ports });
+    const e = h.events;
+    const publishes = e
+      .map((event, index) => (event.includes('.tgz --access public') ? index : -1))
+      .filter((index) => index > -1);
+    const firstPublish = publishes[0] as number;
+    const lastPublish = publishes.at(-1) as number;
+    const firstWait = e.findIndex((event) => event.startsWith('wait '));
+
+    expect(publishes).toHaveLength(4);
+    expect(firstWait).toBeGreaterThan(lastPublish);
+    // Between the first and the last publish nothing is waited for, tagged or committed.
+    for (const event of e.slice(firstPublish, lastPublish)) {
+      expect(event).not.toMatch(/^wait |git commit|git push|git tag|tag-highest|heal-next/);
+    }
+    // And there is one wait for each package, after all the publishes.
+    expect(e.filter((event) => event.startsWith('wait '))).toEqual([
+      'wait @venizia/ardor-kernel',
+      'wait @venizia/ardor-react',
+      'wait @venizia/ardor-admin',
+      'wait @venizia/ardor',
+    ]);
+  });
+
+  test('the packages are published in dependency order, and the clean-install gate runs once, before the first publish', async () => {
+    const h = harness({});
+    await runChain({ options: optionsOf(['kernel', 'react', 'admin', 'ardor']), ports: h.ports });
+    const commands = h.commands();
+    const order = ['kernel', 'react', 'admin', 'ardor'].map((name) =>
+      indexOfCommand(commands, `${name}.tgz --access public`),
+    );
+    const installs = commands
+      .map((command, index) => (command.includes('clean-install/cli.ts') ? index : -1))
+      .filter((index) => index > -1);
+
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(installs).toHaveLength(1);
+    expect(installs[0]).toBeLessThan(order[0] as number);
+    expect(commands[installs[0] as number]).toBe(
+      'bun scripts/checks/clean-install/cli.ts kernel react admin ardor',
+    );
+  });
+
+  test('each package is then waited for, committed, pushed and tagged before the next one is recorded', async () => {
     const h = harness({});
     await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
     const e = h.events;
@@ -274,15 +418,15 @@ describe('runChain: a clean run', () => {
     const kernelCommit = at('git commit -m chore(kernel)');
     const kernelPush = at('git push origin HEAD:develop', kernelCommit);
     const kernelTag = at('git push origin kernel-v0.4.6-0');
-    const reactInstall = at('make clean-install-react');
-    const reactPublish = at('react.tgz --access public');
+    const reactWait = at('wait @venizia/ardor-react');
+    const reactCommit = at('git commit -m chore(react)');
 
-    expect(kernelWait).toBeGreaterThan(at('kernel.tgz --access public'));
+    expect(kernelWait).toBeGreaterThan(at('react.tgz --access public'));
     expect(kernelCommit).toBeGreaterThan(kernelWait);
     expect(kernelPush).toBeGreaterThan(kernelCommit);
     expect(kernelTag).toBeGreaterThan(kernelPush);
-    expect(reactInstall).toBeGreaterThan(kernelTag);
-    expect(reactPublish).toBeGreaterThan(reactInstall);
+    expect(reactWait).toBeGreaterThan(kernelTag);
+    expect(reactCommit).toBeGreaterThan(reactWait);
   });
 
   test('every package ends tagged', async () => {
@@ -320,16 +464,38 @@ describe('runChain: what is already released (D5)', () => {
     expect(indexOfCommand(commands, 'react.tgz --access public')).toBeGreaterThan(-1);
   });
 
-  test('on npm with the manifest below the version: stop before changing anything', async () => {
+  test('on npm with the manifest below the version: it is recorded without a second publish', async () => {
     const h = harness({ onNpm: ['@venizia/ardor-react'] });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(result.states.map((state) => state.mode)).toEqual(['full', 'record']);
+    expect(result.states.map((state) => state.stage)).toEqual(['tagged', 'tagged']);
+    // kernel is published, react is not published again; react is bumped, committed and tagged.
+    expect(indexOfCommand(commands, 'kernel.tgz --access public')).toBeGreaterThan(-1);
+    expect(indexOfCommand(commands, 'react.tgz')).toBe(-1);
+    expect(indexOfCommand(commands, 'npm version 0.4.6-0')).toBeGreaterThan(-1);
+    expect(indexOfCommand(commands, 'git commit -m chore(react)')).toBeGreaterThan(-1);
+    expect(indexOfCommand(commands, 'git push origin react-v0.4.6-0')).toBeGreaterThan(-1);
+    expect(commands.filter((command) => command.includes('npm version'))).toHaveLength(2);
+    // The clean-install gate covers what this run packs, not the package that was published before.
+    expect(commands.find((command) => command.includes('clean-install/cli.ts'))).toBe(
+      'bun scripts/checks/clean-install/cli.ts kernel',
+    );
+  });
+
+  test('a phase A stop before the bump of a package published earlier does not try to record it', async () => {
+    const h = harness({
+      onNpm: ['@venizia/ardor-react'],
+      fail: (command) =>
+        command.includes('release-gates.ts protocols /work/tmp/packed-kernel.json'),
+    });
     const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
 
     expect(result.ok).toBe(false);
-    expect(h.commands()).toEqual([]);
-    expect(result.report).toContain(
-      '@venizia/ardor-react@0.4.6-0 is on npm but the manifest is at 0.4.5',
-    );
-    expect(result.report).toContain('npm version 0.4.6-0 --no-git-tag-version');
+    expect(indexOfCommand(h.commands(), 'git commit')).toBe(-1);
+    expect(indexOfCommand(h.commands(), 'npm version')).toBe(-1);
   });
 
   test('the manifest at the version but not on npm: stop and say so', async () => {
@@ -341,13 +507,35 @@ describe('runChain: what is already released (D5)', () => {
     expect(result.report).toContain('a bump without a publish');
   });
 
-  test('the manifest at the version, on npm, the tag missing: stop with the tag repair', async () => {
+  test('the manifest at the version, on npm, the tag missing: the tag is written on the release commit', async () => {
     const h = harness({ manifests: { kernel: '0.4.6-0' }, onNpm: ['@venizia/ardor-kernel'] });
+    const result = await runChain({ options: optionsOf(['kernel']), ports: h.ports });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(result.states[0]?.mode).toBe('tag');
+    expect(result.states[0]?.stage).toBe('tagged');
+    expect(commands).toEqual([
+      expect.stringContaining(
+        'git log -1 --format=%H --fixed-strings --grep chore(kernel): release v0.4.6-0 ',
+      ),
+      'git tag -a kernel-v0.4.6-0 -m @venizia/ardor-kernel v0.4.6-0 deadbeef00',
+      'git push origin kernel-v0.4.6-0',
+    ]);
+    expect(h.events).toContain('wait @venizia/ardor-kernel');
+  });
+
+  test('the tag of a released package cannot be written when its release commit is not in the history', async () => {
+    const h = harness({
+      manifests: { kernel: '0.4.6-0' },
+      onNpm: ['@venizia/ardor-kernel'],
+      noReleaseCommit: true,
+    });
     const result = await runChain({ options: optionsOf(['kernel']), ports: h.ports });
 
     expect(result.ok).toBe(false);
-    expect(result.report).toContain('only the tag is missing');
-    expect(result.report).toContain('git tag -a kernel-v0.4.6-0');
+    expect(result.report).toContain('no release commit');
+    expect(indexOfCommand(h.commands(), 'git tag')).toBe(-1);
   });
 
   test('a manifest above the version stops the run', async () => {
@@ -382,47 +570,133 @@ describe('runChain: stops', () => {
     expect(result.report).toContain('Nothing of this package was published');
   });
 
-  const phaseBSteps = ReleaseChain.plan({ options: optionsOf(['kernel', 'react']) })
-    .phaseB.filter((step) => step.label.startsWith('react:'))
-    .filter((step) => !('fatal' in step) || step.fatal)
-    .filter((step) => step.kind !== 'record-sha' && step.kind !== 'push-tag');
+  const stopPlan = ReleaseChain.plan({ options: optionsOf(['kernel', 'react']) });
+  const reactSteps = (steps: typeof stopPlan.phaseP) =>
+    steps
+      .filter((step) => step.label.startsWith('react:'))
+      .filter((step) => !('fatal' in step) || step.fatal)
+      .filter((step) => step.kind !== 'record-sha' && step.kind !== 'push-tag');
+  const stopHarness = (step: (typeof stopPlan.phaseP)[number]) => {
+    const failCommand = 'command' in step ? step.command.join(' ') : undefined;
 
-  for (const step of phaseBSteps) {
-    test(`a failure at "${step.label}" leaves kernel done and runs nothing of react after it`, async () => {
-      const failCommand = 'command' in step ? step.command.join(' ') : undefined;
-      const h = harness({
-        scope: 'react',
-        fail: (command) => command === failCommand,
-        failWait: step.kind === 'wait',
-        shaChanges: step.kind === 'verify-sha',
-        packedVersion: step.kind === 'manifest' ? '9.9.9' : undefined,
-      });
+    return harness({
+      scope: 'react',
+      fail: (command) => command === failCommand,
+      failWait: step.kind === 'wait',
+      shaChanges: step.kind === 'verify-sha',
+      packedVersion: step.kind === 'manifest' ? '9.9.9' : undefined,
+    });
+  };
+
+  // Phase P: nothing is published yet, so a stop leaves npm as it was and git without a release commit.
+  for (const step of [
+    ...reactSteps(stopPlan.phaseP),
+    ...stopPlan.phaseP.filter((candidate) => candidate.label.startsWith('clean-install')),
+  ]) {
+    test(`a failure at "${step.label}" (phase P) publishes nothing, not even kernel`, async () => {
+      const h = stopHarness(step);
       const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
 
       expect(result.ok).toBe(false);
-      expect(result.states.map((state) => state.stage)[0]).toBe('tagged');
-      const events = h.events;
-      const reactIndex = events.findIndex((event) => event.includes('make clean-install-react'));
-      const stopped = events.length;
-      // Nothing of a later package exists: react is the last one, so the log ends with the failed step.
-      expect(reactIndex).toBeGreaterThan(-1);
-      expect(stopped).toBeGreaterThan(reactIndex);
+      expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+      expect(indexOfCommand(h.commands(), 'git commit')).toBe(-1);
+      expect(result.states.map((state) => state.stage)).toEqual(['none', 'none']);
+    });
+  }
+
+  // Phase B: kernel is already on npm, so it is recorded before the run stops; react is not.
+  for (const step of reactSteps(stopPlan.phaseB)) {
+    test(`a failure at "${step.label}" (phase B) records kernel and runs nothing of react after it`, async () => {
+      const h = stopHarness(step);
+      const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+      const commands = h.commands();
+
+      expect(result.ok).toBe(false);
+      expect(result.states[0]?.stage).toBe('tagged');
+      expect(indexOfCommand(commands, 'git push origin kernel-v0.4.6-0')).toBeGreaterThan(-1);
+      expect(indexOfCommand(commands, 'git commit -m chore(react)')).toBe(-1);
+      expect(indexOfCommand(commands, 'git push origin react-v0.4.6-0')).toBe(-1);
+      expect(h.events).toContain('wait @venizia/ardor-kernel');
+      expect(h.events).not.toContain('wait @venizia/ardor-react');
+    });
+  }
+
+  // Phase R: every package is on npm; kernel is recorded, react stops at the step.
+  for (const step of reactSteps(stopPlan.phaseR)) {
+    test(`a failure at "${step.label}" (phase R) leaves kernel done and react published without its tag`, async () => {
+      const h = stopHarness(step);
+      const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+      expect(result.ok).toBe(false);
+      expect(result.states[0]?.stage).toBe('tagged');
+      expect(result.states[1]?.stage).not.toBe('tagged');
+      expect(indexOfCommand(h.commands(), 'react.tgz --access public')).toBeGreaterThan(-1);
       expect(indexOfCommand(h.commands(), 'git push origin react-v0.4.6-0')).toBe(-1);
     });
   }
 
-  test('a rejected push stops the run with no pull and no rebase, and the report says so', async () => {
+  test('a stop in phase B still records what was published, and the report says what to dispatch', async () => {
+    const h = harness({
+      scope: 'react',
+      fail: (command) => command.includes('react.tgz --access public'),
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.states.map((state) => state.stage)).toEqual(['tagged', 'attempted']);
+    expect(result.report).toContain('Done: kernel.');
+    expect(result.report).toContain('its outcome is unknown');
+  });
+
+  test('a stop in phase B after three of four are published records those three', async () => {
+    const h = harness({
+      scope: 'ardor',
+      fail: (command) => command.includes('ardor.tgz --access public'),
+    });
+    const result = await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor']),
+      ports: h.ports,
+    });
+
+    expect(result.states.map((state) => state.stage)).toEqual([
+      'tagged',
+      'tagged',
+      'tagged',
+      'attempted',
+    ]);
+    expect(h.events.filter((event) => event.startsWith('wait '))).toEqual([
+      'wait @venizia/ardor-kernel',
+      'wait @venizia/ardor-react',
+      'wait @venizia/ardor-admin',
+    ]);
+  });
+
+  test('a record that fails after a stop is a warning, and the stop is still the one reported', async () => {
+    const h = harness({
+      scope: 'react',
+      fail: (command) =>
+        command.includes('react.tgz --access public') || command === 'git push origin HEAD:develop',
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain('react: publish');
+  });
+
+  test('a rejected push stops the run with no pull and no rebase; the other package is published and the report says so', async () => {
     const h = harness({ fail: (command) => command === 'git push origin HEAD:develop' });
     const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
     const commands = h.commands();
 
     expect(result.ok).toBe(false);
-    expect(result.states[0]?.stage).toBe('committed');
+    expect(result.states.map((state) => state.stage)).toEqual(['committed', 'published']);
     expect(
       commands.some((command) => command.includes('git pull') || command.includes('rebase')),
     ).toBe(false);
-    expect(indexOfCommand(commands, 'react.tgz')).toBe(-1);
+    expect(indexOfCommand(commands, 'react.tgz --access public')).toBeGreaterThan(-1);
+    expect(indexOfCommand(commands, 'git commit -m chore(react)')).toBe(-1);
     expect(result.report).toContain('the push to develop did not land');
+    expect(result.report).toContain('Published and not yet recorded in git: react.');
+    expect(result.report).toContain('Dispatch the same version again');
   });
 
   test('a failing publish is reported as attempted, outcome unknown', async () => {
@@ -432,6 +706,7 @@ describe('runChain: stops', () => {
     expect(result.states[0]?.stage).toBe('attempted');
     expect(result.report).toContain('its outcome is unknown');
     expect(result.report).toContain('npm view @venizia/ardor-kernel versions');
+    expect(result.report).toContain('records it without a second publish');
   });
 
   test('a changed tarball stops before the publish was attempted', async () => {
@@ -474,6 +749,214 @@ describe('runChain: stops', () => {
       'sleep 20000',
     ]);
     expect(result.report).toContain('only the tag is missing');
+  });
+});
+
+describe('runChain: a heal run, with the first package already published', () => {
+  const healed = (extra: Parameters<typeof harness>[0] = {}) =>
+    harness({ onNpm: ['@venizia/ardor-kernel'], ...extra });
+
+  test('the tarball folder is made for the first package that packs, also when the first package is only recorded', async () => {
+    const h = healed();
+    const result = await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor']),
+      ports: h.ports,
+    });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(commands.filter((command) => command === 'mkdir -p /work/tarballs')).toHaveLength(1);
+    expect(indexOfCommand(commands, 'mkdir -p /work/tarballs')).toBeLessThan(
+      indexOfCommand(commands, 'react.tgz'),
+    );
+  });
+
+  test('the plan makes the folder in the first package that packs, too', () => {
+    const plan = ReleaseChain.plan({
+      options: {
+        ...optionsOf(['kernel', 'react']),
+        packages: [
+          { name: 'kernel', packageName: NAMES.kernel as string, mode: 'record' },
+          { name: 'react', packageName: NAMES.react as string, mode: 'full' },
+        ],
+      },
+    });
+    const labels = plan.phaseP.map((step) => step.label);
+
+    expect(labels.indexOf('make the tarball folder')).toBeGreaterThan(
+      labels.indexOf('kernel: bump'),
+    );
+    expect(labels.indexOf('make the tarball folder')).toBeLessThan(
+      labels.indexOf('react: pack the tarball to publish'),
+    );
+  });
+
+  test('a package published earlier is waited for before the clean-install gate reads it from the registry', async () => {
+    const h = healed();
+    await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+    const waitAt = h.events.indexOf('wait @venizia/ardor-kernel');
+    const installAt = h.events.findIndex((event) => event.includes('clean-install/cli.ts'));
+
+    expect(waitAt).toBeGreaterThan(-1);
+    expect(waitAt).toBeLessThan(installAt);
+  });
+
+  test('a package published earlier whose tarball never answers stops the run in phase P, and is waited for once', async () => {
+    const h = healed({ failWait: true });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+    expect(h.events.filter((event) => event === 'wait @venizia/ardor-kernel')).toHaveLength(1);
+  });
+
+  test('the release branch is made once, also when the first package recorded is only tagged', async () => {
+    const h = harness({
+      manifests: { kernel: '0.4.6-0' },
+      onNpm: ['@venizia/ardor-kernel'],
+      tagged: [],
+    });
+    const result = await runChain({
+      options: optionsOf(['kernel', 'react', 'admin'], { branch: 'release-7' }),
+      ports: h.ports,
+    });
+    const commands = h.commands();
+
+    expect(result.ok).toBe(true);
+    expect(commands.filter((command) => command === 'git switch -c release-7')).toHaveLength(1);
+    expect(indexOfCommand(commands, 'git switch -c release-7')).toBeLessThan(
+      indexOfCommand(commands, 'git commit -m chore(react)'),
+    );
+  });
+});
+
+describe('runChain: what each commit holds', () => {
+  test('the release stages one package.json and the lockfile, never a whole tree that holds later bumps', async () => {
+    const h = harness({});
+    await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor'], { branch: 'release-3' }),
+      ports: h.ports,
+    });
+    const adds = h.commands().filter((command) => command.startsWith('git add'));
+
+    expect(adds).toEqual([
+      'git add packages/kernel/package.json bun.lock',
+      'git add packages/react/package.json bun.lock',
+      'git add packages/admin/package.json bun.lock',
+      'git add packages/ardor/package.json bun.lock',
+    ]);
+    expect(h.commands().filter((command) => /git (add -A|add \.|commit -a)/.test(command))).toEqual(
+      [],
+    );
+  });
+
+  test('the release branch is made once, at run time', async () => {
+    const h = harness({});
+    await runChain({
+      options: optionsOf(['kernel', 'react', 'admin', 'ardor'], { branch: 'release-3' }),
+      ports: h.ports,
+    });
+
+    expect(h.commands().filter((command) => command.startsWith('git switch -c'))).toEqual([
+      'git switch -c release-3',
+    ]);
+  });
+});
+
+// bun writes the exact version of every workspace sibling into the packed manifest. The fake workspace is at 0.4.5.
+describe('runChain: the exact pins on the siblings of the run', () => {
+  const pinned = (extra: Parameters<typeof harness>[0]) =>
+    harness({ scope: 'react', packedDependencies: { '@venizia/ardor-kernel': '0.4.5' }, ...extra });
+
+  test('a pin equal to the version of the sibling in the workspace passes, once the sibling is published', async () => {
+    const h = pinned({});
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(true);
+    expect(result.states[1]?.pins).toEqual({ '@venizia/ardor-kernel': '0.4.5' });
+  });
+
+  test('a pin that is not the version the workspace has stops the run before anything is published', async () => {
+    const h = pinned({ packedDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+  });
+
+  test('a wrong pin in the dependencies is not hidden by a right pin in the peers of the same name', async () => {
+    const h = pinned({
+      packedDependencies: { '@venizia/ardor-kernel': '0.4.4' },
+      packedPeerDependencies: { '@venizia/ardor-kernel': '0.4.5' },
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+  });
+
+  test('a wrong pin in the peers is not hidden by a right pin in the dependencies of the same name', async () => {
+    const h = pinned({ packedPeerDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+  });
+
+  test('a wrong pin in the optional dependencies is refused too', async () => {
+    const h = pinned({ packedOptionalDependencies: { '@venizia/ardor-kernel': '0.4.4' } });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain(
+      '@venizia/ardor-kernel is pinned 0.4.4, the workspace has 0.4.5',
+    );
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+  });
+
+  test('a package that depends on one released after it stops the run before anything is published', async () => {
+    const h = harness({
+      scope: 'kernel',
+      packedDependencies: { '@venizia/ardor-react': '0.4.5' },
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(result.report).toContain('released after this package, but this package depends on it');
+    expect(indexOfCommand(h.commands(), 'npm publish')).toBe(-1);
+  });
+
+  test('a sibling outside the run must be on npm, or the package is not published', async () => {
+    const missing = pinned({});
+    const stopped = await runChain({ options: optionsOf(['react']), ports: missing.ports });
+
+    expect(stopped.ok).toBe(false);
+    expect(stopped.report).toContain('@venizia/ardor-kernel@0.4.5 is not on npm');
+    expect(indexOfCommand(missing.commands(), 'react.tgz --access public')).toBe(-1);
+
+    const served = pinned({ onNpm: ['@venizia/ardor-kernel'] });
+    const passed = await runChain({ options: optionsOf(['react']), ports: served.ports });
+
+    expect(passed.ok).toBe(true);
+  });
+
+  test('a sibling of the run whose publish failed is never relied on', async () => {
+    const h = harness({
+      packedDependencies: { '@venizia/ardor-kernel': '0.4.5' },
+      scope: 'kernel',
+      fail: (command) => command.includes('kernel.tgz --access public'),
+    });
+    const result = await runChain({ options: optionsOf(['kernel', 'react']), ports: h.ports });
+
+    expect(result.ok).toBe(false);
+    expect(indexOfCommand(h.commands(), 'react.tgz --access public')).toBe(-1);
   });
 });
 
@@ -520,7 +1003,7 @@ describe('ReleaseChain.report', () => {
     expect(report).toContain('stopped at "react: build": exit 1');
     expect(report).toContain('Done: kernel.');
     expect(report).toContain('Stopped in: react (@venizia/ardor-react@0.4.6-0)');
-    expect(report).toContain('--version');
+    expect(report).toContain('same version');
   });
 });
 
@@ -613,8 +1096,8 @@ describe('the state file and the report read back from it', () => {
 
 describe('the tarball folder', () => {
   test('the first package makes it before it packs, the next ones do not', () => {
-    const { phaseB } = ReleaseChain.plan({ options: optionsOf(['kernel', 'react']) });
-    const labels = phaseB.map((step) => step.label);
+    const { phaseP } = ReleaseChain.plan({ options: optionsOf(['kernel', 'react']) });
+    const labels = phaseP.map((step) => step.label);
 
     expect(labels.filter((label) => label === 'make the tarball folder')).toHaveLength(1);
     expect(labels.indexOf('make the tarball folder')).toBeLessThan(
@@ -634,7 +1117,7 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
   const names = ['kernel', 'react', 'admin', 'ardor'];
   const stable = ReleaseChain.plan({ options: stableOptions(names) });
   const prerelease = ReleaseChain.plan({ options: optionsOf(names) });
-  const commandOf = (steps: typeof stable.phaseB, label: string): string[] => {
+  const commandOf = (steps: typeof stable.phaseR, label: string): string[] => {
     const step = steps.find((candidate) => candidate.label === label);
 
     return step !== undefined && 'command' in step ? step.command : [];
@@ -646,8 +1129,8 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
   });
 
   test('a stable pushes its release commits to main, a prerelease to develop', () => {
-    expect(commandOf(stable.phaseB, 'react: push')).toEqual(['git', 'push', 'origin', 'HEAD:main']);
-    expect(commandOf(prerelease.phaseB, 'react: push')).toEqual([
+    expect(commandOf(stable.phaseR, 'react: push')).toEqual(['git', 'push', 'origin', 'HEAD:main']);
+    expect(commandOf(prerelease.phaseR, 'react: push')).toEqual([
       'git',
       'push',
       'origin',
@@ -658,7 +1141,7 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
   test('a stable checks its packed manifest and its preset for an IGNIS prerelease; a prerelease does not', () => {
     expect(stable.phaseA).toHaveLength(28);
     expect(stable.phaseA.filter((step) => step.label.endsWith(': stable-deps'))).toHaveLength(4);
-    expect(commandOf(stable.phaseB, 'ardor: check the preset names only stable versions')).toEqual([
+    expect(commandOf(stable.phaseP, 'ardor: check the preset names only stable versions')).toEqual([
       'bun',
       'scripts/release/release-gates.ts',
       'stable-deps',
@@ -666,12 +1149,12 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
     ]);
     expect(prerelease.phaseA).toHaveLength(24);
     expect(
-      prerelease.phaseB.some((step) => step.label.includes('names only stable versions')),
+      prerelease.phaseP.some((step) => step.label.includes('names only stable versions')),
     ).toBe(false);
   });
 
   test('highest moves through the gate, which only moves it up', () => {
-    expect(commandOf(stable.phaseB, 'react: tag highest')).toEqual([
+    expect(commandOf(stable.phaseR, 'react: tag highest')).toEqual([
       'bun',
       'scripts/release/release-gates.ts',
       'tag-highest',
@@ -687,10 +1170,10 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
       }),
     });
 
-    expect(commandOf(withLine.phaseB, 'react: annotate the tag')[5]).toBe(
+    expect(commandOf(withLine.phaseR, 'react: annotate the tag')[5]).toBe(
       '@venizia/ardor-react v0.4.9\nbuilt on: @venizia/ignis-kernel=0.4.6, @venizia/ignis-boot=0.4.6',
     );
-    expect(commandOf(stable.phaseB, 'react: annotate the tag')[5]).toBe(
+    expect(commandOf(stable.phaseR, 'react: annotate the tag')[5]).toBe(
       '@venizia/ardor-react v0.4.9',
     );
   });
