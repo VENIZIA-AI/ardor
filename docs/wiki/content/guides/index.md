@@ -17,6 +17,12 @@ ARDOR 0.4.3 gives you:
 
 ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
 
+<WhereToStart :items="[
+  { title: 'Create a Project', text: 'Start a monorepo with an admin, or add one to a monorepo you have, with one VULCAN command.', href: '/guides/get-started/create-a-project' },
+  { title: 'Quickstart', text: 'Write a small admin by hand against a stub API: a datasource, a repository, a list page and a login.', href: '/guides/get-started/5-minute-quickstart' },
+  { title: 'Build an Admin', text: 'Create a complete administration console with list, create, edit and delete pages for one resource.', href: '/guides/tutorials/build-an-admin' },
+]" />
+
 <div class="guide-cards">
 <a href="./get-started/create-a-project" class="guide-card">
   <h3>Create a Project</h3>
