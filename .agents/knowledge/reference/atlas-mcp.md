@@ -107,8 +107,7 @@ frontmatter:
 
 - `packages:` lists the npm names an entry is about. An explicit `packages: []` says the entry is
   about no package, such as repository tooling; an entry that declares none appears in no package's
-  `changes` window, and `make okf-check-strict` reports it. `make changelogs-migrate` writes the
-  list into entries that lack one, once, for review.
+  `changes` window, and `make okf-check-strict` reports it.
 - An entry falls after the releases that existed before the commit that added it. An uncommitted
   entry counts as newer than every release, and a `release: '<npm name>@<version>'` line places it
   by hand.

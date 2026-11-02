@@ -22,7 +22,7 @@ generated:
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |
-| `make changelogs-migrate` | - | Write the packages: list into changelog entries that declare none. |
+| `make changelogs-migrate` | - | Write the packages: list into changelog entries that declare none |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
