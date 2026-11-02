@@ -83,4 +83,41 @@ describe('RequestBodyEncoder.encode', () => {
       }
     }
   });
+
+  test('the body is typed by the body type, so it can be written without a cast', () => {
+    // The shape of an IGNIS `write({ body })`: text or an object, never `unknown`.
+    const write = (opts: { body: string | object }) => opts.body;
+
+    const form = RequestBodyEncoder.encode({
+      bodyType: RequestBodyTypes.FORM_DATA,
+      body: { a: 1 },
+    });
+    const formBody: FormData = form.body;
+    const encoded = RequestBodyEncoder.encode({
+      bodyType: RequestBodyTypes.FORM_URL_ENCODED,
+      body: { a: 1 },
+    });
+    const encodedBody: URLSearchParams = encoded.body;
+    const encodedType: string = encoded.contentType;
+    const sent = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.JSON, body: { id: 7 } });
+    const id: number = sent.body.id;
+    const text = RequestBodyEncoder.encode({ body: 'raw' });
+    const raw: string = text.body;
+
+    expect(write({ body: formBody })).toBeInstanceOf(FormData);
+    expect(write({ body: encodedBody })).toBeInstanceOf(URLSearchParams);
+    expect(encodedType).toBe('application/x-www-form-urlencoded');
+    expect([id, raw]).toEqual([7, 'raw']);
+
+    // A body type known only as a string cannot say what was built, so it stays `unknown`.
+    const anyType: string = RequestBodyTypes.FORM_DATA;
+    const wide = RequestBodyEncoder.encode({ bodyType: anyType, body: {} });
+    // @ts-expect-error - `unknown` is not `string | object`: a wide body type needs a narrowing
+    write({ body: wide.body });
+    // @ts-expect-error - a FormData is not a string body
+    const notString: string = form.body;
+
+    expect(wide.body).toBeInstanceOf(FormData);
+    expect(notString).toBeInstanceOf(FormData);
+  });
 });

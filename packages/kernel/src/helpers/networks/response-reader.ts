@@ -175,6 +175,17 @@ export class ResponseReader {
     return range?.total ?? opts.rowCount;
   }
 
+  /**
+   * The file name the `Content-Disposition` of a response names, `filename*` (UTF-8, decoded) before
+   * `filename`, or `undefined` when the header is absent or names none. `read` returns the same name
+   * as `filename`.
+   */
+  static readFilename(opts: { headers?: Pick<Headers, 'get'> }): string | undefined {
+    const header = opts.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
+
+    return ResponseReader.parseFilename({ header });
+  }
+
   /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
   private static parseFilename(opts: { header: string }): string | undefined {
     const { header } = opts;
