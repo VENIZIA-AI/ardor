@@ -930,11 +930,14 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         npmIsPinned
       );
     },
-    // C6: no npm token in any form and no secret at all, in the workflow or the chain: the release
-    // publishes through trusted publishing.
+    // C6: no npm token in any form and no secret but the key of the atlas pair, in the workflow or the chain: the
+    // release publishes through trusted publishing. The key signs the index of a tag; it is not a credential of npm.
     noNpmToken: ({ workflow, chain }: IFiles): boolean =>
       !/secrets\.|NPM_ACCESS_TOKEN|NPM_CONFIG_TOKEN|NODE_AUTH_TOKEN/.test(
-        withoutComments(`${workflow}\n${chain}`),
+        withoutComments(`${workflow}\n${chain}`).replaceAll(
+          'ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}',
+          '',
+        ),
       ),
     // C16: the jobs that talk to npm name the environment npm-release; the test job names none.
     publishEnvironment: ({ workflow }: IFiles): boolean => {
@@ -1048,7 +1051,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
 
       return (
         uses.length >= 9 &&
-        uses.every((value) => /^[\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+(\.\d+)*$/.test(value))
+        uses.every((value) => /^[\w.-]+\/[\w.\/-]+@[0-9a-f]{40} # v\d+(\.\d+)*(-\d+)?$/.test(value))
       );
     },
     // C4: preset-smoke runs the VULCAN the repository pins, and `latest` appears nowhere.
@@ -1850,6 +1853,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   test('a guard needs the jobs it reads', () => {
     expect(Object.keys(jobsOf(files.workflow)).toSorted()).toEqual([
       'approve',
+      'atlas-index',
       'heal-next',
       'plan',
       'publish',
@@ -2315,5 +2319,155 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
     expect(broken.exitCode).toBe(1);
     expect(broken.stderr.toString()).toContain('@venizia/ignis-inversion');
     expect(run(tree({ ardorKernel: '0.4.5-0', ardor: '0.4.5-0' })).exitCode).toBe(0);
+  });
+});
+
+// The release pushes with the Actions token, which starts no workflow, so deploy-docs.yml never publishes the signed
+// atlas pair of a release commit or tag. package-release.yml does it in a job of its own, as VULCAN's own release does:
+// the same action, pinned by the same commit, the same secret, one step for each package tag, and the key never
+// shares a job with the npm identity.
+describe('package-release.yml publishes the atlas pair of each release tag, in a job of its own', () => {
+  const workflow = workflowText;
+  const jobs = jobsOf(workflow);
+  const job = jobs['atlas-index'] ?? '';
+  const stepsOf = (text: string): string[] =>
+    withoutComments(text)
+      .split(/\n {6}- /)
+      .slice(1)
+      .map((step) => step.trimEnd());
+  const steps = stepsOf(job);
+  const atlasSteps = steps.filter((step) => step.includes('actions/atlas-index@'));
+  const docs = readFileSync(join(ROOT, '.github/workflows/deploy-docs.yml'), 'utf8');
+  const ACTION = /VENIZIA-AI\/vulcan\/\.github\/actions\/atlas-index@([0-9a-f]{40}) # (v\S+)/;
+  const vulcanVersion: string = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+    .devDependencies['@venizia/vulcan'];
+  // The packages one run releases; a tag is `<package>-v<version>` (the manifest's tagPattern).
+  const PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
+
+  // The other tests read the file as text, so a quote that breaks the YAML would pass them all and fail on GitHub.
+  test('the file is valid YAML, and the new job reads back', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; permissions?: Record<string, string>; steps?: { name: string }[] }
+      >;
+    };
+    const atlas = parsed.jobs['atlas-index'];
+
+    expect(atlas?.needs).toEqual(['plan', 'publish']);
+    expect(atlas?.permissions).toEqual({ contents: 'write' });
+    expect(atlas?.steps?.map((step) => step.name)).toEqual([
+      'Checkout',
+      'Setup Bun',
+      'Install',
+      'Find the tags this run pushed',
+      ...PACKAGES.map((name) => `Publish the atlas index of the ${name} tag`),
+    ]);
+  });
+
+  test('the job runs after publish, also after a chain that stopped, and never fails the run', () => {
+    expect(Object.keys(jobs)).toEqual([
+      'plan',
+      'test',
+      'approve',
+      'publish',
+      'atlas-index',
+      'heal-next',
+    ]);
+    expect(job).toContain('needs: [plan, publish]');
+    expect(job).toContain(
+      "if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}",
+    );
+    expect(job).toMatch(/\n {4}continue-on-error: true\n/);
+  });
+
+  test('it holds contents: write and nothing else: no id-token, no environment, and publish keeps its own', () => {
+    expect(job).toMatch(/\n {4}permissions:\n {6}contents: write\n {4}env:/);
+    expect(job).not.toContain('id-token');
+    expect(job).not.toContain('environment:');
+    expect(jobs['publish']).toMatch(
+      /\n {4}permissions:\n {6}contents: write\n {6}id-token: write\n/,
+    );
+    expect([...withoutComments(workflow).matchAll(/contents: write/g)]).toHaveLength(2);
+    expect([...withoutComments(workflow).matchAll(/id-token: write/g)]).toHaveLength(2);
+    expect(workflow).toMatch(/\npermissions:\n {2}contents: read\n/);
+  });
+
+  test('it reads the clone the tags are in, with no stored git credential', () => {
+    const checkout = steps.find((step) => step.startsWith('name: Checkout')) ?? '';
+
+    expect(checkout).toContain('ref: ${{ github.sha }}');
+    expect(checkout).toContain('fetch-depth: 0');
+    expect(checkout).toContain('persist-credentials: false');
+    expect(steps.some((step) => step.includes('bun-version: 1.4.4'))).toBe(true);
+    expect(
+      steps.some((step) => step.startsWith('name: Install') && step.includes('run: bun install')),
+    ).toBe(true);
+  });
+
+  test('there is one step for each package, after the step that finds the tags', () => {
+    const names = steps.map((step) => /^name: (.+)$/m.exec(step)?.[1] ?? '');
+    const find = steps.find((step) => step.startsWith('name: Find the tags this run pushed')) ?? '';
+
+    expect(atlasSteps).toHaveLength(PACKAGES.length);
+
+    for (const name of PACKAGES) {
+      expect(names).toContain(`Publish the atlas index of the ${name} tag`);
+    }
+
+    expect(Math.min(...atlasSteps.map((step) => steps.indexOf(step)))).toBeGreaterThan(
+      names.indexOf('Find the tags this run pushed'),
+    );
+    expect(find).toContain('tag="$package-v$PLAN_VERSION"');
+    // Without the id or the output line every step below is skipped, the run stays green and nothing is published.
+    expect(find).toContain('id: tags');
+    expect(find).toContain('echo "$package=$tag" >> "$GITHUB_OUTPUT"');
+    expect(job).toMatch(/\n {4}timeout-minutes: 15\n/);
+    expect(find).toContain('git rev-parse --verify --quiet "refs/tags/$tag"');
+    expect(job).toContain('PLAN_VERSION: ${{ needs.plan.outputs.version }}');
+  });
+
+  test('the action is the one deploy-docs.yml pins, at the commit of the installed VULCAN release', () => {
+    const pinned = ACTION.exec(docs);
+
+    expect(pinned).not.toBeNull();
+    expect(pinned?.[2]).toBe(`v${vulcanVersion}`);
+
+    for (const step of atlasSteps) {
+      expect(ACTION.exec(step)?.[0]).toBe(pinned?.[0]);
+    }
+  });
+
+  test('each step takes only the ref of its own package tag, and the key by the action default', () => {
+    for (const name of PACKAGES) {
+      const step = atlasSteps.find((candidate) => candidate.includes(`of the ${name} tag`)) ?? '';
+
+      // The action's inputs are `ref` and `key-env`; `key-env` defaults to ATLAS_INDEX_KEY, as VULCAN's release uses it.
+      expect(step).toMatch(
+        new RegExp(
+          `\\n {8}with:\\n {10}ref: \\$\\{\\{ steps\\.tags\\.outputs\\.${name} \\}\\}\\n {8}env:\\n {10}ATLAS_INDEX_KEY: \\$\\{\\{ secrets\\.ATLAS_INDEX_KEY \\}\\}$`,
+        ),
+      );
+      expect(step).not.toContain('key-env');
+      expect(step).toContain(`if: \${{ steps.tags.outputs.${name} != '' }}`);
+      // One failed pair must not skip the next.
+      expect(step).toContain('continue-on-error: true');
+    }
+  });
+
+  test('the key is read by those four steps only, and by no other job', () => {
+    expect([...withoutComments(workflow).matchAll(/secrets\./g)]).toHaveLength(PACKAGES.length);
+    expect(steps.filter((step) => step.includes('secrets.'))).toEqual(atlasSteps);
+
+    for (const [id, text] of Object.entries(jobs)) {
+      if (id !== 'atlas-index') {
+        expect(withoutComments(text)).not.toContain('secrets.');
+      }
+    }
+  });
+
+  test('deploy-docs.yml no longer calls it a known limit', () => {
+    expect(docs).not.toContain('Known limit');
+    expect(docs).toContain('package-release.yml runs the same action');
   });
 });

@@ -161,7 +161,8 @@ jobs:
   # from those pushes, so a push never makes the pair of a release tag. A manual run does: GitHub runs it with the
   # workflow file of the ref it is started on, so start it on develop and give the tag as `ref`. The input is never
   # checked out (the checkout is the ref the run started on); the action refuses a name that is not a plain tag or
-  # branch, or whose commit is not on the default branch or develop, before it builds anything.
+  # branch, or whose commit is not on the default branch or develop, before it builds anything. A release run does not need it: package-release.yml runs the same action,
+  # pinned by the same commit, in a job of its own for each tag the release pushes.
   atlas-index:
     name: Publish the pair
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.job == 'atlas-index')

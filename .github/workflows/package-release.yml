@@ -49,7 +49,8 @@ on:
         required: false
         default: false
 
-# The workflow can write nothing by default; the one job that pushes the release commits and the tags says so.
+# The workflow can write nothing by default; the jobs that write say so: `publish` pushes the release commits and
+# the tags, and `atlas-index` uploads the signed atlas pair of each tag, with no npm identity.
 # Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
 # name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
 # publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
@@ -409,6 +410,94 @@ jobs:
       - name: Report the run
         if: ${{ always() }}
         run: bun scripts/release/release-chain.ts report --state "$RUNNER_TEMP/release-state.json"
+
+  # The signed atlas pair of each release tag. The release pushes its commits and tags with the Actions token, and
+  # GitHub starts no workflow from such a push, so the `atlas-index` job of deploy-docs.yml never runs for them; this
+  # job does, as VULCAN's own release does, with the same action pinned by the same commit and the same secret. It is
+  # a job of its own, after `publish`, so the key never shares a job with `id-token: write` or the npm-release
+  # environment, and it holds contents: write only, less than `publish`. The action takes one ref, so there is one
+  # step for each package, and a package this run did not tag has none. It runs after a chain that stopped too, because
+  # the tags it made stand. The action does nothing while ATLAS_INDEX_KEY is empty and refuses a tag whose commit is
+  # not on main or develop; a failure here never fails or undoes a release that has published.
+  atlas-index:
+    name: Publish the atlas pairs
+    needs: [plan, publish]
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}
+    continue-on-error: true
+    # A hung install or upload must not hold the repository-wide `npm-release` lock until GitHub stops it (6 hours).
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      PLAN_VERSION: ${{ needs.plan.outputs.version }}
+    runs-on: ubuntu-26.04
+
+    steps:
+      # The tags this run pushed are in the clone: the whole history, every branch and every tag.
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      # The action runs the project's installed atlas (`vulcan x atlas index publish`).
+      - name: Install
+        run: bun install
+
+      - name: Find the tags this run pushed
+        id: tags
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            tag="$package-v$PLAN_VERSION"
+
+            if git rev-parse --verify --quiet "refs/tags/$tag" > /dev/null; then
+              echo "$package=$tag" >> "$GITHUB_OUTPUT"
+            else
+              echo "no tag $tag - no pair for it"
+            fi
+          done
+
+      - name: Publish the atlas index of the kernel tag
+        if: ${{ steps.tags.outputs.kernel != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@6670969acce876a29c11d9f1da319992fdd3e282 # v0.4.9-1
+        with:
+          ref: ${{ steps.tags.outputs.kernel }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the react tag
+        if: ${{ steps.tags.outputs.react != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@6670969acce876a29c11d9f1da319992fdd3e282 # v0.4.9-1
+        with:
+          ref: ${{ steps.tags.outputs.react }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the admin tag
+        if: ${{ steps.tags.outputs.admin != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@6670969acce876a29c11d9f1da319992fdd3e282 # v0.4.9-1
+        with:
+          ref: ${{ steps.tags.outputs.admin }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the ardor tag
+        if: ${{ steps.tags.outputs.ardor != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@6670969acce876a29c11d9f1da319992fdd3e282 # v0.4.9-1
+        with:
+          ref: ${{ steps.tags.outputs.ardor }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
 
   # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
   # ARDOR package without publishing anything (the same check a release runs after each publish).
