@@ -154,6 +154,94 @@ describe('useStoredState writes', () => {
     expect(result.current.value).toBe(6);
   });
 
+  test('two updaters in one tick compose, like a functional setState', () => {
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+
+    act(() => {
+      result.current.setValue((current) => current + 1);
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(2);
+    expect(localStorage.getItem(KEY)).toBe('2');
+  });
+
+  test('an updater on a hook that has not rendered since another hook wrote sees that write', () => {
+    const first = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    const second = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+
+    act(() => {
+      first.result.current.setValue((current) => current + 1);
+      second.result.current.setValue((current) => current + 1);
+    });
+
+    expect(localStorage.getItem(KEY)).toBe('2');
+    expect(first.result.current.value).toBe(2);
+    expect(second.result.current.value).toBe(2);
+  });
+
+  test('an updater sees a write made outside React in the same tick', () => {
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+
+    act(() => {
+      BrowserStorage.set({ key: KEY, value: 10 });
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(11);
+  });
+
+  test('a plain value after an updater in the same tick wins, and an updater after it builds on it', () => {
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+
+    act(() => {
+      result.current.setValue((current) => current + 1);
+      result.current.setValue(10);
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(11);
+  });
+
+  test('updaters in one tick compose on a storage that refuses the writes', () => {
+    const quota = new SwitchStorage();
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    quota.failWrites = true;
+
+    act(() => {
+      result.current.setValue((current) => current + 1);
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(2);
+    expect(quota.getItem(KEY)).toBeNull();
+  });
+
+  test('an updater after a refused removal starts again from the default value', () => {
+    const quota = new SwitchStorage();
+    quota.setItem(KEY, JSON.stringify(5));
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    quota.failWrites = true;
+
+    act(() => {
+      result.current.remove();
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(1);
+  });
+
+  test('setValue keeps its identity when the value changes', () => {
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    const before = result.current.setValue;
+
+    act(() => result.current.setValue(3));
+
+    expect(result.current.setValue).toBe(before);
+  });
+
   test('remove deletes the key and gives the default value again', () => {
     localStorage.setItem(KEY, JSON.stringify('dark'));
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));

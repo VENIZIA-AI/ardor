@@ -51,7 +51,13 @@ export const useStoredState = <TValue>(
 ): IUseStoredStateReturn<TValue> => {
   const { key, defaultValue, storage, codec } = opts;
   const decoded = React.useRef<IDecoded<TValue>>(undefined);
+  const keptRef = React.useRef<IKept<TValue>>(undefined);
   const [kept, setKept] = React.useState<IKept<TValue>>();
+
+  const keep = React.useCallback((next: IKept<TValue> | undefined) => {
+    keptRef.current = next;
+    setKept(next);
+  }, []);
 
   const subscribe = React.useCallback(
     (listener: () => void) => {
@@ -59,12 +65,12 @@ export const useStoredState = <TValue>(
         key,
         storage,
         listener: () => {
-          setKept(undefined);
+          keep(undefined);
           listener();
         },
       });
     },
-    [key, storage],
+    [key, storage, keep],
   );
 
   const getSnapshot = React.useCallback((): TValue => {
@@ -88,19 +94,21 @@ export const useStoredState = <TValue>(
 
   const setValue = React.useCallback(
     (next: TValue | ((current: TValue) => TValue)) => {
-      const resolved = isUpdater(next) ? next(value) : next;
+      const hit = keptRef.current;
+      const current = hit?.key === key && hit.storage === storage ? hit.value : getSnapshot();
+      const resolved = isUpdater(next) ? next(current) : next;
       const isStored = BrowserStorage.set({ key, value: resolved, storage, codec });
 
-      setKept(isStored ? undefined : { key, storage, value: resolved });
+      keep(isStored ? undefined : { key, storage, value: resolved });
     },
-    [key, storage, codec, value],
+    [key, storage, codec, getSnapshot, keep],
   );
 
   const remove = React.useCallback(() => {
     const isRemoved = BrowserStorage.remove({ key, storage });
 
-    setKept(isRemoved ? undefined : { key, storage, value: defaultValue });
-  }, [key, storage, defaultValue]);
+    keep(isRemoved ? undefined : { key, storage, value: defaultValue });
+  }, [key, storage, defaultValue, keep]);
 
   return { value, setValue, remove };
 };
