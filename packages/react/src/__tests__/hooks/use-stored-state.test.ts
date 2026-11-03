@@ -218,6 +218,38 @@ describe('useStoredState writes', () => {
     expect(quota.getItem(KEY)).toBeNull();
   });
 
+  test('after a refused write, an updater builds on the kept value, not on a write the hook was not told about', () => {
+    const quota = new SwitchStorage();
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    quota.failWrites = true;
+    act(() => result.current.setValue(5));
+    expect(result.current.value).toBe(5);
+
+    quota.failWrites = false;
+    quota.setItem(KEY, JSON.stringify(100));
+    act(() => result.current.setValue((current) => current + 1));
+
+    expect(result.current.value).toBe(6);
+    expect(quota.getItem(KEY)).toBe('6');
+  });
+
+  test('after a refused write, a write the hook is told about, by an event or by BrowserStorage, wins over the kept value', () => {
+    const quota = new SwitchStorage();
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    quota.failWrites = true;
+    act(() => result.current.setValue(5));
+
+    quota.failWrites = false;
+    act(() => {
+      BrowserStorage.set({ key: KEY, value: 100 });
+    });
+    act(() => result.current.setValue((current) => current + 1));
+
+    expect(result.current.value).toBe(101);
+  });
+
   test('an updater after a refused removal starts again from the default value', () => {
     const quota = new SwitchStorage();
     quota.setItem(KEY, JSON.stringify(5));
