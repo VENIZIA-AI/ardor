@@ -82,11 +82,11 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": "^0.4.7-2",
-    "@venizia/ignis-filter": "^0.4.6-1",
-    "@venizia/ignis-helpers": "^0.4.7-2",
-    "@venizia/ignis-inversion": "^0.4.6-1",
-    "@venizia/ignis-kernel": "^0.4.7-2",
+    "@venizia/ignis-connectors": "^0.4.7",
+    "@venizia/ignis-filter": "^0.4.6",
+    "@venizia/ignis-helpers": "^0.4.7",
+    "@venizia/ignis-inversion": "^0.4.6",
+    "@venizia/ignis-kernel": "^0.4.7",
     "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {

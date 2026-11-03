@@ -10,14 +10,11 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 <Badge type="warning" text="Breaking Change" /> <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="info" text="Bug Fix" />
 
-**In one line.** ARDOR 0.4.7 removes the old bare names and the kernel logger, so an application on 0.4.6 does not compile until it runs the codemod. It also moves the IGNIS peers to one prerelease family, adds the `Ardor` namespace and adds lazy i18n sources.
+**In one line.** ARDOR 0.4.7 removes the old bare names and the kernel logger, so an application on 0.4.6 does not compile until it runs the codemod. It also moves the IGNIS peers to the IGNIS 0.4.7 release, adds the `Ardor` namespace and adds lazy i18n sources.
 
 ```bash
 bun add @venizia/ardor
 ```
-
-> [!NOTE]
-> Until 0.4.7 is on `latest`, it is on the `next` dist-tag, and the command above installs 0.4.6. Install 0.4.7 with `bun add @venizia/ardor@next`.
 
 ## What changed
 
@@ -33,7 +30,8 @@ bun add @venizia/ardor
 | New feature | The session hooks see every token change, a refresh by the network service included, and `unauthenticatedRejection` sets what `checkAuth` and a 401 reject with | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Token hook and guest rejection](./2026-11-03-token-hook-and-guest-rejection) |
 | New feature | `useElementSize` returns a callback `ref` when you pass none, takes `round` and returns `measured`, and `FakeResizeObserver` in `@venizia/ardor/testing` delivers a size in a test | `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [useElementSize ref, round and measured](./2026-11-03-element-size-ref-round-measured) |
 | Bug fix | `useElementSize` no longer throws on a host without `ResizeObserver`; it stays at 0 by 0 | `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [useElementSize without ResizeObserver](./2026-11-03-element-size-without-resize-observer) |
-| Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
+| New feature | `RequestBodyEncoder.encode` returns a `FormData`, a `URLSearchParams` or the body you passed, and `ResponseReader.readFilename` returns the file name of a download | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.7 | [Typed request body and file name](./2026-11-03-typed-request-body-and-filename) |
+| Enhancement | The IGNIS peers are the IGNIS 0.4.7 release: `^0.4.7` and `^0.4.6` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
 
 Four size budgets are raised, and all are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace), `@venizia/ardor-admin` from 10 KB to 10.65 KB (lazy sources, the session hooks and the token change hook), `@venizia/ardor-react` to 2.55 KB and the `@venizia/ardor/testing` entry from 900 B to 1.1 KB (`useElementSize` and `FakeResizeObserver`).
 
@@ -45,11 +43,11 @@ Four size budgets are raised, and all are repository gates, not something an app
 
 | Peer | 0.4.6 | 0.4.7 |
 |------|-------|-------|
-| `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.1` | `^0.4.7-2` |
-| `@venizia/ignis-inversion`, `-filter` | `^0.4.1` | `^0.4.6-1` |
+| `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.1` | `^0.4.7` |
+| `@venizia/ignis-inversion`, `-filter` | `^0.4.1` | `^0.4.6` |
 | `typescript` (`@venizia/ardor`, optional) | none | `>=5.0.0` |
 
-IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helpers, kernel, connectors and boot. It does satisfy `^0.4.6-1` of inversion and filter.
+IGNIS 0.4.6 does not satisfy `^0.4.7`, so it is not accepted for helpers, kernel, connectors and boot. It does satisfy `^0.4.6` of inversion and filter.
 
 ## Who is affected
 
@@ -67,7 +65,7 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 
 ## Upgrade checklist
 
-1. **Move the four ARDOR packages together** to `0.4.7` (the `next` tag, until 0.4.7 is on `latest`), and every `@venizia/ignis-*` package to one IGNIS family: helpers, kernel, connectors and boot at `^0.4.7-2` or newer, inversion and filter at `^0.4.6-1` or newer. A range such as `^0.4.1` never matches a prerelease, so a mix installs two copies.
+1. **Move the four ARDOR packages together** to `0.4.7`, and every `@venizia/ignis-*` package to the IGNIS 0.4.7 release: helpers, kernel, connectors and boot at `^0.4.7` or newer, inversion and filter at `^0.4.6` or newer.
 2. **Run the codemod.** Install `typescript` (`>=5.0.0`, an optional peer of `@venizia/ardor`; without it the tool exits with code 2), commit your work, then preview, write, and run your formatter:
 
    ```bash
