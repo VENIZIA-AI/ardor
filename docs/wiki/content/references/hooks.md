@@ -59,7 +59,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
 | Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
-| Observe the content or border box of a ref with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height }` |
+| Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 
@@ -536,9 +536,19 @@ export function Chart() {
 }
 ```
 
-- **Parameters**: `opts: IUseElementSizeOptions` - `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`.
-- **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number }`, `0` by `0` until the first measure.
-- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box` (and starts again from `0` by `0`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+Leave `ref` out when the element mounts later or is replaced, and give the returned `ref` to it:
+
+```tsx
+export function Panel({ open }: { open: boolean }) {
+  const { ref, width, measured } = useElementSize({ round: true });
+
+  return open ? <div ref={ref}>{measured ? `${width}px` : '...'}</div> : null;
+}
+```
+
+- **Parameters**: `opts?: IUseElementSizeOptions` - optional `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`, optional `round`: `true` rounds width and height to whole pixels (default `false`).
+- **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number; measured: boolean }`, `0` by `0` with `measured` `false` until the first measure. Without a `ref` option the return is `IUseElementSizeRefReturn`, which adds `ref: React.RefCallback<Element>`; its identity never changes.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
 
 ### useStoredState
 
