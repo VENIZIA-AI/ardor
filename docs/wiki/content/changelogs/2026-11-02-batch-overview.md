@@ -26,12 +26,12 @@ bun add @venizia/ardor
 | Breaking Change | Utility functions and factories are static members of classes, and the old bare names, `isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE` and two `HeaderConstants` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces) |
 | Breaking Change | The logger is `ILogger` from IGNIS, `enableDebug` is replaced by the `logger` prop, and the kernel `Logger`, `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-logger-from-ignis) |
 | Breaking Change | Sign-out removes only keys under `@app/auth/`, and `LocalStorageKeys.PREFIX_OAUTH2` is removed | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix) |
-| New feature | `Ardor` holds all 23 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
+| New feature | `Ardor` holds all 25 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
 | New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
 | New feature | `DefaultAuthProvider` has the hooks `onSessionStarted` and `onSessionCleared`, so a socket or a per-user cache stays in step with the session without overriding `checkAuth` | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Session hooks](./2026-11-03-session-lifecycle-hooks) |
 | Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
 
-Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 660 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.5 KB (lazy sources).
+Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.5 KB (lazy sources).
 
 | Package | ARDOR 0.4.6 | ARDOR 0.4.7 |
 |---------|-------------|-------------|

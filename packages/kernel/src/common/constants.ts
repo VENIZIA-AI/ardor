@@ -79,6 +79,11 @@ export class RequestTypes {
   }
 }
 
+export class StorageAreas {
+  static readonly LOCAL = 'local';
+  static readonly SESSION = 'session';
+}
+
 export class RequestBodyTypes {
   static readonly NONE = 'none';
   static readonly FORM_DATA = 'form-data';

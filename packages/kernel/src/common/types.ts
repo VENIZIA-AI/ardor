@@ -20,6 +20,7 @@ import type {
   RequestCountData,
   RequestMethods,
   RequestTypes,
+  StorageAreas,
 } from './constants';
 
 export type IdType = string | number;
@@ -57,6 +58,14 @@ export interface ISendParams {
 export type ISendResponse<T = unknown> = INetworkResponse<T>;
 
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
+
+export type TStorageArea = TStringConstValue<typeof StorageAreas>;
+
+/** How `BrowserStorage` turns a value into text and back. `decode` may throw: `get` then gives the fallback. */
+export interface IStorageCodec<TValue> {
+  encode: (value: TValue) => string;
+  decode: (text: string) => TValue;
+}
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
 export interface IGetRequestPropsParams {
