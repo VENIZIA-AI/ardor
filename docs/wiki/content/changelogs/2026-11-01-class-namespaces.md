@@ -95,7 +95,7 @@ What is different:
 
 ## Testing and the Vite plugin
 
-- **`assertArdorApplicationBoots`** keeps its name and its options. It now needs `@venizia/ignis-inversion` with `BindingVerifier.assertResolve`, which is in `0.4.6-1` and later. With an older inversion it fails at once with `The installed @venizia/ignis-inversion has no BindingVerifier.assertResolve | It arrived in 0.4.6-1: upgrade the peer to ^0.4.6-1, or this helper cannot check the bindings`. The peer range already asks for `^0.4.6-1`, so this only shows in an install that forced an older copy.
+- **`assertArdorApplicationBoots`** keeps its name and its options. It now needs `@venizia/ignis-inversion` with `BindingVerifier.assertResolve`, which is in `0.4.6-1` and later. With an older inversion it fails at once with `The installed @venizia/ignis-inversion has no BindingVerifier.assertResolve | It arrived in 0.4.6-1: upgrade the peer to ^0.4.6, or this helper cannot check the bindings`. The peer range already asks for `^0.4.6`, so this only shows in an install that forced an older copy.
 - **`buildInfoFile` of `@venizia/ardor/vite`** no longer installs a quiet logger for the Vite process. The IGNIS git lookup it uses writes its "git unavailable" lines at `debug` level. They stay silent because debug is off, and they print when `DEBUG` is set. An app that relied on the plugin to set the process-wide `LoggerFactory` provider now gets the IGNIS default.
 
 ## The `Ardor` namespace for hooks
@@ -117,7 +117,7 @@ What is different:
 > The names in the tables above are gone from `@venizia/ardor`, `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`. The codemod is the upgrade path: commit your work first, then run it.
 
 > [!IMPORTANT]
-> The IGNIS peer floors rise with it, on all four packages, to one prerelease family: `@venizia/ignis-helpers`, `-kernel`, `-boot` and `-connectors` `^0.4.7-2` (the logger is `LoggerFactory` of helpers, in the browser-safe `core` entry), `@venizia/ignis-inversion` and `-filter` `^0.4.6-1` (the helpers 0.4.7-2 pins them). A range such as `^0.4.1` never matches a prerelease, so an install that mixed it with `^0.4.7-2` would hold two copies of helpers and inversion. Move all your `@venizia/ignis-*` packages to the same IGNIS release, and keep one copy of each. IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helpers, kernel, boot and connectors; it does satisfy `^0.4.6-1` of inversion and filter. `@venizia/ignis-boot` is an optional peer of `@venizia/ardor` only, and `@venizia/ignis-connectors` is optional on `@venizia/ardor-kernel` and `@venizia/ardor`.
+> The IGNIS peer floors rise with it, on all four packages, to the IGNIS 0.4.7 release: `@venizia/ignis-helpers`, `-kernel`, `-boot` and `-connectors` `^0.4.7` (the logger is `LoggerFactory` of helpers, in the browser-safe `core` entry), `@venizia/ignis-inversion` and `-filter` `^0.4.6`. Move all your `@venizia/ignis-*` packages to the same IGNIS release, and keep one copy of each. IGNIS 0.4.6 does not satisfy `^0.4.7`, so it is not accepted for helpers, kernel, boot and connectors; it does satisfy `^0.4.6` of inversion and filter. `@venizia/ignis-boot` is an optional peer of `@venizia/ardor` only, and `@venizia/ignis-connectors` is optional on `@venizia/ardor-kernel` and `@venizia/ardor`.
 
 **Before:**
 
