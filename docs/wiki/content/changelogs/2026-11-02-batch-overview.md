@@ -16,13 +16,16 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 bun add @venizia/ardor
 ```
 
+> [!NOTE]
+> Until 0.4.7 is on `latest`, it is on the `next` dist-tag, and the command above installs 0.4.6. Install 0.4.7 with `bun add @venizia/ardor@next`.
+
 ## What changed
 
 | Kind | Change | Packages | In | Entry |
 |------|--------|----------|----|-------|
 | Breaking Change | Utility functions and factories are static members of classes, and the old bare names, `isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE` and two `HeaderConstants` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces) |
 | Breaking Change | The logger is `ILogger` from IGNIS, `enableDebug` is replaced by the `logger` prop, and the kernel `Logger`, `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-logger-from-ignis) |
-| Breaking Change | Sign-out removes only keys under `@app/auth/`, and `LocalStorageKeys.PREFIX_OAUTH2` is removed | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.7 | [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix) |
+| Breaking Change | Sign-out removes only keys under `@app/auth/`, and `LocalStorageKeys.PREFIX_OAUTH2` is removed | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix) |
 | New feature | `Ardor` holds all 23 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
 | New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
 | Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
@@ -56,7 +59,7 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 
 ## Upgrade checklist
 
-1. **Move the four ARDOR packages together** to `0.4.7`, and every `@venizia/ignis-*` package to one IGNIS family: helpers, kernel, connectors and boot at `^0.4.7-2` or newer, inversion and filter at `^0.4.6-1` or newer. A range such as `^0.4.1` never matches a prerelease, so a mix installs two copies.
+1. **Move the four ARDOR packages together** to `0.4.7` (the `next` tag, until 0.4.7 is on `latest`), and every `@venizia/ignis-*` package to one IGNIS family: helpers, kernel, connectors and boot at `^0.4.7-2` or newer, inversion and filter at `^0.4.6-1` or newer. A range such as `^0.4.1` never matches a prerelease, so a mix installs two copies.
 2. **Run the codemod.** Install `typescript` (`>=5.0.0`, an optional peer of `@venizia/ardor`; without it the tool exits with code 2), commit your work, then preview, write, and run your formatter:
 
    ```bash
