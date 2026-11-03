@@ -538,7 +538,7 @@ export function Chart() {
 
 - **Parameters**: `opts: IUseElementSizeOptions` - `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`.
 - **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number }`, `0` by `0` until the first measure.
-- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box` (and starts again from `0` by `0`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box` (and starts again from `0` by `0`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
 
 ### useStoredState
 
