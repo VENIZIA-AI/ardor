@@ -51,6 +51,8 @@ happy-dom and some other test hosts have a `ResizeObserver` whose `observe()` do
 ```ts
 import { FakeResizeObserver } from '@venizia/ardor/testing';
 
+declare const element: Element; // the element the component under test observes
+
 const restore = FakeResizeObserver.install();
 // render the component, then:
 FakeResizeObserver.flush({ element, width: 320, height: 200 });

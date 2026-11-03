@@ -539,6 +539,8 @@ export function Chart() {
 Leave `ref` out when the element mounts later or is replaced, and give the returned `ref` to it:
 
 ```tsx
+import { useElementSize } from '@venizia/ardor';
+
 export function Panel({ open }: { open: boolean }) {
   const { ref, width, measured } = useElementSize({ round: true });
 
