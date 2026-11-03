@@ -74,7 +74,8 @@ export class AuthConfiguration {
 | `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
 | `IReactAdminAuthProvider` | interface | Standard react-admin auth provider contract |
 | `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
-| `SessionClearReasons`, `TSessionClearReason` | class, type | The reasons `onSessionCleared` receives: `logout`, `unauthorized`, `rejected` |
+| `SessionClearReasons`, `TSessionClearReason` | class, type | The reasons `onSessionCleared` receives: `logout`, `unauthorized`, `rejected`, `external` |
+| `IAuthRejection` | interface | What `checkAuth` and `checkError` reject with: `redirectTo`, `logoutUser`, `message` |
 | `LocalStorageKeys` | class | `localStorage` key constants: `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` |
 | `CoreBindings` | class | Container keys: `DEFAULT_AUTH_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE` |
 
@@ -162,6 +163,7 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `beforeSaveSession(opts)` | `opts: { session: ISignInSession; params: AnyType } => Promise<void>` | `Promise.resolve()` | Validation hook before persistence; throwing rejects login and saves nothing |
 | `saveSession(opts)` | `opts: { session: ISignInSession; username: string } => void` | `authService.saveAuth(...)` | Saves token, identity, and permissions to `localStorage` |
 | `sessionHookTimeout` | `protected get: number` | `10000` | Milliseconds a session hook may run before the provider logs it and carries on. See [Session hooks](#session-hooks) |
+| `unauthenticatedRejection(opts)` | `opts: { reason: TSessionClearReason } => IAuthRejection` | `{ redirectTo: this.loginPagePath }` | What `checkAuth` (`rejected`) and the 401 branch of `checkError` (`unauthorized`) reject with. See [Guest apps](#guest-apps) |
 | `onSessionStarted(opts)` | `opts: { token: IAuthTokenRecord; user: AnyType } => void \| Promise<void>` | no-op | Runs when a session starts or its token is replaced. See [Session hooks](#session-hooks) |
 | `onSessionCleared(opts)` | `opts: { reason: TSessionClearReason } => void \| Promise<void>` | no-op | Runs when the announced session ends. See [Session hooks](#session-hooks) |
 
@@ -236,8 +238,8 @@ Each hook fires once per change of the session. A re-check of the same session s
 
 | Hook | Fires after | Does not fire |
 | --- | --- | --- |
-| `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); `refreshToken()` stored a new token | A `checkAuth` or a `refreshToken()` that leaves the same user and token. A refresh that the network service makes on its own 401 recovery, which does not go through the provider |
-| `onSessionCleared` | `logout`; the 401 branch of `checkError`; a `checkAuth` that rejects | A session that was never announced. A second clear of the same session |
+| `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); a token was saved by anything that calls `DefaultAuthService.saveAuth`, such as your network service's `refreshToken()` on a 401 | A `checkAuth` or a `refreshToken()` that leaves the same user and token. A refresh that the network service makes on its own 401 recovery, which does not go through the provider |
+| `onSessionCleared` | `logout`; the 401 branch of `checkError`; a `checkAuth` that rejects; a `cleanUp` made by other code, with the reason `external` | A session that was never announced. A second clear of the same session |
 
 - **The arguments.** `token` is the stored token record (`value`, `type`). `user` is the stored identity (`userId`, `username`, `referenceId`, `provider`), or `{ userId, username }` when your `saveSession` keeps nothing in the store. `reason` is `SessionClearReasons.LOGOUT`, `UNAUTHORIZED` or `REJECTED`.
 - **Order.** `logout` and the 401 branch clear the store first, then call the hook. A rejected `checkAuth` calls the hook but does not clear the store.
@@ -245,7 +247,42 @@ Each hook fires once per change of the session. A re-check of the same session s
 - **Failures.** A hook that throws or rejects is logged and the call carries on. Sign-in and sign-out do not fail because a socket is down.
 - **A hook that never settles.** After `sessionHookTimeout` (10 seconds; override the getter) the provider logs it and carries on. The hook itself keeps running, and the next hook may start while it does. Put a timeout on your own `connect` too.
 - **Do not call the provider from a hook.** `this.logout()` or `this.refreshToken()` inside a hook queues behind that hook, so it waits until `sessionHookTimeout` ends the hook. Return from the hook and call it afterwards.
-- **What the provider sees.** The provider reacts to its own calls only. A `cleanUp` that your network service's `onAuthFailure` runs fires nothing. The next `checkAuth` (it rejects) or a 401 in `checkError` calls `onSessionCleared`.
+- **What the provider sees.** The provider subscribes to `DefaultAuthService` (`subscribe({ listener })` runs after every `saveAuth` and `cleanUp`), so a refresh your network service makes on a 401 and a `cleanUp` from its `onAuthFailure` reach the hooks as well. A token written straight to `localStorage`, or by another tab, does not: save it with `saveAuth`.
+- **A refresh is a start.** A new token for the same user calls `onSessionStarted` again with the new `token`; there is no separate hook. A token saved again with the same value stays silent.
+
+## Guest apps
+
+A guest app has no login page, and a 401 should not log the user out. Override `unauthenticatedRejection`, which `checkAuth` and the 401 branch of `checkError` reject with:
+
+```ts
+import {
+  DefaultAuthProvider,
+  type IAuthRejection,
+  SessionClearReasons,
+  type TSessionClearReason,
+} from '@venizia/ardor';
+
+export class GuestAuthProvider extends DefaultAuthProvider {
+  protected override unauthenticatedRejection(opts: { reason: TSessionClearReason }): IAuthRejection {
+    return opts.reason === SessionClearReasons.UNAUTHORIZED
+      ? { logoutUser: false, message: false }
+      : { redirectTo: false, message: false };
+  }
+}
+```
+
+The values follow ra-core (5.15.5):
+
+| Rejects | Value | What ra-core does |
+| --- | --- | --- |
+| `checkAuth` | `redirectTo: false` | No redirect after it logs out. |
+| `checkAuth` | `message: false` | No notification. |
+| `checkError` (401) | `logoutUser: false` | It does not call `logout`. It redirects only if `redirectTo` is set. |
+| `checkError` (401) | `message: false` | No "not authorized" notification. |
+
+`{ message: false }` alone still redirects: ra-core logs out and goes to `/login` unless `redirectTo` is `false`. For `checkAuth` return `{ redirectTo: false, message: false }`.
+
+A 401 whose rejection has `logoutUser: false` keeps the stored session: the provider does not run `cleanUp` and does not call `onSessionCleared`. Any other rejection clears the session as before. `checkAuth` always calls `logout` through ra-core when it rejects, so `onSessionCleared` with `logout` follows a rejected check that logs out.
 
 ## An application with no sign-in
 

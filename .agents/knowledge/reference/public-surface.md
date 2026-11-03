@@ -181,7 +181,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (38)
+### `@venizia/ardor-admin` (39)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -193,6 +193,7 @@ generated:
 - `Features` class
 - `IApplication` interface
 - `IAuthProvider` interface
+- `IAuthRejection` interface
 - `IDataProvider` interface
 - `II18nProviderOptions` interface
 - `IListFilter` interface
@@ -224,7 +225,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (172)
+### `@venizia/ardor` (173)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -275,6 +276,7 @@ generated:
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
+- `IAuthRejection` interface
 - `IAuthTokenRecord` interface
 - `IBuildInfoFile` interface
 - `ICustomParams` interface

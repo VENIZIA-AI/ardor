@@ -13,7 +13,7 @@ import {
   RequestMethods,
   type TStringConstValue,
 } from '@venizia/ardor-kernel';
-import type { IAuthProvider, IDataProvider } from '@/common';
+import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
 
 /** What the login form hands to `login`: the user name and the password, and whatever else the form holds. */
 export interface ILoginParams {
@@ -28,6 +28,8 @@ export class SessionClearReasons {
   static readonly LOGOUT = 'logout';
   /** `checkError` met a 401. */
   static readonly UNAUTHORIZED = 'unauthorized';
+  /** The session was cleared by code that is not this provider, such as the network service's `onAuthFailure`. */
+  static readonly EXTERNAL = 'external';
   /** `checkAuth` rejected: no token is stored, or the server answered with no data. */
   static readonly REJECTED = 'rejected';
 }
@@ -67,10 +69,15 @@ export class DefaultAuthProvider<
     protected permissionProvider?: IPermissionProvider,
   ) {
     super({ scope: DefaultAuthProvider.name });
+
+    this.authService.subscribe({ listener: () => this.syncSession() });
   }
 
   /** The session last announced to `onSessionStarted`: `undefined` when none is, or after it was cleared. */
   private announcedSession?: string;
+
+  /** The reason of the `cleanUp` this provider is running, for the listener of the service. */
+  private clearing?: TSessionClearReason;
 
   /** The hook calls run one after the other, so a slow `onSessionStarted` ends before a later `onSessionCleared`. */
   private hookQueue: Promise<void> = Promise.resolve();
@@ -100,6 +107,16 @@ export class DefaultAuthProvider<
   /** How long, in milliseconds, `login`, `logout` and the checks wait for a session hook before they log it and carry on. */
   protected get sessionHookTimeout(): number {
     return 10_000;
+  }
+
+  /**
+   * What `checkAuth` rejects with when the session is not valid (`reason` is `rejected`), and the 401
+   * branch of `checkError` (`unauthorized`). The default redirects to `loginPagePath`. A guest app with no
+   * login page returns `{ redirectTo: false, message: false }` for `rejected` and
+   * `{ logoutUser: false, message: false }` for `unauthorized`; the 401 then keeps the stored session.
+   */
+  protected unauthenticatedRejection(_opts: { reason: TSessionClearReason }): IAuthRejection {
+    return { redirectTo: this.loginPagePath };
   }
 
   // --- Sign-in hooks ---------------------------------------------------------------------------
@@ -315,7 +332,7 @@ export class DefaultAuthProvider<
   /** Announces the end of the session announced last, once. A session never announced ends silently. */
   private endSession(opts: { reason: TSessionClearReason }): Promise<void> {
     if (this.announcedSession === undefined) {
-      return Promise.resolve();
+      return this.hookQueue;
     }
 
     this.announcedSession = undefined;
@@ -323,6 +340,24 @@ export class DefaultAuthProvider<
       name: 'onSessionCleared',
       run: () => this.onSessionCleared(opts),
     });
+  }
+
+  /** Announces or ends the session after the service saved or cleared it. */
+  private syncSession(): Promise<void> {
+    return this.authService.getAuth()?.value
+      ? this.startStoredSession()
+      : this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+  }
+
+  private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {
+    this.clearing = opts.reason;
+    try {
+      this.authService.cleanUp();
+    } finally {
+      this.clearing = undefined;
+    }
+
+    await this.endSession(opts);
   }
 
   /** Announces the session in the store, when there is one. */
@@ -366,8 +401,7 @@ export class DefaultAuthProvider<
   }
 
   async logout(_params?: unknown): Promise<void> {
-    this.authService.cleanUp();
-    await this.endSession({ reason: SessionClearReasons.LOGOUT });
+    await this.clearSession({ reason: SessionClearReasons.LOGOUT });
   }
 
   async checkAuth(_params?: unknown) {
@@ -375,7 +409,9 @@ export class DefaultAuthProvider<
 
     if (!token?.value) {
       await this.endSession({ reason: SessionClearReasons.REJECTED });
-      return Promise.reject({ redirectTo: this.loginPagePath });
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
     }
 
     if (!this.authProviderOptions.paths?.checkAuth) {
@@ -390,25 +426,28 @@ export class DefaultAuthProvider<
     });
 
     if (!response?.data) {
-      // A sign-in that landed while the request was out is a newer session: this answer is not about it.
+      // The answer belongs to the session announced before the request.
       if (this.announcedSession === checked) {
         await this.endSession({ reason: SessionClearReasons.REJECTED });
       }
-      return Promise.reject({ redirectTo: this.loginPagePath });
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
     }
 
     await this.startStoredSession();
     return Promise.resolve();
   }
 
-  checkError(error: unknown) {
+  async checkError(error: unknown) {
     const status = readStatus(error);
 
     if (status === 401) {
-      this.authService.cleanUp();
-      return this.endSession({ reason: SessionClearReasons.UNAUTHORIZED }).then(() => {
-        return Promise.reject({ redirectTo: this.loginPagePath });
-      });
+      const rejection = this.unauthenticatedRejection({ reason: SessionClearReasons.UNAUTHORIZED });
+      if (rejection.logoutUser !== false) {
+        await this.clearSession({ reason: SessionClearReasons.UNAUTHORIZED });
+      }
+      return Promise.reject(rejection);
     }
 
     if (status === 403) {

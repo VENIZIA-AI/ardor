@@ -681,7 +681,7 @@ describe('canAccess', () => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
     container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: 'services.Extra' }).toValue({});
     if (opts.permissionProvider) {
       container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);

@@ -30,9 +30,10 @@ bun add @venizia/ardor
 | New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
 | New feature | `DefaultAuthProvider` has the hooks `onSessionStarted` and `onSessionCleared`, so a socket or a per-user cache stays in step with the session without overriding `checkAuth` | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Session hooks](./2026-11-03-session-lifecycle-hooks) |
 | New feature | `BrowserStorage` (typed, never-throwing `localStorage` and `sessionStorage`), the hooks `useStoredState` and `useElementSize` | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [Typed browser storage and useElementSize](./2026-11-03-browser-storage-and-element-size) |
+| New feature | The session hooks see every token change, a refresh by the network service included, and `unauthenticatedRejection` sets what `checkAuth` and a 401 reject with | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Token hook and guest rejection](./2026-11-03-token-hook-and-guest-rejection) |
 | Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
 
-Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.5 KB (lazy sources).
+Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.65 KB (lazy sources, the session hooks and the token change hook).
 
 | Package | ARDOR 0.4.6 | ARDOR 0.4.7 |
 |---------|-------------|-------------|
@@ -60,6 +61,7 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 - **An app that stores OAuth2 state under `@app/oauth2/`.** Step 10.
 - **An app that overrides `checkAuth`, `logout` or `saveSession` to sync a socket or a cache with the session.** Step 13.
 - **An app with its own `localStorage` helper or `ResizeObserver` hook.** Step 14.
+- **A guest app with no login page.** Step 15.
 
 ## Upgrade checklist
 
@@ -84,4 +86,5 @@ IGNIS 0.4.6 stable does not satisfy `^0.4.7-2`, so it is not accepted for helper
 12. **Optional: lazy i18n sources.** Turn a catalogue the first screen does not need into `() => import('./vi')`. See [Lazy i18n sources](./2026-11-01-lazy-i18n-sources).
 13. **Optional: session hooks.** If you override `checkAuth`, `logout` or `saveSession` only to keep a socket or a cache in step with the session, move that code into `onSessionStarted({ token, user })` and `onSessionCleared({ reason })` of your `DefaultAuthProvider` subclass, and delete the overrides. Each hook fires once per change of the session, is awaited, and cannot break sign-in or sign-out when it throws. Do not call `this.logout()` or `this.refreshToken()` from a hook: the call waits behind the hook until the 10 second `sessionHookTimeout`. See [Session hooks](./2026-11-03-session-lifecycle-hooks).
 14. **Optional: browser storage and element size.** Replace your own `localStorage` helper with `BrowserStorage` (`get`, `set`, `remove` and `subscribe`; a failing storage gives the fallback, never an exception) and your own hook with `useStoredState({ key, defaultValue })`. Keys are used as you give them, so your existing keys keep working. Name new ones `@app/store/<name>`, and never write under `@app/auth/`: `BrowserStorage` refuses it. Replace a `ResizeObserver` hook you wrote with `useElementSize({ ref })`, and pass a stable `ref` from `useRef`. See [Typed browser storage and useElementSize](./2026-11-03-browser-storage-and-element-size).
+15. **Optional: a guest app.** If your app has no login page, override `unauthenticatedRejection` in your `DefaultAuthProvider` subclass: return `{ redirectTo: false, message: false }` for the reason `rejected` and `{ logoutUser: false, message: false }` for `unauthorized`. `{ message: false }` alone still redirects to `/login`. A 401 with `logoutUser: false` keeps the stored session. The session hooks now also fire for a token your network service refreshes and for a `cleanUp` made outside the provider (reason `external`). See [Token hook and guest rejection](./2026-11-03-token-hook-and-guest-rejection).
 
