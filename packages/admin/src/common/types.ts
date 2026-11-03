@@ -68,6 +68,17 @@ export type IReactAdminAuthProvider = Required<
 > &
   Pick<AuthProvider, 'getIdentity' | 'canAccess'>;
 
+/**
+ * What `checkAuth` and `checkError` reject with, as ra-core reads it. `redirectTo: false` skips the
+ * redirect of `checkAuth`, `message: false` skips the notification, and `logoutUser: false` (`checkError`
+ * only) keeps the user logged in.
+ */
+export interface IAuthRejection {
+  redirectTo?: string | false;
+  logoutUser?: boolean;
+  message?: string | false;
+}
+
 export interface IAuthProvider extends IReactAdminAuthProvider {
   getRoles: (params?: unknown) => Promise<Set<string>>;
   /** `true` when the session was refreshed, `false` when there is no refresh to make. */

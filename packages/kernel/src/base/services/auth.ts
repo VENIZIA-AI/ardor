@@ -5,8 +5,29 @@ import { AuthTokenStore } from '@/helpers';
 import { BaseService } from './base';
 
 export class DefaultAuthService extends BaseService {
+  private readonly listeners = new Set<() => void>();
+
   constructor() {
     super({ scope: DefaultAuthService.name });
+  }
+
+  /** `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes. */
+  subscribe(opts: { listener: () => void }): () => void {
+    this.listeners.add(opts.listener);
+
+    return () => {
+      this.listeners.delete(opts.listener);
+    };
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      try {
+        listener();
+      } catch (error) {
+        this.logger.error('[notify] A listener failed | error: %o', error);
+      }
+    }
   }
 
   /** What is stored under the key, or `null` when nothing is, also outside a browser. */
@@ -94,6 +115,8 @@ export class DefaultAuthService extends BaseService {
     if (roles) {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, JSON.stringify(roles));
     }
+
+    this.notify();
   }
 
   cleanUp() {
@@ -108,5 +131,7 @@ export class DefaultAuthService extends BaseService {
 
       localStorage.removeItem(key);
     });
+
+    this.notify();
   }
 }

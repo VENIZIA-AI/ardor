@@ -381,3 +381,63 @@ describe('LocalStorageKeys prefixes', () => {
     expect(LocalStorageKeys.KEY_AUTH_TOKEN.startsWith(LocalStorageKeys.PREFIX_AUTH)).toBe(true);
   });
 });
+
+describe('subscribe', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('saveAuth notifies after the token and the identity are stored', () => {
+    const service = new DefaultAuthService();
+    const seen: Array<string | undefined> = [];
+    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    service.saveAuth({ userId: 7, token: { value: 'tok-2', type: 'Bearer' } });
+
+    expect(seen).toEqual(['tok-1', 'tok-2']);
+  });
+
+  test('cleanUp notifies after the session keys are removed', () => {
+    const service = new DefaultAuthService();
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    const seen: Array<string | undefined> = [];
+    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+
+    service.cleanUp();
+
+    expect(seen).toEqual([undefined]);
+  });
+
+  test('the function it returns stops the listener', () => {
+    const service = new DefaultAuthService();
+    const calls: Array<string> = [];
+    const stop = service.subscribe({ listener: () => calls.push('called') });
+    stop();
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+
+    expect(calls).toEqual([]);
+  });
+
+  test('a listener that throws does not break saveAuth, cleanUp or the other listeners', () => {
+    const service = new DefaultAuthService();
+    const calls: Array<string> = [];
+    service.subscribe({
+      listener: () => {
+        throw new Error('listener failed');
+      },
+    });
+    service.subscribe({ listener: () => calls.push('second') });
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    service.cleanUp();
+
+    expect(calls).toEqual(['second', 'second']);
+    expect(service.getAuth()).toBeNull();
+  });
+});

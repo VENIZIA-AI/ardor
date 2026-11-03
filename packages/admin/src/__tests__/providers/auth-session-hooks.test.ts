@@ -2,7 +2,7 @@ import { afterAll, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
-import type { IAuthProvider } from '@/common';
+import type { IAuthProvider, IAuthRejection } from '@/common';
 import {
   DefaultAuthProvider,
   SessionClearReasons,
@@ -28,6 +28,7 @@ interface IHooks {
   started: Array<IStartedCall>;
   cleared: Array<TSessionClearReason>;
   storedAtClear: Array<string | null>;
+  rejectionReasons: Array<TSessionClearReason>;
   onStarted: () => void | Promise<void>;
   onCleared: () => void | Promise<void>;
   timeout: number;
@@ -48,6 +49,7 @@ const hooks: IHooks = {
   started: [],
   cleared: [],
   storedAtClear: [],
+  rejectionReasons: [],
   onStarted: () => undefined,
   onCleared: () => undefined,
   timeout: 1000,
@@ -63,6 +65,13 @@ const api: IApi = {
 };
 
 class RecordingAuthProvider extends DefaultAuthProvider {
+  protected override unauthenticatedRejection(opts: {
+    reason: TSessionClearReason;
+  }): IAuthRejection {
+    hooks.rejectionReasons.push(opts.reason);
+    return super.unauthenticatedRejection(opts);
+  }
+
   protected override get sessionHookTimeout(): number {
     return hooks.timeout;
   }
@@ -82,6 +91,19 @@ class RecordingAuthProvider extends DefaultAuthProvider {
   }
 }
 
+/** A guest app: no login page, and a 401 keeps the user. */
+class GuestAuthProvider extends RecordingAuthProvider {
+  protected override unauthenticatedRejection(opts: {
+    reason: TSessionClearReason;
+  }): IAuthRejection {
+    hooks.rejectionReasons.push(opts.reason);
+
+    return opts.reason === SessionClearReasons.UNAUTHORIZED
+      ? { logoutUser: false, message: false }
+      : { redirectTo: false, message: false };
+  }
+}
+
 /** The same provider with `saveSession` doing nothing: an app that keeps the session elsewhere. */
 class SessionKeptElsewhereProvider extends RecordingAuthProvider {
   protected override saveSession(_opts: { session: ISignInSession; username: string }): void {
@@ -89,11 +111,14 @@ class SessionKeptElsewhereProvider extends RecordingAuthProvider {
   }
 }
 
-const buildProvider = (opts?: {
+let service = new DefaultAuthService();
+
+const createContainer = (opts?: {
   providerClass?: typeof DefaultAuthProvider;
   withCheckPath?: boolean;
-}): IAuthProvider => {
+}): Container => {
   const container = new Container();
+  service = new DefaultAuthService();
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
     send: (request: { resource: string }) => {
       if (request.resource === '/auth/whoami') {
@@ -113,12 +138,19 @@ const buildProvider = (opts?: {
   container
     .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
     .toValue(opts?.withCheckPath === false ? {} : { paths: { checkAuth: '/auth/whoami' } });
-  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
+  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(service);
   container
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
     .toProvider(opts?.providerClass ?? RecordingAuthProvider);
 
-  return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  return container;
+};
+
+const buildProvider = (opts?: {
+  providerClass?: typeof DefaultAuthProvider;
+  withCheckPath?: boolean;
+}): IAuthProvider => {
+  return createContainer(opts).get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
 };
 
 const storeSession = (opts: { token: string; userId: number }) => {
@@ -128,6 +160,8 @@ const storeSession = (opts: { token: string; userId: number }) => {
     username: 'alice',
   });
 };
+
+const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 5));
 
 const signIn = (provider: IAuthProvider) => {
   return provider.login({ username: 'alice', password: 'secret' });
@@ -139,6 +173,7 @@ beforeEach(() => {
   hooks.started = [];
   hooks.cleared = [];
   hooks.storedAtClear = [];
+  hooks.rejectionReasons = [];
   hooks.onStarted = () => undefined;
   hooks.onCleared = () => undefined;
   api.signIn = { userId: 7, token: { value: 'jwt-1', type: 'Bearer' }, roles: ['admin'] };
@@ -515,5 +550,155 @@ describe('without paths.checkAuth', () => {
     await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.REJECTED]);
+  });
+});
+
+describe('a change of the session made outside the provider', () => {
+  test('a token saved by the network service refresh is announced, once per token', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+
+    service.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    service.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    service.saveAuth({ userId: 7, token: { value: 'jwt-3', type: 'Bearer' } });
+    await settle();
+
+    expect(hooks.started.map((call) => call.token.value)).toEqual(['jwt-1', 'jwt-2', 'jwt-3']);
+    expect(hooks.started[1]?.user.userId).toBe(7);
+  });
+
+  test('a session saved by the app itself is announced', async () => {
+    buildProvider();
+
+    service.saveAuth({ userId: 3, username: 'bob', token: { value: 'app-token', type: 'Bearer' } });
+    await settle();
+
+    expect(hooks.started).toHaveLength(1);
+    expect(hooks.started[0]?.user).toEqual(expect.objectContaining({ userId: 3, username: 'bob' }));
+  });
+
+  test('a cleanUp made outside the provider calls the hook with external, once', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+
+    service.cleanUp();
+    service.cleanUp();
+    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+
+    expect(hooks.cleared).toEqual([SessionClearReasons.EXTERNAL]);
+  });
+
+  test("the provider's own logout and 401 keep their reasons", async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+    await provider.logout({});
+    await signIn(provider);
+    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+
+    expect(hooks.cleared).toEqual([SessionClearReasons.LOGOUT, SessionClearReasons.UNAUTHORIZED]);
+  });
+
+  test('a slow onSessionStarted ends before the hook of a later outside change begins', async () => {
+    hooks.onStarted = () => new Promise((resolve) => setTimeout(resolve, 15));
+    const provider = buildProvider();
+
+    const signingIn = signIn(provider);
+    while (!hooks.events.includes('started:begin')) {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+    service.cleanUp();
+    await signingIn;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(hooks.events).toEqual(['started:begin', 'started:end', 'cleared:external']);
+  });
+});
+
+describe('unauthenticatedRejection', () => {
+  test('by default every place rejects with a redirect to the login page, and names its reason', async () => {
+    const provider = buildProvider();
+    const noToken = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    storeSession({ token: 'stored', userId: 3 });
+    api.whoamiHasData = false;
+    const noData = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    const unauthorized = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 401 }),
+    });
+
+    expect([noToken, noData, unauthorized]).toEqual([
+      { redirectTo: '/login' },
+      { redirectTo: '/login' },
+      { redirectTo: '/login' },
+    ]);
+    expect(hooks.rejectionReasons).toEqual([
+      SessionClearReasons.REJECTED,
+      SessionClearReasons.REJECTED,
+      SessionClearReasons.UNAUTHORIZED,
+    ]);
+  });
+
+  test('a guest app rejects checkAuth with no redirect and no message', async () => {
+    const provider = buildProvider({ providerClass: GuestAuthProvider });
+    const noToken = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    storeSession({ token: 'stored', userId: 3 });
+    api.whoamiHasData = false;
+    const noData = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+
+    expect(noToken).toEqual({ redirectTo: false, message: false });
+    expect(noData).toEqual({ redirectTo: false, message: false });
+  });
+
+  test('a 401 rejection with logoutUser false keeps the stored session and calls no clear hook', async () => {
+    const provider = buildProvider({ providerClass: GuestAuthProvider });
+    await signIn(provider);
+
+    const rejection = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 401 }),
+    });
+
+    expect(rejection).toEqual({ logoutUser: false, message: false });
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
+    expect(hooks.cleared).toEqual([]);
+  });
+
+  test('a 403 and any other status are not affected', async () => {
+    const provider = buildProvider({ providerClass: GuestAuthProvider });
+
+    const forbidden = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 403 }),
+    });
+    await provider.checkError({ status: 500 });
+
+    expect(forbidden).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(hooks.rejectionReasons).toEqual([]);
+  });
+});
+
+describe('dispose', () => {
+  test('stops a provider from listening to the service, and a second call does nothing', async () => {
+    const instance = createContainer().instantiate(RecordingAuthProvider);
+    service.saveAuth({ userId: 7, token: { value: 'jwt-1', type: 'Bearer' } });
+    await settle();
+    expect(hooks.started).toHaveLength(1);
+
+    instance.dispose();
+    instance.dispose();
+    service.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    service.cleanUp();
+    await settle();
+
+    expect(hooks.started).toHaveLength(1);
+    expect(hooks.cleared).toEqual([]);
+  });
+
+  test('a second provider on the same service fires every hook twice, which is why there is one per service', async () => {
+    const container = createContainer();
+    container.instantiate(RecordingAuthProvider);
+    container.instantiate(RecordingAuthProvider);
+
+    service.saveAuth({ userId: 7, token: { value: 'jwt-1', type: 'Bearer' } });
+    await settle();
+
+    expect(hooks.started).toHaveLength(2);
   });
 });
