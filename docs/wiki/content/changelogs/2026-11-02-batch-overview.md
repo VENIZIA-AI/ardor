@@ -8,7 +8,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 ## Everything since ARDOR 0.4.6 in one place, with an upgrade checklist
 
-<Badge type="warning" text="Breaking Change" /> <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" />
+<Badge type="warning" text="Breaking Change" /> <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="info" text="Bug Fix" />
 
 **In one line.** ARDOR 0.4.7 removes the old bare names and the kernel logger, so an application on 0.4.6 does not compile until it runs the codemod. It also moves the IGNIS peers to one prerelease family, adds the `Ardor` namespace and adds lazy i18n sources.
 
@@ -31,6 +31,7 @@ bun add @venizia/ardor
 | New feature | `DefaultAuthProvider` has the hooks `onSessionStarted` and `onSessionCleared`, so a socket or a per-user cache stays in step with the session without overriding `checkAuth` | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Session hooks](./2026-11-03-session-lifecycle-hooks) |
 | New feature | `BrowserStorage` (typed, never-throwing `localStorage` and `sessionStorage`), the hooks `useStoredState` and `useElementSize` | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [Typed browser storage and useElementSize](./2026-11-03-browser-storage-and-element-size) |
 | New feature | The session hooks see every token change, a refresh by the network service included, and `unauthenticatedRejection` sets what `checkAuth` and a 401 reject with | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Token hook and guest rejection](./2026-11-03-token-hook-and-guest-rejection) |
+| Bug fix | `useElementSize` no longer throws on a host without `ResizeObserver`; it stays at 0 by 0 | `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [useElementSize without ResizeObserver](./2026-11-03-element-size-without-resize-observer) |
 | Enhancement | The IGNIS peers are one prerelease family: `^0.4.7-2` and `^0.4.6-1` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
 
 Two size budgets are raised, and both are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace) and `@venizia/ardor-admin` from 10 KB to 10.65 KB (lazy sources, the session hooks and the token change hook).
