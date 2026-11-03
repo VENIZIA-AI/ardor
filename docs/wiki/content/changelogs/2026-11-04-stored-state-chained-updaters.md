@@ -31,13 +31,15 @@ export function Counter() {
 ## What changed
 
 - **An updater sees the current value.** That is the stored value, so it includes a write made a moment ago by another call, another hook on the same key, or code outside React. After a write or a removal that the storage refused, it is the value the hook keeps.
-- **`setValue` keeps its identity** when the value changes, because it no longer depends on the last render's value.
+- **`setValue` keeps its identity** when the value changes, as long as `defaultValue` and `codec` are stable, because it no longer depends on the last render's value.
 - **A plain value is unchanged.** `setValue(10)` stores 10, and an updater called after it builds on 10.
 - **Sign out without a flash.** The [`useStoredState` reference](../references/hooks#usestoredstate) now says how to remove session keys at sign-out. `remove()` tells every hook mounted on the key, so remove the keys after the protected tree has unmounted, and gate the effects that write the store on the signed-in state, or a still-mounted effect can write defaults back. There is no `silent` option, because the browser tells other tabs on its own and no option can stop that.
 
 ## Who is affected
 
 - **An app that calls `setValue` with an updater more than once in one tick, or on two hooks of one key.** Those updates now all apply. Code that worked around the lost update (a ref holding the latest value, a single combined updater) can stay or be removed.
+- **An effect that calls `setValue((current) => current + 1)`.** In React StrictMode in development the effect runs twice, so the value now goes up by 2, as it does with React's own `setState`. Production runs it once.
+- **An app that writes the key without telling the hook, after the storage refused a write of the hook.** The hook builds an updater on the value it keeps and does not see that write until the storage next notifies it (a `BrowserStorage` write or a `storage` event). See [Hooks](../references/hooks#usestoredstate).
 - **All other apps.** No action needed.
 
 See [Hooks](../references/hooks#usestoredstate).

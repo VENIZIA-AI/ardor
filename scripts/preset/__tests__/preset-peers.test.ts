@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 
-import { prereleaseRanges } from '../../release/release-gates';
+import { manifestFilesOf, prereleaseRanges } from '../../release/release-gates';
 
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 
@@ -49,9 +49,10 @@ describe('presets/*/preset.json, a stable ships on stable ranges', () => {
   const catalogIsStable = Object.entries(catalog)
     .filter(([name]) => name.startsWith('@venizia/'))
     .every(([, range]) => !/\d+\.\d+\.\d+-/.test(range));
-  const presets = readdirSync(join(ROOT, 'presets'), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
+  // The files the stable run's `stable-deps` reads: every preset.json under presets/, nested ones too.
+  const manifests = manifestFilesOf({ path: join(ROOT, 'presets') }).map((file) =>
+    relative(ROOT, file),
+  );
 
   test('the check sees a prerelease token in a hand-written peer, so it is not vacuous', () => {
     const manifest = { peers: { '@venizia/dev-configs': '^0.4.0 || ^0.4.7-2' } };
@@ -59,14 +60,14 @@ describe('presets/*/preset.json, a stable ships on stable ranges', () => {
     expect(prereleaseRanges({ manifest })).toEqual(['@venizia/dev-configs@^0.4.0 || ^0.4.7-2']);
   });
 
-  test.each(presets)(
-    'presets/%s names no prerelease while the catalog pins only stable versions',
-    (name) => {
-      if (!catalogIsStable) {
-        return;
-      }
+  test('it finds the manifests of both presets', () => {
+    expect(manifests).toContain('presets/app/preset.json');
+    expect(manifests).toContain('presets/lib/preset.json');
+  });
 
-      expect(prereleaseRanges({ manifest: readJson(`presets/${name}/preset.json`) })).toEqual([]);
-    },
-  );
+  describe.skipIf(!catalogIsStable)('while the catalog pins only stable versions', () => {
+    test.each(manifests)('%s names no prerelease', (file) => {
+      expect(prereleaseRanges({ manifest: readJson(file) })).toEqual([]);
+    });
+  });
 });
