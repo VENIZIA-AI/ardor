@@ -65,7 +65,7 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
 
   if (typeof inversion.BindingVerifier?.assertResolve !== 'function') {
     fail(
-      'The installed @venizia/ignis-inversion has no BindingVerifier.assertResolve | It arrived in 0.4.6-1: upgrade the peer to ^0.4.6-1, or this helper cannot check the bindings',
+      'The installed @venizia/ignis-inversion has no BindingVerifier.assertResolve | It arrived in 0.4.6-1: upgrade the peer to ^0.4.6, or this helper cannot check the bindings',
     );
   }
 
