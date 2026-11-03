@@ -10,29 +10,47 @@ const storageEvent = (opts: { key: string | null; storageArea: Storage }): Event
   return new StorageEvent('storage', opts);
 };
 
-class FailingStorage implements Storage {
+class SwitchStorage implements Storage {
   [name: string]: unknown;
 
+  failReads = false;
+  failWrites = false;
+  private readonly items = new Map<string, string>();
+
   get length(): number {
-    return 0;
+    return this.items.size;
   }
 
-  getItem(_key: string): string | null {
-    throw new DOMException('Access is denied', 'SecurityError');
+  getItem(key: string): string | null {
+    if (this.failReads) {
+      throw new DOMException('Access is denied', 'SecurityError');
+    }
+
+    return this.items.get(key) ?? null;
   }
 
-  setItem(_key: string, _value: string): void {
-    throw new DOMException('The quota has been exceeded', 'QuotaExceededError');
+  setItem(key: string, value: string): void {
+    if (this.failWrites) {
+      throw new DOMException('The quota has been exceeded', 'QuotaExceededError');
+    }
+
+    this.items.set(key, value);
   }
 
-  removeItem(_key: string): void {
-    throw new DOMException('Access is denied', 'SecurityError');
+  removeItem(key: string): void {
+    if (this.failWrites) {
+      throw new DOMException('Access is denied', 'SecurityError');
+    }
+
+    this.items.delete(key);
   }
 
-  clear(): void {}
+  clear(): void {
+    this.items.clear();
+  }
 
-  key(_index: number): string | null {
-    return null;
+  key(index: number): string | null {
+    return [...this.items.keys()][index] ?? null;
   }
 }
 
@@ -85,7 +103,10 @@ describe('useStoredState reads', () => {
 
   test('gives the default value, and does not crash, when the accessor throws', () => {
     localStorage.setItem(KEY, JSON.stringify('dark'));
-    replaceLocalStorage(new FailingStorage());
+    const blocked = new SwitchStorage();
+    blocked.setItem(KEY, JSON.stringify('dark'));
+    blocked.failReads = true;
+    replaceLocalStorage(blocked);
 
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
 
@@ -143,11 +164,57 @@ describe('useStoredState writes', () => {
     expect(localStorage.getItem(KEY)).toBeNull();
   });
 
-  test('a write the storage refuses keeps the last value and does not throw', () => {
+  test('a write the quota refuses is kept in the hook, so the UI still reacts, and is not stored', () => {
+    const quota = new SwitchStorage();
+    replaceLocalStorage(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
-    replaceLocalStorage(new FailingStorage());
+    quota.failWrites = true;
 
     act(() => result.current.setValue('dark'));
+    expect(result.current.value).toBe('dark');
+    expect(quota.getItem(KEY)).toBeNull();
+
+    act(() => result.current.setValue((current) => `${current}-2`));
+    expect(result.current.value).toBe('dark-2');
+  });
+
+  test('a write on a storage that is blocked entirely is kept in the hook and does not throw', () => {
+    const blocked = new SwitchStorage();
+    blocked.failReads = true;
+    blocked.failWrites = true;
+    replaceLocalStorage(blocked);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
+
+    act(() => result.current.setValue('dark'));
+
+    expect(result.current.value).toBe('dark');
+  });
+
+  test('a value kept after a refused write gives way to the next change of the storage', () => {
+    const quota = new SwitchStorage();
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
+    quota.failWrites = true;
+    act(() => result.current.setValue('dark'));
+
+    quota.failWrites = false;
+    act(() => {
+      quota.setItem(KEY, JSON.stringify('blue'));
+      window.dispatchEvent(storageEvent({ key: KEY, storageArea: quota }));
+    });
+
+    expect(result.current.value).toBe('blue');
+  });
+
+  test('a removal the storage refuses shows the default value in the hook', () => {
+    const quota = new SwitchStorage();
+    quota.setItem(KEY, JSON.stringify('dark'));
+    replaceLocalStorage(quota);
+    const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
+    expect(result.current.value).toBe('dark');
+    quota.failWrites = true;
+
+    act(() => result.current.remove());
 
     expect(result.current.value).toBe('light');
   });
@@ -213,9 +280,9 @@ describe('useStoredState stays in step', () => {
     rerender({ key: '@app/store/b' });
     expect(result.current.value).toBe('from-b');
 
-    const add = spyOn(globalThis, 'removeEventListener');
+    const removed = spyOn(globalThis, 'removeEventListener');
     unmount();
-    expect(add.mock.calls.filter(([type]) => type === 'storage')).toHaveLength(1);
-    add.mockRestore();
+    expect(removed.mock.calls.filter(([type]) => type === 'storage')).toHaveLength(1);
+    removed.mockRestore();
   });
 });

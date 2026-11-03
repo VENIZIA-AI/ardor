@@ -538,7 +538,7 @@ export function Chart() {
 
 - **Parameters**: `opts: IUseElementSizeOptions` - `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`.
 - **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number }`, `0` by `0` until the first measure.
-- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box`, not a `ref.current` replaced later. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box` (and starts again from `0` by `0`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
 
 ### useStoredState
 
@@ -554,7 +554,7 @@ export function ThemeToggle() {
 
 - **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default).
 - **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
-- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue` and `setValue` stores nothing. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
+- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
 
 ### useWindowDimensions
 

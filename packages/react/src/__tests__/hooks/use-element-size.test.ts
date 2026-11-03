@@ -74,6 +74,18 @@ const entryOf = (opts: {
   };
 };
 
+class LegacyEntry implements ResizeObserverEntry {
+  declare readonly borderBoxSize: ReadonlyArray<ResizeObserverSize>;
+  readonly target = document.createElement('div');
+  readonly contentBoxSize: ReadonlyArray<ResizeObserverSize> = [];
+  readonly devicePixelContentBoxSize: ReadonlyArray<ResizeObserverSize> = [];
+  readonly contentRect: DOMRectReadOnly;
+
+  constructor(opts: { width: number; height: number }) {
+    this.contentRect = new DOMRectReadOnly(0, 0, opts.width, opts.height);
+  }
+}
+
 const fire = (opts: { observer: IObserverRecord; entries: Array<ResizeObserverEntry> }) => {
   opts.observer.callback(opts.entries, opts.observer.instance);
 };
@@ -198,6 +210,53 @@ describe('useElementSize', () => {
     expect(observers).toHaveLength(2);
     expect(observerAt(0).disconnected).toBe(true);
     expect(observerAt(1).targets).toEqual([second]);
+  });
+
+  test('border-box on an entry without borderBoxSize, as before Safari 15.4, reads the content rect', () => {
+    const ref = refOf(document.createElement('div'));
+    const { result } = renderHook(() => useElementSize({ ref, box: 'border-box' }));
+
+    fire({ observer: observerAt(0), entries: [new LegacyEntry({ width: 70, height: 30 })] });
+    flushFrames();
+
+    expect(result.current).toEqual({ width: 70, height: 30 });
+  });
+
+  test('a new box observes again with that box and starts from zero', () => {
+    const ref = refOf(document.createElement('div'));
+    const { result, rerender } = renderHook(
+      (props: { box: 'content-box' | 'border-box' }) => useElementSize({ ref, box: props.box }),
+      { initialProps: { box: 'content-box' } },
+    );
+    fire({ observer: observerAt(0), entries: [entryOf({ width: 100, height: 50 })] });
+    flushFrames();
+    expect(result.current).toEqual({ width: 100, height: 50 });
+
+    rerender({ box: 'border-box' });
+
+    expect(observerAt(0).disconnected).toBe(true);
+    expect(observerAt(1).options).toEqual([{ box: 'border-box' }]);
+    expect(result.current).toEqual({ width: 0, height: 0 });
+  });
+
+  test('a new ref cancels the pending frame, so the old element sets nothing, and starts from zero', () => {
+    const first = refOf(document.createElement('div'));
+    const second = refOf(document.createElement('div'));
+    const { result, rerender } = renderHook(
+      (props: { ref: { current: Element | null } }) => useElementSize({ ref: props.ref }),
+      { initialProps: { ref: first } },
+    );
+    fire({ observer: observerAt(0), entries: [entryOf({ width: 100, height: 50 })] });
+    flushFrames();
+    fire({ observer: observerAt(0), entries: [entryOf({ width: 400, height: 300 })] });
+    const pending = [...frames.keys()];
+    expect(pending).toHaveLength(1);
+
+    rerender({ ref: second });
+
+    expect(cancelled).toEqual(pending);
+    expect(frames.size).toBe(0);
+    expect(result.current).toEqual({ width: 0, height: 0 });
   });
 
   test('a ref with no element observes nothing and does not throw', () => {

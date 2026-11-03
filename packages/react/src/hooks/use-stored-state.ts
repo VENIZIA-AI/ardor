@@ -23,6 +23,16 @@ const RAW_TEXT: IStorageCodec<string | null> = {
   decode: (text) => text,
 };
 
+interface IKept<TValue> {
+  key: string;
+  storage?: TStorageArea;
+  value: TValue;
+}
+
+const isUpdater = <TValue>(
+  next: TValue | ((current: TValue) => TValue),
+): next is (current: TValue) => TValue => typeof next === 'function';
+
 interface IDecoded<TValue> {
   key: string;
   storage?: TStorageArea;
@@ -34,15 +44,26 @@ interface IDecoded<TValue> {
 /**
  * A value kept in `localStorage` or `sessionStorage`, in step with other hooks on the key, with code
  * that writes through `BrowserStorage`, and with other tabs. Pass a stable `codec` and `defaultValue`.
+ * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
  */
 export const useStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,
 ): IUseStoredStateReturn<TValue> => {
   const { key, defaultValue, storage, codec } = opts;
   const decoded = React.useRef<IDecoded<TValue>>(undefined);
+  const [kept, setKept] = React.useState<IKept<TValue>>();
 
   const subscribe = React.useCallback(
-    (listener: () => void) => BrowserStorage.subscribe({ key, storage, listener }),
+    (listener: () => void) => {
+      return BrowserStorage.subscribe({
+        key,
+        storage,
+        listener: () => {
+          setKept(undefined);
+          listener();
+        },
+      });
+    },
     [key, storage],
   );
 
@@ -62,20 +83,24 @@ export const useStoredState = <TValue>(
     return value;
   }, [key, storage, codec, defaultValue]);
 
-  const value = React.useSyncExternalStore(subscribe, getSnapshot, () => defaultValue);
+  const stored = React.useSyncExternalStore(subscribe, getSnapshot, () => defaultValue);
+  const value = kept?.key === key && kept.storage === storage ? kept.value : stored;
 
   const setValue = React.useCallback(
     (next: TValue | ((current: TValue) => TValue)) => {
-      const resolved =
-        typeof next === 'function' ? (next as (current: TValue) => TValue)(getSnapshot()) : next;
-      BrowserStorage.set({ key, value: resolved, storage, codec });
+      const resolved = isUpdater(next) ? next(value) : next;
+      const isStored = BrowserStorage.set({ key, value: resolved, storage, codec });
+
+      setKept(isStored ? undefined : { key, storage, value: resolved });
     },
-    [key, storage, codec, getSnapshot],
+    [key, storage, codec, value],
   );
 
   const remove = React.useCallback(() => {
-    BrowserStorage.remove({ key, storage });
-  }, [key, storage]);
+    const isRemoved = BrowserStorage.remove({ key, storage });
+
+    setKept(isRemoved ? undefined : { key, storage, value: defaultValue });
+  }, [key, storage, defaultValue]);
 
   return { value, setValue, remove };
 };

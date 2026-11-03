@@ -11,12 +11,14 @@ export interface IUseElementSizeReturn {
   height: number;
 }
 
+const ZERO_SIZE: IUseElementSizeReturn = { width: 0, height: 0 };
+
 const readSize = (opts: {
   entry: ResizeObserverEntry;
   box: 'content-box' | 'border-box';
 }): IUseElementSizeReturn => {
   const { entry, box } = opts;
-  const border = box === 'border-box' ? entry.borderBoxSize[0] : undefined;
+  const border = box === 'border-box' ? entry.borderBoxSize?.[0] : undefined;
 
   return border
     ? { width: border.inlineSize, height: border.blockSize }
@@ -26,13 +28,17 @@ const readSize = (opts: {
 /**
  * The size of `ref.current`, kept up to date by a `ResizeObserver` with one state update per
  * animation frame. The element is read when the effect runs: it follows a new `ref` or `box`, not a
- * `ref.current` that is replaced later.
+ * `ref.current` that is replaced later. A new `ref` or `box` starts again from 0 by 0. Pass a stable `ref`.
  */
 export const useElementSize = (opts: IUseElementSizeOptions): IUseElementSizeReturn => {
   const { ref, box = 'content-box' } = opts;
-  const [size, setSize] = React.useState<IUseElementSizeReturn>({ width: 0, height: 0 });
+  const [size, setSize] = React.useState<IUseElementSizeReturn>(ZERO_SIZE);
 
   React.useEffect(() => {
+    setSize((current) =>
+      current === ZERO_SIZE || (current.width === 0 && current.height === 0) ? current : ZERO_SIZE,
+    );
+
     const element = ref.current;
     if (!element) {
       return () => {};
