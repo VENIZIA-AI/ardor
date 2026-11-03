@@ -294,7 +294,7 @@
     "@types/react-dom": "^19",
     "@venizia/dev-configs": "^0.4.7-5",
     "@venizia/ignis-boot": "^0.4.7-7",
-    "@venizia/ignis-connectors": "^0.4.7-6",
+    "@venizia/ignis-connectors": "^0.4.7-7",
     "@venizia/ignis-filter": "^0.4.6-2",
     "@venizia/ignis-helpers": "^0.4.7-6",
     "@venizia/ignis-inversion": "^0.4.6-2",
@@ -725,7 +725,7 @@
 
     "@venizia/ignis-boot": ["@venizia/ignis-boot@0.4.7-7", "", { "dependencies": { "@venizia/ignis-helpers": "0.4.7-6", "@venizia/ignis-inversion": "0.4.6-2" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/esm/clis/artifacts.js" } }, "sha512-n/w+pCkwRlfSVkRhM7RC7cfoHjAz66qqdyxNUj2equq/9Vl1fx49KFrFtLx4qyLOSmYvuuo3PdcqYN+GEIicOg=="],
 
-    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.4.7-6", "", { "dependencies": { "@venizia/ignis-filter": "0.4.6-2", "@venizia/ignis-helpers": "0.4.7-6", "@venizia/ignis-inversion": "0.4.6-2", "@venizia/ignis-kernel": "0.4.7-6", "zod": "^4.6.7" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.10", "@hono/zod-openapi": "^1.6.3", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.4", "drizzle-zod": "^0.8.3", "hono": "^4.13.13", "meilisearch": "^0.62.0", "pg": "^8.23.1", "postgres": "^3.4.9", "typesense": "^3.2.0" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-bZxC1ko5d/SEgmgfafVM76AcpAp6UvHH1T4CSyHkHOaOuWV/HZH+eXxVIU6ANMOOwword7Xi9GvKGuFx1F2JuA=="],
+    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.4.7-7", "", { "dependencies": { "@venizia/ignis-filter": "0.4.6-2", "@venizia/ignis-helpers": "0.4.7-6", "@venizia/ignis-inversion": "0.4.6-2", "@venizia/ignis-kernel": "0.4.7-6", "zod": "^4.6.7" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.10", "@hono/zod-openapi": "^1.6.3", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.4", "drizzle-zod": "^0.8.3", "hono": "^4.13.13", "meilisearch": "^0.62.0", "pg": "^8.23.1", "postgres": "^3.4.9", "typesense": "^3.2.0" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-LWSwKIZcPA5qp/cicknk155Qhe/rYV1EcAjHBEQrd4cCCoEDg1kfFFkTlWnMkzBhKVc5Y8emE/3lGOBoc9nYgg=="],
 
     "@venizia/ignis-filter": ["@venizia/ignis-filter@0.4.6-2", "", { "dependencies": { "@venizia/ignis-inversion": "0.4.6-2", "zod": "^4.6.7" } }, "sha512-aDZyqjEGVyKQ4tLebvOOYJwP8WHuDJ40drGsYzv8QiiHJPSysXSEmT9l+35xfuRiNUTzhPBe6wZec6YSOrkZ7w=="],
 
