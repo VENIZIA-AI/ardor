@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Rejects a commit message that carries an agent signature (W-00). The message file is "$1".
+
+set -e
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+bun x --no-install vulcan commit-check "$1"

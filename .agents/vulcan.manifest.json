@@ -115,5 +115,12 @@
     "index": {
       "keys": ["gqQ8Wtlk6KiZpnCDafb3deR/VqhW2aBaDqqnKJLblZc="]
     }
+  },
+  "commit": {
+    "message": {
+      "agent": {
+        "signature": "deny"
+      }
+    }
   }
 }
