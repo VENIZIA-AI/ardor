@@ -1,7 +1,7 @@
 ---
 title: Sign-out clears only keys under @app/auth/, not @app/oauth2/
 description: DefaultAuthService.cleanUp no longer removes keys under @app/oauth2/, and LocalStorageKeys.PREFIX_OAUTH2 is removed.
-packages: ['@venizia/ardor-kernel', '@venizia/ardor']
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 ---
 
 # Changelog - 2026-11-02
