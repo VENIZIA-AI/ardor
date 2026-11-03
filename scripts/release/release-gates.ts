@@ -607,7 +607,7 @@ const presetFilesUnder = (opts: { path: string }): string[] =>
         : [],
   );
 
-const manifestFilesOf = (opts: { path: string }): string[] =>
+export const manifestFilesOf = (opts: { path: string }): string[] =>
   statSync(opts.path).isDirectory() ? presetFilesUnder({ path: opts.path }) : [opts.path];
 
 const fail = (opts: { lines: string[] }): never => {
