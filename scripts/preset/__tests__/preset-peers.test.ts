@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { prereleaseRanges } from '../../release/release-gates';
 
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 
@@ -36,4 +38,35 @@ describe('presets/app/preset.json, the peers written by hand', () => {
 
     expect(Bun.semver.satisfies(next, range)).toBe(true);
   });
+});
+
+// A stable ships on stable ranges: the stable run stops at its preset check if a preset names a
+// prerelease (0.4.7 stopped on a hand-written dev-configs peer, #549). The check is the run's own
+// (`prereleaseRanges`), applied to the sources on every pull request, but only while the root catalog
+// pins no prerelease: a prerelease cycle needs the hand-written peers to name the prerelease line (#504).
+describe('presets/*/preset.json, a stable ships on stable ranges', () => {
+  const catalog: Record<string, string> = readJson('package.json').workspaces.catalog;
+  const catalogIsStable = Object.entries(catalog)
+    .filter(([name]) => name.startsWith('@venizia/'))
+    .every(([, range]) => !/\d+\.\d+\.\d+-/.test(range));
+  const presets = readdirSync(join(ROOT, 'presets'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  test('the check sees a prerelease token in a hand-written peer, so it is not vacuous', () => {
+    const manifest = { peers: { '@venizia/dev-configs': '^0.4.0 || ^0.4.7-2' } };
+
+    expect(prereleaseRanges({ manifest })).toEqual(['@venizia/dev-configs@^0.4.0 || ^0.4.7-2']);
+  });
+
+  test.each(presets)(
+    'presets/%s names no prerelease while the catalog pins only stable versions',
+    (name) => {
+      if (!catalogIsStable) {
+        return;
+      }
+
+      expect(prereleaseRanges({ manifest: readJson(`presets/${name}/preset.json`) })).toEqual([]);
+    },
+  );
 });
