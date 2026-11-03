@@ -126,3 +126,62 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
 
   return target;
 };
+
+/**
+ * A `ResizeObserver` for a test host whose own `observe()` does nothing, such as happy-dom. Call
+ * `FakeResizeObserver.install()` before the code under test creates its observer, and `flush` to
+ * deliver a size. A callback runs at once; code that waits for an animation frame still needs the
+ * test's own frame control.
+ */
+export class FakeResizeObserver implements ResizeObserver {
+  private static readonly all = new Set<FakeResizeObserver>();
+
+  private readonly targets = new Set<Element>();
+
+  constructor(private readonly callback: ResizeObserverCallback) {
+    FakeResizeObserver.all.add(this);
+  }
+
+  /** Replaces `globalThis.ResizeObserver` with the fake. The returned function puts the previous one back. */
+  static install(): () => void {
+    const previous = globalThis.ResizeObserver;
+    FakeResizeObserver.all.clear();
+    globalThis.ResizeObserver = FakeResizeObserver;
+
+    return () => {
+      globalThis.ResizeObserver = previous;
+    };
+  }
+
+  /** Calls every observer of `element` with one entry of that size, for the content and the border box alike. */
+  static flush(opts: { element: Element; width: number; height: number }): void {
+    const { element, width, height } = opts;
+    const box = { x: 0, y: 0, width, height, top: 0, left: 0, right: width, bottom: height };
+    const size = [{ inlineSize: width, blockSize: height }];
+    const entry: ResizeObserverEntry = {
+      target: element,
+      contentRect: { ...box, toJSON: () => box },
+      contentBoxSize: size,
+      borderBoxSize: size,
+      devicePixelContentBoxSize: [],
+    };
+
+    for (const observer of FakeResizeObserver.all) {
+      if (observer.targets.has(element)) {
+        observer.callback([entry], observer);
+      }
+    }
+  }
+
+  observe(target: Element): void {
+    this.targets.add(target);
+  }
+
+  unobserve(target: Element): void {
+    this.targets.delete(target);
+  }
+
+  disconnect(): void {
+    this.targets.clear();
+  }
+}
