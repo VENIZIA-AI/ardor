@@ -566,7 +566,13 @@ export function ThemeToggle() {
 
 - **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default).
 - **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
-- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
+- **Gotcha**: An updater passed to `setValue` runs against the value at the moment you call it (the stored one, or the one the hook keeps after a refused write), not the value of the last render, so several updaters in one tick compose like a functional `setState`. Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
+
+**Sign out without a flash.** `remove()` and `setValue` tell every hook mounted on the key, in this tab, so a screen that is still mounted re-renders with `defaultValue` while you sign out. The browser tells the other tabs on its own, and no option can stop that. There is no `silent` option, because it would leave the hooks of this tab out of step with the storage. Instead:
+
+- Remove the stored session keys after the protected tree has unmounted: navigate to the login page first, or unmount the tree, then remove the keys.
+- Gate every effect that writes the store on the signed-in state. An effect that is still mounted when the keys go can write its defaults back, and the next sign-in starts from them.
+- Or let a screen treat an absent value as "signing out" and render nothing.
 
 ### useWindowDimensions
 
