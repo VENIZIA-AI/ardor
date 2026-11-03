@@ -136,7 +136,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (40)
+### `@venizia/ardor-react` (41)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -150,6 +150,7 @@ generated:
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
 - `IUseElementSizeOptions` interface
+- `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseSizerOptions` interface
@@ -169,7 +170,7 @@ generated:
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
-- `useElementSize` const
+- `useElementSize` function
 - `useInjectable` const
 - `useInjectableContainer` const
 - `useProvider` const
@@ -225,7 +226,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (173)
+### `@venizia/ardor` (174)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -314,6 +315,7 @@ generated:
 - `IUseDebounceReturn` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseElementSizeOptions` interface
+- `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseRequestHeaderLocaleOptions` interface
@@ -379,7 +381,7 @@ generated:
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useDocumentTitle` const
-- `useElementSize` const
+- `useElementSize` function
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
@@ -427,9 +429,10 @@ generated:
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
-### `@venizia/ardor/testing` (3)
+### `@venizia/ardor/testing` (4)
 
 - `assertArdorApplicationBoots` const
+- `FakeResizeObserver` class
 - `IAssertArdorApplicationBootsOptions` interface
 - `TBootSkip` type
 
