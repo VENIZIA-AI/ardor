@@ -1,46 +1,68 @@
 import React from 'react';
 
 export interface IUseElementSizeOptions {
-  ref: React.RefObject<Element | null>;
+  /** The element to measure. Leave it out to measure the element the returned `ref` is given to. */
+  ref?: React.RefObject<Element | null>;
   /** @default 'content-box' */
   box?: 'content-box' | 'border-box';
+  /** Round width and height to whole pixels, so a fractional size does not render again. @default false */
+  round?: boolean;
 }
 
 export interface IUseElementSizeReturn {
   width: number;
   height: number;
+  /** `false` until the first size is read, so 0 by 0 can be told from a measured empty element. */
+  measured: boolean;
 }
 
-const ZERO_SIZE: IUseElementSizeReturn = { width: 0, height: 0 };
+export interface IUseElementSizeRefReturn extends IUseElementSizeReturn {
+  ref: React.RefCallback<Element>;
+}
+
+const ZERO_SIZE: IUseElementSizeReturn = { width: 0, height: 0, measured: false };
 
 const readSize = (opts: {
   entry: ResizeObserverEntry;
   box: 'content-box' | 'border-box';
+  round: boolean;
 }): IUseElementSizeReturn => {
-  const { entry, box } = opts;
+  const { entry, box, round } = opts;
   const border = box === 'border-box' ? entry.borderBoxSize?.[0] : undefined;
+  const width = border ? border.inlineSize : entry.contentRect.width;
+  const height = border ? border.blockSize : entry.contentRect.height;
 
-  return border
-    ? { width: border.inlineSize, height: border.blockSize }
-    : { width: entry.contentRect.width, height: entry.contentRect.height };
+  return round
+    ? { width: Math.round(width), height: Math.round(height), measured: true }
+    : { width, height, measured: true };
 };
 
 /**
- * The size of `ref.current`, kept up to date by a `ResizeObserver` with one state update per
- * animation frame. The element is read when the effect runs: it follows a new `ref` or `box`, not a
- * `ref.current` that is replaced later. A new `ref` or `box` starts again from 0 by 0. Pass a stable `ref`.
+ * The size of an element, kept up to date by a `ResizeObserver` with one state update per animation
+ * frame. Pass `ref` to measure `ref.current`, or leave it out and give the returned `ref` to the
+ * element: that form follows an element mounted later or replaced. With a `ref` object the element
+ * is read when the effect runs, so it follows a new `ref`, `box` or `round`, not a `ref.current`
+ * that is replaced later; pass a stable `ref`. A new element, `box` or `round` starts again from
+ * 0 by 0 with `measured` false.
  */
-export const useElementSize = (opts: IUseElementSizeOptions): IUseElementSizeReturn => {
-  const { ref, box = 'content-box' } = opts;
+export function useElementSize(
+  opts: IUseElementSizeOptions & { ref: React.RefObject<Element | null> },
+): IUseElementSizeReturn;
+export function useElementSize(
+  opts?: Omit<IUseElementSizeOptions, 'ref'>,
+): IUseElementSizeRefReturn;
+export function useElementSize(
+  opts: IUseElementSizeOptions = {},
+): IUseElementSizeReturn | IUseElementSizeRefReturn {
+  const { ref, box = 'content-box', round = false } = opts;
+  const [element, setElement] = React.useState<Element | null>(null);
   const [size, setSize] = React.useState<IUseElementSizeReturn>(ZERO_SIZE);
 
   React.useEffect(() => {
-    setSize((current) =>
-      current === ZERO_SIZE || (current.width === 0 && current.height === 0) ? current : ZERO_SIZE,
-    );
+    setSize((current) => (current.measured ? ZERO_SIZE : current));
 
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === 'undefined') {
+    const target = ref ? ref.current : element;
+    if (!target || typeof ResizeObserver === 'undefined') {
       return () => {};
     }
 
@@ -59,13 +81,15 @@ export const useElementSize = (opts: IUseElementSizeOptions): IUseElementSizeRet
           return;
         }
 
-        const next = readSize({ entry: latest, box });
+        const next = readSize({ entry: latest, box, round });
         setSize((current) => {
-          return current.width === next.width && current.height === next.height ? current : next;
+          return current.measured && current.width === next.width && current.height === next.height
+            ? current
+            : next;
         });
       });
     });
-    observer.observe(element, { box });
+    observer.observe(target, { box });
 
     return () => {
       observer.disconnect();
@@ -73,7 +97,7 @@ export const useElementSize = (opts: IUseElementSizeOptions): IUseElementSizeRet
         cancelAnimationFrame(frame);
       }
     };
-  }, [ref, box]);
+  }, [ref, element, box, round]);
 
-  return size;
-};
+  return ref ? size : { ...size, ref: setElement };
+}
