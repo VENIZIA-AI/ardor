@@ -59,6 +59,8 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
 | Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
+| Observe the content or border box of a ref with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height }` |
+| Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 
 ## Reach the container
@@ -519,6 +521,40 @@ export function ChartContainer() {
 - **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
 - **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
 - **Gotcha**: Reported width and height are the element's `offsetWidth` and `offsetHeight`, as they are. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
+
+### useElementSize
+
+```tsx
+import React from 'react';
+import { useElementSize } from '@venizia/ardor';
+
+export function Chart() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { width, height } = useElementSize({ ref });
+
+  return <div ref={ref}>Width: {width}, Height: {height}</div>;
+}
+```
+
+- **Parameters**: `opts: IUseElementSizeOptions` - `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`.
+- **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number }`, `0` by `0` until the first measure.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. The element is read when the effect runs, so the hook follows a new `ref` or `box` (and starts again from `0` by `0`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+
+### useStoredState
+
+```tsx
+import { useStoredState } from '@venizia/ardor';
+
+export function ThemeToggle() {
+  const { value, setValue } = useStoredState({ key: '@app/store/theme', defaultValue: 'light' });
+
+  return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
+}
+```
+
+- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default).
+- **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
+- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
 
 ### useWindowDimensions
 

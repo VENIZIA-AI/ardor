@@ -1,0 +1,148 @@
+import { type IStorageCodec, LocalStorageKeys, StorageAreas, type TStorageArea } from '@/common';
+
+interface ISubscription {
+  key: string;
+  storage?: TStorageArea;
+  listener: () => void;
+}
+
+/**
+ * `localStorage` and `sessionStorage` that never throw: a missing area, a blocked accessor, a quota
+ * error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at
+ * import. A key under `LocalStorageKeys.PREFIX_AUTH` is the session and is never written here.
+ */
+export class BrowserStorage {
+  private static readonly subs = new Set<ISubscription>();
+
+  /** The one catch: a storage that throws is the case this class absorbs, so every access runs here. */
+  private static safe<TResult>(opts: { run: () => TResult; fallback: TResult }): TResult {
+    try {
+      return opts.run();
+      // eslint-disable-next-line venizia/no-silent-catch -- absorbing a throwing storage is the contract of BrowserStorage
+    } catch {
+      return opts.fallback;
+    }
+  }
+
+  private static area(opts: { storage?: TStorageArea }): Storage | undefined {
+    return BrowserStorage.safe<Storage | undefined>({
+      run: () => {
+        return opts.storage === StorageAreas.SESSION
+          ? globalThis.sessionStorage
+          : globalThis.localStorage;
+      },
+      fallback: undefined,
+    });
+  }
+
+  static get<TValue>(opts: {
+    key: string;
+    fallback: TValue;
+    storage?: TStorageArea;
+    codec?: IStorageCodec<TValue>;
+  }): TValue {
+    const { key, fallback, codec } = opts;
+
+    return BrowserStorage.safe({
+      run: () => {
+        const text = BrowserStorage.area(opts)?.getItem(key);
+        return text === null || text === undefined
+          ? fallback
+          : codec
+            ? codec.decode(text)
+            : JSON.parse(text);
+      },
+      fallback,
+    });
+  }
+
+  static set<TValue>(opts: {
+    key: string;
+    value: TValue;
+    storage?: TStorageArea;
+    codec?: IStorageCodec<TValue>;
+  }): boolean {
+    const { key, value, codec } = opts;
+
+    return BrowserStorage.write({
+      ...opts,
+      run: (area) => {
+        const text = codec ? codec.encode(value) : JSON.stringify(value);
+        if (typeof text !== 'string') {
+          throw new TypeError('not JSON');
+        }
+
+        area.setItem(key, text);
+      },
+    });
+  }
+
+  static remove(opts: { key: string; storage?: TStorageArea }): boolean {
+    return BrowserStorage.write({ ...opts, run: (area) => area.removeItem(opts.key) });
+  }
+
+  /** `listener` runs after a write through `BrowserStorage` and after another tab changes the key. */
+  static subscribe(opts: {
+    key: string;
+    storage?: TStorageArea;
+    listener: () => void;
+  }): () => void {
+    const subscription: ISubscription = { ...opts };
+
+    if (BrowserStorage.subs.size === 0) {
+      BrowserStorage.listen({ on: true });
+    }
+    BrowserStorage.subs.add(subscription);
+
+    return () => {
+      BrowserStorage.subs.delete(subscription);
+      if (BrowserStorage.subs.size === 0) {
+        BrowserStorage.listen({ on: false });
+      }
+    };
+  }
+
+  private static listen(opts: { on: boolean }): void {
+    const events: Partial<EventTarget> = globalThis;
+    const method = opts.on ? events.addEventListener : events.removeEventListener;
+
+    method?.call(globalThis, 'storage', BrowserStorage.onEvent);
+  }
+
+  private static write(opts: {
+    key: string;
+    storage?: TStorageArea;
+    run: (area: Storage) => void;
+  }): boolean {
+    const area = BrowserStorage.area(opts);
+    if (!area || opts.key.startsWith(LocalStorageKeys.PREFIX_AUTH)) {
+      return false;
+    }
+
+    return BrowserStorage.safe({
+      run: () => {
+        opts.run(area);
+        BrowserStorage.notify({ key: opts.key, area });
+        return true;
+      },
+      fallback: false,
+    });
+  }
+
+  private static notify(opts: { key: unknown; area: unknown }): void {
+    for (const { key, storage, listener } of BrowserStorage.subs) {
+      if (
+        (opts.key === null || opts.key === key) &&
+        opts.area === BrowserStorage.area({ storage })
+      ) {
+        BrowserStorage.safe<void>({ run: listener, fallback: undefined });
+      }
+    }
+  }
+
+  private static readonly onEvent = (event: Event): void => {
+    if ('key' in event && 'storageArea' in event) {
+      BrowserStorage.notify({ key: event.key, area: event.storageArea });
+    }
+  };
+}

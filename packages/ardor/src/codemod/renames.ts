@@ -61,6 +61,7 @@ export class HookRenames {
     'useCopyToClipboard',
     'useDebounce',
     'useDocumentTitle',
+    'useElementSize',
     'useFeatures',
     'useHtmlLang',
     'useInjectable',
@@ -72,6 +73,7 @@ export class HookRenames {
     'useRequestHeaderLocale',
     'useService',
     'useSizer',
+    'useStoredState',
     'useTranslate',
     'useWindowDimensions',
   ]);

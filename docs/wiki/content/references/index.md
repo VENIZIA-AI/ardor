@@ -39,6 +39,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 | Testing | `@venizia/ardor` (`/testing`) | [Testing](./testing) |
 | Types | `@venizia/ardor-kernel` | [Types](./types) |
 | Runtime config | `@venizia/ardor-kernel` | [Runtime config](#runtime-config) |
+| Browser storage | `@venizia/ardor-kernel` | [Browser storage](#browser-storage) |
 
 ## Runtime config
 
@@ -67,6 +68,29 @@ try {
 ```
 
 `RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
+
+## Browser storage
+
+`BrowserStorage` reads and writes `localStorage` and `sessionStorage` outside React, and it never throws. A missing area (a server), a blocked accessor (private mode), a quota error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at import.
+
+```typescript
+import { BrowserStorage, StorageAreas } from '@venizia/ardor';
+
+BrowserStorage.set({ key: '@app/store/theme', value: { mode: 'dark' } });
+const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: { mode: 'light' } });
+BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
+```
+
+| Method | Returns | Meaning |
+|---|---|---|
+| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` | The key is missing, the accessor throws, or `decode` throws. |
+| `set({ key, value, storage?, codec? })` | `boolean` | `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`. |
+| `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
+| `subscribe({ key, storage?, listener })` | a function that stops it | `listener` runs after a `set` or `remove` through `BrowserStorage` and after another tab changes the key. |
+
+`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default.
+
+Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 
 ## Find the Exact API
 

@@ -25,11 +25,13 @@ export {
   useConfirm,
   useCopyToClipboard,
   useDebounce,
+  useElementSize,
   useInjectable,
   useInjectableContainer,
   useProvider,
   useRepository,
   useService,
   useSizer,
+  useStoredState,
   useWindowDimensions,
 } from '@venizia/ardor-react';

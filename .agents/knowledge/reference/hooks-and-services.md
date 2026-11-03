@@ -10,11 +10,11 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [hooks and context](/architecture/hooks-and-context.md).
 
-**23 hooks across 2 directories.**
+**25 hooks across 2 directories.**
 
 | Directory | Hooks |
 |---|---|
-| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useInjectable` · `useInjectableContainer` · `useProvider` · `useRepository` · `useService` · `useSizer` · `useWindowDimensions` |
+| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useElementSize` · `useInjectable` · `useInjectableContainer` · `useProvider` · `useRepository` · `useService` · `useSizer` · `useStoredState` · `useWindowDimensions` |
 | `packages/admin/src/hooks/` | `useDocumentTitle` · `useFeatures` · `useHtmlLang` · `useNotifyError` · `useRefreshToken` · `useRequestHeaderLocale` · `useTranslate` |
 
 ## Services

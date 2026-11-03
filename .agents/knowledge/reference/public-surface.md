@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (89)
+### `@venizia/ardor-kernel` (93)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -30,6 +30,7 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserStorage` class
 - `BrowserUtility` class
 - `component` const
 - `configuration` const
@@ -67,6 +68,7 @@ generated:
 - `ISendParams` interface
 - `ISendResponse` type
 - `ISignInSession` interface
+- `IStorageCodec` interface
 - `LocalStorageKeys` class
 - `model` const
 - `NetworkHeaders` class
@@ -84,6 +86,7 @@ generated:
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `service` const
+- `StorageAreas` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -97,6 +100,7 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
+- `TStorageArea` type
 - `TStringConstValue` type
 - `ValueOf` type
 - `ValueOptional` type
@@ -132,7 +136,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (34)
+### `@venizia/ardor-react` (40)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -145,9 +149,13 @@ generated:
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
+- `IUseElementSizeOptions` interface
+- `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
+- `IUseStoredStateOptions` interface
+- `IUseStoredStateReturn` interface
 - `SelectorHooks` class
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
@@ -161,12 +169,14 @@ generated:
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
+- `useElementSize` const
 - `useInjectable` const
 - `useInjectableContainer` const
 - `useProvider` const
 - `useRepository` const
 - `useService` const
 - `useSizer` const
+- `useStoredState` const
 - `useWindowDimensions` const
 
 ## admin
@@ -214,7 +224,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (162)
+### `@venizia/ardor` (172)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -236,6 +246,7 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserStorage` class
 - `BrowserUtility` class
 - `component` const
 - `configuration` const
@@ -290,6 +301,7 @@ generated:
 - `ISendParams` interface
 - `ISendResponse` type
 - `ISignInSession` interface
+- `IStorageCodec` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface
@@ -299,10 +311,14 @@ generated:
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
 - `IUseDocumentTitleOptions` interface
+- `IUseElementSizeOptions` interface
+- `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
+- `IUseStoredStateOptions` interface
+- `IUseStoredStateReturn` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
@@ -324,6 +340,7 @@ generated:
 - `SelectorHooks` class
 - `service` const
 - `SessionClearReasons` class
+- `StorageAreas` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -341,6 +358,7 @@ generated:
 - `TRequestMethod` type
 - `TRequestType` type
 - `TSessionClearReason` type
+- `TStorageArea` type
 - `TStringConstValue` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
@@ -359,6 +377,7 @@ generated:
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useDocumentTitle` const
+- `useElementSize` const
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
@@ -370,6 +389,7 @@ generated:
 - `useRequestHeaderLocale` const
 - `useService` const
 - `useSizer` const
+- `useStoredState` const
 - `useTranslate` const
 - `useWindowDimensions` const
 - `ValueOf` type
