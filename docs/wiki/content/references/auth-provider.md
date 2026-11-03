@@ -1,6 +1,6 @@
 ---
 title: Auth provider
-description: DefaultAuthProvider and DefaultAuthService - sign-in contract, storage keys, options, hooks, method table, and configuring an app with no sign-in.
+description: DefaultAuthProvider and DefaultAuthService - sign-in contract, storage keys, options, hooks, session hooks, method table, and configuring an app with no sign-in.
 ---
 
 # Auth provider
@@ -74,6 +74,7 @@ export class AuthConfiguration {
 | `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
 | `IReactAdminAuthProvider` | interface | Standard react-admin auth provider contract |
 | `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
+| `SessionClearReasons`, `TSessionClearReason` | class, type | The reasons `onSessionCleared` receives: `logout`, `unauthorized`, `rejected` |
 | `LocalStorageKeys` | class | `localStorage` key constants: `KEY_AUTH_TOKEN`, `KEY_AUTH_IDENTITY`, `KEY_AUTH_PERMISSION` |
 | `CoreBindings` | class | Container keys: `DEFAULT_AUTH_PROVIDER`, `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE` |
 
@@ -160,6 +161,9 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `resolveUsername(opts)` | `opts: { params: AnyType } => string` | `opts.params?.username ?? ''` | Determines username string saved in user identity |
 | `beforeSaveSession(opts)` | `opts: { session: ISignInSession; params: AnyType } => Promise<void>` | `Promise.resolve()` | Validation hook before persistence; throwing rejects login and saves nothing |
 | `saveSession(opts)` | `opts: { session: ISignInSession; username: string } => void` | `authService.saveAuth(...)` | Saves token, identity, and permissions to `localStorage` |
+| `sessionHookTimeout` | `protected get: number` | `10000` | Milliseconds a session hook may run before the provider logs it and carries on. See [Session hooks](#session-hooks) |
+| `onSessionStarted(opts)` | `opts: { token: IAuthTokenRecord; user: AnyType } => void \| Promise<void>` | no-op | Runs when a session starts or its token is replaced. See [Session hooks](#session-hooks) |
+| `onSessionCleared(opts)` | `opts: { reason: TSessionClearReason } => void \| Promise<void>` | no-op | Runs when the announced session ends. See [Session hooks](#session-hooks) |
 
 Subclasses can override any hook to customize authentication:
 
@@ -196,6 +200,52 @@ export class CustomAuthProvider extends DefaultAuthProvider {
   }
 }
 ```
+
+## Session hooks
+
+To keep a socket or a per-user cache in step with the session, override `onSessionStarted` and `onSessionCleared`. You no longer override `checkAuth` for it.
+
+```ts
+import {
+  type AnyType,
+  DefaultAuthProvider,
+  type IAuthTokenRecord,
+  type TSessionClearReason,
+} from '@venizia/ardor';
+
+declare const socket: {
+  connect: (opts: { token: string }) => Promise<void>;
+  disconnect: (opts: { reason: string }) => void;
+};
+
+export class SocketAuthProvider extends DefaultAuthProvider {
+  protected override async onSessionStarted(opts: {
+    token: IAuthTokenRecord;
+    user: AnyType;
+  }): Promise<void> {
+    await socket.connect({ token: opts.token.value });
+  }
+
+  protected override onSessionCleared(opts: { reason: TSessionClearReason }): void {
+    socket.disconnect({ reason: opts.reason });
+  }
+}
+```
+
+Each hook fires once per change of the session. A re-check of the same session stays silent.
+
+| Hook | Fires after | Does not fire |
+| --- | --- | --- |
+| `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); `refreshToken()` stored a new token | A `checkAuth` or a `refreshToken()` that leaves the same user and token. A refresh that the network service makes on its own 401 recovery, which does not go through the provider |
+| `onSessionCleared` | `logout`; the 401 branch of `checkError`; a `checkAuth` that rejects | A session that was never announced. A second clear of the same session |
+
+- **The arguments.** `token` is the stored token record (`value`, `type`). `user` is the stored identity (`userId`, `username`, `referenceId`, `provider`), or `{ userId, username }` when your `saveSession` keeps nothing in the store. `reason` is `SessionClearReasons.LOGOUT`, `UNAUTHORIZED` or `REJECTED`.
+- **Order.** `logout` and the 401 branch clear the store first, then call the hook. A rejected `checkAuth` calls the hook but does not clear the store.
+- **Async.** The provider awaits a hook before `login`, `logout`, `checkAuth`, `checkError` or `refreshToken()` resolves or rejects. Hook calls run one after the other, so a slow `onSessionStarted` ends before a later `onSessionCleared` begins. A `checkAuth` that finds the session already announced waits for the hook of the call that announced it.
+- **Failures.** A hook that throws or rejects is logged and the call carries on. Sign-in and sign-out do not fail because a socket is down.
+- **A hook that never settles.** After `sessionHookTimeout` (10 seconds; override the getter) the provider logs it and carries on. The hook itself keeps running, and the next hook may start while it does. Put a timeout on your own `connect` too.
+- **Do not call the provider from a hook.** `this.logout()` or `this.refreshToken()` inside a hook queues behind that hook, so it waits until `sessionHookTimeout` ends the hook. Return from the hook and call it afterwards.
+- **What the provider sees.** The provider reacts to its own calls only. A `cleanUp` that your network service's `onAuthFailure` runs fires nothing. The next `checkAuth` (it rejects) or a 401 in `checkError` calls `onSessionCleared`.
 
 ## An application with no sign-in
 

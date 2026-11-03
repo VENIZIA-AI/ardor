@@ -171,7 +171,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (36)
+### `@venizia/ardor-admin` (38)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -194,9 +194,11 @@ generated:
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
+- `SessionClearReasons` class
 - `TFeature` type
 - `TFeatureMessages` type
 - `TI18nSource` type
+- `TSessionClearReason` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
@@ -212,7 +214,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (160)
+### `@venizia/ardor` (162)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -321,6 +323,7 @@ generated:
 - `RuntimeConfig` class
 - `SelectorHooks` class
 - `service` const
+- `SessionClearReasons` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -337,6 +340,7 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
+- `TSessionClearReason` type
 - `TStringConstValue` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
