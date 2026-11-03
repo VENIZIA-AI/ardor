@@ -53,7 +53,8 @@ const readStatus = (error: unknown): unknown => {
  * The session hooks `onSessionStarted` and `onSessionCleared` are for what lives next to the session
  * (a socket, a per-user cache). Each fires once per change of the session this provider sees, and a
  * hook that throws, or does not settle in `sessionHookTimeout`, is logged and does not stop the call
- * that fired it. A hook does not call this provider's methods: they wait behind it.
+ * that fired it. A hook does not call this provider's methods: they wait behind it. Build one provider
+ * per auth service: a second one listening to the same service calls every hook again.
  */
 export class DefaultAuthProvider<
   TResource extends string = string,
@@ -70,8 +71,15 @@ export class DefaultAuthProvider<
   ) {
     super({ scope: DefaultAuthProvider.name });
 
-    this.authService.subscribe({ listener: () => this.syncSession() });
+    this.stopSync = this.authService.subscribe({ listener: () => this.syncSession() });
   }
+
+  /** Stops listening to the auth service. Call it when you discard a provider that you built yourself. */
+  dispose(): void {
+    this.stopSync();
+  }
+
+  private readonly stopSync: () => void;
 
   /** The session last announced to `onSessionStarted`: `undefined` when none is, or after it was cleared. */
   private announcedSession?: string;
@@ -265,8 +273,9 @@ export class DefaultAuthProvider<
 
   /**
    * Runs when a session starts or its token is replaced: after `login` saved it, after a `checkAuth`
-   * confirmed it (the first one of a page that finds a stored session too), and after
-   * `refreshToken` stored a new token. `user` is the stored identity (`userId`, `username`,
+   * confirmed it (the first one of a page that finds a stored session too), and whenever anything saves
+   * a new token through `DefaultAuthService.saveAuth`, such as the refresh the network service makes on
+   * a 401. `user` is the stored identity (`userId`, `username`,
    * `referenceId`, `provider`), or `{ userId, username }` when `saveSession` keeps nothing in the
    * store. A re-check of the same session does not call it again. It is awaited; a throw or a
    * rejection is logged and the caller carries on.
@@ -280,7 +289,8 @@ export class DefaultAuthProvider<
 
   /**
    * Runs when the session this provider announced ends, with the reason: after `logout`, after the
-   * 401 branch of `checkError`, and when `checkAuth` rejects (that one does not clear the store).
+   * 401 branch of `checkError`, when `checkAuth` rejects (that one does not clear the store), and when
+   * other code calls `cleanUp` (reason `external`, for example the network service's `onAuthFailure`).
    * It is called once for a session, and not at all for one that was never announced. It is awaited;
    * a throw or a rejection is logged and the caller carries on.
    */

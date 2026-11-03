@@ -113,10 +113,10 @@ class SessionKeptElsewhereProvider extends RecordingAuthProvider {
 
 let service = new DefaultAuthService();
 
-const buildProvider = (opts?: {
+const createContainer = (opts?: {
   providerClass?: typeof DefaultAuthProvider;
   withCheckPath?: boolean;
-}): IAuthProvider => {
+}): Container => {
   const container = new Container();
   service = new DefaultAuthService();
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
@@ -143,7 +143,14 @@ const buildProvider = (opts?: {
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
     .toProvider(opts?.providerClass ?? RecordingAuthProvider);
 
-  return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  return container;
+};
+
+const buildProvider = (opts?: {
+  providerClass?: typeof DefaultAuthProvider;
+  withCheckPath?: boolean;
+}): IAuthProvider => {
+  return createContainer(opts).get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
 };
 
 const storeSession = (opts: { token: string; userId: number }) => {
@@ -664,5 +671,34 @@ describe('unauthenticatedRejection', () => {
 
     expect(forbidden).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
     expect(hooks.rejectionReasons).toEqual([]);
+  });
+});
+
+describe('dispose', () => {
+  test('stops a provider from listening to the service, and a second call does nothing', async () => {
+    const instance = createContainer().instantiate(RecordingAuthProvider);
+    service.saveAuth({ userId: 7, token: { value: 'jwt-1', type: 'Bearer' } });
+    await settle();
+    expect(hooks.started).toHaveLength(1);
+
+    instance.dispose();
+    instance.dispose();
+    service.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
+    service.cleanUp();
+    await settle();
+
+    expect(hooks.started).toHaveLength(1);
+    expect(hooks.cleared).toEqual([]);
+  });
+
+  test('a second provider on the same service fires every hook twice, which is why there is one per service', async () => {
+    const container = createContainer();
+    container.instantiate(RecordingAuthProvider);
+    container.instantiate(RecordingAuthProvider);
+
+    service.saveAuth({ userId: 7, token: { value: 'jwt-1', type: 'Bearer' } });
+    await settle();
+
+    expect(hooks.started).toHaveLength(2);
   });
 });

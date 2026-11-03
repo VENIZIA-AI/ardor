@@ -35,7 +35,8 @@ export class GuestAuthProvider extends DefaultAuthProvider {
 - **A token change fires `onSessionStarted`.** `DefaultAuthProvider` listens, so a refresh that saves the new token with `saveAuth`, from the provider or from your network service, calls the hook with the new `token`. There is no separate refresh hook. The once-per-change and ordering guarantees are unchanged.
 - **A new reason, `external`.** A `cleanUp` made by other code, such as your `onAuthFailure`, calls `onSessionCleared({ reason: SessionClearReasons.EXTERNAL })`. `logout` and the 401 branch keep `logout` and `unauthorized`.
 - **`unauthenticatedRejection({ reason })`** (`@venizia/ardor-admin`). It returns the value `checkAuth` (reason `rejected`) and the 401 branch of `checkError` (reason `unauthorized`) reject with. The default is the old `{ redirectTo: loginPagePath }`, so an app that overrides nothing behaves as before.
-- **A 401 can keep the session.** When the rejection has `logoutUser: false`, the provider does not run `cleanUp` and does not call `onSessionCleared`.
+- **A 401 can keep the session.** When the rejection has `logoutUser: false`, the provider does not run `cleanUp` and does not call `onSessionCleared`. The revoked token stays stored and keeps going out, so clear or replace it yourself (for example in `onAuthFailure`), or every request keeps answering 401.
+- **`dispose()`.** The provider listens to the auth service from its constructor. Build one provider per service (a second one calls every hook again), and call `dispose()` on one you discard.
 - **New exports.** `IAuthRejection`, and `SessionClearReasons.EXTERNAL`. The admin size limit goes from 10.5 kB to 10.65 kB (a repository gate).
 
 ## Who is affected

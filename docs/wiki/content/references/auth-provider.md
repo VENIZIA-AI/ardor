@@ -238,7 +238,7 @@ Each hook fires once per change of the session. A re-check of the same session s
 
 | Hook | Fires after | Does not fire |
 | --- | --- | --- |
-| `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); a token was saved by anything that calls `DefaultAuthService.saveAuth`, such as your network service's `refreshToken()` on a 401 | A `checkAuth` or a `refreshToken()` that leaves the same user and token. A refresh that the network service makes on its own 401 recovery, which does not go through the provider |
+| `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); a token was saved by anything that calls `DefaultAuthService.saveAuth`, such as your network service's `refreshToken()` on a 401 | A `checkAuth` or a `refreshToken()` that leaves the same user and token. |
 | `onSessionCleared` | `logout`; the 401 branch of `checkError`; a `checkAuth` that rejects; a `cleanUp` made by other code, with the reason `external` | A session that was never announced. A second clear of the same session |
 
 - **The arguments.** `token` is the stored token record (`value`, `type`). `user` is the stored identity (`userId`, `username`, `referenceId`, `provider`), or `{ userId, username }` when your `saveSession` keeps nothing in the store. `reason` is `SessionClearReasons.LOGOUT`, `UNAUTHORIZED` or `REJECTED`.
@@ -248,6 +248,7 @@ Each hook fires once per change of the session. A re-check of the same session s
 - **A hook that never settles.** After `sessionHookTimeout` (10 seconds; override the getter) the provider logs it and carries on. The hook itself keeps running, and the next hook may start while it does. Put a timeout on your own `connect` too.
 - **Do not call the provider from a hook.** `this.logout()` or `this.refreshToken()` inside a hook queues behind that hook, so it waits until `sessionHookTimeout` ends the hook. Return from the hook and call it afterwards.
 - **What the provider sees.** The provider subscribes to `DefaultAuthService` (`subscribe({ listener })` runs after every `saveAuth` and `cleanUp`), so a refresh your network service makes on a 401 and a `cleanUp` from its `onAuthFailure` reach the hooks as well. A token written straight to `localStorage`, or by another tab, does not: save it with `saveAuth`.
+- **One provider per auth service.** Each provider listens to the service in its constructor, so a second provider on the same `DefaultAuthService` calls every hook again. A provider you build and discard yourself (a test, a hot reload) stops listening with `dispose()`.
 - **A refresh is a start.** A new token for the same user calls `onSessionStarted` again with the new `token`; there is no separate hook. A token saved again with the same value stays silent.
 
 ## Guest apps
@@ -282,7 +283,7 @@ The values follow ra-core (5.15.5):
 
 `{ message: false }` alone still redirects: ra-core logs out and goes to `/login` unless `redirectTo` is `false`. For `checkAuth` return `{ redirectTo: false, message: false }`.
 
-A 401 whose rejection has `logoutUser: false` keeps the stored session: the provider does not run `cleanUp` and does not call `onSessionCleared`. Any other rejection clears the session as before. `checkAuth` always calls `logout` through ra-core when it rejects, so `onSessionCleared` with `logout` follows a rejected check that logs out.
+A 401 whose rejection has `logoutUser: false` keeps the stored session: the provider does not run `cleanUp` and does not call `onSessionCleared`. The revoked token then stays stored and keeps going out with every request, so the app must clear or replace it itself (for example in the network service's `onAuthFailure`, or by saving a new token with `saveAuth`). Otherwise every request keeps answering 401. Any other rejection clears the session as before. `checkAuth` always calls `logout` through ra-core when it rejects, so `onSessionCleared` with `logout` follows a rejected check that logs out.
 
 ## An application with no sign-in
 
