@@ -40,7 +40,7 @@ export const useElementSize = (opts: IUseElementSizeOptions): IUseElementSizeRet
     );
 
     const element = ref.current;
-    if (!element) {
+    if (!element || typeof ResizeObserver === 'undefined') {
       return () => {};
     }
 

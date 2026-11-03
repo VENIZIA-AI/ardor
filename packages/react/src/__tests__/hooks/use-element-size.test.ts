@@ -259,6 +259,16 @@ describe('useElementSize', () => {
     expect(result.current).toEqual({ width: 0, height: 0 });
   });
 
+  test('a host with no ResizeObserver stays at zero, observes nothing and does not throw', () => {
+    Reflect.deleteProperty(globalThis, 'ResizeObserver');
+    const ref = refOf(document.createElement('div'));
+
+    const { result } = renderHook(() => useElementSize({ ref }));
+
+    expect(observers).toHaveLength(0);
+    expect(result.current).toEqual({ width: 0, height: 0 });
+  });
+
   test('a ref with no element observes nothing and does not throw', () => {
     const { result } = renderHook(() => useElementSize({ ref: refOf(null) }));
 
