@@ -69,7 +69,6 @@ help:
 	@$(HELP_ROW) "surface-check" "Gate: the public surface equals the snapshot."
 	@$(HELP_ROW) "atlas-symbols" "Print the symbols atlas reads from the built .d.ts. Needs a build."
 	@$(HELP_ROW) "atlas-releases" "Print the release table atlas computes from the tags."
-	@$(HELP_ROW) "changelogs-migrate" "Write the packages: list into changelog entries that declare none."
 	@$(HELP_ROW) "wiki-links-check" "Gate: every source path the wiki and knowledge bundle name exists."
 	@$(HELP_ROW) "wiki-anchors-check" "Gate: every wiki '#fragment' link resolves. Needs a build (make docs)."
 	@$(HELP_ROW) "atlas-smoke" "Gate: VULCAN's atlas serves this checkout over MCP."
