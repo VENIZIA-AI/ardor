@@ -1,9 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 
-import { rejectionOf } from '@/__tests__/rejection';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestBodyTypes, RequestTypes } from '@/common';
-import { Logger } from '@/helpers';
 
 interface IRecorded {
   method: string;
@@ -29,11 +28,12 @@ beforeAll(() => {
         await new Promise((resolve) => setTimeout(resolve, 600));
       }
 
+      const result = await request.arrayBuffer();
       recorded.push({
         method: request.method,
         search: url.search,
         headers: request.headers,
-        bytes: new Uint8Array(await request.arrayBuffer()),
+        bytes: new Uint8Array(result),
       });
 
       return Response.json({ ok: true });
@@ -67,8 +67,6 @@ const decode = (bytes: Uint8Array): string => new TextDecoder().decode(bytes);
 describe('request log', () => {
   test('no Authorization value and no body reaches any console method, at any level', async () => {
     const service = createService();
-    // The service logs through its own scope; the switch is process-wide.
-    Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: true });
 
     const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
       spyOn(console, method).mockImplementation(() => undefined),
@@ -91,7 +89,6 @@ describe('request log', () => {
       for (const spy of spies) {
         spy.mockRestore();
       }
-      Logger.getInstance({ scope: 'DefaultNetworkRequestService', enableDebug: false });
     }
 
     // Redaction is for the log only: the server still received the real header and body.
@@ -124,16 +121,15 @@ describe('abort signals', () => {
     setTimeout(() => controller.abort(), 50);
     const startedAt = Date.now();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/delay`,
-          method: 'get',
-          timeout: 5000,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
+        url: `${baseUrl}/delay`,
+        method: 'get',
+        timeout: 5000,
+        signal: controller.signal,
+      }),
+    });
+    expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
   });
@@ -143,16 +139,15 @@ describe('abort signals', () => {
     const controller = new AbortController();
     controller.abort();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/echo`,
-          method: 'get',
-          timeout: 5000,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
+        url: `${baseUrl}/echo`,
+        method: 'get',
+        timeout: 5000,
+        signal: controller.signal,
+      }),
+    });
+    expect(result).toBeDefined();
   });
 
   test('the timeout still aborts when the caller passes a signal that never fires', async () => {
@@ -160,16 +155,15 @@ describe('abort signals', () => {
     const controller = new AbortController();
     const startedAt = Date.now();
 
-    expect(
-      await rejectionOf(
-        fetcher.send({
-          url: `${baseUrl}/delay`,
-          method: 'get',
-          timeout: 50,
-          signal: controller.signal,
-        }),
-      ),
-    ).toBeDefined();
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({
+        url: `${baseUrl}/delay`,
+        method: 'get',
+        timeout: 50,
+        signal: controller.signal,
+      }),
+    });
+    expect(result).toBeDefined();
 
     expect(Date.now() - startedAt).toBeLessThan(500);
   });
@@ -177,9 +171,10 @@ describe('abort signals', () => {
   test('the timeout alone still aborts', async () => {
     const fetcher = createFetcher({ name: 'node-fetch-timeout-only-test' });
 
-    expect(
-      await rejectionOf(fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 })),
-    ).toBeDefined();
+    const result = await RejectionHelper.rejectionOf({
+      task: fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 }),
+    });
+    expect(result).toBeDefined();
   });
 });
 

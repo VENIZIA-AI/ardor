@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
  * Installs packed tarballs into empty projects (hoisted and isolated) and loads every published
- * sub-path with Bun, Node ESM and a browser build. Named packages are packed alone, their siblings
- * taken from the registry.
+ * sub-path with Bun, Node ESM and a browser build. Named packages are packed together and installed
+ * as each other's local tarballs; a sibling that is not named is taken from the registry.
  *
  * Usage: bun scripts/checks/clean-install/cli.ts [package ...] [--keep]
  */
@@ -18,7 +18,7 @@ import {
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 import { makeScratch } from '../../scratch';
-import { buildManifest } from '@venizia/dev-configs/checks';
+import { PurityManifest } from '@venizia/dev-configs/checks';
 import { PURITY_CLAIMS } from '../purity/manifest';
 import {
   assertEveryPackageClaimed,
@@ -37,7 +37,7 @@ import type { IInstallRow, IPackageManifest } from './manifest';
 const LINKERS = ['hoisted', 'isolated'];
 const GUARD_DIRECTORY = import.meta.dir;
 
-const PURITY_MANIFEST = buildManifest({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
+const PURITY_MANIFEST = PurityManifest.build({ claims: PURITY_CLAIMS, root: REPOSITORY_ROOT });
 
 // Entries run decorators at import, so each check loads the polyfill first, as an application does.
 const LOAD = (specifier: string): string =>
@@ -235,7 +235,8 @@ const main = async (): Promise<number> => {
   const keep = args.includes('--keep');
   const tokens = args.filter((arg) => !arg.startsWith('--'));
 
-  if (!(await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT })).ok) {
+  const result2 = await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT });
+  if (!result2.ok) {
     throw new Error('[clean-install] `node` is not on PATH - the Node checks cannot run');
   }
 
@@ -316,7 +317,8 @@ const main = async (): Promise<number> => {
       for (const duplicate of findDuplicateCopies({ lock })) {
         failures.push(`${manifest.name} [${linker}] copies: ${duplicate}`);
       }
-      for (const problem of await findSplitPeers({ name: manifest.name, sandbox })) {
+      const splitPeers = await findSplitPeers({ name: manifest.name, sandbox });
+      for (const problem of splitPeers) {
         failures.push(`${manifest.name} [${linker}] peers: ${problem}`);
       }
 
@@ -355,4 +357,5 @@ const main = async (): Promise<number> => {
   return 0;
 };
 
-process.exit(await main());
+const result2 = await main();
+process.exit(result2);

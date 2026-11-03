@@ -56,8 +56,8 @@ still gets `canAccess`. A provider passed to `super` wins over the bound one. No
 
 `DefaultI18nProvider` injects `CoreBindings.FEATURES` (optional) and builds a `FeatureMessages`
 (`packages/admin/src/features/messages.ts`): per locale, every feature's bundle merged flat, a key two
-features both define throwing with both names. The application's own `i18nSources[locale]` (or
-`englishMessages`) is merged over that, so the application may relabel a feature.
+features both define throwing with both names. The application's own `i18nSources[locale]` (an object, or a lazy loader once it delivered; `englishMessages` when
+there is none or a loader failed) is merged over that, so the application may relabel a feature.
 
 ra-i18n-polyglot reads the initial locale synchronously once, while it is built, and throws on a
 promise. So the provider answers that first read with what is available now (eager bundles), and

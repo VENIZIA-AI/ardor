@@ -1,12 +1,12 @@
 ---
-title: useDocumentTitle takes fallback, a base title a layout sets and screens override
-description: useDocumentTitle gains an optional fallback flag; a fallback call shows its title only while no other call is mounted, so a layout's base title no longer wins over a screen's on the first mount.
+title: useDocumentTitle takes fallback, a base title screens override
+description: useDocumentTitle gains an optional fallback flag; a fallback call shows its title only while no other call is mounted.
 packages: ['@venizia/ardor-admin', '@venizia/ardor']
 ---
 
 # Changelog - 2026-10-28
 
-## useDocumentTitle takes fallback, a base title a layout sets and screens override
+## useDocumentTitle takes fallback, a base title screens override
 
 <Badge type="tip" text="New Feature" />
 

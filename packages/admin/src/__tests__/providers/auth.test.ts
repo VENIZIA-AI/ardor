@@ -15,7 +15,7 @@ import {
   type IPermissionProvider,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
-import { rejectionOf } from '@/__tests__/rejection';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   readonly method: string;
@@ -379,7 +379,8 @@ describe('login against the sign-in response shapes', () => {
 
     await authProvider.login({ username: 'alice', password: 'secret-password' });
 
-    expect(await authProvider.getRoles()).toEqual(new Set(['admin', 'editor', 'viewer']));
+    const result = await authProvider.getRoles();
+    expect(result).toEqual(new Set(['admin', 'editor', 'viewer']));
   });
 
   test('falls back to the roles claim of the token, and prefers the roles of the response', async () => {
@@ -387,11 +388,13 @@ describe('login against the sign-in response shapes', () => {
 
     loginBody = { token };
     await authProvider.login({ username: 'alice', password: 'secret-password' });
-    expect(await authProvider.getRoles()).toEqual(new Set(['admin']));
+    const result = await authProvider.getRoles();
+    expect(result).toEqual(new Set(['admin']));
 
     loginBody = { roles: ['auditor'], token };
     await authProvider.login({ username: 'alice', password: 'secret-password' });
-    expect(await authProvider.getRoles()).toEqual(new Set(['auditor']));
+    const result2 = await authProvider.getRoles();
+    expect(result2).toEqual(new Set(['auditor']));
   });
 
   test('replaces the roles of the last user, and skips an entry it cannot read', async () => {
@@ -404,17 +407,21 @@ describe('login against the sign-in response shapes', () => {
       token: { value: 'jwt', type: 'Bearer' },
     };
     await authProvider.login({ username: 'bob', password: 'secret-password' });
-    expect(await authProvider.getRoles()).toEqual(new Set(['viewer']));
+    const result = await authProvider.getRoles();
+    expect(result).toEqual(new Set(['viewer']));
 
     loginBody = defaultLoginBody;
     await authProvider.login({ username: 'carol', password: 'secret-password' });
-    expect(await authProvider.getRoles()).toEqual(new Set());
+    const result2 = await authProvider.getRoles();
+    expect(result2).toEqual(new Set());
   });
 
   test('rejects, and stores nothing, when no user id can be found', async () => {
     loginBody = { token: 'opaque-token' };
 
-    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+    const error = await RejectionHelper.rejectionOf({
+      task: authProvider.login({ username: 'alice', password: 'x' }),
+    });
 
     expect(String(error)).toContain('[login]');
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
@@ -424,7 +431,9 @@ describe('login against the sign-in response shapes', () => {
   test('rejects, and stores nothing, when the response carries no token', async () => {
     loginBody = { userId: 7 };
 
-    const error = await rejectionOf(authProvider.login({ username: 'alice', password: 'x' }));
+    const error = await RejectionHelper.rejectionOf({
+      task: authProvider.login({ username: 'alice', password: 'x' }),
+    });
 
     expect(String(error)).toContain('[login]');
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
@@ -433,7 +442,8 @@ describe('login against the sign-in response shapes', () => {
 
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
-    expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
+    expect(result).toEqual({
       redirectTo: '/login',
     });
     expect(recordedRequests).toHaveLength(0);
@@ -447,7 +457,8 @@ describe('checkAuth', () => {
     recordedRequests.length = 0;
     whoamiReturnsData = true;
 
-    expect(await authProvider.checkAuth({})).toBeUndefined();
+    const result = await authProvider.checkAuth({});
+    expect(result).toBeUndefined();
 
     expect(recordedRequests).toHaveLength(1);
     const whoamiRequest = recordedRequests[0];
@@ -463,7 +474,8 @@ describe('checkAuth', () => {
     recordedRequests.length = 0;
     whoamiReturnsData = false;
 
-    expect(await rejectionOf(authProvider.checkAuth({}))).toEqual({
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
+    expect(result).toEqual({
       redirectTo: '/login',
     });
 
@@ -485,7 +497,10 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    expect(await rejectionOf(authProvider.checkError({ status: 401 }))).toEqual({
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError({ status: 401 }),
+    });
+    expect(result).toEqual({
       redirectTo: '/login',
     });
 
@@ -503,7 +518,10 @@ describe('checkError', () => {
       JSON.stringify({ userId: 7, username: 'alice' }),
     );
 
-    expect(await rejectionOf(authProvider.checkError({ status: 403 }))).toEqual({
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError({ status: 403 }),
+    });
+    expect(result).toEqual({
       redirectTo: '/unauthorized',
       logoutUser: false,
     });
@@ -513,9 +531,12 @@ describe('checkError', () => {
   });
 
   test('resolves successfully for other error statuses', async () => {
-    expect(await authProvider.checkError({ status: 400 })).toBeUndefined();
-    expect(await authProvider.checkError({ status: 404 })).toBeUndefined();
-    expect(await authProvider.checkError({ status: 500 })).toBeUndefined();
+    const result = await authProvider.checkError({ status: 400 });
+    expect(result).toBeUndefined();
+    const result2 = await authProvider.checkError({ status: 404 });
+    expect(result2).toBeUndefined();
+    const result3 = await authProvider.checkError({ status: 500 });
+    expect(result3).toBeUndefined();
   });
 
   test('reads statusCode from an ApplicationError thrown by the data provider', async () => {
@@ -524,27 +545,27 @@ describe('checkError', () => {
       JSON.stringify({ value: 'jwt', type: 'Bearer' }),
     );
 
-    expect(
-      await rejectionOf(
-        authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
-      ),
-    ).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    const result = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
+    });
+    expect(result).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
 
-    expect(
-      await authProvider.checkError(getError({ statusCode: 500, message: 'HTTP 500' })),
-    ).toBeUndefined();
+    const result2 = await authProvider.checkError(
+      getError({ statusCode: 500, message: 'HTTP 500' }),
+    );
+    expect(result2).toBeUndefined();
 
-    expect(
-      await rejectionOf(
-        authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
-      ),
-    ).toEqual({ redirectTo: '/login' });
+    const result3 = await RejectionHelper.rejectionOf({
+      task: authProvider.checkError(getError({ statusCode: 401, message: 'HTTP 401' })),
+    });
+    expect(result3).toEqual({ redirectTo: '/login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
   });
 
   test('resolves when react-admin passes no error', async () => {
-    expect(await authProvider.checkError(undefined)).toBeUndefined();
+    const result = await authProvider.checkError(undefined);
+    expect(result).toBeUndefined();
   });
 });
 
@@ -560,7 +581,8 @@ describe('logout', () => {
     );
     localStorage.setItem('other-app-config', 'persisted-data');
 
-    expect(await authProvider.logout({})).toBeUndefined();
+    const result = await authProvider.logout({});
+    expect(result).toBeUndefined();
 
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
@@ -572,7 +594,8 @@ describe('getIdentity', () => {
   test('rejects when no userId is stored in identity', async () => {
     expect(authProvider.getIdentity).toBeDefined();
     if (authProvider.getIdentity !== undefined) {
-      expect(await rejectionOf(authProvider.getIdentity({}))).toEqual({
+      const result = await RejectionHelper.rejectionOf({ task: authProvider.getIdentity({}) });
+      expect(result).toEqual({
         message: '[getIdentity] No userId to get user identity!',
       });
     }
@@ -591,14 +614,16 @@ describe('getIdentity', () => {
 
       // `getIdentity` returns what `saveAuth` stored, which carries `userId` rather than react-admin's
       // `id`; the type says UserIdentity, the wire object says userId - a seam this test records.
-      expect(await authProvider.getIdentity({})).toMatchObject(identityPayload);
+      const result = await authProvider.getIdentity({});
+      expect(result).toMatchObject(identityPayload);
     }
   });
 });
 
 describe('getRoles', () => {
   test('resolves with an empty set when no roles are stored', async () => {
-    expect(await authProvider.getRoles({})).toEqual(new Set<string>());
+    const result = await authProvider.getRoles({});
+    expect(result).toEqual(new Set<string>());
   });
 
   test('resolves with a set of stored role strings', async () => {
@@ -607,17 +632,20 @@ describe('getRoles', () => {
       JSON.stringify(['admin', 'editor', 'viewer']),
     );
 
-    expect(await authProvider.getRoles({})).toEqual(new Set<string>(['admin', 'editor', 'viewer']));
+    const result = await authProvider.getRoles({});
+    expect(result).toEqual(new Set<string>(['admin', 'editor', 'viewer']));
   });
 });
 
 describe('getPermissions and refreshToken', () => {
   test('resolves permissions to undefined', async () => {
-    expect(await authProvider.getPermissions({})).toBeUndefined();
+    const result = await authProvider.getPermissions({});
+    expect(result).toBeUndefined();
   });
 
   test('refreshToken asks the network service to refresh: false when the service has no refresh', async () => {
-    expect(await authProvider.refreshToken()).toBe(false);
+    const result = await authProvider.refreshToken();
+    expect(result).toBe(false);
   });
 
   test('refreshToken is the network service refresh, the one place a refresh is made', async () => {
@@ -637,7 +665,8 @@ describe('getPermissions and refreshToken', () => {
 
     const provider = container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
 
-    expect(await provider.refreshToken()).toBe(true);
+    const result = await provider.refreshToken();
+    expect(result).toBe(true);
     expect(refreshed).toBe(1);
   });
 });
@@ -652,7 +681,7 @@ describe('canAccess', () => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
     container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: 'services.Extra' }).toValue({});
     if (opts.permissionProvider) {
       container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
@@ -687,7 +716,8 @@ describe('canAccess', () => {
       permissionProvider: { canAccess: () => Promise.resolve(false) },
     });
 
-    expect(await provider.canAccess?.({ resource: 'stocks', action: 'list' })).toBe(false);
+    const result = await provider.canAccess?.({ resource: 'stocks', action: 'list' });
+    expect(result).toBe(false);
   });
 
   test('stays absent for that subclass when the application binds no permission provider', () => {
@@ -717,7 +747,8 @@ describe('canAccess', () => {
       permissionProvider: { canAccess: () => Promise.resolve(false) },
     });
 
-    expect(await provider.canAccess?.({ resource: 'stocks', action: 'list' })).toBe(true);
+    const result = await provider.canAccess?.({ resource: 'stocks', action: 'list' });
+    expect(result).toBe(true);
   });
 
   test('is absent when the application binds no permission provider', () => {
@@ -736,10 +767,15 @@ describe('canAccess', () => {
     });
 
     const signal = new AbortController().signal;
-    expect(
-      await provider.canAccess?.({ resource: 'stocks', action: 'list', record: { id: 1 }, signal }),
-    ).toBe(true);
-    expect(await provider.canAccess?.({ resource: 'stocks', action: 'delete' })).toBe(false);
+    const result = await provider.canAccess?.({
+      resource: 'stocks',
+      action: 'list',
+      record: { id: 1 },
+      signal,
+    });
+    expect(result).toBe(true);
+    const result2 = await provider.canAccess?.({ resource: 'stocks', action: 'delete' });
+    expect(result2).toBe(false);
     expect(asked).toEqual([
       { resource: 'stocks', action: 'list', record: { id: 1 } },
       { resource: 'stocks', action: 'delete', record: undefined },
@@ -791,9 +827,9 @@ describe('login hooks', () => {
       }
     }
 
-    const error = await rejectionOf(
-      signInWith({ providerClass: AdminOnlyAuthProvider }).login({ username: 'alice' }),
-    );
+    const error = await RejectionHelper.rejectionOf({
+      task: signInWith({ providerClass: AdminOnlyAuthProvider }).login({ username: 'alice' }),
+    });
 
     expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
@@ -807,9 +843,9 @@ describe('login hooks', () => {
       }
     }
 
-    const error = await rejectionOf(
-      signInWith({ providerClass: RefusingAuthProvider }).login({ username: 'alice' }),
-    );
+    const error = await RejectionHelper.rejectionOf({
+      task: signInWith({ providerClass: RefusingAuthProvider }).login({ username: 'alice' }),
+    });
 
     expect(String(error)).toContain('[beforeSaveSession] Forbidden');
     expect(isNothingStored()).toBe(true);
@@ -928,20 +964,29 @@ describe('paths as protected getters', () => {
   });
 
   test('afterLogin defaults to / and follows paths.afterLogin', async () => {
-    expect(await signInWith({}).login({ username: 'a' })).toMatchObject({ redirectTo: '/' });
-    expect(
-      await signInWith({ options: { paths: { afterLogin: '/home' } } }).login({ username: 'a' }),
-    ).toMatchObject({ redirectTo: '/home' });
+    const result = await signInWith({}).login({ username: 'a' });
+    expect(result).toMatchObject({ redirectTo: '/' });
+    const result2 = await signInWith({ options: { paths: { afterLogin: '/home' } } }).login({
+      username: 'a',
+    });
+    expect(result2).toMatchObject({ redirectTo: '/home' });
   });
 
   test('the login page and the unauthorized page are overridable', async () => {
     const provider = signInWith({ providerClass: RenamedAuthProvider });
 
-    expect(await rejectionOf(provider.checkAuth({}))).toEqual({ redirectTo: '/sign-in-page' });
-    expect(await rejectionOf(provider.checkError({ status: 401 }))).toEqual({
+    const result = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    expect(result).toEqual({ redirectTo: '/sign-in-page' });
+    const result2 = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 401 }),
+    });
+    expect(result2).toEqual({
       redirectTo: '/sign-in-page',
     });
-    expect(await rejectionOf(provider.checkError({ status: 403 }))).toEqual({
+    const result3 = await RejectionHelper.rejectionOf({
+      task: provider.checkError({ status: 403 }),
+    });
+    expect(result3).toEqual({
       redirectTo: '/no-access',
       logoutUser: false,
     });

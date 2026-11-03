@@ -16,6 +16,21 @@ export function StatusWidget() {
 }
 ```
 
+## One name for every hook: `Ardor`
+
+`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page, the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function StatusTitle() {
+  Ardor.useDocumentTitle({ title: 'Status', appTitle: 'Back Office' });
+  return <span>Ready</span>;
+}
+```
+
+It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Read a hook through `Ardor.useX` in code; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
+
 ## Which hook do I need?
 
 | I want to... | Hook | Needs in the tree | Returns |
@@ -28,9 +43,9 @@ export function StatusWidget() {
 | Resolve a provider from the `providers` namespace | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
 | Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
 | Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
-| Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `Logger` |
-| Build typed dispatch hooks for a Redux store | `createAppDispatch` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
-| Build typed selector hooks for Redux state | `createAppSelectors` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
+| Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `ILogger` |
+| Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
+| Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 | Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
 | Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
@@ -44,6 +59,8 @@ export function StatusWidget() {
 | Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
 | Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
+| Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
+| Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 
 ## Reach the container
@@ -208,20 +225,20 @@ export function LoggerButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: `Logger`.
+- **Return value**: `ILogger` from `@venizia/ignis-helpers/core`.
 - **Gotcha**: Throws an error (`[useApplicationLogger] must be used within a ApplicationContextProvider`) if called when no logger is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
 ## Redux
 
-### createAppDispatch
+### DispatchHooks.create
 
 ```ts
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
-import { createAppDispatch } from '@venizia/ardor';
+import { DispatchHooks } from '@venizia/ardor';
 
 type AppDispatch = Dispatch<UnknownAction>;
 
-export const { useAppDispatch, useMultipleAppDispatch } = createAppDispatch<AppDispatch>();
+export const { useAppDispatch, useMultipleAppDispatch } = DispatchHooks.create<AppDispatch>();
 
 export function useResetAction() {
   const dispatch = useAppDispatch();
@@ -237,10 +254,10 @@ export function useResetAction() {
 - **Return value**: `{ useAppDispatch, useMultipleAppDispatch }` - typed `useDispatch` hook returning `TDispatch`, and callback `(...actions) => void` dispatching non-falsy actions in sequential order.
 - **Gotcha**: Requires a react-redux `Provider` in the tree. Falsy action arguments passed to `useMultipleAppDispatch` are skipped. Defined in `packages/react/src/hooks/redux/use-app-dispatch.ts`.
 
-### createAppSelectors
+### SelectorHooks.create
 
 ```ts
-import { createAppSelectors } from '@venizia/ardor';
+import { SelectorHooks } from '@venizia/ardor';
 
 interface RootState {
   user: { name: string };
@@ -248,7 +265,7 @@ interface RootState {
 }
 
 export const { useAppSelector, useShallowEqualSelector, useDeepEqualSelector } =
-  createAppSelectors<RootState>();
+  SelectorHooks.create<RootState>();
 
 export function useUserState() {
   const userName = useAppSelector((state) => state.user.name);
@@ -406,7 +423,7 @@ export function ProductSearch() {
 
 - **Parameters**: `opts: IUseDebounceOptions<TValue>` - `value`, optional `delay` (default `App.DEFAULT_DEBOUNCE_TIME` = 500 ms), optional `enabled` (default `true`).
 - **Return value**: `IUseDebounceReturn<TValue>` containing `{ debouncedValue: TValue }`.
-- **Gotcha**: When `enabled` is `false` or outside the browser (`!isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
+- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
 
 ### useAutosave
 
@@ -423,7 +440,7 @@ export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
 
 - **Parameters**: `opts: IUseAutosaveOptions<TData, TReturn>` - `data`, `onSave`, optional `interval` (default `2000`), optional `enableSaveOnUnmount`, optional `enabled` (default `true`).
 - **Return value**: `void`.
-- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged through the application logger (`Logger`, scope `useAutosave`) and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
+- **Gotcha**: The initial render is skipped. Rejections from `onSave` are logged through a logger scoped `useAutosave` and swallowed without propagating. Defined in `packages/react/src/hooks/use-autosave.ts`.
 
 ### useConfirm
 
@@ -467,7 +484,7 @@ export function CopyShareLink(props: { url: string }) {
 
 - **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
 - **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and logs a warning through the application logger (`Logger`, scope `useCopyToClipboard`) if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 
@@ -504,6 +521,52 @@ export function ChartContainer() {
 - **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
 - **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
 - **Gotcha**: Reported width and height are the element's `offsetWidth` and `offsetHeight`, as they are. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
+
+### useElementSize
+
+```tsx
+import React from 'react';
+import { useElementSize } from '@venizia/ardor';
+
+export function Chart() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { width, height } = useElementSize({ ref });
+
+  return <div ref={ref}>Width: {width}, Height: {height}</div>;
+}
+```
+
+Leave `ref` out when the element mounts later or is replaced, and give the returned `ref` to it:
+
+```tsx
+import { useElementSize } from '@venizia/ardor';
+
+export function Panel({ open }: { open: boolean }) {
+  const { ref, width, measured } = useElementSize({ round: true });
+
+  return open ? <div ref={ref}>{measured ? `${width}px` : '...'}</div> : null;
+}
+```
+
+- **Parameters**: `opts?: IUseElementSizeOptions` - optional `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`, optional `round`: `true` rounds width and height to whole pixels (default `false`).
+- **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number; measured: boolean }`, `0` by `0` with `measured` `false` until the first measure. Without a `ref` option the return is `IUseElementSizeRefReturn`, which adds `ref: React.RefCallback<Element>`; its identity never changes.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+
+### useStoredState
+
+```tsx
+import { useStoredState } from '@venizia/ardor';
+
+export function ThemeToggle() {
+  const { value, setValue } = useStoredState({ key: '@app/store/theme', defaultValue: 'light' });
+
+  return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
+}
+```
+
+- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default).
+- **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
+- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
 
 ### useWindowDimensions
 

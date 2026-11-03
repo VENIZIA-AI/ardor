@@ -43,8 +43,7 @@ preset's `checks` are `typecheck`, `lint`, `test` and `compile`. `scripts/preset
 
 A library package (`kernel`, `react`, `admin`, `ardor`) keeps Makefile targets, not scripts: `build`,
 `typecheck`, `lint`, `lint-fix`, `test` and `clean`, all from `make/project.mk`, plus `rebuild` (what
-`prepublishOnly` runs) and `size`. A package with no suite sets `HAS_TESTS := no` before the include
-(`ardor`), and its `make test` says so and passes. The root targets (`make lint-fix`, `make test`,
+`prepublishOnly` runs) and `size`. The root targets (`make lint-fix`, `make test`,
 `make lint-fix-<pkg>`, `make test-<pkg>`) call these. A library's `package.json` keeps only `force-update`
 and `prepublishOnly`.
 

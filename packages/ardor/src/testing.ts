@@ -1,6 +1,6 @@
 import * as inversion from '@venizia/ignis-inversion';
 
-import { Features, loadFeatureMessages, resolveApplicationProviders } from '@venizia/ardor-admin';
+import { ApplicationProviders, Features } from '@venizia/ardor-admin';
 import { CoreBindings, type BaseArdorApplication } from '@venizia/ardor-kernel';
 
 /** A class (matched exactly), a class name, or a binding key; the shape the shared core takes. */
@@ -63,13 +63,20 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
 ): Promise<Application> => {
   const { skipBindings, locale, allowEmpty = false } = options;
 
-  if (typeof inversion.assertBindingsResolve !== 'function') {
+  if (typeof inversion.BindingVerifier?.assertResolve !== 'function') {
     fail(
-      'The installed @venizia/ignis-inversion has no assertBindingsResolve | It arrived in 0.4.4: upgrade the peer to ^0.4.4, or this helper cannot check the bindings',
+      'The installed @venizia/ignis-inversion has no BindingVerifier.assertResolve | It arrived in 0.4.6-1: upgrade the peer to ^0.4.6, or this helper cannot check the bindings',
     );
   }
 
-  const target = typeof application === 'function' ? await application() : application;
+  let target: Application;
+
+  if (typeof application === 'function') {
+    const created = await application();
+    target = created;
+  } else {
+    target = application;
+  }
 
   if (
     bootedApplications.has(target) ||
@@ -93,17 +100,17 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
   try {
     await target.start();
 
-    const verification = inversion.assertBindingsResolve({
+    const verification = inversion.BindingVerifier.assertResolve({
       container: target,
       namespaces: VERIFIED_NAMESPACES,
       skip: skipBindings,
       scope: SCOPE,
     });
 
-    const { i18nProvider } = resolveApplicationProviders({ container: target });
+    const { i18nProvider } = ApplicationProviders.resolve({ container: target });
     const features = Features.read({ container: target });
     Features.mount({ features });
-    await loadFeatureMessages({ features, i18nProvider, locale });
+    await Features.loadMessages({ features, i18nProvider, locale });
 
     // A skip that matched is a binding that exists: the core rejects one that matched nothing.
     const hasBindings = verification.verified.length > 0 || (skipBindings?.length ?? 0) > 0;
@@ -119,3 +126,62 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
 
   return target;
 };
+
+/**
+ * A `ResizeObserver` for a test host whose own `observe()` does nothing, such as happy-dom. Call
+ * `FakeResizeObserver.install()` before the code under test creates its observer, and `flush` to
+ * deliver a size. A callback runs at once; code that waits for an animation frame still needs the
+ * test's own frame control.
+ */
+export class FakeResizeObserver implements ResizeObserver {
+  private static readonly all = new Set<FakeResizeObserver>();
+
+  private readonly targets = new Set<Element>();
+
+  constructor(private readonly callback: ResizeObserverCallback) {
+    FakeResizeObserver.all.add(this);
+  }
+
+  /** Replaces `globalThis.ResizeObserver` with the fake. The returned function puts the previous one back. */
+  static install(): () => void {
+    const previous = globalThis.ResizeObserver;
+    FakeResizeObserver.all.clear();
+    globalThis.ResizeObserver = FakeResizeObserver;
+
+    return () => {
+      globalThis.ResizeObserver = previous;
+    };
+  }
+
+  /** Calls every observer of `element` with one entry of that size, for the content and the border box alike. */
+  static flush(opts: { element: Element; width: number; height: number }): void {
+    const { element, width, height } = opts;
+    const box = { x: 0, y: 0, width, height, top: 0, left: 0, right: width, bottom: height };
+    const size = [{ inlineSize: width, blockSize: height }];
+    const entry: ResizeObserverEntry = {
+      target: element,
+      contentRect: { ...box, toJSON: () => box },
+      contentBoxSize: size,
+      borderBoxSize: size,
+      devicePixelContentBoxSize: [],
+    };
+
+    for (const observer of FakeResizeObserver.all) {
+      if (observer.targets.has(element)) {
+        observer.callback([entry], observer);
+      }
+    }
+  }
+
+  observe(target: Element): void {
+    this.targets.add(target);
+  }
+
+  unobserve(target: Element): void {
+    this.targets.delete(target);
+  }
+
+  disconnect(): void {
+    this.targets.clear();
+  }
+}

@@ -3,9 +3,8 @@ import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { LocalStorageKeys } from '@/common';
 import { AuthTokenStore } from '@/helpers/auth-token-store';
-import { Logger } from '@/helpers';
 
-const logger = () => Logger.getInstance({ scope: 'AuthTokenStore' });
+const logger = () => AuthTokenStore['logger'];
 
 describe('AuthTokenStore', () => {
   beforeEach(() => {

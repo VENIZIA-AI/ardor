@@ -458,13 +458,12 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
   });
 
   test('it passes when every latest is at least what the prerelease was built on', async () => {
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.9-1',
-        message,
-        latestOf: latest({ '@venizia/ignis-kernel': '0.4.6', '@venizia/ignis-boot': '0.4.7' }),
-      }),
-    ).toEqual([]);
+    const result = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.9-1',
+      message,
+      latestOf: latest({ '@venizia/ignis-kernel': '0.4.6', '@venizia/ignis-boot': '0.4.7' }),
+    });
+    expect(result).toEqual([]);
   });
 
   test('it names a package whose latest is below', async () => {
@@ -537,20 +536,18 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
         '@venizia/ignis-kernel': opts.kernel,
       });
 
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.6-0',
-        message: realTag,
-        latestOf: stableOf({ kernel: '0.4.6' }),
-      }),
-    ).toEqual([]);
-    expect(
-      await ReleasePlan.checkBuiltOn({
-        tag: 'ardor-v0.4.6-0',
-        message: realTag,
-        latestOf: stableOf({ kernel: '0.4.5' }),
-      }),
-    ).toEqual([
+    const result = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.6-0',
+      message: realTag,
+      latestOf: stableOf({ kernel: '0.4.6' }),
+    });
+    expect(result).toEqual([]);
+    const result2 = await ReleasePlan.checkBuiltOn({
+      tag: 'ardor-v0.4.6-0',
+      message: realTag,
+      latestOf: stableOf({ kernel: '0.4.5' }),
+    });
+    expect(result2).toEqual([
       'IGNIS stable is not out: @venizia/ignis-kernel latest 0.4.5, the prerelease was built on 0.4.6-0',
     ]);
   });
@@ -558,7 +555,7 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
 
 describe('release-plan.ts plan', () => {
   const scratches: string[] = [];
-  const dispatch = (opts: { versions: string; argv: string[] }) => {
+  const dispatch = (opts: { versions: string; argv: string[]; env?: Record<string, string> }) => {
     const root = makeScratch({ prefix: 'release-plan-cli-' });
     scratches.push(root);
     for (const name of ALL) {
@@ -578,7 +575,7 @@ describe('release-plan.ts plan', () => {
         ALL.join(','),
         ...opts.argv,
       ],
-      { cwd: root, env: { ...process.env, GITHUB_OUTPUT: output } },
+      { cwd: root, env: { ...process.env, GITHUB_OUTPUT: output, ...opts.env } },
     );
 
     return {
@@ -605,7 +602,8 @@ describe('release-plan.ts plan', () => {
     expect(result.stdout).toContain(
       'plan: 0.4.9-2 (prerelease) from prerelease on refs/heads/develop',
     );
-    expect(await Bun.file(result.outputPath).text()).toBe(
+    const result2 = await Bun.file(result.outputPath).text();
+    expect(result2).toBe(
       'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\ndevelop_sha=\n',
     );
   });
@@ -615,7 +613,160 @@ describe('release-plan.ts plan', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('ERROR | a stable release runs from main, not develop');
-    expect(await Bun.file(result.outputPath).exists()).toBe(false);
+    const result2 = await Bun.file(result.outputPath).exists();
+    expect(result2).toBe(false);
+  });
+
+  describe('the run title is the dispatcher label, and the plan holds it to the truth (#453)', () => {
+    const SHA = '207ce412f58e01957efa54a27a4a57c048785ada';
+    const base = ['--mode', 'prerelease', '--ref', DEVELOP, '--issue', '450'];
+    const run = (label: string) =>
+      dispatch({
+        versions: '0.4.9-1',
+        argv: [...base, '--label', label],
+        env: { GITHUB_SHA: SHA },
+      });
+
+    test('the label the plan computes passes, and so does no label', async () => {
+      const own = '0.4.9-2 prerelease · kernel,react,admin,ardor · #450 · 207ce41';
+      const result = run(own);
+
+      expect(result.code).toBe(0);
+      const result2 = await Bun.file(result.outputPath).text();
+      expect(result2).toContain('version=0.4.9-2\n');
+      expect(run('').code).toBe(0);
+    });
+
+    test.each([
+      ['another version', '0.4.9-3 prerelease · kernel,react,admin,ardor · #450 · 207ce41'],
+      ['another kind', '0.4.9-2 stable · kernel,react,admin,ardor · #450 · 207ce41'],
+      ['another list of packages', '0.4.9-2 prerelease · kernel · #450 · 207ce41'],
+      ['another issue', '0.4.9-2 prerelease · kernel,react,admin,ardor · #1 · 207ce41'],
+      ['another commit', '0.4.9-2 prerelease · kernel,react,admin,ardor · #450 · 0000000'],
+      ['a title with no commit', '0.4.9-2 prerelease · kernel,react,admin,ardor · #450'],
+    ])('a label with %s is refused and writes no output', async (_name, label) => {
+      const result = run(label);
+
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('is not what the plan computes');
+      const result2 = await Bun.file(result.outputPath).exists();
+      expect(result2).toBe(false);
+    });
+
+    test('a hostile label is refused, quoted, and writes nothing to the job outputs', async () => {
+      for (const label of [
+        '0.4.9-2 prerelease\nversion=9.9.9',
+        '::error::forged',
+        '${{ secrets.ATLAS_INDEX_KEY }}',
+        '$(id)',
+        '"; rm -rf / #',
+        '--merge-trial',
+        '--label',
+        '--ref',
+        '--packages',
+        '--train',
+        'x'.repeat(100_000),
+      ]) {
+        const result = run(label);
+
+        expect(result.code).toBe(1);
+        const result2 = await Bun.file(result.outputPath).exists();
+        expect(result2).toBe(false);
+        // The refusal prints the label quoted, so no line of the log starts with `::` or carries the text raw.
+        expect(result.stderr.split('\n').some((line) => line.startsWith('::'))).toBe(false);
+        expect(result.stderr).toContain('ERROR | the label "');
+      }
+    });
+
+    test('a label that looks like a flag is neither read as one nor left for another flag to read', () => {
+      // `--ref` as the label must not become the ref, and `--merge-trial` must not turn a trial on.
+      const asRef = dispatch({
+        versions: '0.4.9-1',
+        argv: ['--mode', 'prerelease', '--label', '--ref', '--ref', DEVELOP],
+        env: { GITHUB_SHA: SHA },
+      });
+
+      expect(asRef.code).toBe(1);
+      expect(asRef.stderr).toContain('ERROR | the label "--ref"');
+      expect(asRef.stdout).toContain('on refs/heads/develop');
+    });
+  });
+});
+
+describe('ReleasePlan.labelOf, labelProblems, takeLabel and declaresLabel (#453)', () => {
+  const ALL_PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
+
+  test('the label is version, kind, packages, issue and the short commit', () => {
+    expect(
+      ReleasePlan.labelOf({
+        version: '0.4.6-1',
+        kind: 'prerelease',
+        packages: ALL_PACKAGES,
+        issue: '450',
+        sha: '207ce412f58e01957efa54a27a4a57c048785ada',
+      }),
+    ).toBe('0.4.6-1 prerelease · kernel,react,admin,ardor · #450 · 207ce41');
+  });
+
+  test('no issue and no commit leave their parts out', () => {
+    expect(
+      ReleasePlan.labelOf({ version: '0.4.6', kind: 'stable', packages: ['ardor'], issue: '' }),
+    ).toBe('0.4.6 stable · ardor');
+  });
+
+  test('an empty label, or the computed one, has no problem; any other is quoted', () => {
+    const expected = '0.4.6 stable · ardor';
+
+    expect(ReleasePlan.labelProblems({ label: undefined, expected })).toEqual([]);
+    expect(ReleasePlan.labelProblems({ label: '', expected })).toEqual([]);
+    expect(ReleasePlan.labelProblems({ label: expected, expected })).toEqual([]);
+    expect(ReleasePlan.labelProblems({ label: 'a\nb', expected })).toEqual([
+      'the label "a\\nb" is not what the plan computes: "0.4.6 stable · ardor"',
+    ]);
+  });
+
+  test('quoted writes control, zero-width and bidirectional characters as escapes', () => {
+    const text = `a${String.fromCodePoint(0x202e)}b${String.fromCodePoint(0x200b)}c${String.fromCodePoint(0xe0041)}\n"d"`;
+
+    expect(ReleasePlan.quoted({ text })).toBe('"a\\u202eb\\u200bc\\u{e0041}\\n\\"d\\""');
+    expect(ReleasePlan.quoted({ text: '0.4.6 stable · ardor' })).toBe('"0.4.6 stable · ardor"');
+  });
+
+  test('takeLabel reads the value as given and takes both words out', () => {
+    expect(ReleasePlan.takeLabel({ argv: ['--mode', 'patch'] })).toEqual({
+      label: undefined,
+      rest: ['--mode', 'patch'],
+    });
+    expect(
+      ReleasePlan.takeLabel({ argv: ['--issue', '5', '--label', '--merge-trial', '--ref', 'x'] }),
+    ).toEqual({ label: '--merge-trial', rest: ['--issue', '5', '--ref', 'x'] });
+    expect(ReleasePlan.takeLabel({ argv: ['--label'] })).toEqual({ label: '', rest: [] });
+  });
+
+  test('only a workflow that declares the label input can be sent one', () => {
+    const declared =
+      'name: Release\non:\n  workflow_dispatch:\n    inputs:\n      label:\n        type: string\n\njobs:\n  plan:\n    name: Plan\n';
+    const old =
+      'name: NPM Release\non:\n  workflow_dispatch:\n    inputs:\n      issue:\n        type: string\n\njobs:\n';
+
+    expect(ReleasePlan.declaresLabel({ workflow: declared })).toBe(true);
+    expect(ReleasePlan.declaresLabel({ workflow: old })).toBe(false);
+    // A `label:` further down, in a job, is not an input.
+    expect(ReleasePlan.declaresLabel({ workflow: `${old}\n      label:\n        run: x\n` })).toBe(
+      false,
+    );
+    expect(ReleasePlan.declaresLabel({ workflow: '' })).toBe(false);
+  });
+
+  test('the dispatch carries the label as an input, and leaves an empty one out', () => {
+    const label = '0.4.6-1 prerelease · kernel · #450 · 207ce41';
+    const dispatch = ReleasePlan.dispatch({ plan: ['kernel'], version: '0.4.6-1', label });
+
+    expect(dispatch.inputs.label).toBe(label);
+    expect(ReleasePlan.dispatchArgs({ dispatch })).toContain(`label=${label}`);
+    expect(
+      ReleasePlan.dispatch({ plan: ['kernel'], version: '0.4.6-1', label: '' }).inputs,
+    ).not.toHaveProperty('label');
   });
 });
 

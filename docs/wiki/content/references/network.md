@@ -170,6 +170,26 @@ export function configureHeaders(): Record<string, string> {
 }
 ```
 
+## Encode a body and read a file name yourself
+
+`RequestBodyEncoder.encode({ bodyType, body })` builds the body the service sends, and its overloads type the result: a `FormData` for `form-data`, a `URLSearchParams` for `x-www-form-urlencoded`, and the body you passed for `json`, `none`, `binary` or no type. A `bodyType` that is only a `string` gives `body: unknown`. The result of the first two goes to any API that takes `string | object` without a cast.
+
+`ResponseReader.readFilename({ headers })` returns the file name a `Content-Disposition` header names: `filename*=` (UTF-8, decoded) first, then `filename=`, or `undefined`. `ResponseReader.read` returns the same name as `filename`.
+
+```ts
+import { RequestBodyEncoder, RequestBodyTypes, ResponseReader } from '@venizia/ardor';
+
+export const toUpload = (data: Record<string, unknown>): FormData => {
+  const { body } = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.FORM_DATA, body: data });
+
+  return body;
+};
+
+export const fileNameOf = (response: Response): string | undefined => {
+  return ResponseReader.readFilename({ headers: response.headers });
+};
+```
+
 ## Error handling and 401 recovery
 
 When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `ResponseReader.toError` in `packages/kernel/src/helpers/networks/response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:

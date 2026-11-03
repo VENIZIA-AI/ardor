@@ -90,7 +90,8 @@ const started = async () => {
 
 describe('a REMOTE repository', () => {
   test('is discovered with its datasource, and the datasource is injected', async () => {
-    const products = (await started()).get<ProductRepository>({
+    const result = await started();
+    const products = result.get<ProductRepository>({
       key: 'repositories.ProductRepository',
     });
 
@@ -107,7 +108,8 @@ describe('a REMOTE repository', () => {
   });
 
   test('takes a datasource registered by hand when it has no @inject', async () => {
-    const entries = (await started()).get<EntryRepository>({
+    const result = await started();
+    const entries = result.get<EntryRepository>({
       key: 'repositories.EntryRepository',
     });
 
@@ -115,7 +117,8 @@ describe('a REMOTE repository', () => {
   });
 
   test('accepts @inject({ target }) naming a datasource registered by hand', async () => {
-    const archive = (await started()).get<ArchiveRepository>({
+    const result = await started();
+    const archive = result.get<ArchiveRepository>({
       key: 'repositories.ArchiveRepository',
     });
 
@@ -123,7 +126,8 @@ describe('a REMOTE repository', () => {
   });
 
   test('resolves a datasource with a pinned key through @inject({ target }), whatever its class name', async () => {
-    const pinned = (await started()).get<PinnedByTargetRepository>({
+    const result = await started();
+    const pinned = result.get<PinnedByTargetRepository>({
       key: 'repositories.PinnedByTargetRepository',
     });
 
@@ -133,7 +137,8 @@ describe('a REMOTE repository', () => {
   // Kernel 0.2.1-2 asked for `datasources.Zv`, built from the class name at decoration. From
   // 0.2.1-3 `@repository` records the datasource class too, and inversion reads its key first.
   test('resolves a datasource with a pinned key without @inject, whatever its class name', async () => {
-    const pinned = (await started()).get<PinnedRepository>({
+    const result = await started();
+    const pinned = result.get<PinnedRepository>({
       key: 'repositories.PinnedRepository',
     });
 

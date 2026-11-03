@@ -10,8 +10,8 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { useBeforeUnload, type IUseBeforeUnloadOptions } from '@/hooks/use-before-unload';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
 import { useSizer, type IUseSizerOptions } from '@/hooks/use-sizer';
-import { createAppDispatch } from '@/hooks/redux/use-app-dispatch';
-import { createAppSelectors } from '@/hooks/redux/use-app-selector';
+import { DispatchHooks } from '@/hooks/redux/use-app-dispatch';
+import { SelectorHooks } from '@/hooks/redux/use-app-selector';
 
 // A fake clock, not a sleep: the debounce fires when the test says so, on any runner.
 const useFakeClock = (): void => {
@@ -265,11 +265,14 @@ describe('useConfirm', () => {
     const { result } = renderHook(() => {
       return useConfirm();
     });
+    let pending: Promise<boolean> | undefined;
 
     act(() => {
-      result.current.confirm({ message: 'Dismissable prompt' }).catch(() => undefined);
+      // The promise stays pending on purpose: the test only closes the prompt.
+      pending = result.current.confirm({ message: 'Dismissable prompt' });
     });
 
+    expect(pending).toBeInstanceOf(Promise);
     expect(result.current.message).toBe('Dismissable prompt');
 
     act(() => {
@@ -308,7 +311,8 @@ describe('useCopyToClipboard', () => {
 
     let copyResult: boolean = false;
     await act(async () => {
-      copyResult = await result.current.copy({ value: 'ARDOR text' });
+      const result2 = await result.current.copy({ value: 'ARDOR text' });
+      copyResult = result2;
     });
 
     expect(copyResult).toBe(true);
@@ -329,7 +333,8 @@ describe('useCopyToClipboard', () => {
 
     let copyResult: boolean = true;
     await act(async () => {
-      copyResult = await result.current.copy({ value: 'IGNIS text' });
+      const result2 = await result.current.copy({ value: 'IGNIS text' });
+      copyResult = result2;
     });
 
     expect(copyResult).toBe(false);
@@ -512,8 +517,8 @@ const createCounterWrapper = ({ store }: { store: TCounterStore }) => {
   };
 };
 
-describe('createAppDispatch', () => {
-  const { useAppDispatch, useMultipleAppDispatch } = createAppDispatch<TTestDispatch>();
+describe('DispatchHooks.create', () => {
+  const { useAppDispatch, useMultipleAppDispatch } = DispatchHooks.create<TTestDispatch>();
 
   test('useAppDispatch dispatches single action to the store', () => {
     const store = createCounterStore();
@@ -620,9 +625,9 @@ const createSelectorWrapper = ({ store }: { store: TSelectorStore }) => {
   };
 };
 
-describe('createAppSelectors', () => {
+describe('SelectorHooks.create', () => {
   const { useShallowEqualSelector, useDeepEqualSelector } =
-    createAppSelectors<TRootSelectorState>();
+    SelectorHooks.create<TRootSelectorState>();
 
   test('useShallowEqualSelector returns a stable reference for a shallow-equal object across renders', () => {
     const store = createSelectorStore();

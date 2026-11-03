@@ -8,7 +8,7 @@ This is the **only tracked instruction file**. ARDOR's agent tooling is **VULCAN
 per-developer adapters (`CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`):
 
 ```bash
-make vulcan-sync      # or make agent-setup; re-run after a pull that touched .configs/ or .agents/
+make vulcan-sync      # re-run after a pull that touched .configs/ or .agents/
 make vulcan-doctor    # checks the project still follows VULCAN
 ```
 

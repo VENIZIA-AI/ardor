@@ -3,8 +3,9 @@
  * preset is read from the extracted tarball, and the app is created, installed and checked in a
  * scratch folder under `.agents/local/tmp` that is its own git repository. This repository's
  * `node_modules` is still above that folder, so a dependency the app forgot to declare could resolve
- * from it: `assertDeclaredDependenciesInstalled` proves only that every declared one was installed
- * in the project.
+ * from it and every check pass for the wrong reason: `assertDeclaredDependenciesInstalled` proves that
+ * every declared one was installed in the project, and `assertImportsDeclared` that every package the
+ * app imports is declared (declared-imports.ts reads the source, so the folder's place cannot hide it).
  *
  *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
  *             .env copied from .env.example it passes them again and the dev server reads PORT and API_URL
@@ -54,6 +55,7 @@ import { type BrowserContext, chromium } from 'playwright-core';
 import { isTarballLag, TARBALL_LAG_DELAYS_SECONDS } from '../release/release-gates';
 import type { TConstValue } from '../const-value';
 import { makeScratch } from '../scratch';
+import { DeclaredImports } from './declared-imports';
 
 const ROOT = resolve(import.meta.dir, '..', '..');
 
@@ -253,7 +255,8 @@ const fetchRegistry = async (opts: {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     try {
       const response = await fetch(opts.url);
-      const body = new Uint8Array(await response.arrayBuffer());
+      const result = await response.arrayBuffer();
+      const body = new Uint8Array(result);
 
       if (response.ok && opts.accept(body)) {
         return body;
@@ -301,7 +304,8 @@ const downloadTagged = async (opts: {
     `${opts.name.replace(/^@/, '').replace('/', '-')}-${opts.tag}.tgz`,
   );
 
-  writeFileSync(path, await fetchRegistry({ url: dist.tarball, accept: () => true }));
+  const result = await fetchRegistry({ url: dist.tarball, accept: () => true });
+  writeFileSync(path, result);
 
   return path;
 };
@@ -362,6 +366,19 @@ const peerRange = (opts: { presetRoot: string; name: string }): string => {
   return isRecord(peers) ? String(peers[opts.name]) : '';
 };
 
+/** The versions the app preset itself lists for a package: VULCAN holds a catalog pin equal to one of them satisfied by construction. */
+const listedVersions = (opts: { presetRoot: string; name: string }): string[] => {
+  const preset = readJson({ path: appPresetPath({ presetRoot: opts.presetRoot }) });
+
+  return ['dependencies', 'devDependencies']
+    .map((section) => {
+      const listed = preset[section];
+
+      return isRecord(listed) ? listed[opts.name] : undefined;
+    })
+    .filter((version): version is string => typeof version === 'string');
+};
+
 /** Root `overrides`: bun applies a `file:` override to a transitive dependency too. */
 const addOverrides = (opts: {
   project: string;
@@ -419,6 +436,16 @@ const assertDeclaredDependenciesInstalled = (opts: { project: string; folder: st
   assert({
     condition: missing.length === 0,
     message: `every dependency of ${opts.folder} is installed in the project (missing: ${missing.join(', ') || 'none'})`,
+  });
+};
+
+/** A package the app imports must be declared in its package.json, not found above the scratch folder. */
+const assertImportsDeclared = (opts: { project: string; folder: string }): void => {
+  const undeclared = DeclaredImports.undeclared({ folder: join(opts.project, opts.folder) });
+
+  assert({
+    condition: undeclared.length === 0,
+    message: `every package ${opts.folder} imports is declared in its package.json (undeclared: ${undeclared.join(', ') || 'none'})`,
   });
 };
 
@@ -548,11 +575,12 @@ const assertPageRenders = async (opts: { port: number; name: string }) => {
   const problems: string[] = [];
 
   try {
-    browser = await chromium.launchPersistentContext(profile, {
+    const result = await chromium.launchPersistentContext(profile, {
       executablePath,
       channel: executablePath === undefined ? 'chrome' : undefined,
       env: { ...process.env, TMPDIR: profile },
     });
+    browser = result;
     const page = await browser.newPage();
 
     page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
@@ -660,7 +688,8 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
   const answer = async (path: string): Promise<Response | undefined> => {
     for (const host of hosts) {
       try {
-        return await fetch(`http://${host}:${port}${path}`);
+        const result = await fetch(`http://${host}:${port}${path}`);
+        return result;
       } catch {
         // not listening on this address (yet)
       }
@@ -677,7 +706,8 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
 
       while (response === undefined && Date.now() < deadline) {
         await Bun.sleep(250);
-        response = await answer(path);
+        const result = await answer(path);
+        response = result;
       }
 
       assert({
@@ -691,8 +721,15 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
     if (stub !== undefined) {
       const forwarded = await answer('/api/hello');
 
+      let forwardedText = '';
+
+      if (forwarded?.ok === true) {
+        const result2 = await forwarded.text();
+        forwardedText = result2;
+      }
+
       assert({
-        condition: forwarded?.ok === true && (await forwarded.text()).includes(HELLO.message),
+        condition: forwarded?.ok === true && forwardedText.includes(HELLO.message),
         message: 'the dev server read PORT and API_URL from .env and forwards /api to API_URL',
       });
     }
@@ -735,6 +772,7 @@ const install = async (opts: {
 
   for (const app of opts.apps) {
     assertDeclaredDependenciesInstalled({ project: opts.project, folder: app.folder });
+    assertImportsDeclared({ project: opts.project, folder: app.folder });
   }
 
   for (const app of opts.apps) {
@@ -1363,7 +1401,8 @@ const main = async () => {
       const get = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
-            return await fetch(`http://localhost:${port}${path}`);
+            const result = await fetch(`http://localhost:${port}${path}`);
+            return result;
           } catch {
             await Bun.sleep(500);
           }
@@ -1390,7 +1429,8 @@ const main = async () => {
           frozen: Object.isFrozen(sandbox.window.__APP_CONFIG__),
         };
       };
-      const bareConfig = evaluateConfig(await bare.text());
+      const result = await bare.text();
+      const bareConfig = evaluateConfig(result);
 
       assert({
         condition:
@@ -1412,14 +1452,18 @@ const main = async () => {
       const asset = /\/assets\/[^"]+\.js/.exec(html)?.[0] ?? '';
       const hello = await get('/api/hello');
 
+      const helloText = await hello.text();
+
       assert({
-        condition: hello.ok && (await hello.text()).includes('Hello from IGNIS!'),
+        condition: hello.ok && helloText.includes('Hello from IGNIS!'),
         message: '/api/hello reaches the backend through nginx',
       });
       const route = await get('/anything/not/a/file');
 
+      const routeText = await route.text();
+
       assert({
-        condition: route.ok && (await route.text()) === html,
+        condition: route.ok && routeText === html,
         message: 'a route that is not a file answers with index.html',
       });
       const script = await get(asset);
@@ -1428,17 +1472,20 @@ const main = async () => {
         condition: script.ok && (script.headers.get('cache-control') ?? '').includes('immutable'),
         message: 'a hashed asset is cached for good',
       });
+      const result2 = await get('/assets/missing.js');
       assert({
-        condition: (await get('/assets/missing.js')).status === 404,
+        condition: result2.status === 404,
         message: 'a missing asset is a 404, not the page',
       });
       // /health answers from nginx alone, never cached.
       const health = await get('/health');
 
+      const healthText = await health.text();
+
       assert({
         condition:
           health.status === 200 &&
-          (await health.text()).trim() === 'ok' &&
+          healthText.trim() === 'ok' &&
           (health.headers.get('cache-control') ?? '').includes('no-store'),
         message: '/health answers 200 from nginx without calling the backend, and is never cached',
       });
@@ -1446,7 +1493,11 @@ const main = async () => {
       // that sets its own add_header, which every location here does.
       const secured = await Promise.all(
         ['/', '/config.js', asset, '/health', '/anything/not/a/file', '/assets/missing.js'].map(
-          async (path) => ({ path, response: await get(path) }),
+          async (path) => {
+            const response = await get(path);
+
+            return { path, response };
+          },
         ),
       );
       const unsecured = secured.filter(({ response }) => {
@@ -1501,7 +1552,8 @@ const main = async () => {
       const orphan = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
-            return await fetch(`http://localhost:${orphanPort}${path}`);
+            const result = await fetch(`http://localhost:${orphanPort}${path}`);
+            return result;
           } catch {
             await Bun.sleep(500);
           }
@@ -1510,12 +1562,14 @@ const main = async () => {
         throw new Error(`[preset-smoke] the container without an upstream did not answer ${path}`);
       };
 
+      const result3 = await orphan('/');
       assert({
-        condition: (await orphan('/')).status === 200,
+        condition: result3.status === 200,
         message: 'with an upstream that does not resolve, nginx starts and serves the page',
       });
+      const result4 = await orphan('/api/hello');
       assert({
-        condition: (await orphan('/api/hello')).status === 502,
+        condition: result4.status === 502,
         message: 'with an upstream that does not resolve, only /api answers 502',
       });
 
@@ -1538,7 +1592,8 @@ const main = async () => {
       const gateway = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
-            return await fetch(`http://localhost:${gatewayPort}${path}`);
+            const result = await fetch(`http://localhost:${gatewayPort}${path}`);
+            return result;
           } catch {
             await Bun.sleep(500);
           }
@@ -1547,12 +1602,17 @@ const main = async () => {
         throw new Error(`[preset-smoke] the gateway container did not answer ${path}`);
       };
 
+      const result5 = await gateway('/');
+      const health5 = await gateway('/health');
+
       assert({
-        condition: (await gateway('/')).status === 200 && (await gateway('/health')).status === 200,
+        condition: result5.status === 200 && health5.status === 200,
         message: 'with API_UPSTREAM empty, nginx starts and serves the page and /health',
       });
+      const result7 = await gateway('/api/hello');
+      const result6 = await result7.text();
       assert({
-        condition: (await (await gateway('/api/hello')).text()) === html,
+        condition: result6 === html,
         message:
           'with API_UPSTREAM empty there is no /api proxy: the path is the app, not the backend',
       });
@@ -1594,13 +1654,15 @@ const main = async () => {
 
       for (let attempt = 0; attempt < 40 && configured === undefined; attempt += 1) {
         try {
-          configured = await fetch(`http://localhost:${configuredPort}/config.js`);
+          const result8 = await fetch(`http://localhost:${configuredPort}/config.js`);
+          configured = result8;
         } catch {
           await Bun.sleep(500);
         }
       }
 
-      const configuredText = (await configured?.text()) ?? '';
+      const result9 = await configured?.text();
+      const configuredText = result9 ?? '';
       const published = evaluateConfig(configuredText);
 
       assert({
@@ -1675,15 +1737,17 @@ const main = async () => {
         ignisDirectory === undefined
           ? new Map<string, string>()
           : packAll({ directory: ignisDirectory, destination: join(tempFolder, 'ignis-tgz') });
-      const ignisTarball =
-        ignisDirectory === undefined
-          ? await downloadTagged({
-              name: '@venizia/ignis',
-              // The line the catalog was refreshed to: IGNIS stable beside an ARDOR prerelease is two copies.
-              tag: process.env.CATALOG_TAG ?? 'latest',
-              destination: join(tempFolder, 'ignis-tgz'),
-            })
-          : ignisTarballs.get('@venizia/ignis');
+      let ignisTarball = ignisTarballs.get('@venizia/ignis');
+
+      if (ignisDirectory === undefined) {
+        const result10 = await downloadTagged({
+          name: '@venizia/ignis',
+          // The line the catalog was refreshed to: IGNIS stable beside an ARDOR prerelease is two copies.
+          tag: process.env.CATALOG_TAG ?? 'latest',
+          destination: join(tempFolder, 'ignis-tgz'),
+        });
+        ignisTarball = result10;
+      }
 
       if (ignisTarball === undefined) {
         throw new Error('[preset-smoke] @venizia/ignis was not packed from IGNIS_DIR');
@@ -1739,7 +1803,11 @@ const main = async () => {
         )?.[devConfigs] ?? '',
       );
 
-      if (!Bun.semver.satisfies(pinned.replace(/^[\^~]/, ''), devConfigsRange)) {
+      // A pin equal to a version the preset lists is no refusal (VULCAN 0.4.9): `init` wrote it from that preset.
+      if (
+        !Bun.semver.satisfies(pinned.replace(/^[\^~]/, ''), devConfigsRange) &&
+        !listedVersions({ presetRoot, name: devConfigs }).includes(pinned)
+      ) {
         const { output } = vulcan({
           cwd: project,
           env: NO_INSTALL,

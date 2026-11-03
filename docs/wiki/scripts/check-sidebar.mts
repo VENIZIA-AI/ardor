@@ -12,12 +12,8 @@ const WIKI = new URL('..', import.meta.url).pathname;
 const CONTENT = `${WIKI}content`;
 const CONFIG = `${WIKI}site/.vitepress/config.mts`;
 
-/** Author-facing skeletons, deliberately never linked from a reader-facing menu. */
-const UNLISTED = [
-  /^extensions\/(components|helpers)\/template\//,
-  /^index$/,
-  /^changelogs\/\d{4}-\d{2}-\d{2}-/,
-];
+/** Pages deliberately never linked from a reader-facing menu. */
+const UNLISTED = [/^index$/, /^changelogs\/\d{4}-\d{2}-\d{2}-/];
 
 const config = await Bun.file(CONFIG).text();
 const linked = new Set(
@@ -54,7 +50,9 @@ if (dead.length > 0) {
 
 if (problems.length > 0) {
   console.error(`sidebar check FAILED\n\n${problems.join('\n\n')}\n`);
-  console.error('Add the entry to site/.vitepress/config.mts, or to UNLISTED if it is a template.');
+  console.error(
+    'Add the entry to site/.vitepress/config.mts, or to UNLISTED if it is meant to stay unlisted.',
+  );
   process.exit(1);
 }
 

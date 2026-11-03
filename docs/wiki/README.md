@@ -33,7 +33,7 @@ docs/wiki/
 │   ├── references/      # application, features, binding keys, data provider, network, auth, i18n, hooks
 │   ├── extensions/      # socket client, count provider, custom transport
 │   ├── best-practices/  # module augmentation, binding keys, services, auth recovery
-│   └── changelogs/      # one entry per significant change
+│   └── changelogs/      # one entry per change users can see or use
 ├── site/.vitepress/     # config (the sidebar) and theme
 └── scripts/             # check-sidebar.mts, check-snippets.mts, docs-build.sh
 ```

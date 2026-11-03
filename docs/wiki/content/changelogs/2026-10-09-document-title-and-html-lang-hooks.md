@@ -15,7 +15,7 @@ packages: ['@venizia/ardor-admin']
 ## What changed
 
 - **`useDocumentTitle({ title, appTitle, separator, enabled })`.** The tab title is the non-empty `title` segments, then `appTitle`, joined by `separator` (default `' · '`). `title` is one segment or an array; `false`, `null`, `undefined` and `''` are skipped. `enabled` defaults to `true`.
-- **Restore.** When the title changes or the component unmounts, the hook puts back the title it replaced, so no reset on navigation is needed.
+- **Restore.** When the title changes or the component unmounts, the hook puts back the title it replaced, so no reset on navigation is needed. It restores only while the tab still shows the title the hook wrote, so a locale switch or two calls with the same title no longer leave a stale title.
 - **`useHtmlLang()`.** Sets `document.documentElement.lang` to the ra-core `useLocaleState()` locale and follows every change, so screen readers pick the right voice.
 
 ```tsx
@@ -31,16 +31,7 @@ export function OrdersPage() {
 
 ## Who is affected
 
-- **Applications with their own title or `lang` hook.** They can switch to these; the signature is the options object above.
+- **Applications with their own title or `lang` hook.** They can switch to these.
 - **Everyone else.** No action needed.
 
-## Details
-
-- Call `useDocumentTitle` from one component per screen. React runs child effects before parent effects, so a call in a parent wins over a call in a child.
-- `useHtmlLang` needs the ra-core locale state; `useDocumentTitle` needs nothing from the tree.
-
-| File | Package |
-|------|---------|
-| `src/hooks/use-document-title.ts` | admin |
-| `src/hooks/use-html-lang.ts` | admin |
-| `src/hooks/index.ts` | admin |
+Call `useDocumentTitle` from one component per screen: React runs child effects before parent effects, so a call in a parent wins over a call in a child. `useHtmlLang` needs the ra-core locale state.

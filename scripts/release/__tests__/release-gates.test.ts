@@ -250,6 +250,16 @@ const jobsOf = (text: string): Record<string, string> => {
   );
 };
 
+/** The keys of a step's `env:` block (ten spaces deep), in order. */
+const envKeysOf = (step: string): string[] => {
+  const block = step.split(/\n {8}env:\n/)[1] ?? '';
+
+  return block
+    .split('\n')
+    .filter((line) => /^ {10}\S/.test(line) && !line.trimStart().startsWith('#'))
+    .map((line) => line.trim().split(':')[0] ?? '');
+};
+
 /** The steps of a job, each with its name and its text. */
 const stepsOf = (job: string): Array<{ name: string; text: string }> =>
   job
@@ -321,7 +331,9 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
   test("clean-install is the chain's, after the sibling is out, and not the test job's", () => {
     expect(testJob).not.toContain('clean-install');
-    expect(chainPlan.phaseB.some((step) => step.label === 'react: clean-install')).toBe(true);
+    expect(
+      chainPlan.phaseP.some((step) => step.label.startsWith('clean-install: kernel, react')),
+    ).toBe(true);
   });
 
   test('the publish job checks the branches, installs, releases and reports, in that order', () => {
@@ -373,12 +385,36 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     );
   });
 
+  test('every package is published before the first wait, and nothing is committed or tagged before the last publish', () => {
+    const all = [...chainPlan.phaseP, ...chainPlan.phaseB, ...chainPlan.phaseR].map(
+      (step) => step.label,
+    );
+    const publishes = ['kernel', 'react', 'admin', 'ardor'].map((name) =>
+      all.indexOf(`${name}: publish`),
+    );
+    const firstWait = all.findIndex((label) =>
+      label.endsWith('wait for the tarball to answer 200'),
+    );
+    const firstGitWrite = all.findIndex((label) => /: (commit|push|annotate the tag)$/.test(label));
+
+    expect(publishes).toEqual([...publishes].sort((a, b) => a - b));
+    expect(publishes[0]).toBeGreaterThan(-1);
+    expect(firstWait).toBeGreaterThan(publishes[3] as number);
+    expect(firstGitWrite).toBeGreaterThan(publishes[3] as number);
+    // The one clean-install gate runs before the first publish, from the tarballs of the run.
+    expect(all.findIndex((label) => label.startsWith('clean-install:'))).toBeLessThan(
+      publishes[0] as number,
+    );
+  });
+
   test('the bump comes before the pack, the publish before any git write', () => {
     expect(
       inOrder({
-        labels: labelsOf({ steps: chainPlan.phaseB, name: 'react' }),
+        labels: labelsOf({
+          steps: [...chainPlan.phaseP, ...chainPlan.phaseB, ...chainPlan.phaseR],
+          name: 'react',
+        }),
         order: [
-          'clean-install',
           'bump',
           'pack the tarball to publish',
           'check the packed manifest',
@@ -399,8 +435,8 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
   test('the preset is written after the bump and before the pack, for ardor only', () => {
     const indexOfLabel = (label: string): number =>
-      chainPlan.phaseB.findIndex((step) => step.label === label);
-    const presets = chainPlan.phaseB.filter((step) => step.label.includes('VULCAN preset'));
+      chainPlan.phaseP.findIndex((step) => step.label === label);
+    const presets = chainPlan.phaseP.filter((step) => step.label.includes('VULCAN preset'));
 
     expect(presets).toHaveLength(1);
     expect(indexOfLabel('ardor: write the VULCAN preset')).toBeGreaterThan(
@@ -421,7 +457,9 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   });
 
   test('the dist-tag and the next heal come after the publish and never stop the chain', () => {
-    const steps = chainPlan.phaseB.filter((step) => step.label.startsWith('react: '));
+    const steps = [...chainPlan.phaseB, ...chainPlan.phaseR].filter((step) =>
+      step.label.startsWith('react: '),
+    );
     const publish = steps.findIndex((step) => step.kind === 'publish');
     const highest = steps.find((step) => step.label === 'react: tag highest');
     const heal = steps.find((step) => step.label === 'react: keep next at or above latest');
@@ -635,7 +673,7 @@ describe('the workflow passes what it published, and can heal alone', () => {
   const workflow = workflowText;
 
   test('the heal step of the chain is given the published package, version and tag', () => {
-    const heal = chainPlan.phaseB.find(
+    const heal = chainPlan.phaseR.find(
       (step) => step.label === 'kernel: keep next at or above latest',
     );
 
@@ -702,6 +740,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     ['failure', 'success', 'skipped', 'prerelease', false],
   ];
   const REPORT_STEP = 'Report the run';
+  const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
   const LOOP = 'for package in ${PACKAGES//,/ }; do';
 
   const guards = {
@@ -822,6 +861,36 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         !publish.includes('RELEASE_VERSION')
       );
     },
+    // C34 (VULCAN's C31): the publish job makes the GitHub Release after the chain and cannot fail the run for it.
+    githubRelease: ({ workflow }: IFiles): boolean => {
+      const publish = jobsOf(workflow).publish ?? '';
+      const steps = stepsOf(publish);
+      const names = steps.map((step) => step.name);
+      const release = steps.find((step) => step.name === GITHUB_RELEASE_STEP)?.text ?? '';
+
+      return (
+        names.indexOf(GITHUB_RELEASE_STEP) > names.indexOf(RELEASE_STEP) &&
+        names.indexOf(RELEASE_STEP) > -1 &&
+        names.indexOf(GITHUB_RELEASE_STEP) < names.indexOf(REPORT_STEP) &&
+        /\n {8}if: \$\{\{ !cancelled\(\) \}\}\n/.test(release) &&
+        /\n {8}continue-on-error: true\n/.test(release) &&
+        /\n {8}timeout-minutes: 5\n/.test(release) &&
+        /\n {10}GH_TOKEN: \$\{\{ github\.token \}\}\n/.test(release) &&
+        /\n {8}run: bun scripts\/release\/github-release\.ts create --version "\$PLAN_VERSION" --kind "\$PLAN_KIND" --packages "\$PACKAGES"\n/.test(
+          release,
+        ) &&
+        // Exactly one step of that name, and its env holds the job token and nothing else: a step-level PLAN_KIND,
+        // PLAN_VERSION or PACKAGES, a GH_REPO or a GH_HOST would redirect what the step releases or where.
+        names.filter((name) => name === GITHUB_RELEASE_STEP).length === 1 &&
+        envKeysOf(release).join(',') === 'GH_TOKEN' &&
+        !/\n {8}(working-directory|shell|uses):/.test(release) &&
+        // The job token is the only credential: no secret, and no other step or the job holds a GitHub token.
+        !/secrets\./.test(release) &&
+        steps.filter((step) => /GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(step.text)).length ===
+          1 &&
+        !/GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(publish.split(/\n {4}steps:\n/)[0] ?? '')
+      );
+    },
     // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
     catalogTagFromPlan: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
@@ -889,11 +958,14 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         npmIsPinned
       );
     },
-    // C6: no npm token in any form and no secret at all, in the workflow or the chain: the release
-    // publishes through trusted publishing.
+    // C6: no npm token in any form and no secret but the key of the atlas pair, in the workflow or the chain: the
+    // release publishes through trusted publishing. The key signs the index of a tag; it is not a credential of npm.
     noNpmToken: ({ workflow, chain }: IFiles): boolean =>
       !/secrets\.|NPM_ACCESS_TOKEN|NPM_CONFIG_TOKEN|NODE_AUTH_TOKEN/.test(
-        withoutComments(`${workflow}\n${chain}`),
+        withoutComments(`${workflow}\n${chain}`).replaceAll(
+          'ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}',
+          '',
+        ),
       ),
     // C16: the jobs that talk to npm name the environment npm-release; the test job names none.
     publishEnvironment: ({ workflow }: IFiles): boolean => {
@@ -946,7 +1018,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     // C24: the tarball that was packed and checked is the tarball that is published: its checksum is
     // recorded, then checked, before the publish, and the check compares against the record.
     tarballChecksum: ({ chain }: IFiles): boolean => {
-      const body = chain.slice(chain.indexOf('static release('));
+      const body = chain.slice(chain.indexOf('static prepare('));
       const record = body.indexOf("kind: 'record-sha'");
       const verify = body.indexOf("kind: 'verify-sha'");
       const publish = body.indexOf("kind: 'publish'");
@@ -963,11 +1035,42 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       );
       const runName = workflow.match(/^run-name: (.+)$/m)?.[1] ?? '';
 
+      // The title carries the verified label first and the whole commit when there is none: the whole
+      // expression is pinned, not a substring, so `inputs.label` cannot be dropped or reordered away.
       return (
         checkouts.length >= 3 &&
         checkouts.every((step) => /\n {10}ref: \$\{\{ github\.sha \}\}/.test(step.text)) &&
         !/git checkout develop|git pull origin develop|git switch develop/.test(workflow) &&
-        runName.includes('github.sha')
+        /^"Release · \$\{\{ inputs\.heal_only && .*github\.sha\) \|\| inputs\.label \|\| format\(.*, github\.sha\) \}\}"$/.test(
+          runName,
+        )
+      );
+    },
+    // C33: the title is the dispatcher's `label` input, and the plan job (not the title) decides whether it is true:
+    // the plan is handed the label through the step env, never through the script text, and it is the last flag.
+    labelVerified: ({ workflow }: IFiles): boolean => {
+      const plan = jobsOf(workflow).plan ?? '';
+      const planStep = stepsOf(plan).find((step) => step.name === 'Plan the run')?.text ?? '';
+      const input =
+        workflow
+          .split(/\njobs:\n/)[0]
+          ?.match(/\n {6}label:\n([\s\S]*?)(?=\n {6}\w+:\n|\n\S)/)?.[1] ?? '';
+
+      return (
+        /type: string/.test(input) &&
+        /default: ''/.test(input) &&
+        /\n {10}RELEASE_LABEL: \$\{\{ inputs\.label \}\}\n/.test(planStep) &&
+        /\n {8}run: bun scripts\/release\/release-plan\.ts plan .* --label "\$RELEASE_LABEL"\n/.test(
+          planStep,
+        ) &&
+        // The label is read in two places and nowhere else in the file: the title, and the env of the plan step.
+        !/inputs\.label/.test(
+          workflow
+            .replace(/^run-name: .*$/m, '')
+            .replace(/\n {10}RELEASE_LABEL: \$\{\{ inputs\.label \}\}\n/, '\n'),
+        ) &&
+        // A plan step that may fail without failing the job would let a refused label through.
+        !/continue-on-error/.test(plan)
       );
     },
     // D6: every action by its full commit, with the tag in a comment.
@@ -976,7 +1079,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
 
       return (
         uses.length >= 9 &&
-        uses.every((value) => /^[\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+(\.\d+)*$/.test(value))
+        uses.every((value) => /^[\w.-]+\/[\w.\/-]+@[0-9a-f]{40} # v\d+(\.\d+)*(-\d+)?$/.test(value))
       );
     },
     // C4: preset-smoke runs the VULCAN the repository pins, and `latest` appears nowhere.
@@ -1195,6 +1298,123 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       name: 'the plan stops handing develop on',
       mutate: (text) =>
         text.replace('      develop_sha: ${{ steps.plan.outputs.develop_sha }}\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step may fail the run',
+      mutate: (text) =>
+        text.replace('        continue-on-error: true\n        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not bounded in time',
+      mutate: (text) => text.replace('        timeout-minutes: 5\n', ''),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step comes before the chain',
+      mutate: (text) => {
+        const block =
+          /( {6}- name: Create the GitHub Release\n[\s\S]*?)(?= {6}# A job that was cancelled)/.exec(
+            text,
+          )?.[1];
+
+        return block === undefined
+          ? text
+          : text
+              .replace(block, '')
+              .replace(
+                '      - name: Release the packages\n',
+                `${block}      - name: Release the packages\n`,
+              );
+      },
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step stops running after a failed chain',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Create the GitHub Release\n        if: ${{ !cancelled() }}\n',
+          '      - name: Create the GitHub Release\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step uses a secret instead of the job token',
+      mutate: (text) =>
+        text.replace('GH_TOKEN: ${{ github.token }}', 'GH_TOKEN: ${{ secrets.GITHUB_PAT }}'),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is not told the packages of the run',
+      mutate: (text) =>
+        text.replace(
+          ' --packages "$PACKAGES"\n\n      # A job that was cancelled',
+          '\n\n      # A job that was cancelled',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step overrides the plan kind in its own env',
+      mutate: (text) =>
+        text.replace(
+          '          GH_TOKEN: ${{ github.token }}\n        run: bun scripts/release/github-release.ts',
+          '          GH_TOKEN: ${{ github.token }}\n          PLAN_KIND: stable\n        run: bun scripts/release/github-release.ts',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is pointed at another repository',
+      mutate: (text) =>
+        text.replace(
+          '          GH_TOKEN: ${{ github.token }}\n        run: bun scripts/release/github-release.ts',
+          '          GH_TOKEN: ${{ github.token }}\n          GH_REPO: evil/x\n        run: bun scripts/release/github-release.ts',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the publish job holds a GitHub token for every step',
+      mutate: (text) =>
+        text.replace(
+          '      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}\n    # The release pushes',
+          '      CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}\n      GH_TOKEN: ${{ github.token }}\n    # The release pushes',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'another step holds a GitHub token',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Report the run\n        if: ${{ always() }}\n',
+          '      - name: Report the run\n        if: ${{ always() }}\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step runs somewhere else',
+      mutate: (text) =>
+        text.replace(
+          '        timeout-minutes: 5\n        env:',
+          '        timeout-minutes: 5\n        working-directory: /tmp\n        env:',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'a second step of the same name does something else',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Report the run\n',
+          '      - name: Create the GitHub Release\n        run: echo other\n\n      - name: Report the run\n',
+        ),
+    },
+    {
+      guard: 'githubRelease',
+      name: 'the step is gone',
+      mutate: (text) =>
+        text.replace(
+          / {6}- name: Create the GitHub Release\n[\s\S]*?(?= {6}# A job that was cancelled)/,
+          '',
+        ),
     },
     {
       guard: 'publishUsesThePlan',
@@ -1452,7 +1672,72 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     {
       guard: 'dispatchedCommit',
       name: 'the run name drops the commit',
-      mutate: (text) => text.replace(/^(run-name: .*) \| \$\{\{ github\.sha \}\}/m, '$1'),
+      mutate: (text) => text.replace(/, github\.sha\) \}\}"$/m, ') }}"'),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the run name drops the label',
+      mutate: (text) => text.replace(' || inputs.label ||', ' ||'),
+    },
+    {
+      guard: 'dispatchedCommit',
+      name: 'the run name is the old NPM Release one',
+      mutate: (text) =>
+        text.replace(
+          /^run-name: .*$/m,
+          "run-name: \"${{ inputs.heal_only && 'heal the next tags' || format('packages: {0}', inputs.packages) }} | ${{ github.sha }}\"",
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the plan no longer gets the label',
+      mutate: (text) => text.replace(' --label "$RELEASE_LABEL"', ''),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the label is written into the script text',
+      mutate: (text) => text.replace('--label "$RELEASE_LABEL"', '--label "${{ inputs.label }}"'),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the label input is gone',
+      mutate: (text) => text.replace(/\n {6}label:\n[\s\S]*?(?=\n {6}heal_only:\n)/, ''),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'an extra step of the plan job writes the label into a script',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n',
+          '      - name: Show the label\n        run: echo "${{ inputs.label }}"\n\n      - name: Plan the run\n',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the workflow reads the label in its top-level env',
+      mutate: (text) =>
+        text.replace(
+          'env:\n  FORCE_JAVASCRIPT',
+          'env:\n  TITLE: ${{ inputs.label }}\n  FORCE_JAVASCRIPT',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'the plan step may fail without failing the job',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Plan the run\n        id: plan\n',
+          '      - name: Plan the run\n        id: plan\n        continue-on-error: true\n',
+        ),
+    },
+    {
+      guard: 'labelVerified',
+      name: 'another job reads the label',
+      mutate: (text) =>
+        text.replace(
+          '    needs: plan\n    runs-on: ubuntu-26.04\n',
+          '    needs: plan\n    runs-on: ubuntu-26.04\n    env:\n      TITLE: ${{ inputs.label }}\n',
+        ),
     },
     {
       guard: 'actionsByCommit',
@@ -1596,6 +1881,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   test('a guard needs the jobs it reads', () => {
     expect(Object.keys(jobsOf(files.workflow)).toSorted()).toEqual([
       'approve',
+      'atlas-index',
       'heal-next',
       'plan',
       'publish',
@@ -2061,5 +2347,155 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
     expect(broken.exitCode).toBe(1);
     expect(broken.stderr.toString()).toContain('@venizia/ignis-inversion');
     expect(run(tree({ ardorKernel: '0.4.5-0', ardor: '0.4.5-0' })).exitCode).toBe(0);
+  });
+});
+
+// The release pushes with the Actions token, which starts no workflow, so deploy-docs.yml never publishes the signed
+// atlas pair of a release commit or tag. package-release.yml does it in a job of its own, as VULCAN's own release does:
+// the same action, pinned by the same commit, the same secret, one step for each package tag, and the key never
+// shares a job with the npm identity.
+describe('package-release.yml publishes the atlas pair of each release tag, in a job of its own', () => {
+  const workflow = workflowText;
+  const jobs = jobsOf(workflow);
+  const job = jobs['atlas-index'] ?? '';
+  const stepsOf = (text: string): string[] =>
+    withoutComments(text)
+      .split(/\n {6}- /)
+      .slice(1)
+      .map((step) => step.trimEnd());
+  const steps = stepsOf(job);
+  const atlasSteps = steps.filter((step) => step.includes('actions/atlas-index@'));
+  const docs = readFileSync(join(ROOT, '.github/workflows/deploy-docs.yml'), 'utf8');
+  const ACTION = /VENIZIA-AI\/vulcan\/\.github\/actions\/atlas-index@([0-9a-f]{40}) # (v\S+)/;
+  const vulcanVersion: string = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+    .devDependencies['@venizia/vulcan'];
+  // The packages one run releases; a tag is `<package>-v<version>` (the manifest's tagPattern).
+  const PACKAGES = ['kernel', 'react', 'admin', 'ardor'];
+
+  // The other tests read the file as text, so a quote that breaks the YAML would pass them all and fail on GitHub.
+  test('the file is valid YAML, and the new job reads back', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; permissions?: Record<string, string>; steps?: { name: string }[] }
+      >;
+    };
+    const atlas = parsed.jobs['atlas-index'];
+
+    expect(atlas?.needs).toEqual(['plan', 'publish']);
+    expect(atlas?.permissions).toEqual({ contents: 'write' });
+    expect(atlas?.steps?.map((step) => step.name)).toEqual([
+      'Checkout',
+      'Setup Bun',
+      'Install',
+      'Find the tags this run pushed',
+      ...PACKAGES.map((name) => `Publish the atlas index of the ${name} tag`),
+    ]);
+  });
+
+  test('the job runs after publish, also after a chain that stopped, and never fails the run', () => {
+    expect(Object.keys(jobs)).toEqual([
+      'plan',
+      'test',
+      'approve',
+      'publish',
+      'atlas-index',
+      'heal-next',
+    ]);
+    expect(job).toContain('needs: [plan, publish]');
+    expect(job).toContain(
+      "if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}",
+    );
+    expect(job).toMatch(/\n {4}continue-on-error: true\n/);
+  });
+
+  test('it holds contents: write and nothing else: no id-token, no environment, and publish keeps its own', () => {
+    expect(job).toMatch(/\n {4}permissions:\n {6}contents: write\n {4}env:/);
+    expect(job).not.toContain('id-token');
+    expect(job).not.toContain('environment:');
+    expect(jobs['publish']).toMatch(
+      /\n {4}permissions:\n {6}contents: write\n {6}id-token: write\n/,
+    );
+    expect([...withoutComments(workflow).matchAll(/contents: write/g)]).toHaveLength(2);
+    expect([...withoutComments(workflow).matchAll(/id-token: write/g)]).toHaveLength(2);
+    expect(workflow).toMatch(/\npermissions:\n {2}contents: read\n/);
+  });
+
+  test('it reads the clone the tags are in, with no stored git credential', () => {
+    const checkout = steps.find((step) => step.startsWith('name: Checkout')) ?? '';
+
+    expect(checkout).toContain('ref: ${{ github.sha }}');
+    expect(checkout).toContain('fetch-depth: 0');
+    expect(checkout).toContain('persist-credentials: false');
+    expect(steps.some((step) => step.includes('bun-version: 1.4.4'))).toBe(true);
+    expect(
+      steps.some((step) => step.startsWith('name: Install') && step.includes('run: bun install')),
+    ).toBe(true);
+  });
+
+  test('there is one step for each package, after the step that finds the tags', () => {
+    const names = steps.map((step) => /^name: (.+)$/m.exec(step)?.[1] ?? '');
+    const find = steps.find((step) => step.startsWith('name: Find the tags this run pushed')) ?? '';
+
+    expect(atlasSteps).toHaveLength(PACKAGES.length);
+
+    for (const name of PACKAGES) {
+      expect(names).toContain(`Publish the atlas index of the ${name} tag`);
+    }
+
+    expect(Math.min(...atlasSteps.map((step) => steps.indexOf(step)))).toBeGreaterThan(
+      names.indexOf('Find the tags this run pushed'),
+    );
+    expect(find).toContain('tag="$package-v$PLAN_VERSION"');
+    // Without the id or the output line every step below is skipped, the run stays green and nothing is published.
+    expect(find).toContain('id: tags');
+    expect(find).toContain('echo "$package=$tag" >> "$GITHUB_OUTPUT"');
+    expect(job).toMatch(/\n {4}timeout-minutes: 15\n/);
+    expect(find).toContain('git rev-parse --verify --quiet "refs/tags/$tag"');
+    expect(job).toContain('PLAN_VERSION: ${{ needs.plan.outputs.version }}');
+  });
+
+  test('the action is the one deploy-docs.yml pins, at the commit of the installed VULCAN release', () => {
+    const pinned = ACTION.exec(docs);
+
+    expect(pinned).not.toBeNull();
+    expect(pinned?.[2]).toBe(`v${vulcanVersion}`);
+
+    for (const step of atlasSteps) {
+      expect(ACTION.exec(step)?.[0]).toBe(pinned?.[0]);
+    }
+  });
+
+  test('each step takes only the ref of its own package tag, and the key by the action default', () => {
+    for (const name of PACKAGES) {
+      const step = atlasSteps.find((candidate) => candidate.includes(`of the ${name} tag`)) ?? '';
+
+      // The action's inputs are `ref` and `key-env`; `key-env` defaults to ATLAS_INDEX_KEY, as VULCAN's release uses it.
+      expect(step).toMatch(
+        new RegExp(
+          `\\n {8}with:\\n {10}ref: \\$\\{\\{ steps\\.tags\\.outputs\\.${name} \\}\\}\\n {8}env:\\n {10}ATLAS_INDEX_KEY: \\$\\{\\{ secrets\\.ATLAS_INDEX_KEY \\}\\}$`,
+        ),
+      );
+      expect(step).not.toContain('key-env');
+      expect(step).toContain(`if: \${{ steps.tags.outputs.${name} != '' }}`);
+      // One failed pair must not skip the next.
+      expect(step).toContain('continue-on-error: true');
+    }
+  });
+
+  test('the key is read by those four steps only, and by no other job', () => {
+    expect([...withoutComments(workflow).matchAll(/secrets\./g)]).toHaveLength(PACKAGES.length);
+    expect(steps.filter((step) => step.includes('secrets.'))).toEqual(atlasSteps);
+
+    for (const [id, text] of Object.entries(jobs)) {
+      if (id !== 'atlas-index') {
+        expect(withoutComments(text)).not.toContain('secrets.');
+      }
+    }
+  });
+
+  test('deploy-docs.yml no longer calls it a known limit', () => {
+    expect(docs).not.toContain('Known limit');
+    expect(docs).toContain('package-release.yml runs the same action');
   });
 });

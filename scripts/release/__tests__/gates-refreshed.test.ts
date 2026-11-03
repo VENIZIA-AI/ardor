@@ -22,18 +22,20 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
     expect(GatesRefreshed.vulcanCmd({ workflow })).toMatch(/^bun x @venizia\/vulcan@\d+\.\d+\.\d+/);
   });
 
-  test('refresh runs before install, install before gates', () => {
+  test('refresh runs before install, install before gates, and the clean install last', () => {
     const steps = GatesRefreshed.steps({ workflow });
 
     expect(steps.map((step) => step.label)).toEqual([
       GatesRefreshed.REFRESH_STEP,
       'Install',
       'Gates',
+      GatesRefreshed.CLEAN_INSTALL_STEP,
     ]);
     expect(steps.map((step) => step.script)).toEqual([
       REFRESH.join('\n'),
       'bun install',
       'make gates',
+      'make clean-install',
     ]);
   });
 

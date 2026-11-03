@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Logger } from '@venizia/ardor-kernel';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 
 import { useDebounce } from './use-debounce';
 
@@ -14,7 +14,7 @@ export interface IUseAutosaveOptions<TData, TReturn> {
   enabled?: boolean;
 }
 
-const logger = Logger.getInstance({ scope: 'useAutosave' });
+const logger = LoggerFactory.getLogger(['useAutosave']);
 
 export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => {
   const { data, onSave, interval = 2000, enableSaveOnUnmount, enabled = true } = opts;
@@ -32,7 +32,7 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
   React.useEffect(() => {
     if (initialRender.current) {
       initialRender.current = false;
-      return;
+      return () => {};
     }
     Promise.resolve(handleSave.current(debouncedValueToSave)).catch((error: unknown) => {
       logger.error('[useAutosave] Failed to save debounced value | error: %s', error);

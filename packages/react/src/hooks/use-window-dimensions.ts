@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { isBrowser } from '@venizia/ardor-kernel';
+import { BrowserUtility } from '@venizia/ardor-kernel';
 
 const readWindowDimensions = () => {
   // Where there is no window (a server render) the size is 0 x 0 until the browser measures it.
-  return isBrowser()
+  return BrowserUtility.isBrowser()
     ? { width: window.innerWidth, height: window.innerHeight }
     : { width: 0, height: 0 };
 };

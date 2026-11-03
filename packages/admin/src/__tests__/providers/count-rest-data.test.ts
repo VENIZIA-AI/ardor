@@ -58,7 +58,8 @@ const parseRequestBody = async (opts: { request: Request }): Promise<unknown> =>
     return null;
   }
   try {
-    return await request.json();
+    const result = await request.json();
+    return result;
   } catch (error) {
     console.error(error);
     return null;

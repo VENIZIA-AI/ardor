@@ -14,20 +14,13 @@ packages: ['@venizia/ardor-admin']
 
 ## What changed
 
-- **The lookup.** `DefaultAuthProvider` used to take the permission provider only as its fourth constructor argument. A subclass that declares its own constructor and passes three arguments to `super` ended up without `canAccess`, and react-admin then allowed everything with no warning. The provider now also reads the bound permission provider from the container when it builds its methods.
-- **An explicit argument still wins.** A permission provider passed to `super` is used before the bound one.
-- **Nothing bound, nothing changes.** Without a bound permission provider there is still no `canAccess`, and react-admin allows everything, as before.
+- **The bug.** `DefaultAuthProvider` took the permission provider only as its fourth constructor argument. A subclass with its own constructor that passed three arguments to `super` ended up without `canAccess`, and react-admin then allowed everything with no warning.
+- **The fix.** The provider now also reads the bound permission provider from the container. A permission provider passed to `super` still wins over the bound one.
+- **Nothing bound, nothing changes.** Without a bound permission provider there is still no `canAccess`, and react-admin allows everything.
 
 ## Who is affected
 
 - **Applications with an `AuthProvider` subclass and a bound permission provider.** Their checks now run. Remove any workaround that injected the provider only to forward it to `super`; it keeps working if left in place.
 - **Applications that bind no permission provider.** No action needed.
-
-## Details
-
-| File | Package |
-|------|---------|
-| `src/providers/auth.ts` | admin |
-| `src/__tests__/providers/auth.test.ts` | admin |
 
 See [Features and permissions](../references/permission).

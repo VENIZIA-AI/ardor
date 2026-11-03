@@ -39,12 +39,14 @@ describe('AdminConfiguration', () => {
   });
 
   test('binds the REST data provider options under their key', async () => {
-    expect(await restUrlOf()).toBe('/api');
+    const result = await restUrlOf();
+    expect(result).toBe('/api');
   });
 
   test('the API url is the one config.js wrote when the container started', async () => {
     Reflect.set(globalThis, RUNTIME_CONFIG_GLOBAL, { VITE_API_URL: 'https://api.example.com' });
 
-    expect(await restUrlOf()).toBe('https://api.example.com');
+    const result = await restUrlOf();
+    expect(result).toBe('https://api.example.com');
   });
 });

@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-import { findCatalogProblems } from '@venizia/dev-configs/checks';
+import { CatalogCheck } from '@venizia/dev-configs/checks';
 
 import { makeScratch } from '../../scratch';
 
@@ -38,7 +38,7 @@ describe('findCatalogProblems', () => {
       },
     });
 
-    const report = await findCatalogProblems({ root });
+    const report = await CatalogCheck.find({ root });
 
     expect(report.problems).toEqual([]);
     expect(report.referenced).toBe(1);
@@ -52,7 +52,7 @@ describe('findCatalogProblems', () => {
       },
     });
 
-    const report = await findCatalogProblems({ root });
+    const report = await CatalogCheck.find({ root });
 
     expect(report.problems).toHaveLength(1);
     expect(report.problems[0]?.file).toBe('packages/a/package.json');
@@ -70,7 +70,7 @@ describe('findCatalogProblems', () => {
     };
     const root = makeRoot({ files });
 
-    const report = await findCatalogProblems({
+    const report = await CatalogCheck.find({
       root,
       globs: ['presets/*/preset.json'],
       presetPrefix: 'presets/',

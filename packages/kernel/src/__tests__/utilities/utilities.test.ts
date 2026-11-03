@@ -1,66 +1,58 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  isBrowser,
-  isDefined,
-  isNumber,
-  isObject,
-  isString,
-  isValidDate,
-} from '@/utilities/boolean';
-import { rejectionOf } from '@/__tests__/rejection';
-import { toDataUrl } from '@/utilities/file';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { BrowserUtility, FileUtility, ValueUtility } from '@/utilities';
 
 describe('boolean utilities', () => {
   test('isDefined rejects null and undefined only', () => {
-    expect(isDefined(null)).toBe(false);
-    expect(isDefined(undefined)).toBe(false);
-    expect(isDefined(0)).toBe(true);
-    expect(isDefined('')).toBe(true);
-    expect(isDefined(false)).toBe(true);
-    expect(isDefined(NaN)).toBe(true);
-    expect(isDefined({})).toBe(true);
-    expect(isDefined([])).toBe(true);
+    expect(ValueUtility.isDefined(null)).toBe(false);
+    expect(ValueUtility.isDefined(undefined)).toBe(false);
+    expect(ValueUtility.isDefined(0)).toBe(true);
+    expect(ValueUtility.isDefined('')).toBe(true);
+    expect(ValueUtility.isDefined(false)).toBe(true);
+    expect(ValueUtility.isDefined(NaN)).toBe(true);
+    expect(ValueUtility.isDefined({})).toBe(true);
+    expect(ValueUtility.isDefined([])).toBe(true);
   });
 
   test('isString accepts string values and rejects non-string values', () => {
-    expect(isString('ARDOR')).toBe(true);
-    expect(isString('')).toBe(true);
-    expect(isString(123)).toBe(false);
-    expect(isString(null)).toBe(false);
-    expect(isString(undefined)).toBe(false);
-    expect(isString({})).toBe(false);
-    expect(isString([])).toBe(false);
+    expect(ValueUtility.isString('ARDOR')).toBe(true);
+    expect(ValueUtility.isString('')).toBe(true);
+    expect(ValueUtility.isString(123)).toBe(false);
+    expect(ValueUtility.isString(null)).toBe(false);
+    expect(ValueUtility.isString(undefined)).toBe(false);
+    expect(ValueUtility.isString({})).toBe(false);
+    expect(ValueUtility.isString([])).toBe(false);
   });
 
   test('isNumber accepts numbers and numeric strings while rejecting NaN and alphabetic strings', () => {
-    expect(isNumber({ value: 123 })).toBe(true);
-    expect(isNumber({ value: 0 })).toBe(true);
-    expect(isNumber({ value: -45.67 })).toBe(true);
-    expect(isNumber({ value: '123' })).toBe(true);
-    expect(isNumber({ value: '0' })).toBe(true);
-    expect(isNumber({ value: '-45.67' })).toBe(true);
-    expect(isNumber({ value: NaN })).toBe(false);
-    expect(isNumber({ value: 'abc' })).toBe(false);
-    expect(isNumber({ value: null })).toBe(false);
-    expect(isNumber({ value: undefined })).toBe(false);
+    expect(ValueUtility.isNumber({ value: 123 })).toBe(true);
+    expect(ValueUtility.isNumber({ value: 0 })).toBe(true);
+    expect(ValueUtility.isNumber({ value: -45.67 })).toBe(true);
+    expect(ValueUtility.isNumber({ value: '123' })).toBe(true);
+    expect(ValueUtility.isNumber({ value: '0' })).toBe(true);
+    expect(ValueUtility.isNumber({ value: '-45.67' })).toBe(true);
+    expect(ValueUtility.isNumber({ value: NaN })).toBe(false);
+    expect(ValueUtility.isNumber({ value: 'abc' })).toBe(false);
+    expect(ValueUtility.isNumber({ value: null })).toBe(false);
+    expect(ValueUtility.isNumber({ value: undefined })).toBe(false);
   });
 
   test('isObject accepts plain objects and rejects arrays and null', () => {
-    expect(isObject({ value: {} })).toBe(true);
-    expect(isObject({ value: { framework: 'ARDOR' } })).toBe(true);
-    expect(isObject({ value: [] })).toBe(false);
-    expect(isObject({ value: ['ARDOR', 'IGNIS'] })).toBe(false);
-    expect(isObject({ value: null })).toBe(false);
-    expect(isObject({ value: undefined })).toBe(false);
-    expect(isObject({ value: 'ARDOR' })).toBe(false);
-    expect(isObject({ value: 42 })).toBe(false);
+    expect(ValueUtility.isObject({ value: {} })).toBe(true);
+    expect(ValueUtility.isObject({ value: { framework: 'ARDOR' } })).toBe(true);
+    expect(ValueUtility.isObject({ value: [] })).toBe(false);
+    expect(ValueUtility.isObject({ value: ['ARDOR', 'IGNIS'] })).toBe(false);
+    expect(ValueUtility.isObject({ value: null })).toBe(false);
+    expect(ValueUtility.isObject({ value: undefined })).toBe(false);
+    expect(ValueUtility.isObject({ value: 'ARDOR' })).toBe(false);
+    expect(ValueUtility.isObject({ value: 42 })).toBe(false);
   });
 
   test('isValidDate validates dates and timestamp inputs while rejecting invalid dates', () => {
-    expect(isValidDate({ value: new Date() })).toBe(true);
-    expect(isValidDate({ value: '2024-01-01T00:00:00.000Z' })).toBe(true);
-    expect(isValidDate({ value: 1704067200000 })).toBe(true);
-    expect(isValidDate({ value: 'invalid-date-string' })).toBe(false);
+    expect(ValueUtility.isValidDate({ value: new Date() })).toBe(true);
+    expect(ValueUtility.isValidDate({ value: '2024-01-01T00:00:00.000Z' })).toBe(true);
+    expect(ValueUtility.isValidDate({ value: 1704067200000 })).toBe(true);
+    expect(ValueUtility.isValidDate({ value: 'invalid-date-string' })).toBe(false);
   });
 
   test('isBrowser is false without a window', () => {
@@ -68,7 +60,7 @@ describe('boolean utilities', () => {
     const originalWindow = Reflect.get(globalThis, 'window');
     Reflect.deleteProperty(globalThis, 'window');
 
-    expect(isBrowser()).toBe(false);
+    expect(BrowserUtility.isBrowser()).toBe(false);
 
     if (hadWindow) {
       Reflect.set(globalThis, 'window', originalWindow);
@@ -125,7 +117,7 @@ describe('file utilities', () => {
       );
 
       const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
-      const dataUrl = await toDataUrl({ blob });
+      const dataUrl = await FileUtility.toDataUrl({ blob });
 
       expect(dataUrl.startsWith('data:text/plain')).toBe(true);
       expect(dataUrl.endsWith(`;base64,${btoa('ARDOR test content')}`)).toBe(true);
@@ -135,7 +127,7 @@ describe('file utilities', () => {
   test('toDataUrl rejects when the reader fails', async () => {
     await withStubReader({ fail: true, text: '' }, async () => {
       const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
-      const error = await rejectionOf(toDataUrl({ blob }));
+      const error = await RejectionHelper.rejectionOf({ task: FileUtility.toDataUrl({ blob }) });
 
       expect((error as Error).message).toBe('read failed');
     });

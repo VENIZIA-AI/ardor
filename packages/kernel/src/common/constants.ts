@@ -1,7 +1,6 @@
 export class App {
   static readonly TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
   static readonly TIMEZONE_OFFSET = -(new Date().getTimezoneOffset() / 60);
-  static readonly DEFAULT_LOCALE = 'en.UTF-8';
   static readonly DEFAULT_DEBOUNCE_TIME = 500;
 }
 
@@ -80,6 +79,11 @@ export class RequestTypes {
   }
 }
 
+export class StorageAreas {
+  static readonly LOCAL = 'local';
+  static readonly SESSION = 'session';
+}
+
 export class RequestBodyTypes {
   static readonly NONE = 'none';
   static readonly FORM_DATA = 'form-data';
@@ -131,13 +135,10 @@ export class HeaderConstants {
   static readonly TIMEZONE_OFFSET = 'timezone-offset';
 
   static readonly REQUEST_TRACING_ID = 'x-request-id';
-  static readonly REQUEST_DEVICE_INFO = 'x-device-info';
   static readonly REQUEST_CHANNEL = 'x-request-channel';
 
   static readonly REQUEST_COUNT_DATA = 'x-request-count';
   static readonly RESPONSE_COUNT_DATA = 'x-response-count';
-
-  static readonly RESPONSE_FORMAT = 'x-response-format';
 
   static readonly TEXTUAL_CONTENT_TYPE_RE =
     /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;

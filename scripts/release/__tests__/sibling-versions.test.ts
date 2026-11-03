@@ -103,9 +103,9 @@ describe('the packed manifest of each package', () => {
     });
     const exitCode = await proc.exited;
     if (exitCode !== 0) {
-      throw new Error(
-        `bun pm pack failed in ${opts.dir}: ${await new Response(proc.stderr).text()}`,
-      );
+      const stderr = await new Response(proc.stderr).text();
+
+      throw new Error(`bun pm pack failed in ${opts.dir}: ${stderr}`);
     }
 
     const tarball = readdirSync(out).find((file) => file.endsWith('.tgz'));
@@ -116,7 +116,8 @@ describe('the packed manifest of each package', () => {
     const tar = Bun.spawn(['tar', '-xzOf', join(out, tarball), 'package/package.json'], {
       stdout: 'pipe',
     });
-    return JSON.parse(await new Response(tar.stdout).text()) as TManifest;
+    const result = await new Response(tar.stdout).text();
+    return JSON.parse(result) as TManifest;
   };
 
   test('names each sibling at the exact version it is released with, and no protocol survives', async () => {
@@ -125,7 +126,8 @@ describe('the packed manifest of each package', () => {
         readFileSync(join(PACKAGES_DIR, dir, 'package.json'), 'utf8'),
       ) as TManifest;
       if (!manifest.private) {
-        packed.set(manifest.name, await pack({ dir }));
+        const result = await pack({ dir });
+        packed.set(manifest.name, result);
       }
     }
 

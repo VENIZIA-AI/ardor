@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Release and publish
-description: How to run the manually-triggered NPM Release workflow, which releases the ARDOR packages in one run, and validate it against a consumer before publishing.
+description: How to run the manually-triggered Release workflow, which releases the ARDOR packages in one run, and validate it against a consumer before publishing.
 resource: .github/workflows/package-release.yml
 tags: [process, release, ci]
 ---
@@ -16,15 +16,17 @@ tags: [process, release, ci]
 - [Version line](#version-line)
 - [Force-update the workspace before install](#force-update-the-workspace-before-install)
 - [Gates, bump, publish, record](#gates-bump-publish-record)
+- [GitHub Releases](#github-releases)
 - [Trusted publishing (no npm token)](#trusted-publishing-no-npm-token)
 - [The VULCAN preset (ardor only)](#the-vulcan-preset-ardor-only)
 - [Consumer measurement](#consumer-measurement)
-- [Changelog entry required](#changelog-entry-required)
+- [Changelog entry for a user-visible release](#changelog-entry-for-a-user-visible-release)
 <!-- okf:generated:contents end -->
 
 ## What triggers it
 
-The "NPM Release" workflow (`.github/workflows/package-release.yml`) is a `workflow_dispatch` only -
+The "Release" workflow (`.github/workflows/package-release.yml`; its file name and its job `NPM Release` are unchanged,
+npm trusted publishing and the environments refer to them) is a `workflow_dispatch` only -
 it never runs on push, tag, or PR. It is dispatched from the Actions tab, `gh workflow run`, or
 `scripts/release/release.ts` (below). **One dispatch is one run: it releases every package it names, in
 dependency order, at one version.** The inputs:
@@ -35,16 +37,26 @@ dependency order, at one version.** The inputs:
 - `version` (optional): an explicit version, `x.y.z` or `x.y.z-pre`. When set it replaces `build_mode`
   (see [Version line](#version-line)).
 - `issue` (optional): the issue number the release commits serve; each commit subject is prefixed `[#N]`.
+- `label` (optional): the run title, filled in by `release.ts` (see below); leave it empty for a dispatch by hand.
 - `heal_only` (optional): run only the `next` tag heal, publish nothing.
 
-The run name is `packages: <list> | release: <version or mode> | <commit>`.
+**The run title** is `Release · <label>`, for example `Release · 0.4.6-1 prerelease · kernel,react,admin,ardor · #450 · 207ce41`
+(version, kind, packages, issue, short commit). A workflow names its run before the plan job exists, and an expression
+can neither work these out nor cut a commit short, so `release.ts` works the label out (`ReleasePlan.labelOf`) and sends it,
+and the plan job passes it to `release-plan.ts plan --label` (through a step env, never through the script text), which
+refuses a label that is not the one it computes (`ReleasePlan.labelProblems`, which writes control and bidirectional characters as escapes in the log). The title cannot name a release the run does
+not use (a version, kind, issue or commit); the packages are the ones dispatched. It is only what was sent until the plan job has passed, so a queued or refused run shows that. A dispatch by hand has no label: the title is `Release · <version or mode> · <packages> · #<issue> · <whole commit>`.
+A heal-only run has no plan job, so it ignores a label: `Release · heal the next tags · <commit>`.
+`release.ts` sends a label only to a branch whose workflow declares the input (`ReleasePlan.declaresLabel`): GitHub refuses
+an input the ref's workflow does not know, so a stable dispatched on `main` before the Sync that brings the input is titled by
+its inputs. The guards `dispatchedCommit` (C17) and `labelVerified` (C33) in `release-gates.test.ts` pin both.
 
 **The dispatch names the ref.** GitHub runs a `workflow_dispatch` from the copy of the workflow on
 the dispatched ref, checks out that ref, and validates the inputs against it. `gh workflow run`
 defaults to the DEFAULT branch, `main`, so an unpinned run would build `main`: a prerelease dispatched there is refused by the plan job, and a stable needs it. `scripts/release/release.ts` passes `--ref develop` for a prerelease and `--ref main` for a stable, and a hand-run dispatch needs the right one
 too. Every job checks out the dispatched commit (`github.sha`), never a branch name, and the run name carries it.
 
-**The jobs of the workflow.** A release is four jobs and a heal is one.
+**The jobs of the workflow.** A release is four jobs, then the atlas pairs, and a heal is one.
 
 | Job | Runs | What it does |
 |---|---|---|
@@ -52,9 +64,10 @@ too. Every job checks out the dispatched commit (`github.sha`), never a branch n
 | `test` | after `plan` | The gates that need no registry credential: the workspace links and one copy of every `@venizia/*` package (`release-gates.ts links` and `single-copy`, right after the install: a workspace member that does not declare an IGNIS package itself gets the stable copy for its peer range, which excludes a prerelease, and the build then fails on two sets of inversion types), build, lint, package tests, repository script tests, purity, catalog, and the preset smoke against the pinned VULCAN when the run holds `ardor`, each looped over the packages of the run. It refreshes the catalog with the plan's `catalog_tag`. It holds no secret and cannot write. |
 | `approve` | only for a stable; after `plan` and `test` | The one human stop: environment `release-approval` (reviewer: the owner; branch: `main` only), `permissions: {}`, one `echo`. Its name carries the version. A prerelease skips it and nobody is asked. |
 | `publish` | after `plan`, `test` and `approve` (skipped only for a prerelease) | Environment `npm-release` (no reviewers), `contents: write`, `id-token: write`. For a stable its first step stops the run when `main` is not at the dispatched commit or `develop` is not at the `develop_sha` the plan tested. It takes the plan's version and kind, never works them out again, and passes them to the chain with `--target-branch "$GITHUB_REF_NAME"`; the chain stops when they disagree. The `if` is written out so that a skipped `approve` on a stable stops the job. |
+| `atlas-index` | after `plan` and `publish`, also when `publish` failed (the tags it pushed stand); `contents: write` only, no `id-token`, no environment; `continue-on-error`, so it never fails the run | Publishes the signed atlas pair of each tag the run pushed (`<package>-v<version>`, found in the clone: full history, every tag), through VULCAN's action pinned by the same commit as in `deploy-docs.yml`, with the Actions secret `ATLAS_INDEX_KEY`, which only this job reads. The Actions token starts no workflow, so `deploy-docs.yml` never sees a release commit or tag; VULCAN's own release does the same for its one tag, as a step of its `publish` job; ARDOR has up to four tags and puts it in a job of its own, so the key never shares a job with `id-token: write`. One step for each of the four packages (the action takes one ref); a package the run did not tag has no step run. |
 | `heal-next` | only for `heal_only`, on `develop` or `main` | Moves a stale `next` tag; publishes nothing. Same environment and `id-token` as `publish`. |
 
-The clean-install gate is not in the `test` job: it installs a package with its siblings from the registry, and before the bump those are the old versions. The chain runs it after the sibling is out. Workflow permissions are read-only; only `publish` has `contents: write`, and only `publish` and `heal-next` hold `id-token: write` and name `npm-release` (see [Trusted publishing](#trusted-publishing-no-npm-token)). There is no npm token and no secret in the workflow. `bun`, Node and npm have exact versions and every action is pinned by its full commit with the tag in a comment: a bump is a deliberate pull request. `scripts/release/__tests__/release-gates.test.ts` reads the workflow and `release-chain.ts` as text and fails when one guard is removed (one mutation per guard, among them the job graph, the single approval, the publish condition, the branch check and the plan's merge trial); it stops accidents, not an author who removes the guard and the test together. Known limit: the `test` and `publish` jobs each refresh the catalog once, so the tested tree is the published tree only if no IGNIS version appears between them.
+The clean-install gate is not in the `test` job: it installs the packages as they are after the bump. The chain runs it once, over the tarballs of the run, before the first publish. Workflow permissions are read-only; only `publish` and `atlas-index` have `contents: write`, and only `publish` and `heal-next` hold `id-token: write` and name `npm-release` (see [Trusted publishing](#trusted-publishing-no-npm-token)). There is no npm token in the workflow, and the one secret is `ATLAS_INDEX_KEY` (the key that signs an atlas pair), read by the four steps of `atlas-index` only. `bun`, Node and npm have exact versions and every action is pinned by its full commit with the tag in a comment: a bump is a deliberate pull request. `scripts/release/__tests__/release-gates.test.ts` reads the workflow and `release-chain.ts` as text and fails when one guard is removed (one mutation per guard, among them the job graph, the single approval, the publish condition, the branch check and the plan's merge trial); it stops accidents, not an author who removes the guard and the test together. Known limit: the `test` and `publish` jobs each refresh the catalog once, so the tested tree is the published tree only if no IGNIS version appears between them.
 
 **The approval.** A prerelease needs none: the owner's dispatch is the only act. A stable waits for one approval on `release-approval`, given in the run on GitHub (`gh run view <id> --web`); nothing else waits after the click, not the chain and not the merge back. `release-approval` and `npm-release` are GitHub settings that only the owner writes, and the workflow line is what makes a job subject to them. Merge nothing into `main` or `develop` while a stable run is open: if either moves between the plan and the publish, the first step of `publish` stops it before anything is published, and the next dispatch needs a second click.
 
@@ -133,7 +146,7 @@ bun run --filter "@venizia/*" force-update highest
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
 - Every workspace member declares the IGNIS packages it builds on as `catalog:` devDependencies, next to the
-  peer range. The peer range (`^0.4.1`) has no prerelease part, so it never matches `0.4.5-0`: a member
+  peer range. A peer range with no prerelease part (such as `^0.4.1`) never matches `0.4.5-0`: a member
   that lists the package only as a peer gets the stable copy from bun, beside the prerelease the other
   members use, and two copies of inversion are two sets of types (run 40903260601, issue #434). The Test
   job runs `release-gates.ts single-copy` right after the install; it walks what the root and each
@@ -145,7 +158,7 @@ bun run --filter "@venizia/*" force-update highest
   older install left in a member's `node_modules`, which `bun install` does not prune. It is marked
   `stale install` and the advice is a clean install, not a declaration; a version the lock holds keeps
   the catalog advice (issue #445).
-- `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree; run it before every dispatch (see [Testing](testing.md)).
+- `make gates-refreshed` replays this refresh, the install and `make gates` in a scratch copy of the tree, then `make clean-install` (the four packages packed together and installed from the live registry, which the Test job does not run: a peer range that mixes a prerelease with a stable one gives two copies of an IGNIS package there, as in issue #488); run it before every dispatch (see [Testing](testing.md)).
 
 ## Gates, bump, publish, record
 
@@ -154,14 +167,14 @@ publish, and only then any git write. The `publish` job does its own setup (chec
 `scripts/release/__tests__/release-gates.test.ts`); the chain calls its command line, and
 `scripts/preset/preset-smoke.ts` imports the same functions.
 
-**Before anything runs**, the chain reads each package fresh (the registry with `--prefer-online`, and `git ls-remote` for the tag): a package whose manifest and registry and tag are all at the version is skipped; a version on npm while the manifest is below it, a manifest at the version that is not on npm, or a version on npm without its tag stops the run before anything changes, and the report names the repair.
+**Before anything runs**, the chain reads each package fresh (the registry with `--prefer-online`, and `git ls-remote` for the tag): a package whose manifest and registry and tag are all at the version is skipped; a manifest at the version that is not on npm stops the run before anything changes, and the report names the repair. A version on npm while the manifest is below it (published by an earlier dispatch whose release commit never landed) is only bumped and recorded, never published twice; a manifest at the version and on npm without its tag only gets the tag, on the release commit found in the history.
 
 **Phase A, before the first publish, for every package of the run** (see [Build system](/process/build-system.md) and [Makefile targets](/reference/makefile-targets.md)):
 
 1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball. (The Test job also runs `single-copy`, once, before the build: see the force-update section.)
 2. `make <package>` - the build.
 3. `release-gates.ts artifacts` - every file the package's `exports` map names exists (derived from the map, never a hand-written list).
-4. `release-gates.ts pack` - the tarball is packed once, as a check before any mutation (the tarball that is published is packed again in phase B).
+4. `release-gates.ts pack` - the tarball is packed once, as a check before any mutation (the tarball that is published is packed again in phase P).
 5. `release-gates.ts protocols` - its manifest has no `catalog:` or `workspace:` left.
 6. `release-gates.ts registry` - every runtime dependency can be installed (some published version satisfies its range). The packages of the run are named in `--chain-released` and checked against their workspace version, because npm can take minutes to list a sibling the run publishes seconds earlier.
 
@@ -169,33 +182,54 @@ For a **stable** a seventh check follows `protocols`: `release-gates.ts stable-d
 
 The preset smoke for `ardor` is not a step of the `publish` job: the `test` job runs it first (below). A phase A failure publishes nothing.
 
-**Phase B, one package at a time** (the first one also makes the tarball folder, because `bun pm pack --filename` does not):
+**Phase P, prepare every package, publish nothing** (the first package also makes the tarball folder, because `bun pm pack --filename` does not). For each package of the run, in order:
 
-1. `make clean-install-<package>` - pack the package, install it into empty sandboxes (hoisted and isolated) with its siblings from the registry, and import every entry with Bun, Node ESM and a browser build. It runs after the previous package's tarball answered 200, so it installs the sibling versions this run published.
-2. `npm version <version> --no-git-tag-version --workspaces-update=false` inside the package folder, then (ardor) `bun scripts/preset/vulcan-preset.ts`, and for a stable `release-gates.ts stable-deps packages/ardor/dist/presets` (the preset names only stable versions).
-3. **Pack the tarball to publish.** `bun pm pack --quiet --filename <tarballs>/<package>.tgz` (one folder, `.agents/local/tmp/release-tarballs`, absolute because npm reads a relative `.agents/x/y.tgz` as a package spec), after the bump and the preset write so it carries both. Its manifest goes through `release-gates.ts protocols` and must carry the version this run releases; the sha256 of the file is recorded and checked again just before the publish. Only `bun pm pack` resolves `catalog:` and `workspace:`: npm packs those specifiers verbatim and the package cannot be installed.
-4. **Publish first.** `npm publish <tarball> --access public --tag <npm tag> --ignore-scripts --provenance`, where the tag is `latest` for a stable version and `next` for one with a pre-release part (`scripts/release/release-version.ts tag`). The package is marked "publish attempted" before the call, because a publish that succeeds and loses its response still leaves npm holding the version. There is no `bun publish`: bun has no trusted publishing.
-5. Wait until the tarball answers 200 (`waitForTarball`).
-6. `release-gates.ts tag-highest --published <name>@<version>` (non-fatal, over OIDC) runs `npm dist-tag add` for `highest` only when the version is semver-greater than the current `highest`: a stable `0.4.9` published after `0.4.10-0` leaves it alone. Then **the `next` tag is kept at or above
+1. `npm version <version> --no-git-tag-version --workspaces-update=false` inside the package folder, then (ardor) `bun scripts/preset/vulcan-preset.ts`, and for a stable `release-gates.ts stable-deps packages/ardor/dist/presets` (the preset names only stable versions). Every package is bumped before the preset names their versions.
+2. **Pack the tarball to publish.** `bun pm pack --quiet --filename <tarballs>/<package>.tgz` (one folder, `.agents/local/tmp/release-tarballs`, absolute because npm reads a relative `.agents/x/y.tgz` as a package spec), after the bump and the preset write so it carries both. Its manifest goes through `release-gates.ts protocols` and must carry the version this run releases, and every ARDOR sibling it pins must be exactly the version that sibling has in the workspace now (bun writes that into the tarball, so a different pin means the pack did not see the bump) and must not be a package released after it. The sha256 of the file is recorded.
+
+Then **one clean-install gate** for the whole run: `bun scripts/checks/clean-install/cli.ts kernel react admin ardor` packs the packages again from the tree and installs them into empty sandboxes (hoisted and isolated) with each other as local tarballs, so no sibling is read from the registry and nothing has to be served yet, and imports every entry with Bun, Node ESM and a browser build. A package that an earlier dispatch already published is not in the list, so it is read from the registry: the chain waits until its tarball answers before the gate runs. Nothing is published until all of phase P has passed: a stop here leaves npm as it was.
+
+**Phase B, publish every package, in order, and wait for nothing.** For each package: the sha256 of the tarball is checked against the recorded one (a changed file stops the run), then **publish first**: `npm publish <tarball> --access public --tag <npm tag> --ignore-scripts --provenance`, where the tag is `latest` for a stable version and `next` for one with a pre-release part (`scripts/release/release-version.ts tag`). Before the call each ARDOR sibling the packed manifest pins must already be published by this run (an earlier package of the run) or be on npm (a package outside the run). The package is marked "publish attempted" before the call, because a publish that succeeds and loses its response still leaves npm holding the version. There is no `bun publish`, no token and no `NODE_AUTH_TOKEN`: the job signs in with its OIDC identity and npm writes the provenance. The registry lists a version before its tarball answers, and that is why no package waits here: a dependent package needs its sibling accepted by npm, not yet served. In run 41413104236 (0.4.7-1) the wait took about 5 minutes 3 seconds for each of the four packages, 20 of the 22 minutes of the chain.
+
+**Phase R, record each published package, in order** (the first package that gets a release commit also makes the branch `release-<run id>`):
+
+1. Wait until the tarball answers 200 (`waitForTarball`). The first wait absorbs most of the lag: the others were published seconds after it, so their waits end soon after. A tag still means installable.
+2. `release-gates.ts tag-highest --published <name>@<version>` (non-fatal, over OIDC) runs `npm dist-tag add` for `highest` only when the version is semver-greater than the current `highest`: a stable `0.4.9` published after `0.4.10-0` leaves it alone. Then **the `next` tag is kept at or above
    `latest`** for every `@venizia/ardor*` package, not only the one released (`release-gates.ts heal-next --published <name>@<version> --tag <tag>`;
    a missing or semver-lower `next` is moved to `latest`; non-fatal and loud). The package just published is passed
    in and counts as the current value of its tag: npm can serve the old tags for minutes after a publish, and the
    first live release (ardor 0.3.1) moved `next` to the stale `latest` it read back. The other packages are read from the registry. Phat's rule: `bun add pkg@next`
    never installs something older than `bun add pkg`. A failure of either is a warning in the report, never a stop.
-7. Commit `package.json` AND `bun.lock` with `chore(<package>): release v<version> [<version>]` (prefixed `[#N]` when the `issue` input is set), on a branch `release-<run id>` made before the first commit. The lockfile is re-synced in a scratch copy of HEAD
+3. Commit `package.json` AND `bun.lock` with `chore(<package>): release v<version> [<version>]` (prefixed `[#N]` when the `issue` input is set). The lockfile is re-synced in a scratch copy of HEAD
    (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
    force-updated ranges of the build leaking into the commit. Push `HEAD:<target branch>` (`develop` for a prerelease, `main` for a stable). **The chain never rebases:** a push rejected because the branch moved stops the run, since a rebase would pull commits the tests never saw into the tree that later packages are built and published from.
-8. Create and push an annotated tag `<package>-v<version>`, tried three times, 10 s and 20 s apart. Its message is `<name> v<version>` and a line `built on: <@venizia/* catalog entry>=<version>, ...`, read from the refreshed catalog with the range prefix (`^`, `~`) dropped: the stable plan reads that line of the prerelease it promotes to check that IGNIS has a stable at least as new. The first prerelease tag (`ardor-v0.4.6-0`) holds the ranges (`^0.4.6-0`), so the plan drops a leading `^` or `~` when it reads the line (issue #439).
+4. Create and push an annotated tag `<package>-v<version>`, tried three times, 10 s and 20 s apart. Its message is `<name> v<version>` and a line `built on: <@venizia/* catalog entry>=<version>, ...`, read from the refreshed catalog with the range prefix (`^`, `~`) dropped: the stable plan reads that line of the prerelease it promotes to check that IGNIS has a stable at least as new.
+
+A stop in phase P publishes nothing. A stop in phase B (a failed publish or a changed tarball) still runs phase R for the packages already published, so git keeps up with npm as far as it can, and then reports the stop; the same version dispatched again records the rest. A stop in phase R reports the package that stopped and the ones still waiting for their record. The dispatch again is the repair in every case: the chain classifies each package fresh (above) and does only what is missing.
 
 **Phase C, a stable only: the merge back.** After the last package is tagged (or when every package was already released), one run-level step merges `main` back into `develop`. It fetches `develop` and is **skipped** when `develop` already holds the last release commit. Otherwise it adds a throwaway worktree of `origin/develop`, copies `scripts/release/merge-back.ts` from this checkout, runs `apply --from <last release commit> --repo <worktree>` (see [The merge back into develop](#the-merge-back-into-develop)), pushes `HEAD:develop` from the worktree and removes it. A rejected push stops the run; nothing is rebased or forced.
 
-So after any stop git equals the registry: a package has its commit and its tag, or it was not published. One run leaves one commit and one tag per package.
+After a stop in phase P or B git equals the registry as far as the run got: every published package has its commit and its tag, or the stop was in the record and the report names the package that waits. One run leaves one commit and one tag per package.
 
-**When a run stops**, nothing is repaired. The chain writes the state of every package to a file after each step and the last step of the job, `Report the run`, runs `release-chain.ts report` with `if: always()`: it prints the report and adds it to the step summary, also when the job was cancelled or timed out. The report names the package, the step, the packages already done and the repair for one of five states: nothing published (fix the cause and dispatch again with `--version`); a publish attempted with an unknown outcome (confirm with `npm view <name> versions`); published but not committed or not pushed (bump the manifest by hand, or pull and push); committed and pushed but not tagged (create the tag by hand); and, for a stable, **"Report - published, merge back not done"**: every package is released and tagged, only the merge back is missing, and the report gives the repair (dispatch the same version again, which runs only the merge back, or the three commands by hand). Every report names the branch the run pushes to. The workflow never force-pushes `develop` or `main`. The state file also records `mergeBack` (`none` until it is done or found already done).
+**When a run stops**, nothing is repaired by force; the same version dispatched again does what is missing. The chain writes the state of every package to a file after each step and the last step of the job, `Report the run`, runs `release-chain.ts report` with `if: always()`: it prints the report and adds it to the step summary, also when the job was cancelled or timed out. The report names the package, the step, the packages already done and the repair for one of five states: nothing published (fix the cause and dispatch the same version again); a publish attempted with an unknown outcome (confirm with `npm view <name> versions`); published but not committed or not pushed (dispatch the same version again: the chain bumps it and records it without a second publish; or by hand, bump the manifest, or pull and push); committed and pushed but not tagged (dispatch the same version again: the chain writes the tag on the release commit; or create it by hand), with the line "Published and not yet recorded in git" naming the other packages that wait for their record; and, for a stable, **"Report - published, merge back not done"**: every package is released and tagged, only the merge back is missing, and the report gives the repair (dispatch the same version again, which runs only the merge back, or the three commands by hand). Every report names the branch the run pushes to. The workflow never force-pushes `develop` or `main`. The state file also records `mergeBack` (`none` until it is done or found already done).
 
 Only one release runs at a time (`concurrency: npm-release`). A dispatch with the `heal_only` input runs just the
 heal (a second job, `Heal next tags`): it publishes nothing, ignores the other inputs, and is how
 a stale `next` is fixed by hand. It moves a dist-tag, so it is a trusted-publisher action too: the same environment, `id-token: write` and `contents: read`, and the same exact npm.
+
+## GitHub Releases
+
+Every release run, prerelease and stable, makes one GitHub Release for the run, from the run that follows this change on; no Release is made for an older version. The step `Create the GitHub Release` of the publish job runs `scripts/release/github-release.ts create --version "$PLAN_VERSION" --kind "$PLAN_KIND" --packages "$PACKAGES"` after the chain. It is a port of VULCAN's S9.
+
+| | A stable | A prerelease |
+|---|---|---|
+| The tag | the tag of the last package of the run: `ardor-v<version>` for a full run, the umbrella | the same |
+| Title | `ARDOR <version>` | `ARDOR <version>` |
+| Flag | Latest only for a run that ends in the umbrella `ardor` and only when no higher stable `ardor-v*` tag exists (`--latest=false` otherwise, so a run of the first packages never moves Latest) | Pre-release, never Latest |
+| Body | the changelog entries added since the previous stable tag, with the front matter, the date heading and an `ARDOR X.Y.Z:` prefix removed; `No change for users of the packages in this release.` when there is none | `Install: npm install @venizia/ardor@next` (the last package of the run) and up to 30 `[#N]` subjects since the previous tag, fenced, without the release commits |
+| Both | a `Packages` list of this run (a resume run lists only the packages it released), each linked to its npm version page | |
+
+A tag that already has a Release is skipped; so is a tag that is not on the remote (the chain stopped before it, or an earlier run made it: a re-dispatch after a failed Release step makes the missing Release). Only a 404 means that: another answer of GitHub (a missing right, a server error) is a failure in the summary. A tag whose version is not plain semver (`ardor-v9zzz`) names no version, and a version that is not plain semver is refused. A stable's notes are cut at 100000 characters and a subject at 300. The step is `continue-on-error`, bounded to 5 minutes, runs even when the chain stopped (the tags it made stand) and uses the job token: a failure is written to the run summary and never fails or undoes a publish. The script never touches the `atlas-index` release. `--dry-run` prints the tag, whether it would be Latest and the notes, and writes nothing. The guard `githubRelease` (C34) in `release-gates.test.ts` pins the step; `github-release.test.ts` runs the script on a real repository with a stand-in for `gh`.
 
 ## Trusted publishing (no npm token)
 
@@ -209,7 +243,7 @@ A failed first run is safe: nothing is published before the first package authen
 
 ## The VULCAN preset (ardor only)
 
-Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `publish` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`. A VULCAN bump moves the pin in four places in one change: the root `package.json`, the lockfile, `VULCAN_CMD` and the commit with its `# v<version>` comment of the VULCAN action in `atlas-index.yml` (two tests read them). A 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
+Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test` job, before the `publish` job and so before any bump (it packs the packages and checks an app created from the packed preset), and `bun scripts/preset/vulcan-preset.ts` writes `packages/ardor/dist/presets` in the chain, after the bump and before the pack. The smoke runs the VULCAN the root `package.json` pins (the workflow sets `VULCAN_CMD` to `bun x @venizia/vulcan@<that version>`; `preset-smoke.ts` defaults to the same), never `latest`. A VULCAN bump moves the pin in four places in one change: the root `package.json`, the lockfile, `VULCAN_CMD` and the commit with its `# v<version>` comment of the VULCAN action in the `atlas-index` job of `deploy-docs.yml` (the guards and `docs-workflow.test.ts` read them). A 404 on a `@venizia` tarball just after a publish is registry lag, and the smoke retries only that, six tries over about five minutes. Details: [ardor](/packages/ardor.md).
 
 ## Consumer measurement
 
@@ -227,11 +261,13 @@ project internally as BANA - rather than relying on the package's own test suite
    `IGNIS`/`Application` surface looks like. An undocumented error is a signal to fix the package,
    not the consumer.
 
-## Changelog entry required
+## Changelog entry for a user-visible release
 
-Every release - regardless of package or bump size - needs a changelog entry describing what
-changed and why, before or alongside the version bump commit. This is what lets a later `tsc` error
-in the consumer be traced back to an intended change instead of a regression. See
+A release that changes what a user of the published packages sees or can use needs a changelog entry
+describing what changed and what to do about it, before or alongside the version bump commit. This is what
+lets a later `tsc` error in the consumer be traced back to an intended change instead of a regression. A
+release of internal work only (release tooling, CI, refactors, tests) has no entry: see
+[Writing a changelog entry](/process/writing-a-changelog-entry.md) for what counts. See
 [Git workflow](/process/git-workflow.md) for where that entry lives in the commit flow and
 [Testing](/process/testing.md) for the test expectations a package must meet before it is a release
 candidate.

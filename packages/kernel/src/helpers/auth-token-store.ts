@@ -1,10 +1,12 @@
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import { type IAuthTokenRecord, LocalStorageKeys } from '@/common';
-import { Logger } from './logger';
 
 /** The one place that reads and writes the stored auth token, with the browser guard. */
 export class AuthTokenStore {
+  private static readonly logger = LoggerFactory.getLogger(['AuthTokenStore']);
+
   /** The stored token, or `undefined` when none is stored, it is unusable, or there is no `localStorage`. */
   static read(): IAuthTokenRecord | undefined {
     if (typeof localStorage === 'undefined') {
@@ -21,7 +23,7 @@ export class AuthTokenStore {
       return typeof token === 'object' && token !== null ? token : undefined;
     } catch (error) {
       // The name only: the message of a JSON parse error quotes the text it could not parse, the token.
-      Logger.getInstance({ scope: AuthTokenStore.name }).warn(
+      AuthTokenStore.logger.warn(
         '[read] The stored auth token is not valid JSON, ignoring it | error: %s',
         error instanceof Error ? error.name : typeof error,
       );

@@ -1,4 +1,5 @@
 import type { Store } from '@reduxjs/toolkit';
+import type { ILogger } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { AuthProvider, CoreAdminProps, DataProvider, Locale, ResourceProps } from 'ra-core';
@@ -67,22 +68,44 @@ export type IReactAdminAuthProvider = Required<
 > &
   Pick<AuthProvider, 'getIdentity' | 'canAccess'>;
 
+/**
+ * What `checkAuth` and `checkError` reject with, as ra-core reads it. `redirectTo: false` skips the
+ * redirect of `checkAuth`, `message: false` skips the notification, and `logoutUser: false` (`checkError`
+ * only) keeps the user logged in.
+ */
+export interface IAuthRejection {
+  redirectTo?: string | false;
+  logoutUser?: boolean;
+  message?: string | false;
+}
+
 export interface IAuthProvider extends IReactAdminAuthProvider {
   getRoles: (params?: unknown) => Promise<Set<string>>;
   /** `true` when the session was refreshed, `false` when there is no refresh to make. */
   refreshToken: () => Promise<boolean>;
 }
 
+/**
+ * The messages of one locale: an object, or a loader called the first time the locale is used, so a
+ * bundler splits the catalogue out of the boot bundle (`() => import('./vi')`, whose default export
+ * is the messages). A loader that fails leaves that locale on the English messages.
+ */
+export type TI18nSource = object | (() => Promise<object>);
+
 export interface II18nProviderOptions {
-  /** Messages by locale, merged over the English ones: a source may hold only the keys it relabels. */
-  i18nSources?: Record<string, object>;
+  /** Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed. */
+  i18nSources?: Record<string, TI18nSource>;
   languages?: Array<Locale>;
 }
 
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   container: Container;
 
-  enableDebug?: boolean;
+  /**
+   * The logger `useApplicationLogger()` returns. Absent, a console logger named after the application
+   * (IGNIS's, so a provider registered with `LoggerFactory.use` is the one behind it).
+   */
+  logger?: ILogger;
   reduxStore: Store;
   suspense: ReactNode;
 

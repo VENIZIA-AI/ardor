@@ -10,6 +10,7 @@ tags: [process, changelog, docs]
 <!-- okf:generated:contents start -->
 **Contents**
 
+- [What gets an entry](#what-gets-an-entry)
 - [What every entry needs](#what-every-entry-needs)
 - [Optional frontmatter](#optional-frontmatter)
 - [Template](#template)
@@ -19,12 +20,29 @@ An entry is a file in `docs/wiki/content/changelogs/` named `YYYY-MM-DD-<slug>.m
 (`/changelogs/`) is built from the entries themselves: add the file and it appears, grouped by year, with
 no table to edit. Copy the template below.
 
+## What gets an entry
+
+The changelog records only what affects the users of the published packages (`@venizia/ardor`,
+`-kernel`, `-react`, `-admin`) and what they can use. Ask: does a user see or do something different?
+
+| Gets an entry | Gets none |
+|---|---|
+| A new feature, API, hook, option or preset | Release tooling, CI and workflows, guards and gates |
+| Changed behaviour, or a breaking change with its upgrade step | A refactor with no behaviour change |
+| A bug fix a user could hit | Tests, agent rules and skills, the knowledge bundle, internal docs |
+| A security fix | Repository hygiene: formatting, lint setup, scripts, make targets, the wiki's own look |
+| A deprecation or a removal | A version promotion with no code change |
+
+A pull request with only the right-hand kind of change gets no entry, and a release of such work has none
+either. A mixed pull request gets an entry for the left-hand part only. Write the user's benefit and what
+to do about it, in a few lines; the implementation stays in the code and the knowledge bundle.
+
 ## What every entry needs
 
 | Part | Where | Rule |
 |---|---|---|
 | **Badge** | one `<Badge>` line under the first heading | Keep the ones that apply: New Feature, Enhancement, Bug Fix, Security, Behavior Change, Breaking Change. The first types the entry on the index and in the filters. |
-| **`packages:`** | frontmatter | The npm names whose code changed, from `packages[].name`; `[]` for repository tooling. `okf check --strict` fails an entry without the list. |
+| **`packages:`** | frontmatter | The npm names whose code changed, from `packages[].name`. An entry about no package is internal and has no place here. `okf check --strict` fails an entry without the list. |
 | **Upgrade note for a breaking change** | the `## Breaking changes` section | Who is affected, then Before and After code or numbered steps. Delete the section when nothing breaks. |
 | **Who is affected** | `## Who is affected` | Each audience, and whether it must act ("No action needed" where true). |
 
@@ -46,7 +64,7 @@ The title and the description (one plain sentence) are the entry's card on the i
 ---
 title: [Short, plain title - what a user would search for]
 description: [One sentence, plain - what changed and why it matters]
-# Mandatory: the npm names whose code changed in this release; [] for repository tooling.
+# Mandatory: the npm names whose code changed in this release.
 packages: ['@venizia/ardor']
 ---
 

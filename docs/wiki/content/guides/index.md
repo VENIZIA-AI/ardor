@@ -7,15 +7,21 @@ description: Getting started tutorials, core architecture concepts, and migratio
 
 ARDOR is the browser framework of [VENIZIA](https://venizia.ai). It structures ra-core applications inside an IGNIS inversion-of-control container. These guides take you from a first project to the core concepts and a migration path.
 
-ARDOR 0.4.3 gives you:
+ARDOR gives you:
 
 - **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
 - **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
 - **An HTTP repository** from IGNIS on `@venizia/ardor/repository`, which can share the data provider's token and 401 refresh through `getDataSourceAuth()`.
-- **Runtime configuration.** `getRuntimeConfig` reads `window.__APP_CONFIG__`, so one built image serves every environment; with `required: true` it throws an error that carries a code. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
+- **Runtime configuration.** `RuntimeConfig.get` reads `window.__APP_CONFIG__`, so one built image serves every environment; with `required: true` it throws an error that carries a code. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
 - **A VULCAN preset** that generates an admin with Tailwind, an nginx image (gzip, `/health`, security headers) and that runtime configuration.
 
 ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
+
+<WhereToStart :items="[
+  { title: 'Create a Project', text: 'Start a monorepo with an admin, or add one to a monorepo you have, with one VULCAN command.', href: '/guides/get-started/create-a-project' },
+  { title: 'Quickstart', text: 'Write a small admin by hand against a stub API: a datasource, a repository, a list page and a login.', href: '/guides/get-started/5-minute-quickstart' },
+  { title: 'Build an Admin', text: 'Create a complete administration console with list, create, edit and delete pages for one resource.', href: '/guides/tutorials/build-an-admin' },
+]" />
 
 <div class="guide-cards">
 <a href="./get-started/create-a-project" class="guide-card">
@@ -29,6 +35,10 @@ ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](
 <a href="./get-started/5-minute-quickstart" class="guide-card highlight">
   <h3>Quickstart</h3>
   <p>Write a small admin by hand against a stub API: a datasource, a repository, a list page and a login</p>
+</a>
+<a href="./get-started/vite-setup" class="guide-card">
+  <h3>Vite setup</h3>
+  <p>What an app needs in its Vite 8 config: the chunk order flag the preset sets, and buildInfoFile for an About page</p>
 </a>
 <a href="./tutorials/build-an-admin" class="guide-card">
   <h3>Build an Admin</h3>

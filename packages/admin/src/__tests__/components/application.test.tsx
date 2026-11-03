@@ -5,10 +5,13 @@ import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
+import type { TI18nSource } from '@/common';
 import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
+import { useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings } from '@venizia/ardor-kernel';
+import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
 const ReportList = () => {
@@ -16,10 +19,15 @@ const ReportList = () => {
   return <h1>{translate('reports.title')}</h1>;
 };
 
-const createContainer = (opts: { load: () => Promise<object>; withAuthProvider?: boolean }) => {
+const createContainer = (opts: {
+  load: () => Promise<object>;
+  withAuthProvider?: boolean;
+  list?: () => React.ReactElement;
+  i18nSources?: Record<string, TI18nSource>;
+}) => {
   const reports = Features.define({
     name: 'reports',
-    resources: [{ name: 'reports', list: ReportList }],
+    resources: [{ name: 'reports', list: opts.list ?? ReportList }],
     messages: { en: opts.load },
   });
 
@@ -37,7 +45,9 @@ const createContainer = (opts: { load: () => Promise<object>; withAuthProvider?:
   }
   container
     .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-    .toValue(new DefaultI18nProvider({}, [reports]).value(container));
+    .toValue(
+      new DefaultI18nProvider({ i18nSources: opts.i18nSources }, [reports]).value(container),
+    );
 
   return container;
 };
@@ -61,7 +71,8 @@ describe('ArdorApplication with features', () => {
     );
 
     expect(screen.getByText('loading')).toBeDefined();
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     expect(load).toHaveBeenCalledTimes(1);
   });
 
@@ -79,7 +90,55 @@ describe('ArdorApplication with features', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
+  });
+
+  test("mounts once the application's lazy messages of the initial locale are loaded", async () => {
+    const loadSource = mock(() => Promise.resolve({ ra: { action: { add: 'Add it' } } }));
+
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={createContainer({
+            load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+            i18nSources: { en: loadSource },
+          })}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('loading')).toBeDefined();
+    await screen.findByText('Monthly reports');
+    expect(loadSource).toHaveBeenCalledTimes(1);
+  });
+
+  test("mounts in English when the application's lazy messages fail to load", async () => {
+    const error = spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      render(
+        <MemoryRouter>
+          <ArdorApplication
+            container={createContainer({
+              load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+              i18nSources: { en: () => Promise.reject(new Error('remote file is down')) },
+            })}
+            reduxStore={configureStore({ reducer: () => ({}) })}
+            suspense={<span>loading</span>}
+          />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText('Monthly reports');
+      expect(error.mock.calls.some((call) => String(call[0]).includes('failed to load'))).toBe(
+        true,
+      );
+    } finally {
+      error.mockRestore();
+    }
   });
 
   test('resolves the providers once per container, however often it renders', async () => {
@@ -100,7 +159,8 @@ describe('ArdorApplication with features', () => {
     );
 
     const { rerender } = render(tree('one'));
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     rerender(tree('two'));
     rerender(tree('three'));
 
@@ -156,24 +216,29 @@ describe('ArdorApplication features prop', () => {
 
   test('mounts every bound feature when no list is passed', async () => {
     renderAt({ path: '/reports' });
-    expect(await screen.findByText('Monthly reports')).toBeDefined();
+    const result = await screen.findByText('Monthly reports');
+    expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/invoices' });
-    expect(await screen.findByText('Open invoices')).toBeDefined();
+    const result2 = await screen.findByText('Open invoices');
+    expect(result2).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders' });
-    expect(await screen.findByText('Reminders')).toBeDefined();
+    const result3 = await screen.findByText('Reminders');
+    expect(result3).toBeDefined();
   });
 
   test("mounts only the passed list's resources and routes", async () => {
     renderAt({ path: '/invoices', features: [invoices] });
-    expect(await screen.findByText('Open invoices')).toBeDefined();
+    const result = await screen.findByText('Open invoices');
+    expect(result).toBeDefined();
     cleanup();
 
     renderAt({ path: '/reminders', features: [invoices] });
-    expect(await screen.findByText('Reminders')).toBeDefined();
+    const result2 = await screen.findByText('Reminders');
+    expect(result2).toBeDefined();
     cleanup();
 
     // The container still binds `reports`; the list left it out, so its page is not mounted.
@@ -190,5 +255,63 @@ describe('ArdorApplication features prop', () => {
 
     expect(screen.queryByText('Open invoices')).toBeNull();
     expect(container.textContent).toBe('');
+  });
+});
+
+// The default logger of an ArdorApplication is built like every other one, from a BaseHelper, so the
+// resolver an application installs at startup (the debugging page shows it) silences its debug lines too.
+// The default logger of an ArdorApplication comes from LoggerFactory like every other one, so the level an
+// application sets at startup (the debugging page shows it) decides its debug lines too.
+describe('ArdorApplication logger', () => {
+  const LoggingList = () => {
+    const logger = useApplicationLogger();
+    logger.debug('[LoggingList] debug');
+    logger.info('[LoggingList] info');
+
+    return <h1>Logged</h1>;
+  };
+
+  const mountAndRead = async (opts: { level: typeof LogLevels.DEBUG | typeof LogLevels.INFO }) => {
+    const debug = spyOn(console, 'debug').mockImplementation(() => undefined);
+    const info = spyOn(console, 'log').mockImplementation(() => undefined);
+
+    try {
+      // oxlint-disable-next-line react-hooks/rules-of-hooks -- LoggerFactory.use sets a level; it is not a React hook
+      LoggerFactory.use({ level: opts.level });
+
+      render(
+        <MemoryRouter>
+          <ArdorApplication
+            container={createContainer({
+              load: () => Promise.resolve({ reports: { title: 'Monthly reports' } }),
+              list: LoggingList,
+            })}
+            reduxStore={configureStore({ reducer: () => ({}) })}
+            suspense={<span>loading</span>}
+          />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText('Logged');
+
+      return { debug: debug.mock.calls.length, info: info.mock.calls.length };
+    } finally {
+      LoggerFactory.reset();
+      debug.mockRestore();
+      info.mockRestore();
+    }
+  };
+
+  test('drops its debug lines under LoggerFactory.use({ level: LogLevels.INFO }) and keeps the others', async () => {
+    const calls = await mountAndRead({ level: LogLevels.INFO });
+
+    expect(calls.debug).toBe(0);
+    expect(calls.info).toBeGreaterThan(0);
+  });
+
+  test('writes its debug lines under LoggerFactory.use({ level: LogLevels.DEBUG })', async () => {
+    const calls = await mountAndRead({ level: LogLevels.DEBUG });
+
+    expect(calls.debug).toBeGreaterThan(0);
   });
 });

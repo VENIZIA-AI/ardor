@@ -1,9 +1,6 @@
 # Package test suites, type-check, the browser-purity gate, the clean-install gate, the bundle and
 # layering gates, and the gate scripts' own tests.
 
-# Packages with an entry claimed browser-pure (scripts/checks/purity/manifest.ts) - all of them.
-PURE := $(PACKAGES)
-
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
 CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
@@ -69,7 +66,7 @@ purity-test:
 	@echo "🔍 Running the purity gate's regression tests..."
 	@bun test scripts/checks/purity/__tests__
 
-$(addprefix purity-,$(PURE)): purity-%:
+$(addprefix purity-,$(PACKAGES)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
 	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts $*
 

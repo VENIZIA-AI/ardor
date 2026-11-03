@@ -1,5 +1,11 @@
-name: 'NPM Release'
-run-name: "${{ inputs.heal_only && 'heal the next tags' || format('packages: {0} | release: {1}', inputs.packages, inputs.version || inputs.build_mode) }} | ${{ github.sha }}"
+name: Release
+# The title of the run. `release.ts` sends `label` (`0.4.6-1 prerelease · kernel,react,admin,ardor · #450 · 207ce41`:
+# version, kind, packages, issue, short commit) and the plan job refuses a label that is not what it computed, so the
+# title cannot name a version, kind, issue or commit the run does not use (the packages are the ones dispatched).
+# Until the plan job has passed it is only what was sent: a queued or a refused run shows that. A dispatch by hand
+# has no label: the title is the version or the bump, the packages, the issue and the whole commit (an expression
+# cannot cut a commit short). A heal-only run has no plan job to check a label, so it ignores one.
+run-name: "Release · ${{ inputs.heal_only && format('heal the next tags · {0}', github.sha) || inputs.label || format('{0} · {1}{2} · {3}', inputs.version || inputs.build_mode, inputs.packages, inputs.issue && format(' · #{0}', inputs.issue) || '', github.sha) }}"
 
 on:
   workflow_dispatch:
@@ -32,13 +38,19 @@ on:
         description: 'Issue number the release commits serve (prefixes each with [#N])'
         required: false
         default: ''
+      label:
+        type: string
+        description: 'The run title, filled in by scripts/release/release.ts; the plan job refuses one that is not its own (empty = titled by the inputs)'
+        required: false
+        default: ''
       heal_only:
         type: boolean
         description: 'Only move the next tag to latest for every ARDOR package: publishes nothing, ignores the other inputs'
         required: false
         default: false
 
-# The workflow can write nothing by default; the one job that pushes the release commits and the tags says so.
+# The workflow can write nothing by default; the jobs that write say so: `publish` pushes the release commits and
+# the tags, and `atlas-index` uploads the signed atlas pair of each tag, with no npm identity.
 # Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
 # name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
 # publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
@@ -120,11 +132,12 @@ jobs:
         id: plan
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
-        run: bun scripts/release/release-plan.ts plan --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE" --ref "$GITHUB_REF" --issue "$RELEASE_ISSUE" --merge-trial
+          RELEASE_LABEL: ${{ inputs.label }}
+        run: bun scripts/release/release-plan.ts plan --packages "$PACKAGES" --version "$VERSION" --mode "$BUILD_MODE" --ref "$GITHUB_REF" --issue "$RELEASE_ISSUE" --merge-trial --label "$RELEASE_LABEL"
 
   # Everything that needs no secret, on the dispatched commit: the approve and publish jobs need it. Each gate
-  # loops over the packages of the run. The clean-install gate is not here: it installs the siblings a package
-  # ships with, and before the bump those are the old versions. The chain runs it after the sibling is out.
+  # loops over the packages of the run. The clean-install gate is not here: it installs the packages as they are
+  # after the bump. The chain runs it once, over the tarballs of the run, before the first publish.
   test:
     name: Test
     needs: plan
@@ -234,7 +247,7 @@ jobs:
         if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
-          VULCAN_CMD: bun x @venizia/vulcan@0.4.7
+          VULCAN_CMD: bun x @venizia/vulcan@0.4.9-5
         run: make preset-smoke
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
@@ -357,11 +370,13 @@ jobs:
       # -------------------------------------------------------------------------
       # RELEASE - every gate, bump, publish and git write of every package, in release-chain.ts
       # -------------------------------------------------------------------------
-      # Phase A checks every package before the first publish. Phase B then takes the packages one at a time:
-      # clean-install, bump, preset, pack, checksum, publish, wait until the tarball answers 200, dist-tags,
-      # release commit, push, tag. The publish runs ahead of every git write of its package: a failed publish
-      # leaves git untouched. The push is never rebased, and a failure is reported, never repaired by a
-      # force-push: npm cannot un-publish. A stable then merges main back into develop, in a worktree of its own
+      # Phase A checks every package before the first publish. Phase P prepares them all and publishes nothing:
+      # bump, preset, pack, check of the manifest and of its pins on the siblings, checksum, then one clean-install
+      # over the tarballs of the run. Phase B publishes every package in order, with no wait. Phase R waits once for
+      # the tarballs to answer 200, then for each package the dist-tags, release commit, push and tag. The publish
+      # runs ahead of every git write, a stop in phase B still records what was published, and the same version
+      # dispatched again records what is missing without a second publish. The push is never rebased, and a failure
+      # is reported, never repaired by a force-push: npm cannot un-publish. A stable then merges main back into develop, in a worktree of its own
       # and from a copy of this checkout's merge-back.ts. The state of every package is written to a file after
       # each step.
       - name: Release the packages
@@ -374,11 +389,117 @@ jobs:
           fi
           bun scripts/release/release-chain.ts "${ARGS[@]}"
 
+      # -------------------------------------------------------------------------
+      # GITHUB RELEASE
+      # -------------------------------------------------------------------------
+      # One Release for the run, on the tag of the last package it released (`ardor-v<version>` for a full run): a
+      # stable is marked Latest only when no higher stable tag exists, with the changelog entries added since the
+      # previous stable (or a line saying there is no change for users); a prerelease is marked Pre-release and
+      # never Latest. A tag that has a Release is skipped, and so is a tag this run did not make. The step runs
+      # after a chain that stopped too, because the tags it made stand. A failure is reported in the run summary
+      # and never fails or undoes a publish. The script refuses the tag of the atlas index, whose release is not a
+      # publish's.
+      - name: Create the GitHub Release
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/release/github-release.ts create --version "$PLAN_VERSION" --kind "$PLAN_KIND" --packages "$PACKAGES"
+
       # A job that was cancelled or timed out runs no script of its own, so the report is a step of its own,
       # read from the state file: which package stopped, which are done, and the repair that fits.
       - name: Report the run
         if: ${{ always() }}
         run: bun scripts/release/release-chain.ts report --state "$RUNNER_TEMP/release-state.json"
+
+  # The signed atlas pair of each release tag. The release pushes its commits and tags with the Actions token, and
+  # GitHub starts no workflow from such a push, so the `atlas-index` job of deploy-docs.yml never runs for them; this
+  # job does, as VULCAN's own release does, with the same action pinned by the same commit and the same secret. It is
+  # a job of its own, after `publish`, so the key never shares a job with `id-token: write` or the npm-release
+  # environment, and it holds contents: write only, less than `publish`. The action takes one ref, so there is one
+  # step for each package, and a package this run did not tag has none. It runs after a chain that stopped too, because
+  # the tags it made stand. The action does nothing while ATLAS_INDEX_KEY is empty and refuses a tag whose commit is
+  # not on main or develop; a failure here never fails or undoes a release that has published.
+  atlas-index:
+    name: Publish the atlas pairs
+    needs: [plan, publish]
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}
+    continue-on-error: true
+    # A hung install or upload must not hold the repository-wide `npm-release` lock until GitHub stops it (6 hours).
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      PLAN_VERSION: ${{ needs.plan.outputs.version }}
+    runs-on: ubuntu-26.04
+
+    steps:
+      # The tags this run pushed are in the clone: the whole history, every branch and every tag.
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      # The action runs the project's installed atlas (`vulcan x atlas index publish`).
+      - name: Install
+        run: bun install
+
+      - name: Find the tags this run pushed
+        id: tags
+        run: |
+          for package in ${PACKAGES//,/ }; do
+            tag="$package-v$PLAN_VERSION"
+
+            if git rev-parse --verify --quiet "refs/tags/$tag" > /dev/null; then
+              echo "$package=$tag" >> "$GITHUB_OUTPUT"
+            else
+              echo "no tag $tag - no pair for it"
+            fi
+          done
+
+      - name: Publish the atlas index of the kernel tag
+        if: ${{ steps.tags.outputs.kernel != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        with:
+          ref: ${{ steps.tags.outputs.kernel }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the react tag
+        if: ${{ steps.tags.outputs.react != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        with:
+          ref: ${{ steps.tags.outputs.react }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the admin tag
+        if: ${{ steps.tags.outputs.admin != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        with:
+          ref: ${{ steps.tags.outputs.admin }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+      - name: Publish the atlas index of the ardor tag
+        if: ${{ steps.tags.outputs.ardor != '' }}
+        continue-on-error: true
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        with:
+          ref: ${{ steps.tags.outputs.ardor }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
 
   # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
   # ARDOR package without publishing anything (the same check a release runs after each publish).

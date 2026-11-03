@@ -1,11 +1,11 @@
 ---
 title: Testing - prove the application boots
-description: assertArdorApplicationBoots in @venizia/ardor/testing starts an application, resolves every binding it made and what the first render resolves, with no browser and no network, and fails with the error opening the app would raise.
+description: assertArdorApplicationBoots in @venizia/ardor/testing starts an application, resolves every binding it made and what the first render resolves, with no browser and no network, and fails with the error opening the app would raise. FakeResizeObserver delivers a size to code that observes an element.
 ---
 
 # Testing - prove the application boots
 
-A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. Available in 0.4.4; it needs `@venizia/ignis-inversion` 0.4.4 or newer.
+A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. Available in 0.4.4; it needs `@venizia/ignis-inversion` 0.4.6-1 or newer.
 
 ```ts
 import { assertArdorApplicationBoots } from '@venizia/ardor/testing';
@@ -43,3 +43,23 @@ The first argument is an instance or a function that returns one. Pass a functio
 - Anything that fails only in a real browser: CSS, layout, the router, a page's own rendering.
 - A request a service makes with its own transport, or a socket it opens when it is built. Name such a binding in `skipBindings`.
 - A wrong API url, a server that is down, an expired token: nothing here reaches the network.
+
+## Test a ResizeObserver
+
+happy-dom and some other test hosts have a `ResizeObserver` whose `observe()` does nothing, so a hook such as `useElementSize` never gets a size. `FakeResizeObserver` replaces it and delivers the size you choose.
+
+```ts
+import { FakeResizeObserver } from '@venizia/ardor/testing';
+
+declare const element: Element; // the element the component under test observes
+
+const restore = FakeResizeObserver.install();
+// render the component, then:
+FakeResizeObserver.flush({ element, width: 320, height: 200 });
+restore();
+```
+
+- **`FakeResizeObserver.install()`** puts the fake on `globalThis.ResizeObserver` and returns a function that leaves `ResizeObserver` as it was before that call. Call it before the code under test creates its observer. It does not nest: an inner `install()` forgets the observers of the outer one, so install once per test.
+- **`FakeResizeObserver.flush({ element, width, height })`** calls every observer of `element` at once, with one entry whose content box and border box have that size. An element nobody observes, an element that was unobserved and a disconnected observer get nothing.
+- **Animation frames are yours.** `useElementSize` applies a size on the next animation frame, so the test also runs its frames, with a fake `requestAnimationFrame` or its runner's timers, inside `act`.
+- It needs no DOM of its own. Call the function `install` returned in `afterEach`.

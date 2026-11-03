@@ -83,7 +83,7 @@ ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires l
 Check that TypeScript compiles without errors and that Vite produces a production build:
 
 ```bash
-bunx tsc --noEmit -p tsconfig.app.json
+bun check --no-pretty -p tsconfig.app.json
 bun run build
 ```
 

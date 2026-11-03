@@ -22,16 +22,11 @@ status message must open with the minimap (P-09), and a downstream test suite ru
 ## Step 2: run `make vulcan-sync`
 
 ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulcan.config.mts`).
-`make vulcan-sync` (alias `make agent-setup`) writes the gitignored adapters: `CLAUDE.md` as
+`make vulcan-sync` writes the gitignored adapters: `CLAUDE.md` as
 `@AGENTS.md`, the shared hooks merged into your `.claude/settings.json`, and the skill links under
 `.claude/skills/`. `make vulcan-doctor` then reports 0 violations. There are no per-package agent
 files - a package carries no local `CLAUDE.md`; its facts live in the knowledge bundle instead.
 Re-run the sync after any pull that touched `.configs/` or `.agents/`.
-
-VULCAN 0.1.0-0 needs up to three syncs on a `settings.json` that already carries `$schema`
-first; run it until every line reads `unchanged`. A checkout set up before VULCAN keeps a
-SessionStart entry for the deleted session hook under `.agents/plugin/` - delete that
-entry from `.claude/settings.json` by hand.
 
 ## Step 3: build, in dependency order
 

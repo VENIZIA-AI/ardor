@@ -53,6 +53,8 @@ The framework ships four packages, built in dependency order.
 How the pieces fit.
 
 - [Application lifecycle](/architecture/application-lifecycle.md) - start(), the bindings the framework makes, how React receives the container
+- [Artifact registration](/architecture/artifact-registration.md) - from a stereotype decorator to a React component: declared, discovered at import time, bound before `bindingList()` and `bindContext()`, resolved by hooks
+- [Network layer](/architecture/network-layer.md) - the fetch transport beneath `DefaultNetworkRequestService`: query and body encoding, headers, response decoding, and where the socket client lives
 - [DI in the browser](/architecture/di-in-the-browser.md) - the IGNIS container as the application, bindings, injection by key and by class
 - [Data provider pipeline](/architecture/data-provider-pipeline.md) - react-admin call to HTTP request and back, the IGNIS filter vocabulary
 - [Auth recovery](/architecture/auth-recovery.md) - one refresh per 401 burst, one retry, what is never recovered

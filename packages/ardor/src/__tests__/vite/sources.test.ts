@@ -6,7 +6,7 @@ import { BuildInfoEnvironmentKeys } from '@venizia/ignis-boot/build-info';
 
 import { findInstalledVersion, readFrameworkVersions, readGit, readJsonFile } from '@/vite/sources';
 
-import { getRejection } from '../rejection';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, runNode, writeFiles } from './fixture';
 
 describe('reading from disk', () => {
@@ -45,12 +45,14 @@ describe('reading from disk', () => {
   });
 
   test('readJsonFile: a missing file is undefined', async () => {
-    expect(await readJsonFile({ path: join(root, 'empty', 'package.json') })).toBeUndefined();
+    const result = await readJsonFile({ path: join(root, 'empty', 'package.json') });
+    expect(result).toBeUndefined();
   });
 
   test('readJsonFile: a broken file is an error that names the file and never quotes its content', async () => {
     const path = join(root, 'broken', 'package.json');
-    const message = String(await getRejection({ task: readJsonFile({ path }) }));
+    const result = await RejectionHelper.rejectionOf({ task: readJsonFile({ path }) });
+    const message = String(result);
 
     expect(message).toContain(path);
     expect(message).toContain('is not valid JSON');
@@ -60,9 +62,12 @@ describe('reading from disk', () => {
   test('findInstalledVersion walks up the node_modules folders like Node does', async () => {
     const app = join(root, 'apps', 'shop');
 
-    expect(await findInstalledVersion({ root: app, name: '@venizia/ardor' })).toBe('0.4.3');
-    expect(await findInstalledVersion({ root: app, name: '@venizia/ignis-boot' })).toBe('0.4.3');
-    expect(await findInstalledVersion({ root: app, name: '@venizia/nothing' })).toBeUndefined();
+    const result = await findInstalledVersion({ root: app, name: '@venizia/ardor' });
+    expect(result).toBe('0.4.3');
+    const result2 = await findInstalledVersion({ root: app, name: '@venizia/ignis-boot' });
+    expect(result2).toBe('0.4.3');
+    const result3 = await findInstalledVersion({ root: app, name: '@venizia/nothing' });
+    expect(result3).toBeUndefined();
   });
 
   test('readFrameworkVersions lists the installed versions, the ones not installed and the invalid names', async () => {
@@ -80,7 +85,8 @@ describe('reading from disk', () => {
   test('readFrameworkVersions without a package.json is an error that says where to look', async () => {
     const task = readFrameworkVersions({ root: join(root, 'empty'), scope: '@venizia/' });
 
-    expect(String(await getRejection({ task }))).toContain('root option');
+    const result = await RejectionHelper.rejectionOf({ task });
+    expect(String(result)).toContain('root option');
   });
 });
 
@@ -138,5 +144,58 @@ describe('under Node, which is where Vite runs', () => {
     expect(run.stderr).toBe('');
     expect(run.stdout.trim()).toMatch(/^[0-9a-f]{12}$/);
     expect(run.exitCode).toBe(0);
+  });
+});
+
+// The resolver logs why a folder has no package.json at debug level. A Vite build used to install a quiet
+// provider for that; IGNIS's console logger keeps debug off by itself, so nothing is installed any more.
+describe('resolveRecord and the debug gate', () => {
+  const run = (opts: { debug?: string }): string[] => {
+    const root = makeScratch({ prefix: 'build-info-debug-' });
+    const script = `
+      const seen = [];
+      for (const method of ['debug', 'log', 'info', 'warn', 'error']) {
+        console[method] = (...parts) => { seen.push(method + ':' + parts.join(' ')); };
+      }
+      const { defaultSources } = await import(${JSON.stringify(join(import.meta.dir, '../../vite/sources.ts'))});
+      defaultSources.resolveRecord({ root: ${JSON.stringify(root)} });
+      process.stdout.write('RESULT:' + JSON.stringify(seen) + '\\n');
+    `;
+    const env: Record<string, string | undefined> = { ...process.env };
+    delete env.DEBUG;
+    delete env.NODE_ENV;
+    if (opts.debug !== undefined) {
+      env.DEBUG = opts.debug;
+    }
+
+    try {
+      const result = Bun.spawnSync(['bun', '-e', script], {
+        cwd: import.meta.dir,
+        env,
+        stdout: 'pipe',
+        stderr: 'pipe',
+        timeout: 20_000,
+      });
+      const line = result.stdout
+        .toString()
+        .split('\n')
+        .find((entry) => entry.startsWith('RESULT:'));
+
+      if (!line) {
+        throw new Error(`[sources-test] no result | stderr: ${result.stderr.toString()}`);
+      }
+
+      return JSON.parse(line.slice('RESULT:'.length));
+    } finally {
+      removeScratch({ root });
+    }
+  };
+
+  test('prints no debug line while DEBUG is unset', () => {
+    expect(run({}).filter((line) => line.startsWith('debug:'))).toEqual([]);
+  });
+
+  test('prints the debug line when DEBUG is set, which is the IGNIS gate and no longer ours', () => {
+    expect(run({ debug: '1' }).some((line) => line.startsWith('debug:'))).toBe(true);
   });
 });

@@ -10,12 +10,11 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**85 targets.**
+**82 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
 | `make admin` | `react` | Rebuild one package, after its dependencies. |
-| `make agent-setup` | `vulcan-sync` | Alias of vulcan-sync. |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
 | `make atlas-releases` | - | Print the release table atlas computes from the tags. |
 | `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
@@ -23,7 +22,6 @@ generated:
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |
-| `make changelogs-migrate` | - | Write the packages: list into changelog entries that declare none. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
@@ -36,11 +34,10 @@ generated:
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
 | `make gates` | - | The Test job of the release workflow, locally: links, copies, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
-| `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), in a scratch copy. About two minutes; run before every dispatch. |
+| `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), then clean-install, in a scratch copy. About four minutes; run before every dispatch. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
-| `make knowledge-symbols-check` | - | Fail when a symbol a concept names is gone or its signature changed |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages` | lint-<pkg> for every package. |

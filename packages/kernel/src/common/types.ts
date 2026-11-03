@@ -20,12 +20,10 @@ import type {
   RequestCountData,
   RequestMethods,
   RequestTypes,
+  StorageAreas,
 } from './constants';
 
-export type NumberIdType = number;
-export type StringIdType = string;
 export type IdType = string | number;
-export type NullableType = undefined | null | void;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
 export type {
@@ -60,6 +58,14 @@ export interface ISendParams {
 export type ISendResponse<T = unknown> = INetworkResponse<T>;
 
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
+
+export type TStorageArea = TStringConstValue<typeof StorageAreas>;
+
+/** How `BrowserStorage` turns a value into text and back. `decode` may throw: `get` then gives the fallback. */
+export interface IStorageCodec<TValue> {
+  encode: (value: TValue) => string;
+  decode: (text: string) => TValue;
+}
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
 export interface IGetRequestPropsParams {
@@ -285,8 +291,3 @@ export interface IApplicationInfo {
 export interface IBuildInfoFile extends TBuildInfoRecord {
   frameworks: Record<string, string>;
 }
-
-export type TDataCount<T> = {
-  data: T;
-  count?: number;
-};

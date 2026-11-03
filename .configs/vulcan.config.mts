@@ -8,6 +8,9 @@ export default {
   // The base slot V-W-01: git writes happen only on the user's word (ARDOR's own W-01 agrees).
   rules: { 'V-W-01': 'on-user-word' },
 
+  // W-00: no agent signature in a commit message.
+  commit: { message: { agent: { signature: 'deny' } } },
+
   // Team-shared Claude settings that `vulcan sync` merges into `.claude/settings.json`. The two
   // plugins are off here by choice of the team, not a VULCAN default.
   claude: {

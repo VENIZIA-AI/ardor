@@ -4,7 +4,7 @@ import { Container } from '@venizia/ignis-inversion';
 import { Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
-import { rejectionOf } from '@/__tests__/rejection';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 const inventory = Features.define({
   name: 'inventory',
@@ -23,7 +23,8 @@ describe('FeatureMessages', () => {
   test('merges the bundles every feature has for a locale', async () => {
     const messages = new FeatureMessages({ features: [inventory, commerce] });
 
-    expect(await messages.read({ locale: 'en' })).toEqual({
+    const result = await messages.read({ locale: 'en' });
+    expect(result).toEqual({
       inventory: { title: 'Stock', unit: 'Unit' },
       commerce: { title: 'Orders' },
     });
@@ -37,7 +38,8 @@ describe('FeatureMessages', () => {
     });
     const messages = new FeatureMessages({ features: [inventory, shadow] });
 
-    expect(await rejectionOf(messages.read({ locale: 'en' }))).toMatchObject({
+    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'en' }) });
+    expect(result).toMatchObject({
       message: expect.stringContaining(
         "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
       ),

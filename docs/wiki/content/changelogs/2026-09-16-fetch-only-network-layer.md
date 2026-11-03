@@ -14,9 +14,10 @@ packages: ['@venizia/ardor-kernel']
 
 ## What changed
 
-- **The axios transport is removed.** `AxiosNetworkRequest`, `AxiosFetcher`, `IAxiosRequestOptions` and `IAxiosNetworkOptions` no longer exist, and `axios` is not a peer dependency of any ARDOR package. `DefaultNetworkRequestService` already used `fetch`; now that is the only transport.
-- **The socket client moved to a sub-path.** `SocketIOClientHelper` and `ISocketIOClientOptions` are imported from `@venizia/ardor/socket-io` (or `@venizia/ardor-kernel/socket-io`) instead of the package root.
-- **Importing the framework installs nothing extra.** Both changes exist for the same reason: the root barrel used to pull `axios` and `socket.io-client` eagerly, so an application had to install two packages declared *optional* before it could import ARDOR at all.
+- **The axios transport is removed.** `AxiosNetworkRequest`, `AxiosFetcher`, `IAxiosRequestOptions` and `IAxiosNetworkOptions` no longer exist, and `axios` is not a peer dependency of any ARDOR package. `fetch` is the only transport.
+- **The socket client moved to a sub-path.** Import `SocketIOClientHelper` and `ISocketIOClientOptions` from `@venizia/ardor/socket-io` (or `@venizia/ardor-kernel/socket-io`) instead of the package root.
+- **Nothing extra to install.** The root import used to pull `axios` and `socket.io-client`, so an application had to install two packages declared optional before it could import ARDOR at all.
+- **`TFetcherVariant` is now `'node-fetch'` alone.** `BaseNetworkRequest<T>` stays generic over it, so you can still add your own transport.
 
 ## Who is affected
 
@@ -27,7 +28,7 @@ packages: ['@venizia/ardor-kernel']
 ## Breaking changes
 
 > [!WARNING]
-> Two public classes moved or disappeared. Both are transport-layer helpers; neither is used by the default data provider, auth provider or i18n provider.
+> Two public classes moved or disappeared. Neither is used by the default data provider, auth provider or i18n provider.
 
 **Before:**
 
@@ -42,7 +43,7 @@ const socket = new SocketIOClientHelper({ host, options });
 **After:**
 
 ```ts no-check
-// Written for 0.3.x; both classes are IGNIS's since 2026-10-25 (see that entry).
+// Written for 0.3.x; both classes are IGNIS's since 2026-10-25.
 import { NodeFetchNetworkRequest } from '@venizia/ardor';
 import { SocketIOClientHelper } from '@venizia/ardor/socket-io';
 // ...
@@ -60,15 +61,3 @@ const socket = new SocketIOClientHelper({
 ```
 
 `socket.io-client` stays an optional peer, and is now genuinely optional: install it only if you import the `./socket-io` sub-path.
-
-## Details
-
-- `TFetcherVariant` is now `'node-fetch'` alone. `BaseNetworkRequest<T>` stays generic over it, so a consumer can still add a transport without forking the base.
-- The browser-purity gate proves the result rather than asserting it: the kernel root entry bundles with no external dependency at all, while `kernel/socket-io` declares `socket.io-client` and is measured separately.
-
-| File | Package |
-|------|---------|
-| `src/helpers/networks/fetchers/axios.ts` (deleted) | kernel |
-| `src/helpers/networks/common/types.ts` | kernel |
-| `src/helpers/networks/base-request.ts` | kernel |
-| `package.json` exports and peers | kernel, ardor |

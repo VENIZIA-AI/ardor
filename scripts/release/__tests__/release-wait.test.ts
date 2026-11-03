@@ -137,7 +137,8 @@ describe('waitForCompletion', () => {
       ],
     });
 
-    expect(await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep })).toBe('success');
+    const result = await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep });
+    expect(result).toBe('success');
   });
 
   test('keeps waiting while the run waits for approval, however long', async () => {
@@ -146,7 +147,8 @@ describe('waitForCompletion', () => {
       statuses: [...waiting, { status: 'completed', conclusion: 'success' }],
     });
 
-    expect(await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep })).toBe('success');
+    const result = await waitForCompletion({ runId: '1', readRun, sleepFn: noSleep });
+    expect(result).toBe('success');
     expect(polls()).toBe(2001);
   });
 

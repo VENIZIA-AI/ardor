@@ -67,10 +67,14 @@ export class FeatureMessages {
     const bundles = await Promise.all(
       this.opts.features.map(async (feature) => {
         const messages = feature.messages?.[locale];
-        return {
-          feature: feature.name,
-          bundle: typeof messages === 'function' ? await messages() : messages,
-        };
+        let bundle = typeof messages === 'function' ? undefined : messages;
+
+        if (typeof messages === 'function') {
+          const result = await messages();
+          bundle = result;
+        }
+
+        return { feature: feature.name, bundle };
       }),
     );
 

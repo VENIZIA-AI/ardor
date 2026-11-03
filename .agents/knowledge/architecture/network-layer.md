@@ -29,6 +29,8 @@ A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/servi
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
 - **Every other case** (`json`, `none`, `binary`, or no `bodyType`) passes the body through untouched.
 
+`RequestBodyEncoder.encode` has overloads that type the result: `FormData` for `form-data`, `URLSearchParams` for `x-www-form-urlencoded`, the passed body type for `json`, `none`, `binary` and no type, and `IEncodedBody` (`body: unknown`) for a `bodyType` known only as a `string`. They are types only; `src/__tests__/helpers/networks/request-body-encoder.test.ts` pins them with `@ts-expect-error`.
+
 Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s a plain object or an array, so a `binary` body is sent as its bytes and a string is not quoted a second time; no body stays no body. A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, to the logger `doRequest` passes; the body is never logged and the headers pass through `redactSecrets`. With no logger the fetcher logs nothing.
 
 ## Traps for a transport author
@@ -42,7 +44,7 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `ResponseReader.read` (`packages/kernel/src/helpers/networks/response-reader.ts`) decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
-- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`) and `contentDisposition` when present.
+- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`; the public `ResponseReader.readFilename({ headers })` returns the same name and is the one parser) and `contentDisposition` when present.
 - Anything else goes through `rs.json()` and then `convertResponse`, which reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
 The textual pattern admits `text/*` and XML, but those bodies are still parsed with `rs.json()`, so a 2xx `text/plain` or XML response rejects with a `SyntaxError`. A 2xx response with no `content-type` comes back as a `Blob`.

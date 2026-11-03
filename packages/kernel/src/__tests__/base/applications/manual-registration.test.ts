@@ -46,7 +46,8 @@ describe('registration by hand', () => {
 
   // The key is recorded on the class, so `@inject({ target })` resolves a class registered by hand.
   test('@inject({ target }) resolves a class registered by hand', async () => {
-    const repository = (await started()).get<OrderRepository>({
+    const result = await started();
+    const repository = result.get<OrderRepository>({
       key: 'repositories.OrderRepository',
     });
 

@@ -1,5 +1,5 @@
 /**
- * Dispatches the NPM Release workflow once and checks what it did.
+ * Dispatches the Release workflow once and checks what it did.
  *
  * One dispatch is one run for every package it names: the workflow releases them in dependency order at
  * one version (`release-chain.ts`), so there is nothing to wait for between packages here. This script
@@ -113,12 +113,14 @@ const collectState = async (opts: {
 
     const manifest = JSON.parse(shown.stdout) as Record<string, string>;
 
+    const result = await resolvePublishedVersion({ packageName: manifest.name });
+    const result2 = await listPublishedVersions({ packageName: manifest.name });
     states.push({
       name,
       packageName: manifest.name,
       localVersion: manifest.version,
-      publishedVersion: await resolvePublishedVersion({ packageName: manifest.name }),
-      publishedVersions: await listPublishedVersions({ packageName: manifest.name }),
+      publishedVersion: result,
+      publishedVersions: result2,
     });
   }
 
@@ -336,13 +338,16 @@ const main = async (): Promise<void> => {
 
   // A stable whose packages are all out can still owe the merge back: a run that stopped after the last
   // tag. The same version dispatched again runs only that, so it is not "nothing to release".
-  const mergeBackOwed =
-    isStable &&
-    plan.length === 0 &&
-    (await run({
+  let mergeBackOwed = false;
+
+  if (isStable && plan.length === 0) {
+    const ancestry = await run({
       command: ['git', 'merge-base', '--is-ancestor', 'origin/main', 'origin/develop'],
       allowFailure: true,
-    }).then((result) => result.exitCode !== 0));
+    });
+
+    mergeBackOwed = ancestry.exitCode !== 0;
+  }
 
   if (plan.length === 0 && !mergeBackOwed) {
     console.log(`Nothing to release - every package is already at ${resolved.version}.`);
@@ -365,13 +370,40 @@ const main = async (): Promise<void> => {
     );
   }
 
+  const packages = mergeBackOwed ? named : resolved.packages;
+  // The run title: the workflow cannot work it out when it names the run, so it is sent, and the plan job
+  // refuses one that is not its own. Only a workflow that declares the input can be sent one.
+  // The commit in the label is the head the dispatch will run, so it is read fresh: a branch that moved since the
+  // start would make the plan job refuse the label.
+  await run({ command: ['git', 'fetch', '--quiet', 'origin', branch], allowFailure: true });
+  const result2 = await readFromRemote({ branch, path: WORKFLOW_PATH });
+  let label: string | undefined;
+
+  if (ReleasePlan.declaresLabel({ workflow: result2 })) {
+    const head = await run({
+      command: ['git', 'rev-parse', `origin/${branch}`],
+      allowFailure: true,
+    });
+
+    label = ReleasePlan.labelOf({
+      version: resolved.version,
+      kind,
+      packages,
+      issue,
+      sha: head.stdout,
+    });
+  }
   const dispatch = ReleasePlan.dispatch({
-    plan: mergeBackOwed ? named : resolved.packages,
+    plan: packages,
     version: resolved.version,
     issue,
+    label,
     ref: branch,
   });
   console.log(`\n${ReleasePlan.describe({ dispatch })}`);
+  if (label !== undefined) {
+    console.log(`The run is titled: Release · ${label}`);
+  }
   if (isStable) {
     console.log('A stable waits for one approval on release-approval, given in the run on GitHub.');
   }

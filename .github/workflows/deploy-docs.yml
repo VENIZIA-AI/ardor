@@ -1,28 +1,106 @@
-name: Deploy Wiki Site
+name: Docs
+run-name: 'Docs · ${{ github.ref_name }}'
 
+# Everything this repository publishes besides the packages, as jobs of one workflow, each with the trigger it had
+# when it was a workflow of its own:
+#
+#   docs         a push to develop that touches docs/wiki/ builds the wiki and deploys it to GitHub Pages, and so
+#                does a manual run that asks for it
+#   atlas-index  a push to main, develop or a tag publishes the signed atlas index of that commit, and a manual run
+#                that asks for it publishes the pair of a tag or a branch
+#
+# A manual run picks one job with `job` (default `docs`, which is what a manual run always did). A run for
+# `atlas-index` builds no wiki and deploys nothing:
+#
+#   gh workflow run deploy-docs.yml --ref develop
+#   gh workflow run deploy-docs.yml --ref develop -f job=atlas-index -f ref=ardor-v0.4.7-1
+#   gh workflow run deploy-docs.yml --ref develop -f job=atlas-index -f ref=develop
+#
+# The file keeps its name: the github-pages environment and the release docs name it.
 on:
   push:
-    branches: [develop]
-    paths:
-      - 'docs/wiki/**'
+    branches:
+      - main
+      - develop
+    tags:
+      - '*'
   workflow_dispatch:
+    inputs:
+      job:
+        type: choice
+        description: 'Which job a manual run starts'
+        options:
+          - docs
+          - atlas-index
+        required: true
+        default: 'docs'
+      ref:
+        type: string
+        description: 'atlas-index only: a tag or a branch whose commit to publish instead of the one this run starts on (empty = the commit this run starts on)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Whether the docs job runs. A path filter on the trigger would stop the atlas job on a push that does not touch
+  # the wiki, so the filter is this check: a push to develop deploys when docs/wiki/ changed between the old and the
+  # new head (and when the old head cannot be read), and a manual run deploys when it asked for `docs`, which is
+  # the default, so a manual run without inputs deploys as it did.
+  changes:
+    name: What changed
+    runs-on: ubuntu-26.04
+    outputs:
+      docs: ${{ steps.docs.outputs.docs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Does the wiki need a deploy
+        id: docs
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          JOB: ${{ inputs.job }}
+        run: |
+          docs=false
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$JOB" = "docs" ]; then
+              docs=true
+            fi
+          elif [ "$EVENT" = "push" ] && [ "$REF" = "refs/heads/develop" ]; then
+            if [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              docs=true
+            elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- docs/wiki; then
+              docs=true
+            fi
+          fi
+
+          echo "docs=$docs" >> "$GITHUB_OUTPUT"
+          echo "docs job: $docs"
+
   build:
     name: Wiki Release
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # The group the whole old workflow ran in: a newer push builds after an older one has deployed, never beside
+    # it, so the older docs cannot be deployed last.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3
@@ -60,7 +138,60 @@ jobs:
     needs: build
     runs-on: ubuntu-26.04
     name: Deploy
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5.0.0
+
+  # Publishes the signed atlas index of each commit atlas can be asked for (main, develop and the release tags)
+  # to the release `atlas-index` of this repository, so a project that reads ARDOR as a source downloads it
+  # instead of building it. The private key is the Actions secret ATLAS_INDEX_KEY; its public half is
+  # `atlas.index.keys` in .configs/vulcan.config.mts. VULCAN's action refuses anything but a push or a manual run
+  # on those refs and does nothing while the secret is empty. It is pinned by commit, the one of the installed
+  # VULCAN release.
+  #
+  # The release workflow pushes its release commits and tags with the Actions token, and GitHub starts no workflow
+  # from those pushes, so a push never makes the pair of a release tag. A manual run does: GitHub runs it with the
+  # workflow file of the ref it is started on, so start it on develop and give the tag as `ref`. The input is never
+  # checked out (the checkout is the ref the run started on); the action refuses a name that is not a plain tag or
+  # branch, or whose commit is not on the default branch or develop, before it builds anything. A release run does not need it: package-release.yml runs the same action,
+  # pinned by the same commit, in a job of its own for each tag the release pushes.
+  atlas-index:
+    name: Publish the pair
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.job == 'atlas-index')
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    concurrency:
+      # The name of the ref on both sides: a push to develop and a manual run for `develop` publish one at a time.
+      group: atlas-index-${{ inputs.ref || github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # The release table is generated from release commits and tags; a shallow clone has none.
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      # The action runs the project's installed atlas (`vulcan x atlas index publish`).
+      - name: Install
+        run: bun install
+
+      - name: Publish the atlas index
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        with:
+          ref: ${{ inputs.ref }}
+        env:
+          ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}

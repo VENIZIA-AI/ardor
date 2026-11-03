@@ -22,7 +22,7 @@ never its `src` (rule B-05): `kernel -> react -> admin -> ardor`.
 |---|---|---|
 | [`admin`](/packages/admin.md) | `@venizia/ardor-admin` | ARDOR react-admin adapter - the REST data provider, auth provider and i18n provider wired through IGNIS inversion, the ArdorApplication root component, the translate and notify hooks, and the English and Vietnamese message bundles. |
 | [`ardor`](/packages/ardor.md) | `@venizia/ardor` | ARDOR - frontend application framework for the VENIZIA family. |
-| [`kernel`](/packages/kernel.md) | `@venizia/ardor-kernel` | ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and provider bases, request/auth constants, binding keys, logger, the network request service, runtime config and the HTTP repository (from IGNIS). |
+| [`kernel`](/packages/kernel.md) | `@venizia/ardor-kernel` | ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and provider bases, request/auth constants, binding keys, the network request service, runtime config and the HTTP repository (from IGNIS). |
 | [`react`](/packages/react.md) | `@venizia/ardor-react` | ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). |
 <!-- okf:generated:packages-table end -->
 
@@ -45,7 +45,7 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | `.configs/` | `vulcan.config.mts` - the one VULCAN config (every project of the repository keeps its own `.configs/` with `lints/` and, where it builds, `builders/`; an example and the presets also keep `formatters/`, until `devz` reads the root `bunfig.toml`): rule slot, project hooks, knowledge roots, atlas packages |
 | `.mcp.json` (gitignored) | Registers the `atlas` MCP server (VULCAN's atlas run against this checkout); `vulcan sync` writes it on each machine - see [Atlas MCP server](/reference/atlas-mcp.md) |
 | `.githooks/` | `pre-commit` runs `make lint-all`; enabled by `make setup-hooks` |
-| `.github/workflows/` | `ci.yml` (gates, build, tests, lint), `package-release.yml` (one dispatch releases the packages it names), `deploy-docs.yml` |
+| `.github/workflows/` | Three own workflows: `ci.yml` (Checks: gates, build, tests, lint), `package-release.yml` (Release: one dispatch releases the packages it names), `deploy-docs.yml` (Docs: the wiki deploy and the atlas index as jobs) |
 | `bunfig.toml` | Bun's config for commands run at the root: only `telemetry = false`. Bun reads it only from the directory a command runs in, and no `minimumReleaseAge`: it would refuse the young versions that the floors at the latest need |
 | `Makefile`, `make/` | Every entry point; one job per `make/*.mk` file, `make/project.mk` is the per-package include; a bare `make` lists them |
 

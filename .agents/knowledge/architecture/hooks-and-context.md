@@ -11,10 +11,14 @@ tags: [hooks, context, react, ignis, ra-core]
 ARDOR bridges the IGNIS dependency injection container into the React tree with a single plain context, `ApplicationContext`, defined at `packages/react/src/contexts/application.ts`. Its value type is the exported `IApplicationContextValue`:
 
 ```ts
-{ container: Container | null, logger: Logger | null }
+{ container: Container | null, logger: ILogger | null }
 ```
 
 Both fields default to `null`. There is no `registry` field: the container is its own metadata registry (`container.getMetadataRegistry()`). The ARDOR application fills them in when it mounts - see [Application lifecycle](/architecture/application-lifecycle.md) and [DI in the browser](/architecture/di-in-the-browser.md). Components below that mount point read the context through hooks rather than `useContext` directly.
+
+## One name for the hooks
+
+`@venizia/ardor` exports `Ardor`, a module namespace over every hook of the react and admin packages, so `Ardor.useRepository()` is `useRepository()` ([the umbrella package](/packages/ardor.md) explains why it is a namespace and what it costs: nothing in an app bundle). The packages themselves keep their top-level exports.
 
 ## Core context hooks
 
@@ -59,13 +63,13 @@ Each of these hooks will throw or degrade differently if its required provider i
 
 ## UI and browser-only hooks
 
-A second group of hooks needs nothing from React context at all - they only use browser APIs: `useDebounce`, `useAutosave`, `useConfirm`, `useCopyToClipboard`, `useBeforeUnload`, `useSizer`, and `useWindowDimensions`. These are safe to use anywhere, including outside an ARDOR application, and are documented alongside the rest of the hook surface in [Hooks and services](/reference/hooks-and-services.md).
+A second group of hooks needs nothing from React context at all - they only use browser APIs: `useDebounce`, `useAutosave`, `useConfirm`, `useCopyToClipboard`, `useBeforeUnload`, `useSizer`, `useElementSize`, `useStoredState` and `useWindowDimensions`. These are safe to use anywhere, including outside an ARDOR application, and are documented alongside the rest of the hook surface in [Hooks and services](/reference/hooks-and-services.md).
 
 `useDocumentTitle` (in `packages/admin`, no provider needed) also belongs here. `useDocumentTitle({ title, appTitle, separator = ' · ', enabled = true, fallback = false })` sets the tab title to the non-empty `title` segments then `appTitle`, joined by `separator`, and restores the title it replaced when the title changes or the component unmounts, so no reset-on-navigation hook is needed. The restore runs only while `document.title` is still the hook's own title, so a later writer (a layout re-mounted by a locale change, a twin call React cleans up first) keeps its title. Limit: React runs child effects before parent effects, so of two plain calls the parent's wins. A layout that wants a base title passes `fallback: true`: it shows only while no plain call is mounted, so the screen wins on the first mount, the fallback shows again when the screen unmounts, and of two fallbacks the one mounted last shows. The mounted calls live in a module-level list in `packages/admin/src/hooks/use-document-title.ts`.
 
 ## Redux factories
 
-`createAppDispatch` and `createAppSelectors` are factory functions, not hooks themselves - they return typed hooks (`useAppDispatch`, `useMultipleAppDispatch`, `useAppSelector`, `useShallowEqualSelector`, `useDeepEqualSelector`). The hooks they produce need a react-redux `Provider` in the tree to work. Calling the factories is how an application gets typed Redux hooks bound to its own store shape, following the same options-object and typed-augmentation conventions as the rest of ARDOR - see [Options objects](/conventions/options-objects.md).
+`DispatchHooks.create` and `SelectorHooks.create` (formerly `createAppDispatch` and `createAppSelectors`, removed) are factory functions, not hooks themselves - they return typed hooks (`useAppDispatch`, `useMultipleAppDispatch`, `useAppSelector`, `useShallowEqualSelector`, `useDeepEqualSelector`). The hooks they produce need a react-redux `Provider` in the tree to work. Calling the factories is how an application gets typed Redux hooks bound to its own store shape, following the same options-object and typed-augmentation conventions as the rest of ARDOR - see [Options objects](/conventions/options-objects.md).
 
 ## Test environment
 

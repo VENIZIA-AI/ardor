@@ -168,7 +168,7 @@ export const findLockMismatches = (opts: {
  * context, registry or polyfill. An ARDOR package that uses one declares it as a PEER with one
  * range, so the application owns the single copy.
  */
-export const IDENTITY_PEERS = [
+const IDENTITY_PEERS = [
   'react',
   'react-dom',
   'react-redux',

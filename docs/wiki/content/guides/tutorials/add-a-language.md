@@ -66,7 +66,7 @@ export class I18nConfiguration {
 
 `DefaultI18nProvider` in `packages/admin/src/providers/i18n.ts` wraps `polyglotI18nProvider` from `ra-i18n-polyglot`. It resolves `II18nProviderOptions` (`packages/admin/src/common/types.ts`) bound under `CoreBindings.I18N_PROVIDER_OPTIONS`:
 
-- `i18nSources`: A dictionary mapping locale codes to translation objects. Defaults to `{ en: englishMessages }`.
+- `i18nSources`: A dictionary mapping locale codes to translation objects, or to loaders (`vi: () => import('./vi')`) that keep a catalogue out of the boot bundle until its locale is used. Defaults to `{ en: englishMessages }`. See [Lazy sources](/references/i18n.md#lazy-sources).
 - `languages`: An array of available locales and their display labels. Defaults to `[{ locale: 'en', name: 'English' }]`.
 
 Spread `englishMessages` (`packages/admin/src/common/locales/en.ts`) or `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to retain standard react-admin keys (`ra.*`), and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` merges messages from `Features.define()` before applying `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features)). See [Configuration](../core-concepts/configuration) for configuration class details.

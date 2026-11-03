@@ -22,34 +22,59 @@ ARDOR coordinates data, authentication, and internationalization through provide
 
 ## Provider Flow into react-admin
 
-```mermaid
-flowchart LR
-  subgraph Config["Configuration (@provide)"]
-    direction TB
-    RestOpts["REST_DATA_PROVIDER_OPTIONS"]
-    AuthOpts["AUTH_PROVIDER_OPTIONS"]
-    I18nOpts["I18N_PROVIDER_OPTIONS"]
-  end
-
-  subgraph Providers["IoC Container (Singletons)"]
-    direction TB
-    RestProv["DEFAULT_REST_DATA_PROVIDER (IDataProvider)"]
-    AuthProv["DEFAULT_AUTH_PROVIDER (IAuthProvider, optional)"]
-    I18nProv["DEFAULT_I18N_PROVIDER (I18nProvider)"]
-  end
-
-  subgraph ReactAdmin["ArdorApplication"]
-    CoreAdmin["CoreAdmin (react-admin)"]
-  end
-
-  RestOpts -->|injects| RestProv
-  AuthOpts -->|injects| AuthProv
-  I18nOpts -->|injects| I18nProv
-
-  RestProv -->|dataProvider| CoreAdmin
-  AuthProv -->|authProvider| CoreAdmin
-  I18nProv -->|i18nProvider| CoreAdmin
-```
+<svg viewBox="0 0 684 272" role="img" aria-labelledby="providers-flow-title providers-flow-desc" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;font:12px var(--vp-font-family-base);color:var(--vp-c-text-1)">
+<title id="providers-flow-title">Provider flow into react-admin</title>
+<desc id="providers-flow-desc">Three configuration bindings each inject one provider into the container: the REST data provider, the auth provider (optional) and the i18n provider. The container hands each to CoreAdmin inside ArdorApplication as dataProvider, authProvider and i18nProvider.</desc>
+<defs><marker id="providers-flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--vp-c-text-2)"/></marker></defs>
+<g style="fill:none;stroke:var(--vp-c-divider);stroke-dasharray:5 4">
+<rect x="4" y="6" width="210" height="260" rx="10"/>
+<rect x="274" y="6" width="210" height="260" rx="10"/>
+<rect x="574" y="6" width="106" height="260" rx="10"/>
+</g>
+<g fill="currentColor" font-weight="600">
+<text x="109" y="30" text-anchor="middle">Configuration (@provide)</text>
+<text x="379" y="30" text-anchor="middle">IoC Container (Singletons)</text>
+<text x="627" y="30" text-anchor="middle">ArdorApplication</text>
+</g>
+<g style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)">
+<rect x="14" y="54" width="190" height="52" rx="6"/>
+<rect x="14" y="124" width="190" height="52" rx="6"/>
+<rect x="14" y="194" width="190" height="52" rx="6"/>
+<rect x="284" y="54" width="190" height="52" rx="6"/>
+<rect x="284" y="124" width="190" height="52" rx="6"/>
+<rect x="284" y="194" width="190" height="52" rx="6"/>
+<rect x="584" y="108" width="86" height="84" rx="6"/>
+</g>
+<g fill="currentColor" text-anchor="middle">
+<text x="109" y="84">REST_DATA_PROVIDER_OPTIONS</text>
+<text x="109" y="154">AUTH_PROVIDER_OPTIONS</text>
+<text x="109" y="224">I18N_PROVIDER_OPTIONS</text>
+<text x="379" y="77">DEFAULT_REST_DATA_PROVIDER</text>
+<text x="379" y="147">DEFAULT_AUTH_PROVIDER</text>
+<text x="379" y="217">DEFAULT_I18N_PROVIDER</text>
+<text x="627" y="146" font-weight="600">CoreAdmin</text>
+</g>
+<g fill="var(--vp-c-text-2)" text-anchor="middle" font-size="11">
+<text x="379" y="94">IDataProvider</text>
+<text x="379" y="164">IAuthProvider (optional)</text>
+<text x="379" y="234">I18nProvider</text>
+<text x="627" y="164">(react-admin)</text>
+<text x="244" y="76">injects</text>
+<text x="244" y="146">injects</text>
+<text x="244" y="216">injects</text>
+<text x="529" y="86">dataProvider</text>
+<text x="529" y="143">authProvider</text>
+<text x="529" y="233">i18nProvider</text>
+</g>
+<g style="stroke:var(--vp-c-text-2);stroke-width:1.5;fill:none" marker-end="url(#providers-flow-arrow)">
+<path d="M204 80H284"/>
+<path d="M204 150H284"/>
+<path d="M204 220H284"/>
+<path d="M474 80C530 80 530 126 584 126"/>
+<path d="M474 150H584"/>
+<path d="M474 220C530 220 530 174 584 174"/>
+</g>
+</svg>
 
 `ArdorApplication` reads providers by key from the container when building props for react-admin; see [Application](./application). Components resolve them with `useProvider` or `useInjectable` (see [Dependency Injection](./dependency-injection)). When passed a `{ target }` class, `useProvider` checks that the class is registered under the `providers` namespace (`BindingNamespaces.PROVIDER`), throwing only when the class is bound under a different namespace.
 

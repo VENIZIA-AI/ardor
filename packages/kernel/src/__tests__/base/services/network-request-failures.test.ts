@@ -85,7 +85,8 @@ describe('errors the network service used to swallow', () => {
     const service = createFailingService({ name: 'refresh-failure-test' });
 
     const logged = await captureConsole(async () => {
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
     });
 
     expect(logged).toContain('refresh-boom');
@@ -96,7 +97,8 @@ describe('errors the network service used to swallow', () => {
     service.failureError = new Error('failure-boom');
 
     const logged = await captureConsole(async () => {
-      expect(await service.refresh()).toBe(false);
+      const result = await service.refresh();
+      expect(result).toBe(false);
     });
 
     expect(logged).toContain('refresh-boom');

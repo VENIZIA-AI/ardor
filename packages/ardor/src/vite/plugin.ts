@@ -139,13 +139,14 @@ export const createBuildInfoFilePlugin = (opts: {
     },
 
     async generateBundle() {
+      const result = await loadBody({
+        warn: (message) => this.warn(message),
+        policy: onUnresolved,
+      });
       this.emitFile({
         type: 'asset',
         fileName,
-        source: await loadBody({
-          warn: (message) => this.warn(message),
-          policy: onUnresolved,
-        }),
+        source: result,
       });
     },
   };

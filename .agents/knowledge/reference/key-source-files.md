@@ -51,14 +51,13 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/react/src/hooks/` - `use-autosave.ts`, `use-before-unload.ts`, `use-confirm.ts`, `use-copy-to-clipboard.ts`, `use-debounce.ts`, `use-sizer.ts`, `use-window-dimensions.ts`, and `redux/use-app-dispatch.ts` / `redux/use-app-selector.ts`. See [React hooks conventions](/conventions/react-hooks.md).
 
 ## Utilities
-- `packages/kernel/src/utilities/boolean.ts`, `file.ts`, `parse.ts`, `url.ts` - small pure helpers used throughout the kernel.
-- `packages/kernel/src/helpers/base-helper.ts` and `logger.ts` - shared helper base and logging.
+- `packages/kernel/src/utilities/value.ts`, `file.ts`, `browser.ts`, `runtime-config.ts` - the static utility classes (`ValueUtility`, `FileUtility`, `BrowserUtility`, `RuntimeConfig`) used throughout the kernel.
 
 ## Package entry points
 - `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./repository` in kernel and ARDOR. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), and [ARDOR package](/packages/ardor.md).
 
 ## Types and constants
 - `packages/kernel/src/common/types.ts`, `constants.ts` - shared kernel-wide types and constants.
-- `packages/react/src/common/types.ts` and `packages/admin/src/common/types.ts` - package-level shared types.
+- `packages/admin/src/common/types.ts` - the admin package's shared types. The react package has no `common` folder: its types sit beside the hook that uses them, such as `packages/react/src/hooks/use-injectable.ts`.
 
 For a narrower answer to "which file defines X", start at the package entry point, then follow its re-exports down into the concern-specific file listed above rather than searching blind.

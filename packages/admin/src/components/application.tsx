@@ -1,43 +1,39 @@
 import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
+import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';
 
-import { Logger } from '@venizia/ardor-kernel';
 import { type TFeature, Features } from '@/features/feature';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
-import {
-  hasPendingFeatureMessages,
-  loadFeatureMessages,
-  resolveApplicationProviders,
-} from './resolve';
+import { ApplicationProviders } from './resolve';
 
 const Wrapper: React.FC<{
   applicationName?: string;
   container: Container;
   reduxStore: Store;
   suspense: React.ReactNode;
-  enableDebug?: boolean;
+  logger?: ILogger;
   children: React.ReactNode;
 }> = ({
   applicationName = 'ArdorApplication',
   container,
   reduxStore,
   suspense,
-  enableDebug = false,
+  logger,
   children,
 }) => {
+  // The one the application passed, else a console logger named after it: built once, not per render.
+  const applicationLogger = React.useMemo(() => {
+    return logger ?? LoggerFactory.getLogger([applicationName]);
+  }, [logger, applicationName]);
+
   return (
-    <ApplicationContext.Provider
-      value={{
-        container,
-        logger: Logger.getInstance({ scope: applicationName, enableDebug }),
-      }}
-    >
+    <ApplicationContext.Provider value={{ container, logger: applicationLogger }}>
       <ReduxProvider store={reduxStore}>
         <React.Suspense fallback={suspense}>{children}</React.Suspense>
       </ReduxProvider>
@@ -58,18 +54,18 @@ const useFeatureMessagesReady = (opts: {
 
   const [state, setState] = React.useState<{ isReady: boolean; error?: unknown }>(() => {
     return {
-      isReady: !hasPendingFeatureMessages({ features, i18nProvider }),
+      isReady: !Features.hasPendingMessages({ features, i18nProvider }),
     };
   });
 
   React.useEffect(() => {
     if (state.isReady) {
-      return;
+      return () => {};
     }
 
     let isLive = true;
 
-    loadFeatureMessages({ features, i18nProvider }).then(
+    Features.loadMessages({ features, i18nProvider }).then(
       () => {
         if (isLive) {
           setState({ isReady: true });
@@ -99,7 +95,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     container,
     reduxStore,
     suspense,
-    enableDebug = false,
+    logger,
     resources,
     routes,
     features: selected,
@@ -118,7 +114,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   // Resolved once per container: the props below are a new object on every render.
   const providers = React.useMemo(() => {
-    return resolveApplicationProviders({ container });
+    return ApplicationProviders.resolve({ container });
   }, [container]);
 
   const adminProps = { ...providers, ...reactAdminProps };
@@ -130,24 +126,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   if (!isMessagesReady) {
     return (
-      <Wrapper
-        container={container}
-        reduxStore={reduxStore}
-        suspense={suspense}
-        enableDebug={enableDebug}
-      >
+      <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
         {suspense}
       </Wrapper>
     );
   }
 
   return (
-    <Wrapper
-      container={container}
-      reduxStore={reduxStore}
-      suspense={suspense}
-      enableDebug={enableDebug}
-    >
+    <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
       <CoreAdmin {...adminProps}>
         {mounted.resources.map((resource) => {
           return <Resource key={resource.name} {...resource} />;

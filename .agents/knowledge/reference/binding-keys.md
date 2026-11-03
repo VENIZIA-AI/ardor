@@ -33,7 +33,7 @@ generated:
 | Constant | Key |
 |---|---|
 | `PREFIX_AUTH` | `@app/auth/` |
-| `PREFIX_OAUTH2` | `@app/oauth2/` |
+| `PREFIX_STORE` | `@app/store/` |
 | `KEY_AUTH_TOKEN` | `@app/auth/token` |
 | `KEY_AUTH_IDENTITY` | `@app/auth/identity` |
 | `KEY_AUTH_PERMISSION` | `@app/auth/permission` |

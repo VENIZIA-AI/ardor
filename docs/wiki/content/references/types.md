@@ -33,9 +33,6 @@ Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common
 | Type | Kind | Definition and usage |
 |---|---|---|
 | `IdType` | `type` | Entity identifier (`string \| number`), used by all CRUD and provider method signatures. |
-| `NumberIdType` | `type` | Numeric entity identifier (`number`), used to narrow numeric entity ids. |
-| `StringIdType` | `type` | String entity identifier (`string`), used to narrow string entity ids. |
-| `NullableType` | `type` | Absent value union (`undefined \| null \| void`), used for empty or uninitialized states. |
 | `AnyType` | `type` | Named alias for `any`, used at untyped boundaries and generic defaults. |
 | `AnyObject` | `type` | Loose record (`Record<string \| symbol \| number, any>`), used for untyped property dictionaries. |
 | `ValueOrPromise<T>` | `type` | Sync or async value (`T \| Promise<T>`), used in application lifecycle methods (`preConfigure`, `start`). |
@@ -48,7 +45,6 @@ Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common
 | `TNumberConstValue<T>` | `type` | Extracts numeric literal unions from a const class with regular literal types (`& {}`). |
 | `TPaths<T>` | `type` | Dotted path union over object keys up to 10 levels deep, stopping at arrays. |
 | `TFullPaths<T>` | `type` | Dotted leaf path union over object keys up to 10 levels deep, descending into arrays. |
-| `TDataCount<T>` | `type` | Payload with optional total count (`{ data: T; count?: number }`). |
 
 ```ts
 import type { IdType, TFullPaths, TPaths, ValueOf, ValueOptional } from '@venizia/ardor';
@@ -108,7 +104,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `RequestChannel` | `class` | Client channel constant (`WEB: '100_WEB'`) with `SCHEME_SET` and `isValid`. |
 | `Authentication` | `class` | Auth types and strategies (`TYPE_BEARER`, `STRATEGY_JWT`) with `SCHEME_SET` and `isValid`. |
 | `HeaderConstants` | `class` | HTTP header string constants read and written by network services. |
-| `App` | `class` | Runtime defaults for `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_LOCALE`, and `DEFAULT_DEBOUNCE_TIME`. |
+| `App` | `class` | Runtime defaults for `TIMEZONE`, `TIMEZONE_OFFSET` and `DEFAULT_DEBOUNCE_TIME`. The i18n provider defaults to `en`. |
 
 ### Repositories (@venizia/ardor/repository)
 
@@ -134,11 +130,10 @@ Source files: `packages/ardor/src/repository.ts` and `packages/kernel/src/base/r
 
 ## @venizia/ardor-react
 
-Source files: `packages/react/src/common/types.ts` and `packages/react/src/hooks/use-injectable.ts`.
+Source file: `packages/react/src/hooks/use-injectable.ts`.
 
 | Type | Kind | Definition and usage |
 |---|---|---|
-| `ISyncFC<TProps>` | `interface` | Synchronous functional component interface returning `ReactNode`. |
 | `IUseInjectableKeysOverrides` | `interface` | Augmentation interface for registering custom string keys with `useInjectable`. |
 | `TUseInjectableKeysDefault` | `type` | Union of default string keys extracted from `CoreBindings`. |
 | `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable` (`TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides`). |
@@ -155,6 +150,7 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `IReactAdminAuthProvider` | `interface` | Standard react-admin auth provider contract (`login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess`). |
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. |
 | `II18nProviderOptions` | `interface` | i18n configuration options (`i18nSources`, `languages`), bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. |
+| `TI18nSource` | `type` | The messages of one locale: an object, or a loader `() => Promise<object>` called the first time the locale is used. |
 | `IApplication` | `interface` | Props accepted by `<ArdorApplication>` (`container`, `reduxStore`, `suspense`, `resources`, `routes`). |
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. |

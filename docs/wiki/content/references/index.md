@@ -5,7 +5,7 @@ description: Technical API reference for ARDOR container classes, providers, bin
 
 # ARDOR API References
 
-ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`getRuntimeConfig`) has its own section below.
+ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get`) has its own section below.
 
 <div class="guide-cards">
 <a href="./application" class="guide-card"><h3>Application</h3><p>Container lifecycle, configuration, and ArdorApplication component</p></a>
@@ -18,7 +18,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 <a href="./features" class="guide-card"><h3>Features</h3><p>Feature package definitions, configuration classes, and route mounting</p></a>
 <a href="./repository" class="guide-card"><h3>Repository</h3><p>HttpRepository and HttpDataSource for resource-level operations</p></a>
 <a href="./hooks" class="guide-card"><h3>Hooks</h3><p>Container resolution, Redux hooks, ra-core helpers, and UI utilities</p></a>
-<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network</p></a>
+<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network; FakeResizeObserver delivers a size in a test</p></a>
 <a href="./types" class="guide-card"><h3>Types</h3><p>Kernel type aliases, const classes, path helpers, and options shapes</p></a>
 </div>
 
@@ -39,10 +39,11 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 | Testing | `@venizia/ardor` (`/testing`) | [Testing](./testing) |
 | Types | `@venizia/ardor-kernel` | [Types](./types) |
 | Runtime config | `@venizia/ardor-kernel` | [Runtime config](#runtime-config) |
+| Browser storage | `@venizia/ardor-kernel` | [Browser storage](#browser-storage) |
 
 ## Runtime config
 
-`getRuntimeConfig` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
+`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
@@ -54,11 +55,11 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 Without `required` the result is `string | undefined`. With `required: true` and no value anywhere, it throws an `ApplicationError` from `@venizia/ignis-inversion`. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
 
 ```typescript
-import { getRuntimeConfig, RUNTIME_CONFIG_REQUIRED_CODE } from '@venizia/ardor';
+import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 try {
-  getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+  RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
 } catch (error) {
   if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
     console.error('missing config key', error.extra?.key);
@@ -67,6 +68,29 @@ try {
 ```
 
 `RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
+
+## Browser storage
+
+`BrowserStorage` reads and writes `localStorage` and `sessionStorage` outside React, and it never throws. A missing area (a server), a blocked accessor (private mode), a quota error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at import.
+
+```typescript
+import { BrowserStorage, StorageAreas } from '@venizia/ardor';
+
+BrowserStorage.set({ key: '@app/store/theme', value: { mode: 'dark' } });
+const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: { mode: 'light' } });
+BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
+```
+
+| Method | Returns | Meaning |
+|---|---|---|
+| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` | The key is missing, the accessor throws, or `decode` throws. |
+| `set({ key, value, storage?, codec? })` | `boolean` | `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`. |
+| `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
+| `subscribe({ key, storage?, listener })` | a function that stops it | `listener` runs after a `set` or `remove` through `BrowserStorage` and after another tab changes the key. |
+
+`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default.
+
+Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 
 ## Find the Exact API
 

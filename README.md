@@ -46,9 +46,9 @@ import {
   DefaultI18nProvider,
   DefaultRestDataProvider,
   englishMessages,
-  getRuntimeConfig,
   inject,
   provide,
+  RuntimeConfig,
 } from '@venizia/ardor';
 
 @configuration()
@@ -61,7 +61,7 @@ export class AdminConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions() {
     // The API is `/api` unless VITE_API_URL says otherwise, in .env or in the container's config.js.
-    const url = getRuntimeConfig({
+    const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
       buildTimeEnv: import.meta.env,
       defaultValue: '/api',

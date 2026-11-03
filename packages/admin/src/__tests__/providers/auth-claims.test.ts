@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { Logger } from '@venizia/ardor-kernel';
+import { describe, expect, spyOn, test } from 'bun:test';
+import { BaseHelper, type ILogger, LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 
 import { DefaultAuthProvider } from '@/providers/auth';
 
 interface IClaimsReader {
-  logger: Logger;
+  logger: ILogger;
   decodeJwtClaims(opts: { jwt: string }): Record<string, unknown> | undefined;
 }
 
@@ -13,16 +13,12 @@ const scope = 'auth-claims-test';
 /** The provider without its container: `decodeJwtClaims` reads nothing but its input and its logger. */
 const createReader = (): IClaimsReader => {
   const reader = Object.create(DefaultAuthProvider.prototype) as IClaimsReader;
-  reader.logger = Logger.getInstance({ scope, enableDebug: true });
+  reader.logger = new BaseHelper({ scope }).logger;
 
   return reader;
 };
 
 const encode = (value: string): string => btoa(value).replace(/=+$/, '');
-
-afterEach(() => {
-  Logger.getInstance({ scope, enableDebug: false });
-});
 
 const logsOf = (run: () => unknown): string => {
   const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
@@ -30,10 +26,14 @@ const logsOf = (run: () => unknown): string => {
   );
 
   try {
+    // The failure is logged at debug level, which is off unless the application turns it on.
+    // oxlint-disable-next-line react-hooks/rules-of-hooks -- LoggerFactory.use sets a level; it is not a React hook
+    LoggerFactory.use({ level: LogLevels.DEBUG });
     run();
 
     return JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
   } finally {
+    LoggerFactory.reset();
     for (const spy of spies) {
       spy.mockRestore();
     }

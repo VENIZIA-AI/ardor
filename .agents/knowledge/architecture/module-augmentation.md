@@ -44,9 +44,9 @@ The declaring packages are the fragile target. An application depends on `@veniz
 
 Applications are expected to derive their key unions from something real - a `const` bindings map, an application's `bindingList()` method, or a message object - rather than typing literals by hand twice. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof ReturnType<any>` collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
 
-## Retargeting legacy augmentation blocks
+## Where the augmentation lives
 
-Code that augments `@venizia/ardor-react` or `@venizia/ardor-admin` works only where the application depends on that package itself; elsewhere its `declare module` target is rewritten to `@venizia/ardor`. This retargeting is mechanical: the interface body and the derived key type stay the same, only the string after `declare module` changes, and one block can hold both override interfaces. After retargeting, augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten.
+Augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten. One `declare module '@venizia/ardor'` block can hold both override interfaces.
 
 ## Verifying with @ts-expect-error
 

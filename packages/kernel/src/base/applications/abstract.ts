@@ -177,7 +177,8 @@ export abstract class AbstractArdorApplication extends Container implements IArd
         });
       }
 
-      resolved.push(await group.resolve());
+      const result = await group.resolve();
+      resolved.push(result);
     }
 
     return resolved;
@@ -297,7 +298,8 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   async start() {
-    this.resolvedIndexes = await this.resolveArtifactIndexes();
+    const result = await this.resolveArtifactIndexes();
+    this.resolvedIndexes = result;
     await this.preConfigure();
     await this.postConfigure();
   }

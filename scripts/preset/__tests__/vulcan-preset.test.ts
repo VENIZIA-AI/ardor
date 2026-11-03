@@ -273,15 +273,14 @@ describe('buildPreset, a library preset', () => {
   });
 });
 
-// run 40906705541: the Test job builds the preset on the IGNIS prerelease, and `vulcan add` refused the catalog
-// `vulcan init` had written, because ^0.4.1 does not meet 0.4.6-0.
+// VULCAN 0.4.9 compares a catalog pin that `init` wrote from the preset with what the preset lists, not with its
+// peer range, so the peers are no longer widened with the prerelease the preset was built on (run 40906705541).
 describe('buildPreset, a preset built on a prerelease catalog', () => {
-  const peers = { '@venizia/ignis-kernel': 'peer:', react: '^19.0.0' };
-  const peersOf = (
-    catalog: Record<string, string>,
-    template: Record<string, string> = peers,
-  ): Record<string, string> | undefined => {
-    const root = repository({ template: { peers: template }, catalog });
+  test('the peer ranges stay as the template writes them, whatever the catalog pins', () => {
+    const root = repository({
+      template: { peers: { '@venizia/ignis-kernel': 'peer:', react: '^19.0.0' } },
+      catalog: { '@venizia/ignis-kernel': '^0.2.3-1', react: '^19.2.7' },
+    });
     buildPreset({
       root,
       packageDirectory: 'packages/umbrella',
@@ -289,29 +288,10 @@ describe('buildPreset, a preset built on a prerelease catalog', () => {
       outDirectory: join(root, 'packages/umbrella/dist/presets'),
     });
 
-    return JSON.parse(
-      readFileSync(join(root, 'packages/umbrella/dist/presets/app/preset.json'), 'utf8'),
-    ).peers;
-  };
-
-  test('the peer range also accepts the exact prerelease the catalog pins', () => {
-    expect(peersOf({ '@venizia/ignis-kernel': '^0.2.3-1', react: '^19.2.7' })).toEqual({
-      '@venizia/ignis-kernel': '^0.2.2 || 0.2.3-1',
-      react: '^19.0.0',
-    });
-  });
-
-  test('a stable catalog leaves every range as it is', () => {
-    expect(peersOf({ '@venizia/ignis-kernel': '^0.2.3', react: '^19.2.7' })).toEqual({
-      '@venizia/ignis-kernel': '^0.2.2',
-      react: '^19.0.0',
-    });
-  });
-
-  test('a prerelease the range already meets is not widened', () => {
-    expect(peersOf({ react: '^19.3.0-rc.1' }, { react: '>=19.3.0-rc.0' })).toEqual({
-      react: '>=19.3.0-rc.0',
-    });
+    expect(
+      JSON.parse(readFileSync(join(root, 'packages/umbrella/dist/presets/app/preset.json'), 'utf8'))
+        .peers,
+    ).toEqual({ '@venizia/ignis-kernel': '^0.2.2', react: '^19.0.0' });
   });
 });
 

@@ -10,7 +10,7 @@ import {
   type IApplicationInfo,
 } from '@venizia/ardor-kernel';
 import { getError } from '@venizia/ignis-inversion';
-import { assertArdorApplicationBoots } from '@/testing';
+import { assertArdorApplicationBoots, FakeResizeObserver } from '@/testing';
 
 class Dependency {}
 
@@ -97,7 +97,8 @@ describe('assertArdorApplicationBoots', () => {
       ],
     });
 
-    expect(await assertArdorApplicationBoots(application)).toBe(application);
+    const result = await assertArdorApplicationBoots(application);
+    expect(result).toBe(application);
   });
 
   test('rejects when a service injects a key nobody bound, naming the key and who needs it', async () => {
@@ -228,9 +229,8 @@ describe('assertArdorApplicationBoots', () => {
 
     expect(seen).toBeDefined();
     expect(seen).not.toBe(originalFetch);
-    expect(await messageOf((seen as typeof fetch)('http://localhost/x'))).toContain(
-      'never reaches the network',
-    );
+    const result = await messageOf((seen as typeof fetch)('http://localhost/x'));
+    expect(result).toContain('never reaches the network');
     expect(globalThis.fetch).toBe(originalFetch);
   });
 
@@ -255,5 +255,89 @@ describe('assertArdorApplicationBoots', () => {
     const message = await messageOf(assertArdorApplicationBoots(application));
 
     expect(message).toContain('key defined twice');
+  });
+});
+
+describe('FakeResizeObserver', () => {
+  const targetOf = (): Element => {
+    const target: unknown = { tagName: 'DIV' };
+    return target as Element;
+  };
+
+  test('install swaps the global observer and the returned function puts the previous one back', () => {
+    const previous = Reflect.get(globalThis, 'ResizeObserver');
+
+    const restore = FakeResizeObserver.install();
+    expect(Reflect.get(globalThis, 'ResizeObserver')).toBe(FakeResizeObserver);
+
+    restore();
+    expect(Reflect.get(globalThis, 'ResizeObserver')).toBe(previous);
+  });
+
+  test('flush calls an observer of the element once, with the size in every box', () => {
+    const restore = FakeResizeObserver.install();
+    const element = targetOf();
+    const received: Array<ResizeObserverEntry> = [];
+    const observer = new ResizeObserver((entries) => {
+      received.push(...entries);
+    });
+    observer.observe(element);
+
+    FakeResizeObserver.flush({ element, width: 120, height: 40 });
+
+    expect(received).toHaveLength(1);
+    const [entry] = received;
+    expect(entry?.target).toBe(element);
+    expect(entry?.contentRect.width).toBe(120);
+    expect(entry?.contentRect.height).toBe(40);
+    expect(entry?.borderBoxSize[0]).toEqual({ inlineSize: 120, blockSize: 40 });
+    expect(entry?.contentBoxSize[0]).toEqual({ inlineSize: 120, blockSize: 40 });
+    restore();
+  });
+
+  test('flush skips an element nobody observes, one that was unobserved and a disconnected observer', () => {
+    const restore = FakeResizeObserver.install();
+    const watched = targetOf();
+    const other = targetOf();
+    const calls: Array<string> = [];
+    const first = new ResizeObserver(() => calls.push('first'));
+    const second = new ResizeObserver(() => calls.push('second'));
+    first.observe(watched);
+    first.unobserve(watched);
+    second.observe(watched);
+    second.disconnect();
+
+    FakeResizeObserver.flush({ element: watched, width: 1, height: 1 });
+    FakeResizeObserver.flush({ element: other, width: 1, height: 1 });
+
+    expect(calls).toEqual([]);
+    restore();
+  });
+
+  test('flush reaches every observer of the same element', () => {
+    const restore = FakeResizeObserver.install();
+    const element = targetOf();
+    const calls: Array<string> = [];
+    new ResizeObserver(() => calls.push('a')).observe(element);
+    new ResizeObserver(() => calls.push('b')).observe(element);
+
+    FakeResizeObserver.flush({ element, width: 5, height: 5 });
+
+    expect(calls).toEqual(['a', 'b']);
+    restore();
+  });
+
+  test('install forgets the observers of an earlier install', () => {
+    const restoreFirst = FakeResizeObserver.install();
+    const element = targetOf();
+    const calls: Array<string> = [];
+    new ResizeObserver(() => calls.push('stale')).observe(element);
+    restoreFirst();
+
+    const restore = FakeResizeObserver.install();
+    FakeResizeObserver.flush({ element, width: 5, height: 5 });
+
+    expect(calls).toEqual([]);
+    restore();
   });
 });

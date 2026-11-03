@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { isApplicationError } from '@venizia/ignis-inversion';
 import {
-  getRuntimeConfig,
   RUNTIME_CONFIG_GLOBAL,
   RUNTIME_CONFIG_REQUIRED_CODE,
+  RuntimeConfig,
 } from '@/utilities/runtime-config';
 
 const setRuntimeConfig = (value: unknown) => {
   Reflect.set(globalThis, RUNTIME_CONFIG_GLOBAL, value);
 };
 
-describe('getRuntimeConfig', () => {
+describe('RuntimeConfig.get', () => {
   afterEach(() => {
     Reflect.deleteProperty(globalThis, RUNTIME_CONFIG_GLOBAL);
   });
@@ -23,7 +23,7 @@ describe('getRuntimeConfig', () => {
     setRuntimeConfig({ VITE_API_URL: 'https://api.example.com' });
 
     expect(
-      getRuntimeConfig({
+      RuntimeConfig.get({
         key: 'VITE_API_URL',
         buildTimeEnv: { VITE_API_URL: '/dev-api' },
         defaultValue: '/api',
@@ -33,24 +33,24 @@ describe('getRuntimeConfig', () => {
 
   test('without a runtime value it falls back to the build-time env, then to the default', () => {
     expect(
-      getRuntimeConfig({
+      RuntimeConfig.get({
         key: 'VITE_API_URL',
         buildTimeEnv: { VITE_API_URL: '/dev-api' },
         defaultValue: '/api',
       }),
     ).toBe('/dev-api');
-    expect(getRuntimeConfig({ key: 'VITE_API_URL', buildTimeEnv: {}, defaultValue: '/api' })).toBe(
+    expect(RuntimeConfig.get({ key: 'VITE_API_URL', buildTimeEnv: {}, defaultValue: '/api' })).toBe(
       '/api',
     );
-    expect(getRuntimeConfig({ key: 'VITE_API_URL', defaultValue: '/api' })).toBe('/api');
-    expect(getRuntimeConfig({ key: 'VITE_API_URL' })).toBeUndefined();
+    expect(RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: '/api' })).toBe('/api');
+    expect(RuntimeConfig.get({ key: 'VITE_API_URL' })).toBeUndefined();
   });
 
   test('an empty runtime value falls through, as an unset one does', () => {
     setRuntimeConfig({ VITE_API_URL: '' });
 
     expect(
-      getRuntimeConfig({ key: 'VITE_API_URL', buildTimeEnv: { VITE_API_URL: '/dev-api' } }),
+      RuntimeConfig.get({ key: 'VITE_API_URL', buildTimeEnv: { VITE_API_URL: '/dev-api' } }),
     ).toBe('/dev-api');
   });
 
@@ -58,11 +58,11 @@ describe('getRuntimeConfig', () => {
     setRuntimeConfig({ VITE_FLAG: true, VITE_COUNT: 3, VITE_NESTED: { a: 1 } });
 
     for (const key of ['VITE_FLAG', 'VITE_COUNT', 'VITE_NESTED']) {
-      expect(getRuntimeConfig({ key, defaultValue: 'fallback' })).toBe('fallback');
+      expect(RuntimeConfig.get({ key, defaultValue: 'fallback' })).toBe('fallback');
     }
 
     expect(
-      getRuntimeConfig({ key: 'DEV', buildTimeEnv: { DEV: true }, defaultValue: 'fallback' }),
+      RuntimeConfig.get({ key: 'DEV', buildTimeEnv: { DEV: true }, defaultValue: 'fallback' }),
     ).toBe('fallback');
   });
 
@@ -70,39 +70,39 @@ describe('getRuntimeConfig', () => {
     for (const value of [undefined, null, 'text', 7, []]) {
       setRuntimeConfig(value);
 
-      expect(getRuntimeConfig({ key: 'VITE_API_URL', defaultValue: 'fallback' })).toBe('fallback');
+      expect(RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: 'fallback' })).toBe('fallback');
     }
   });
 
   test('a key inherited from Object.prototype is not a config value', () => {
     setRuntimeConfig({});
 
-    expect(getRuntimeConfig({ key: 'toString' })).toBeUndefined();
-    expect(getRuntimeConfig({ key: 'constructor', buildTimeEnv: {} })).toBeUndefined();
+    expect(RuntimeConfig.get({ key: 'toString' })).toBeUndefined();
+    expect(RuntimeConfig.get({ key: 'constructor', buildTimeEnv: {} })).toBeUndefined();
   });
 
   describe('required', () => {
     test('is a string, by the runtime value, the build-time value or the default', () => {
       setRuntimeConfig({ VITE_API_URL: 'https://api.example.com' });
-      expect(getRuntimeConfig({ key: 'VITE_API_URL', required: true })).toBe(
+      expect(RuntimeConfig.get({ key: 'VITE_API_URL', required: true })).toBe(
         'https://api.example.com',
       );
 
       setRuntimeConfig({});
       expect(
-        getRuntimeConfig({
+        RuntimeConfig.get({
           key: 'VITE_API_URL',
           buildTimeEnv: { VITE_API_URL: '/dev-api' },
           required: true,
         }),
       ).toBe('/dev-api');
-      expect(getRuntimeConfig({ key: 'VITE_API_URL', defaultValue: '/api', required: true })).toBe(
+      expect(RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: '/api', required: true })).toBe(
         '/api',
       );
     });
 
     test('throws when the runtime value, the build-time value and the default are all absent', () => {
-      expect(() => getRuntimeConfig({ key: 'VITE_API_URL', required: true })).toThrow(
+      expect(() => RuntimeConfig.get({ key: 'VITE_API_URL', required: true })).toThrow(
         "'VITE_API_URL'",
       );
     });
@@ -110,7 +110,7 @@ describe('getRuntimeConfig', () => {
     test('the error is told by its code and carries the key, whatever the message says', () => {
       let thrown: unknown;
       try {
-        getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+        RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
       } catch (error) {
         thrown = error;
       }
@@ -128,7 +128,7 @@ describe('getRuntimeConfig', () => {
       setRuntimeConfig({ VITE_API_URL: '', VITE_TOKEN_HINT: 424242 });
 
       expect(() =>
-        getRuntimeConfig({
+        RuntimeConfig.get({
           key: 'VITE_API_URL',
           buildTimeEnv: { VITE_API_URL: '' },
           required: true,
@@ -137,7 +137,7 @@ describe('getRuntimeConfig', () => {
 
       let message = '';
       try {
-        getRuntimeConfig({ key: 'VITE_TOKEN_HINT', required: true });
+        RuntimeConfig.get({ key: 'VITE_TOKEN_HINT', required: true });
       } catch (error) {
         message = error instanceof Error ? error.message : String(error);
       }
@@ -146,22 +146,22 @@ describe('getRuntimeConfig', () => {
     });
 
     test('required: false or unset keeps returning undefined', () => {
-      expect(getRuntimeConfig({ key: 'VITE_API_URL', required: false })).toBeUndefined();
-      expect(getRuntimeConfig({ key: 'VITE_API_URL' })).toBeUndefined();
+      expect(RuntimeConfig.get({ key: 'VITE_API_URL', required: false })).toBeUndefined();
+      expect(RuntimeConfig.get({ key: 'VITE_API_URL' })).toBeUndefined();
     });
 
     test('the type narrows: string with required: true, string | undefined without', () => {
       setRuntimeConfig({ VITE_API_URL: '/api' });
 
-      const narrowed: string = getRuntimeConfig({ key: 'VITE_API_URL', required: true });
+      const narrowed: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
       expect(narrowed).toBe('/api');
 
       // @ts-expect-error - without `required: true` the value may be undefined
-      const widened: string = getRuntimeConfig({ key: 'VITE_API_URL' });
+      const widened: string = RuntimeConfig.get({ key: 'VITE_API_URL' });
       expect(widened).toBe('/api');
 
       // @ts-expect-error - a `required` known only as boolean may be false, so it may be undefined
-      const flag: string = getRuntimeConfig({ key: 'VITE_API_URL', required: Boolean('x') });
+      const flag: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: Boolean('x') });
       expect(flag).toBe('/api');
     });
   });

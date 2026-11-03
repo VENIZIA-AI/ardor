@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
-import { Logger } from '@/helpers';
+import { AuthTokenStore } from '@/helpers';
 
-const storeLogger = () => Logger.getInstance({ scope: 'AuthTokenStore' });
+// The store's own logger (private), so a test can see the one warning it writes.
+const storeLogger = () => AuthTokenStore['logger'];
 
 describe('saveAuth and credential retrieval', () => {
   beforeEach(() => {
@@ -232,14 +233,13 @@ describe('cleanUp selective removal', () => {
     localStorage.clear();
   });
 
-  test('cleanUp removes only keys starting with @app/auth/ and @app/oauth2/, leaving other keys intact', () => {
+  test('cleanUp removes only keys starting with @app/auth/, leaving other keys intact', () => {
     const service = new DefaultAuthService();
 
     localStorage.setItem('@app/auth/token', 'token-val');
     localStorage.setItem('@app/auth/identity', 'identity-val');
     localStorage.setItem('@app/auth/permission', 'perm-val');
     localStorage.setItem('@app/oauth2/state', 'state-val');
-    localStorage.setItem('@app/oauth2/pkce_verifier', 'verifier-val');
     localStorage.setItem('@app/settings/theme', 'dark');
     localStorage.setItem('@app/application/instance', 'inst-001');
     localStorage.setItem('unprefixed_key', 'preserve-me');
@@ -249,9 +249,9 @@ describe('cleanUp selective removal', () => {
     expect(localStorage.getItem('@app/auth/token')).toBeNull();
     expect(localStorage.getItem('@app/auth/identity')).toBeNull();
     expect(localStorage.getItem('@app/auth/permission')).toBeNull();
-    expect(localStorage.getItem('@app/oauth2/state')).toBeNull();
-    expect(localStorage.getItem('@app/oauth2/pkce_verifier')).toBeNull();
 
+    // Not a session key since the prefix was dropped: it stays.
+    expect(localStorage.getItem('@app/oauth2/state')).toBe('state-val');
     expect(localStorage.getItem('@app/settings/theme')).toBe('dark');
     expect(localStorage.getItem('@app/application/instance')).toBe('inst-001');
     expect(localStorage.getItem('unprefixed_key')).toBe('preserve-me');
@@ -375,9 +375,69 @@ describe('without a localStorage', () => {
 });
 
 describe('LocalStorageKeys prefixes', () => {
-  test('name the two prefixes cleanUp removes', () => {
+  test('name the one prefix cleanUp removes', () => {
     expect(LocalStorageKeys.PREFIX_AUTH).toBe('@app/auth/');
-    expect(LocalStorageKeys.PREFIX_OAUTH2).toBe('@app/oauth2/');
+    expect(Reflect.has(LocalStorageKeys, 'PREFIX_OAUTH2')).toBe(false);
     expect(LocalStorageKeys.KEY_AUTH_TOKEN.startsWith(LocalStorageKeys.PREFIX_AUTH)).toBe(true);
+  });
+});
+
+describe('subscribe', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('saveAuth notifies after the token and the identity are stored', () => {
+    const service = new DefaultAuthService();
+    const seen: Array<string | undefined> = [];
+    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    service.saveAuth({ userId: 7, token: { value: 'tok-2', type: 'Bearer' } });
+
+    expect(seen).toEqual(['tok-1', 'tok-2']);
+  });
+
+  test('cleanUp notifies after the session keys are removed', () => {
+    const service = new DefaultAuthService();
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    const seen: Array<string | undefined> = [];
+    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+
+    service.cleanUp();
+
+    expect(seen).toEqual([undefined]);
+  });
+
+  test('the function it returns stops the listener', () => {
+    const service = new DefaultAuthService();
+    const calls: Array<string> = [];
+    const stop = service.subscribe({ listener: () => calls.push('called') });
+    stop();
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+
+    expect(calls).toEqual([]);
+  });
+
+  test('a listener that throws does not break saveAuth, cleanUp or the other listeners', () => {
+    const service = new DefaultAuthService();
+    const calls: Array<string> = [];
+    service.subscribe({
+      listener: () => {
+        throw new Error('listener failed');
+      },
+    });
+    service.subscribe({ listener: () => calls.push('second') });
+
+    service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
+    service.cleanUp();
+
+    expect(calls).toEqual(['second', 'second']);
+    expect(service.getAuth()).toBeNull();
   });
 });
