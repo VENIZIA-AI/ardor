@@ -18,7 +18,7 @@ Providers (`src/providers/index.ts`):
 - `DefaultI18nProvider`, plus bundled `englishMessages` and `vietnameseMessages` - the concrete i18n provider for react-admin, part of the framework's [i18n](/architecture/i18n.md) story. The messages (the features', the application's source and English) are merged by a small internal `deepMerge` (`src/common/merge.ts`, not exported by the package: a later source wins, plain objects merge, an array or a string replaces, an `undefined` never overwrites, `__proto__` is dropped); neither `ardor-admin` nor `ardor-react` depends on `lodash`. Its hooks are `resolveInitialLocale({ locales })` (reads `navigator.language` when the provider is built, never at import) and `composeMessages({ locale, messages })`.
 
 Features (`src/features/index.ts`):
-- `Features` (static `define`, `read`, `mount`, `loadMessages`), `TFeature` (`IFeatureBase` plus `resources`, `routes` and `messages`) and `TFeatureMessages` (per locale, the messages or a loader for them). `FeatureMessages` stays internal. See [feature modules](/architecture/feature-modules.md).
+- `Features` (static `define`, `read`, `mount`, `hasPendingMessages`, `loadMessages`), `TFeature` (`IFeatureBase` plus `resources`, `routes` and `messages`) and `TFeatureMessages` (per locale, the messages or a loader for them). `FeatureMessages` stays internal. See [feature modules](/architecture/feature-modules.md).
 
 Hooks (`src/hooks/index.ts`):
 - `useTranslate` - a typed wrapper over react-admin's translate hook.
