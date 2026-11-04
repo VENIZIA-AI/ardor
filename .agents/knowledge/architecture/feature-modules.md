@@ -10,15 +10,15 @@ tags: [architecture, features, permissions, i18n, admin, kernel]
 
 A feature package is one value describing an area of an admin: the `@configuration()` classes that
 register its services and repositories, the resources and routes it mounts, its messages, and the
-permissions it checks. BANA's two shells (web-manager, web-bo) mount the same feature packages; the
+permissions it checks. Two shells of one project can mount the same feature packages; the
 mechanism is ARDOR's, the conventions (menu, permission vocabulary, workspace context) are the
-application's. Decided by Phat on 2026-10-07; design reviewed by BANA (Inven-1).
+application's. Decided by Phat on 2026-10-07; design reviewed by a project that uses Venizia.
 
 ## Split by layer
 
 The kernel imports no React and no ra-core, so the type is split. `IFeatureBase` and
 `IPermissionProvider` live in `packages/kernel/src/common/types.ts`; `TFeature<TExtension>`,
-`Features.define` and `useFeatures` in admin. `TExtension` is what a shell adds (BANA: menu entries);
+`Features.define` and `useFeatures` in admin. `TExtension` is what a shell adds (a project's menu entries);
 ARDOR carries it and never reads it - a generic rather than an untyped `extensions` bag.
 
 ## Registration
@@ -49,8 +49,8 @@ calling anything (`useCanAccess.js`, `emptyQueryObserverResult`) - no behaviour 
 binds nothing. ra-core caches answers under `['auth', 'canAccess', ...]`; the application invalidates
 `['auth']` on a workspace switch. `value(container)` takes the provider passed to the constructor, else reads
 `PERMISSION_PROVIDER` from the container (optional), so a subclass with its own constructor that
-passes three arguments to `super` (every BANA `AuthProvider`; `kits/admin` adds a socket at index 3)
-still gets `canAccess`. A provider passed to `super` wins over the bound one. No `useCan` alias: BANA calls `useCanAccess` directly.
+passes three arguments to `super` (every `AuthProvider` of a project that uses Venizia; one of them adds a socket at index 3)
+still gets `canAccess`. A provider passed to `super` wins over the bound one. No `useCan` alias: an application calls `useCanAccess` directly.
 
 ## Messages
 

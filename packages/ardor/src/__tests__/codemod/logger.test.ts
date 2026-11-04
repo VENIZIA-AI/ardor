@@ -211,7 +211,7 @@ describe('the move off the kernel logger: the enableDebug prop', () => {
   });
 });
 
-// BANA's BaseHelper subclasses extend a copy in kits/core, not ARDOR's: the codemod follows the import
+// A downstream project's BaseHelper subclasses extend a copy in its own kit, not ARDOR's: the codemod follows the import
 // source, so a BaseHelper that does not come from an ARDOR package is never touched.
 describe("a BaseHelper, LoggerFactory or ILogger the file owns is not ARDOR's", () => {
   test('a BaseHelper from another module is left alone, whatever else the file imports from ARDOR', () => {

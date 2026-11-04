@@ -131,7 +131,7 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('refused src/a.ts');
   });
 
-  // The BANA case: another codemod already changed a file, so the tree is dirty when this one runs.
+  // The downstream case: another codemod already changed a file, so the tree is dirty when this one runs.
   describe('a file another codemod already changed', () => {
     const OTHER = `${OLD}// changed by another codemod\n`;
     const OTHER_NEW = `${NEW}// changed by another codemod\n`;
