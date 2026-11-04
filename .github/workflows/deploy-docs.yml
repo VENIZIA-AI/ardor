@@ -190,7 +190,7 @@ jobs:
         run: bun install
 
       - name: Publish the atlas index
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@0ff780cf6f4b5162b380a4ab9de8394167101e3a # v0.4.10-2
         with:
           ref: ${{ inputs.ref }}
         env:

@@ -11,6 +11,9 @@ export default {
   // W-00: no agent signature in a commit message.
   commit: { message: { agent: { signature: 'deny' } } },
 
+  // A write outside the project folder is denied, not asked about.
+  guard: { outside: 'deny' },
+
   // Team-shared Claude settings that `vulcan sync` merges into `.claude/settings.json`. The two
   // plugins are off here by choice of the team, not a VULCAN default.
   claude: {
