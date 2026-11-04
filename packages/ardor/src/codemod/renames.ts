@@ -67,6 +67,7 @@ export class HookRenames {
     'useHtmlLang',
     'useInjectable',
     'useInjectableContainer',
+    'useIntersection',
     'useMediaQuery',
     'useNotifyError',
     'useOnlineStatus',

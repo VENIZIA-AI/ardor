@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (48)
+### `@venizia/ardor-react` (50)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -155,6 +155,7 @@ generated:
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseIntersectionOptions` interface
 - `IUseResizeEffectOptions` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
@@ -162,7 +163,7 @@ generated:
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `SelectorHooks` class
-- `TResizeTarget` type
+- `TElementTarget` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
@@ -179,6 +180,7 @@ generated:
 - `useElementSize` function
 - `useInjectable` const
 - `useInjectableContainer` const
+- `useIntersection` const
 - `useMediaQuery` const
 - `useOnlineStatus` const
 - `useProvider` const
@@ -237,7 +239,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (185)
+### `@venizia/ardor` (187)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -330,6 +332,7 @@ generated:
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseResizeEffectOptions` interface
 - `IUseSizerOptions` interface
@@ -363,6 +366,7 @@ generated:
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
+- `TElementTarget` type
 - `TEnvironment` type
 - `TFeature` type
 - `TFeatureMessages` type
@@ -376,7 +380,6 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
-- `TResizeTarget` type
 - `TSessionClearReason` type
 - `TStorageArea` type
 - `TStringConstValue` type
@@ -404,6 +407,7 @@ generated:
 - `useHtmlLang` const
 - `useInjectable` const
 - `useInjectableContainer` const
+- `useIntersection` const
 - `useMediaQuery` const
 - `useNotifyError` const
 - `useOnlineStatus` const

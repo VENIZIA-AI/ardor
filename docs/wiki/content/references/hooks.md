@@ -61,6 +61,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
 | Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
 | Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
+| Know whether an element is in view, with `IntersectionObserver` | `useIntersection` | Browser DOM | `IntersectionObserverEntry \| undefined` |
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 | Know whether a media query matches | `useMediaQuery` | Browser window | `boolean` |
@@ -632,6 +633,32 @@ export function Popover({ open }: { open: boolean }) {
 - **Parameters**: `opts: IUseResizeEffectOptions` - `targets: Array<React.RefObject<Element | null> | Element | null>` (an element, a ref to one, or `null`, which is skipped), `onResize: (entries: ResizeObserverEntry[]) => void`, optional `box`: `content-box` (default) or `border-box`, optional `children`: `true` also observes the direct children of each target (default `false`).
 - **Return value**: `void`.
 - **Gotcha**: One `ResizeObserver` watches all the elements, and `onResize` runs at most once per animation frame with the latest entry of each element that resized since the last call. The hook keeps the latest `onResize`, so a new function each render does not observe again. The targets are read after every render and the observer follows the set: a new element is observed, one that is gone is not, and an element that is already observed is left alone, so a list made anew in each render observes nothing again. Pass an element held in state (`useState` with the setter as `ref`) for one that mounts conditionally or is found by a query, or a ref whose `current` is read at each render; a `null` is skipped. A ref whose `current` changes without a render of this component is not seen until its next render. The first entries are delivered as the browser delivers them, so `onResize` runs once when observing starts. With `children`, a child added later is observed, and so delivers its first entry, and a removed child is not observed any more; a grandchild is never observed, and a `MutationObserver` exists only with `children`. Where there is no `ResizeObserver` the hook does nothing. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). Defined in `packages/react/src/hooks/use-resize-effect.ts`.
+
+### useIntersection
+
+```tsx
+import React from 'react';
+import { useIntersection } from '@venizia/ardor';
+
+export function LoadMore({ onLoad }: { onLoad: () => void }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const entry = useIntersection({ target: ref, rootMargin: '200px' });
+
+  React.useEffect(() => {
+    if (entry?.isIntersecting) {
+      onLoad();
+    }
+  }, [entry?.isIntersecting, onLoad]);
+
+  return <div ref={ref} />;
+}
+```
+
+Use it to know whether an element is in view: lazy content, a "load more" sentinel, a sticky header. A caller that wants only the boolean reads `entry?.isIntersecting`. An element that mounts conditionally goes in as state, as for `useResizeEffect`.
+
+- **Parameters**: `opts: IUseIntersectionOptions` - `target: Element | React.RefObject<Element | null> | null` (read after every render; `null` observes nothing), optional `rootMargin` (default `'0px'`), optional `threshold`: one number from `0` to `1` (default `0`).
+- **Return value**: the latest `IntersectionObserverEntry`, or `undefined`.
+- **Gotcha**: The value is `undefined` before the first entry, where there is no `IntersectionObserver` (a server render), while `target` is `null`, and again right after a new element, `rootMargin` or `threshold` starts a new observation. The state changes only when `isIntersecting` or `intersectionRatio` changed, so the rectangles of the entry can be one delivery old. The viewport is the root: an app with a scrolling root passes `rootMargin`. There is no option for several thresholds or for one delivery only; for those write an `IntersectionObserver` of your own. Defined in `packages/react/src/hooks/use-intersection.ts`.
 
 ### useStoredState
 

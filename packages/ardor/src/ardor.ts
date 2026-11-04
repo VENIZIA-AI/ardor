@@ -30,6 +30,7 @@ export {
   useElementSize,
   useInjectable,
   useInjectableContainer,
+  useIntersection,
   useMediaQuery,
   useOnlineStatus,
   useProvider,
