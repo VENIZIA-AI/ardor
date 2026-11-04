@@ -183,10 +183,13 @@ describe('useStoredState with StorageCodecs.text', () => {
     const { result } = renderHook(() => {
       return useStoredState({ key: KEY, defaultValue: 'light', codec: THEME });
     });
+    // @ts-expect-error a value outside allowed is a compile error
     act(() => result.current.setValue('sepia'));
 
+    const shown: string = result.current.value;
+
     expect(localStorage.getItem(KEY)).toBe('dark');
-    expect(result.current.value).toBe('sepia');
+    expect(shown).toBe('sepia');
   });
 });
 

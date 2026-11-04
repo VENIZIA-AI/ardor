@@ -1,17 +1,19 @@
+import { getError } from '@venizia/ignis-inversion';
+
 import type { IStorageCodec } from '@/common';
 
 export class StorageCodecs {
-  /**
-   * A string stored as it is, with no quotes: for a key whose data is a bare string, not JSON. With
-   * `allowed`, a text outside the list does not decode (`BrowserStorage.get` gives its fallback) and
-   * a value outside the list does not encode (`BrowserStorage.set` answers `false`). The error names
-   * no value, because a stored text can be a token. Create it once, outside a component.
-   */
-  static text(opts: { allowed?: ReadonlyArray<string> } = {}): IStorageCodec<string> {
+  /** A bare string, not JSON. Create once; outside `allowed`, decode and encode throw. */
+  static text<TText extends string = string>(
+    opts: { allowed?: ReadonlyArray<TText> } = {},
+  ): IStorageCodec<TText> {
     const { allowed } = opts;
-    const check = (text: string): string => {
-      if (allowed && !allowed.includes(text)) {
-        throw new TypeError('not an allowed value');
+    const isAllowed = (text: string): text is TText => {
+      return !allowed || allowed.some((item) => item === text);
+    };
+    const check = (text: string): TText => {
+      if (!isAllowed(text)) {
+        throw getError({ message: '[StorageCodecs.text] The text is not in the allowed list' });
       }
 
       return text;

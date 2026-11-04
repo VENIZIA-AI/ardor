@@ -102,9 +102,17 @@ describe('StorageCodecs.text with allowed', () => {
     expect(BrowserStorage.get({ key: KEY, fallback: 'light', codec })).toBe('light');
   });
 
+  test('throws an application error that names no value when decode or encode is called outside the list', () => {
+    expect(() => codec.decode('sepia')).toThrow('allowed list');
+    expect(() => codec.decode('sepia')).not.toThrow('sepia');
+    // @ts-expect-error a value outside allowed is a compile error
+    expect(() => codec.encode('sepia')).toThrow('allowed list');
+  });
+
   test('refuses to write a value outside the list, and leaves the storage as it was', () => {
     localStorage.setItem(KEY, 'dark');
 
+    // @ts-expect-error a value outside allowed is a compile error
     expect(BrowserStorage.set({ key: KEY, value: 'sepia', codec })).toBe(false);
     expect(localStorage.getItem(KEY)).toBe('dark');
     expect(BrowserStorage.set({ key: KEY, value: 'light', codec })).toBe(true);

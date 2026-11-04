@@ -22,6 +22,18 @@ export interface IUseStoredStateReturn<TValue> {
   remove: () => void;
 }
 
+export interface IUseStoredState {
+  /** With a codec, the value type is the codec's: a literal `defaultValue` is checked against it, not widened past it. */
+  <TValue>(
+    opts: Omit<IUseStoredStateOptions<TValue>, 'defaultValue' | 'codec'> & {
+      defaultValue: NoInfer<TValue>;
+      codec: IStorageCodec<TValue>;
+    },
+  ): IUseStoredStateReturn<TValue>;
+  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  <TValue>(opts: IUseStoredStateOptions<TValue>): IUseStoredStateReturn<TValue>;
+}
+
 const RAW_TEXT = StorageCodecs.text();
 
 interface IKept<TValue> {
@@ -47,7 +59,7 @@ interface IDecoded<TValue> {
  * that writes through `BrowserStorage`, and with other tabs. Pass a stable `codec` and `defaultValue`.
  * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
  */
-export const useStoredState = <TValue>(
+export const useStoredState: IUseStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,
 ): IUseStoredStateReturn<TValue> => {
   const { key, defaultValue, storage, codec } = opts;

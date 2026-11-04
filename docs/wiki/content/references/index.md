@@ -92,7 +92,7 @@ BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
 
 ### A bare string as the stored text
 
-A key whose existing data is a bare string (`dark`, not `"dark"`) is not JSON, so the default codec cannot read it. `StorageCodecs.text()` stores a string as it is. With `allowed`, a stored text outside the list gives the `fallback`, and a write of a value outside the list returns `false` and leaves the storage as it was.
+A key whose existing data is a bare string (`dark`, not `"dark"`) is not JSON, so the default codec cannot read it. `StorageCodecs.text()` stores a string as it is. With `allowed`, the codec is typed by the list (`'light' | 'dark'` below), so a literal outside it is a compile error; a stored text outside the list gives the `fallback`, and a value outside it, passed past the types, returns `false` from `set` and leaves the storage as it was.
 
 ```typescript
 import { BrowserStorage, StorageCodecs } from '@venizia/ardor';
