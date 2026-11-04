@@ -46,6 +46,8 @@ A boolean field with a `null` value shows nothing rather than a "false"-looking 
 
 When package size is checked against its budget, peer dependencies are treated as external and excluded from the measured bundle size. A size budget failure means the package's own code grew, not that a peer got heavier. See [build-system](/process/build-system.md).
 
+A budget is a ceiling, not a target. Its limit is the measured size plus 2%, rounded up to the next 10 B, written in bytes in the `size-limit` block of the package: reset it to that after a round of changes, and raise it for a single change only by a decision that names the measured size before and after.
+
 ## Purity externals are third-party packages only
 
 `make purity` bundles every runtime entry in the `exports` maps of kernel, react, admin and ardor for the browser and keeps ARDOR's own code and every `@venizia/*` dependency in the measured graph. The per-sub-path `external` list in `scripts/checks/purity/manifest.ts` may exempt only a third-party package - a peer, or a dependency such as `ra-i18n-polyglot` - whose own packaging the probe cannot judge; listing an `@venizia/*` package there throws when the gate runs, because an external would hide the exact leak the gate exists to catch. When purity fails on ARDOR code, fix the import - do not reach for `external`. See [build-run-test](/overview/build-run-test.md) ("Repository gates") and [design-decisions](/overview/design-decisions.md) ("Purity and layer gates").
