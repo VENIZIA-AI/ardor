@@ -10,7 +10,11 @@ import {
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
-import { DefaultNetworkRequestService } from '@venizia/ardor-kernel';
+import {
+  CoreBindings,
+  DefaultAuthService,
+  DefaultNetworkRequestService,
+} from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -846,6 +850,38 @@ describe('network service creation', () => {
     version: '1.0.0',
     description: 'x',
   };
+
+  test('value() hands the network service the auth service of the container, so a refresh path refreshes', async () => {
+    localStorage.clear();
+    const authService = new DefaultAuthService();
+    authService.saveAuth({ userId: 7, token: { value: 'stale', type: 'Bearer' } });
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    const provider = new DefaultRestDataProvider(
+      { url: baseUrl, authRecovery: { refreshTokenPath: '/auth/refresh' } },
+      applicationInfo,
+    );
+    provider.value(container);
+    const service = provider.getNetworkService();
+    spyOn(service, 'doRequest').mockResolvedValue({ data: { token: 'fresh' } });
+
+    const isRefreshed = await service.refresh();
+
+    expect(isRefreshed).toBe(true);
+    expect(authService.getAuth()?.value).toBe('fresh');
+  });
+
+  test('without an auth service in the container a refresh path refreshes nothing', async () => {
+    const provider = new DefaultRestDataProvider(
+      { url: baseUrl, authRecovery: { refreshTokenPath: '/auth/refresh' } },
+      applicationInfo,
+    );
+    provider.value(new Container());
+
+    const isRefreshed = await provider.getNetworkService().refresh();
+
+    expect(isRefreshed).toBe(false);
+  });
 
   test('createNetworkService is the one place the service is built, once, on first use', () => {
     let built = 0;

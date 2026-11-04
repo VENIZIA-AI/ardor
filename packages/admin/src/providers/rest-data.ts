@@ -27,6 +27,7 @@ import type {
 import {
   BaseProvider,
   CoreBindings,
+  type DefaultAuthService,
   DefaultNetworkRequestService,
   type IApplicationInfo,
   type INetworkResponse,
@@ -50,6 +51,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   IDataProvider<TResource>
 > {
   private cachedNetworkService?: DefaultNetworkRequestService;
+  private authService?: DefaultAuthService;
 
   constructor(
     @inject({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
@@ -73,6 +75,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery,
+      authService: this.authService,
     });
   }
 
@@ -389,7 +392,13 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * react-admin's data provider contract takes positional arguments, `(resource, params)`: the one
    * place this class does not take an `opts` object. Each method hands them to the `opts` method.
    */
-  override value(_container: Container): IDataProvider<TResource> {
+  override value(container: Container): IDataProvider<TResource> {
+    // Read here, not injected: a subclass with its own constructor rarely forwards a further argument.
+    this.authService = container.get<DefaultAuthService>({
+      key: CoreBindings.DEFAULT_AUTH_SERVICE,
+      isOptional: true,
+    });
+
     return {
       getList: (resource, params) => {
         return this.getList({ resource, params });

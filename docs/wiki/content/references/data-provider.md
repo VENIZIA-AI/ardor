@@ -73,7 +73,7 @@ export class RestDataConfiguration {
 | `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression patterns matching resource paths that must omit `Authorization` headers. Set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path. |
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
 | `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header. Defaults to `RequestChannel.WEB` (`'100_WEB'`). |
-| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint to prevent recursive 401 recovery loops. |
+| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint: a request to it never starts a refresh, and the default `refreshToken` posts to it. |
 
 ## Example
 

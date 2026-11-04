@@ -107,7 +107,7 @@ The configuration relies on the following defaults and container keys:
 | `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. Keys are converted to lowercase and merged with runtime headers. |
 | `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
 | `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
-| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. |
+| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to. |
 | `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
 
 ## Fetch transport and timeout
@@ -206,7 +206,7 @@ When a request receives a 401 Unauthorized status, `doRequest` triggers token re
 Recovery calls `refresh()`, which delegates to the protected `refreshToken()` hook:
 - Concurrent requests share a single in-flight promise (`AuthRecovery.refresh`), preventing duplicate refresh calls.
 - If `refreshToken()` resolves `true`, `doRequest` retrieves updated authorization headers and retries the original request once.
-- If `refreshToken()` resolves `false` (the default behavior), no retry is attempted and the 401 error is thrown.
+- If `refreshToken()` resolves `false` (the default without a `refreshTokenPath` or an auth service), no retry is attempted and the 401 error is thrown. With a path, the default posts to it and saves the new token.
 - If `refreshToken()` throws, `onAuthFailure()` runs, and the original 401 error is thrown.
 
 ## Repository data source authentication
