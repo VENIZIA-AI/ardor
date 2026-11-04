@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
 import {
@@ -20,6 +20,7 @@ class SwitchStorage implements Storage {
 
   failReads = false;
   failWrites = false;
+  readonly writes: Array<string> = [];
   private readonly items = new Map<string, string>();
 
   get length(): number {
@@ -40,6 +41,7 @@ class SwitchStorage implements Storage {
     }
 
     this.items.set(key, value);
+    this.writes.push(value);
   }
 
   removeItem(key: string): void {
@@ -455,5 +457,242 @@ describe('useStoredState stays in step', () => {
     unmount();
     expect(removed.mock.calls.filter(([type]) => type === 'storage')).toHaveLength(1);
     removed.mockRestore();
+  });
+});
+
+describe('useStoredState writeDelayMs', () => {
+  const DELAY = 200;
+
+  const advance = (milliseconds: number) => {
+    act(() => {
+      jest.advanceTimersByTime(milliseconds);
+    });
+  };
+
+  const delayed = () => {
+    const storage = new SwitchStorage();
+    replaceLocalStorage(storage);
+    const view = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: DELAY });
+    });
+
+    return { storage, ...view };
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('setValue changes the value at once and writes the last one once, after the delay', () => {
+    const { result, storage } = delayed();
+
+    act(() => {
+      result.current.setValue(1);
+      result.current.setValue(2);
+      result.current.setValue(3);
+    });
+    expect(result.current.value).toBe(3);
+    expect(storage.writes).toEqual([]);
+
+    advance(DELAY);
+
+    expect(storage.writes).toEqual(['3']);
+    expect(result.current.value).toBe(3);
+  });
+
+  test('every setValue restarts the delay', () => {
+    const { result, storage } = delayed();
+
+    act(() => result.current.setValue(1));
+    advance(150);
+    act(() => result.current.setValue(2));
+    advance(150);
+    expect(storage.writes).toEqual([]);
+
+    advance(50);
+    expect(storage.writes).toEqual(['2']);
+  });
+
+  test('updaters inside the delay build on the pending value', () => {
+    const { result, storage } = delayed();
+
+    act(() => {
+      result.current.setValue((current) => current + 1);
+      result.current.setValue((current) => current + 1);
+    });
+    advance(DELAY);
+
+    expect(result.current.value).toBe(2);
+    expect(storage.writes).toEqual(['2']);
+  });
+
+  test('remove inside the delay cancels the write and removes the key', () => {
+    const { result, storage } = delayed();
+    storage.setItem(KEY, JSON.stringify(9));
+    storage.writes.length = 0;
+
+    act(() => result.current.setValue(5));
+    act(() => result.current.remove());
+    advance(DELAY);
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBeNull();
+    expect(result.current.value).toBe(0);
+  });
+
+  test('unmount inside the delay writes the pending value', () => {
+    const { result, storage, unmount } = delayed();
+    act(() => result.current.setValue(7));
+
+    unmount();
+
+    expect(storage.writes).toEqual(['7']);
+    advance(DELAY);
+    expect(storage.writes).toEqual(['7']);
+  });
+
+  test('a changed key writes the pending value to the old key and starts from the new one', () => {
+    const storage = new SwitchStorage();
+    storage.setItem('@app/store/b', JSON.stringify(40));
+    replaceLocalStorage(storage);
+    const { result, rerender } = renderHook(
+      (props: { key: string }) => {
+        return useStoredState({ key: props.key, defaultValue: 0, writeDelayMs: DELAY });
+      },
+      { initialProps: { key: '@app/store/a' } },
+    );
+    act(() => result.current.setValue(5));
+
+    rerender({ key: '@app/store/b' });
+
+    expect(storage.getItem('@app/store/a')).toBe('5');
+    expect(result.current.value).toBe(40);
+    advance(DELAY);
+    expect(storage.getItem('@app/store/b')).toBe('40');
+  });
+
+  test('a write from other code inside the delay wins: the pending write is cancelled', () => {
+    const { result, storage } = delayed();
+    act(() => result.current.setValue(5));
+
+    act(() => {
+      BrowserStorage.set({ key: KEY, value: 99 });
+    });
+    advance(DELAY);
+
+    expect(storage.writes).toEqual(['99']);
+    expect(result.current.value).toBe(99);
+  });
+
+  test('a storage event from another tab inside the delay cancels the pending write too', () => {
+    const { result, storage } = delayed();
+    act(() => result.current.setValue(5));
+
+    act(() => {
+      storage.setItem(KEY, JSON.stringify(60));
+      window.dispatchEvent(storageEvent({ key: KEY, storageArea: storage }));
+    });
+    advance(DELAY);
+
+    expect(storage.writes).toEqual(['60']);
+    expect(result.current.value).toBe(60);
+  });
+
+  test('the hook own write is not a foreign one: a later change after it is still written', () => {
+    const { result, storage } = delayed();
+    act(() => result.current.setValue(1));
+    advance(DELAY);
+
+    act(() => result.current.setValue(2));
+    advance(DELAY);
+
+    expect(storage.writes).toEqual(['1', '2']);
+    expect(result.current.value).toBe(2);
+  });
+
+  test('a delayed write the storage refuses is kept in the hook', () => {
+    const { result, storage } = delayed();
+    act(() => result.current.setValue(5));
+    storage.failWrites = true;
+
+    advance(DELAY);
+
+    expect(storage.getItem(KEY)).toBeNull();
+    expect(result.current.value).toBe(5);
+  });
+
+  test('a removal the storage refuses inside the delay does not write the pending value later', () => {
+    const { result, storage } = delayed();
+    storage.setItem(KEY, JSON.stringify(9));
+    storage.writes.length = 0;
+    act(() => result.current.setValue(5));
+    storage.failWrites = true;
+
+    act(() => result.current.remove());
+    storage.failWrites = false;
+    advance(DELAY);
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBe('9');
+    expect(result.current.value).toBe(0);
+  });
+
+  test('a value kept after a refused removal is not written when the hook unmounts', () => {
+    const { result, storage, unmount } = delayed();
+    storage.setItem(KEY, JSON.stringify(9));
+    storage.writes.length = 0;
+    storage.failWrites = true;
+    act(() => result.current.remove());
+    storage.failWrites = false;
+
+    unmount();
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBe('9');
+  });
+
+  test('a delayed write the storage refuses is not tried again when the hook unmounts', () => {
+    const { result, storage, unmount } = delayed();
+    act(() => result.current.setValue(5));
+    storage.failWrites = true;
+    advance(DELAY);
+    storage.failWrites = false;
+
+    unmount();
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBeNull();
+  });
+
+  test('a delay that is not a number writes at once', () => {
+    const storage = new SwitchStorage();
+    replaceLocalStorage(storage);
+    const { result } = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: Number.NaN });
+    });
+
+    act(() => result.current.setValue(1));
+
+    expect(storage.writes).toEqual(['1']);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test('a delay of 0, or none, writes at once and sets no timer', () => {
+    const storage = new SwitchStorage();
+    replaceLocalStorage(storage);
+    const none = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
+    const zero = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: 0 });
+    });
+
+    act(() => none.result.current.setValue(1));
+    expect(storage.writes).toEqual(['1']);
+    act(() => zero.result.current.setValue(2));
+    expect(storage.writes).toEqual(['1', '2']);
+    expect(jest.getTimerCount()).toBe(0);
   });
 });
