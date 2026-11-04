@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (44)
+### `@venizia/ardor-react` (47)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -174,9 +174,12 @@ generated:
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
+- `useDocumentVisibility` const
 - `useElementSize` function
 - `useInjectable` const
 - `useInjectableContainer` const
+- `useMediaQuery` const
+- `useOnlineStatus` const
 - `useProvider` const
 - `useRepository` const
 - `useResizeEffect` const
@@ -233,7 +236,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (181)
+### `@venizia/ardor` (184)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -393,12 +396,15 @@ generated:
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useDocumentTitle` const
+- `useDocumentVisibility` const
 - `useElementSize` function
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
 - `useInjectableContainer` const
+- `useMediaQuery` const
 - `useNotifyError` const
+- `useOnlineStatus` const
 - `useProvider` const
 - `useRefreshToken` const
 - `useRepository` const
