@@ -91,9 +91,8 @@ export const useStoredState: IUseStoredState = <TValue>(
   // A new key or storage, and an unmount, write the pending value to the key it was set for.
   React.useEffect(() => {
     return () => {
-      const pending = timerRef.current === undefined ? undefined : keptRef.current;
-      if (pending) {
-        write(pending);
+      if (timerRef.current !== undefined && keptRef.current) {
+        write(keptRef.current);
       }
     };
   }, [key, storage, write]);
@@ -137,7 +136,7 @@ export const useStoredState: IUseStoredState = <TValue>(
       const current = hit?.key === key && hit.storage === storage ? hit.value : getSnapshot();
       const entry = { key, storage, codec, value: isUpdater(next) ? next(current) : next };
 
-      if (writeDelayMs <= 0) {
+      if (!(writeDelayMs > 0)) {
         write(entry);
         return;
       }

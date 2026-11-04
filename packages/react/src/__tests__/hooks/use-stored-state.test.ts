@@ -655,6 +655,32 @@ describe('useStoredState writeDelayMs', () => {
     expect(storage.getItem(KEY)).toBe('9');
   });
 
+  test('a delayed write the storage refuses is not tried again when the hook unmounts', () => {
+    const { result, storage, unmount } = delayed();
+    act(() => result.current.setValue(5));
+    storage.failWrites = true;
+    advance(DELAY);
+    storage.failWrites = false;
+
+    unmount();
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBeNull();
+  });
+
+  test('a delay that is not a number writes at once', () => {
+    const storage = new SwitchStorage();
+    replaceLocalStorage(storage);
+    const { result } = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: Number.NaN });
+    });
+
+    act(() => result.current.setValue(1));
+
+    expect(storage.writes).toEqual(['1']);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
   test('a delay of 0, or none, writes at once and sets no timer', () => {
     const storage = new SwitchStorage();
     replaceLocalStorage(storage);
