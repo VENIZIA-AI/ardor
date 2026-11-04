@@ -360,6 +360,117 @@ describe('useCopyToClipboard', () => {
   });
 });
 
+describe('useCopyToClipboard isCopied', () => {
+  const originalClipboard: Clipboard | undefined = navigator.clipboard;
+  const RESET_MS = 1500;
+
+  useFakeClock();
+
+  const setClipboard = (writeText: ((text: string) => Promise<void>) | undefined) => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: writeText ? { writeText } : undefined,
+      configurable: true,
+      writable: true,
+    });
+  };
+
+  const copyOnce = async (copy: () => Promise<boolean>) => {
+    await act(async () => {
+      await copy();
+    });
+  };
+
+  beforeEach(() => {
+    setClipboard(async () => {});
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  test('isCopied is false at first, true after a copy, and stays true without resetMs', async () => {
+    const { result } = renderHook(() => useCopyToClipboard());
+    expect(result.current.isCopied).toBe(false);
+
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+    expect(result.current.isCopied).toBe(true);
+
+    await advance({ ms: 60_000 });
+    expect(result.current.isCopied).toBe(true);
+  });
+
+  test('isCopied goes back to false after resetMs', async () => {
+    const { result } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
+
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+    await advance({ ms: RESET_MS - 1 });
+    expect(result.current.isCopied).toBe(true);
+
+    await advance({ ms: 1 });
+    expect(result.current.isCopied).toBe(false);
+  });
+
+  test('a second copy restarts the timer', async () => {
+    const { result } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
+
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+    await advance({ ms: RESET_MS - 500 });
+    await copyOnce(() => result.current.copy({ value: 'b' }));
+    await advance({ ms: RESET_MS - 500 });
+    expect(result.current.isCopied).toBe(true);
+
+    await advance({ ms: 500 });
+    expect(result.current.isCopied).toBe(false);
+  });
+
+  test('a refused copy sets isCopied to false and ends the timer of the copy before', async () => {
+    const { result } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+
+    setClipboard(undefined);
+    await copyOnce(() => result.current.copy({ value: 'b' }));
+
+    expect(result.current.isCopied).toBe(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test('a resetMs of 0 or less starts no timer', async () => {
+    const zero = renderHook(() => useCopyToClipboard({ resetMs: 0 }));
+    const negative = renderHook(() => useCopyToClipboard({ resetMs: -5 }));
+
+    await copyOnce(() => zero.result.current.copy({ value: 'a' }));
+    await copyOnce(() => negative.result.current.copy({ value: 'a' }));
+
+    expect(jest.getTimerCount()).toBe(0);
+    expect(zero.result.current.isCopied).toBe(true);
+    expect(negative.result.current.isCopied).toBe(true);
+  });
+
+  test('unmount clears the timer', async () => {
+    const { result, unmount } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+    expect(jest.getTimerCount()).toBe(1);
+
+    unmount();
+
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test('copy keeps its identity between renders and after a copy', async () => {
+    const { result, rerender } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
+    const before = result.current.copy;
+
+    rerender();
+    await copyOnce(() => result.current.copy({ value: 'a' }));
+
+    expect(result.current.copy).toBe(before);
+  });
+});
+
 describe('useBeforeUnload', () => {
   test('calls preventDefault on beforeunload event by default and when enabled is true', () => {
     const options: IUseBeforeUnloadOptions = { enabled: true, message: 'Unsaved progress' };

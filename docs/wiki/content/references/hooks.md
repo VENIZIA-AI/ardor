@@ -495,16 +495,14 @@ import React from 'react';
 import { useCopyToClipboard } from '@venizia/ardor';
 
 export function CopyShareLink(props: { url: string }) {
-  const { copy } = useCopyToClipboard();
-  const [copied, setCopied] = React.useState(false);
-  const handleCopy = async () => setCopied(await copy({ value: props.url }));
-  return <button onClick={handleCopy}>{copied ? 'Copied' : 'Share'}</button>;
+  const { copy, isCopied } = useCopyToClipboard({ resetMs: 2000 });
+  return <button onClick={() => copy({ value: props.url })}>{isCopied ? 'Copied' : 'Share'}</button>;
 }
 ```
 
-- **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
-- **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` whenever the text is not on the clipboard: no `navigator` (a server render), no `navigator.clipboard` (non-HTTPS environments, an old WebView), a denied permission or a failed write. It never throws. The write is [`BrowserClipboard.writeText`](./index#browser-clipboard), which is also what to call from code outside React. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Parameters**: optional `opts: IUseCopyToClipboardOptions` - `resetMs`: milliseconds after which `isCopied` goes back to `false` (default `0`: it stays as the last copy left it, and a value of `0` or less never resets). Returned `copy` callback takes `{ value: string }`.
+- **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean>; isCopied: boolean }`. `isCopied` is the result of the last copy; a new copy restarts the timer, and a refused copy sets it to `false`. `copy` keeps its identity as long as `resetMs` does not change, and the timer is cleared on unmount. The app puts its own message on `isCopied` or on the result of `copy`.
+- **Gotcha**: A `copy` still waiting for the clipboard when the component unmounts starts a timer that sets nothing visible. `copy` resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` whenever the text is not on the clipboard: no `navigator` (a server render), no `navigator.clipboard` (non-HTTPS environments, an old WebView), a denied permission or a failed write. It never throws. The write is [`BrowserClipboard.writeText`](./index#browser-clipboard), which is also what to call from code outside React. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 
