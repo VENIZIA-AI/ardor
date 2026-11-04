@@ -40,7 +40,7 @@ export function Toolbar() {
 - **The first entries are delivered.** `onResize` runs once when observing starts, as the browser delivers the first entries. A child added later delivers its first entry too.
 - **`useElementSize` shares the code.** Both hooks observe through one internal, so the observer set-up, the frame coalescing and the clean-up are the same. `useElementSize` keeps its behavior.
 - **Also in `Ardor`.** `Ardor.useResizeEffect` joins the namespace, so it holds 27 hooks, and `ardor codemod namespace --hooks` knows it.
-- **New types.** `IUseResizeEffectOptions` is the options object and `TResizeTarget` the type of one target.
+- **New types.** `IUseResizeEffectOptions` is the options object and `TElementTarget` the type of one target.
 
 ## Who is affected
 
