@@ -112,7 +112,13 @@ export class BrowserStorage {
   }
 
   /** The keys of the area, only those that start with `prefix` when it is given. Lists the session keys too. */
-  static keys(opts: { storage?: TStorageArea; prefix?: string } = {}): Array<string> {
+  static keys(
+    opts: {
+      storage?: TStorageArea;
+      /** @default '' */
+      prefix?: string;
+    } = {},
+  ): Array<string> {
     const { prefix = '' } = opts;
 
     return BrowserStorage.safe<Array<string>>({

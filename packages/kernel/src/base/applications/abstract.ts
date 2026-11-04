@@ -36,9 +36,15 @@ const ArtifactIndexKinds = [
 export interface IArtifactRegistration {
   /** Bind under this key instead of `<namespace>.<ClassName>`. */
   binding?: { namespace: string; key: string };
-  /** Defaults to the scope declared on the class, else SINGLETON. */
+  /**
+   * The scope of the binding.
+   * @default The scope declared on the class, else `BindingScopes.SINGLETON`
+   */
   scope?: TBindingScope;
-  /** `false` refuses to replace a binding already under the key. */
+  /**
+   * `false` refuses to replace a binding already under the key.
+   * @default true
+   */
   allowOverride?: boolean;
 }
 

@@ -57,9 +57,15 @@ export class DefaultNetworkRequestService extends BaseService {
     opts: INoAuthOptions & {
       /** The name of the underlying network request helper. */
       name: string;
-      /** Defaults to an empty string, which `doRequest` refuses unless it is given its own `baseUrl`. */
+      /**
+       * An empty one makes `doRequest` refuse, unless it is given its own `baseUrl`.
+       * @default ''
+       */
       baseUrl?: string;
-      /** Sent with every request; a name set later with `setHeaders` replaces it. */
+      /**
+       * Sent with every request; a name set later with `setHeaders` replaces it.
+       * @default {}
+       */
       headers?: HeadersInit;
       /** Enables the refresh-and-retry after a 401. */
       authRecovery?: IAuthRecoveryOptions;
@@ -438,6 +444,7 @@ export class DefaultNetworkRequestService extends BaseService {
    */
   async doRequest<TResult = unknown>(
     opts: IGetRequestPropsResult & {
+      /** @default this.baseUrl */
       baseUrl?: string;
       query?: any;
       type: TRequestType;
