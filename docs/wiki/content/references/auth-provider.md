@@ -72,7 +72,8 @@ export class AuthConfiguration {
 | `DefaultAuthService` | class | Service managing auth tokens, identity, and permissions in `localStorage` in `packages/kernel/src/base/services/auth.ts` |
 | `IAuthProviderOptions` | interface | Configuration options for authentication routes under `paths` |
 | `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
-| `IReactAdminAuthProvider` | interface | Standard react-admin auth provider contract |
+| `IReactAdminAuthProvider` | type | Standard react-admin auth provider contract |
+| `ILoginParams` | interface | What the login form hands to `login`: `username`, `password` and any other form field |
 | `ISignInSession` | interface | Parsed sign-in session carrying `userId`, `token`, and `roles` |
 | `SessionClearReasons`, `TSessionClearReason` | class, type | The reasons `onSessionCleared` receives: `logout`, `unauthorized`, `rejected`, `external` |
 | `IAuthRejection` | interface | What `checkAuth` and `checkError` reject with: `redirectTo`, `logoutUser`, `message` |
@@ -142,7 +143,7 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `getIdentity(params)` | Reads stored identity from `authService.getUser()`. Rejects if `userId` is absent | `Promise<UserIdentity>` returning `{ userId, username, referenceId, provider }` |
 | `getPermissions(params)` | Default implementation performs no operation | `Promise<void>` resolving to `undefined` |
 | `getRoles(params)` | Reads stored roles from `authService.getRoles()` | `Promise<Set<string>>` containing stored role names |
-| `refreshToken()` | Calls `restDataProvider.getNetworkService().refresh()`. Also invoked by the `useRefreshToken` hook | `Promise<AnyType>` (`true` if refreshed, `false` when no refresh is configured) |
+| `refreshToken()` | Calls `restDataProvider.getNetworkService().refresh()`. Also invoked by the `useRefreshToken` hook | `Promise<boolean>` (`true` if refreshed, `false` when no refresh is configured) |
 | `canAccess(params)` | Calls `permissionProvider.canAccess({ resource, action, record })` when `CoreBindings.PERMISSION_PROVIDER` is bound in the container | `Promise<boolean>`. When unbound, `canAccess` is omitted from the provider so react-admin permits access by default |
 
 ## Overridable hooks
@@ -155,12 +156,12 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `afterLoginPath` | `protected get: string` | `paths.afterLogin ?? '/'` | Redirect destination following successful sign-in |
 | `loginPagePath` | `protected get: string` | `'/login'` | Route of login page redirected to on 401 or authentication failure |
 | `unauthorizedPagePath` | `protected get: string` | `'/unauthorized'` | Route redirected to on 403 authorization failure |
-| `buildSignInBody(opts)` | `opts: { params: AnyType } => unknown` | `{ identifier: { scheme: 'username', value: opts.params?.username }, credential: { scheme: 'basic', value: opts.params?.password } }` | Builds request payload sent to `signInPath` |
+| `buildSignInBody(opts)` | `opts: { params: ILoginParams } => unknown` | `{ identifier: { scheme: 'username', value: opts.params?.username }, credential: { scheme: 'basic', value: opts.params?.password } }` | Builds request payload sent to `signInPath` |
 | `readSignInSession(opts)` | `opts: { data: unknown } => ISignInSession` | Extracts `{ userId, token, roles }` or reads claims from a JWT string | Parses server response into structured session data |
 | `decodeJwtClaims(opts)` | `opts: { jwt: string } => Record<string, unknown> \| undefined` | Decodes base64 payload segment of JWT | Extracts JWT token claims without validating cryptographic signature |
 | `readRoleNames(opts)` | `opts: { roles: unknown } => Array<string>` | Extracts strings or `identifier` / `name` properties | Normalizes varied role response formats into string array |
-| `resolveUsername(opts)` | `opts: { params: AnyType } => string` | `opts.params?.username ?? ''` | Determines username string saved in user identity |
-| `beforeSaveSession(opts)` | `opts: { session: ISignInSession; params: AnyType } => Promise<void>` | `Promise.resolve()` | Validation hook before persistence; throwing rejects login and saves nothing |
+| `resolveUsername(opts)` | `opts: { params: ILoginParams } => string` | `opts.params?.username ?? ''` | Determines username string saved in user identity |
+| `beforeSaveSession(opts)` | `opts: { session: ISignInSession; params: ILoginParams } => Promise<void>` | `Promise.resolve()` | Validation hook before persistence; throwing rejects login and saves nothing |
 | `saveSession(opts)` | `opts: { session: ISignInSession; username: string } => void` | `authService.saveAuth(...)` | Saves token, identity, and permissions to `localStorage` |
 | `sessionHookTimeout` | `protected get: number` | `10000` | Milliseconds a session hook may run before the provider logs it and carries on. See [Session hooks](#session-hooks) |
 | `unauthenticatedRejection(opts)` | `opts: { reason: TSessionClearReason } => IAuthRejection` | `{ redirectTo: this.loginPagePath }` | What `checkAuth` (`rejected`) and the 401 branch of `checkError` (`unauthorized`) reject with. See [Guest apps](#guest-apps) |
@@ -241,7 +242,7 @@ Each hook fires once per change of the session. A re-check of the same session s
 | `onSessionStarted` | `login` saved the session; a `checkAuth` confirmed it (the first one of a page that finds a stored session too); a token was saved by anything that calls `DefaultAuthService.saveAuth`, such as your network service's `refreshToken()` on a 401 | A `checkAuth` or a `refreshToken()` that leaves the same user and token. |
 | `onSessionCleared` | `logout`; the 401 branch of `checkError`; a `checkAuth` that rejects; a `cleanUp` made by other code, with the reason `external` | A session that was never announced. A second clear of the same session |
 
-- **The arguments.** `token` is the stored token record (`value`, `type`). `user` is the stored identity (`userId`, `username`, `referenceId`, `provider`), or `{ userId, username }` when your `saveSession` keeps nothing in the store. `reason` is `SessionClearReasons.LOGOUT`, `UNAUTHORIZED` or `REJECTED`.
+- **The arguments.** `token` is the stored token record (`value`, `type`). `user` is the stored identity (`userId`, `username`, `referenceId`, `provider`), or `{ userId, username }` when your `saveSession` keeps nothing in the store. `reason` is `SessionClearReasons.LOGOUT`, `UNAUTHORIZED`, `REJECTED` or `EXTERNAL`.
 - **Order.** `logout` and the 401 branch clear the store first, then call the hook. A rejected `checkAuth` calls the hook but does not clear the store.
 - **Async.** The provider awaits a hook before `login`, `logout`, `checkAuth`, `checkError` or `refreshToken()` resolves or rejects. Hook calls run one after the other, so a slow `onSessionStarted` ends before a later `onSessionCleared` begins. A `checkAuth` that finds the session already announced waits for the hook of the call that announced it.
 - **Failures.** A hook that throws or rejects is logged and the call carries on. Sign-in and sign-out do not fail because a socket is down.

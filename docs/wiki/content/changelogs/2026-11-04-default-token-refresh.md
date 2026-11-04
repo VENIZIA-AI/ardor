@@ -24,7 +24,7 @@ const restDataProviderOptions: IRestDataProviderOptions = {
 
 ## What changed
 
-- **The default refresh.** With a `refreshTokenPath` and the auth service, `refreshToken()` posts to the path with no body and the stored (expired) token, reads `{ token: { value, type } }` or `{ token: '<jwt>' }` from the answer, and saves it through the auth service. It then returns `true`, so the original request is retried once.
+- **The default refresh.** With a `refreshTokenPath` and the auth service, `refreshToken()` posts to the path with no body (the expired token is attached only when the path is not in `noAuthPaths`), reads `{ token: { value, type } }` or `{ token: '<jwt>' }` from the answer, and saves it through the auth service. It then returns `true`, so the original request is retried once.
 - **The stored session is kept.** A refresh keeps the same user: it saves the new token with the stored user id, and the stored `username`, `referenceId` and `provider` are passed back with it, and the roles are never passed, so a refresh answer that carries roles in another shape cannot wipe them.
 - **A sign-out wins.** If the user signed out while the refresh request was in flight, the token is not saved and the `401` stands.
 - **A failure is as before.** A non-2xx answer, or an answer without a token, rejects the refresh: `onAuthFailure` runs once, the `401` stands, and the stored session is as it was.

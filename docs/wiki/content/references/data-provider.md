@@ -53,7 +53,7 @@ export class RestDataConfiguration {
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
-| `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
+| `IReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
 | `ISendResponse<T>` | type | Response object returned by `IDataProvider.send()` (an `INetworkResponse<T>`). |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |

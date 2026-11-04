@@ -149,7 +149,7 @@ export const IndustryShell: React.FC<{
 
 ## Message loading and suspense
 
-Feature messages are merged per locale by `FeatureMessages.combine()` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.
+Feature messages are merged per locale by `FeatureMessages` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.
 
 - **Duplicate message keys:** If two features define the same leaf key for a locale, ARDOR throws:
   `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`

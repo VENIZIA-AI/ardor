@@ -29,7 +29,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/admin/src/providers/index.ts` - provider exports.
 
 ## Services
-- `packages/kernel/src/base/services/base.ts`, `api.ts`, `auth.ts`, `network-request.ts` - the kernel service layer: base service class, API service, auth service, network request wrapper.
+- `packages/kernel/src/base/services/base.ts`, `auth.ts`, `network-request.ts` - the kernel service layer: base service class, auth service, network request wrapper.
 - See [Hooks and services](/reference/hooks-and-services.md) for the full inventory.
 
 ## Networking
@@ -48,10 +48,10 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/admin/src/hooks/use-translate.ts` - the translation hook.
 
 ## React hooks (generic, non-admin)
-- `packages/react/src/hooks/` - `use-autosave.ts`, `use-before-unload.ts`, `use-confirm.ts`, `use-copy-to-clipboard.ts`, `use-debounce.ts`, `use-window-dimensions.ts`, and `redux/use-app-dispatch.ts` / `redux/use-app-selector.ts`. See [React hooks conventions](/conventions/react-hooks.md).
+- `packages/react/src/hooks/` - `use-autosave.ts`, `use-before-unload.ts`, `use-confirm.ts`, `use-copy-to-clipboard.ts`, `use-debounce.ts`, `use-window-dimensions.ts`, `use-stored-state.ts`, `use-element-size.ts`, `use-resize-effect.ts`, `use-intersection.ts`, `use-media-query.ts`, `use-online-status.ts`, `use-document-visibility.ts` (with `resize-observation.ts` behind the resize hooks), and `redux/use-app-dispatch.ts` / `redux/use-app-selector.ts`. See [React hooks conventions](/conventions/react-hooks.md).
 
 ## Utilities
-- `packages/kernel/src/utilities/value.ts`, `file.ts`, `browser.ts`, `runtime-config.ts` - the static utility classes (`ValueUtility`, `FileUtility`, `BrowserUtility`, `RuntimeConfig`) used throughout the kernel.
+- `packages/kernel/src/utilities/value.ts`, `file.ts`, `browser.ts`, `runtime-config.ts`, `browser-storage.ts`, `storage-codecs.ts`, `browser-clipboard.ts` - the static utility classes (`ValueUtility`, `FileUtility`, `BrowserUtility`, `RuntimeConfig` and the storage and clipboard helpers) used throughout the kernel.
 
 ## Package entry points
 - `packages/kernel/src/index.ts`, `packages/react/src/index.ts`, `packages/admin/src/index.ts`, `packages/ardor/src/index.ts` - always check these first since they are the root entries of what each package exports publicly; the `exports` map in each `package.json` adds any sub-path, such as `./repository` in kernel and ARDOR. Cross-reference with [Kernel package](/packages/kernel.md), [React package](/packages/react.md), [Admin package](/packages/admin.md), and [ARDOR package](/packages/ardor.md).

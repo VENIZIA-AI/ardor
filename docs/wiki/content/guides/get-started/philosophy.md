@@ -63,4 +63,4 @@ The three layers use no Node builtins, so they run in the browser. Take `@venizi
 
 ## Where ARDOR is today
 
-ARDOR is before 1.0. A minor release in the 0.x line can break: some 0.4.x releases carried breaking changes (0.4.1 and 0.4.7), and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers on the 0.4 line; the exact ranges are in each `package.json`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+ARDOR is before 1.0. A minor release in the 0.x line can break: some 0.4.x releases carried breaking changes (0.4.0, 0.4.1, 0.4.7 and 0.4.8), and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers on the 0.4 line; the exact ranges are in each `package.json`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.

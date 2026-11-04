@@ -132,11 +132,10 @@ Do not opt out by habit. A transient service that holds a socket connection or a
 
 A service should not construct a data provider. It should ask the container for the one bound at `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. That is the same instance react-admin receives, so a service and the admin UI share one transport, one auth header and one base URL.
 
-The `inject` decorator comes from IGNIS's inversion package, not from `@venizia/ardor`. The `IDataProvider` type does come from `@venizia/ardor`:
+Both `inject` and the `IDataProvider` type come from `@venizia/ardor`:
 
 ```ts no-check
-import { inject } from '@venizia/ignis-inversion';
-import { BaseService, CoreBindings, type IDataProvider } from '@venizia/ardor';
+import { BaseService, CoreBindings, inject, type IDataProvider } from '@venizia/ardor';
 
 export class PricingService extends BaseService {
   @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
@@ -192,6 +191,9 @@ export class CoreBindings {
   static readonly REST_DATA_PROVIDER_OPTIONS = '@app/application/options/rest/data';
 
   static readonly I18N_PROVIDER_OPTIONS = '@app/application/options/i18n';
+
+  static readonly FEATURES = '@app/application/features';
+  static readonly PERMISSION_PROVIDER = '@app/application/permission/provider';
 }
 ```
 
@@ -211,7 +213,7 @@ Keys that `CoreBindings` does not define - your own classes - come from a stereo
 
 ## Common pitfalls
 
-- **Registering a framework slot with `service()`.** `this.service(MyRestDataProvider)` binds `services.MyRestDataProvider`. Nothing reads that key. Framework slots must be bound with `bind({ key: CoreBindings.X }).toClass(...)`.
+- **Registering a framework slot with `service()`.** `this.service(MyRestDataProvider)` binds `services.MyRestDataProvider`. Nothing reads that key. Bind a framework slot with a `@provide({ key: CoreBindings.X })` method of a `@configuration()` class.
 - **Resolving before `start()`.** `preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, then calls `bindContext()`. Until `start()` has run, none of these keys exist.
 - **Assuming `bind().toClass()` is a singleton.** Stereotypes, the by-hand methods and `bindingList()` default to singleton; `bind()` is transient unless you call `setScope`.
 - **Two classes with the same name.** Both derive `<namespace>.<ClassName>`, and the later registration replaces the earlier. Pass `binding` to one, or `allowOverride: false` to make the collision throw.

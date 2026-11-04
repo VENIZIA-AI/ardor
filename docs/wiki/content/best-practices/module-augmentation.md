@@ -60,7 +60,7 @@ Do not cast the key (`key: 'x' as TUseInjectableKeys`). That hides a real typo a
 
 TypeScript merges interface declarations by module identity. `IUseInjectableKeysOverrides` is declared in `@venizia/ardor-react` and `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`; `@venizia/ardor` re-exports both with `export *`. TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into the real interfaces, and `TUseInjectableKeys` and `TUseTranslateKeys` see your keys.
 
-Measured on `@venizia/ardor` 0.1.4-5 with TypeScript 6, under both of Bun's linkers (`hoisted` and `isolated`): a declared key is accepted and an undeclared one is rejected.
+Measured with TypeScript 6, under both of Bun's linkers (`hoisted` and `isolated`): a declared key is accepted and an undeclared one is rejected.
 
 ### Do
 
@@ -113,11 +113,7 @@ export class Application extends BaseArdorApplication {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext(): void {
-    for (const [key, target] of Object.entries(this.bindingList())) {
-      this.bind({ key }).toClass(target);
-    }
-  }
+  bindContext(): void {}
 
   bindingList() {
     return {

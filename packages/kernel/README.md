@@ -4,8 +4,10 @@ The isomorphic core of [ARDOR](https://github.com/VENIZIA-AI/ardor). No React, n
 layer a browser data client and a plain TypeScript consumer can both use.
 
 ```bash
-bun add @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter reflect-metadata
+bun add @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-helpers @venizia/ignis-kernel reflect-metadata
 ```
+
+`@venizia/ignis-connectors` is an optional peer, needed only for `./repository`.
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
 which re-exports this package.

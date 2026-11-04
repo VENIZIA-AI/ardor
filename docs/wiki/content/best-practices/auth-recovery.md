@@ -130,11 +130,13 @@ class AuthRecovery {
   refresh(): Promise<boolean> {
     this.refreshing ??= Promise.resolve()
       .then(() => this.opts.refresh()) // the service's refreshToken hook
-      .catch(async () => {
+      .catch(async (error) => {
+        this.logger.error('[refresh] refreshToken failed | error: %o', error);
+
         try {
           await this.opts.onFailure(); // the service's onAuthFailure hook
-        } catch {
-          this.logger.error('[refresh] onAuthFailure failed');
+        } catch (failure) {
+          this.logger.error('[refresh] onAuthFailure failed | error: %o', failure);
         }
         return false;
       })
@@ -151,7 +153,7 @@ class AuthRecovery {
 
 ## The default refresh
 
-When `authRecovery.refreshTokenPath` is set and the data provider found the auth service in the container (`CoreBindings.DEFAULT_AUTH_SERVICE`), the default `refreshToken` needs no subclass. It POSTs to that path with no body and the stored (expired) token, reads the new token from the answer, and saves it through the auth service.
+When `authRecovery.refreshTokenPath` is set and the data provider found the auth service in the container (`CoreBindings.DEFAULT_AUTH_SERVICE`), the default `refreshToken` needs no subclass. It POSTs to that path with no body, reads the new token from the answer, and saves it through the auth service. The request carries the expired token only when the path is not in `noAuthPaths`; with the path in `noAuthPaths` the server must identify the session by other means, such as a cookie.
 
 - **The answer.** `{ token: { value, type } }` or `{ token: '<jwt>' }`; nothing else is read, because a refresh keeps the same user. An answer without a token is a failed refresh: `onAuthFailure` runs once and the `401` stands. Override `readRefreshedToken({ data })` for another shape.
 - **Signed out meanwhile.** If the user signed out while the refresh request was in flight, nothing is saved and the `401` stands.

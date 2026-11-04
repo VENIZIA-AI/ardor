@@ -37,7 +37,7 @@ app needs together:
 
 The wiki quickstart (`guides/get-started/5-minute-quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `.configs/builders/vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 
-Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
+Module augmentation on `@venizia/ardor` teaches `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.
 
 ## How to run

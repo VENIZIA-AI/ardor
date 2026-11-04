@@ -47,6 +47,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
 | Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 | Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
+| Translate message keys without key type checking | `useUntypedTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
 | Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
@@ -56,7 +57,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Debounce a rapidly changing value | `useDebounce` | Browser DOM | `{ debouncedValue }` |
 | Automatically save stable form data | `useAutosave` | Browser DOM | `void` |
 | Show a Promise-based confirmation prompt | `useConfirm` | React tree | Confirmation controls |
-| Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
+| Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy, isCopied }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
 | Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
 | Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
@@ -116,7 +117,7 @@ export function TenantHeaderButton() {
 }
 ```
 
-- **Parameters**: `opts: TUseInjectableOptions` - `{ key: TUseInjectableKeys; container?: Container }` or `{ target: TClass<AnyType>; container?: Container }`.
+- **Parameters**: `opts: TUseInjectableOptions` - `{ key: TUseInjectableKeys; container?: Container }` or `{ target: TClass<unknown>; container?: Container }`.
 - **Return value**: The resolved instance `TInstance`.
 - **Gotcha**: When resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
 
@@ -327,8 +328,8 @@ export function RefreshTokenButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: A callback function `() => Promise<any>`.
-- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. If no auth provider is mounted, calling the returned function resolves to `undefined` without executing anything. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
+- **Return value**: A callback function `() => Promise<boolean>`: `true` when the token was refreshed, `false` when there is no auth provider or no refresh to make.
+- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
 
 ### useNotifyError
 
@@ -442,7 +443,7 @@ export function ProductSearch() {
 
 - **Parameters**: `opts: IUseDebounceOptions<TValue>` - `value`, optional `delay` (default `App.DEFAULT_DEBOUNCE_TIME` = 500 ms), optional `enabled` (default `true`).
 - **Return value**: `IUseDebounceReturn<TValue>` containing `{ debouncedValue: TValue }`.
-- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
+- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` keeps the last value it had. Defined in `packages/react/src/hooks/use-debounce.ts`.
 
 ### useAutosave
 

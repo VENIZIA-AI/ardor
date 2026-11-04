@@ -18,7 +18,7 @@ control and `@venizia/ignis-filter` for the query vocabulary the data layer spea
 
 | Package | Role | Depends on |
 |---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetchers, socket client. No React, no react-admin. | IGNIS inversion + filter |
+| `@venizia/ardor-kernel` | Isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin. | IGNIS inversion + filter |
 | `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React |
 | `@venizia/ardor-admin` | The react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles. | kernel, react, `ra-core` |
 | `@venizia/ardor` | Umbrella. Re-exports all three, so an application needs one dependency and one import specifier. | the three above |
@@ -32,7 +32,7 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `src/common/{constants,keys}.ts` | `@venizia/ardor-kernel` |
 | `src/common/types.ts` | split: the pure types to `ardor-kernel`, the `ra-core` provider contracts (`IDataProvider`, `IAuthProvider`, `II18nProviderOptions`) to `ardor-admin` |
 | `src/common/locales/{en,vi}.ts` | `@venizia/ardor-admin` |
-| `src/helpers/**` (logger, networks, fetchers, socket client) | `@venizia/ardor-kernel` |
+| `src/helpers/**` (networks) | `@venizia/ardor-kernel`; the logger, fetchers and socket client moved to IGNIS helpers or were removed |
 | `src/utilities/**` | `@venizia/ardor-kernel` |
 | `src/base/applications`, `src/base/services`, `src/base/decorators` | `@venizia/ardor-kernel` |
 | `src/base/services/base-crud.service.ts` | Removed - use an `HttpRepository` from `@venizia/ardor/repository` |
@@ -43,8 +43,7 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `src/ui/components/CoreRaApplication.tsx` | `@venizia/ardor-admin` as `ArdorApplication` |
 
 File names follow the family convention - named by role, never repeating the folder - so
-`helpers/logger.helper.ts` is now `helpers/logger.ts` and `providers/default-rest-data.provider.ts`
-is now `providers/rest-data.ts`. This is invisible to consumers, which import from the barrel.
+`providers/default-rest-data.provider.ts` is now `providers/rest-data.ts`. This is invisible to consumers, which import from the barrel.
 
 ## Breaking changes
 
@@ -82,7 +81,7 @@ Three removals and one requirement:
   application depends on that package itself: under a linker that does not hoist (Bun's
   `isolated` linker, pnpm) it fails with TS2664 and the keys are missing.
 
-- **`@venizia/ignis-inversion` must be `^0.3.0`.** ARDOR resolves a binding from a class through
+- **`@venizia/ignis-inversion` must satisfy the peer range in the ARDOR `package.json`.** ARDOR resolves a binding from a class through
   the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
 
 One logger change worth knowing about, because it changes the call:
@@ -96,8 +95,8 @@ gap. They are mechanical, but the last one is the reason this is a reviewed pass
 search-and-replace.
 
 1. **The dependency.** Swap `@minimaltech/ra-core-infra` for `@venizia/ardor` in every
-   `package.json`, and pin `@venizia/ignis-inversion` to `^0.3.0` (a Bun catalog entry, or
-   each manifest).
+   `package.json`, and set `@venizia/ignis-inversion` to the peer range in the ARDOR `package.json` (a Bun
+   catalog entry, or each manifest).
 2. **The import specifier.** `@minimaltech/ra-core-infra` -> `@venizia/ardor` in every `import`
    and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three
    layers under the same names.

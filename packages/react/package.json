@@ -1,7 +1,7 @@
 {
   "name": "@venizia/ardor-react",
   "version": "0.4.8-1",
-  "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). No react-admin.",
+  "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, element size, window dimensions). No react-admin.",
   "keywords": [
     "ardor",
     "ardor-react",
