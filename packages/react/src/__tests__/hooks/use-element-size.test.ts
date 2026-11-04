@@ -31,6 +31,7 @@ describe('useElementSize', () => {
     let renders = 0;
     const { result } = renderHook(() => {
       renders += 1;
+
       return useElementSize({ ref });
     });
 

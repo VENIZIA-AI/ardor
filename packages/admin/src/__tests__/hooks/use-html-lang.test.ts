@@ -55,6 +55,7 @@ describe('useHtmlLang', () => {
     const { result } = renderHook(
       () => {
         useHtmlLang();
+
         return useLocaleState();
       },
       { wrapper: createWrapper({ locale: 'vi' }) },

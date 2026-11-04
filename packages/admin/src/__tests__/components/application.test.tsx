@@ -16,6 +16,7 @@ import { Container } from '@venizia/ignis-inversion';
 
 const ReportList = () => {
   const translate = useTranslate();
+
   return <h1>{translate('reports.title')}</h1>;
 };
 
@@ -34,6 +35,7 @@ const createContainer = (opts: {
   const container = new Container();
   container.bind({ key: CoreBindings.FEATURES }).toValue([reports]);
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+
   if (opts.withAuthProvider ?? true) {
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
       checkAuth: () => Promise.resolve(),
@@ -43,6 +45,7 @@ const createContainer = (opts: {
       getPermissions: () => Promise.resolve(),
     });
   }
+
   container
     .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
     .toValue(
@@ -167,6 +170,7 @@ describe('ArdorApplication with features', () => {
     const resolved = (key: string) => {
       return getSpy.mock.calls.filter(([opts]) => (opts as { key: string }).key === key).length;
     };
+
     expect(resolved(CoreBindings.DEFAULT_REST_DATA_PROVIDER)).toBe(1);
     expect(resolved(CoreBindings.DEFAULT_AUTH_PROVIDER)).toBe(1);
     expect(resolved(CoreBindings.DEFAULT_I18N_PROVIDER)).toBe(1);

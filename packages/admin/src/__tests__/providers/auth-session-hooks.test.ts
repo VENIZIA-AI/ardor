@@ -69,6 +69,7 @@ class RecordingAuthProvider extends DefaultAuthProvider {
     reason: TSessionClearReason;
   }): IAuthRejection {
     hooks.rejectionReasons.push(opts.reason);
+
     return super.unauthenticatedRejection(opts);
   }
 
@@ -124,13 +125,16 @@ const createContainer = (opts?: {
       if (request.resource === '/auth/whoami') {
         api.checkCalls += 1;
         const answer = { data: api.whoamiHasData ? { id: 7 } : null };
+
         return new Promise((resolve) => setTimeout(() => resolve(answer), api.whoamiDelay));
       }
+
       return Promise.resolve({ data: api.signIn });
     },
     getNetworkService: () => ({
       refresh: () => {
         api.refreshed = true;
+
         return Promise.resolve(api.refreshResult);
       },
     }),
@@ -404,6 +408,7 @@ describe('a hook that throws or is async', () => {
     hooks.onStarted = () => {
       throw new Error('socket is down');
     };
+
     const provider = buildProvider();
 
     const result = await signIn(provider);
@@ -416,6 +421,7 @@ describe('a hook that throws or is async', () => {
     hooks.onStarted = () => {
       throw new Error('socket is down');
     };
+
     const provider = buildProvider();
 
     await signIn(provider);
@@ -454,6 +460,7 @@ describe('a hook that throws or is async', () => {
   test('a hook that calls a provider method waits behind itself only until the timeout', async () => {
     hooks.timeout = 20;
     const provider = buildProvider();
+
     hooks.onStarted = async () => {
       await provider.logout({});
     };
@@ -468,10 +475,12 @@ describe('a hook that throws or is async', () => {
 
   test('login resolves after an async onSessionStarted has finished', async () => {
     let finished = false;
+
     hooks.onStarted = async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       finished = true;
     };
+
     const provider = buildProvider();
 
     await signIn(provider);
@@ -485,9 +494,11 @@ describe('a hook that throws or is async', () => {
     const provider = buildProvider();
 
     const checking = provider.checkAuth({});
+
     while (!hooks.events.includes('started:begin')) {
       await new Promise((resolve) => setTimeout(resolve, 1));
     }
+
     const loggingOut = provider.logout({});
     await Promise.all([checking, loggingOut]);
 
@@ -603,9 +614,11 @@ describe('a change of the session made outside the provider', () => {
     const provider = buildProvider();
 
     const signingIn = signIn(provider);
+
     while (!hooks.events.includes('started:begin')) {
       await new Promise((resolve) => setTimeout(resolve, 1));
     }
+
     service.cleanUp();
     await signingIn;
     await new Promise((resolve) => setTimeout(resolve, 30));

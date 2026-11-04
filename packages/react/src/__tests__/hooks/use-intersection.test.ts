@@ -72,6 +72,7 @@ describe('useIntersection', () => {
     let renders = 0;
     renderHook(() => {
       renders += 1;
+
       return useIntersection({ target: element });
     });
     deliver(intersectionEntryOf({ target: element, isIntersecting: true, ratio: 0.5 }));

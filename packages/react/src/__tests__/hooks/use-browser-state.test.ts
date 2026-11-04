@@ -23,6 +23,7 @@ const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia')
 const listOf = (query: string): FakeMediaQueryList => {
   const list = lists.get(query) ?? new FakeMediaQueryList(query, false);
   lists.set(query, list);
+
   return list;
 };
 
@@ -41,6 +42,7 @@ beforeEach(() => {
     writable: true,
     value: (query: string) => {
       matchMediaCalls += 1;
+
       return listOf(query);
     },
   });
@@ -48,6 +50,7 @@ beforeEach(() => {
     configurable: true,
     get: () => {
       stateReads += 1;
+
       return visibility;
     },
   });
@@ -55,6 +58,7 @@ beforeEach(() => {
     configurable: true,
     get: () => {
       stateReads += 1;
+
       return isOnline;
     },
   });
@@ -63,9 +67,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   mock.restore();
+
   if (originalMatchMedia) {
     Object.defineProperty(window, 'matchMedia', originalMatchMedia);
   }
+
   Reflect.deleteProperty(document, 'visibilityState');
   Reflect.deleteProperty(navigator, 'onLine');
 });

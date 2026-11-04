@@ -53,6 +53,7 @@ export function useElementSize(
 export function useElementSize(
   opts?: Omit<IUseElementSizeOptions, 'ref'>,
 ): IUseElementSizeRefReturn;
+
 export function useElementSize(
   opts: IUseElementSizeOptions = {},
 ): IUseElementSizeReturn | IUseElementSizeRefReturn {
@@ -73,6 +74,7 @@ export function useElementSize(
       box,
       onFrame: (entries) => {
         const entry = entries.at(-1);
+
         if (!entry) {
           return;
         }

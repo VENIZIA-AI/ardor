@@ -54,16 +54,21 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       if (!withoutDataProvider) {
         this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(dataProvider);
       }
+
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+
       if (withAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
       }
+
       if (withBrokenAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toClass(Detached);
       }
+
       if (features) {
         this.bind({ key: CoreBindings.FEATURES }).toValue(features);
       }
+
       for (const [key, target] of services) {
         this.bind({ key }).toClass(target);
       }
@@ -79,6 +84,7 @@ const messageOf = async (task: Promise<unknown>): Promise<string> => {
   } catch (error) {
     return (error as Error).message;
   }
+
   throw getError({ message: 'Expected the task to reject' });
 };
 
@@ -261,6 +267,7 @@ describe('assertArdorApplicationBoots', () => {
 describe('FakeResizeObserver', () => {
   const targetOf = (): Element => {
     const target: unknown = { tagName: 'DIV' };
+
     return target as Element;
   };
 

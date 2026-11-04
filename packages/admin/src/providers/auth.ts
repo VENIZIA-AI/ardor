@@ -43,6 +43,7 @@ const readStatus = (error: unknown): unknown => {
   }
 
   const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
+
   return status ?? statusCode;
 };
 
@@ -166,9 +167,11 @@ export class DefaultAuthProvider<
     }
 
     const claims = this.decodeJwtClaims({ jwt: record.value });
+
     const isUserId = (value: unknown): value is number | string => {
       return typeof value === 'number' || (typeof value === 'string' && value.length > 0);
     };
+
     const resolvedUserId = [userId, claims?.userId, claims?.sub].find(isUserId);
 
     if (resolvedUserId === undefined) {
@@ -191,6 +194,7 @@ export class DefaultAuthProvider<
   /** The claims of a JWT, or `undefined` for a token that is not one. The signature is not checked. */
   protected decodeJwtClaims(opts: { jwt: string }): Record<string, unknown> | undefined {
     const segment = opts.jwt.split('.')[1];
+
     if (!segment) {
       return undefined;
     }
@@ -200,6 +204,7 @@ export class DefaultAuthProvider<
         char.charCodeAt(0),
       );
       const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
+
       return typeof claims === 'object' && claims !== null
         ? (claims as Record<string, unknown>)
         : undefined;
@@ -209,6 +214,7 @@ export class DefaultAuthProvider<
         '[decodeJwtClaims] The token payload cannot be decoded, reading no claims | error: %s',
         error instanceof Error ? error.name : typeof error,
       );
+
       return undefined;
     }
   }
@@ -223,6 +229,7 @@ export class DefaultAuthProvider<
     }
 
     const names: Array<string> = [];
+
     for (const role of opts.roles as Array<unknown>) {
       const named =
         typeof role === 'object' && role !== null ? (role as Record<string, unknown>) : {};
@@ -230,6 +237,7 @@ export class DefaultAuthProvider<
         typeof role === 'string'
           ? role
           : [named.identifier, named.name].find((v) => typeof v === 'string');
+
       if (typeof name === 'string' && name.length > 0) {
         names.push(name);
       }
@@ -328,11 +336,13 @@ export class DefaultAuthProvider<
   /** Announces a session unless it is the one announced last. The claim is made before the hook is awaited. */
   private startSession(opts: { token: IAuthTokenRecord; user: AnyType }): Promise<void> {
     const session = [opts.user?.userId, opts.token.value].join('|');
+
     if (session === this.announcedSession) {
       return this.hookQueue;
     }
 
     this.announcedSession = session;
+
     return this.runSessionHook({
       name: 'onSessionStarted',
       run: () => this.onSessionStarted(opts),
@@ -346,6 +356,7 @@ export class DefaultAuthProvider<
     }
 
     this.announcedSession = undefined;
+
     return this.runSessionHook({
       name: 'onSessionCleared',
       run: () => this.onSessionCleared(opts),
@@ -361,6 +372,7 @@ export class DefaultAuthProvider<
 
   private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {
     this.clearing = opts.reason;
+
     try {
       this.authService.cleanUp();
     } finally {
@@ -373,6 +385,7 @@ export class DefaultAuthProvider<
   /** Announces the session in the store, when there is one. */
   private startStoredSession(): Promise<void> {
     const token = this.authService.getAuth();
+
     if (!token?.value) {
       return Promise.resolve();
     }
@@ -419,6 +432,7 @@ export class DefaultAuthProvider<
 
     if (!token?.value) {
       await this.endSession({ reason: SessionClearReasons.REJECTED });
+
       return Promise.reject(
         this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
       );
@@ -426,6 +440,7 @@ export class DefaultAuthProvider<
 
     if (!this.authProviderOptions.paths?.checkAuth) {
       await this.startStoredSession();
+
       return Promise.resolve();
     }
 
@@ -440,12 +455,14 @@ export class DefaultAuthProvider<
       if (this.announcedSession === checked) {
         await this.endSession({ reason: SessionClearReasons.REJECTED });
       }
+
       return Promise.reject(
         this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
       );
     }
 
     await this.startStoredSession();
+
     return Promise.resolve();
   }
 
@@ -454,9 +471,11 @@ export class DefaultAuthProvider<
 
     if (status === 401) {
       const rejection = this.unauthenticatedRejection({ reason: SessionClearReasons.UNAUTHORIZED });
+
       if (rejection.logoutUser !== false) {
         await this.clearSession({ reason: SessionClearReasons.UNAUTHORIZED });
       }
+
       return Promise.reject(rejection);
     }
 
@@ -495,6 +514,7 @@ export class DefaultAuthProvider<
    */
   async refreshToken(): Promise<boolean> {
     const isRefreshed = await this.restDataProvider.getNetworkService().refresh();
+
     if (isRefreshed) {
       await this.startStoredSession();
     }
@@ -525,6 +545,7 @@ export class DefaultAuthProvider<
         ? {
             canAccess: (params: { resource: string; action: string; record?: unknown }) => {
               const { resource, action, record } = params;
+
               return permissionProvider.canAccess({ resource, action, record });
             },
           }

@@ -17,6 +17,7 @@ describe('useWindowDimensions', () => {
       try {
         const dimensions = useWindowDimensions();
         renders.push(dimensions);
+
         return dimensions;
       } finally {
         if (descriptor) {

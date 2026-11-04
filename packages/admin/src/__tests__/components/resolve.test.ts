@@ -17,12 +17,15 @@ const authProvider = {
 const createContainer = (opts: { withAuthProvider: boolean; withI18nProvider?: boolean }) => {
   const container = new Container();
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({ id: 'data' });
+
   if (opts.withAuthProvider) {
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
   }
+
   if (opts.withI18nProvider ?? true) {
     container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({ id: 'i18n' });
   }
+
   return container;
 };
 

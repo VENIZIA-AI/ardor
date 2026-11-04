@@ -85,6 +85,7 @@ class RemoteApplication extends BaseArdorApplication {
 const started = async () => {
   const application = new RemoteApplication();
   await application.start();
+
   return application;
 };
 

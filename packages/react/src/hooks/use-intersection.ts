@@ -30,6 +30,7 @@ export const useIntersection = (
 
   React.useEffect(() => {
     setEntry(undefined);
+
     if (!element || typeof IntersectionObserver === 'undefined') {
       return () => {};
     }
@@ -37,6 +38,7 @@ export const useIntersection = (
     const observer = new IntersectionObserver(
       (entries) => {
         const latest = entries.at(-1);
+
         if (!latest) {
           return;
         }

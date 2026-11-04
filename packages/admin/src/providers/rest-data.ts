@@ -80,6 +80,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
   protected get networkService(): DefaultNetworkRequestService {
     this.cachedNetworkService ??= this.createNetworkService();
+
     return this.cachedNetworkService;
   }
 

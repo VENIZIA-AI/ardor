@@ -34,6 +34,7 @@ const logsOf = (run: () => unknown): string => {
     return JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
   } finally {
     LoggerFactory.reset();
+
     for (const spy of spies) {
       spy.mockRestore();
     }

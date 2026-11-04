@@ -54,12 +54,15 @@ const { useDeepEqualSelector, useShallowEqualSelector } = SelectorHooks.create<I
 
 const mount = <TSelected>(opts: { store: TStore; selector: (state: IState) => TSelected }) => {
   const renders = { count: 0 };
+
   const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(Provider, { store: opts.store, children });
   };
+
   const hook = renderHook(
     () => {
       renders.count += 1;
+
       return useDeepEqualSelector(opts.selector);
     },
     { wrapper },
@@ -170,12 +173,15 @@ describe('SelectorHooks useDeepEqualSelector', () => {
   test('differs from the shallow selector, which renders again for the same new object', () => {
     const store = createStore();
     const renders = { count: 0 };
+
     const wrapper = ({ children }: { children: React.ReactNode }) => {
       return React.createElement(Provider, { store, children });
     };
+
     renderHook(
       () => {
         renders.count += 1;
+
         return useShallowEqualSelector((state) => ({
           items: state.items.map((item) => ({ ...item })),
         }));

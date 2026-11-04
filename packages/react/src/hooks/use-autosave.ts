@@ -32,21 +32,26 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
   React.useEffect(() => {
     if (initialRender.current) {
       initialRender.current = false;
+
       return () => {};
     }
+
     Promise.resolve(handleSave.current(debouncedValueToSave)).catch((error: unknown) => {
       logger.error('[useAutosave] Failed to save debounced value | error: %s', error);
     });
+
     return () => {};
   }, [debouncedValueToSave]);
 
   React.useEffect(() => {
     valueOnCleanup.current = data;
+
     return () => {};
   }, [data]);
 
   React.useEffect(() => {
     handleSave.current = onSave;
+
     return () => {};
   }, [onSave]);
 
@@ -55,6 +60,7 @@ export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TRe
       if (!enableSaveOnUnmount) {
         return;
       }
+
       Promise.resolve(handleSave.current(valueOnCleanup.current)).catch((error: unknown) => {
         logger.error('[useAutosave] Failed to save value on unmount | error: %s', error);
       });

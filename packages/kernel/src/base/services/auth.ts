@@ -41,6 +41,7 @@ export class DefaultAuthService extends BaseService {
    */
   private parseStored(opts: { key: string; method: string }): unknown {
     const stored = this.readStored({ key: opts.key });
+
     if (!stored?.length) {
       return undefined;
     }
@@ -54,6 +55,7 @@ export class DefaultAuthService extends BaseService {
         opts.key,
         error instanceof Error ? error.name : typeof error,
       );
+
       return undefined;
     }
   }

@@ -100,17 +100,20 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       caller: 'registerArtifacts',
       entries: targets.flatMap((target) => {
         const metadata = registry.getArtifactMetadata({ target });
+
         if (!metadata) {
           return [];
         }
 
         const namespace = ArtifactNamespaces.resolve({ type: metadata.type });
+
         return [{ target: target as TClass<unknown>, namespace, binding: metadata.binding }];
       }),
     });
 
     for (const target of targets) {
       const key = this.getMetadataRegistry().getBindingKey({ target });
+
       if (!key) {
         continue;
       }
@@ -123,6 +126,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
         this.bind({ key: entry.key })
           .toProvider((container) => {
             const instance = container.get<Record<string | symbol, () => unknown>>({ key });
+
             return instance[entry.methodName]();
           })
           .setScope(entry.scope ?? BindingScopes.SINGLETON);
@@ -195,6 +199,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     for (const entry of indexes) {
       const group = entry as { isArtifactGroup?: boolean; content?: IArtifactIndex };
       const index = group.isArtifactGroup === true ? group.content : entry;
+
       if (!index) {
         continue;
       }
@@ -235,6 +240,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
           message: `[features] Two features are named '${feature.name}' | A feature name is unique within an application`,
         });
       }
+
       names.add(feature.name);
 
       for (const target of feature.configurations ?? []) {
@@ -320,6 +326,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     });
 
     const allowOverride = opts.opts?.allowOverride ?? declared?.allowOverride ?? true;
+
     if (!allowOverride && this.isBound({ key })) {
       throw getError({
         message: `[${caller}] '${key}' is already bound and allowOverride is false | Pass a distinct binding key`,
@@ -327,6 +334,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     }
 
     this.getMetadataRegistry().setBindingKey({ target, key });
+
     return this.bind<T>({ key })
       .toClass(target)
       .setScope(opts.opts?.scope ?? declared?.scope ?? BindingScopes.SINGLETON);

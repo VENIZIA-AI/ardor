@@ -126,6 +126,7 @@ describe('useCopyToClipboard isCopied', () => {
 
   test('a copy that resolves after the unmount still resolves with its result and throws nothing', async () => {
     let finish: () => void = () => {};
+
     setClipboard(
       () =>
         new Promise<void>((resolve) => {

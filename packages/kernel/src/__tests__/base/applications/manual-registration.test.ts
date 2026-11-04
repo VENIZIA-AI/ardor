@@ -31,6 +31,7 @@ class ManualApplication extends BaseArdorApplication {
 const started = async () => {
   const application = new ManualApplication();
   await application.start();
+
   return application;
 };
 

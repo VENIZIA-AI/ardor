@@ -86,6 +86,7 @@ export const assertArdorApplicationBoots = async <Application extends BaseArdorA
       'This application instance was already started | A failed or finished start leaves registrations behind, so build a new instance (pass a factory) for each call',
     );
   }
+
   bootedApplications.add(target);
 
   const originalFetch: unknown = Reflect.get(globalThis, 'fetch');

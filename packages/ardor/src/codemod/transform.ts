@@ -68,6 +68,7 @@ export class NamespaceTransform {
     hooks: boolean;
   }): INamespaceResult {
     const { ts, fileName, text, hooks } = opts;
+
     if (!text.includes('@venizia/ardor')) {
       return { text, renamed: 0, findings: [] };
     }
@@ -546,6 +547,7 @@ export class NamespaceTransform {
 
       return before.slice(before.lastIndexOf('\n') + 1);
     };
+
     const closing = /^\s*/.exec(lineStart(declaration.getStart(sourceFile)))?.[0] ?? '';
     const first = named.elements[0];
     const indent = first

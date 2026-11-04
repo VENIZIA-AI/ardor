@@ -27,23 +27,28 @@ interface IRecordedRequest {
 
 const isRecord = (opts: { value: unknown }): opts is { value: Record<string, unknown> } => {
   const { value } = opts;
+
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const parseFilterQuery = (opts: { raw?: string }): Record<string, unknown> => {
   const { raw } = opts;
+
   if (!raw) {
     return {};
   }
+
   try {
     const parsed: unknown = JSON.parse(raw);
     const check = { value: parsed };
+
     if (isRecord(check)) {
       return check.value;
     }
   } catch (err) {
     console.error(err);
   }
+
   return {};
 };
 
@@ -58,6 +63,7 @@ const createProvider = (opts: { baseUrl: string }): DefaultRestDataProvider => {
     version: '1.0.0',
     description: 'ARDOR test application',
   };
+
   return new DefaultRestDataProvider(restDataProviderOptions, applicationInfo);
 };
 
@@ -77,6 +83,7 @@ beforeAll(() => {
         if (contentType.includes('application/json')) {
           try {
             const text = await req.text();
+
             if (text.length > 0) {
               body = JSON.parse(text);
             }
@@ -100,6 +107,7 @@ beforeAll(() => {
         } else {
           try {
             const text = await req.text();
+
             if (text.length > 0) {
               body = text;
             }
@@ -889,6 +897,7 @@ describe('network service creation', () => {
     class CountingProvider extends DefaultRestDataProvider {
       protected override createNetworkService() {
         built += 1;
+
         return super.createNetworkService();
       }
     }

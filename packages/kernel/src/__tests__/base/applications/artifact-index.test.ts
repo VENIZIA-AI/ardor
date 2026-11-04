@@ -156,6 +156,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
       async resolve(): Promise<IArtifactIndex> {
         this.resolveCalls++;
+
         return this.resolver();
       }
 

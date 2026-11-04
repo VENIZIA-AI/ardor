@@ -133,6 +133,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return this.noAuthPathRegexes.some((regex) => {
       return candidates.some((candidate) => {
         regex.lastIndex = 0;
+
         return regex.test(candidate);
       });
     });
@@ -146,6 +147,7 @@ export class DefaultNetworkRequestService extends BaseService {
    */
   protected async refreshToken(): Promise<boolean> {
     const path = this.authRecovery?.refreshTokenPath;
+
     if (!path || !this.authService) {
       return false;
     }
@@ -157,6 +159,7 @@ export class DefaultNetworkRequestService extends BaseService {
       headers: this.getRequestHeader({ resource: path }),
     });
     const user = this.authService.getUser();
+
     // Signed out while the request was in flight: saving the token would start a session with no user.
     if (user.userId === undefined) {
       return false;
@@ -169,6 +172,7 @@ export class DefaultNetworkRequestService extends BaseService {
       provider: user.provider,
       token: this.readRefreshedToken({ data: response.data }),
     });
+
     return true;
   }
 
@@ -182,6 +186,7 @@ export class DefaultNetworkRequestService extends BaseService {
       typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
     const { token } = body;
     let record: object = {};
+
     if (typeof token === 'string') {
       record = { value: token };
     } else if (typeof token === 'object' && token !== null) {

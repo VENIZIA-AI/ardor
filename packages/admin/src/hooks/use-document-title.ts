@@ -36,6 +36,7 @@ const resolveTitle = (): string | undefined => {
     if (!entry.isFallback) {
       return entry.title;
     }
+
     fallback ??= entry.title;
   }
 
@@ -64,6 +65,7 @@ const unregister = (entry: ITitleEntry) => {
 
   if (entries.length > 0) {
     writeTitle();
+
     return;
   }
 
@@ -72,6 +74,7 @@ const unregister = (entry: ITitleEntry) => {
   if (originalTitle !== undefined && document.title === writtenTitle) {
     document.title = originalTitle;
   }
+
   originalTitle = undefined;
   writtenTitle = undefined;
 };

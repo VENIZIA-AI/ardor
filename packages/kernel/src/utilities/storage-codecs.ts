@@ -8,9 +8,11 @@ export class StorageCodecs {
     opts: { allowed?: ReadonlyArray<TText> } = {},
   ): IStorageCodec<TText> {
     const { allowed } = opts;
+
     const isAllowed = (text: string): text is TText => {
       return !allowed || allowed.some((item) => item === text);
     };
+
     const check = (text: string): TText => {
       if (!isAllowed(text)) {
         throw getError({ message: '[StorageCodecs.text] The text is not in the allowed list' });

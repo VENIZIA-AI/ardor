@@ -24,6 +24,7 @@ export const useRefreshToken = (): TRefreshToken => {
         .catch((error: unknown) => {
           logger.error('[refreshToken] Failed to invalidate permissions cache | error: %s', error);
         });
+
       return isRefreshed;
     });
   }, [authProvider, queryClient]);

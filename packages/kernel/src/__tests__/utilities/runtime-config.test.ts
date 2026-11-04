@@ -109,6 +109,7 @@ describe('RuntimeConfig.get', () => {
 
     test('the error is told by its code and carries the key, whatever the message says', () => {
       let thrown: unknown;
+
       try {
         RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
       } catch (error) {
@@ -117,9 +118,11 @@ describe('RuntimeConfig.get', () => {
 
       expect(RUNTIME_CONFIG_REQUIRED_CODE).toBe('ardor.runtime_config.required');
       expect(isApplicationError(thrown)).toBe(true);
+
       if (!isApplicationError(thrown)) {
         return;
       }
+
       expect(thrown.normalized.code).toBe(RUNTIME_CONFIG_REQUIRED_CODE);
       expect(thrown.extra?.key).toBe('VITE_API_URL');
     });
@@ -136,11 +139,13 @@ describe('RuntimeConfig.get', () => {
       ).toThrow("'VITE_API_URL'");
 
       let message = '';
+
       try {
         RuntimeConfig.get({ key: 'VITE_TOKEN_HINT', required: true });
       } catch (error) {
         message = error instanceof Error ? error.message : String(error);
       }
+
       expect(message).toContain('VITE_TOKEN_HINT');
       expect(message).not.toContain('424242');
     });

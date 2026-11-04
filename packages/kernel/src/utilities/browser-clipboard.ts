@@ -12,6 +12,7 @@ export class BrowserClipboard {
   }): Promise<TResult> {
     try {
       const result = await opts.run();
+
       return result;
       // eslint-disable-next-line venizia/no-silent-catch -- absorbing a refusing clipboard is the contract of BrowserClipboard
     } catch {
@@ -24,6 +25,7 @@ export class BrowserClipboard {
     return BrowserClipboard.safe({
       run: async () => {
         await globalThis.navigator.clipboard.writeText(opts.text);
+
         return true;
       },
       fallback: false,

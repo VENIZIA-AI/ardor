@@ -21,6 +21,7 @@ export interface IUseCopyToClipboardReturn {
 // A hook is never handed an async function, so the copy lives outside it.
 const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
   const isCopied = await BrowserClipboard.writeText({ text: opts.value });
+
   if (!isCopied) {
     logger.warn('[copy] The clipboard did not take the text');
   }
@@ -44,6 +45,7 @@ export const useCopyToClipboard = (
       return copyToClipboard(copyOpts).then((isDone) => {
         clearTimeout(timerRef.current);
         setCopied(isDone);
+
         if (isDone && resetMs > 0) {
           timerRef.current = setTimeout(() => setCopied(false), resetMs);
         }

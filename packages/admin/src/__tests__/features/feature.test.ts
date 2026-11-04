@@ -31,9 +31,11 @@ const commerce = Features.define<IMenuExtension>({
 
 const containerWith = (opts: { features?: Array<TFeature> }) => {
   const container = new Container();
+
   if (opts.features) {
     container.bind({ key: CoreBindings.FEATURES }).toValue(opts.features);
   }
+
   return container;
 };
 

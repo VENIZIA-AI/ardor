@@ -164,6 +164,7 @@ describe('resolveRecord and the debug gate', () => {
     const env: Record<string, string | undefined> = { ...process.env };
     delete env.DEBUG;
     delete env.NODE_ENV;
+
     if (opts.debug !== undefined) {
       env.DEBUG = opts.debug;
     }
