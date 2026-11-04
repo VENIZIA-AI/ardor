@@ -39,10 +39,14 @@ import { BaseService } from './base';
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
  */
 export class DefaultNetworkRequestService extends BaseService {
+  /** Resources sent without a token, matched exactly. */
   protected noAuthPaths?: string[];
+  /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
+  /** Headers added to every request, keyed by lowercase name. */
   protected headers: Record<string, string>;
   protected networkRequest: NodeFetchNetworkRequest;
+  /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
   protected authService?: DefaultAuthService;
@@ -51,9 +55,13 @@ export class DefaultNetworkRequestService extends BaseService {
 
   constructor(
     opts: INoAuthOptions & {
+      /** The name of the underlying network request helper. */
       name: string;
+      /** Defaults to an empty string, which `doRequest` refuses unless it is given its own `baseUrl`. */
       baseUrl?: string;
+      /** Sent with every request; a name set later with `setHeaders` replaces it. */
       headers?: HeadersInit;
+      /** Enables the refresh-and-retry after a 401. */
       authRecovery?: IAuthRecoveryOptions;
       /** What the default `refreshToken` saves the new token through. */
       authService?: DefaultAuthService;
@@ -208,7 +216,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return Promise.resolve();
   }
 
-  /** The tracing id of a request, sent in `x-request-tracing-id`. Default `<application name>_<uuid>`. */
+  /** The tracing id of a request, sent in `x-request-id`. Default `<application name>_<uuid>`. */
   protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
     return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
   }
@@ -286,6 +294,10 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /**
+   * The `token` (`<type> <value>`, `Bearer` when the type is empty) and `provider` of the stored
+   * token. Throws an error with status 401 when there is no token.
+   */
   getRequestAuthorizationHeader() {
     const authToken = this.resolveAuthToken();
 
@@ -307,6 +319,7 @@ export class DefaultNetworkRequestService extends BaseService {
     this.headers = NetworkHeaders.merge({ sources: [this.headers, opts.headers] });
   }
 
+  /** Removes the headers set by name, in any case. */
   removeHeaders(opts: { keys: string[] }) {
     if (!opts.keys?.length) {
       return;
@@ -346,6 +359,10 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /**
+   * The session headers, plus `authorization` and `x-auth-provider` unless `resource` is a no-auth
+   * path. Throws a 401 error for any other resource when there is no token.
+   */
   getRequestHeader(opts: { resource: string }): Record<string, string> {
     const { resource } = opts;
 
@@ -370,6 +387,10 @@ export class DefaultNetworkRequestService extends BaseService {
     return RequestBodyEncoder.encode(opts);
   }
 
+  /**
+   * The headers (session, auth, tracing, `x-request-count`, the `extra` header, and the content type
+   * of the encoded body) and the encoded body of a request. Throws as `getRequestHeader` does.
+   */
   getRequestProps(params: IGetRequestPropsParams) {
     const {
       bodyType,
@@ -409,6 +430,12 @@ export class DefaultNetworkRequestService extends BaseService {
     return ResponseReader.convert<TData>(opts);
   }
 
+  /**
+   * Sends the request and reads the response by `type`. Throws when `baseUrl` (the option, else the
+   * service's) is empty. A 401 on a path that can recover triggers `refresh` and, if it refreshed,
+   * one retry with the new token. Any other non-2xx response, or a retry that still fails, throws
+   * the error read from the response.
+   */
   async doRequest<TResult = unknown>(
     opts: IGetRequestPropsResult & {
       baseUrl?: string;

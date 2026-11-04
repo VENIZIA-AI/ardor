@@ -5,9 +5,17 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
 
+/**
+ * A `DefaultRestDataProvider` whose list reads take their `total` from the count route
+ * (`GET /{resource}/count` with the same `where`) instead of the `Content-Range` header.
+ */
 export class CountRestDataProvider<
   TResource extends string = string,
 > extends DefaultRestDataProvider<TResource> {
+  /**
+   * Sends the list GET and the count GET together; `total` is the count's `count`, or `0` when the
+   * count answers none. Rejects when either request rejects.
+   */
   protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     type: TRequestType;

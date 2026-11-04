@@ -34,6 +34,7 @@ export class AuthTokenStore {
     }
   }
 
+  /** Stores the token with its `provider` under `LocalStorageKeys.KEY_AUTH_TOKEN`. Throws when `localStorage` is not available. */
   static write(opts: { token: { value: string; type: string }; provider: string }): void {
     // Not a silent skip: a sign-in that is not kept would look like it worked.
     if (typeof localStorage === 'undefined') {

@@ -34,6 +34,7 @@ export class SessionClearReasons {
   static readonly REJECTED = 'rejected';
 }
 
+/** One of the `SessionClearReasons` values. */
 export type TSessionClearReason = TStringConstValue<typeof SessionClearReasons>;
 
 /** The status of a failure: react-admin's `HttpError` has `status`, the data provider's `ApplicationError` has `statusCode`. */
@@ -395,7 +396,12 @@ export class DefaultAuthProvider<
 
   // --- react-admin's auth provider -------------------------------------------------------------
 
-  /** Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling. */
+  /**
+   * Posts the sign-in body to `signInPath`, stores the session and resolves `{ ...response,
+   * redirectTo }`, where `redirectTo` is `afterLoginPath`. Rejects when the request fails, when the
+   * response carries no token or user id, or when `beforeSaveSession` throws; no session is stored
+   * then. Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling.
+   */
   async login(params: ILoginParams): Promise<unknown> {
     const response = await this.restDataProvider.send({
       resource: this.signInPath as TResource,
@@ -423,10 +429,16 @@ export class DefaultAuthProvider<
     };
   }
 
+  /** Clears the session and resolves. */
   async logout(_params?: unknown): Promise<void> {
     await this.clearSession({ reason: SessionClearReasons.LOGOUT });
   }
 
+  /**
+   * Resolves when a token is stored and, if `paths.checkAuth` is set, the server answers with data.
+   * Otherwise it ends the session (reason `rejected`) and rejects with `unauthenticatedRejection`;
+   * it rejects with the request's error when the check request fails.
+   */
   async checkAuth(_params?: unknown) {
     const token = this.authService.getAuth();
 
@@ -466,6 +478,11 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
+  /**
+   * Resolves for every error but 401 and 403. A 401 clears the session (unless
+   * `unauthenticatedRejection` says `logoutUser: false`) and rejects with that rejection; a 403
+   * rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
+   */
   async checkError(error: unknown) {
     const status = readStatus(error);
 
@@ -489,6 +506,7 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
+  /** Resolves the stored user; rejects when there is no `userId`. */
   getIdentity(_params?: unknown) {
     const user = this.authService.getUser();
 
@@ -499,10 +517,12 @@ export class DefaultAuthProvider<
     return Promise.resolve(user);
   }
 
+  /** Resolves with nothing; the roles come from `getRoles`. */
   getPermissions(_params?: unknown) {
     return Promise.resolve();
   }
 
+  /** Resolves the roles of the stored session. */
   getRoles(_params?: unknown) {
     return Promise.resolve(this.authService.getRoles());
   }

@@ -23,6 +23,7 @@ import type {
   StorageAreas,
 } from './constants';
 
+/** A record id: a string or a number. */
 export type IdType = string | number;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
@@ -39,16 +40,25 @@ export type {
   ValueOrPromise,
 };
 
+/** One of the `RequestMethods` values. */
 export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
+/** One of the `Environments` values. */
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
+/** What `IDataProvider.send` takes. */
 export interface ISendParams {
+  /** Required: `send` throws without it. */
   method?: TRequestMethod;
+  /** How the response is read. `RequestTypes.SEND` when absent. */
   requestType?: TRequestType;
+  /** How `body` is encoded; it goes through as JSON when absent. */
   bodyType?: TRequestBodyType;
   body?: unknown;
+  /** Sent as the query string of the request. */
   query?: Record<string, unknown>;
+  /** Added to the headers of this request. */
   headers?: Record<string, string | number>;
+  /** Whether the response carries a count; sent in `x-request-count`. `RequestCountData.DATA_ONLY` when absent. */
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
@@ -57,8 +67,10 @@ export interface ISendParams {
 /** What `IDataProvider.send` answers: the network service's response. */
 export type ISendResponse<T = unknown> = INetworkResponse<T>;
 
+/** One of the `RequestBodyTypes` values. */
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 
+/** One of the `StorageAreas` values. */
 export type TStorageArea = TStringConstValue<typeof StorageAreas>;
 
 /** How `BrowserStorage` turns a value into text and back. `decode` may throw: `get` then gives the fallback. */
@@ -66,19 +78,27 @@ export interface IStorageCodec<TValue> {
   encode: (value: TValue) => string;
   decode: (text: string) => TValue;
 }
+/** One of the `RequestTypes` values. */
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
+/** What `DefaultNetworkRequestService.getRequestProps` takes. */
 export interface IGetRequestPropsParams {
+  /** Decides whether the request goes without a token (`noAuthPaths`, `noAuthPathRegex`). */
   resource: string;
+  /** `RequestCountData.DATA_ONLY` when absent. */
   requestCountData?: TConstValue<typeof RequestCountData>;
   body?: unknown;
+  /** How `body` is encoded. */
   bodyType?: TRequestBodyType;
+  /** Gives the request channel. */
   restDataProviderOptions: IRestDataProviderOptions;
+  /** Gives the name the tracing id starts with. */
   applicationInfo: IApplicationInfo;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
 }
 
+/** The headers and the encoded body of a request. */
 export interface IGetRequestPropsResult {
   headers?: HeadersInit;
   body?: unknown;
@@ -109,11 +129,13 @@ export interface IAuthProviderOptions {
   };
 }
 
+/** How a request recovers from a 401. */
 export interface IAuthRecoveryOptions {
   /** A request to this path never starts a refresh: it is the refresh. */
   refreshTokenPath?: string;
 }
 
+/** One pattern or a list; a string is compiled with `new RegExp(...)`. */
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
 /**
@@ -133,17 +155,23 @@ export interface INoAuthOptions {
   noAuthPathRegex?: TNoAuthPathRegex;
 }
 
+/** Data only: where and how the REST data provider sends. */
 export interface IRestDataProviderOptions extends INoAuthOptions {
+  /** The base URL requests are sent to. */
   url: string;
   /** Sent in `x-request-channel`. Default `RequestChannel.WEB`. */
   requestTracingChannel?: string;
 
+  /** Sent with every request. */
   headers?: HeadersInit;
 
+  /** Enables the refresh-and-retry after a 401. */
   authRecovery?: IAuthRecoveryOptions;
 }
 
+/** The token an application is signed in with. */
 export interface IAuthTokenRecord {
+  /** The authorization scheme; the service sends `Bearer` when it is empty or absent. */
   type?: string;
   value: string;
   provider?: string;
@@ -168,7 +196,9 @@ export interface IDataSourceAuth {
 
 /** What `DefaultNetworkRequestService.doRequest` answers. */
 export interface INetworkResponse<TResult = unknown> {
+  /** The response body, or its rows for a list. */
   data: TResult;
+  /** The count the server sent, in the body or in `x-response-count`; absent when it sent none. */
   count?: number;
   /** GET_LIST and GET_MANY_REFERENCE: the total of `Content-Range`, else the page's own row count. */
   total?: number;
@@ -214,20 +244,33 @@ export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
 
+/** The contract of an application: lifecycle hooks, registration of artifacts, and `start`. */
 export interface IArdorApplication {
+  /** Binds the application instance and info, then the discovered, feature and listed classes. */
   preConfigure(): ValueOrPromise<void>;
+  /** Runs after `preConfigure` in `start`. */
   postConfigure(): ValueOrPromise<void>;
+  /** The application's own bindings, bound last in `preConfigure`. */
   bindContext(): ValueOrPromise<void>;
+  /** Classes bound by key as singletons. */
   bindingList(): Record<string, TClass<unknown>>;
+  /** The features this application mounts. */
   features(): Array<IFeatureBase>;
+  /** The artifact indexes `start` checks every stereotyped class against. */
   artifacts(): Array<IArtifactIndex>;
 
+  /** Binds `value` under `<scope>.<ClassName>` as a singleton. */
   injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
+  /** Binds `value` in the service namespace. */
   service<T>(value: TClass<T>): unknown;
+  /** Binds `value` in the repository namespace. */
   repository<T>(value: TClass<T>): unknown;
+  /** Binds `value` in the data source namespace. */
   dataSource<T>(value: TClass<T>): unknown;
+  /** Binds `value` in the component namespace. */
   component<T>(value: TClass<T>): unknown;
 
+  /** Runs the whole startup: resolves the indexes, then `preConfigure`, then `postConfigure`. */
   start(): ValueOrPromise<void>;
 }
 
@@ -266,6 +309,7 @@ export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
         }[keyof T]
       : never;
 
+/** The dotted paths of an object type, to `DeepLevel` levels (10 by default); unlike `TPaths`, only the paths down to a leaf value. */
 export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never
   ? never
   : T extends Array<infer U>
@@ -280,6 +324,7 @@ export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends nev
         }[keyof T]
       : never;
 
+/** What an application is: bound under `CoreBindings.APPLICATION_INFO`, and the name a tracing id starts with. */
 export interface IApplicationInfo {
   name: string;
   version: string;

@@ -11,6 +11,10 @@ export interface IUseRequestHeaderLocaleOptions {
   key?: string;
 }
 
+/**
+ * Keeps the current react-admin locale in a header of the default REST data provider's network
+ * service, re-set on each locale change. `opts.key` defaults to `x-locale`; an empty key falls back to it.
+ */
 export const useRequestHeaderLocale = (opts?: IUseRequestHeaderLocaleOptions) => {
   const key = opts?.key?.length ? opts.key : HeaderConstants.X_LOCALE;
 

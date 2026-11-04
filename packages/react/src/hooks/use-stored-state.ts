@@ -8,19 +8,24 @@ import {
 } from '@venizia/ardor-kernel';
 
 export interface IUseStoredStateOptions<TValue> {
+  /** The storage key. */
   key: string;
+  /** The value while the key holds nothing. */
   defaultValue: TValue;
   /** @default 'local' */
   storage?: TStorageArea;
   /** @default JSON */
   codec?: IStorageCodec<TValue>;
-  /** Write storage once, this many milliseconds after the last `setValue`; `value` changes at once. @default 0 */
+  /** Write storage once, this many milliseconds after the last `setValue`; `value` changes at once. Above 0, also pass a stable `codec`. @default 0 */
   writeDelayMs?: number;
 }
 
 export interface IUseStoredStateReturn<TValue> {
+  /** The stored value, or `defaultValue` when the key holds nothing. */
   value: TValue;
+  /** Stores a value, or the result of an updater called with the current one. */
   setValue: (next: TValue | ((current: TValue) => TValue)) => void;
+  /** Removes the key, so `value` is `defaultValue` again. */
   remove: () => void;
 }
 

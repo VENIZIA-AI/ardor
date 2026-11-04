@@ -19,6 +19,7 @@ export interface IUseElementSizeReturn {
 }
 
 export interface IUseElementSizeRefReturn extends IUseElementSizeReturn {
+  /** Give it to the element to measure. */
   ref: React.RefCallback<Element>;
 }
 

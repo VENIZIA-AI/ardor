@@ -46,6 +46,13 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
+/**
+ * The react-admin data provider over an IGNIS REST API. Each method takes one `opts` object
+ * (`{ resource, params }`) and resolves the result react-admin expects; it rejects with the error
+ * the network service throws (a non-2xx response, an empty base URL, an auth failure that cannot be
+ * recovered). A subclass overrides the protected hooks (`createNetworkService`, `buildListFilter`,
+ * `requestList`).
+ */
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
 > {
@@ -84,6 +91,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     return this.cachedNetworkService;
   }
 
+  /** The network service every request of this provider goes through; built on first use. */
   getNetworkService() {
     return this.networkService;
   }
@@ -186,6 +194,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * `GET /{resource}` with the filter built from the list params in the query. Resolves the rows and
+   * `total` (the `Content-Range` total, else the page's row count), plus `meta.extra` when a route
+   * answered extras.
+   */
   async getList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetListParams & QueryFunctionContext & ICustomParams;
@@ -202,6 +215,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * `GET /{resource}/{id}`, with `params.meta.filter` as the query filter. Resolves `{ data }`.
+   */
   async getOne<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
@@ -220,6 +236,10 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * `GET /{resource}` with the ids in `filter.where.id.inq`, merged into `params.meta.filter`.
+   * Resolves `{ data }`.
+   */
   async getMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
@@ -245,6 +265,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * As `getList`, with `filter.where[target] = id`. Resolves the rows and `total`.
+   */
   async getManyReference<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetManyReferenceParams & QueryFunctionContext & ICustomParams;
@@ -265,6 +288,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /** `PATCH /{resource}/{id}` with `params.data` as the body. Resolves `{ data }`. */
   async update<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateParams;
@@ -280,6 +304,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * `PATCH /{resource}` with `{ ...params.data, where: { id: { inq: ids } } }` as the body. Resolves
+   * `{ data }`, the ids of the rows the server answered (`undefined` when the answer is not a row
+   * array). Rejects when `ids` is empty or `params.data` has a `where` field, before any request.
+   */
   async updateMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateManyParams;
@@ -310,6 +339,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /** `POST /{resource}` with `params.data` as the body. Resolves `{ data }`, the created record. */
   async create<
     RecordType extends Omit<RaRecord, 'id'> = Omit<RaRecord, 'id'>,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
@@ -324,6 +354,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /** `DELETE /{resource}/{id}`. Resolves `{ data }`, the record the server answered. */
   async delete<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteParams<RecordType>;
@@ -338,6 +369,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * `DELETE /{resource}` with `{ where: { id: { inq: ids } } }` as the body. Resolves `{ data }`, the
+   * ids of the rows the server answered (`undefined` when the answer is not a row array). Rejects
+   * when `ids` is empty, before any request.
+   */
   async deleteMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteManyParams<RecordType>;
@@ -361,6 +397,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * Sends `params.method` to `/{resource}` with the provider's headers and auth; `requestType`
+   * defaults to `RequestTypes.SEND`. Resolves the response read by that type. Rejects when
+   * `params.method` is missing, before any request.
+   */
   async send<TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;

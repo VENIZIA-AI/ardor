@@ -4,6 +4,7 @@ import { type AnyType, type IAuthTokenRecord, type IdType, LocalStorageKeys } fr
 import { AuthTokenStore } from '@/helpers';
 import { BaseService } from './base';
 
+/** Keeps the signed-in session (token, identity, roles) in `localStorage`; everything under `LocalStorageKeys.PREFIX_AUTH`. */
 export class DefaultAuthService extends BaseService {
   private readonly listeners = new Set<() => void>();
 
@@ -60,6 +61,7 @@ export class DefaultAuthService extends BaseService {
     }
   }
 
+  /** The stored identity; `{}` when nothing usable is stored, also outside a browser. */
   getUser(): AnyType {
     const identity = this.parseStored({
       key: LocalStorageKeys.KEY_AUTH_IDENTITY,
@@ -70,6 +72,7 @@ export class DefaultAuthService extends BaseService {
     return isRecord ? identity : {};
   }
 
+  /** The stored roles; empty when nothing usable is stored, also outside a browser. */
   getRoles() {
     const stored = this.parseStored({
       key: LocalStorageKeys.KEY_AUTH_PERMISSION,
@@ -85,6 +88,10 @@ export class DefaultAuthService extends BaseService {
     return AuthTokenStore.read() ?? null;
   }
 
+  /**
+   * Stores the token and identity, then notifies the subscribers. Throws when `localStorage` is
+   * not available. Roles are stored only when `roles` is given.
+   */
   saveAuth(opts: {
     userId: number | string;
 
@@ -121,6 +128,7 @@ export class DefaultAuthService extends BaseService {
     this.notify();
   }
 
+  /** Removes every key under `LocalStorageKeys.PREFIX_AUTH`, then notifies the subscribers; does nothing outside a browser. */
   cleanUp() {
     if (typeof localStorage === 'undefined') {
       return;

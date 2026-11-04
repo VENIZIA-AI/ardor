@@ -3,8 +3,12 @@ import React from 'react';
 import type { Dispatch, UnknownAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 
+/** Builds the typed dispatch hooks of a store. */
 export class DispatchHooks {
-  /** The typed dispatch hooks of a store: bind your `AppDispatch` once, and export what comes back. */
+  /**
+   * The typed dispatch hooks of a store: bind your `AppDispatch` once, and export what comes back.
+   * `useMultipleAppDispatch` returns a function that dispatches each action in order and skips falsy ones.
+   */
   static create<TDispatch extends Dispatch<UnknownAction> = Dispatch<UnknownAction>>() {
     const useAppDispatch = useDispatch.withTypes<TDispatch>();
 

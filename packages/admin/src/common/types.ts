@@ -20,17 +20,24 @@ import type { TFeature } from '@/features/feature';
 
 /** What `DefaultRestDataProvider.request` sends: every react-admin method goes through it. */
 export interface IRestRequestOptions<TResource extends string = string> {
+  /** The first path segment, unless `paths` is set. */
   resource: TResource;
+  /** What the response is read as, and what the request is logged as. */
   type: TRequestType;
+  /** The HTTP method. */
   method: TRequestMethod;
   /** Default `[resource]`. */
   paths?: Array<string>;
+  /** The request body; encoded by `bodyType`. */
   body?: unknown;
   bodyType?: ISendParams['bodyType'];
+  /** The query string. */
   query?: Record<string, unknown>;
+  /** The list extras, sent in a header. */
   extra?: TExtraRequest;
   /** Win over the computed headers: a caller that names a header means it. */
   headers?: HeadersInit;
+  /** Default `RequestCountData.DATA_ONLY`. */
   requestCountData?: TConstValue<typeof RequestCountData>;
 }
 
@@ -51,11 +58,13 @@ export type IReactAdminDataProvider<TResource extends string = string> = Pick<
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
+  /** A request outside react-admin's methods: the same headers and auth, the method and body of `params`. */
   send: <TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
   }) => Promise<ISendResponse<TResult>>;
 
+  /** The network service every request goes through. */
   getNetworkService(): DefaultNetworkRequestService;
 
   /** Spread into an `HttpDataSource`: the repository then sends what this provider sends. */
@@ -80,6 +89,7 @@ export interface IAuthRejection {
 }
 
 export interface IAuthProvider extends IReactAdminAuthProvider {
+  /** The roles of the signed-in user. */
   getRoles: (params?: unknown) => Promise<Set<string>>;
   /** `true` when the session was refreshed, `false` when there is no refresh to make. */
   refreshToken: () => Promise<boolean>;
@@ -95,10 +105,13 @@ export type TI18nSource = object | (() => Promise<object>);
 export interface II18nProviderOptions {
   /** Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed. */
   i18nSources?: Record<string, TI18nSource>;
+  /** The locales the app offers. Default English only. */
   languages?: Array<Locale>;
 }
 
+/** The props of `ArdorApplication`: react-admin's `CoreAdmin` props except `children`, plus the ARDOR ones. */
 export interface IApplication extends Omit<CoreAdminProps, 'children'> {
+  /** The container the providers and the features are resolved from. */
   container: Container;
 
   /**
@@ -106,7 +119,9 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
    * (IGNIS's, so a provider registered with `LoggerFactory.use` is the one behind it).
    */
   logger?: ILogger;
+  /** The store the Redux provider of the shell serves. */
   reduxStore: Store;
+  /** Rendered as the `Suspense` fallback and while feature messages for the locale load. */
   suspense: ReactNode;
 
   /** The application's own resources; each feature's are mounted after them. */

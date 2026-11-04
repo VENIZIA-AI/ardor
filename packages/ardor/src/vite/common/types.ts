@@ -3,12 +3,17 @@ import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 
 import type { UnresolvedPolicies } from './constants';
 
+/** `'error'` or `'unspecified'`; see `UnresolvedPolicies`. */
 export type TUnresolvedPolicy = TConstValue<typeof UnresolvedPolicies>;
 
 export interface IBuildInfoFileOptions {
   /** The app folder, where its package.json is. Default: the folder Vite runs in. */
   root?: string;
-  /** The file's path under the output folder and under the dev server's base. Default: `build-info.json`. */
+  /**
+   * The file's path under the output folder and under the dev server's base. Default: `build-info.json`.
+   * A relative path of letters, digits, `.`, `_` and `-`, with `/` between folders, ending `.json`, and
+   * no `..` segment; anything else throws.
+   */
   fileName?: string;
   /** Dependencies whose name starts with this are listed under `frameworks`. Default: `@venizia/`. */
   frameworkScope?: string;

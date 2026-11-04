@@ -1,3 +1,4 @@
+/** The built-in English messages: react-admin's `ra` catalogue and ARDOR's own keys. */
 export const englishMessages = {
   ra: {
     action: {

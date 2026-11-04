@@ -4,6 +4,7 @@ import type { I18nProvider } from 'ra-core';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IDataProvider } from '@/common';
 
+/** Resolves the providers `ArdorApplication` hands to react-admin. */
 export class ApplicationProviders {
   /**
    * What `ArdorApplication` resolves from the container when it mounts: the one place, so a test of

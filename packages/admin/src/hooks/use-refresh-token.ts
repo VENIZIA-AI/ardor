@@ -8,6 +8,10 @@ import type { IAuthProvider } from '@/common';
 
 const logger = LoggerFactory.getLogger(['useRefreshToken']);
 
+/**
+ * Returns a function that refreshes the session through the auth provider's `refreshToken` and, once
+ * that resolves, invalidates the cached permissions. It rejects when `refreshToken` rejects.
+ */
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();
 

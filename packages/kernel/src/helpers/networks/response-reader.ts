@@ -15,6 +15,7 @@ const isCountedBody = (value: unknown): value is { data: unknown; count?: number
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
 };
 
+/** Reads a `Response` into an `INetworkResponse`, and an error response into an error. */
 export class ResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';
@@ -67,6 +68,13 @@ export class ResponseReader {
     return extra ? { ...converted, extra } : converted;
   }
 
+  /**
+   * Shapes a parsed body by request type. `GET_LIST` and `GET_MANY_REFERENCE` give `data` as an
+   * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
+   * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
+   * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
+   * `{ data, count }` body unchanged.
+   */
   static convert<TData = unknown>(opts: {
     response: {
       data: TData | { data: TData; count?: number };

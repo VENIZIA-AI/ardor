@@ -17,6 +17,7 @@ export class AuthRecovery {
       refresh: () => Promise<boolean>;
       /** Runs once when the refresh threw. */
       onFailure: () => Promise<void>;
+      /** Whether the request, given by its paths, goes without a token; such a request never recovers. */
       isNoAuthPath: (paths: string[]) => boolean;
     },
   ) {}

@@ -23,6 +23,7 @@ export type TFeature<TExtension extends object = {}> = IFeatureBase &
     messages?: TFeatureMessages;
   };
 
+/** Defines, reads, mounts and loads the messages of the features an application binds. */
 export class Features {
   /** Types a feature, keeping the shell's extension. */
   static define<TExtension extends object = {}>(

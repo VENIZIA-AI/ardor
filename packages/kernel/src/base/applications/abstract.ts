@@ -36,6 +36,7 @@ const ArtifactIndexKinds = [
 export interface IArtifactRegistration {
   /** Bind under this key instead of `<namespace>.<ClassName>`. */
   binding?: { namespace: string; key: string };
+  /** Defaults to the scope declared on the class, else SINGLETON. */
   scope?: TBindingScope;
   /** `false` refuses to replace a binding already under the key. */
   allowOverride?: boolean;
@@ -47,7 +48,9 @@ export interface IArtifactRegistration {
  * SINGLETON (IGNIS's server uses transient): a hook resolves on every render.
  */
 export abstract class AbstractArdorApplication extends Container implements IArdorApplication {
+  /** The application's own bindings; `preConfigure` runs it last, so they win over discovered and feature bindings. */
   abstract bindContext(): ValueOrPromise<void>;
+  /** The `IApplicationInfo` that `preConfigure` binds under `CoreBindings.APPLICATION_INFO`. */
   abstract getAppInfo(): ValueOrPromise<IApplicationInfo>;
 
   /** What `start()` resolved from `artifacts()`; unset when `preConfigure()` runs without it. */
@@ -255,8 +258,10 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     this.bind({ key: CoreBindings.FEATURES }).toValue(features);
   }
 
+  /** Runs after `preConfigure` in `start()`; empty by default, for a subclass to override. */
   postConfigure(): ValueOrPromise<void> {}
 
+  /** Binds `target` in the service namespace; returns the binding. */
   service<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
     return this.registerArtifact({
       target,
@@ -266,6 +271,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     });
   }
 
+  /** Binds `target` in the repository namespace; returns the binding. */
   repository<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
     return this.registerArtifact({
       target,
@@ -275,6 +281,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     });
   }
 
+  /** Binds `target` in the data source namespace; returns the binding. */
   dataSource<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
     return this.registerArtifact({
       target,
@@ -284,6 +291,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     });
   }
 
+  /** Binds `target` in the component namespace; returns the binding. */
   component<T>(target: TClass<T>, opts?: IArtifactRegistration): Binding<T> {
     return this.registerArtifact({
       target,
@@ -303,6 +311,7 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       .setTags(...(tags ?? []));
   }
 
+  /** Resolves the artifact indexes, then runs `preConfigure`, then `postConfigure`, in that order. */
   async start() {
     const result = await this.resolveArtifactIndexes();
     this.resolvedIndexes = result;
@@ -341,4 +350,5 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 }
 
+/** The base to extend for an application: implement `bindContext` and `getAppInfo`. */
 export abstract class BaseArdorApplication extends AbstractArdorApplication {}
