@@ -36,7 +36,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | I want to... | Hook | Needs in the tree | Returns |
 | --- | --- | --- | --- |
 | Access the IoC container from context | `useApplicationContext` | `ApplicationContext` with a container | `Container` |
-| Access the container with an optional override | `useInjectableContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
+| Access the container with an optional override | `useApplicationContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
 | Resolve a bound dependency by key or class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
 | Resolve a service from the `services` namespace | `useService` | `ApplicationContext` with a container, or explicit option | Bound service instance |
 | Resolve a repository from the `repositories` namespace | `useRepository` | `ApplicationContext` with a container, or explicit option | Bound repository instance |
@@ -85,20 +85,20 @@ export function ContainerStatus() {
 - **Return value**: `Container` from `@venizia/ignis-inversion`.
 - **Gotcha**: Throws an error (`[useApplicationContext] must be used within a ApplicationContextProvider`) if called when no container is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
-### useInjectableContainer
+### useApplicationContainer
 
 ```tsx
-import { useInjectableContainer } from '@venizia/ardor';
+import { useApplicationContainer } from '@venizia/ardor';
 
 export function ContainerChecker() {
-  const container = useInjectableContainer();
+  const container = useApplicationContainer();
   return <span>{container ? 'container ready' : 'no container'}</span>;
 }
 ```
 
 - **Parameters**: Optional `opts?: { container?: Container }`.
 - **Return value**: `Container`.
-- **Gotcha**: Throws an error (`[useInjectable] Failed to determine injectable container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
+- **Gotcha**: Throws an error (`[useApplicationContainer] Failed to determine the application container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useInjectable
 
@@ -380,7 +380,7 @@ export function FeatureNavigation() {
 
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
-- **Gotcha**: Reads from the container using `useInjectableContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+- **Gotcha**: Reads from the container using `useApplicationContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
 
 ### useDocumentTitle
 

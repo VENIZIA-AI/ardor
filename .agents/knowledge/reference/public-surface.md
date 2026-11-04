@@ -167,6 +167,7 @@ generated:
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
@@ -179,7 +180,6 @@ generated:
 - `useDocumentVisibility` const
 - `useElementSize` function
 - `useInjectable` const
-- `useInjectableContainer` const
 - `useIntersection` const
 - `useMediaQuery` const
 - `useOnlineStatus` const
@@ -391,6 +391,7 @@ generated:
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
 - `TUseUntypedTranslateFn` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
@@ -406,7 +407,6 @@ generated:
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
-- `useInjectableContainer` const
 - `useIntersection` const
 - `useMediaQuery` const
 - `useNotifyError` const

@@ -41,7 +41,7 @@ Resolution rules:
 
 - `{ key }` calls `container.get({ key })` directly - `key` is typically a value from the const-class binding keys registry (see [Binding key namespaces](/conventions/binding-key-namespaces.md)).
 - `{ target }` reads the binding key recorded on the class from the container's metadata registry, then resolves it. A stereotype (`@service()`, `@component()`, ...) records that key, and so does registration by hand (`service(X)`, `repository(X)`, `dataSource(X)`, `component(X)`, `bindingList()`, `injectable()`). A class that went through neither throws; resolve it by `{ key }` or register it.
-- If you pass an explicit `container`, that takes priority over the one in context. The choice lives in `useInjectableContainer({ container? })`, which returns the explicit container, else `ApplicationContext.container`, and throws `[useInjectable] Failed to determine injectable container!` when there is neither.
+- If you pass an explicit `container`, that takes priority over the one in context. The choice lives in `useApplicationContainer({ container? })`, which returns the explicit container, else `ApplicationContext.container`, and throws `[useApplicationContainer] Failed to determine the application container!` when there is neither.
 
 The type `TUseInjectableKeys` is the union of core binding key strings plus the keys of `IUseInjectableKeysOverrides`, an empty interface you augment for your own bindings. This is the same [module augmentation](/architecture/module-augmentation.md) pattern used elsewhere in ARDOR, and it keeps custom binding keys type-safe without ARDOR needing to know about them ahead of time. See also [Binding keys](/reference/binding-keys.md).
 
