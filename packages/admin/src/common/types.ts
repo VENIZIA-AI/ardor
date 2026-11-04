@@ -26,7 +26,10 @@ export interface IRestRequestOptions<TResource extends string = string> {
   type: TRequestType;
   /** The HTTP method. */
   method: TRequestMethod;
-  /** Default `[resource]`. */
+  /**
+   * The path segments of the request.
+   * @default [resource]
+   */
   paths?: Array<string>;
   /** The request body; encoded by `bodyType`. */
   body?: unknown;
@@ -37,7 +40,10 @@ export interface IRestRequestOptions<TResource extends string = string> {
   extra?: TExtraRequest;
   /** Win over the computed headers: a caller that names a header means it. */
   headers?: HeadersInit;
-  /** Default `RequestCountData.DATA_ONLY`. */
+  /**
+   * What the request asks the server to count.
+   * @default RequestCountData.DATA_ONLY
+   */
   requestCountData?: TConstValue<typeof RequestCountData>;
 }
 
@@ -103,9 +109,15 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
 export type TI18nSource = object | (() => Promise<object>);
 
 export interface II18nProviderOptions {
-  /** Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed. */
+  /**
+   * Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed.
+   * @default { en: englishMessages }
+   */
   i18nSources?: Record<string, TI18nSource>;
-  /** The locales the app offers. Default English only. */
+  /**
+   * The locales the app offers.
+   * @default [{ locale: 'en', name: 'English' }]
+   */
   languages?: Array<Locale>;
 }
 

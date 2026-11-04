@@ -57,6 +57,27 @@ const readStatus = (error: unknown): unknown => {
  * hook that throws, or does not settle in `sessionHookTimeout`, is logged and does not stop the call
  * that fired it. A hook does not call this provider's methods: they wait behind it. Build one provider
  * per auth service: a second one listening to the same service calls every hook again.
+ *
+ * @example
+ * ```ts
+ * import { type BaseArdorApplication, configuration, CoreBindings, DefaultAuthProvider, inject, provide } from '@venizia/ardor';
+ *
+ * class AppAuthProvider extends DefaultAuthProvider {
+ *   protected override get afterLoginPath() {
+ *     return '/products';
+ *   }
+ * }
+ *
+ * @configuration()
+ * export class AuthConfiguration {
+ *   constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
+ *
+ *   @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+ *   authProvider() {
+ *     return this.application.instantiate(AppAuthProvider).value(this.application);
+ *   }
+ * }
+ * ```
  */
 export class DefaultAuthProvider<
   TResource extends string = string,
@@ -531,6 +552,19 @@ export class DefaultAuthProvider<
    * Refreshes the session through the network service's `refresh`, the one place a refresh is made:
    * `true` when it was refreshed, `false` when the service has no refresh to make. The `401`
    * recovery calls the same method, so one burst of 401s and this call share one refresh.
+   *
+   * @example
+   * ```tsx
+   * import { useRefreshToken } from '@venizia/ardor';
+   *
+   * // The data provider options name the refresh endpoint:
+   * // { url: '/api', authRecovery: { refreshTokenPath: '/auth/refresh-token' } }
+   * export const RefreshButton = () => {
+   *   const refreshToken = useRefreshToken();
+   *
+   *   return <button onClick={() => refreshToken()}>Refresh</button>;
+   * };
+   * ```
    */
   async refreshToken(): Promise<boolean> {
     const isRefreshed = await this.restDataProvider.getNetworkService().refresh();
