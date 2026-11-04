@@ -1,6 +1,4 @@
-import React from 'react';
-
-import { type I18nProvider, useI18nProvider } from 'ra-core';
+import { type I18nProvider, type TranslateFunction, useTranslate as useRaTranslate } from 'ra-core';
 
 import type { TFullPaths } from '@venizia/ardor-kernel';
 import type { englishMessages } from '@/common/locales';
@@ -16,23 +14,10 @@ export type TUseTranslateOptions = Parameters<I18nProvider['translate']>[1];
 
 export type TUseTranslateFn = (key: TUseTranslateKeys, options?: TUseTranslateOptions) => string;
 
-export type TUseUntypedTranslateFn = (key: string, options?: TUseTranslateOptions) => string;
-
-const identity: TUseUntypedTranslateFn = (key) => key;
+export type TUseUntypedTranslateFn = TranslateFunction;
 
 /** For a key that exists only at run time (`errors.${code}`); a key written in code belongs to `useTranslate`. */
-export const useUntypedTranslate = (): TUseUntypedTranslateFn => {
-  const i18nProvider = useI18nProvider();
-
-  const translate: TUseUntypedTranslateFn = React.useCallback(
-    (key, options) => {
-      return i18nProvider.translate(key, options);
-    },
-    [i18nProvider],
-  );
-
-  return i18nProvider ? translate : identity;
-};
+export const useUntypedTranslate: () => TUseUntypedTranslateFn = useRaTranslate;
 
 /** The same function as `useUntypedTranslate`, with the key narrowed to `TUseTranslateKeys`. */
 export const useTranslate: () => TUseTranslateFn = useUntypedTranslate;

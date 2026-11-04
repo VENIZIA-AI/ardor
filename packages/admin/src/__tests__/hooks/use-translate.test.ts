@@ -102,7 +102,7 @@ describe('useUntypedTranslate hook', () => {
     window.location.href = 'http://localhost/';
   });
 
-  test('returns the key unchanged without an i18n provider', () => {
+  test('answers through the default provider of ra-core without an i18n provider', () => {
     const { result } = renderHook(() => {
       return useUntypedTranslate();
     });
@@ -110,6 +110,7 @@ describe('useUntypedTranslate hook', () => {
 
     expect(result.current(key)).toBe('errors.not_found');
     expect(result.current(key, { ['smart_count']: 2 })).toBe('errors.not_found');
+    expect(result.current(key, { _: 'Not found: %{id}', id: 7 })).toBe('Not found: 7');
   });
 
   test('translates a key built at run time and passes the options through', () => {
@@ -147,6 +148,8 @@ describe('useUntypedTranslate hook', () => {
   });
 
   test('is the implementation of useTranslate, which keeps the checked key type', () => {
+    expect(useTranslate).toBe(useUntypedTranslate);
+
     const typed = renderHook(() => useTranslate());
     // @ts-expect-error a key outside the catalog is a compile error for the typed hook
     const result = typed.result.current('not.in.the.catalog');
