@@ -119,9 +119,15 @@ export class BrowserStorage {
           return [];
         }
 
-        const keys = Array.from({ length: area.length }, (_, index) => area.key(index));
+        const keys: Array<string> = [];
+        for (let index = 0; index < area.length; index += 1) {
+          const key = area.key(index);
+          if (key?.startsWith(prefix)) {
+            keys.push(key);
+          }
+        }
 
-        return keys.filter((key): key is string => !!key?.startsWith(prefix));
+        return keys;
       },
       fallback: [],
     });
@@ -129,7 +135,8 @@ export class BrowserStorage {
 
   /**
    * Removes every key that starts with `prefix` and answers how many it removed. An empty `prefix`
-   * removes nothing, and a session key is never removed, as in `remove`.
+   * removes nothing, and a session key is never removed, as in `remove`. A key another tab removed
+   * after the listing still counts: `removeItem` of a missing key does not throw.
    */
   static removeWhere(opts: { storage?: TStorageArea; prefix: string }): number {
     const { storage, prefix } = opts;
