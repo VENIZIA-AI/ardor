@@ -3,7 +3,7 @@ export type TResizeBox = Exclude<ResizeObserverBoxOptions, 'device-pixel-content
 
 export interface IResizeObservationOptions {
   box: TResizeBox;
-  /** Also observe the direct children of each target, and again whenever they change. */
+  /** Also observe the direct children of each target, and again whenever they change. @default false */
   children?: boolean;
   /** Called at most once per animation frame, with the latest entry of each element that resized. */
   onFrame: (entries: ResizeObserverEntry[]) => void;

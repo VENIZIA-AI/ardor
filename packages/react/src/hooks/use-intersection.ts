@@ -15,6 +15,18 @@ export interface IUseIntersectionOptions {
  * The latest `IntersectionObserverEntry` of the target, or `undefined` before the first one and
  * where there is no `IntersectionObserver`. The state changes only when `isIntersecting` or the
  * ratio changed. A new element, `rootMargin` or `threshold` starts again from `undefined`.
+ *
+ * @example
+ * ```tsx
+ * import React from 'react';
+ * import { useIntersection } from '@venizia/ardor';
+ *
+ * export function Lazy() {
+ *   const ref = React.useRef<HTMLDivElement>(null);
+ *   const entry = useIntersection({ target: ref, threshold: 0.5 });
+ *   return <div ref={ref}>{entry?.isIntersecting ? 'visible' : 'hidden'}</div>;
+ * }
+ * ```
  */
 export const useIntersection = (
   opts: IUseIntersectionOptions,

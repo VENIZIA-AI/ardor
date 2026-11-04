@@ -47,6 +47,16 @@ const readSize = (opts: {
  * is read when the effect runs, so it follows a new `ref`, `box` or `round`, not a `ref.current`
  * that is replaced later; pass a stable `ref`. A new element, `box` or `round` starts again from
  * 0 by 0 with `measured` false.
+ *
+ * @example
+ * ```tsx
+ * import { useElementSize } from '@venizia/ardor';
+ *
+ * export function Panel() {
+ *   const { ref, width, height, measured } = useElementSize();
+ *   return <div ref={ref}>{measured ? `${width} x ${height}` : '...'}</div>;
+ * }
+ * ```
  */
 export function useElementSize(
   opts: IUseElementSizeOptions & { ref: React.RefObject<Element | null> },

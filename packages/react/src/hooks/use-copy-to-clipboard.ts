@@ -29,7 +29,19 @@ const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
   return isCopied;
 };
 
-/** Copies text with `BrowserClipboard`; `isCopied` is the result of the last copy. */
+/**
+ * Copies text with `BrowserClipboard`; `isCopied` is the result of the last copy.
+ *
+ * @example
+ * ```tsx
+ * import { useCopyToClipboard } from '@venizia/ardor';
+ *
+ * export function CopyButton() {
+ *   const { copy, isCopied } = useCopyToClipboard({ resetMs: 2000 });
+ *   return <button onClick={() => copy({ value: 'hello' })}>{isCopied ? 'Copied' : 'Copy'}</button>;
+ * }
+ * ```
+ */
 export const useCopyToClipboard = (
   opts: IUseCopyToClipboardOptions = {},
 ): IUseCopyToClipboardReturn => {
