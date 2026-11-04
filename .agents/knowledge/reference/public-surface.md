@@ -30,9 +30,9 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserClipboard` class
 - `BrowserStorage` class
 - `BrowserUtility` class
-- `Clipboard` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -253,9 +253,9 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserClipboard` class
 - `BrowserStorage` class
 - `BrowserUtility` class
-- `Clipboard` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class

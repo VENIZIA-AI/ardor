@@ -4,7 +4,7 @@
  * a missing user gesture and an unfocused document all answer `false` or `undefined`. Nothing
  * touches `navigator` at import.
  */
-export class Clipboard {
+export class BrowserClipboard {
   /** The one catch: every refusal the browser can make is the case this class absorbs. */
   private static async safe<TResult>(opts: {
     run: () => Promise<TResult>;
@@ -13,7 +13,7 @@ export class Clipboard {
     try {
       const result = await opts.run();
       return result;
-      // eslint-disable-next-line venizia/no-silent-catch -- absorbing a refusing clipboard is the contract of Clipboard
+      // eslint-disable-next-line venizia/no-silent-catch -- absorbing a refusing clipboard is the contract of BrowserClipboard
     } catch {
       return opts.fallback;
     }
@@ -21,7 +21,7 @@ export class Clipboard {
 
   /** `true` when the text is on the clipboard. */
   static writeText(opts: { text: string }): Promise<boolean> {
-    return Clipboard.safe({
+    return BrowserClipboard.safe({
       run: async () => {
         await globalThis.navigator.clipboard.writeText(opts.text);
         return true;
@@ -32,7 +32,7 @@ export class Clipboard {
 
   /** The text on the clipboard, or `undefined`: reading needs a permission and a gesture, and some browsers do not offer it. */
   static readText(): Promise<string | undefined> {
-    return Clipboard.safe<string | undefined>({
+    return BrowserClipboard.safe<string | undefined>({
       run: () => globalThis.navigator.clipboard.readText(),
       fallback: undefined,
     });

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { Clipboard } from '@/utilities/clipboard';
+import { BrowserClipboard } from '@/utilities/browser-clipboard';
 
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
 
@@ -16,7 +16,7 @@ afterEach(() => {
   }
 });
 
-describe('Clipboard.writeText', () => {
+describe('BrowserClipboard.writeText', () => {
   test('puts the text on the clipboard and answers true', async () => {
     const written: Array<string> = [];
     installNavigator({
@@ -28,7 +28,7 @@ describe('Clipboard.writeText', () => {
       },
     });
 
-    const isWritten = await Clipboard.writeText({ text: 'hello' });
+    const isWritten = await BrowserClipboard.writeText({ text: 'hello' });
 
     expect(isWritten).toBe(true);
     expect(written).toEqual(['hello']);
@@ -56,20 +56,20 @@ describe('Clipboard.writeText', () => {
     for (const navigator of refusals) {
       installNavigator(navigator);
 
-      const isWritten = await Clipboard.writeText({ text: 'hello' });
+      const isWritten = await BrowserClipboard.writeText({ text: 'hello' });
 
       expect(isWritten).toBe(false);
     }
   });
 });
 
-describe('Clipboard.readText', () => {
+describe('BrowserClipboard.readText', () => {
   test('answers the text on the clipboard, an empty string included', async () => {
     installNavigator({ clipboard: { readText: () => Promise.resolve('pasted') } });
-    const pasted = await Clipboard.readText();
+    const pasted = await BrowserClipboard.readText();
 
     installNavigator({ clipboard: { readText: () => Promise.resolve('') } });
-    const empty = await Clipboard.readText();
+    const empty = await BrowserClipboard.readText();
 
     expect(pasted).toBe('pasted');
     expect(empty).toBe('');
@@ -97,7 +97,7 @@ describe('Clipboard.readText', () => {
     for (const navigator of refusals) {
       installNavigator(navigator);
 
-      const text = await Clipboard.readText();
+      const text = await BrowserClipboard.readText();
 
       expect(text).toBeUndefined();
     }
