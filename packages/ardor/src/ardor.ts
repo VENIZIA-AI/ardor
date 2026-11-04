@@ -37,7 +37,6 @@ export {
   useRepository,
   useResizeEffect,
   useService,
-  useSizer,
   useStoredState,
   useWindowDimensions,
 } from '@venizia/ardor-react';

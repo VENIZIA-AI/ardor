@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (50)
+### `@venizia/ardor-react` (47)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -157,8 +157,6 @@ generated:
 - `IUseInjectableKeysOverrides` interface
 - `IUseIntersectionOptions` interface
 - `IUseResizeEffectOptions` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
 - `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
@@ -187,7 +185,6 @@ generated:
 - `useRepository` const
 - `useResizeEffect` const
 - `useService` const
-- `useSizer` const
 - `useStoredState` const
 - `useWindowDimensions` const
 
@@ -239,7 +236,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (187)
+### `@venizia/ardor` (184)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -335,8 +332,6 @@ generated:
 - `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseResizeEffectOptions` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
 - `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
@@ -417,7 +412,6 @@ generated:
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
 - `useService` const
-- `useSizer` const
 - `useStoredState` const
 - `useTranslate` const
 - `useUntypedTranslate` const

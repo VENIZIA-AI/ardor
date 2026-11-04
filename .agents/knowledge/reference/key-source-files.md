@@ -48,7 +48,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - `packages/admin/src/hooks/use-translate.ts` - the translation hook.
 
 ## React hooks (generic, non-admin)
-- `packages/react/src/hooks/` - `use-autosave.ts`, `use-before-unload.ts`, `use-confirm.ts`, `use-copy-to-clipboard.ts`, `use-debounce.ts`, `use-sizer.ts`, `use-window-dimensions.ts`, and `redux/use-app-dispatch.ts` / `redux/use-app-selector.ts`. See [React hooks conventions](/conventions/react-hooks.md).
+- `packages/react/src/hooks/` - `use-autosave.ts`, `use-before-unload.ts`, `use-confirm.ts`, `use-copy-to-clipboard.ts`, `use-debounce.ts`, `use-window-dimensions.ts`, and `redux/use-app-dispatch.ts` / `redux/use-app-selector.ts`. See [React hooks conventions](/conventions/react-hooks.md).
 
 ## Utilities
 - `packages/kernel/src/utilities/value.ts`, `file.ts`, `browser.ts`, `runtime-config.ts` - the static utility classes (`ValueUtility`, `FileUtility`, `BrowserUtility`, `RuntimeConfig`) used throughout the kernel.

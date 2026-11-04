@@ -10,11 +10,11 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Model: [hooks and context](/architecture/hooks-and-context.md).
 
-**31 hooks across 2 directories.**
+**30 hooks across 2 directories.**
 
 | Directory | Hooks |
 |---|---|
-| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useDocumentVisibility` · `useElementSize` · `useInjectable` · `useInjectableContainer` · `useIntersection` · `useMediaQuery` · `useOnlineStatus` · `useProvider` · `useRepository` · `useResizeEffect` · `useService` · `useSizer` · `useStoredState` · `useWindowDimensions` |
+| `packages/react/src/hooks/` | `useApplicationContext` · `useApplicationLogger` · `useAutosave` · `useBeforeUnload` · `useComponent` · `useConfiguration` · `useConfirm` · `useCopyToClipboard` · `useDebounce` · `useDocumentVisibility` · `useElementSize` · `useInjectable` · `useInjectableContainer` · `useIntersection` · `useMediaQuery` · `useOnlineStatus` · `useProvider` · `useRepository` · `useResizeEffect` · `useService` · `useStoredState` · `useWindowDimensions` |
 | `packages/admin/src/hooks/` | `useDocumentTitle` · `useFeatures` · `useHtmlLang` · `useNotifyError` · `useRefreshToken` · `useRequestHeaderLocale` · `useTranslate` · `useUntypedTranslate` |
 
 ## Services
