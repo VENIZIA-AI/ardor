@@ -8,30 +8,32 @@ import { RequestMethods, RequestTypes } from '@/common';
 
 class StorageStub implements Storage {
   [name: string]: unknown;
-  private readonly items = new Map<string, string>();
 
   get length(): number {
-    return this.items.size;
+    return Object.keys(this).length;
   }
 
   getItem(key: string): string | null {
-    return this.items.get(key) ?? null;
+    const value = Object.getOwnPropertyDescriptor(this, key)?.value;
+    return typeof value === 'string' ? value : null;
   }
 
   setItem(key: string, value: string): void {
-    this.items.set(key, value);
+    this[key] = value;
   }
 
   removeItem(key: string): void {
-    this.items.delete(key);
+    delete this[key];
   }
 
   clear(): void {
-    this.items.clear();
+    for (const key of Object.keys(this)) {
+      delete this[key];
+    }
   }
 
   key(index: number): string | null {
-    return [...this.items.keys()][index] ?? null;
+    return Object.keys(this)[index] ?? null;
   }
 }
 
@@ -172,6 +174,19 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(authService.getUser().userId).toBe(7);
     expect(authService.getRoles()).toEqual(new Set(['admin', 'editor']));
     expect(authService.getAuth()).toMatchObject({ value: 'fresh', type: 'Bearer' });
+  });
+
+  test('a sign-out during the refresh saves no token, and the 401 stands', async () => {
+    refreshAnswer = () => {
+      authService.cleanUp();
+      return Response.json({ token: 'fresh' });
+    };
+
+    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+    expect(authService.getAuth()).toBeNull();
+    expect(authService.getUser()).toEqual({});
   });
 
   test('a refresh request that is answered 401 does not start another refresh', async () => {

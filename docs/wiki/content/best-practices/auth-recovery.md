@@ -154,6 +154,7 @@ class AuthRecovery {
 When `authRecovery.refreshTokenPath` is set and the data provider found the auth service in the container (`CoreBindings.DEFAULT_AUTH_SERVICE`), the default `refreshToken` needs no subclass. It POSTs to that path with no body and the stored (expired) token, reads the new token from the answer, and saves it through the auth service.
 
 - **The answer.** `{ token: { value, type } }` or `{ token: '<jwt>' }`; nothing else is read, because a refresh keeps the same user. An answer without a token is a failed refresh: `onAuthFailure` runs once and the `401` stands. Override `readRefreshedToken({ data })` for another shape.
+- **Signed out meanwhile.** If the user signed out while the refresh request was in flight, nothing is saved and the `401` stands.
 - **A store of your own.** The default saves through the auth service, which keeps the session in `localStorage`. A subclass whose `resolveAuthToken` reads another store does not see the refreshed token: override `refreshToken` as well.
 - **What is kept.** The stored `username`, `referenceId` and `provider`, and the roles, are not touched: the refresh saves only the token and the user id, so a refresh answer that carries roles in another shape cannot wipe them.
 - **Who hears it.** Subscribers of the auth service (the session hooks) run once after the refresh, as after `login`.

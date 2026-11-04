@@ -157,6 +157,10 @@ export class DefaultNetworkRequestService extends BaseService {
       headers: this.getRequestHeader({ resource: path }),
     });
     const user = this.authService.getUser();
+    // Signed out while the request was in flight: saving the token would start a session with no user.
+    if (user.userId === undefined) {
+      return false;
+    }
 
     this.authService.saveAuth({
       userId: user.userId,
@@ -177,8 +181,14 @@ export class DefaultNetworkRequestService extends BaseService {
     const body: { token?: unknown } =
       typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
     const { token } = body;
-    const record = typeof token === 'object' && token !== null ? token : {};
-    const value = typeof token === 'string' ? token : 'value' in record ? record.value : undefined;
+    let record: object = {};
+    if (typeof token === 'string') {
+      record = { value: token };
+    } else if (typeof token === 'object' && token !== null) {
+      record = token;
+    }
+
+    const value = 'value' in record ? record.value : undefined;
     const type = 'type' in record ? record.type : undefined;
 
     if (typeof value !== 'string' || !value) {
