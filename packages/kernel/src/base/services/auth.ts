@@ -95,8 +95,11 @@ export class DefaultAuthService extends BaseService {
   saveAuth(opts: {
     userId: number | string;
 
+    /** @default '' */
     username?: string;
+    /** @default '' */
     provider?: string;
+    /** @default '' */
     referenceId?: IdType;
 
     token: { value: string; type: string };

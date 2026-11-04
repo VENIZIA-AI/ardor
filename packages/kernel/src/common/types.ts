@@ -58,7 +58,10 @@ export interface ISendParams {
   query?: Record<string, unknown>;
   /** Added to the headers of this request. */
   headers?: Record<string, string | number>;
-  /** Whether the response carries a count; sent in `x-request-count`. `RequestCountData.DATA_ONLY` when absent. */
+  /**
+   * Whether the response carries a count; sent in `x-request-count`.
+   * @default RequestCountData.DATA_ONLY
+   */
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
@@ -85,7 +88,10 @@ export type TRequestType = TStringConstValue<typeof RequestTypes>;
 export interface IGetRequestPropsParams {
   /** Decides whether the request goes without a token (`noAuthPaths`, `noAuthPathRegex`). */
   resource: string;
-  /** `RequestCountData.DATA_ONLY` when absent. */
+  /**
+   * Whether the response carries a count.
+   * @default RequestCountData.DATA_ONLY
+   */
   requestCountData?: TConstValue<typeof RequestCountData>;
   body?: unknown;
   /** How `body` is encoded. */
@@ -120,18 +126,45 @@ export interface ISignInSession {
 /** Data only: where the auth provider talks to. Behaviour is in `DefaultAuthProvider`'s protected hooks. */
 export interface IAuthProviderOptions {
   paths?: {
-    /** Where `login` posts. Default `/auth/sign-in`, the IGNIS auth controller's route. */
+    /**
+     * Where `login` posts: the IGNIS auth controller's route.
+     * @default '/auth/sign-in'
+     */
     signIn?: string;
     /** Where `checkAuth` validates the stored token. Default: not called; the stored token is enough. */
     checkAuth?: string;
-    /** Where the admin goes once `login` resolves. Default `/`. */
+    /**
+     * Where the admin goes once `login` resolves.
+     * @default '/'
+     */
     afterLogin?: string;
   };
 }
 
 /** How a request recovers from a 401. */
 export interface IAuthRecoveryOptions {
-  /** A request to this path never starts a refresh: it is the refresh. */
+  /**
+   * A request to this path never starts a refresh: it is the refresh. Listing it in `noAuthPaths`
+   * as well keeps the expired token off that request.
+   * @example
+   * ```ts
+   * import { configuration, CoreBindings, provide } from '@venizia/ardor';
+   *
+   * @configuration()
+   * export class ApiConfiguration {
+   *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+   *   restDataProviderOptions() {
+   *     return {
+   *       url: 'https://api.example.com',
+   *       // The refresh path is also a no-auth path: the expired token stays off that request, so the
+   *       // server identifies the session another way, such as a cookie.
+   *       noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
+   *       authRecovery: { refreshTokenPath: '/auth/refresh' },
+   *     };
+   *   }
+   * }
+   * ```
+   */
   refreshTokenPath?: string;
 }
 
@@ -159,7 +192,10 @@ export interface INoAuthOptions {
 export interface IRestDataProviderOptions extends INoAuthOptions {
   /** The base URL requests are sent to. */
   url: string;
-  /** Sent in `x-request-channel`. Default `RequestChannel.WEB`. */
+  /**
+   * Sent in `x-request-channel`.
+   * @default RequestChannel.WEB
+   */
   requestTracingChannel?: string;
 
   /** Sent with every request. */
@@ -219,6 +255,7 @@ export interface IFeatureBase {
   /**
    * The feature's `@configuration()` classes, by value. Referencing them keeps a bundler from
    * dropping a module nothing else imports, and `start()` checks each was discovered.
+   * @default []
    */
   configurations?: Array<TClass<unknown>>;
   /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
