@@ -119,15 +119,9 @@ export class BrowserStorage {
           return [];
         }
 
-        const keys: Array<string> = [];
-        for (let index = 0; index < area.length; index += 1) {
-          const key = area.key(index);
-          if (key?.startsWith(prefix)) {
-            keys.push(key);
-          }
-        }
+        const keys = Array.from({ length: area.length }, (_, index) => area.key(index));
 
-        return keys;
+        return keys.filter((key): key is string => !!key?.startsWith(prefix));
       },
       fallback: [],
     });
