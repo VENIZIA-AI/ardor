@@ -35,7 +35,7 @@ Kernel sits below the other framework packages in the [monorepo layout](/overvie
 
 ## Peer dependencies
 
-Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers (and `@venizia/ignis-helpers`, which holds the transport). It has no runtime dependency, and no socket client: that is IGNIS's.
+Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers (and `@venizia/ignis-helpers`, which holds the transport). `@venizia/ignis-connectors` is an optional peer, needed only for the `./repository` sub-path, which re-exports `@venizia/ignis-connectors/http`. It has no runtime dependency, and no socket client: that is IGNIS's.
 
 ## Build, test, size
 

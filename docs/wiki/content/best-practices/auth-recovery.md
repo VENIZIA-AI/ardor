@@ -130,11 +130,13 @@ class AuthRecovery {
   refresh(): Promise<boolean> {
     this.refreshing ??= Promise.resolve()
       .then(() => this.opts.refresh()) // the service's refreshToken hook
-      .catch(async () => {
+      .catch(async (error) => {
+        this.logger.error('[refresh] refreshToken failed | error: %o', error);
+
         try {
           await this.opts.onFailure(); // the service's onAuthFailure hook
-        } catch {
-          this.logger.error('[refresh] onAuthFailure failed');
+        } catch (failure) {
+          this.logger.error('[refresh] onAuthFailure failed | error: %o', failure);
         }
         return false;
       })

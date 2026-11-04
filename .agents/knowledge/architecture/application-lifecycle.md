@@ -16,26 +16,28 @@ ARDOR applications are built by subclassing `BaseArdorApplication`, which extend
 
 ```ts
 async start() {
+  this.resolvedIndexes = await this.resolveArtifactIndexes();
   await this.preConfigure();
   await this.postConfigure();
 }
 ```
 
-Both steps are awaited in sequence. `postConfigure()` never runs concurrently with `preConfigure()`, and anything bound during `preConfigure()` is guaranteed to exist by the time `postConfigure()` runs.
+`start()` first resolves the lazy groups of `artifacts()` into the indexes that `registerArtifacts()` checks against. The two configure steps are then awaited in sequence. `postConfigure()` never runs concurrently with `preConfigure()`, and anything bound during `preConfigure()` is guaranteed to exist by the time `postConfigure()` runs.
 
 ## preConfigure()
 
-The default `preConfigure()` in `AbstractArdorApplication` does five things, in order:
+The default `preConfigure()` in `AbstractArdorApplication` does six things, in order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this` - the container can hand itself out as a value.
-2. Binds `CoreBindings.APPLICATION_INFO` to whatever `this.getAppInfo()` returns. This is bound as-is, not awaited, so `getAppInfo()` should return a plain object rather than a Promise if downstream consumers expect a resolved value.
+2. Binds `CoreBindings.APPLICATION_INFO` to whatever `this.getAppInfo()` returns. `getAppInfo()` is a `ValueOrPromise<IApplicationInfo>`: a promise is awaited, and the resolved value is what gets bound. Steps 3 to 6 run after that bind.
 3. Calls `this.registerArtifacts()`, which binds every class a stereotype (`@service()`, `@component()` and the rest) discovered, under the key the stereotype recorded on the class, in the scope it declares (singleton by default). A discovered class with no recorded key is skipped. For a `@configuration()` class it also binds each `@provide({ key })` method under its key, as a lazy provider, SINGLETON unless the decorator passes a `scope` - the same as IGNIS's `bindProvidedKeys`.
-4. Binds every entry of `this.bindingList()` - a record of literal key to class, empty by default - with `toClass(...)` as a singleton, recording each key on its class.
-5. Returns `this.bindContext()` - an abstract method every concrete application must implement, usually empty: the provider options and the three default providers are declared with `@provide` in a `@configuration()` class and bound by `registerArtifacts()`, and application artifacts get bound by hand with `this.service(X)`, `this.repository(X)`, `this.dataSource(X)`, `this.component(X)`.
+4. Calls `this.registerFeatures({ features: this.features() })`, which registers each feature (see [feature modules](/architecture/feature-modules.md)).
+5. Binds every entry of `this.bindingList()` - a record of literal key to class, empty by default - with `toClass(...)` as a singleton, recording each key on its class.
+6. Returns `this.bindContext()` - an abstract method every concrete application must implement, usually empty: the provider options and the three default providers are declared with `@provide` in a `@configuration()` class and bound by `registerArtifacts()`, and application artifacts get bound by hand with `this.service(X)`, `this.repository(X)`, `this.dataSource(X)`, `this.component(X)`.
 
-Steps 3 to 5 run from least explicit to most explicit, and a later bind on the same key replaces the earlier one: stereotype, then `bindingList()`, then `bindContext()`. So a `bindingList()` entry overrides a stereotype on the same key, and a manual `this.bind(...)` in `bindContext()` overrides both. See [binding key namespaces](/conventions/binding-key-namespaces.md) for when to reach for each form.
+Steps 3 to 6 run from least explicit to most explicit, and a later bind on the same key replaces the earlier one: stereotype, then features, then `bindingList()`, then `bindContext()`. So a `bindingList()` entry overrides a stereotype on the same key, and a manual `this.bind(...)` in `bindContext()` overrides both. See [binding key namespaces](/conventions/binding-key-namespaces.md) for when to reach for each form.
 
-Because `bindContext()` can be async and its return value is what `preConfigure()` returns, `start()`'s `await this.preConfigure()` also waits for `bindContext()` to finish. This ordering matters: any subclass overriding `preConfigure()` must call `super.preConfigure()`, or none of the five steps happen - not the two core bindings, not the stereotype and `bindingList()` registrations, and not `bindContext()`.
+Because `bindContext()` can be async and its return value is what `preConfigure()` returns, `start()`'s `await this.preConfigure()` also waits for `bindContext()` to finish. This ordering matters: any subclass overriding `preConfigure()` must call `super.preConfigure()`, or none of the six steps happen - not the two core bindings, not the stereotype and `bindingList()` registrations, and not `bindContext()`.
 
 ## postConfigure()
 

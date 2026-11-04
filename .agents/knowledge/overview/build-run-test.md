@@ -22,7 +22,7 @@ Each package's `make <pkg>` target runs `make -C packages/<pkg> rebuild` (`make/
 
 ## Test, lint, typecheck targets
 
-- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin` in that order, each running `bun test` with `NODE_ENV=test` and the setup preload inside the package directory. `make test-ardor` says there is no suite and passes.
+- `make test` (alias `make test-all`) runs `test-kernel`, `test-react`, `test-admin`, `test-ardor` in that order (the `PACKAGES` order), each running `bun test` with `NODE_ENV=test` and the setup preload inside the package directory.
 - `make lint` runs `lint-packages` (`lint-kernel`, `lint-react`, `lint-admin`, `lint-ardor`); `make lint-all` adds `lint-wiki`, `lint-scripts` and `lint-files` (the root `package.json` and the other files outside the projects, the examples among them), and `make lint-fix` applies the fixes. `make typecheck-examples` type-checks the examples (CI runs it), and each one keeps its own `compile` and `typecheck` scripts for use by hand. Zero lint errors and zero warnings is the bar - see [Coding style](/conventions/coding-style.md) and [Testing conventions](/conventions/testing-conventions.md).
 - `make typecheck` (alias `typecheck-all`) type-checks every package without emitting.
 - `make docs` builds the VitePress wiki, including its sidebar gate.
@@ -39,7 +39,7 @@ Beyond build/test/lint, the Makefile exposes gate scripts that must pass for a c
 - `make size-check` - measures brotli-compressed bundle size against budgets for kernel, react, admin and ardor, run after a build.
 - `make okf-check-strict` - validates the agent knowledge bundle (the Open Knowledge Format bundle this document is part of) and adds the house rules: links, style, coverage, freshness and a `packages:` list on every changelog entry. This is the CI gate; `make okf-check` alone checks OKF v0.2 conformance only.
 - `make wiki-links-check` - validates wiki-to-source links.
-- `make atlas-symbols` and `make atlas-releases` - print what atlas reads: the symbols from the built `.d.ts` (build first) and the release table computed from the git tags. There is nothing to regenerate or commit, so no freshness gate; CI still checks out with `fetch-depth: 0` so the tags exist. `make atlas-smoke` is a manual smoke test, not a CI gate: it starts the atlas MCP server against this repository (`vulcan x atlas mcp`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
+- `make atlas-symbols` and `make atlas-releases` - print what atlas reads: the symbols from the built `.d.ts` (build first) and the release table computed from the git tags. There is nothing to regenerate or commit, so no freshness gate; CI still checks out with `fetch-depth: 0` so the tags exist. `make atlas-smoke` is a smoke test and a step of the build-and-test job of Checks (not a required check): it starts the atlas MCP server against this repository (`vulcan x atlas mcp`, or the local CLI named by `ARDOR_ATLAS_CLI`) and checks that it answers.
 
 These gates are what CI and reviewers hold a change to; running `make build-all` green does not by itself mean the change is mergeable.
 

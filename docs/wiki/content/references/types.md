@@ -95,8 +95,8 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | Class | Kind | Definition and usage |
 |---|---|---|
 | `CoreBindings` | `class` | The eleven container keys for instances, options, providers, and features. |
-| `LocalStorageKeys` | `class` | The three local storage keys for tokens, identities, and permissions. |
-| `RequestMethods` | `class` | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) with `SCHEME_SET` and `isValid`. |
+| `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions (`KEY_AUTH_*`), and the two prefixes `PREFIX_AUTH` and `PREFIX_STORE`. |
+| `RequestMethods` | `class` | HTTP method constants (`HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE`) with `SCHEME_SET` and `isValid`. |
 | `RequestTypes` | `class` | Data operation constants (`SEND`, `GET_LIST`, `GET_ONE`, etc.) with `SCHEME_SET` and `isValid`. |
 | `RequestBodyTypes` | `class` | Request body formats (`JSON`, `FORM_DATA`, `BINARY`, etc.) with `SCHEME_SET` and `isValid`. |
 | `Environments` | `class` | Environment constants (`DEVELOPMENT`, `PRODUCTION`) with `SCHEME_SET` and `isValid`. |

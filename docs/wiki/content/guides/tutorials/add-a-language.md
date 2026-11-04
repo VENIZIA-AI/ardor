@@ -94,7 +94,7 @@ export const DashboardHeader = () => {
 };
 ```
 
-Always assign `useTranslate()` to a local variable typed as `TUseTranslateFn`. In `packages/admin/src/hooks/use-translate.ts`, `useTranslate()` returns the typed function when `useI18nProvider()` resolves, or an identity fallback `(key: any) => any`. Annotating `TUseTranslateFn` enforces type checking on your translation keys.
+Always assign `useTranslate()` to a local variable typed as `TUseTranslateFn`. In `packages/admin/src/hooks/use-translate.ts`, `useTranslate()` returns the typed function. With no i18n provider mounted, ra-core's default provider answers. Annotating `TUseTranslateFn` enforces type checking on your translation keys.
 
 ## 3. Type custom keys with module augmentation
 

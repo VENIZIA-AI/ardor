@@ -29,7 +29,7 @@ Sign in with a user seeded in `vert` (`bun run seed:authz` there creates test ac
 | --- | --- |
 | `src/application.ts` | The application alone, with `AutoArtifacts` from the Vite plugin |
 | `src/constants/vert-paths.ts`, `src/services/`, `src/providers/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, the 401 refresh as a `refreshToken` hook of a network service subclass returned by `createNetworkService`, and the bindings - one decorated class per file |
-| `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useInjectable`, `useNotifyError` with an `ApplicationError` |
+| `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useService`, `useNotifyError` with an `ApplicationError` |
 
 ---
 

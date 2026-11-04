@@ -81,7 +81,7 @@ Signature: `preConfigure(): ValueOrPromise<void>`
 The exact execution order in `packages/kernel/src/base/applications/abstract.ts` is:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE`: `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);`.
-2. Binds `CoreBindings.APPLICATION_INFO`: `this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo());` without awaiting.
+2. Binds `CoreBindings.APPLICATION_INFO` with the value of `this.getAppInfo()`. When `getAppInfo()` returns a promise, `preConfigure()` waits for it, binds the resolved value, then runs steps 3 to 6.
 3. Invokes `this.registerArtifacts()`: discovers and binds stereotyped classes and `@provide` methods on `@configuration()` classes.
 4. Invokes `this.registerFeatures({ features: this.features() })`: validates features and binds `CoreBindings.FEATURES`.
 5. Iterates entries of `this.bindingList()`: binds each target under its literal key as `BindingScopes.SINGLETON`.
@@ -178,7 +178,7 @@ Abstract method implemented by subclasses to register manual bindings or overrid
 
 Signature: `abstract getAppInfo(): ValueOrPromise<IApplicationInfo>`
 
-Abstract method returning application metadata, bound directly under `CoreBindings.APPLICATION_INFO` without awaiting. `IApplicationInfo` in `packages/kernel/src/common/types.ts` specifies application metadata:
+Abstract method returning application metadata, bound under `CoreBindings.APPLICATION_INFO`. When it returns a promise, `preConfigure()` binds the resolved value. `IApplicationInfo` in `packages/kernel/src/common/types.ts` specifies application metadata:
 
 | Field | Type | Description |
 |---|---|---|
@@ -186,7 +186,6 @@ Abstract method returning application metadata, bound directly under `CoreBindin
 | `version` | `string` | Application version string |
 | `description` | `string` | Human-readable application description |
 | `author` | `{ name: string; email: string; url?: string }` | Optional author contact information |
-| `[extra]` | `any` | Additional application metadata indexed by string or symbol |
 
 ### service(), repository(), dataSource(), component()
 

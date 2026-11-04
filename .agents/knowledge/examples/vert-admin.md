@@ -84,7 +84,7 @@ documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths
 ## configurations CRUD list
 
 `src/pages/configurations.tsx` renders a react-admin list backed by the `configurations` resource. It
-reads records through `useListContext`, resolves collaborating services through `useInjectable` (see
+reads records through `useListContext`, resolves collaborating services through `useService` (see
 [Hooks and context](/architecture/hooks-and-context.md)), and reports failures with `useNotifyError`
 against an `ApplicationError` - the standard error-handling shape from
 [Error handling](/conventions/error-handling.md) and [Error flow](/architecture/error-flow.md). Totals for
@@ -94,7 +94,7 @@ part of its normal response pipeline.
 ## Module augmentation and i18n
 
 The example resolves `IdentityService` by class (`useService({ target })`), so it needs no
-`IUseInjectableKeysOverrides` augmentation. It augments `IUseTranslateKeysOverrides` from `@venizia/ardor-admin` with
+`IUseInjectableKeysOverrides` augmentation. It augments `IUseTranslateKeysOverrides` from `@venizia/ardor` with
 its own `vert.configurations` and `vert.signedInAs` keys. This is the standard
 [Module augmentation](/architecture/module-augmentation.md) technique for getting type-safe autocomplete
 on bindings and translation keys without editing framework packages. The i18n provider options add these

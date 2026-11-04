@@ -127,8 +127,8 @@ frontmatter:
 - **A manifest edit** reaches atlas only after `make vulcan-sync`.
 - **A source** is as old as the commit the cache holds, or the last one served while offline.
 
-None of these is a CI gate any more: the old `symbols-check` and `releases-check` are gone, because
-nothing is committed to compare. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
+None of the staleness above has a freshness gate: the old `symbols-check` and `releases-check` are gone, because
+nothing is committed to compare. `make atlas-smoke` is a step of the build-and-test job of Checks (not a required check): it starts VULCAN's
 server against this repository and checks that it names itself `ardor-atlas`,
 lists the five tools, finds `no-auth-paths` in the knowledge corpus and the data provider page in
 the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.

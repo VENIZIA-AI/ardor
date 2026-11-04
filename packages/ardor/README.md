@@ -13,6 +13,8 @@ control comes from `@venizia/ignis-inversion`, and the data layer speaks the que
 bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
+The React-side peers (`react`, `react-dom`, `react-redux`, `@reduxjs/toolkit`, `@tanstack/react-query`, `ra-core`, `ra-i18n-polyglot`, `react-router-dom`) are installed too; the full `bun add` line is in the [setup guide](https://ardor.venizia.ai/guides/get-started/setup).
+
 ## The `Ardor` namespace
 
 `Ardor` gathers every React hook of the react and admin packages under one name: `Ardor.useRepository(...)`, `Ardor.useTranslate()`. It is the same function as the bare `useRepository`, the Rules of Hooks check the call, and a bundler keeps only the hooks you use, so it adds no bytes to an app.
@@ -20,8 +22,10 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 ```tsx
 import { Ardor } from '@venizia/ardor';
 
+import { OrdersRepository } from './orders.repository';
+
 export const Orders = () => {
-  const repository = Ardor.useRepository({ key: 'repositories.Orders' });
+  const repository = Ardor.useRepository({ target: OrdersRepository });
 
   return <div>{String(repository)}</div>;
 };
@@ -108,7 +112,8 @@ export class Application extends BaseArdorApplication {
 ```
 
 The full guide, including the root component and the typed hooks, is in the
-[repository README](https://github.com/VENIZIA-AI/ardor#readme).
+[Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) and the
+[references](https://ardor.venizia.ai/references/hooks).
 
 ## Migrating from `@minimaltech/ra-core-infra`
 

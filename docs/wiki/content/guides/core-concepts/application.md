@@ -39,7 +39,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 
 `ArdorApplication` (in `packages/admin/src/components/application.tsx`) connects the IGNIS container to React. When rendered, it executes the following steps:
 
-1. **Reads features**: Calls `Features.read({ container })` to retrieve features bound under `CoreBindings.FEATURES`.
+1. **Reads features**: When the `features` prop is absent, calls `Features.read({ container })` to retrieve features bound under `CoreBindings.FEATURES`. The prop replaces that read.
 2. **Mounts resources and routes**: Calls `Features.mount({ features, resources, routes })` in `packages/admin/src/features/feature.ts`. Application resources and routes mount first, then each feature's in order. Duplicate resource names throw `[features] Resource '<name>' is mounted by both ... | A resource name is unique within an application`.
 3. **Resolves default providers**: Resolves framework providers from the container via `container.get()`:
    - `CoreBindings.DEFAULT_REST_DATA_PROVIDER`: Required `IDataProvider`.
@@ -63,6 +63,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 | `suspense` | `ReactNode` | Yes | Fallback React node displayed while components or feature translations load. |
 | `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
+| `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](../../references/features#mount-a-filtered-list). |
 | `routes` | `Array<RouteProps>` | No | Custom routes registered inside `CustomRoutes` before feature routes. |
 | `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`) passed directly to `CoreAdmin`. |
 

@@ -51,7 +51,7 @@ graph edges - served both as files under `.agents/knowledge/` and over MCP by `a
 
 1. [What is ARDOR](/overview/what-is-ardor.md) - the frontend framework, its role next to IGNIS,
    and the IoC-container mental model.
-2. [Monorepo layout](/overview/monorepo-layout.md) - where the five packages live and how they
+2. [Monorepo layout](/overview/monorepo-layout.md) - where the four packages live and how they
    relate.
 3. [Build, run, test](/overview/build-run-test.md) - the day-to-day commands, expanded from step 3
    and 4 above.

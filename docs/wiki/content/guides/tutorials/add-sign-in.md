@@ -184,49 +184,9 @@ When a request returns HTTP 401, `DefaultNetworkRequestService` asks `AuthRecove
 
 If both pass, `refresh()` batches concurrent 401 failures into a single in-flight promise and calls `refreshToken()`. Retried once if `refreshToken()` resolves `true`. If `refreshToken()` throws, `onAuthFailure()` runs once, the refresh resolves `false`, and the 401 error is raised.
 
-Subclass `DefaultNetworkRequestService` and `DefaultRestDataProvider` in `src/providers/app-rest-data.provider.ts`:
+Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS` and include `/auth/token/refresh` in `noAuthPaths`. The default `refreshToken()` POSTs to that path with the stored token, reads the new token from the answer and saves it through the auth service, so the session hooks run and the kept identity and roles stay. It needs no subclass.
 
-```ts
-import {
-  DefaultNetworkRequestService,
-  DefaultRestDataProvider,
-  LocalStorageKeys,
-  RequestMethods,
-  RequestTypes,
-} from '@venizia/ardor';
-
-export class AppNetworkService extends DefaultNetworkRequestService {
-  protected override async refreshToken(): Promise<boolean> {
-    const { data } = await this.doRequest<{ token: string }>({
-      type: RequestTypes.SEND,
-      method: RequestMethods.POST,
-      paths: ['/auth/token/refresh'],
-      headers: this.getRequestHeader({ resource: '/auth/token/refresh' }),
-    });
-
-    localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_TOKEN,
-      JSON.stringify({ value: data.token, type: 'Bearer' }),
-    );
-    return true;
-  }
-}
-
-export class AppRestDataProvider extends DefaultRestDataProvider {
-  protected override createNetworkService() {
-    return new AppNetworkService({
-      name: 'app-network-service',
-      baseUrl: this.restDataProviderOptions.url,
-      noAuthPaths: this.restDataProviderOptions.noAuthPaths,
-      noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
-      headers: this.restDataProviderOptions.headers,
-      authRecovery: this.restDataProviderOptions.authRecovery,
-    });
-  }
-}
-```
-
-Register `AppRestDataProvider` under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, configure `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS`, and include `/auth/token/refresh` in `noAuthPaths`.
+Write a `DefaultNetworkRequestService` subclass only for a refresh the default does not cover: a request body, another answer shape, or a token store that is not the auth service. See [The default refresh](../../best-practices/auth-recovery#the-default-refresh).
 
 `useRefreshToken` from `@venizia/ardor` calls `DefaultAuthProvider.refreshToken()`, which delegates to `refresh()` on the network service and shares the same coalesced promise. See [No-auth paths and token recovery](../../best-practices/auth-recovery).
 
