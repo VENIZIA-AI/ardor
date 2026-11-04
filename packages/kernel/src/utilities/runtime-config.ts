@@ -27,11 +27,15 @@ const readString = (opts: { source: unknown; key: string }): string | undefined 
 };
 
 interface IRuntimeConfigOptions {
+  /** The name looked up in `window.__APP_CONFIG__` and in `buildTimeEnv`. */
   key: string;
+  /** The build-time source, normally `import.meta.env`. */
   buildTimeEnv?: Record<string, unknown>;
+  /** Used when neither source has a non-empty string for `key`. */
   defaultValue?: string;
 }
 
+/** Reads configuration a deployment can change without a rebuild. */
 export class RuntimeConfig {
   /**
    * One config value: the runtime one (`window.__APP_CONFIG__`), else the build-time one

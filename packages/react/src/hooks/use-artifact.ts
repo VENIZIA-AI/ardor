@@ -10,14 +10,18 @@ import {
 
 /** By class: the return type is inferred from the target. */
 export interface IUseArtifactByTarget<TInstance> {
+  /** Defaults to the application's container. */
   container?: Container;
+  /** The class to resolve; its recorded binding key is used. */
   target: TClass<TInstance>;
   key?: never;
 }
 
 /** By key: the caller supplies the type. */
 export interface IUseArtifactByKey {
+  /** Defaults to the application's container. */
   container?: Container;
+  /** The binding key to resolve. */
   key: TUseInjectableKeys;
   target?: never;
 }
@@ -52,6 +56,7 @@ const useArtifactInNamespace = <TInstance>(opts: {
   return useInjectable<TInstance>(options);
 };
 
+/** Resolves the instance bound under the `service` namespace by `target` or `key`. A `target` bound under another namespace throws. */
 export const useService = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
@@ -61,6 +66,7 @@ export const useService = <TInstance = unknown>(
     hook: 'useService',
   });
 
+/** Resolves the instance bound under the `provider` namespace by `target` or `key`. A `target` bound under another namespace throws. */
 export const useProvider = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
@@ -70,6 +76,7 @@ export const useProvider = <TInstance = unknown>(
     hook: 'useProvider',
   });
 
+/** Resolves the instance bound under the `component` namespace by `target` or `key`. A `target` bound under another namespace throws. */
 export const useComponent = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
@@ -79,6 +86,7 @@ export const useComponent = <TInstance = unknown>(
     hook: 'useComponent',
   });
 
+/** Resolves the instance bound under the `configuration` namespace by `target` or `key`. A `target` bound under another namespace throws. */
 export const useConfiguration = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>
@@ -88,6 +96,7 @@ export const useConfiguration = <TInstance = unknown>(
     hook: 'useConfiguration',
   });
 
+/** Resolves the instance bound under the `repository` namespace by `target` or `key`. A `target` bound under another namespace throws. */
 export const useRepository = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>

@@ -3,9 +3,13 @@ import React from 'react';
 type TDocumentTitleSegment = string | false | null | undefined;
 
 export interface IUseDocumentTitleOptions {
+  /** The screen title, or a list of segments in order; `false`, `null`, `undefined` and empty segments are dropped. */
   title: TDocumentTitleSegment | Array<TDocumentTitleSegment>;
+  /** The last segment of the tab title. */
   appTitle: string;
+  /** Joins the segments. @default ' · ' */
   separator?: string;
+  /** When `false` the call writes no title. @default true */
   enabled?: boolean;
   /**
    * A base title for a layout. It shows only while no other call is mounted, so a screen's title

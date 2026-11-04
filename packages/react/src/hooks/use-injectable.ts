@@ -5,12 +5,16 @@ import { type Container, getError, type TClass } from '@venizia/ignis-inversion'
 import type { CoreBindings, ValueOf } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '../contexts/application';
 
+/** Declaration-merge string keys into this interface to make them valid `key` values of the injectable hooks. */
 export interface IUseInjectableKeysOverrides {}
 
+/** The binding keys the kernel defines (the string values of `CoreBindings`). */
 export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
 
+/** A key the injectable hooks accept: a kernel binding key or one added to `IUseInjectableKeysOverrides`. */
 export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
 
+/** Resolve by `key` or by `target` class, never both. `container` defaults to the application's. */
 export type TUseInjectableOptions =
   | { container?: Container; key: TUseInjectableKeys; target?: never }
   | { container?: Container; key?: never; target: TClass<unknown> };
@@ -32,6 +36,10 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
   return container;
 };
 
+/**
+ * Resolves an instance from the container by `key` or by `target` class. Throws when the key is not
+ * bound, when the class has no recorded binding key, or when neither `key` nor `target` is given.
+ */
 export const useInjectable = <TInstance>(opts: TUseInjectableOptions) => {
   const container = useApplicationContainer({ container: opts?.container });
 

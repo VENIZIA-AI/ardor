@@ -2,6 +2,7 @@ import { getError } from '@venizia/ignis-inversion';
 
 import type { IStorageCodec } from '@/common';
 
+/** The codecs `BrowserStorage` takes, in place of its JSON default. */
 export class StorageCodecs {
   /** A bare string, not JSON. Create once; outside `allowed`, decode and encode throw. */
   static text<TText extends string = string>(

@@ -3,9 +3,11 @@ import React from 'react';
 export interface IUseBeforeUnloadOptions {
   /** @default true */
   enabled?: boolean;
+  /** Set as the `returnValue` of the event; browsers may show their own text instead. */
   message?: string;
 }
 
+/** While `enabled`, asks the browser to confirm before the page is left or reloaded. */
 export const useBeforeUnload = (opts: IUseBeforeUnloadOptions) => {
   const { enabled = true, message } = opts;
 

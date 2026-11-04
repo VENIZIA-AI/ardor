@@ -29,6 +29,7 @@ const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
   return isCopied;
 };
 
+/** Copies text with `BrowserClipboard`; `isCopied` is the result of the last copy. */
 export const useCopyToClipboard = (
   opts: IUseCopyToClipboardOptions = {},
 ): IUseCopyToClipboardReturn => {

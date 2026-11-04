@@ -6,17 +6,23 @@ import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
 /** The IGNIS filter a list request sends. Any other key of the list params is a filter key too. */
 export interface IListFilter {
   where: Record<string, unknown>;
+  /** Each entry is `'<field> <ASC|DESC>'`. */
   order?: Array<string>;
   limit?: number;
+  /** IGNIS's offset; `ListFilterBuilder.build` sets this one. */
   skip?: number;
+  /** An alias of `skip`. */
   offset?: number;
   include?: unknown;
   fields?: unknown;
+  /** Not part of the filter sent: `ListFilterBuilder.build` moves it into the query string. */
   params?: Record<string, unknown>;
+  /** Lifts `limit` and `skip`: the list is not paginated. */
   noLimit?: boolean;
   [key: string]: unknown;
 }
 
+/** Builds the filter, query and extras of a list request from react-admin's list params. */
 export class ListFilterBuilder {
   /** `filter.params` as the keys of the query string, as a copy. */
   static extractQueryParams(opts: { params?: Record<string, unknown> }): Record<string, unknown> {

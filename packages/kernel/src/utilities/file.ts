@@ -1,3 +1,4 @@
+/** Helpers over `Blob` and file data. */
 export class FileUtility {
   /** The blob as a `data:` URL. */
   static toDataUrl(opts: { blob: Blob }): Promise<string> {

@@ -90,6 +90,13 @@ const useFeatureMessagesReady = (opts: {
   return state.isReady;
 };
 
+/**
+ * The application shell. It resolves the data, auth and i18n providers from `container`, mounts the
+ * `resources` and `routes` of the application and of each feature inside react-admin, and wraps it
+ * all in `ApplicationContext.Provider` (`container`, `logger`), the Redux provider and `Suspense`.
+ * While a feature's lazy messages for the current locale load, it renders `suspense` instead of
+ * react-admin; a failed load is thrown from render. Remaining props go to react-admin's `CoreAdmin`.
+ */
 export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
   const {
     container,

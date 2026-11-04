@@ -1,5 +1,6 @@
 import type { TranslationMessages } from 'ra-core';
 
+/** The built-in Vietnamese messages, the same shape as `englishMessages`. */
 export const vietnameseMessages: TranslationMessages = {
   ra: {
     action: {

@@ -106,6 +106,7 @@ export class BrowserStorage {
     });
   }
 
+  /** Removes the key; `false` when it is under `LocalStorageKeys.PREFIX_AUTH`, when there is no such area, or when storage throws. */
   static remove(opts: { key: string; storage?: TStorageArea }): boolean {
     return BrowserStorage.write({ ...opts, run: (area) => area.removeItem(opts.key) });
   }

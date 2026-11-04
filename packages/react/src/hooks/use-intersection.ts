@@ -7,7 +7,7 @@ export interface IUseIntersectionOptions {
   target: TElementTarget;
   /** @default '0px' */
   rootMargin?: string;
-  /** The ratio of the element in view at which an entry is delivered. @default 0 */
+  /** The ratio of the element in view at which an entry is delivered; a single number, not an array. @default 0 */
   threshold?: number;
 }
 
