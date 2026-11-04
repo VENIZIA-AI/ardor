@@ -17,6 +17,7 @@ export {
   useUntypedTranslate,
 } from '@venizia/ardor-admin';
 export {
+  useApplicationContainer,
   useApplicationContext,
   useApplicationLogger,
   useAutosave,
@@ -29,7 +30,6 @@ export {
   useDocumentVisibility,
   useElementSize,
   useInjectable,
-  useInjectableContainer,
   useIntersection,
   useMediaQuery,
   useOnlineStatus,

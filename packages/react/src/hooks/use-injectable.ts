@@ -19,13 +19,13 @@ export type TUseInjectableOptions =
  * The container an injectable hook resolves from: the one passed in, else the application's. Shared,
  * so a hook never checks one container and resolves from another.
  */
-export const useInjectableContainer = (opts?: { container?: Container }): Container => {
+export const useApplicationContainer = (opts?: { container?: Container }): Container => {
   const applicationContext = React.useContext(ApplicationContext);
   const container = opts?.container ?? applicationContext.container;
 
   if (!container) {
     throw getError({
-      message: '[useInjectable] Failed to determine injectable container!',
+      message: '[useApplicationContainer] Failed to determine the application container!',
     });
   }
 
@@ -33,7 +33,7 @@ export const useInjectableContainer = (opts?: { container?: Container }): Contai
 };
 
 export const useInjectable = <TInstance>(opts: TUseInjectableOptions) => {
-  const container = useInjectableContainer({ container: opts?.container });
+  const container = useApplicationContainer({ container: opts?.container });
 
   const { key, target } = opts;
 

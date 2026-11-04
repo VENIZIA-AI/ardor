@@ -69,7 +69,7 @@ This keeps call sites readable as the number of request-shaping concerns grows.
 
 Hooks follow the same rule. `useInjectable` (`packages/react/src/hooks/use-injectable.ts`) takes
 `{ key }` or `{ target }` as a discriminated union rather than two positional overloads, and
-`useInjectableContainer` takes `{ container }` even though that is its only field.
+`useApplicationContainer` takes `{ container }` even though that is its only field.
 
 ## Errors follow the same shape
 

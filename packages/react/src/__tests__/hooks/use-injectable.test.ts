@@ -4,7 +4,7 @@ import { renderHook } from '@testing-library/react';
 import { Container } from '@venizia/ignis-inversion';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@/contexts/application';
-import { useInjectable } from '@/hooks/use-injectable';
+import { useApplicationContainer, useInjectable } from '@/hooks/use-injectable';
 
 interface ITestApp {
   readonly id: string;
@@ -54,6 +54,39 @@ const createWrapper = ({ container }: ICreateWrapperOptions) => {
     );
   };
 };
+
+describe('useApplicationContainer', () => {
+  test('answers the container of ApplicationContext', () => {
+    const container = new Container({ scope: 'test' });
+
+    const { result } = renderHook(() => useApplicationContainer(), {
+      wrapper: createWrapper({ container }),
+    });
+
+    expect(result.current).toBe(container);
+  });
+
+  test('answers the container passed in over the one of the context', () => {
+    const inContext = new Container({ scope: 'context' });
+    const passed = new Container({ scope: 'passed' });
+
+    const { result } = renderHook(() => useApplicationContainer({ container: passed }), {
+      wrapper: createWrapper({ container: inContext }),
+    });
+
+    expect(result.current).toBe(passed);
+  });
+
+  test('throws where there is no container in the context and none is passed', () => {
+    const errorSpy = spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(() => {
+      renderHook(() => useApplicationContainer(), { wrapper: createWrapper({ container: null }) });
+    }).toThrow('[useApplicationContainer] Failed to determine the application container!');
+
+    errorSpy.mockRestore();
+  });
+});
 
 describe('useInjectable with key option', () => {
   test('resolves binding from the container in ApplicationContext when only key is provided', () => {
@@ -187,7 +220,7 @@ describe('useInjectable container resolution failures', () => {
       renderHook(() => {
         return useInjectable({ key: CoreBindings.APPLICATION_INSTANCE });
       });
-    }).toThrow('[useInjectable] Failed to determine injectable container!');
+    }).toThrow('[useApplicationContainer] Failed to determine the application container!');
   });
 
   test('throws error when context provider provides null container and no explicit container is passed', () => {
@@ -200,6 +233,6 @@ describe('useInjectable container resolution failures', () => {
           wrapper: createWrapper({ container: null }),
         },
       );
-    }).toThrow('[useInjectable] Failed to determine injectable container!');
+    }).toThrow('[useApplicationContainer] Failed to determine the application container!');
   });
 });
