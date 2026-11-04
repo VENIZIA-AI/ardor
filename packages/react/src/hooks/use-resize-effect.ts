@@ -1,12 +1,11 @@
 import React from 'react';
 
+import { ElementTargets, type TElementTarget } from './element-target';
 import { type IResizeObservation, ResizeObservation, type TResizeBox } from './resize-observation';
-
-export type TResizeTarget = React.RefObject<Element | null> | Element | null;
 
 export interface IUseResizeEffectOptions {
   /** Read after every render: an element, a ref to one, or `null`, which is skipped. */
-  targets: TResizeTarget[];
+  targets: TElementTarget[];
   /** Receives the latest entry of each element that resized since the last call. */
   onResize: (entries: ResizeObserverEntry[]) => void;
   /** @default 'content-box' */
@@ -14,10 +13,6 @@ export interface IUseResizeEffectOptions {
   /** Also observe the direct children of each target, and again whenever they change. @default false */
   children?: boolean;
 }
-
-const elementOf = (target: TResizeTarget): Element | null => {
-  return target && 'current' in target ? target.current : target;
-};
 
 /**
  * Calls `onResize` at most once per animation frame when any of the targets resizes. A new
@@ -46,6 +41,8 @@ export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
   }, [box, children]);
 
   React.useEffect(() => {
-    observation.current?.sync(targets.flatMap((target) => elementOf(target) ?? []));
+    observation.current?.sync(
+      targets.flatMap((target) => ElementTargets.resolve({ target }) ?? []),
+    );
   });
 };
