@@ -7,17 +7,27 @@ import type { UnresolvedPolicies } from './constants';
 export type TUnresolvedPolicy = TConstValue<typeof UnresolvedPolicies>;
 
 export interface IBuildInfoFileOptions {
-  /** The app folder, where its package.json is. Default: the folder Vite runs in. */
+  /**
+   * The app folder, where its package.json is.
+   * @default process.cwd()
+   */
   root?: string;
   /**
-   * The file's path under the output folder and under the dev server's base. Default: `build-info.json`.
+   * The file's path under the output folder and under the dev server's base.
    * A relative path of letters, digits, `.`, `_` and `-`, with `/` between folders, ending `.json`, and
    * no `..` segment; anything else throws.
+   * @default 'build-info.json'
    */
   fileName?: string;
-  /** Dependencies whose name starts with this are listed under `frameworks`. Default: `@venizia/`. */
+  /**
+   * Dependencies whose name starts with this are listed under `frameworks`.
+   * @default '@venizia/'
+   */
   frameworkScope?: string;
-  /** What a build does when no commit can be found: `error` (default) or `unspecified`. The dev server always serves what it has and warns. */
+  /**
+   * What a build does when no commit can be found: `error` or `unspecified`. The dev server always serves what it has and warns.
+   * @default UnresolvedPolicies.ERROR
+   */
   onUnresolved?: TUnresolvedPolicy;
 }
 
