@@ -40,7 +40,7 @@ describe('useResizeEffect', () => {
     const second = document.createElement('div');
     const { onResize } = recorder();
 
-    renderHook(() => useResizeEffect({ refs: [refOf(first), refOf(second)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [refOf(first), refOf(second)], onResize }));
 
     expect(observers).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([first, second]);
@@ -51,7 +51,7 @@ describe('useResizeEffect', () => {
     const element = document.createElement('div');
     const { onResize } = recorder();
 
-    renderHook(() => useResizeEffect({ refs: [refOf(element)], onResize, box: 'border-box' }));
+    renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize, box: 'border-box' }));
 
     expect(observerAt(0).options).toEqual([{ box: 'border-box' }]);
   });
@@ -62,7 +62,7 @@ describe('useResizeEffect', () => {
     const third = document.createElement('div');
     const { calls, onResize } = recorder();
     renderHook(() => {
-      useResizeEffect({ refs: [refOf(first), refOf(second), refOf(third)], onResize });
+      useResizeEffect({ targets: [refOf(first), refOf(second), refOf(third)], onResize });
     });
     const one = entryOf({ width: 10, height: 10, target: first });
     const two = entryOf({ width: 20, height: 20, target: third });
@@ -79,7 +79,7 @@ describe('useResizeEffect', () => {
   test('several resizes of one element inside a frame give one call with the latest entry', () => {
     const element = document.createElement('div');
     const { calls, onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(element)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize }));
     const latest = entryOf({ width: 100, height: 50, target: element });
 
     fire({
@@ -97,7 +97,7 @@ describe('useResizeEffect', () => {
   test('an entry delivered when observing starts is passed on like any other', () => {
     const element = document.createElement('div');
     const { calls, onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(element)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize }));
     const first = entryOf({ width: 30, height: 20, target: element });
 
     fire({ observer: observerAt(0), entries: [first] });
@@ -110,7 +110,7 @@ describe('useResizeEffect', () => {
     const first = document.createElement('div');
     const second = document.createElement('div');
     const { calls, onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(first), refOf(second)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [refOf(first), refOf(second)], onResize }));
     const early = entryOf({ width: 10, height: 10, target: first });
     const late = entryOf({ width: 20, height: 20, target: second });
 
@@ -124,12 +124,12 @@ describe('useResizeEffect', () => {
 
   test('the latest onResize is called, and a new one does not observe again', () => {
     const element = document.createElement('div');
-    const refs = [refOf(element)];
+    const targets = [refOf(element)];
     const old = recorder();
     const next = recorder();
     const { rerender } = renderHook(
       (props: { onResize: (entries: Array<ResizeObserverEntry>) => void }) => {
-        useResizeEffect({ refs, onResize: props.onResize });
+        useResizeEffect({ targets, onResize: props.onResize });
       },
       { initialProps: { onResize: old.onResize } },
     );
@@ -144,11 +144,11 @@ describe('useResizeEffect', () => {
   });
 
   test('a new box observes again with that box', () => {
-    const refs = [refOf(document.createElement('div'))];
+    const targets = [refOf(document.createElement('div'))];
     const { onResize } = recorder();
     const { rerender } = renderHook(
       (props: { box: 'content-box' | 'border-box' }) => {
-        useResizeEffect({ refs, onResize, box: props.box });
+        useResizeEffect({ targets, onResize, box: props.box });
       },
       { initialProps: { box: 'content-box' } },
     );
@@ -160,54 +160,143 @@ describe('useResizeEffect', () => {
     expect(observerAt(1).options).toEqual([{ box: 'border-box' }]);
   });
 
-  test('a new list of refs disconnects the old observer and observes the new set only', () => {
+  test('a new list of targets observes the new ones and stops observing the old ones, on the same observer', () => {
     const first = document.createElement('div');
     const second = document.createElement('div');
     const third = document.createElement('div');
     const { onResize } = recorder();
     const { rerender } = renderHook(
-      (props: { refs: Array<{ current: Element | null }> }) => {
-        useResizeEffect({ refs: props.refs, onResize });
+      (props: { targets: Array<{ current: Element | null }> }) => {
+        useResizeEffect({ targets: props.targets, onResize });
       },
-      { initialProps: { refs: [refOf(first), refOf(second)] } },
+      { initialProps: { targets: [refOf(first), refOf(second)] } },
     );
 
-    rerender({ refs: [refOf(third)] });
+    rerender({ targets: [refOf(second), refOf(third)] });
 
-    expect(observerAt(0).disconnected).toBe(true);
-    expect(observers).toHaveLength(2);
-    expect(observerAt(1).targets).toEqual([third]);
+    expect(observers).toHaveLength(1);
+    expect(observerAt(0).disconnected).toBe(false);
+    expect(observerAt(0).targets).toEqual([first, second, third]);
+    expect(observerAt(0).unobserved).toEqual([first]);
   });
 
-  test('a list made anew in every render observes again in every render, so pass a stable one', () => {
+  test('a list made anew in every render observes each element once', () => {
     const element = document.createElement('div');
     const { onResize } = recorder();
     const { rerender } = renderHook(() => {
-      useResizeEffect({ refs: [refOf(element)], onResize });
+      useResizeEffect({ targets: [refOf(element)], onResize });
     });
 
     rerender();
     rerender();
 
-    expect(observers).toHaveLength(3);
+    expect(observers).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
+    expect(observerAt(0).unobserved).toEqual([]);
   });
 
-  test('a ref with no element is skipped, and no element at all observes nothing', () => {
+  test('an element held in state, set after the mount, is observed', () => {
+    const element = document.createElement('div');
+    const { onResize } = recorder();
+    const { rerender } = renderHook<void, { element: Element | null }>(
+      (props) => {
+        useResizeEffect({ targets: [props.element], onResize });
+      },
+      { initialProps: { element: null } },
+    );
+    expect(observerAt(0).targets).toEqual([]);
+
+    rerender({ element });
+
+    expect(observers).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
+  });
+
+  test('a target added and then removed is observed and then not', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { list: Array<Element> }) => {
+        useResizeEffect({ targets: props.list, onResize });
+      },
+      { initialProps: { list: [first] } },
+    );
+
+    rerender({ list: [first, second] });
+    rerender({ list: [second] });
+
+    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).unobserved).toEqual([first]);
+  });
+
+  test('a ref whose element changes is followed at the next render', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const ref = refOf(first);
+    const { onResize } = recorder();
+    const { rerender } = renderHook(() => useResizeEffect({ targets: [ref], onResize }));
+
+    ref.current = second;
+    rerender();
+
+    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).unobserved).toEqual([first]);
+  });
+
+  test('the same elements in another order, or twice, observe and unobserve nothing again', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { list: Array<Element> }) => {
+        useResizeEffect({ targets: props.list, onResize });
+      },
+      { initialProps: { list: [first, second, first] } },
+    );
+    expect(observerAt(0).targets).toEqual([first, second]);
+
+    rerender({ list: [second, first] });
+    rerender({ list: [second, first, second] });
+
+    expect(observers).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).unobserved).toEqual([]);
+  });
+
+  test('a pending resize of a target that was removed is dropped', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const { calls, onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { list: Array<Element> }) => {
+        useResizeEffect({ targets: props.list, onResize });
+      },
+      { initialProps: { list: [first, second] } },
+    );
+    fire({ observer: observerAt(0), entries: [entryOf({ width: 1, height: 1, target: first })] });
+
+    rerender({ list: [second] });
+    flushFrames();
+
+    expect(calls).toHaveLength(0);
+  });
+
+  test('a null target, and an empty list, observe nothing and do not throw', () => {
     const element = document.createElement('div');
     const { onResize } = recorder();
 
-    renderHook(() => useResizeEffect({ refs: [refOf(null), refOf(element)], onResize }));
-    expect(observerAt(0).targets).toEqual([element]);
+    renderHook(() => useResizeEffect({ targets: [null, refOf(null), refOf(element)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [], onResize }));
 
-    renderHook(() => useResizeEffect({ refs: [refOf(null)], onResize }));
-    renderHook(() => useResizeEffect({ refs: [], onResize }));
-    expect(observers).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
+    expect(observerAt(1).targets).toEqual([]);
   });
 
   test('unmount disconnects and cancels a pending frame, so a late resize calls nothing', () => {
     const element = document.createElement('div');
     const { calls, onResize } = recorder();
-    const { unmount } = renderHook(() => useResizeEffect({ refs: [refOf(element)], onResize }));
+    const { unmount } = renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize }));
     fire({ observer: observerAt(0), entries: [entryOf({ width: 5, height: 5, target: element })] });
     const pending = [...frames.keys()];
 
@@ -224,7 +313,7 @@ describe('useResizeEffect', () => {
     const { calls, onResize } = recorder();
 
     const { unmount } = renderHook(() => {
-      useResizeEffect({ refs: [refOf(document.createElement('div'))], onResize });
+      useResizeEffect({ targets: [refOf(document.createElement('div'))], onResize });
     });
     unmount();
 
@@ -251,21 +340,21 @@ describe('useResizeEffect with children', () => {
     return { parent, first, second, grandchild };
   };
 
-  test('observes each ref and its direct children, and not deeper', () => {
+  test('observes each target and its direct children, and not deeper', () => {
     const { parent, first, second } = treeOf();
     const { onResize } = recorder();
 
-    renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize, children: true }));
+    renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize, children: true }));
 
     expect(observers).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([parent, first, second]);
   });
 
-  test('without children only the refs are observed', () => {
+  test('without children only the targets are observed', () => {
     const { parent } = treeOf();
     const { onResize } = recorder();
 
-    renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize }));
+    renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize }));
 
     expect(observerAt(0).targets).toEqual([parent]);
   });
@@ -273,7 +362,7 @@ describe('useResizeEffect with children', () => {
   test('a resize of a child calls onResize with the entry of that child', () => {
     const { parent, second } = treeOf();
     const { calls, onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize, children: true }));
+    renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize, children: true }));
     const entry = entryOf({ width: 8, height: 8, target: second });
 
     fire({ observer: observerAt(0), entries: [entry] });
@@ -286,7 +375,7 @@ describe('useResizeEffect with children', () => {
     const { parent, first, second } = treeOf();
     const added = document.createElement('div');
     const { onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize, children: true }));
+    renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize, children: true }));
 
     parent.append(added);
     parent.removeChild(first);
@@ -300,7 +389,7 @@ describe('useResizeEffect with children', () => {
   test('a resize of a removed child that is still pending is dropped', async () => {
     const { parent, first } = treeOf();
     const { calls, onResize } = recorder();
-    renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize, children: true }));
+    renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize, children: true }));
     fire({ observer: observerAt(0), entries: [entryOf({ width: 1, height: 1, target: first })] });
 
     parent.removeChild(first);
@@ -308,6 +397,54 @@ describe('useResizeEffect with children', () => {
     flushFrames();
 
     expect(calls).toHaveLength(0);
+  });
+
+  test('with children, a new target brings its children and the old target and its children are unobserved', () => {
+    const old = treeOf();
+    const next = treeOf();
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { parent: Element }) => {
+        useResizeEffect({ targets: [props.parent], onResize, children: true });
+      },
+      { initialProps: { parent: old.parent } },
+    );
+
+    rerender({ parent: next.parent });
+
+    expect(observerAt(0).targets).toEqual([
+      old.parent,
+      old.first,
+      old.second,
+      next.parent,
+      next.first,
+      next.second,
+    ]);
+    expect(observerAt(0).unobserved).toEqual([old.parent, old.first, old.second]);
+  });
+
+  test('with children, a render with the same targets does no DOM work', () => {
+    const { parent } = treeOf();
+    const targets = [parent];
+    const { onResize } = recorder();
+    const reads: Array<number> = [];
+    const children = Object.getOwnPropertyDescriptor(Element.prototype, 'children');
+    const { rerender } = renderHook(() => {
+      useResizeEffect({ targets: [...targets], onResize, children: true });
+    });
+    const before = observerAt(0).targets.length;
+
+    Object.defineProperty(parent, 'children', {
+      get() {
+        reads.push(1);
+        return children?.get?.call(this);
+      },
+    });
+    rerender();
+    rerender();
+
+    expect(reads).toHaveLength(0);
+    expect(observerAt(0).targets).toHaveLength(before);
   });
 
   test('a MutationObserver exists only with children, and unmount disconnects it', () => {
@@ -330,11 +467,11 @@ describe('useResizeEffect with children', () => {
     const { onResize } = recorder();
 
     try {
-      renderHook(() => useResizeEffect({ refs: [refOf(parent)], onResize }));
+      renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize }));
       expect(created).toHaveLength(0);
 
       const { unmount } = renderHook(() => {
-        useResizeEffect({ refs: [refOf(parent)], onResize, children: true });
+        useResizeEffect({ targets: [refOf(parent)], onResize, children: true });
       });
       expect(created).toHaveLength(1);
 

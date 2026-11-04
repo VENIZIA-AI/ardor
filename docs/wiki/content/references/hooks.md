@@ -579,11 +579,10 @@ import { useResizeEffect } from '@venizia/ardor';
 
 export function Toolbar() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const refs = React.useMemo(() => [ref], []);
   const [isOverflowing, setOverflowing] = React.useState(false);
 
   useResizeEffect({
-    refs,
+    targets: [ref],
     onResize: () => {
       const element = ref.current;
       setOverflowing(element !== null && element.scrollWidth > element.clientWidth);
@@ -602,10 +601,9 @@ import { useResizeEffect } from '@venizia/ardor';
 
 export function Tabs() {
   const ref = React.useRef<HTMLUListElement>(null);
-  const refs = React.useMemo(() => [ref], []);
 
   useResizeEffect({
-    refs,
+    targets: [ref],
     children: true,
     onResize: (entries) => {
       console.log(entries.map((entry) => entry.target.tagName));
@@ -616,9 +614,24 @@ export function Tabs() {
 }
 ```
 
-- **Parameters**: `opts: IUseResizeEffectOptions` - `refs: React.RefObject<Element | null>[]`, `onResize: (entries: ResizeObserverEntry[]) => void`, optional `box`: `content-box` (default) or `border-box`, optional `children`: `true` also observes the direct children of each ref (default `false`).
+An element that mounts conditionally goes in as state, with the setter as its `ref`:
+
+```tsx
+import React from 'react';
+import { useResizeEffect } from '@venizia/ardor';
+
+export function Popover({ open }: { open: boolean }) {
+  const [element, setElement] = React.useState<HTMLDivElement | null>(null);
+
+  useResizeEffect({ targets: [element], onResize: () => console.log('resized') });
+
+  return open ? <div ref={setElement} /> : null;
+}
+```
+
+- **Parameters**: `opts: IUseResizeEffectOptions` - `targets: Array<React.RefObject<Element | null> | Element | null>` (an element, a ref to one, or `null`, which is skipped), `onResize: (entries: ResizeObserverEntry[]) => void`, optional `box`: `content-box` (default) or `border-box`, optional `children`: `true` also observes the direct children of each target (default `false`).
 - **Return value**: `void`.
-- **Gotcha**: One `ResizeObserver` watches all the elements, and `onResize` runs at most once per animation frame with the latest entry of each element that resized since the last call. The hook keeps the latest `onResize`, so a new function each render does not observe again. The refs are read when the effect runs and a ref with no element is skipped: an element that mounts after the effect ran (`{open && <div ref={ref} />}`) is never observed, so render it from the first render or use the `ref` that `useElementSize()` returns; pass a stable array, as `React.useMemo` gives, because an array made anew in every render observes again in every render, and the browser then delivers the first entries again. The first entries are delivered as the browser delivers them, so `onResize` runs once when observing starts. With `children`, a child added later is observed, and so delivers its first entry, and a removed child is not observed any more; a grandchild is never observed, and a `MutationObserver` exists only with `children`. Where there is no `ResizeObserver` the hook does nothing. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). Defined in `packages/react/src/hooks/use-resize-effect.ts`.
+- **Gotcha**: One `ResizeObserver` watches all the elements, and `onResize` runs at most once per animation frame with the latest entry of each element that resized since the last call. The hook keeps the latest `onResize`, so a new function each render does not observe again. The targets are read after every render and the observer follows the set: a new element is observed, one that is gone is not, and an element that is already observed is left alone, so a list made anew in each render observes nothing again. Pass an element held in state (`useState` with the setter as `ref`) for one that mounts conditionally or is found by a query, or a ref whose `current` is read at each render; a `null` is skipped. A ref whose `current` changes without a render of this component is not seen until its next render. The first entries are delivered as the browser delivers them, so `onResize` runs once when observing starts. With `children`, a child added later is observed, and so delivers its first entry, and a removed child is not observed any more; a grandchild is never observed, and a `MutationObserver` exists only with `children`. Where there is no `ResizeObserver` the hook does nothing. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). Defined in `packages/react/src/hooks/use-resize-effect.ts`.
 
 ### useStoredState
 

@@ -2,7 +2,6 @@
 export type TResizeBox = Exclude<ResizeObserverBoxOptions, 'device-pixel-content-box'>;
 
 export interface IResizeObservationOptions {
-  targets: Element[];
   box: TResizeBox;
   /** Also observe the direct children of each target, and again whenever they change. */
   children?: boolean;
@@ -10,16 +9,23 @@ export interface IResizeObservationOptions {
   onFrame: (entries: ResizeObserverEntry[]) => void;
 }
 
+export interface IResizeObservation {
+  /** Observes these elements and stops observing the ones no longer listed. */
+  sync: (targets: Element[]) => void;
+  stop: () => void;
+}
+
 export class ResizeObservation {
-  /** Observes the targets and returns the function that stops it. Does nothing without `ResizeObserver`. */
-  static observe(opts: IResizeObservationOptions): () => void {
-    const { targets, box, children = false, onFrame } = opts;
-    if (targets.length === 0 || typeof ResizeObserver === 'undefined') {
-      return () => {};
+  /** Does nothing without `ResizeObserver`. */
+  static observe(opts: IResizeObservationOptions): IResizeObservation {
+    const { box, children = false, onFrame } = opts;
+    if (typeof ResizeObserver === 'undefined') {
+      return { sync: () => {}, stop: () => {} };
     }
 
     const latest = new Map<Element, ResizeObserverEntry>();
     let watched = new Set<Element>();
+    let current: Element[] = [];
     let frame: number | undefined;
 
     const observer = new ResizeObserver((entries) => {
@@ -40,7 +46,7 @@ export class ResizeObservation {
       });
     });
 
-    const sync = () => {
+    const update = (targets: Element[]) => {
       const wanted = new Set(
         children ? targets.flatMap((target) => [target, ...target.children]) : targets,
       );
@@ -57,19 +63,32 @@ export class ResizeObservation {
       }
       watched = wanted;
     };
-    sync();
 
-    const mutations = children ? new MutationObserver(sync) : undefined;
-    for (const target of targets) {
-      mutations?.observe(target, { childList: true });
-    }
+    const mutations = children ? new MutationObserver(() => update(current)) : undefined;
 
-    return () => {
-      mutations?.disconnect();
-      observer.disconnect();
-      if (frame !== undefined) {
-        cancelAnimationFrame(frame);
-      }
+    return {
+      sync: (targets) => {
+        if (
+          targets.length === current.length &&
+          targets.every((target, index) => target === current[index])
+        ) {
+          return;
+        }
+
+        current = targets;
+        update(targets);
+        // A removed target stays registered on `mutations` until `stop`; its callback only updates the current targets.
+        for (const target of targets) {
+          mutations?.observe(target, { childList: true });
+        }
+      },
+      stop: () => {
+        mutations?.disconnect();
+        observer.disconnect();
+        if (frame !== undefined) {
+          cancelAnimationFrame(frame);
+        }
+      },
     };
   }
 }

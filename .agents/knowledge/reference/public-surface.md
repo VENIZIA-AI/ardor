@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (47)
+### `@venizia/ardor-react` (48)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -162,6 +162,7 @@ generated:
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `SelectorHooks` class
+- `TResizeTarget` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
@@ -236,7 +237,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (184)
+### `@venizia/ardor` (185)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -375,6 +376,7 @@ generated:
 - `TRequestBodyType` type
 - `TRequestMethod` type
 - `TRequestType` type
+- `TResizeTarget` type
 - `TSessionClearReason` type
 - `TStorageArea` type
 - `TStringConstValue` type
