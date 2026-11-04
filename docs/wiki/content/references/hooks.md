@@ -46,7 +46,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `ILogger` |
 | Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
 | Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
-| Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
+| Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
 | Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
@@ -293,8 +293,23 @@ export function SaveButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`) when an i18n provider is present, or a fallback identity function `(key: AnyType) => AnyType`.
-- **Gotcha**: Returns an identity function when no i18n provider is mounted in the tree, returning the key unchanged rather than throwing. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
+- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`).
+- **Gotcha**: With no i18n provider mounted, ra-core's default provider answers instead of throwing: it returns the `_` text of the options when given, else the key, and fills `%{token}` placeholders from the options. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
+
+### useUntypedTranslate
+
+```tsx
+import { useUntypedTranslate } from '@venizia/ardor';
+
+export function ErrorLine(props: { code: string }) {
+  const translate = useUntypedTranslate();
+  return <p>{translate(`errors.${props.code}`, { _: 'Something went wrong' })}</p>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `TUseUntypedTranslateFn` (`(key: string, options?: AnyType) => string`).
+- **Gotcha**: For a key that exists only at run time, such as a server error code or a data label. A key written in code belongs to [`useTranslate`](#usetranslate), which checks it at compile time; both read the same i18n provider and share one implementation. It is ra-core's own `useTranslate` with a `string` key. A key the catalogs do not hold comes back unchanged, or as the `_` text of the options; with no i18n provider, ra-core's default provider answers the same way. Defined in `packages/admin/src/hooks/use-translate.ts`.
 
 ### useRefreshToken
 

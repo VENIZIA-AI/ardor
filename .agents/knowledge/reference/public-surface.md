@@ -182,7 +182,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (39)
+### `@venizia/ardor-admin` (41)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -215,6 +215,7 @@ generated:
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
+- `TUseUntypedTranslateFn` type
 - `useDocumentTitle` const
 - `useFeatures` const
 - `useHtmlLang` const
@@ -222,11 +223,12 @@ generated:
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
 - `useTranslate` const
+- `useUntypedTranslate` const
 - `vietnameseMessages` const
 
 ## ardor
 
-### `@venizia/ardor` (174)
+### `@venizia/ardor` (176)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -371,6 +373,7 @@ generated:
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
+- `TUseUntypedTranslateFn` type
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
@@ -395,6 +398,7 @@ generated:
 - `useSizer` const
 - `useStoredState` const
 - `useTranslate` const
+- `useUntypedTranslate` const
 - `useWindowDimensions` const
 - `ValueOf` type
 - `ValueOptional` type

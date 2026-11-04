@@ -53,7 +53,7 @@ The type `TUseInjectableKeys` is the union of core binding key strings plus the 
 
 ARDOR wraps several ra-core hooks to add typing and safe fallbacks. These need react-admin providers in the tree, not just `ApplicationContext`:
 
-- `useTranslate` - typed wrapper over the ra-core i18n provider. The key type is every dotted path of the English message catalog plus `IUseTranslateKeysOverrides`. When no i18n provider is present in the tree, it degrades to an identity function, so components using it remain safe to render outside a full react-admin mount. See [i18n](/architecture/i18n.md).
+- `useTranslate` - typed wrapper over the ra-core i18n provider. The key type is every dotted path of the English message catalog plus `IUseTranslateKeysOverrides`. When no i18n provider is present in the tree, ra-core's default provider answers, so components using it remain safe to render outside a full react-admin mount. `useUntypedTranslate` is the same function with a `string` key, for a key built at run time. See [i18n](/architecture/i18n.md).
 - `useNotifyError` - turns an `ApplicationError` into a react-admin notification, reading `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. Needs the ra-core notification context. See [Error flow](/architecture/error-flow.md).
 - `useRefreshToken` - needs the ra-core auth provider context and a TanStack `QueryClientProvider`. See [Auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - needs ra-core locale state plus `DEFAULT_REST_DATA_PROVIDER` bound in the container, so it can push the current locale onto outgoing request headers. See [Header protocol](/architecture/header-protocol.md) and [Data provider pipeline](/architecture/data-provider-pipeline.md).

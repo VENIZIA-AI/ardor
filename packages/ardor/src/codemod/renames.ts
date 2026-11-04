@@ -75,6 +75,7 @@ export class HookRenames {
     'useSizer',
     'useStoredState',
     'useTranslate',
+    'useUntypedTranslate',
     'useWindowDimensions',
   ]);
 
