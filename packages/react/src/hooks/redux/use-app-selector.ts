@@ -10,15 +10,16 @@ const isPlain = (value: unknown): value is object => {
 
 /**
  * Equality by value for what a selector returns: primitives, plain objects, arrays and dates, none
- * of them cyclic. Any other object (a `Map`, a class instance) is equal only to itself.
+ * of them cyclic; `0` equals `-0`, and `NaN` equals `NaN`. Any other object (a `Map`, a class
+ * instance) is equal only to itself.
  */
 const deepEqual = (a: unknown, b: unknown): boolean => {
-  if (Object.is(a, b)) {
+  if (a === b || Object.is(a, b)) {
     return true;
   }
 
   if (a instanceof Date && b instanceof Date) {
-    return a.getTime() === b.getTime();
+    return Object.is(a.getTime(), b.getTime());
   }
 
   if (!isPlain(a) || !isPlain(b) || Array.isArray(a) !== Array.isArray(b)) {

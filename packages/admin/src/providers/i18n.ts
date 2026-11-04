@@ -50,7 +50,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   protected composeMessages(opts: { locale: string; messages: object }): TranslationMessages {
     const source = this.localeSources.readNow({ locale: opts.locale });
 
-    // `deepMerge` answers a plain record; every source is a (partial) set of messages.
+    // A merge of (partial) message sets is a set of messages, which a merge that takes any object
+    // cannot say in its type: the assertion is here, where the sources are known, not inside it.
     return deepMerge({
       sources: [opts.messages, source ?? englishMessages],
     }) as TranslationMessages;

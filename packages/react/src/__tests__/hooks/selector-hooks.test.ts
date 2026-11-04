@@ -11,11 +11,20 @@ interface IState {
   items: Array<{ id: number; tags: Array<string> }>;
   shape: Array<number> | Record<string, number>;
   at: number;
+  flags: Record<string, undefined>;
+  zero: number;
 }
 
 const slice = createSlice({
   name: 'test',
-  initialState: { tick: 0, items: [{ id: 1, tags: ['a'] }], shape: [], at: 0 } as IState,
+  initialState: {
+    tick: 0,
+    items: [{ id: 1, tags: ['a'] }],
+    shape: [],
+    at: 0,
+    flags: {},
+    zero: 0,
+  } as IState,
   reducers: {
     tick: (state) => {
       state.tick += 1;
@@ -28,6 +37,12 @@ const slice = createSlice({
     },
     setAt: (state, action: PayloadAction<number>) => {
       state.at = action.payload;
+    },
+    setFlags: (state, action: PayloadAction<IState['flags']>) => {
+      state.flags = action.payload;
+    },
+    setZero: (state, action: PayloadAction<number>) => {
+      state.zero = action.payload;
     },
   },
 });
@@ -120,6 +135,36 @@ describe('SelectorHooks useDeepEqualSelector', () => {
       store.dispatch(slice.actions.setAt(5));
     });
     expect(renders.count).toBeGreaterThan(before);
+  });
+
+  test('tells { a: undefined } from { b: undefined }: the same number of keys, not the same keys', () => {
+    const store = createStore();
+    store.dispatch(slice.actions.setFlags({ a: undefined }));
+    const { result } = mount({ store, selector: (state) => state.flags });
+    expect(Object.keys(result.current)).toEqual(['a']);
+
+    act(() => {
+      store.dispatch(slice.actions.setFlags({ b: undefined }));
+    });
+
+    expect(Object.keys(result.current)).toEqual(['b']);
+  });
+
+  test('treats 0 and -0 as equal, and two invalid dates as equal', () => {
+    const store = createStore();
+    const zero = mount({ store, selector: (state) => state.zero });
+    const bad = mount({ store, selector: () => new Date(Number.NaN) });
+    const before = { zero: zero.renders.count, bad: bad.renders.count };
+
+    act(() => {
+      store.dispatch(slice.actions.setZero(-0));
+    });
+    act(() => {
+      store.dispatch(slice.actions.tick());
+    });
+
+    expect(zero.renders.count).toBe(before.zero);
+    expect(bad.renders.count).toBe(before.bad);
   });
 
   test('differs from the shallow selector, which renders again for the same new object', () => {

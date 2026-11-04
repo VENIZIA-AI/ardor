@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import { deepMerge } from '@/common/merge';
+import { deepMerge, isRecord } from '@/common/merge';
 import type { TFeature } from './feature';
 
 interface IFeatureBundle {
@@ -104,7 +104,7 @@ export class FeatureMessages {
   private static leafKeys(opts: { value: unknown; prefix?: string }): Array<string> {
     const { value, prefix } = opts;
 
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    if (!isRecord(value)) {
       return prefix ? [prefix] : [];
     }
 

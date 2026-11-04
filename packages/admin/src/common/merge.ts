@@ -1,11 +1,12 @@
-const isRecord = (value: unknown): value is Record<string, unknown> => {
+export const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 /**
  * A new object with the sources merged in order: a later source wins, plain objects merge
  * recursively, anything else (an array, a string) replaces, and an `undefined` never overwrites. The
- * sources are not changed. For message bundles and other JSON; `__proto__` is dropped.
+ * sources are not changed. For JSON-like values only (message bundles): a `Date` becomes `{}`, an
+ * array is shared with its source by reference, and `__proto__` is dropped.
  */
 export const deepMerge = (opts: { sources: ReadonlyArray<object> }): Record<string, unknown> => {
   const merged: Record<string, unknown> = {};
