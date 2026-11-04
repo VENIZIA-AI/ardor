@@ -76,6 +76,10 @@ ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](
   <h3>Philosophy</h3>
   <p>Architectural principles and design decisions behind ARDOR and IGNIS</p>
 </a>
+<a href="./migrations/upgrading-ardor" class="guide-card">
+  <h3>Upgrading ARDOR</h3>
+  <p>Which changelog entry to read for your version, and the codemod that moves the removed names</p>
+</a>
 <a href="./migrations/from-ra-core-infra" class="guide-card">
   <h3>Migration</h3>
   <p>Migrate legacy administration interfaces from @minimaltech/ra-core-infra</p>

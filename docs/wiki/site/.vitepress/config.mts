@@ -42,6 +42,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
     text: 'Migrations',
     collapsed: false,
     items: [
+      { text: 'Upgrading ARDOR', link: '/guides/migrations/upgrading-ardor' },
       { text: 'From @minimaltech/ra-core-infra', link: '/guides/migrations/from-ra-core-infra' },
     ],
   },
