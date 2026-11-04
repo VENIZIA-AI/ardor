@@ -184,7 +184,7 @@ When a request returns HTTP 401, `DefaultNetworkRequestService` asks `AuthRecove
 
 If both pass, `refresh()` batches concurrent 401 failures into a single in-flight promise and calls `refreshToken()`. Retried once if `refreshToken()` resolves `true`. If `refreshToken()` throws, `onAuthFailure()` runs once, the refresh resolves `false`, and the 401 error is raised.
 
-Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS` and include `/auth/token/refresh` in `noAuthPaths`. The default `refreshToken()` POSTs to that path with the stored token, reads the new token from the answer and saves it through the auth service, so the session hooks run and the kept identity and roles stay. It needs no subclass.
+Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PROVIDER_OPTIONS` and include `/auth/token/refresh` in `noAuthPaths`. The default `refreshToken()` POSTs to that path with no body, reads the new token from the answer and saves it through the auth service, so the session hooks run and the kept identity and roles stay. It needs no subclass. A path in `noAuthPaths` keeps the expired token off the refresh request, so the server must identify the session by other means, such as a cookie; leave the path out of `noAuthPaths` and the expired token is attached.
 
 Write a `DefaultNetworkRequestService` subclass only for a refresh the default does not cover: a request body, another answer shape, or a token store that is not the auth service. See [The default refresh](../../best-practices/auth-recovery#the-default-refresh).
 
