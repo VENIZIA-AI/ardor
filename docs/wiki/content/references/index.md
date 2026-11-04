@@ -107,6 +107,24 @@ Create the codec once, outside a component: `useStoredState` asks for a stable `
 
 Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 
+## Browser clipboard
+
+`BrowserClipboard` reads and writes the text on the clipboard of the browser from code outside React, a service or a toast action for instance. Nothing throws or rejects: a refusal answers `false` or `undefined`. A refusal is any of these: no `navigator` (a server render), no `navigator.clipboard` (an insecure context, an old WebView), a denied permission, no user gesture, a document that is not focused. Nothing touches `navigator` at import.
+
+```typescript
+import { BrowserClipboard } from '@venizia/ardor';
+
+const isCopied = await BrowserClipboard.writeText({ text: 'https://example.com/share/42' });
+const pasted = await BrowserClipboard.readText();
+```
+
+| Method | Returns | Meaning |
+|---|---|---|
+| `writeText({ text })` | `Promise<boolean>` | `true` when the text is on the clipboard, `false` on any refusal. |
+| `readText()` | `Promise<string \| undefined>` | The text, or `undefined` on any refusal. Reading needs a permission and a user gesture, and some browsers do not offer it, so `undefined` is a normal answer. |
+
+There is no fallback to `document.execCommand('copy')`: it is deprecated and needs a DOM node, so a refusal returns `false` and the caller decides what to show. The helper logs nothing; [`useCopyToClipboard`](./hooks#usecopytoclipboard) calls it and keeps its warning. The source is `packages/kernel/src/utilities/browser-clipboard.ts`.
+
 ## Find the Exact API
 
 <div class="roadmap">

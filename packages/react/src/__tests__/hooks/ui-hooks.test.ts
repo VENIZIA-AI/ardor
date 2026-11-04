@@ -339,6 +339,25 @@ describe('useCopyToClipboard', () => {
 
     expect(copyResult).toBe(false);
   });
+
+  test('resolves false, and does not throw, where navigator is not declared', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Reflect.deleteProperty(globalThis, 'navigator');
+
+    try {
+      const { result } = renderHook(() => {
+        return useCopyToClipboard();
+      });
+
+      const isCopied = await result.current.copy({ value: 'server text' });
+
+      expect(isCopied).toBe(false);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'navigator', descriptor);
+      }
+    }
+  });
 });
 
 describe('useBeforeUnload', () => {
