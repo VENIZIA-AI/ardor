@@ -18,10 +18,12 @@ export class NetworkHeaders {
       if (headers instanceof Headers) {
         return [...headers.entries()];
       }
+
       return Array.isArray(headers) ? headers : Object.entries(headers);
     })();
 
     const rs: Record<string, string> = {};
+
     for (const [key, value] of entries) {
       rs[key.toLowerCase()] = String(value);
     }

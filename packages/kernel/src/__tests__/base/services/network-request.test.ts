@@ -89,6 +89,7 @@ class TestNetworkService extends DefaultNetworkRequestService {
     }
 
     await this.refreshImpl();
+
     return true;
   }
 
@@ -130,6 +131,7 @@ interface ICreateAppInfoOptions {
 
 const createApplicationInfo = (opts: ICreateAppInfoOptions = {}): IApplicationInfo => {
   const { name = 'ardor-app', version = '1.0.0', description = 'ARDOR application info' } = opts;
+
   return {
     name,
     version,
@@ -144,6 +146,7 @@ interface ICreateRestOptions {
 
 const createRestDataProviderOptions = (opts: ICreateRestOptions = {}): IRestDataProviderOptions => {
   const { url = 'http://127.0.0.1:8080', requestTracingChannel } = opts;
+
   return {
     url,
     requestTracingChannel,
@@ -152,6 +155,7 @@ const createRestDataProviderOptions = (opts: ICreateRestOptions = {}): IRestData
 
 const delay = (opts: { milliseconds: number }): Promise<void> => {
   const { milliseconds } = opts;
+
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
@@ -175,6 +179,7 @@ describe('DefaultNetworkRequestService', () => {
 
         let jsonBody: unknown = undefined;
         const contentType = req.headers.get('content-type') ?? '';
+
         if (contentType.includes('application/json')) {
           try {
             const result = await req.json();
@@ -266,9 +271,11 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[auth header expected error]', err);
+
         if (typeof err === 'object' && err !== null && 'statusCode' in err) {
           expect(err.statusCode).toBe(401);
         }
+
         if (err instanceof Error) {
           expect(err.message).toContain(
             '[dataProvider][getAuthHeader] Invalid auth token to fetch!',
@@ -312,9 +319,11 @@ describe('DefaultNetworkRequestService', () => {
         expect(true).toBe(false);
       } catch (err: unknown) {
         console.info('[empty string token expected error]', err);
+
         if (typeof err === 'object' && err !== null && 'statusCode' in err) {
           expect(err.statusCode).toBe(401);
         }
+
         if (err instanceof Error) {
           expect(err.message).toContain(
             '[dataProvider][getAuthHeader] Invalid auth token to fetch!',
@@ -483,6 +492,7 @@ describe('DefaultNetworkRequestService', () => {
       );
 
       const headersObj = props.headers;
+
       if (
         typeof headersObj === 'object' &&
         headersObj !== null &&
@@ -493,6 +503,7 @@ describe('DefaultNetworkRequestService', () => {
           ([key]) => key === HeaderConstants.REQUEST_TRACING_ID,
         );
         expect(tracingHeader).toBeDefined();
+
         if (tracingHeader && typeof tracingHeader[1] === 'string') {
           expect(tracingHeader[1].startsWith('ardor-core_')).toBe(true);
         }
@@ -593,6 +604,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.body instanceof FormData).toBe(true);
+
       if (props.body instanceof FormData) {
         expect(props.body.get('single')).toBeDefined();
         expect(props.body.getAll('multiple').length).toBe(2);
@@ -636,6 +648,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.body instanceof URLSearchParams).toBe(true);
+
       if (props.body instanceof URLSearchParams) {
         expect(props.body.get('scope')).toBe('read');
         expect(props.body.get('remember')).toBe('false');
@@ -665,6 +678,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.body instanceof FormData).toBe(true);
+
       if (props.body instanceof FormData) {
         expect(props.body.get('name')).toBe('alpha');
 
@@ -694,6 +708,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.body instanceof FormData).toBe(true);
+
       if (props.body instanceof FormData) {
         // `String({})` is "[object Object]" - a value the server can only reject, sent with no
         // warning. JSON is the one encoding a multipart text part can carry losslessly.
@@ -717,6 +732,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.body instanceof FormData).toBe(true);
+
       if (props.body instanceof FormData) {
         const items = props.body.getAll('items');
         expect(items.length).toBe(3);
@@ -751,6 +767,7 @@ describe('DefaultNetworkRequestService', () => {
         'application/x-www-form-urlencoded',
       );
       expect(props.body instanceof URLSearchParams).toBe(true);
+
       if (props.body instanceof URLSearchParams) {
         expect(props.body.toString()).toBe(
           'client_id=client-123&grant_type=authorization_code&emptyField=',
@@ -897,6 +914,7 @@ describe('DefaultNetworkRequestService', () => {
       serverHandler = () => {
         return new Response(null, { status: 204 });
       };
+
       const service = createService({ baseUrl: serverBaseUrl });
 
       const res = await service.doRequest({
@@ -915,6 +933,7 @@ describe('DefaultNetworkRequestService', () => {
           headers: { 'content-type': 'application/json' },
         });
       };
+
       const service = createService({ baseUrl: serverBaseUrl });
 
       const res = await service.doRequest<{ id: number; title: string }>({
@@ -936,6 +955,7 @@ describe('DefaultNetworkRequestService', () => {
           },
         });
       };
+
       const service = createService({ baseUrl: serverBaseUrl });
 
       const res = await service.doRequest({
@@ -950,6 +970,7 @@ describe('DefaultNetworkRequestService', () => {
 
     const captureRequestError = async (opts: { paths: string[]; method?: TRequestMethod }) => {
       const service = createService({ baseUrl: serverBaseUrl });
+
       try {
         await service.doRequest({
           paths: opts.paths,
@@ -960,8 +981,10 @@ describe('DefaultNetworkRequestService', () => {
         if (isApplicationError(err)) {
           return err;
         }
+
         throw err;
       }
+
       throw new Error('expected doRequest to throw');
     };
 
@@ -1044,6 +1067,7 @@ describe('DefaultNetworkRequestService', () => {
           headers: { 'content-type': 'application/json' },
         });
       };
+
       const stringKey = await captureRequestError({ paths: ['string-error'] });
       expect(stringKey.statusCode).toBe(502);
       expect(stringKey.message).toBe('HTTP 502');
@@ -1056,6 +1080,7 @@ describe('DefaultNetworkRequestService', () => {
           headers: { 'content-type': 'application/json' },
         });
       };
+
       const service = createService({ baseUrl: serverBaseUrl });
 
       await service.doRequest({
@@ -1078,6 +1103,7 @@ describe('DefaultNetworkRequestService', () => {
           headers: { 'content-type': 'application/json' },
         });
       };
+
       const service = createService({ baseUrl: serverBaseUrl });
 
       await service.doRequest({
@@ -1104,6 +1130,7 @@ describe('DefaultNetworkRequestService', () => {
         refreshCallCount++;
         await delay({ milliseconds: 40 });
         service.setToken({ value: 'fresh-token' });
+
         return true;
       });
 
@@ -1111,18 +1138,21 @@ describe('DefaultNetworkRequestService', () => {
 
       serverHandler = (opts: IServerHandlerOptions) => {
         const auth = opts.req.headers.get('authorization');
+
         if (auth === 'Bearer stale-token') {
           return new Response(JSON.stringify({ error: 'expired' }), {
             status: 401,
             headers: { 'content-type': 'application/json' },
           });
         }
+
         if (auth === 'Bearer fresh-token') {
           return new Response(JSON.stringify({ recovered: true }), {
             status: 200,
             headers: { 'content-type': 'application/json' },
           });
         }
+
         return new Response(JSON.stringify({ error: 'unknown_auth' }), {
           status: 500,
           headers: { 'content-type': 'application/json' },
@@ -1156,6 +1186,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const refreshToken = mock(async () => {
         refreshCalled = true;
+
         return true;
       });
 
@@ -1200,6 +1231,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const refreshToken = mock(async () => {
         refreshCalled = true;
+
         return true;
       });
 
@@ -1340,6 +1372,7 @@ describe('DefaultNetworkRequestService', () => {
         if (opts.req.headers.get('authorization') !== 'Bearer fresh-token') {
           return Response.json({ error: 'expired' }, { status: 401 });
         }
+
         return Response.json([{ id: 'recovered' }]);
       };
 
@@ -1391,6 +1424,7 @@ describe('DefaultNetworkRequestService', () => {
       auth?: ReturnType<DefaultNetworkRequestService['getDataSourceAuth']>;
     }) => {
       const { service, resource, auth = service.getDataSourceAuth() } = opts;
+
       return new HttpRepository<{ id: string }>({
         dataSource: new HttpDataSource({ baseUrl: serverBaseUrl, ...auth }),
         resource,
@@ -1515,6 +1549,7 @@ describe('DefaultNetworkRequestService', () => {
       requestCountData?: string;
     }) => {
       const { service, requestCountData } = opts;
+
       return service.doRequest<Array<Record<string, string>>>({
         paths: ['tickets'],
         method: RequestMethods.GET,

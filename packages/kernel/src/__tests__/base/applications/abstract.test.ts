@@ -131,6 +131,7 @@ class PostConfigureOverrideApplication extends BaseArdorApplication {
 
   override preConfigure(): ValueOrPromise<void> {
     this.lifecycleOrder.push(LifecycleSteps.PRE_CONFIGURE);
+
     return super.preConfigure();
   }
 
@@ -209,8 +210,10 @@ describe('BaseArdorApplication - injectable and service registration', () => {
       const originalSetTags = binding.setTags.bind(binding);
       spyOn(binding, 'setTags').mockImplementation((...tags: Array<string>) => {
         capturedTags = tags;
+
         return originalSetTags(...tags);
       });
+
       return binding;
     });
 

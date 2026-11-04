@@ -14,12 +14,14 @@ export class AuthTokenStore {
     }
 
     const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+
     if (!stored?.length) {
       return undefined;
     }
 
     try {
       const token = JSON.parse(stored);
+
       return typeof token === 'object' && token !== null ? token : undefined;
     } catch (error) {
       // The name only: the message of a JSON parse error quotes the text it could not parse, the token.
@@ -27,6 +29,7 @@ export class AuthTokenStore {
         '[read] The stored auth token is not valid JSON, ignoring it | error: %s',
         error instanceof Error ? error.name : typeof error,
       );
+
       return undefined;
     }
   }

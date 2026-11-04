@@ -54,19 +54,23 @@ export class Features {
     const { features, resources = [], routes = [] } = opts;
 
     const owners = new Map<string, string>();
+
     const claim = (entry: { owner: string; resources: Array<ResourceProps> }) => {
       for (const resource of entry.resources) {
         const owner = owners.get(resource.name);
+
         if (owner) {
           throw getError({
             message: `[features] Resource '${resource.name}' is mounted by both '${owner}' and '${entry.owner}' | A resource name is unique within an application`,
           });
         }
+
         owners.set(resource.name, entry.owner);
       }
     };
 
     claim({ owner: 'the application', resources });
+
     for (const feature of features) {
       claim({ owner: feature.name, resources: feature.resources ?? [] });
     }

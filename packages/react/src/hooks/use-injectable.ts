@@ -54,6 +54,7 @@ export const useInjectable = <TInstance>(opts: TUseInjectableOptions) => {
   }
 
   const resolved = container.getMetadataRegistry().getBindingKey({ target });
+
   if (!resolved) {
     throw getError({
       message: `[useInjectable] No binding key is recorded on ${target.name} | Register it by stereotype (@service() and the rest) or by hand (service(), repository(), dataSource(), component(), bindingList()), or resolve it by { key }`,

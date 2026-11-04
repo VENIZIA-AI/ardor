@@ -437,6 +437,7 @@ describe('useResizeEffect with children', () => {
     Object.defineProperty(parent, 'children', {
       get() {
         reads.push(1);
+
         return children?.get?.call(this);
       },
     });

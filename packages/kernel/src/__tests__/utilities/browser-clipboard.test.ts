@@ -23,6 +23,7 @@ describe('BrowserClipboard.writeText', () => {
       clipboard: {
         writeText: (text: string) => {
           written.push(text);
+
           return Promise.resolve();
         },
       },

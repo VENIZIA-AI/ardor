@@ -36,6 +36,7 @@ export class AuthRecovery {
         } catch (failure) {
           logger.error('[refresh] onAuthFailure failed | error: %o', failure);
         }
+
         return false;
       })
       .finally(() => {
@@ -54,6 +55,7 @@ export class AuthRecovery {
     }
 
     const refreshTokenPath = this.opts.getRefreshTokenPath();
+
     if (refreshTokenPath && paths?.join('/').includes(refreshTokenPath)) {
       return false;
     }

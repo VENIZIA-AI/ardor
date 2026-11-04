@@ -15,6 +15,7 @@ class StorageStub implements Storage {
 
   getItem(key: string): string | null {
     const value = Object.getOwnPropertyDescriptor(this, key)?.value;
+
     return typeof value === 'string' ? value : null;
   }
 
@@ -179,6 +180,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   test('a sign-out during the refresh saves no token, and the 401 stands', async () => {
     refreshAnswer = () => {
       authService.cleanUp();
+
       return Response.json({ token: 'fresh' });
     };
 
@@ -222,6 +224,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     class FailureService extends DefaultNetworkRequestService {
       protected override onAuthFailure(): Promise<void> {
         failures.push(1);
+
         return Promise.resolve();
       }
     }

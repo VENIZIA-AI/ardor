@@ -58,10 +58,12 @@ describe('provider types', () => {
 
   test('send answers unknown data until the caller names a type', () => {
     type TData = Awaited<ReturnType<IDataProvider['send']>>['data'];
+
     const read = (data: TData) => {
       // @ts-expect-error - `data` is unknown: narrow it, or name the type with send<T>()
       return data.name;
     };
+
     const named = (data: Awaited<ReturnType<IDataProvider['send']>>) => data.total;
 
     expect(typeof read).toBe('function');

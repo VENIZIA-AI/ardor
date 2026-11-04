@@ -26,6 +26,7 @@ const create = (opts: {
 describe('AuthRecovery.refresh', () => {
   test('every caller in flight shares one refresh, and the next burst makes a new one', async () => {
     let release: (value: boolean) => void = () => {};
+
     let started = 0;
     const { recovery, refresh } = create({
       // Only the first refresh is held open; a later one settles at once.

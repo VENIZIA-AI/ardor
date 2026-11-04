@@ -83,9 +83,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+
   if (realLocalStorage) {
     Object.defineProperty(globalThis, 'localStorage', realLocalStorage);
   }
+
   localStorage.clear();
   sessionStorage.clear();
 });

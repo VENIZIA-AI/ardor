@@ -35,6 +35,7 @@ describe('AuthTokenStore', () => {
 
   test('read ignores text that is not JSON, and logs the error name, never the text', () => {
     const warn = spyOn(logger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'eyJhbGciOiJIUzI1NiJ9.secretpart');
 
@@ -73,6 +74,7 @@ describe('AuthTokenStore', () => {
 
   test('the auth service and the network service read the token through the store', () => {
     const read = spyOn(AuthTokenStore, 'read');
+
     try {
       localStorage.setItem(
         LocalStorageKeys.KEY_AUTH_TOKEN,
@@ -92,6 +94,7 @@ describe('AuthTokenStore', () => {
 
   test('saveAuth writes the token through the store', () => {
     const write = spyOn(AuthTokenStore, 'write');
+
     try {
       new DefaultAuthService().saveAuth({
         userId: 1,

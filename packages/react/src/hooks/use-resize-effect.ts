@@ -26,6 +26,7 @@ export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
 
   React.useEffect(() => {
     handleResize.current = onResize;
+
     return () => {};
   }, [onResize]);
 

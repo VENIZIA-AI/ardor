@@ -35,6 +35,7 @@ class StubIntersectionObserver implements IntersectionObserver {
 
 export const intersectionAt = (index: number): IIntersectionRecord => {
   const record = intersections[index];
+
   if (!record) {
     throw new Error(`No IntersectionObserver was created at ${index}`);
   }

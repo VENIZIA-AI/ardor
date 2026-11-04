@@ -22,11 +22,13 @@ export class ValueUtility {
 
   static isObject(opts: { value: unknown }): boolean {
     const { value } = opts;
+
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   static isValidDate(opts: { value: string | number | Date }): boolean {
     const date = new Date(opts.value);
+
     return !Number.isNaN(date.valueOf());
   }
 }

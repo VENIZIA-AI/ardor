@@ -12,6 +12,7 @@ class StorageStub implements Storage {
 
   getItem(key: string): string | null {
     const value = Object.getOwnPropertyDescriptor(this, key)?.value;
+
     return typeof value === 'string' ? value : null;
   }
 

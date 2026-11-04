@@ -80,12 +80,14 @@ export class ListFilterBuilder {
     }
 
     const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+
     if (filter?.params) {
       filter['params'] = undefined;
     }
 
     // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
     const { extra, ...queryMeta } = meta ?? {};
+
     for (const key in queryMeta) {
       queryKey[key] = queryMeta[key];
     }

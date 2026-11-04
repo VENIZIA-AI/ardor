@@ -42,6 +42,7 @@ class StubResizeObserver implements ResizeObserver {
 
 export const observerAt = (index: number): IObserverRecord => {
   const record = observers[index];
+
   if (!record) {
     throw new Error(`No ResizeObserver was created at ${index}`);
   }
@@ -110,11 +111,14 @@ export const installObserverStubs = () => {
   cancelled.length = 0;
   nextFrame = 1;
   globalThis.ResizeObserver = StubResizeObserver;
+
   globalThis.requestAnimationFrame = (callback) => {
     const id = nextFrame++;
     frames.set(id, callback);
+
     return id;
   };
+
   globalThis.cancelAnimationFrame = (id) => {
     cancelled.push(id);
     frames.delete(id);

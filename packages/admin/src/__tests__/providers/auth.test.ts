@@ -92,14 +92,18 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
 
 const readStorageJson = (options: { readonly key: string }): unknown => {
   const item = localStorage.getItem(options.key);
+
   if (item === null || item.length === 0) {
     return null;
   }
+
   try {
     const parsed: unknown = JSON.parse(item);
+
     return parsed;
   } catch (error) {
     console.error('Failed to parse localStorage JSON for key:', options.key, error);
+
     return null;
   }
 };
@@ -110,6 +114,7 @@ const hasRedirectTo = (options: {
   if (typeof options.value !== 'object' || options.value === null) {
     return false;
   }
+
   return 'redirectTo' in options.value && typeof options.value.redirectTo === 'string';
 };
 
@@ -120,6 +125,7 @@ beforeAll(async () => {
       const url = new URL(request.url);
       const text = await request.text();
       let body: unknown = null;
+
       if (text.length > 0) {
         try {
           const parsed: unknown = JSON.parse(text);
@@ -145,6 +151,7 @@ beforeAll(async () => {
         if (whoamiReturnsData) {
           return Response.json({ id: 7 });
         }
+
         return Response.json(null);
       }
 
@@ -213,6 +220,7 @@ describe('login', () => {
 
     const loginOutcome = { value: loginResult };
     expect(hasRedirectTo(loginOutcome)).toBe(true);
+
     if (hasRedirectTo(loginOutcome)) {
       expect(loginOutcome.value.redirectTo).toBe('/dashboard');
     }
@@ -259,6 +267,7 @@ const signInWith = (opts: {
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
     send: (request: { resource: string; params: { body: unknown } }) => {
       opts.sent?.push({ resource: request.resource, body: request.params.body });
+
       return Promise.resolve({ data: opts.data ?? defaultSession });
     },
   });
@@ -274,6 +283,7 @@ const signInWith = (opts: {
 // A sign-in response that is only a bare token string, the user id and roles inside its payload.
 const jwtOf = (payload: object): string => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+
   return [encode({ alg: 'ES256' }), encode(payload), 'signature'].join('.');
 };
 
@@ -593,6 +603,7 @@ describe('logout', () => {
 describe('getIdentity', () => {
   test('rejects when no userId is stored in identity', async () => {
     expect(authProvider.getIdentity).toBeDefined();
+
     if (authProvider.getIdentity !== undefined) {
       const result = await RejectionHelper.rejectionOf({ task: authProvider.getIdentity({}) });
       expect(result).toEqual({
@@ -603,6 +614,7 @@ describe('getIdentity', () => {
 
   test('resolves stored user identity when userId is present', async () => {
     expect(authProvider.getIdentity).toBeDefined();
+
     if (authProvider.getIdentity !== undefined) {
       const identityPayload = {
         userId: 42,
@@ -655,6 +667,7 @@ describe('getPermissions and refreshToken', () => {
       getNetworkService: () => ({
         refresh: () => {
           refreshed += 1;
+
           return Promise.resolve(true);
         },
       }),
@@ -683,9 +696,11 @@ describe('canAccess', () => {
     container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: 'services.Extra' }).toValue({});
+
     if (opts.permissionProvider) {
       container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
     }
+
     container
       .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
       .toProvider(opts.providerClass ?? DefaultAuthProvider);
@@ -761,6 +776,7 @@ describe('canAccess', () => {
       permissionProvider: {
         canAccess: (params) => {
           asked.push(params);
+
           return Promise.resolve(params.action === 'list');
         },
       },
@@ -798,6 +814,7 @@ describe('login hooks', () => {
     class SpyAuthProvider extends DefaultAuthProvider {
       protected override beforeSaveSession(opts: { session: ISignInSession; params: unknown }) {
         calls.push({ ...opts, wasStored: !isNothingStored() });
+
         return Promise.resolve();
       }
     }
@@ -823,6 +840,7 @@ describe('login hooks', () => {
         if (!opts.session.roles.includes('superuser')) {
           throw new Error('[beforeSaveSession] Forbidden');
         }
+
         return Promise.resolve();
       }
     }
@@ -873,6 +891,7 @@ describe('login hooks', () => {
     class ElsewhereAuthProvider extends DefaultAuthProvider {
       protected override beforeSaveSession(opts: { session: ISignInSession }) {
         seen.push(opts.session.token.value);
+
         return Promise.resolve();
       }
 
@@ -998,6 +1017,7 @@ describe('readSignInSession as a hook', () => {
     class WrappedResponseAuthProvider extends DefaultAuthProvider {
       protected override readSignInSession(opts: { data: unknown }) {
         const { result } = opts.data as { result: { id: string; jwt: string } };
+
         return {
           userId: result.id,
           token: { value: result.jwt, type: 'Bearer' },

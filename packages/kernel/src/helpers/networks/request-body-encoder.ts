@@ -64,6 +64,7 @@ export class RequestBodyEncoder {
 
         for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
           const values = Array.isArray(value) || RequestBodyEncoder.isFileList(value);
+
           for (const item of values ? Array.from(value as ArrayLike<unknown>) : [value]) {
             RequestBodyEncoder.appendFormValue({ formData, key, value: item });
           }
@@ -115,6 +116,7 @@ export class RequestBodyEncoder {
 
     if (value instanceof Blob) {
       formData.append(key, value, (value as File).name);
+
       return;
     }
 

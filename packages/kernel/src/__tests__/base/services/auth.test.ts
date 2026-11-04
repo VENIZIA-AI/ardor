@@ -183,6 +183,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null and logs the store warning when stored token is not valid JSON', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '{malformed-json');
 
@@ -199,6 +200,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null without logging when no token is stored', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+
     try {
       expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
 
@@ -213,6 +215,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null without logging when the stored token is an empty string', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '');
 
@@ -284,6 +287,7 @@ describe('corrupt storage', () => {
     const spies = (['warn', 'error'] as const).map((level) =>
       spyOn(service['logger'], level).mockImplementation(() => {}),
     );
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, 'username-secretpart{');
 
@@ -299,6 +303,7 @@ describe('corrupt storage', () => {
   test('getRoles reads corrupt permissions as an empty set', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(service['logger'], 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, 'admin,editor{');
 
@@ -324,6 +329,7 @@ describe('corrupt storage', () => {
   test('getAuth logs the error name, never the stored token text', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'eyJhbGciOiJIUzI1NiJ9.secretpart');
 

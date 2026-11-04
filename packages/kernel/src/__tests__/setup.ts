@@ -29,6 +29,7 @@ const createStorage = (): Storage => {
     key: { value: (index: number) => Object.keys(store)[index] ?? null, enumerable: false },
     length: { get: () => Object.keys(store).length, enumerable: false },
   });
+
   return storage;
 };
 

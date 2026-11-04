@@ -13,6 +13,7 @@ export const api = () => {
     ) {
       try {
         const result = await Reflect.apply(originalMethod, this, args);
+
         return result;
       } catch (error) {
         this.logger.error(

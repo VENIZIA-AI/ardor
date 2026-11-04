@@ -107,6 +107,12 @@ jobs:
       - name: VULCAN preset smoke
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make preset-smoke
+        env:
+          # The pair scenario takes @venizia/ignis from the registry at this dist-tag, else `latest`; the
+          # release run's Test job sets it too (`highest` for a prerelease). `latest` still holds the 0.4.7
+          # monorepo while the catalog pins the 0.4.8 prerelease, which would turn this step red on every pull request.
+          # When the IGNIS stable is `latest`, delete this env: the smoke then reads `latest` by default.
+          CATALOG_TAG: highest
 
       # The make targets own the test command (make/project.mk: NODE_ENV=test, the setup preload and the
       # optional BUN_TEST_FLAGS), so CI and a developer's `make test-<pkg>` run the very same command.

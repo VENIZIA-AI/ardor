@@ -28,6 +28,7 @@ export const useBeforeUnload = (opts: IUseBeforeUnloadOptions) => {
 
   React.useEffect(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };

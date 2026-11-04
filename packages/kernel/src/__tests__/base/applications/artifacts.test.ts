@@ -41,6 +41,7 @@ class ProvidingConfiguration {
   @provide({ key: 'test.provided.shared' })
   shared() {
     providedBuilds++;
+
     return { build: providedBuilds };
   }
 
@@ -172,6 +173,7 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
 
   afterEach(() => {
     registry.clearDiscoveredArtifacts();
+
     for (const target of discovered) {
       registry.addDiscoveredArtifact({ target });
     }
@@ -181,6 +183,7 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
   const declareMinified = (opts: { binding?: { namespace: string; key: string } }) => {
     @service(opts.binding ? { binding: opts.binding } : {})
     class Minified {}
+
     return Minified;
   };
 

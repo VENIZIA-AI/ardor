@@ -91,8 +91,10 @@ describe('file utilities', () => {
         queueMicrotask(() => {
           if (opts.fail) {
             this.onerror?.(new Error('read failed'));
+
             return;
           }
+
           this.result = `data:${blob.type};base64,${Buffer.from(opts.text).toString('base64')}`;
           this.onloadend?.();
         });

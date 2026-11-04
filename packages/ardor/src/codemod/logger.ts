@@ -265,6 +265,7 @@ export class LoggerTransform {
           target,
           'Logger is removed; pass an object with a scope to `LoggerFactory.getLogger([scope])`, or use your own ILogger',
         );
+
         return;
       }
 

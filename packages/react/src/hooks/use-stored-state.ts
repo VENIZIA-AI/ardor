@@ -113,17 +113,20 @@ export const useStoredState: IUseStoredState = <TValue>(
 
   const getSnapshot = React.useCallback((): TValue => {
     const text = BrowserStorage.get({ key, storage, fallback: null, codec: RAW_TEXT });
+
     if (text === null) {
       return defaultValue;
     }
 
     const hit = decoded.current;
+
     if (hit?.text === text && hit.key === key && hit.storage === storage && hit.codec === codec) {
       return hit.value;
     }
 
     const value = BrowserStorage.get({ key, fallback: defaultValue, storage, codec });
     decoded.current = { key, storage, codec, text, value };
+
     return value;
   }, [key, storage, codec, defaultValue]);
 
@@ -138,6 +141,7 @@ export const useStoredState: IUseStoredState = <TValue>(
 
       if (!(writeDelayMs > 0)) {
         write(entry);
+
         return;
       }
 

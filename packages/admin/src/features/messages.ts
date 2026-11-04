@@ -21,12 +21,14 @@ export class FeatureMessages {
   /** Whether some feature in the list loads this locale lazily. */
   static hasLoader(opts: { features: Array<TFeature>; locale: string }): boolean {
     const { features, locale } = opts;
+
     return features.some((feature) => typeof feature.messages?.[locale] === 'function');
   }
 
   /** Whether a lazy bundle for the locale is still unloaded. */
   isPending(opts: { locale: string }): boolean {
     const { locale } = opts;
+
     return (
       !this.loaded.has(locale) &&
       FeatureMessages.hasLoader({ features: this.opts.features, locale })
@@ -38,6 +40,7 @@ export class FeatureMessages {
     const { locale } = opts;
 
     const loaded = this.loaded.get(locale);
+
     if (loaded) {
       return loaded;
     }
@@ -46,6 +49,7 @@ export class FeatureMessages {
       locale,
       bundles: this.opts.features.map((feature) => {
         const messages = feature.messages?.[locale];
+
         return {
           feature: feature.name,
           bundle: typeof messages === 'function' ? undefined : messages,
@@ -59,6 +63,7 @@ export class FeatureMessages {
     const { locale } = opts;
 
     const loaded = this.loaded.get(locale);
+
     if (loaded) {
       return loaded;
     }
@@ -79,6 +84,7 @@ export class FeatureMessages {
 
     const combined = FeatureMessages.combine({ locale, bundles });
     this.loaded.set(locale, combined);
+
     return combined;
   }
 
@@ -89,11 +95,13 @@ export class FeatureMessages {
     for (const { feature, bundle } of bundles) {
       for (const key of FeatureMessages.leafKeys({ value: bundle })) {
         const owner = owners.get(key);
+
         if (owner) {
           throw getError({
             message: `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`,
           });
         }
+
         owners.set(key, feature);
       }
     }

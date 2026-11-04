@@ -30,12 +30,16 @@ class UnboundClass {
 
 const bindConstantValue = <T>({ container, key, value }: IBindConstantValueOptions<T>) => {
   const binding = container.bind({ key });
+
   if ('to' in binding && typeof binding['to'] === 'function') {
     binding['to'](value);
+
     return;
   }
+
   if ('toValue' in binding && typeof binding['toValue'] === 'function') {
     binding['toValue'](value);
+
     return;
   }
 };
@@ -168,6 +172,7 @@ describe('useInjectable with target option', () => {
     container.bind({ key: 'services.SomeClass' }).toClass(SomeClass);
 
     const registry = container.getMetadataRegistry();
+
     if ('setBindingKey' in registry && typeof registry['setBindingKey'] === 'function') {
       try {
         registry['setBindingKey']({ target: SomeClass, key: 'services.SomeClass' });
@@ -175,12 +180,14 @@ describe('useInjectable with target option', () => {
         console.warn('setBindingKey failed:', error);
       }
     }
+
     if (!registry.getBindingKey({ target: SomeClass })) {
       spyOn(registry, 'getBindingKey').mockImplementation(
         ({ target }: { readonly target: unknown }) => {
           if (target === SomeClass) {
             return 'services.SomeClass';
           }
+
           return undefined;
         },
       );

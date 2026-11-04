@@ -59,6 +59,7 @@ export class BrowserStorage {
     return BrowserStorage.safe({
       run: () => {
         const text = BrowserStorage.area(opts)?.getItem(key);
+
         return text === null || text === undefined
           ? fallback
           : codec
@@ -95,6 +96,7 @@ export class BrowserStorage {
       ...opts,
       run: (area) => {
         const text = codec ? codec.encode(value) : JSON.stringify(value);
+
         if (typeof text !== 'string') {
           throw new TypeError('not JSON');
         }
@@ -115,6 +117,7 @@ export class BrowserStorage {
     return BrowserStorage.safe<Array<string>>({
       run: () => {
         const area = BrowserStorage.area(opts);
+
         if (!area) {
           return [];
         }
@@ -150,10 +153,12 @@ export class BrowserStorage {
     if (BrowserStorage.subs.size === 0) {
       BrowserStorage.listen({ on: true });
     }
+
     BrowserStorage.subs.add(subscription);
 
     return () => {
       BrowserStorage.subs.delete(subscription);
+
       if (BrowserStorage.subs.size === 0) {
         BrowserStorage.listen({ on: false });
       }
@@ -173,6 +178,7 @@ export class BrowserStorage {
     run: (area: Storage) => void;
   }): boolean {
     const area = BrowserStorage.area(opts);
+
     if (!area || opts.key.startsWith(LocalStorageKeys.PREFIX_AUTH)) {
       return false;
     }
@@ -181,6 +187,7 @@ export class BrowserStorage {
       run: () => {
         opts.run(area);
         BrowserStorage.notify({ key: opts.key, area });
+
         return true;
       },
       fallback: false,

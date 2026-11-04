@@ -126,6 +126,7 @@ export class ResponseReader {
 
         // A missing or non-numeric header means the server sent no count - never NaN.
         const count = Number.parseInt(headers?.get(HeaderConstants.RESPONSE_COUNT_DATA) ?? '', 10);
+
         return {
           data: data as TData,
           count: Number.isNaN(count) ? undefined : count,
@@ -148,9 +149,11 @@ export class ResponseReader {
 
     // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
     const extra: Record<string, unknown> = { ...server.extra };
+
     if (server.requestId) {
       const upstreamRequestId = extra.requestId;
       extra.requestId = server.requestId;
+
       if (upstreamRequestId !== undefined && upstreamRequestId !== server.requestId) {
         const known = Array.isArray(extra.upstreamRequestIds) ? extra.upstreamRequestIds : [];
         extra.upstreamRequestIds = [upstreamRequestId, ...known];
@@ -172,6 +175,7 @@ export class ResponseReader {
     const range = HttpResponseReader.parseContentRange({
       header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
     });
+
     return range?.total ?? opts.rowCount;
   }
 
@@ -195,6 +199,7 @@ export class ResponseReader {
     }
 
     const encodedMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
+
     if (encodedMatch) {
       try {
         return decodeURIComponent(encodedMatch[2].trim());
@@ -204,11 +209,13 @@ export class ResponseReader {
     }
 
     const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
+
     if (quotedMatch) {
       return quotedMatch[1];
     }
 
     const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
+
     if (bareMatch) {
       return bareMatch[1].trim();
     }

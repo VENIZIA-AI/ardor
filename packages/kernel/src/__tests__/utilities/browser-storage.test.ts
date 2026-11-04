@@ -12,6 +12,7 @@ class StorageStub implements Storage {
 
   getItem(key: string): string | null {
     const value = Object.getOwnPropertyDescriptor(this, key)?.value;
+
     return typeof value === 'string' ? value : null;
   }
 
@@ -304,6 +305,7 @@ describe('BrowserStorage.removeWhere', () => {
     ];
 
     BrowserStorage.removeWhere({ prefix: '@app/store/old/' });
+
     for (const stop of stops) {
       stop();
     }
@@ -342,6 +344,7 @@ describe('BrowserStorage.subscribe in one tab', () => {
     BrowserStorage.remove({ key: '@app/store/a' });
 
     expect(calls).toEqual(['a', 'a']);
+
     for (const stop of stops) {
       stop();
     }
@@ -384,6 +387,7 @@ describe('BrowserStorage.subscribe in one tab', () => {
 
     expect(stored).toBe(true);
     expect(calls).toEqual(['second']);
+
     for (const stop of stops) {
       stop();
     }
@@ -413,6 +417,7 @@ describe('BrowserStorage.subscribe across tabs', () => {
     globalThis.dispatchEvent(storageEvent({ key: null, storageArea: localStorage }));
 
     expect(calls).toEqual(['a', 'b']);
+
     for (const stop of stops) {
       stop();
     }

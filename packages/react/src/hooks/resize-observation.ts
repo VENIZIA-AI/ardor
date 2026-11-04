@@ -19,6 +19,7 @@ export class ResizeObservation {
   /** Does nothing without `ResizeObserver`. */
   static observe(opts: IResizeObservationOptions): IResizeObservation {
     const { box, children = false, onFrame } = opts;
+
     if (typeof ResizeObserver === 'undefined') {
       return { sync: () => {}, stop: () => {} };
     }
@@ -32,6 +33,7 @@ export class ResizeObservation {
       for (const entry of entries) {
         latest.set(entry.target, entry);
       }
+
       if (frame !== undefined) {
         return;
       }
@@ -40,6 +42,7 @@ export class ResizeObservation {
         frame = undefined;
         const batch = [...latest.values()];
         latest.clear();
+
         if (batch.length > 0) {
           onFrame(batch);
         }
@@ -50,17 +53,20 @@ export class ResizeObservation {
       const wanted = new Set(
         children ? targets.flatMap((target) => [target, ...target.children]) : targets,
       );
+
       for (const element of watched) {
         if (!wanted.has(element)) {
           observer.unobserve(element);
           latest.delete(element);
         }
       }
+
       for (const element of wanted) {
         if (!watched.has(element)) {
           observer.observe(element, { box });
         }
       }
+
       watched = wanted;
     };
 
@@ -77,6 +83,7 @@ export class ResizeObservation {
 
         current = targets;
         update(targets);
+
         // A removed target stays registered on `mutations` until `stop`; its callback only updates the current targets.
         for (const target of targets) {
           mutations?.observe(target, { childList: true });
@@ -85,6 +92,7 @@ export class ResizeObservation {
       stop: () => {
         mutations?.disconnect();
         observer.disconnect();
+
         if (frame !== undefined) {
           cancelAnimationFrame(frame);
         }
