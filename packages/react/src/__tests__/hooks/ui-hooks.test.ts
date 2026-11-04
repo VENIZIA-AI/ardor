@@ -295,7 +295,11 @@ describe('useCopyToClipboard', () => {
         return useCopyToClipboard();
       });
 
-      const isCopied = await result.current.copy({ value: 'server text' });
+      let isCopied = true;
+      await act(async () => {
+        const result3 = await result.current.copy({ value: 'server text' });
+        isCopied = result3;
+      });
 
       expect(isCopied).toBe(false);
     } finally {

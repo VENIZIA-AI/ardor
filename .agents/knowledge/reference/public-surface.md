@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (47)
+### `@venizia/ardor-react` (48)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -148,6 +148,7 @@ generated:
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
+- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
@@ -236,7 +237,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (184)
+### `@venizia/ardor` (185)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -321,6 +322,7 @@ generated:
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
+- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
