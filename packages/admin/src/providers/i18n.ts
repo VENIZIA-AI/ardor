@@ -1,11 +1,11 @@
 import { type Container, inject } from '@venizia/ignis-inversion';
-import merge from 'lodash/merge.js';
 import type { I18nProvider, TranslationMessages } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';
 
 import { BaseProvider, CoreBindings } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
+import { deepMerge } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { LazyLocales, LocaleSources } from './i18n-sources';
@@ -50,8 +50,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   protected composeMessages(opts: { locale: string; messages: object }): TranslationMessages {
     const source = this.localeSources.readNow({ locale: opts.locale });
 
-    // lodash `merge` loses the message type; every source is a (partial) set of messages.
-    return merge({}, opts.messages, source ?? englishMessages) as TranslationMessages;
+    // `deepMerge` answers a plain record; every source is a (partial) set of messages.
+    return deepMerge({
+      sources: [opts.messages, source ?? englishMessages],
+    }) as TranslationMessages;
   }
 
   override value(_container: Container): I18nProvider {

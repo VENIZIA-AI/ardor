@@ -101,7 +101,6 @@
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
         "@venizia/ardor-react": "workspace:*",
-        "lodash": "catalog:",
       },
       "devDependencies": {
         "@happy-dom/global-registrator": "catalog:",
@@ -110,7 +109,6 @@
         "@tanstack/react-query": "catalog:",
         "@testing-library/react": "catalog:",
         "@types/bun": "catalog:",
-        "@types/lodash": "catalog:",
         "@types/react": "catalog:",
         "@venizia/dev-configs": "catalog:",
         "@venizia/ignis-filter": "catalog:",
@@ -240,7 +238,6 @@
       "version": "0.4.8-0",
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
-        "lodash": "catalog:",
       },
       "devDependencies": {
         "@happy-dom/global-registrator": "catalog:",
@@ -248,7 +245,6 @@
         "@size-limit/preset-small-lib": "catalog:",
         "@testing-library/react": "catalog:",
         "@types/bun": "catalog:",
-        "@types/lodash": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@venizia/dev-configs": "catalog:",
@@ -290,7 +286,6 @@
     "@tanstack/react-query": "^5.104.5",
     "@testing-library/react": "^16.3.3",
     "@types/bun": "^1.4.3",
-    "@types/lodash": "^4.17.27",
     "@types/node": "^25.0.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -305,7 +300,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^10.13.0",
-    "lodash": "^4.18.1",
     "oxlint": "1.89.0",
     "oxlint-tsgolint": "7.0.2004",
     "ra-core": "^5.15.5",
@@ -664,8 +658,6 @@
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
     "@types/linkify-it": ["@types/linkify-it@5.0.0", "", {}, "sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q=="],
-
-    "@types/lodash": ["@types/lodash@4.17.27", "", {}, "sha512-VenMRv/eKNrspX9v3H4dbmjsrnCOYdYBG3kxXKk3dG6X+urBGcj2Prww3xw1U5K4FV/mE4h5GbWd0szEKf+9ew=="],
 
     "@types/markdown-it": ["@types/markdown-it@14.2.0", "", { "dependencies": { "@types/linkify-it": "^5", "@types/mdurl": "^2" } }, "sha512-NoQ2yGlLWj4wpxMs+TYmRKk3thDrQ97agr7sFqfLsAlvoS8SNQuTrlObhFqG9iugdTtgOE9jpJ6FNM4ZGsa5xQ=="],
 

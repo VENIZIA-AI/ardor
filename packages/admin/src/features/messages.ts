@@ -1,7 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
-import isPlainObject from 'lodash/isPlainObject.js';
-import merge from 'lodash/merge.js';
 
+import { deepMerge } from '@/common/merge';
 import type { TFeature } from './feature';
 
 interface IFeatureBundle {
@@ -99,17 +98,17 @@ export class FeatureMessages {
       }
     }
 
-    return merge({}, ...bundles.map(({ bundle }) => bundle ?? {}));
+    return deepMerge({ sources: bundles.map(({ bundle }) => bundle ?? {}) });
   }
 
   private static leafKeys(opts: { value: unknown; prefix?: string }): Array<string> {
     const { value, prefix } = opts;
 
-    if (!isPlainObject(value)) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       return prefix ? [prefix] : [];
     }
 
-    return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => {
+    return Object.entries(value).flatMap(([key, child]) => {
       return FeatureMessages.leafKeys({ value: child, prefix: prefix ? `${prefix}.${key}` : key });
     });
   }
