@@ -693,7 +693,7 @@ describe('canAccess', () => {
     return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
   };
 
-  // The shape every BANA auth provider has: its own constructor, three arguments to `super`, and
+  // The shape an application's auth provider has: its own constructor, three arguments to `super`, and
   // another injection at the index the base uses for the permission provider.
   class ThreeArgumentAuthProvider extends DefaultAuthProvider {
     constructor(

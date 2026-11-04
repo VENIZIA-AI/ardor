@@ -158,10 +158,10 @@ longer silently replaces the first. A pinned `binding` is never counted, and a s
 after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
 that re-evaluates a module is not an error. `service()`/`injectable()` derive through
 `ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
-BANA's `kits/admin` pins `binding` on all 122 of its decorated classes, so it cannot collide.
+One project that uses Venizia pins `binding` on all 122 of its decorated classes, so it cannot collide.
 
 A `useInjectable({ key })` miss names this cause in its error, after the container's own
-`Binding key: <key> is not bounded in context!`, which BANA matches with `/is not bounded/`.
+`Binding key: <key> is not bounded in context!`, which a project that uses Venizia matches with `/is not bounded/`.
 
 ## How a key becomes a type
 

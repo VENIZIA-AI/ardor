@@ -27,10 +27,10 @@ import { buildInfoFile } from '@venizia/ardor/vite';
 
 - **A new app from the preset.** Nothing to do: the flag is in its config.
 - **An app already generated from the preset.** Optional but recommended: add `strictExecutionOrder: true` to `build.rolldownOptions.output` of its `vite.config.mts`, and keep Vite at 8.3.5 or newer.
-- **An app with its own Vite plugin that puts `import 'reflect-metadata'` before DI modules (BANA's `reflectMetadataFirst`).** Replace it with the flag; see the steps below.
+- **An app with its own Vite plugin that puts `import 'reflect-metadata'` before DI modules (a `reflectMetadataFirst` plugin).** Replace it with the flag; see the steps below.
 - **An app that wants an About page.** Use `buildInfoFile`.
 
-## Upgrade steps for an app with its own `reflectMetadataFirst` and `buildInfoFile` (BANA)
+## Upgrade steps for an app with its own `reflectMetadataFirst` and `buildInfoFile`
 
 1. Bump `vite` to 8.3.5 or newer. An app on Vite 8.1.0 reported `React$12 is not defined` with the flag on; 8.3.5 builds and loads in a real browser.
 2. Add `strictExecutionOrder: true` to `build.rolldownOptions.output` of the Vite config.

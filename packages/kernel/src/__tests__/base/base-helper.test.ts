@@ -28,7 +28,7 @@ class PriceProvider extends BaseProvider<number> {
   }
 }
 
-// `this.logger` is what an application's services call (BANA has dozens of them), so it must stay on
+// `this.logger` is what an application's services call (an application has dozens of them), so it must stay on
 // BaseService and BaseProvider, typed as IGNIS's ILogger.
 describe('BaseService and BaseProvider are IGNIS BaseHelpers', () => {
   test('both are instances of the IGNIS BaseHelper, with the scope they were given', () => {

@@ -5,7 +5,7 @@
  * github-release.ts (its GitHub Release machinery, not copied); the imports carry no `.ts`. Fix a defect in
  * VULCAN first and copy the fix.
  *
- * The Sync PR of the release flow: `main` takes the exact commit of the prerelease BANA gated, never whatever
+ * The Sync PR of the release flow: `main` takes the exact commit of the prerelease the downstream project gated, never whatever
  * `develop` has become since.
  *
  *   bun scripts/release/sync-pr.ts open   --tag <prerelease tag> [--dry-run]

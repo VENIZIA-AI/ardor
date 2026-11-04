@@ -37,7 +37,7 @@ The IGNIS peers stay `^0.4.1` on `@venizia/ardor-kernel`, `@venizia/ardor-react`
 
 - **An application on ARDOR 0.4.3.** No action is needed to keep running. The checklist below takes the new behavior.
 - **An application generated from the preset.** Optional and recommended: step 3.
-- **An application with its own `reflectMetadataFirst` or `buildInfoFile` plugin (BANA).** Steps 2 to 4.
+- **An application with its own `reflectMetadataFirst` or `buildInfoFile` plugin.** Steps 2 to 4.
 - **An app that wants a boot test.** Step 5.
 
 ## Upgrade checklist

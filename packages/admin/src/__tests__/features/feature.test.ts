@@ -11,7 +11,7 @@ import { Container } from '@venizia/ignis-inversion';
 
 const List = () => null;
 
-// What a shell adds on top: BANA's menu entries, typed through the extension parameter.
+// What a shell adds on top: a project's menu entries, typed through the extension parameter.
 interface IMenuExtension {
   menu: Array<{ id: string; label: string }>;
 }

@@ -247,8 +247,7 @@ Only the `ardor` release carries a preset. `make preset-smoke` runs in the `test
 
 ## Consumer measurement
 
-Before trusting a release chain, measure the downstream consumer - the material refers to this
-project internally as BANA - rather than relying on the package's own test suite alone:
+Before trusting a release chain, measure the downstream consumer - a project that uses Venizia - rather than relying on the package's own test suite alone:
 
 1. Symlink the consumer's `node_modules` entries for `@venizia/*` packages to the freshly built
    `packages/<name>` folders, keeping every other dependency pinned to the consumer's own resolved
