@@ -19,7 +19,7 @@ export class ResizeObservation {
     }
 
     const latest = new Map<Element, ResizeObserverEntry>();
-    const watched = new Set<Element>();
+    let watched = new Set<Element>();
     let frame: number | undefined;
 
     const observer = new ResizeObserver((entries) => {
@@ -47,16 +47,15 @@ export class ResizeObservation {
       for (const element of watched) {
         if (!wanted.has(element)) {
           observer.unobserve(element);
-          watched.delete(element);
           latest.delete(element);
         }
       }
       for (const element of wanted) {
         if (!watched.has(element)) {
           observer.observe(element, { box });
-          watched.add(element);
         }
       }
+      watched = wanted;
     };
     sync();
 
