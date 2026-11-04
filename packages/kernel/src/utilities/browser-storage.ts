@@ -108,6 +108,36 @@ export class BrowserStorage {
     return BrowserStorage.write({ ...opts, run: (area) => area.removeItem(opts.key) });
   }
 
+  /** The keys of the area, only those that start with `prefix` when it is given. Lists the session keys too. */
+  static keys(opts: { storage?: TStorageArea; prefix?: string } = {}): Array<string> {
+    const { prefix = '' } = opts;
+
+    return BrowserStorage.safe<Array<string>>({
+      run: () => {
+        const area = BrowserStorage.area(opts);
+        if (!area) {
+          return [];
+        }
+
+        const keys = Array.from({ length: area.length }, (_, index) => area.key(index));
+
+        return keys.filter((key): key is string => !!key?.startsWith(prefix));
+      },
+      fallback: [],
+    });
+  }
+
+  /**
+   * Removes every key that starts with `prefix` and answers how many it removed. An empty `prefix`
+   * removes nothing, and a session key is never removed, as in `remove`.
+   */
+  static removeWhere(opts: { storage?: TStorageArea; prefix: string }): number {
+    const { storage, prefix } = opts;
+    const keys = prefix ? BrowserStorage.keys({ storage, prefix }) : [];
+
+    return keys.filter((key) => BrowserStorage.remove({ key, storage })).length;
+  }
+
   /** `listener` runs after a write through `BrowserStorage` and after another tab changes the key. */
   static subscribe(opts: {
     key: string;
