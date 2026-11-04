@@ -17,7 +17,7 @@ which re-exports this package.
 | Context | `ApplicationContext`, `useApplicationContext`, `useApplicationLogger` |
 | Injection | `useInjectable` - resolve a binding by key or by class |
 | Redux | `DispatchHooks.create`, `SelectorHooks.create` - factories that bind your `RootState` and `AppDispatch` (the old `createAppDispatch` and `createAppSelectors` are removed; `bun run ardor codemod namespace` moves your code) |
-| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer`, `useWindowDimensions` |
+| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useWindowDimensions` |
 | Types | `TUseInjectableKeys` |
 
 ## Typing your own binding keys

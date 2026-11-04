@@ -77,7 +77,6 @@ export class HookRenames {
     'useRequestHeaderLocale',
     'useResizeEffect',
     'useService',
-    'useSizer',
     'useStoredState',
     'useTranslate',
     'useUntypedTranslate',
