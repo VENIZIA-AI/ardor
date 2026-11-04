@@ -14,6 +14,8 @@ export interface IUseStoredStateOptions<TValue> {
   storage?: TStorageArea;
   /** @default JSON */
   codec?: IStorageCodec<TValue>;
+  /** Write storage once, this many milliseconds after the last `setValue`; `value` changes at once. @default 0 */
+  writeDelayMs?: number;
 }
 
 export interface IUseStoredStateReturn<TValue> {
@@ -39,6 +41,7 @@ const RAW_TEXT = StorageCodecs.text();
 interface IKept<TValue> {
   key: string;
   storage?: TStorageArea;
+  codec?: IStorageCodec<TValue>;
   value: TValue;
 }
 
@@ -58,19 +61,42 @@ interface IDecoded<TValue> {
  * A value kept in `localStorage` or `sessionStorage`, in step with other hooks on the key, with code
  * that writes through `BrowserStorage`, and with other tabs. Pass a stable `codec` and `defaultValue`.
  * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
+ * With `writeDelayMs` the value waits in the same place for the delay: a change of the storage from
+ * outside drops it, and an unmount or a new key or storage writes it at once.
  */
 export const useStoredState: IUseStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,
 ): IUseStoredStateReturn<TValue> => {
-  const { key, defaultValue, storage, codec } = opts;
+  const { key, defaultValue, storage, codec, writeDelayMs = 0 } = opts;
   const decoded = React.useRef<IDecoded<TValue>>(undefined);
   const keptRef = React.useRef<IKept<TValue>>(undefined);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined);
   const [kept, setKept] = React.useState<IKept<TValue>>();
 
+  // Every change of the kept value ends a pending write; only a delayed setValue starts one.
   const keep = React.useCallback((next: IKept<TValue> | undefined) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = undefined;
     keptRef.current = next;
     setKept(next);
   }, []);
+
+  const write = React.useCallback(
+    (entry: IKept<TValue>) => {
+      keep(BrowserStorage.set(entry) ? undefined : entry);
+    },
+    [keep],
+  );
+
+  // A new key or storage, and an unmount, write the pending value to the key it was set for.
+  React.useEffect(() => {
+    return () => {
+      const pending = timerRef.current === undefined ? undefined : keptRef.current;
+      if (pending) {
+        write(pending);
+      }
+    };
+  }, [key, storage, write]);
 
   const subscribe = React.useCallback(
     (listener: () => void) => {
@@ -109,12 +135,17 @@ export const useStoredState: IUseStoredState = <TValue>(
     (next: TValue | ((current: TValue) => TValue)) => {
       const hit = keptRef.current;
       const current = hit?.key === key && hit.storage === storage ? hit.value : getSnapshot();
-      const resolved = isUpdater(next) ? next(current) : next;
-      const isStored = BrowserStorage.set({ key, value: resolved, storage, codec });
+      const entry = { key, storage, codec, value: isUpdater(next) ? next(current) : next };
 
-      keep(isStored ? undefined : { key, storage, value: resolved });
+      if (writeDelayMs <= 0) {
+        write(entry);
+        return;
+      }
+
+      keep(entry);
+      timerRef.current = setTimeout(() => write(entry), writeDelayMs);
     },
-    [key, storage, codec, getSnapshot, keep],
+    [key, storage, codec, writeDelayMs, getSnapshot, keep, write],
   );
 
   const remove = React.useCallback(() => {
