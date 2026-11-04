@@ -22,8 +22,9 @@ export interface IAssertArdorApplicationBootsOptions {
   locale?: string;
 
   /**
-   * Default `false`: an application with no service, repository, datasource, component or
-   * configuration and no feature proves nothing (usually the artifact index was empty).
+   * An application with no service, repository, datasource, component or configuration and no
+   * feature proves nothing (usually the artifact index was empty), so it fails unless this is `true`.
+   * @default false
    */
   allowEmpty?: boolean;
 }

@@ -156,6 +156,16 @@ export const createBuildInfoFilePlugin = (opts: {
  * Emits `build-info.json` into the build and serves it on the dev server: the commit, the branch and
  * the build time from the pipeline or git, the app's name and version, and the installed versions of
  * the framework packages it depends on. The shape is `IBuildInfoFile` of `@venizia/ardor`.
+ *
+ * @example
+ * ```ts
+ * import { buildInfoFile } from '@venizia/ardor/vite';
+ * import { defineConfig } from 'vite';
+ *
+ * export default defineConfig({
+ *   plugins: [buildInfoFile({ fileName: 'build-info.json', onUnresolved: 'unspecified' })],
+ * });
+ * ```
  */
 export const buildInfoFile = (opts: IBuildInfoFileOptions = {}): Plugin =>
   createBuildInfoFilePlugin({ options: opts, sources: defaultSources });
