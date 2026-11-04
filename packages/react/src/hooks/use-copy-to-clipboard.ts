@@ -1,5 +1,7 @@
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
 
+import { Clipboard } from '@venizia/ardor-kernel';
+
 const logger = LoggerFactory.getLogger(['useCopyToClipboard']);
 
 export interface IUseCopyToClipboardReturn {
@@ -9,20 +11,12 @@ export interface IUseCopyToClipboardReturn {
 // A hook is never handed an async function, so the copy lives outside it; it holds no state, which is
 // why the hook returns the same function on every render, as `useCallback(..., [])` did.
 const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
-  if (!navigator?.clipboard) {
-    logger.warn('[copy] The clipboard is not supported');
-    return false;
+  const isCopied = await Clipboard.writeText({ text: opts.value });
+  if (!isCopied) {
+    logger.warn('[copy] The clipboard did not take the text');
   }
 
-  const { value } = opts;
-
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch (error) {
-    logger.warn('[copy] Copy failed | error: %s', error);
-    return false;
-  }
+  return isCopied;
 };
 
 export const useCopyToClipboard = (): IUseCopyToClipboardReturn => ({ copy: copyToClipboard });

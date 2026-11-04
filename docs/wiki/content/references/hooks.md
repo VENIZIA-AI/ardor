@@ -499,7 +499,7 @@ export function CopyShareLink(props: { url: string }) {
 
 - **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
 - **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` whenever the text is not on the clipboard: no `navigator` (a server render), no `navigator.clipboard` (non-HTTPS environments, an old WebView), a denied permission or a failed write. It never throws. The write is [`Clipboard.writeText`](./index#clipboard), which is also what to call from code outside React. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 

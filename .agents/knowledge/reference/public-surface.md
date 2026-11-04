@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (94)
+### `@venizia/ardor-kernel` (95)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -32,6 +32,7 @@ generated:
 - `BindingNamespaces` class
 - `BrowserStorage` class
 - `BrowserUtility` class
+- `Clipboard` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class
@@ -230,7 +231,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (178)
+### `@venizia/ardor` (179)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -254,6 +255,7 @@ generated:
 - `BindingNamespaces` class
 - `BrowserStorage` class
 - `BrowserUtility` class
+- `Clipboard` class
 - `component` const
 - `configuration` const
 - `CoreBindings` class
