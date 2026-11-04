@@ -17,6 +17,7 @@ import {
   RequestChannel,
   RequestCountData,
   RequestMethods,
+  RequestTypes,
   type TConstValue,
   type TNoAuthPathRegex,
   type TRequestMethod,
@@ -30,6 +31,7 @@ import {
   RequestBodyEncoder,
   ResponseReader,
 } from '@/helpers';
+import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
 /**
@@ -43,6 +45,7 @@ export class DefaultNetworkRequestService extends BaseService {
   protected networkRequest: NodeFetchNetworkRequest;
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
+  protected authService?: DefaultAuthService;
 
   private readonly recovery: AuthRecovery;
 
@@ -52,16 +55,27 @@ export class DefaultNetworkRequestService extends BaseService {
       baseUrl?: string;
       headers?: HeadersInit;
       authRecovery?: IAuthRecoveryOptions;
+      /** What the default `refreshToken` saves the new token through. */
+      authService?: DefaultAuthService;
     },
   ) {
     super({ scope: DefaultNetworkRequestService.name });
-    const { name, baseUrl = '', headers = {}, noAuthPaths, noAuthPathRegex, authRecovery } = opts;
+    const {
+      name,
+      baseUrl = '',
+      headers = {},
+      noAuthPaths,
+      noAuthPathRegex,
+      authRecovery,
+      authService,
+    } = opts;
 
     this.headers = NetworkHeaders.toRecord({ headers });
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
+    this.authService = authService;
     this.recovery = new AuthRecovery({
       logger: this.logger,
       getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
@@ -126,10 +140,62 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * Refreshes the session after a 401. `true`: refreshed, the request is retried; `false`: this
-   * service has no refresh (the default); a throw: the refresh failed and `onAuthFailure` runs.
+   * service has no refresh; a throw: the refresh failed and `onAuthFailure` runs. The default posts
+   * to `authRecovery.refreshTokenPath` with no body and saves the new token through `authService`,
+   * keeping the stored identity and roles; with no path or no `authService` it answers `false`.
    */
-  protected refreshToken(): Promise<boolean> {
-    return Promise.resolve(false);
+  protected async refreshToken(): Promise<boolean> {
+    const path = this.authRecovery?.refreshTokenPath;
+    if (!path || !this.authService) {
+      return false;
+    }
+
+    const response = await this.doRequest({
+      paths: [path],
+      method: RequestMethods.POST,
+      type: RequestTypes.SEND,
+      headers: this.getRequestHeader({ resource: path }),
+    });
+    const user = this.authService.getUser();
+    // Signed out while the request was in flight: saving the token would start a session with no user.
+    if (user.userId === undefined) {
+      return false;
+    }
+
+    this.authService.saveAuth({
+      userId: user.userId,
+      username: user.username,
+      referenceId: user.referenceId,
+      provider: user.provider,
+      token: this.readRefreshedToken({ data: response.data }),
+    });
+    return true;
+  }
+
+  /**
+   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`. A
+   * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
+   * a throw.
+   */
+  protected readRefreshedToken(opts: { data: unknown }): { value: string; type: string } {
+    const body: { token?: unknown } =
+      typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
+    const { token } = body;
+    let record: object = {};
+    if (typeof token === 'string') {
+      record = { value: token };
+    } else if (typeof token === 'object' && token !== null) {
+      record = token;
+    }
+
+    const value = 'value' in record ? record.value : undefined;
+    const type = 'type' in record ? record.type : undefined;
+
+    if (typeof value !== 'string' || !value) {
+      throw getError({ message: '[refreshToken] The refresh response carries no token' });
+    }
+
+    return { value, type: typeof type === 'string' ? type : 'Bearer' };
   }
 
   /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
