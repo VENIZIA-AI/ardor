@@ -19,7 +19,7 @@
  * export const Orders = () => {
  *   const orders = Ardor.useRepository({ target: OrdersRepository });
  *   const container = Ardor.useApplicationContainer();
- *   return <span>{orders.count()} {container.isBound({ key: 'services.Orders' }) ? 'bound' : 'missing'}</span>;
+ *   return <span>{orders.count()} {container.isBound({ key: 'repositories.OrdersRepository' }) ? 'bound' : 'missing'}</span>;
  * };
  * ```
  */
