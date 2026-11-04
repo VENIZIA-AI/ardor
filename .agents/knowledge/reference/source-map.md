@@ -12,13 +12,13 @@ generated:
 
 **103 source files across 4 packages.**
 
-## admin  (26 source files)
+## admin  (27 source files)
 
 | Subsystem | Files |
 |---|---|
 | `hooks/` | 8 |
 | `providers/` | 7 |
-| `common/` | 5 |
+| `common/` | 6 |
 | `features/` | 3 |
 | `components/` | 2 |
 
@@ -38,9 +38,9 @@ generated:
 | `helpers/` | 7 |
 | `common/` | 4 |
 
-## react  (26 source files)
+## react  (25 source files)
 
 | Subsystem | Files |
 |---|---|
-| `hooks/` | 23 |
+| `hooks/` | 22 |
 | `contexts/` | 2 |

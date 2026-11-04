@@ -9,7 +9,6 @@ import { useConfirm } from '@/hooks/use-confirm';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { useBeforeUnload, type IUseBeforeUnloadOptions } from '@/hooks/use-before-unload';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
-import { useSizer, type IUseSizerOptions } from '@/hooks/use-sizer';
 import { DispatchHooks } from '@/hooks/redux/use-app-dispatch';
 import { SelectorHooks } from '@/hooks/redux/use-app-selector';
 
@@ -28,59 +27,6 @@ const advance = async ({ ms }: { ms: number }): Promise<void> => {
   await act(async () => {
     jest.advanceTimersByTime(ms);
   });
-};
-
-type TResizeObserverCallback = (entries: ResizeObserverEntry[], observer: ResizeObserver) => void;
-
-class StubResizeObserver implements ResizeObserver {
-  public static latestCallback: TResizeObserverCallback | undefined;
-  public static latestInstance: StubResizeObserver | undefined;
-  public static disconnected: boolean = false;
-
-  public constructor(callback: TResizeObserverCallback) {
-    StubResizeObserver.latestCallback = callback;
-    StubResizeObserver.latestInstance = this;
-    StubResizeObserver.disconnected = false;
-  }
-
-  public observe = (_target: Element): void => {};
-
-  public unobserve = (_target: Element): void => {};
-
-  public disconnect = (): void => {
-    StubResizeObserver.disconnected = true;
-  };
-}
-
-const createContainerElement = ({
-  id,
-  width,
-  height,
-  clientWidth,
-}: {
-  id: string;
-  width: number;
-  height: number;
-  clientWidth: number;
-}): HTMLElement => {
-  const container = document.createElement('div');
-  container.id = id;
-  Object.defineProperty(container, 'offsetWidth', {
-    value: width,
-    configurable: true,
-    writable: true,
-  });
-  Object.defineProperty(container, 'offsetHeight', {
-    value: height,
-    configurable: true,
-    writable: true,
-  });
-  Object.defineProperty(container, 'clientWidth', {
-    value: clientWidth,
-    configurable: true,
-    writable: true,
-  });
-  return container;
 };
 
 describe('useDebounce', () => {
@@ -437,63 +383,6 @@ describe('useWindowDimensions', () => {
     });
 
     expect(result.current).toEqual({ width: 1440, height: 900 });
-  });
-});
-
-describe('useSizer', () => {
-  const originalResizeObserver: typeof ResizeObserver | undefined = globalThis.ResizeObserver;
-
-  afterEach(() => {
-    StubResizeObserver.latestCallback = undefined;
-    StubResizeObserver.latestInstance = undefined;
-    StubResizeObserver.disconnected = false;
-    if (originalResizeObserver) {
-      globalThis.ResizeObserver = originalResizeObserver;
-    } else {
-      Reflect.deleteProperty(globalThis, 'ResizeObserver');
-    }
-  });
-
-  test('observes container and updates width and height on ResizeObserver callback', () => {
-    globalThis.ResizeObserver = StubResizeObserver;
-
-    const container = createContainerElement({
-      id: 'sizer-container',
-      width: 250,
-      height: 120,
-      clientWidth: 249,
-    });
-    document.body.appendChild(container);
-
-    const sizerOptions: IUseSizerOptions = { containerId: 'sizer-container' };
-    const { result, unmount } = renderHook(() => {
-      return useSizer(sizerOptions);
-    });
-
-    expect(result.current).toEqual({ width: 0, height: 0 });
-
-    act(() => {
-      const instance = StubResizeObserver.latestInstance;
-      if (instance) {
-        StubResizeObserver.latestCallback?.([], instance);
-      }
-    });
-
-    expect(result.current).toEqual({ width: 250, height: 120 });
-
-    unmount();
-    expect(StubResizeObserver.disconnected).toBe(true);
-    document.body.removeChild(container);
-  });
-
-  test('remains zero when container element does not exist', () => {
-    globalThis.ResizeObserver = StubResizeObserver;
-
-    const { result } = renderHook(() => {
-      return useSizer({ containerId: 'missing-container' });
-    });
-
-    expect(result.current).toEqual({ width: 0, height: 0 });
   });
 });
 

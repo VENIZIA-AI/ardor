@@ -3,53 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useAutosave } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { useSizer } from '@/hooks/use-sizer';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
-
-describe('useSizer', () => {
-  const original = globalThis.ResizeObserver;
-  let notify: (() => void) | undefined;
-
-  afterEach(() => {
-    globalThis.ResizeObserver = original;
-    notify = undefined;
-  });
-
-  test('reports the offset size of the container, with no extra pixel', () => {
-    globalThis.ResizeObserver = class {
-      constructor(callback: () => void) {
-        notify = callback;
-      }
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    } as never;
-
-    const container = document.createElement('div');
-    container.id = 'sizer-fixes';
-    // A scrollbar or a border makes clientWidth differ from offsetWidth: only offset is read.
-    for (const [key, value] of Object.entries({
-      offsetWidth: 300,
-      offsetHeight: 200,
-      clientWidth: 285,
-      clientHeight: 185,
-    })) {
-      Object.defineProperty(container, key, { value, configurable: true });
-    }
-    document.body.appendChild(container);
-
-    const { result, unmount } = renderHook(() => useSizer({ containerId: 'sizer-fixes' }));
-    act(() => notify?.());
-    expect(result.current).toEqual({ width: 300, height: 200 });
-
-    Object.defineProperty(container, 'offsetWidth', { value: 320, configurable: true });
-    act(() => notify?.());
-    expect(result.current).toEqual({ width: 320, height: 200 });
-
-    unmount();
-    document.body.removeChild(container);
-  });
-});
 
 describe('useWindowDimensions', () => {
   test('answers 0 x 0 in a render that has no window, then measures the browser', () => {

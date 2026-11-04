@@ -51,6 +51,7 @@ export class HookRenames {
   static readonly OWNER = 'Ardor';
 
   static readonly NAMES = new Set([
+    'useApplicationContainer',
     'useApplicationContext',
     'useApplicationLogger',
     'useAutosave',
@@ -66,7 +67,6 @@ export class HookRenames {
     'useFeatures',
     'useHtmlLang',
     'useInjectable',
-    'useInjectableContainer',
     'useIntersection',
     'useMediaQuery',
     'useNotifyError',
@@ -77,7 +77,6 @@ export class HookRenames {
     'useRequestHeaderLocale',
     'useResizeEffect',
     'useService',
-    'useSizer',
     'useStoredState',
     'useTranslate',
     'useUntypedTranslate',

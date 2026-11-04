@@ -139,7 +139,7 @@ keys is bound twice, as two singletons, and `{ target }` reaches the key recorde
 ## Resolve
 
 `useInjectable` takes `{ key }` or `{ target }`, never both, plus an optional `container`. The
-container comes from `useInjectableContainer`: the option, else `ApplicationContext.container`.
+container comes from `useApplicationContainer`: the option, else `ApplicationContext.container`.
 
 - **`{ key }`** calls `container.get({ key })`. The key is typed as `TUseInjectableKeys` - every
   `CoreBindings` value plus the keys an application adds, see [module augmentation](/architecture/module-augmentation.md).
@@ -153,7 +153,7 @@ inferred from the class; with `{ key }` the caller supplies it. They are not ali
 each asserts the recorded key starts with `services.`, `repositories.`, `providers.`,
 `components.` or `configurations.` and otherwise throws naming both. A `key` is not checked - its namespace is in the
 string, the caller's to get wrong - and a `target` with no recorded key skips the check and throws
-from `useInjectable`. The check reads the container through `useInjectableContainer` with the same
+from `useInjectable`. The check reads the container through `useApplicationContainer` with the same
 inputs as the resolve, so the two can never disagree.
 
 Since no stereotype maps to `providers`, `useProvider({ target })` passes only for a class declaring
@@ -167,7 +167,7 @@ Since no stereotype maps to `providers`, `useProvider({ target })` passes only f
 | `Failed to resolve binding key for target` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
 | `is not bounded in context` | A key nobody bound: a typo, a module imported after `start()`, a `bindContext()` binding never made | Fix the key, import before `start()`, or bind it |
 | `is bound as "...", not under "..."` | The hook does not match the class's namespace | Use the hook for that namespace |
-| `Failed to determine injectable container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
+| `Failed to determine the application container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
 
 
 ## Related

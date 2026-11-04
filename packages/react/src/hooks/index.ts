@@ -14,6 +14,5 @@ export * from './use-intersection';
 export * from './use-media-query';
 export * from './use-online-status';
 export * from './use-resize-effect';
-export * from './use-sizer';
 export * from './use-stored-state';
 export * from './use-window-dimensions';

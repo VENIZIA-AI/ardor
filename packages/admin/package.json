@@ -62,8 +62,7 @@
   },
   "dependencies": {
     "@venizia/ardor-kernel": "workspace:*",
-    "@venizia/ardor-react": "workspace:*",
-    "lodash": "catalog:"
+    "@venizia/ardor-react": "workspace:*"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "catalog:",
@@ -72,7 +71,6 @@
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/bun": "catalog:",
-    "@types/lodash": "catalog:",
     "@types/react": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
@@ -119,7 +117,6 @@
         "@venizia/ardor-react",
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "lodash",
         "ra-core",
         "ra-i18n-polyglot",
         "react",
@@ -127,7 +124,7 @@
         "react-redux",
         "react-router-dom"
       ],
-      "limit": "10.65 KB"
+      "limit": "10.75 KB"
     }
   ],
   "engines": {

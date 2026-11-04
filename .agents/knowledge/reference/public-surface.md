@@ -138,7 +138,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (51)
+### `@venizia/ardor-react` (47)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -148,7 +148,6 @@ generated:
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
-- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
@@ -158,8 +157,6 @@ generated:
 - `IUseInjectableKeysOverrides` interface
 - `IUseIntersectionOptions` interface
 - `IUseResizeEffectOptions` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
 - `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
@@ -168,6 +165,7 @@ generated:
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
@@ -180,7 +178,6 @@ generated:
 - `useDocumentVisibility` const
 - `useElementSize` function
 - `useInjectable` const
-- `useInjectableContainer` const
 - `useIntersection` const
 - `useMediaQuery` const
 - `useOnlineStatus` const
@@ -188,7 +185,6 @@ generated:
 - `useRepository` const
 - `useResizeEffect` const
 - `useService` const
-- `useSizer` const
 - `useStoredState` const
 - `useWindowDimensions` const
 
@@ -240,7 +236,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (188)
+### `@venizia/ardor` (184)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -325,7 +321,6 @@ generated:
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
-- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
@@ -337,8 +332,6 @@ generated:
 - `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseResizeEffectOptions` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
 - `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
@@ -393,6 +386,7 @@ generated:
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
 - `TUseUntypedTranslateFn` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
@@ -408,7 +402,6 @@ generated:
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
-- `useInjectableContainer` const
 - `useIntersection` const
 - `useMediaQuery` const
 - `useNotifyError` const
@@ -419,7 +412,6 @@ generated:
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
 - `useService` const
-- `useSizer` const
 - `useStoredState` const
 - `useTranslate` const
 - `useUntypedTranslate` const

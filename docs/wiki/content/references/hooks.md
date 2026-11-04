@@ -36,7 +36,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | I want to... | Hook | Needs in the tree | Returns |
 | --- | --- | --- | --- |
 | Access the IoC container from context | `useApplicationContext` | `ApplicationContext` with a container | `Container` |
-| Access the container with an optional override | `useInjectableContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
+| Access the container with an optional override | `useApplicationContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
 | Resolve a bound dependency by key or class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
 | Resolve a service from the `services` namespace | `useService` | `ApplicationContext` with a container, or explicit option | Bound service instance |
 | Resolve a repository from the `repositories` namespace | `useRepository` | `ApplicationContext` with a container, or explicit option | Bound repository instance |
@@ -58,7 +58,6 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Show a Promise-based confirmation prompt | `useConfirm` | React tree | Confirmation controls |
 | Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
-| Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
 | Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
 | Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
 | Know whether an element is in view, with `IntersectionObserver` | `useIntersection` | Browser DOM | `IntersectionObserverEntry \| undefined` |
@@ -85,20 +84,20 @@ export function ContainerStatus() {
 - **Return value**: `Container` from `@venizia/ignis-inversion`.
 - **Gotcha**: Throws an error (`[useApplicationContext] must be used within a ApplicationContextProvider`) if called when no container is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
-### useInjectableContainer
+### useApplicationContainer
 
 ```tsx
-import { useInjectableContainer } from '@venizia/ardor';
+import { useApplicationContainer } from '@venizia/ardor';
 
 export function ContainerChecker() {
-  const container = useInjectableContainer();
+  const container = useApplicationContainer();
   return <span>{container ? 'container ready' : 'no container'}</span>;
 }
 ```
 
 - **Parameters**: Optional `opts?: { container?: Container }`.
 - **Return value**: `Container`.
-- **Gotcha**: Throws an error (`[useInjectable] Failed to determine injectable container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
+- **Gotcha**: Throws an error (`[useApplicationContainer] Failed to determine the application container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useInjectable
 
@@ -281,7 +280,7 @@ export function useUserState() {
 ```
 
 - **Parameters**: None. The factory accepts a type parameter `TState`.
-- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using default, react-redux `shallowEqual`, and lodash `isEqual` comparators.
+- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using the default comparator, react-redux `shallowEqual`, and a deep comparator. The deep one compares primitives, plain objects, arrays and dates by value (none of them cyclic); any other object, such as a `Map` or a class instance, is equal only to itself.
 - **Gotcha**: Requires a react-redux `Provider` in the tree. Defined in `packages/react/src/hooks/redux/use-app-selector.ts`.
 
 ## ra-core companions
@@ -380,7 +379,7 @@ export function FeatureNavigation() {
 
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
-- **Gotcha**: Reads from the container using `useInjectableContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+- **Gotcha**: Reads from the container using `useApplicationContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
 
 ### useDocumentTitle
 
@@ -521,25 +520,6 @@ export function EditFormGuard() {
 - **Return value**: `void`.
 - **Gotcha**: Modern browsers display a generic browser-defined confirmation prompt rather than custom `message` text, but assigning `message` populates `event.returnValue` as required by the specification. Defined in `packages/react/src/hooks/use-before-unload.ts`.
 
-### useSizer
-
-```tsx
-import { useSizer } from '@venizia/ardor';
-
-export function ChartContainer() {
-  const { width, height } = useSizer({ containerId: 'chart-panel' });
-  return (
-    <div id="chart-panel">
-      <span>Width: {width}, Height: {height}</span>
-    </div>
-  );
-}
-```
-
-- **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
-- **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
-- **Gotcha**: Reported width and height are the element's `offsetWidth` and `offsetHeight`, as they are. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
-
 ### useElementSize
 
 ```tsx
@@ -568,7 +548,7 @@ export function Panel({ open }: { open: boolean }) {
 
 - **Parameters**: `opts?: IUseElementSizeOptions` - optional `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`, optional `round`: `true` rounds width and height to whole pixels (default `false`).
 - **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number; measured: boolean }`, `0` by `0` with `measured` `false` until the first measure. Without a `ref` option the return is `IUseElementSizeRefReturn`, which adds `ref: React.RefCallback<Element>`; its identity never changes.
-- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. Defined in `packages/react/src/hooks/use-element-size.ts`.
 
 ### useResizeEffect
 
