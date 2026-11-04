@@ -72,7 +72,8 @@ export class ResponseReader {
    * Shapes a parsed body by request type. `GET_LIST` and `GET_MANY_REFERENCE` give `data` as an
    * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
    * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
-   * from `x-response-count` when that is a number.
+   * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
+   * `{ data, count }` body unchanged.
    */
   static convert<TData = unknown>(opts: {
     response: {

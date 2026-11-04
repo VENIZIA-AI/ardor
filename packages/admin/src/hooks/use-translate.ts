@@ -7,7 +7,7 @@ import type { englishMessages } from '@/common/locales';
  * Augment this interface to add keys to `TUseTranslateKeys` (messages an app adds to the defaults):
  *
  * ```ts
- * declare module '@venizia/ardor-admin' {
+ * declare module '@venizia/ardor' {
  *   interface IUseTranslateKeysOverrides {
  *     'app.orders.title': unknown;
  *   }
