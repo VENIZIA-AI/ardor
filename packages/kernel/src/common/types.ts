@@ -156,7 +156,9 @@ export interface IAuthRecoveryOptions {
    *   restDataProviderOptions() {
    *     return {
    *       url: 'https://api.example.com',
-   *       noAuthPaths: ['/auth/sign-in'],
+   *       // The refresh path is also a no-auth path: the expired token stays off that request, so the
+   *       // server identifies the session another way, such as a cookie.
+   *       noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
    *       authRecovery: { refreshTokenPath: '/auth/refresh' },
    *     };
    *   }
