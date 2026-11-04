@@ -9,7 +9,7 @@
 import pkg from '../../../../../packages/ardor/package.json';
 import type { THomeContent, TSiteInfo } from './shared/home-types';
 
-export const COUNTS = { packages: 4, examples: 3, testFiles: 64, nodeBuiltins: 0 };
+export const COUNTS = { packages: 4, examples: 3, testFiles: 65, nodeBuiltins: 0 };
 
 export const VERSION: string = pkg.version;
 

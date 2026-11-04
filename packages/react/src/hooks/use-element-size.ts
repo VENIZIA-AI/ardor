@@ -1,10 +1,12 @@
 import React from 'react';
 
+import { ResizeObservation, type TResizeBox } from './resize-observation';
+
 export interface IUseElementSizeOptions {
   /** The element to measure. Leave it out to measure the element the returned `ref` is given to. */
   ref?: React.RefObject<Element | null>;
   /** @default 'content-box' */
-  box?: 'content-box' | 'border-box';
+  box?: TResizeBox;
   /** Round width and height to whole pixels, so a fractional size does not render again. @default false */
   round?: boolean;
 }
@@ -24,7 +26,7 @@ const ZERO_SIZE: IUseElementSizeReturn = { width: 0, height: 0, measured: false 
 
 const readSize = (opts: {
   entry: ResizeObserverEntry;
-  box: 'content-box' | 'border-box';
+  box: TResizeBox;
   round: boolean;
 }): IUseElementSizeReturn => {
   const { entry, box, round } = opts;
@@ -62,41 +64,24 @@ export function useElementSize(
     setSize((current) => (current.measured ? ZERO_SIZE : current));
 
     const target = ref ? ref.current : element;
-    if (!target || typeof ResizeObserver === 'undefined') {
-      return () => {};
-    }
 
-    let frame: number | undefined;
-    let latest: ResizeObserverEntry | undefined;
-
-    const observer = new ResizeObserver((entries) => {
-      latest = entries[entries.length - 1];
-      if (frame !== undefined) {
-        return;
-      }
-
-      frame = requestAnimationFrame(() => {
-        frame = undefined;
-        if (!latest) {
+    return ResizeObservation.observe({
+      targets: target ? [target] : [],
+      box,
+      onFrame: (entries) => {
+        const entry = entries.at(-1);
+        if (!entry) {
           return;
         }
 
-        const next = readSize({ entry: latest, box, round });
+        const next = readSize({ entry, box, round });
         setSize((current) => {
           return current.measured && current.width === next.width && current.height === next.height
             ? current
             : next;
         });
-      });
+      },
     });
-    observer.observe(target, { box });
-
-    return () => {
-      observer.disconnect();
-      if (frame !== undefined) {
-        cancelAnimationFrame(frame);
-      }
-    };
   }, [ref, element, box, round]);
 
   return ref ? size : { ...size, ref: setElement };

@@ -2,122 +2,24 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
 import { useElementSize } from '@/hooks/use-element-size';
+import {
+  cancelled,
+  entryOf,
+  fire,
+  flushFrames,
+  frames,
+  installObserverStubs,
+  LegacyEntry,
+  observerAt,
+  observers,
+  restoreObserverStubs,
+} from '../resize-observer-stub';
 
-interface IObserverRecord {
-  readonly callback: ResizeObserverCallback;
-  readonly targets: Array<Element>;
-  readonly options: Array<ResizeObserverOptions | undefined>;
-  disconnected: boolean;
-  readonly instance: ResizeObserver;
-}
-
-const observers: Array<IObserverRecord> = [];
-
-class StubResizeObserver implements ResizeObserver {
-  private readonly record: IObserverRecord;
-
-  constructor(callback: ResizeObserverCallback) {
-    this.record = { callback, targets: [], options: [], disconnected: false, instance: this };
-    observers.push(this.record);
-  }
-
-  observe = (target: Element, options?: ResizeObserverOptions): void => {
-    this.record.targets.push(target);
-    this.record.options.push(options);
-  };
-
-  unobserve = (_target: Element): void => {};
-
-  disconnect = (): void => {
-    this.record.disconnected = true;
-  };
-}
-
-const observerAt = (index: number): IObserverRecord => {
-  const record = observers[index];
-  if (!record) {
-    throw new Error(`No ResizeObserver was created at ${index}`);
-  }
-
-  return record;
-};
-
-const frames = new Map<number, FrameRequestCallback>();
-let nextFrame = 1;
-const cancelled: Array<number> = [];
-
-const flushFrames = () => {
-  const pending = [...frames.entries()];
-  frames.clear();
-  act(() => {
-    for (const [, callback] of pending) {
-      callback(0);
-    }
-  });
-};
-
-const entryOf = (opts: {
-  width: number;
-  height: number;
-  border?: { inlineSize: number; blockSize: number };
-}): ResizeObserverEntry => {
-  const target = document.createElement('div');
-  const rect = new DOMRectReadOnly(0, 0, opts.width, opts.height);
-  const borderBoxSize: Array<ResizeObserverSize> = opts.border ? [opts.border] : [];
-
-  return {
-    target,
-    contentRect: rect,
-    borderBoxSize,
-    contentBoxSize: [{ inlineSize: opts.width, blockSize: opts.height }],
-    devicePixelContentBoxSize: [],
-  };
-};
-
-class LegacyEntry implements ResizeObserverEntry {
-  declare readonly borderBoxSize: ReadonlyArray<ResizeObserverSize>;
-  readonly target = document.createElement('div');
-  readonly contentBoxSize: ReadonlyArray<ResizeObserverSize> = [];
-  readonly devicePixelContentBoxSize: ReadonlyArray<ResizeObserverSize> = [];
-  readonly contentRect: DOMRectReadOnly;
-
-  constructor(opts: { width: number; height: number }) {
-    this.contentRect = new DOMRectReadOnly(0, 0, opts.width, opts.height);
-  }
-}
-
-const fire = (opts: { observer: IObserverRecord; entries: Array<ResizeObserverEntry> }) => {
-  opts.observer.callback(opts.entries, opts.observer.instance);
-};
-
-const original = {
-  observer: globalThis.ResizeObserver,
-  request: globalThis.requestAnimationFrame,
-  cancel: globalThis.cancelAnimationFrame,
-};
-
-beforeEach(() => {
-  observers.length = 0;
-  frames.clear();
-  cancelled.length = 0;
-  nextFrame = 1;
-  globalThis.ResizeObserver = StubResizeObserver;
-  globalThis.requestAnimationFrame = (callback) => {
-    const id = nextFrame++;
-    frames.set(id, callback);
-    return id;
-  };
-  globalThis.cancelAnimationFrame = (id) => {
-    cancelled.push(id);
-    frames.delete(id);
-  };
-});
+beforeEach(installObserverStubs);
 
 afterEach(() => {
   cleanup();
-  globalThis.ResizeObserver = original.observer;
-  globalThis.requestAnimationFrame = original.request;
-  globalThis.cancelAnimationFrame = original.cancel;
+  restoreObserverStubs();
 });
 
 const refOf = (element: Element | null) => ({ current: element });

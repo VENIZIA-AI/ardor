@@ -31,6 +31,7 @@ export {
   useInjectableContainer,
   useProvider,
   useRepository,
+  useResizeEffect,
   useService,
   useSizer,
   useStoredState,

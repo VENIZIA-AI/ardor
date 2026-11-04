@@ -71,6 +71,7 @@ export class HookRenames {
     'useRefreshToken',
     'useRepository',
     'useRequestHeaderLocale',
+    'useResizeEffect',
     'useService',
     'useSizer',
     'useStoredState',

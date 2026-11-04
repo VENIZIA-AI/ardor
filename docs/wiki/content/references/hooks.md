@@ -60,6 +60,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
 | Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
 | Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
+| Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 
@@ -566,6 +567,55 @@ export function Panel({ open }: { open: boolean }) {
 - **Parameters**: `opts?: IUseElementSizeOptions` - optional `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`, optional `round`: `true` rounds width and height to whole pixels (default `false`).
 - **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number; measured: boolean }`, `0` by `0` with `measured` `false` until the first measure. Without a `ref` option the return is `IUseElementSizeRefReturn`, which adds `ref: React.RefCallback<Element>`; its identity never changes.
 - **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+
+### useResizeEffect
+
+```tsx
+import React from 'react';
+import { useResizeEffect } from '@venizia/ardor';
+
+export function Toolbar() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const refs = React.useMemo(() => [ref], []);
+  const [isOverflowing, setOverflowing] = React.useState(false);
+
+  useResizeEffect({
+    refs,
+    onResize: () => {
+      const element = ref.current;
+      setOverflowing(element !== null && element.scrollWidth > element.clientWidth);
+    },
+  });
+
+  return <div ref={ref}>{isOverflowing ? 'More...' : 'All'}</div>;
+}
+```
+
+Use it for a check that runs when something resizes and keeps no size in state, such as an overflow test, the edges of a scroll area or a canvas fit. For the size itself, use `useElementSize`. Add `children: true` to run the callback when a direct child of the element resizes too:
+
+```tsx
+import React from 'react';
+import { useResizeEffect } from '@venizia/ardor';
+
+export function Tabs() {
+  const ref = React.useRef<HTMLUListElement>(null);
+  const refs = React.useMemo(() => [ref], []);
+
+  useResizeEffect({
+    refs,
+    children: true,
+    onResize: (entries) => {
+      console.log(entries.map((entry) => entry.target.tagName));
+    },
+  });
+
+  return <ul ref={ref} />;
+}
+```
+
+- **Parameters**: `opts: IUseResizeEffectOptions` - `refs: React.RefObject<Element | null>[]`, `onResize: (entries: ResizeObserverEntry[]) => void`, optional `box`: `content-box` (default) or `border-box`, optional `children`: `true` also observes the direct children of each ref (default `false`).
+- **Return value**: `void`.
+- **Gotcha**: One `ResizeObserver` watches all the elements, and `onResize` runs at most once per animation frame with the latest entry of each element that resized since the last call. The hook keeps the latest `onResize`, so a new function each render does not observe again. The refs are read when the effect runs and a ref with no element is skipped: pass a stable array, as `React.useMemo` gives, because an array made anew in every render observes again in every render, and the browser then delivers the first entries again. The first entries are delivered as the browser delivers them, so `onResize` runs once when observing starts. With `children`, a child added later is observed, and so delivers its first entry, and a removed child is not observed any more; a grandchild is never observed, and a `MutationObserver` exists only with `children`. Where there is no `ResizeObserver` the hook does nothing. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). Defined in `packages/react/src/hooks/use-resize-effect.ts`.
 
 ### useStoredState
 

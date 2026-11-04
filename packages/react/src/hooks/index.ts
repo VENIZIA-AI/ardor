@@ -8,6 +8,7 @@ export * from './use-copy-to-clipboard';
 export * from './use-debounce';
 export * from './use-element-size';
 export * from './use-injectable';
+export * from './use-resize-effect';
 export * from './use-sizer';
 export * from './use-stored-state';
 export * from './use-window-dimensions';
