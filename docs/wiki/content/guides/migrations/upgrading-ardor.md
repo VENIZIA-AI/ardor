@@ -16,7 +16,7 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 | 0.4.1 | 0.4.3 | [Everything since 0.4.1](../../changelogs/2026-10-25-batch-overview) |
 | 0.4.3 | 0.4.4 | [Everything since 0.4.3](../../changelogs/2026-10-26-batch-overview) |
 | 0.4.4 | 0.4.5 | [Everything since 0.4.4](../../changelogs/2026-10-28-batch-overview) |
-| 0.4.5 | 0.4.6 | No changelog entry: the release holds repository and preset fixes only |
+| 0.4.5 | 0.4.6 | No changelog entry: no change to the code of the packages (release tooling, devDependencies and the lib preset only) |
 | 0.4.6 | 0.4.7 | [Everything since 0.4.6](../../changelogs/2026-11-02-batch-overview); run the codemod below |
 | 0.4.7 | 0.4.8 | [Everything since 0.4.7](../../changelogs/2026-11-05-batch-overview) |
 
@@ -40,7 +40,7 @@ bun run ardor codemod namespace src --write
 | `--allow-dirty` | With `--write`, also writes a file that has local changes, such as one another codemod just changed. |
 | `--check` | A dry run that exits 1 when anything would change or is left; for CI. It cannot go with `--write`. |
 | `--hooks` | Also moves a hook imported from `@venizia/ardor` to the `Ardor` namespace: `useRepository()` becomes `Ardor.useRepository()`. A hook imported from `@venizia/ardor-react` or `@venizia/ardor-admin` is never touched. |
-| `--help` | Prints the usage and exits. |
+| `--help`, `-h` | Prints the usage and exits. |
 
 The command prints one line per finding and a summary:
 

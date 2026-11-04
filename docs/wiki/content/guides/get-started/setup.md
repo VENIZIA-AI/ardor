@@ -49,7 +49,7 @@ bun add -d @venizia/ignis-boot
 
 Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
 
-Install IGNIS versions that satisfy the `peerDependencies` of the ARDOR version you install (`npm view @venizia/ardor@<version> peerDependencies`). Since 0.4.8 the IGNIS ranges start at a prerelease, so IGNIS 0.4.7 does not satisfy them; see [Upgrading ARDOR](../migrations/upgrading-ardor).
+ARDOR needs the IGNIS versions its peers name: `npm view @venizia/ardor@<version> peerDependencies` prints them, and the [batch overview](../../changelogs/2026-11-05-batch-overview) lists them for 0.4.8-1.
 
 Declare every IGNIS package yourself, in every workspace package that uses ARDOR; do not rely on the peer alone. A peer range such as `^0.4.1` never matches a prerelease (`0.4.5-0`), so a package that lists no IGNIS dependency gets the stable copy from the install, next to the prerelease the rest of the repository uses. Two copies of `@venizia/ignis-inversion` are two sets of types, and the build fails with `Type 'Application' is not assignable to type 'IContainer'`. In a monorepo, put the versions in the root `workspaces.catalog` and write `"catalog:"` in each package.
 
