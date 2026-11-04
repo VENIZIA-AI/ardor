@@ -19,6 +19,7 @@ Providers (`src/providers/index.ts`):
 
 Hooks (`src/hooks/index.ts`):
 - `useTranslate` - a typed wrapper over react-admin's translate hook.
+- `useUntypedTranslate` - the same implementation with a `string` key, for keys that exist only at run time; `useTranslate` is that function with the narrower return type `TUseTranslateFn`.
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).

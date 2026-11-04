@@ -296,6 +296,21 @@ export function SaveButton() {
 - **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`) when an i18n provider is present, or a fallback identity function `(key: AnyType) => AnyType`.
 - **Gotcha**: Returns an identity function when no i18n provider is mounted in the tree, returning the key unchanged rather than throwing. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
 
+### useUntypedTranslate
+
+```tsx
+import { useUntypedTranslate } from '@venizia/ardor';
+
+export function ErrorLine(props: { code: string }) {
+  const translate = useUntypedTranslate();
+  return <p>{translate(`errors.${props.code}`, { _: 'Something went wrong' })}</p>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `TUseUntypedTranslateFn` (`(key: string, options?: AnyType) => string`).
+- **Gotcha**: For a key that exists only at run time, such as a server error code or a data label. A key written in code belongs to [`useTranslate`](#usetranslate), which checks it at compile time; both read the same i18n provider and share one implementation. A key the catalogs do not hold comes back unchanged, or as the `_` text of the options. Without an i18n provider it returns the key unchanged. Defined in `packages/admin/src/hooks/use-translate.ts`.
+
 ### useRefreshToken
 
 ```tsx

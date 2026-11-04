@@ -14,6 +14,7 @@ export {
   useRefreshToken,
   useRequestHeaderLocale,
   useTranslate,
+  useUntypedTranslate,
 } from '@venizia/ardor-admin';
 export {
   useApplicationContext,
