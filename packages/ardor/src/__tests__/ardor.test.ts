@@ -16,7 +16,7 @@ describe('Ardor', () => {
   test('gathers every hook the package exports, and nothing else', () => {
     // A new hook in react or admin that is not listed in ardor.ts fails here.
     expect(hooksOf(Ardor)).toEqual(hooksOf(umbrella));
-    expect(Object.keys(Ardor)).toHaveLength(26);
+    expect(Object.keys(Ardor)).toHaveLength(27);
   });
 
   test('each member is the very function the react or admin package exports', () => {

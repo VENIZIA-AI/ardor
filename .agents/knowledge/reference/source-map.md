@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Layout: [monorepo layout](/overview/monorepo-layout.md).
 
-**96 source files across 4 packages.**
+**98 source files across 4 packages.**
 
 ## admin  (26 source files)
 
@@ -38,9 +38,9 @@ generated:
 | `helpers/` | 7 |
 | `common/` | 4 |
 
-## react  (19 source files)
+## react  (21 source files)
 
 | Subsystem | Files |
 |---|---|
-| `hooks/` | 16 |
+| `hooks/` | 18 |
 | `contexts/` | 2 |
