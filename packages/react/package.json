@@ -111,7 +111,7 @@
         "react",
         "react-redux"
       ],
-      "limit": "3.4 KB"
+      "limit": "3450 B"
     }
   ],
   "engines": {

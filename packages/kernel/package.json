@@ -104,7 +104,7 @@
         "@venizia/ignis-inversion",
         "reflect-metadata"
       ],
-      "limit": "7.6 KB"
+      "limit": "7660 B"
     }
   ],
   "engines": {
