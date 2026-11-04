@@ -10,15 +10,15 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Layout: [monorepo layout](/overview/monorepo-layout.md).
 
-**102 source files across 4 packages.**
+**103 source files across 4 packages.**
 
-## admin  (26 source files)
+## admin  (27 source files)
 
 | Subsystem | Files |
 |---|---|
 | `hooks/` | 8 |
 | `providers/` | 7 |
-| `common/` | 5 |
+| `common/` | 6 |
 | `features/` | 3 |
 | `components/` | 2 |
 

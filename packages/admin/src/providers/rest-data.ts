@@ -1,5 +1,4 @@
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
-import omit from 'lodash/omit.js';
 import type {
   CreateParams,
   CreateResult,
@@ -208,15 +207,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<GetOneResult<RecordType>> {
     const { resource, params } = opts;
 
-    const filter = params?.meta?.filter ?? {};
-    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+    const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
     return this.request<RecordType>({
       resource,
       type: RequestTypes.GET_ONE,
       method: RequestMethods.GET,
       paths: [resource, `${params.id}`],
-      query: { ...queryKey, filter: { ...omit(filter, 'params') } },
+      query: { ...queryKey, filter },
     });
   }
 
@@ -226,8 +225,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<GetManyResult<RecordType>> {
     const { resource, params } = opts;
 
-    const filter = params?.meta?.filter ?? {};
-    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+    const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
     // Always the GET, under the controller's own `find()`, so its scoping applies. A very long id
     // list answers 414/431.
@@ -238,7 +237,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       query: {
         ...queryKey,
         filter: {
-          ...omit(filter, 'params'),
+          ...filter,
           where: { ...filter?.where, id: { inq: params.ids } },
         },
       },

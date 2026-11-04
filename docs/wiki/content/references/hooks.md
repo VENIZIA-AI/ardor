@@ -280,7 +280,7 @@ export function useUserState() {
 ```
 
 - **Parameters**: None. The factory accepts a type parameter `TState`.
-- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using default, react-redux `shallowEqual`, and lodash `isEqual` comparators.
+- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using the default comparator, react-redux `shallowEqual`, and a deep comparator. The deep one compares primitives, plain objects, arrays and dates by value (none of them cyclic); any other object, such as a `Map` or a class instance, is equal only to itself.
 - **Gotcha**: Requires a react-redux `Provider` in the tree. Defined in `packages/react/src/hooks/redux/use-app-selector.ts`.
 
 ## ra-core companions

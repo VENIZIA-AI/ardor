@@ -1,5 +1,4 @@
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
-import omit from 'lodash/omit.js';
 import type { GetListParams } from 'ra-core';
 
 import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
@@ -42,13 +41,13 @@ export class ListFilterBuilder {
     if (filterInput?.where) {
       filter = { ...filterInput, where: { ...filterInput.where } };
     } else {
-      filter['where'] = {
-        ...omit(filterInput, ['include', 'params', 'noLimit', 'fields']),
-      };
-      filter['include'] = filterInput?.include;
-      filter['fields'] = filterInput?.fields;
-      filter['params'] = filterInput?.params;
-      filter['noLimit'] = filterInput?.noLimit;
+      const { include, fields, params, noLimit, ...where } = filterInput ?? {};
+
+      filter['where'] = where;
+      filter['include'] = include;
+      filter['fields'] = fields;
+      filter['params'] = params;
+      filter['noLimit'] = noLimit;
     }
 
     if (sort?.field) {
