@@ -32,8 +32,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
 
   /**
    * The locale the admin starts in: the browser's language when it is one of `locales`, else `en`.
-   * Read when the provider is built, not when the module is imported, and not at all outside a
-   * browser.
+   * Read when the provider is built, not when the module is imported. Without a `navigator` the
+   * language is `en-US`.
    */
   protected resolveInitialLocale(opts: { locales: Array<string> }): string {
     const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
