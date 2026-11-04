@@ -33,8 +33,8 @@ export function ChartContainer() {
 ## What changed
 
 - **`useSizer` is gone,** with its `IUseSizerOptions` and `IUseSizerReturn` types, its entry in `Ardor` (which now holds 30 hooks) and its entry in the codemod's hook table.
-- **The replacement** is `useElementSize({ ref, box: 'border-box', round: true })`. `useSizer` read `offsetWidth` and `offsetHeight`, which are the border box size rounded to whole pixels, and that is what `box: 'border-box'` with `round: true` gives. It takes a `ref` object instead of an element id.
-- **A difference to know.** `useSizer` gave `0` by `0` until the element existed; `useElementSize` gives `0` by `0` with `measured` `false` until the first size is read, so you can tell an unmeasured element from an empty one.
+- **The replacement** is `useElementSize({ ref, box: 'border-box', round: true })`. It is close to what `useSizer` read (`offsetWidth` and `offsetHeight`), not the same: the value is the border box rounded with `Math.round`, which can differ by 1 px from the browser's own snapping of `offsetWidth`; it updates once per animation frame, so one frame later than `useSizer` did; and in a browser without `borderBoxSize` it falls back to the content box. It takes a `ref` object instead of an element id.
+- **One more field.** `useSizer` gave `0` by `0` until the element existed; `useElementSize` also returns `measured`, `false` until the first size is read, so you can tell an unmeasured element from an empty one.
 
 ## Who is affected
 
