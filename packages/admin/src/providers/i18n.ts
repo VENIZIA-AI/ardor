@@ -13,6 +13,26 @@ import { LazyLocales, LocaleSources } from './i18n-sources';
 /**
  * The options hold data (`i18nSources`, `languages`); the hooks are `resolveInitialLocale` and
  * `composeMessages`, each taking one `opts` object.
+ *
+ * @example
+ * ```ts
+ * import { configuration, CoreBindings, englishMessages, provide, vietnameseMessages } from '@venizia/ardor';
+ *
+ * @configuration()
+ * export class I18nConfiguration {
+ *   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+ *   options() {
+ *     return {
+ *       languages: [{ locale: 'en', name: 'English' }, { locale: 'vi', name: 'Tieng Viet' }],
+ *       i18nSources: {
+ *         en: englishMessages,
+ *         // A loader runs the first time the locale is used, such as () => import('./vi').
+ *         vi: async () => vietnameseMessages,
+ *       },
+ *     };
+ *   }
+ * }
+ * ```
  */
 export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   protected localeSources: LocaleSources;

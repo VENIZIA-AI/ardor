@@ -49,7 +49,9 @@ export class Features {
    */
   static mount(opts: {
     features: Array<TFeature>;
+    /** @default [] */
     resources?: Array<ResourceProps>;
+    /** @default [] */
     routes?: Array<RouteProps>;
   }): { resources: Array<ResourceProps>; routes: Array<RouteProps> } {
     const { features, resources = [], routes = [] } = opts;
@@ -103,6 +105,7 @@ export class Features {
   static async loadMessages(opts: {
     features: Array<TFeature>;
     i18nProvider: I18nProvider;
+    /** The locale to load. @default i18nProvider.getLocale() */
     locale?: string;
   }): Promise<void> {
     const { features, i18nProvider } = opts;

@@ -7,7 +7,10 @@ import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { useInjectable } from '@venizia/ardor-react';
 
 export interface IUseRequestHeaderLocaleOptions {
-  /** The header the locale is sent in. Default `x-locale`. */
+  /**
+   * The header the locale is sent in.
+   * @default 'x-locale'
+   */
   key?: string;
 }
 

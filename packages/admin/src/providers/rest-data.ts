@@ -52,6 +52,26 @@ import { type IListFilter, ListFilterBuilder } from './list-filter';
  * the network service throws (a non-2xx response, an empty base URL, an auth failure that cannot be
  * recovered). A subclass overrides the protected hooks (`createNetworkService`, `buildListFilter`,
  * `requestList`).
+ *
+ * @example
+ * ```ts
+ * import { type BaseArdorApplication, configuration, CoreBindings, DefaultRestDataProvider, inject, provide } from '@venizia/ardor';
+ *
+ * @configuration()
+ * export class DataConfiguration {
+ *   constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
+ *
+ *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+ *   options() {
+ *     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+ *   }
+ *
+ *   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+ *   dataProvider() {
+ *     return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+ *   }
+ * }
+ * ```
  */
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
