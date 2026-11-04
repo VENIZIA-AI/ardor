@@ -63,6 +63,9 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
+| Know whether a media query matches | `useMediaQuery` | Browser window | `boolean` |
+| Know whether the tab is visible | `useDocumentVisibility` | Browser DOM | `'visible' \| 'hidden'` |
+| Know whether the browser is online | `useOnlineStatus` | Browser window | `boolean` |
 
 ## Reach the container
 
@@ -682,6 +685,51 @@ export function ViewportInfo() {
 - **Parameters**: None.
 - **Return value**: `{ width: number; height: number }`.
 - **Gotcha**: Reads `window.innerWidth` and `window.innerHeight` during initial state evaluation, and again once the effect runs. Where `window` is undefined (server-side rendering) the first render is `0` by `0`. Defined in `packages/react/src/hooks/use-window-dimensions.ts`.
+
+### useMediaQuery
+
+```tsx
+import { useMediaQuery } from '@venizia/ardor';
+
+export function Layout() {
+  const isWide = useMediaQuery({ query: '(min-width: 768px)' });
+  return <span>{isWide ? 'Wide' : 'Narrow'}</span>;
+}
+```
+
+- **Parameters**: `opts: { query: string }`.
+- **Return value**: `boolean`: whether the query matches now, and again after each change. A new `query` is read at once and the old one is no longer listened to.
+- **Gotcha**: In a server render it is `false` and `window.matchMedia` is not called; the browser value arrives on the client render. Defined in `packages/react/src/hooks/use-media-query.ts`.
+
+### useDocumentVisibility
+
+```tsx
+import { useDocumentVisibility } from '@venizia/ardor';
+
+export function PauseWhenHidden() {
+  const visibility = useDocumentVisibility();
+  return <span>{visibility === 'visible' ? 'Live' : 'Paused'}</span>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `'visible' | 'hidden'`, the value of `document.visibilityState`, kept by the `visibilitychange` event.
+- **Gotcha**: In a server render it is `'visible'` and the document is not read. Defined in `packages/react/src/hooks/use-document-visibility.ts`.
+
+### useOnlineStatus
+
+```tsx
+import { useOnlineStatus } from '@venizia/ardor';
+
+export function OfflineBanner() {
+  const isOnline = useOnlineStatus();
+  return isOnline ? null : <p>You are offline.</p>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `boolean`: `navigator.onLine`, kept by the `online` and `offline` events.
+- **Gotcha**: `navigator.onLine` says whether the browser has a network connection, not whether your server answers. In a server render it is `true` and `navigator` is not read. Defined in `packages/react/src/hooks/use-online-status.ts`.
 
 ## Related
 
