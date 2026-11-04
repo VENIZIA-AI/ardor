@@ -68,8 +68,16 @@ export class ResizeObservation {
 
     return {
       sync: (targets) => {
+        if (
+          targets.length === current.length &&
+          targets.every((target, index) => target === current[index])
+        ) {
+          return;
+        }
+
         current = targets;
         update(targets);
+        // A removed target stays registered on `mutations` until `stop`; its callback only updates the current targets.
         for (const target of targets) {
           mutations?.observe(target, { childList: true });
         }

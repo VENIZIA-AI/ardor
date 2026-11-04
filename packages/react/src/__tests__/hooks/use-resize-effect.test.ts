@@ -198,11 +198,11 @@ describe('useResizeEffect', () => {
   test('an element held in state, set after the mount, is observed', () => {
     const element = document.createElement('div');
     const { onResize } = recorder();
-    const { rerender } = renderHook(
-      (props: { element: Element | null }) => {
+    const { rerender } = renderHook<void, { element: Element | null }>(
+      (props) => {
         useResizeEffect({ targets: [props.element], onResize });
       },
-      { initialProps: { element: null as Element | null } },
+      { initialProps: { element: null } },
     );
     expect(observerAt(0).targets).toEqual([]);
 
@@ -242,6 +242,26 @@ describe('useResizeEffect', () => {
 
     expect(observerAt(0).targets).toEqual([first, second]);
     expect(observerAt(0).unobserved).toEqual([first]);
+  });
+
+  test('the same elements in another order, or twice, observe and unobserve nothing again', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { list: Array<Element> }) => {
+        useResizeEffect({ targets: props.list, onResize });
+      },
+      { initialProps: { list: [first, second, first] } },
+    );
+    expect(observerAt(0).targets).toEqual([first, second]);
+
+    rerender({ list: [second, first] });
+    rerender({ list: [second, first, second] });
+
+    expect(observers).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).unobserved).toEqual([]);
   });
 
   test('a pending resize of a target that was removed is dropped', () => {
@@ -401,6 +421,30 @@ describe('useResizeEffect with children', () => {
       next.second,
     ]);
     expect(observerAt(0).unobserved).toEqual([old.parent, old.first, old.second]);
+  });
+
+  test('with children, a render with the same targets does no DOM work', () => {
+    const { parent } = treeOf();
+    const targets = [parent];
+    const { onResize } = recorder();
+    const reads: Array<number> = [];
+    const children = Object.getOwnPropertyDescriptor(Element.prototype, 'children');
+    const { rerender } = renderHook(() => {
+      useResizeEffect({ targets: [...targets], onResize, children: true });
+    });
+    const before = observerAt(0).targets.length;
+
+    Object.defineProperty(parent, 'children', {
+      get() {
+        reads.push(1);
+        return children?.get?.call(this);
+      },
+    });
+    rerender();
+    rerender();
+
+    expect(reads).toHaveLength(0);
+    expect(observerAt(0).targets).toHaveLength(before);
   });
 
   test('a MutationObserver exists only with children, and unmount disconnects it', () => {
