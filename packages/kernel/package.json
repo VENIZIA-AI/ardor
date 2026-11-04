@@ -37,6 +37,7 @@
     "LICENSE.md",
     "dist",
     "!/**/__tests__",
+    "!**/*.map",
     "!**/*.tsbuildinfo"
   ],
   "type": "module",
