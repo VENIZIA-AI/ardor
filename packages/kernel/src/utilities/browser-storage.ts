@@ -35,6 +35,19 @@ export class BrowserStorage {
     });
   }
 
+  /** With a codec, the fallback may be of another type, such as `null` for "nothing is stored". */
+  static get<TValue, TFallback>(opts: {
+    key: string;
+    fallback: TFallback;
+    storage?: TStorageArea;
+    codec: IStorageCodec<TValue>;
+  }): TValue | TFallback;
+  static get<TValue>(opts: {
+    key: string;
+    fallback: TValue;
+    storage?: TStorageArea;
+    codec?: IStorageCodec<TValue>;
+  }): TValue;
   static get<TValue>(opts: {
     key: string;
     fallback: TValue;
@@ -56,6 +69,20 @@ export class BrowserStorage {
     });
   }
 
+  /** With a codec, the value is checked against the codec's type, so a literal is not widened past it. */
+  static set<TValue>(opts: {
+    key: string;
+    value: NoInfer<TValue>;
+    storage?: TStorageArea;
+    codec: IStorageCodec<TValue>;
+  }): boolean;
+  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  static set<TValue>(opts: {
+    key: string;
+    value: TValue;
+    storage?: TStorageArea;
+    codec?: IStorageCodec<TValue>;
+  }): boolean;
   static set<TValue>(opts: {
     key: string;
     value: TValue;

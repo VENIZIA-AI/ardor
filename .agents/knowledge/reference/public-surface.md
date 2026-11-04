@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (93)
+### `@venizia/ardor-kernel` (94)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -87,6 +87,7 @@ generated:
 - `RuntimeConfig` class
 - `service` const
 - `StorageAreas` class
+- `StorageCodecs` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -136,7 +137,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (41)
+### `@venizia/ardor-react` (42)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -155,6 +156,7 @@ generated:
 - `IUseInjectableKeysOverrides` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
+- `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `SelectorHooks` class
@@ -228,7 +230,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (176)
+### `@venizia/ardor` (178)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -323,6 +325,7 @@ generated:
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseSizerOptions` interface
 - `IUseSizerReturn` interface
+- `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `IUseTranslateKeysOverrides` interface
@@ -347,6 +350,7 @@ generated:
 - `service` const
 - `SessionClearReasons` class
 - `StorageAreas` class
+- `StorageCodecs` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type

@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
-import { BrowserStorage, type IStorageCodec, StorageAreas } from '@venizia/ardor-kernel';
+import {
+  BrowserStorage,
+  type IStorageCodec,
+  StorageAreas,
+  StorageCodecs,
+} from '@venizia/ardor-kernel';
 import { useStoredState } from '@/hooks/use-stored-state';
 
 const KEY = '@app/store/theme';
@@ -139,6 +144,52 @@ describe('useStoredState reads', () => {
     rerender();
 
     expect(result.current.value).toBe(first);
+  });
+});
+
+describe('useStoredState with StorageCodecs.text', () => {
+  const THEME = StorageCodecs.text({ allowed: ['light', 'dark'] });
+
+  test('reads a bare string that the JSON default cannot read, and stores one without quotes', () => {
+    localStorage.setItem(KEY, 'dark');
+
+    const json = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
+    expect(json.result.current.value).toBe('light');
+
+    const { result } = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 'light', codec: THEME });
+    });
+    expect(result.current.value).toBe('dark');
+
+    act(() => result.current.setValue('light'));
+
+    expect(localStorage.getItem(KEY)).toBe('light');
+    expect(result.current.value).toBe('light');
+  });
+
+  test('gives the default value for a stored text outside the allowed list', () => {
+    localStorage.setItem(KEY, 'sepia');
+
+    const { result } = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 'light', codec: THEME });
+    });
+
+    expect(result.current.value).toBe('light');
+  });
+
+  test('does not store a value outside the allowed list, and the hook keeps it like a refused write', () => {
+    localStorage.setItem(KEY, 'dark');
+
+    const { result } = renderHook(() => {
+      return useStoredState({ key: KEY, defaultValue: 'light', codec: THEME });
+    });
+    // @ts-expect-error a value outside allowed is a compile error
+    act(() => result.current.setValue('sepia'));
+
+    const shown: string = result.current.value;
+
+    expect(localStorage.getItem(KEY)).toBe('dark');
+    expect(shown).toBe('sepia');
   });
 });
 
