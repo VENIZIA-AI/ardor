@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor-admin']
 
 <Badge type="tip" text="Enhancement" />
 
-**In one line.** `@venizia/ardor-react` and `@venizia/ardor-admin` used `lodash` for six small calls. Together those four modules (`merge`, `omit`, `isEqual`, `isPlainObject`) are about 10.3 KB brotli (31.9 KB minified) in an app bundle, and no size budget could see them. They are gone: the packages no longer list `lodash` or `@types/lodash`, and ARDOR adds about 170 B of its own code in their place.
+**In one line.** `@venizia/ardor-react` and `@venizia/ardor-admin` used `lodash` for six small calls. Together those four modules (`merge`, `omit`, `isEqual`, `isPlainObject`) are about 10.3 KB brotli (31.9 KB minified) in an app bundle, and no size budget could see them. They are gone: the packages no longer list `lodash` or `@types/lodash`, and ARDOR adds about 220 B of its own code in their place.
 
 ## What changed
 
@@ -18,7 +18,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor-admin']
 - **`isPlainObject`** (the feature message keys) became a plain `typeof` check.
 - **`merge`** (feature messages, and the application's messages over them) became a small deep merge: a later source wins, plain objects merge recursively, an array or a string replaces, an `undefined` never overwrites a value, and `__proto__` is dropped. The sources are not changed.
 - **`isEqual`** (the `useDeepEqualSelector` that `SelectorHooks.create()` returns) became a small deep comparison of primitives, plain objects, arrays and dates. Any other object, such as a `Map`, a `Set` or a class instance, is now equal only to itself, where `isEqual` compared it by content. Data a selector returns from a Redux store is plain, so a selector over state behaves as before.
-- **Size.** `@venizia/ardor-react` grows by 146 B and `@venizia/ardor-admin` by 24 B, measured with `size-limit`. An app that did not already bundle those four lodash modules saves about 10.1 KB brotli.
+- **Size.** `@venizia/ardor-react` grows by 143 B and `@venizia/ardor-admin` by 74 B, measured with `size-limit` against the current develop. An app that did not already bundle those four lodash modules saves about 10.1 KB brotli.
 
 ## Who is affected
 
