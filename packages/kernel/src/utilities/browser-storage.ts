@@ -35,6 +35,19 @@ export class BrowserStorage {
     });
   }
 
+  /** With a codec, the fallback may be of another type, such as `null` for "nothing is stored". */
+  static get<TValue, TFallback>(opts: {
+    key: string;
+    fallback: TFallback;
+    storage?: TStorageArea;
+    codec: IStorageCodec<TValue>;
+  }): TValue | TFallback;
+  static get<TValue>(opts: {
+    key: string;
+    fallback: TValue;
+    storage?: TStorageArea;
+    codec?: IStorageCodec<TValue>;
+  }): TValue;
   static get<TValue>(opts: {
     key: string;
     fallback: TValue;

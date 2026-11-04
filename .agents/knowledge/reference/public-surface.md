@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (93)
+### `@venizia/ardor-kernel` (94)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -87,6 +87,7 @@ generated:
 - `RuntimeConfig` class
 - `service` const
 - `StorageAreas` class
+- `StorageCodecs` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -228,7 +229,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (176)
+### `@venizia/ardor` (177)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -347,6 +348,7 @@ generated:
 - `service` const
 - `SessionClearReasons` class
 - `StorageAreas` class
+- `StorageCodecs` class
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type

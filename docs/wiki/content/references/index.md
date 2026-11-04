@@ -88,7 +88,22 @@ BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
 | `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
 | `subscribe({ key, storage?, listener })` | a function that stops it | `listener` runs after a `set` or `remove` through `BrowserStorage` and after another tab changes the key. |
 
-`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default.
+`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default. With a `codec`, `fallback` may be of another type, such as `null` for "nothing is stored", and `get` answers the union.
+
+### A bare string as the stored text
+
+A key whose existing data is a bare string (`dark`, not `"dark"`) is not JSON, so the default codec cannot read it. `StorageCodecs.text()` stores a string as it is. With `allowed`, a stored text outside the list gives the `fallback`, and a write of a value outside the list returns `false` and leaves the storage as it was.
+
+```typescript
+import { BrowserStorage, StorageCodecs } from '@venizia/ardor';
+
+const THEME = StorageCodecs.text({ allowed: ['light', 'dark'] });
+
+BrowserStorage.set({ key: '@app/store/theme', value: 'dark', codec: THEME });
+const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: 'light', codec: THEME });
+```
+
+Create the codec once, outside a component: `useStoredState` asks for a stable `codec`. The error of a refused value names no value, because a stored text can be a token.
 
 Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 

@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { BrowserStorage, type IStorageCodec, type TStorageArea } from '@venizia/ardor-kernel';
+import {
+  BrowserStorage,
+  type IStorageCodec,
+  StorageCodecs,
+  type TStorageArea,
+} from '@venizia/ardor-kernel';
 
 export interface IUseStoredStateOptions<TValue> {
   key: string;
@@ -17,11 +22,7 @@ export interface IUseStoredStateReturn<TValue> {
   remove: () => void;
 }
 
-/** Reads the stored text as it is, `null` when there is none. */
-const RAW_TEXT: IStorageCodec<string | null> = {
-  encode: (text) => text ?? '',
-  decode: (text) => text,
-};
+const RAW_TEXT = StorageCodecs.text();
 
 interface IKept<TValue> {
   key: string;
