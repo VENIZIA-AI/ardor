@@ -50,6 +50,12 @@ class BlockedStorage extends StorageStub {
   }
 }
 
+class UnlistableStorage extends StorageStub {
+  override get length(): number {
+    throw new DOMException('Access is denied', 'SecurityError');
+  }
+}
+
 const upperCase: IStorageCodec<string> = {
   encode: (value) => value.toUpperCase(),
   decode: (text) => text.toLowerCase(),
@@ -202,6 +208,120 @@ describe('BrowserStorage.remove', () => {
 
     expect(BrowserStorage.remove({ key: LocalStorageKeys.KEY_AUTH_TOKEN })).toBe(false);
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
+  });
+});
+
+describe('BrowserStorage.keys', () => {
+  beforeEach(() => {
+    localStorage.setItem('@app/store/theme', '"dark"');
+    localStorage.setItem('@app/store/old/a', '1');
+    localStorage.setItem('@app/store/old/b', '2');
+    sessionStorage.setItem('@app/store/old/session', '3');
+  });
+
+  test('lists every key of the area, and only the keys with the prefix when one is given', () => {
+    expect(BrowserStorage.keys().sort()).toEqual([
+      '@app/store/old/a',
+      '@app/store/old/b',
+      '@app/store/theme',
+    ]);
+    expect(BrowserStorage.keys({ prefix: '@app/store/old/' }).sort()).toEqual([
+      '@app/store/old/a',
+      '@app/store/old/b',
+    ]);
+    expect(BrowserStorage.keys({ prefix: '@app/store/none' })).toEqual([]);
+  });
+
+  test('reads the area named by storage', () => {
+    expect(BrowserStorage.keys({ storage: StorageAreas.SESSION })).toEqual([
+      '@app/store/old/session',
+    ]);
+  });
+
+  test('lists the session keys too, because listing writes nothing', () => {
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'real-token');
+
+    expect(BrowserStorage.keys({ prefix: LocalStorageKeys.PREFIX_AUTH })).toEqual([
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+    ]);
+  });
+
+  test('answers [], and never throws, when the area is missing or cannot be listed', () => {
+    install({ name: 'sessionStorage', storage: undefined });
+    expect(BrowserStorage.keys({ storage: StorageAreas.SESSION })).toEqual([]);
+
+    install({ name: 'localStorage', storage: new UnlistableStorage() });
+    expect(BrowserStorage.keys()).toEqual([]);
+  });
+});
+
+describe('BrowserStorage.removeWhere', () => {
+  beforeEach(() => {
+    localStorage.setItem('@app/store/theme', '"dark"');
+    localStorage.setItem('@app/store/old/a', '1');
+    localStorage.setItem('@app/store/old/b', '2');
+    sessionStorage.setItem('@app/store/old/session', '3');
+  });
+
+  test('removes every key with the prefix, answers how many, and leaves the others', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '@app/store/old/' })).toBe(2);
+    expect(BrowserStorage.keys()).toEqual(['@app/store/theme']);
+    expect(sessionStorage.getItem('@app/store/old/session')).toBe('3');
+  });
+
+  test('works in the area named by storage', () => {
+    expect(
+      BrowserStorage.removeWhere({ prefix: '@app/store/old/', storage: StorageAreas.SESSION }),
+    ).toBe(1);
+    expect(localStorage.getItem('@app/store/old/a')).toBe('1');
+  });
+
+  test('answers 0 for a prefix nothing has', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '@app/store/none' })).toBe(0);
+    expect(BrowserStorage.keys()).toHaveLength(3);
+  });
+
+  test('an empty prefix removes nothing, so a call cannot clear an area by leaving the prefix out', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '' })).toBe(0);
+    expect(BrowserStorage.keys()).toHaveLength(3);
+  });
+
+  test('never removes a key under the session prefix, even when the prefix reaches it', () => {
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'real-token');
+
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(3);
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
+    expect(BrowserStorage.removeWhere({ prefix: LocalStorageKeys.PREFIX_AUTH })).toBe(0);
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
+  });
+
+  test('notifies the subscribers of each removed key, and of no other', () => {
+    const calls: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({ key: '@app/store/old/a', listener: () => calls.push('a') }),
+      BrowserStorage.subscribe({ key: '@app/store/old/b', listener: () => calls.push('b') }),
+      BrowserStorage.subscribe({ key: '@app/store/theme', listener: () => calls.push('theme') }),
+    ];
+
+    BrowserStorage.removeWhere({ prefix: '@app/store/old/' });
+    for (const stop of stops) {
+      stop();
+    }
+
+    expect(calls.sort()).toEqual(['a', 'b']);
+  });
+
+  test('answers 0, and never throws, when the area is missing, cannot be listed or refuses removals', () => {
+    install({ name: 'sessionStorage', storage: undefined });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/', storage: StorageAreas.SESSION })).toBe(0);
+
+    install({ name: 'localStorage', storage: new UnlistableStorage() });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(0);
+
+    const blocked = new BlockedStorage();
+    blocked.setItem('@app/store/old/a', '1');
+    install({ name: 'localStorage', storage: blocked });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(0);
   });
 });
 
