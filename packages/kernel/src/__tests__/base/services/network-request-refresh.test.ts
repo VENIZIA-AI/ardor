@@ -164,13 +164,24 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(recorded.at(-1)?.provider).toBe('ldap');
   });
 
-  test('takes the user id from the response when it names one, and the token as a plain string', async () => {
+  test('keeps the same user whatever id the response names, and reads the token as a plain string', async () => {
     refreshAnswer = () => Response.json({ token: 'fresh', userId: 9 });
 
     await getItems(createService());
 
-    expect(authService.getUser().userId).toBe(9);
-    expect(authService.getAuth()?.type).toBe('Bearer');
+    expect(authService.getUser().userId).toBe(7);
+    expect(authService.getRoles()).toEqual(new Set(['admin', 'editor']));
+    expect(authService.getAuth()).toMatchObject({ value: 'fresh', type: 'Bearer' });
+  });
+
+  test('a refresh request that is answered 401 does not start another refresh', async () => {
+    refreshAnswer = () => Response.json({ error: 'expired' }, { status: 401 });
+
+    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+    expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
+    expect(authService.getAuth()?.value).toBe('stale');
   });
 
   test('without refreshTokenPath the 401 stands and no refresh is sent', async () => {

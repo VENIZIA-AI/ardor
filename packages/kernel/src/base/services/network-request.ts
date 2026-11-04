@@ -156,30 +156,27 @@ export class DefaultNetworkRequestService extends BaseService {
       type: RequestTypes.SEND,
       headers: this.getRequestHeader({ resource: path }),
     });
-    const { token, userId } = this.readRefreshedSession({ data: response.data });
     const user = this.authService.getUser();
 
     this.authService.saveAuth({
-      userId: userId ?? user.userId,
+      userId: user.userId,
       username: user.username,
       referenceId: user.referenceId,
       provider: user.provider,
-      token,
+      token: this.readRefreshedToken({ data: response.data }),
     });
     return true;
   }
 
   /**
-   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`, and a
-   * `userId` when it names one. Override it for another shape. No token is a throw.
+   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`. A
+   * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
+   * a throw.
    */
-  protected readRefreshedSession(opts: { data: unknown }): {
-    token: { value: string; type: string };
-    userId?: number | string;
-  } {
-    const body: { token?: unknown; userId?: unknown } =
+  protected readRefreshedToken(opts: { data: unknown }): { value: string; type: string } {
+    const body: { token?: unknown } =
       typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
-    const { token, userId } = body;
+    const { token } = body;
     const record = typeof token === 'object' && token !== null ? token : {};
     const value = typeof token === 'string' ? token : 'value' in record ? record.value : undefined;
     const type = 'type' in record ? record.type : undefined;
@@ -188,10 +185,7 @@ export class DefaultNetworkRequestService extends BaseService {
       throw getError({ message: '[refreshToken] The refresh response carries no token' });
     }
 
-    return {
-      token: { value, type: typeof type === 'string' ? type : 'Bearer' },
-      userId: typeof userId === 'number' || typeof userId === 'string' ? userId : undefined,
-    };
+    return { value, type: typeof type === 'string' ? type : 'Bearer' };
   }
 
   /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */

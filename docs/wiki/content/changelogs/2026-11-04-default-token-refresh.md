@@ -24,12 +24,12 @@ const restDataProviderOptions: IRestDataProviderOptions = {
 
 ## What changed
 
-- **The default refresh.** With a `refreshTokenPath` and the auth service, `refreshToken()` posts to the path with no body and the stored (expired) token, reads `{ token: { value, type } }` or `{ token: '<jwt>' }` from the answer (and a `userId` when it names one), and saves it through the auth service. It then returns `true`, so the original request is retried once.
-- **The stored session is kept.** The refresh saves the token and the user id. The stored `username`, `referenceId` and `provider` are passed back with it, and the roles are never passed, so a refresh answer that carries roles in another shape cannot wipe them.
+- **The default refresh.** With a `refreshTokenPath` and the auth service, `refreshToken()` posts to the path with no body and the stored (expired) token, reads `{ token: { value, type } }` or `{ token: '<jwt>' }` from the answer, and saves it through the auth service. It then returns `true`, so the original request is retried once.
+- **The stored session is kept.** A refresh keeps the same user: it saves the new token with the stored user id, and the stored `username`, `referenceId` and `provider` are passed back with it, and the roles are never passed, so a refresh answer that carries roles in another shape cannot wipe them.
 - **A failure is as before.** A non-2xx answer, or an answer without a token, rejects the refresh: `onAuthFailure` runs once, the `401` stands, and the stored session is as it was.
 - **Without a path, nothing changes.** With no `refreshTokenPath` the default still returns `false`. A subclass that overrides `refreshToken` is untouched.
 - **Where the auth service comes from.** `DefaultRestDataProvider.value(container)` reads the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding and gives it to the network service as a new `authService` option. A network service you build yourself passes it in the options.
-- **For another answer shape,** override the new protected hook `readRefreshedSession({ data })`.
+- **For another answer shape,** override the new protected hook `readRefreshedToken({ data })`.
 
 ## Who is affected
 
