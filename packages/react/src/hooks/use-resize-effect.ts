@@ -1,25 +1,33 @@
 import React from 'react';
 
-import { ResizeObservation, type TResizeBox } from './resize-observation';
+import { type IResizeObservation, ResizeObservation, type TResizeBox } from './resize-observation';
+
+export type TResizeTarget = React.RefObject<Element | null> | Element | null;
 
 export interface IUseResizeEffectOptions {
-  /** Read when the effect runs; pass a stable array. */
-  refs: React.RefObject<Element | null>[];
+  /** Read after every render: an element, a ref to one, or `null`, which is skipped. */
+  targets: TResizeTarget[];
   /** Receives the latest entry of each element that resized since the last call. */
   onResize: (entries: ResizeObserverEntry[]) => void;
   /** @default 'content-box' */
   box?: TResizeBox;
-  /** Also observe the direct children of each ref, and again whenever they change. @default false */
+  /** Also observe the direct children of each target, and again whenever they change. @default false */
   children?: boolean;
 }
 
+const elementOf = (target: TResizeTarget): Element | null => {
+  return target && 'current' in target ? target.current : target;
+};
+
 /**
- * Calls `onResize` at most once per animation frame when any of the elements resizes. A new
- * `onResize` is used without observing again.
+ * Calls `onResize` at most once per animation frame when any of the targets resizes. A new
+ * `onResize` is used without observing again, and the targets are read after every render, so an
+ * element held in state, a ref whose element changed and a list that grows or shrinks are followed.
  */
 export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
-  const { refs, onResize, box = 'content-box', children = false } = opts;
+  const { targets, onResize, box = 'content-box', children = false } = opts;
   const handleResize = React.useRef(onResize);
+  const observation = React.useRef<IResizeObservation>(undefined);
 
   React.useEffect(() => {
     handleResize.current = onResize;
@@ -27,11 +35,17 @@ export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
   }, [onResize]);
 
   React.useEffect(() => {
-    return ResizeObservation.observe({
-      targets: refs.flatMap((ref) => ref.current ?? []),
+    const created = ResizeObservation.observe({
       box,
       children,
       onFrame: (entries) => handleResize.current(entries),
     });
-  }, [refs, box, children]);
+    observation.current = created;
+
+    return created.stop;
+  }, [box, children]);
+
+  React.useEffect(() => {
+    observation.current?.sync(targets.flatMap((target) => elementOf(target) ?? []));
+  });
 };

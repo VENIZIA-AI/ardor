@@ -65,8 +65,11 @@ export function useElementSize(
 
     const target = ref ? ref.current : element;
 
-    return ResizeObservation.observe({
-      targets: target ? [target] : [],
+    if (!target) {
+      return () => {};
+    }
+
+    const observation = ResizeObservation.observe({
       box,
       onFrame: (entries) => {
         const entry = entries.at(-1);
@@ -82,6 +85,9 @@ export function useElementSize(
         });
       },
     });
+    observation.sync([target]);
+
+    return observation.stop;
   }, [ref, element, box, round]);
 
   return ref ? size : { ...size, ref: setElement };
