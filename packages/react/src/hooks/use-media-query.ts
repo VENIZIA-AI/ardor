@@ -1,7 +1,5 @@
 import React from 'react';
 
-const SERVER_SNAPSHOT = () => false;
-
 /** Whether the media query matches now, and again after each change. `false` in a server render. */
 export const useMediaQuery = (opts: { query: string }): boolean => {
   const { query } = opts;
@@ -17,6 +15,6 @@ export const useMediaQuery = (opts: { query: string }): boolean => {
   return React.useSyncExternalStore(
     subscribe,
     () => window.matchMedia(query).matches,
-    SERVER_SNAPSHOT,
+    () => false,
   );
 };
