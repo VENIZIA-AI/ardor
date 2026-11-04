@@ -3,7 +3,7 @@ import { type Container, getError, type TClass } from '@venizia/ignis-inversion'
 
 import {
   useInjectable,
-  useInjectableContainer,
+  useApplicationContainer,
   type TUseInjectableKeys,
   type TUseInjectableOptions,
 } from './use-injectable';
@@ -34,7 +34,7 @@ const useArtifactInNamespace = <TInstance>(opts: {
   const { options, namespace, hook } = opts;
 
   // Same inputs as `useInjectable`, so the check and the resolve read one container.
-  const container = useInjectableContainer({ container: options.container });
+  const container = useApplicationContainer({ container: options.container });
 
   // A `key` carries its namespace in the string; only a `target` is checked.
   if (options.target) {
