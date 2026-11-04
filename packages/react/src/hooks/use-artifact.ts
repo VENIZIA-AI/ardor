@@ -10,7 +10,7 @@ import {
 
 /** By class: the return type is inferred from the target. */
 export interface IUseArtifactByTarget<TInstance> {
-  /** Defaults to the application's container. */
+  /** The container to resolve from. @default The application's container (`ApplicationContext`) */
   container?: Container;
   /** The class to resolve; its recorded binding key is used. */
   target: TClass<TInstance>;
@@ -19,7 +19,7 @@ export interface IUseArtifactByTarget<TInstance> {
 
 /** By key: the caller supplies the type. */
 export interface IUseArtifactByKey {
-  /** Defaults to the application's container. */
+  /** The container to resolve from. @default The application's container (`ApplicationContext`) */
   container?: Container;
   /** The binding key to resolve. */
   key: TUseInjectableKeys;
@@ -96,7 +96,24 @@ export const useConfiguration = <TInstance = unknown>(
     hook: 'useConfiguration',
   });
 
-/** Resolves the instance bound under the `repository` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+/**
+ * Resolves the instance bound under the `repository` namespace by `target` or `key`. A `target` bound under another namespace throws.
+ *
+ * @example
+ * ```tsx
+ * import { repository, useRepository } from '@venizia/ardor';
+ *
+ * @repository()
+ * class ProductRepository {
+ *   findStock(productId: string) { return productId ? 42 : 0; }
+ * }
+ *
+ * export function StockDisplay() {
+ *   const productRepository = useRepository({ target: ProductRepository });
+ *   return <span>Stock: {productRepository.findStock('p1')}</span>;
+ * }
+ * ```
+ */
 export const useRepository = <TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance =>

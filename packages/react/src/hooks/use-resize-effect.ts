@@ -18,6 +18,18 @@ export interface IUseResizeEffectOptions {
  * Calls `onResize` at most once per animation frame when any of the targets resizes. A new
  * `onResize` is used without observing again, and the targets are read after every render, so an
  * element held in state, a ref whose element changed and a list that grows or shrinks are followed.
+ *
+ * @example
+ * ```tsx
+ * import React from 'react';
+ * import { useResizeEffect } from '@venizia/ardor';
+ *
+ * export function Panel() {
+ *   const ref = React.useRef<HTMLDivElement>(null);
+ *   useResizeEffect({ targets: [ref], onResize: (entries) => console.log(entries.length) });
+ *   return <div ref={ref} />;
+ * }
+ * ```
  */
 export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
   const { targets, onResize, box = 'content-box', children = false } = opts;

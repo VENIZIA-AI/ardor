@@ -68,6 +68,16 @@ interface IDecoded<TValue> {
  * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
  * With `writeDelayMs` the value waits in the same place for the delay: a change of the storage from
  * outside drops it, and an unmount or a new key or storage writes it at once.
+ *
+ * @example
+ * ```tsx
+ * import { useStoredState } from '@venizia/ardor';
+ *
+ * export function ThemeToggle() {
+ *   const { value, setValue } = useStoredState({ key: 'theme', defaultValue: 'light' });
+ *   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
+ * }
+ * ```
  */
 export const useStoredState: IUseStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,

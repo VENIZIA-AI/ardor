@@ -14,14 +14,45 @@ export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, st
 /** A key the injectable hooks accept: a kernel binding key or one added to `IUseInjectableKeysOverrides`. */
 export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
 
-/** Resolve by `key` or by `target` class, never both. `container` defaults to the application's. */
+/**
+ * Resolve by `key` or by `target` class, never both.
+ *
+ * @example
+ * ```ts
+ * import { CoreBindings, type TUseInjectableOptions } from '@venizia/ardor';
+ *
+ * const byKey: TUseInjectableOptions = { key: CoreBindings.DEFAULT_REST_DATA_PROVIDER };
+ * class Greeter {}
+ * const byTarget: TUseInjectableOptions = { target: Greeter };
+ * ```
+ */
 export type TUseInjectableOptions =
-  | { container?: Container; key: TUseInjectableKeys; target?: never }
-  | { container?: Container; key?: never; target: TClass<unknown> };
+  | {
+      /** The container to resolve from. @default The application's container (`ApplicationContext`) */
+      container?: Container;
+      key: TUseInjectableKeys;
+      target?: never;
+    }
+  | {
+      /** The container to resolve from. @default The application's container (`ApplicationContext`) */
+      container?: Container;
+      key?: never;
+      target: TClass<unknown>;
+    };
 
 /**
  * The container an injectable hook resolves from: the one passed in, else the application's. Shared,
  * so a hook never checks one container and resolves from another.
+ *
+ * @example
+ * ```tsx
+ * import { CoreBindings, useApplicationContainer } from '@venizia/ardor';
+ *
+ * export function BindingCheck() {
+ *   const container = useApplicationContainer();
+ *   return <span>{container.isBound({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) ? 'bound' : 'unbound'}</span>;
+ * }
+ * ```
  */
 export const useApplicationContainer = (opts?: { container?: Container }): Container => {
   const applicationContext = React.useContext(ApplicationContext);
