@@ -1,5 +1,6 @@
 import React from 'react';
 
+/** When `useBeforeUnload` asks, and the text it sets. */
 export interface IUseBeforeUnloadOptions {
   /** @default true */
   enabled?: boolean;

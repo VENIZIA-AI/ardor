@@ -2,6 +2,7 @@ import React from 'react';
 
 import { ElementTargets, type TElementTarget } from './element-target';
 
+/** The element `useIntersection` watches and when it delivers an entry. */
 export interface IUseIntersectionOptions {
   /** Read after every render: an element, a ref to one, or `null`. */
   target: TElementTarget;

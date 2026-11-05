@@ -6,6 +6,7 @@ import type { UnresolvedPolicies } from './constants';
 /** `'error'` or `'unspecified'`; see `UnresolvedPolicies`. */
 export type TUnresolvedPolicy = TConstValue<typeof UnresolvedPolicies>;
 
+/** Where the `buildInfoFile` plugin reads the app from, what it names the file and how it treats a missing commit. */
 export interface IBuildInfoFileOptions {
   /**
    * The app folder, where its package.json is.

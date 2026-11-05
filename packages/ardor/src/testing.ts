@@ -6,6 +6,7 @@ import { CoreBindings, type BaseArdorApplication } from '@venizia/ardor-kernel';
 /** A class (matched exactly), a class name, or a binding key; the shape the shared core takes. */
 export type TBootSkip = inversion.TBindingSkip;
 
+/** What `assertArdorApplicationBoots` leaves out, which locale it loads, and when an empty application passes. */
 export interface IAssertArdorApplicationBootsOptions {
   /**
    * Bindings the check leaves unresolved, for the few that open a socket or read the page when

@@ -6,11 +6,13 @@ import { BrowserClipboard } from '@venizia/ardor-kernel';
 
 const logger = LoggerFactory.getLogger(['useCopyToClipboard']);
 
+/** How long `useCopyToClipboard` keeps `isCopied` set. */
 export interface IUseCopyToClipboardOptions {
   /** Set `isCopied` back to `false` this many milliseconds after a copy; 0 or less never resets. @default 0 */
   resetMs?: number;
 }
 
+/** The copy function of `useCopyToClipboard` and the result of its last call. */
 export interface IUseCopyToClipboardReturn {
   /** Resolves `true` when the text is on the clipboard and `false` otherwise, and never throws. */
   copy: (opts: { value: string }) => Promise<boolean>;

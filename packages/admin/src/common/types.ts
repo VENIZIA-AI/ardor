@@ -61,6 +61,7 @@ export type IReactAdminDataProvider<TResource extends string = string> = Pick<
   | 'deleteMany'
 >;
 
+/** react-admin's data provider with a free-form `send` and access to the network service and its auth. */
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
@@ -94,6 +95,7 @@ export interface IAuthRejection {
   message?: string | false;
 }
 
+/** The auth provider of an ARDOR application: react-admin's methods, the user's roles and a token refresh. */
 export interface IAuthProvider extends IReactAdminAuthProvider {
   /** The roles of the signed-in user. */
   getRoles: (params?: unknown) => Promise<Set<string>>;
@@ -108,6 +110,7 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
  */
 export type TI18nSource = object | (() => Promise<object>);
 
+/** What `DefaultI18nProvider` is built from: the message sources and the languages on offer. */
 export interface II18nProviderOptions {
   /**
    * Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed.
