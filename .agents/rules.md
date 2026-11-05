@@ -31,7 +31,7 @@ base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C
 | [S - Security](#s---security) | S-01 … S-06 | Secrets, injected content, leaks, auth defaults, dependencies |
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
-| [D - Docs](#d---docs) | D-01 … D-05 | Where a wiki page goes, its style, its wiring and its gates |
+| [D - Docs](#d---docs) | D-01 … D-06 | Where a wiki page goes, its style, its wiring and its gates |
 | [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
@@ -137,6 +137,7 @@ reads its paths from the manifest and applies these rules. D-01 to D-04 mean the
 | **D-03** | **A new page is wired in twice:** the sidebar in `docs/wiki/site/.vitepress/config.mts`, and the `index.md` of its section when it has one. A changelog entry is wired by its file: the index lists every dated entry and the feed carries it, so there is no row and no sidebar link to add. |
 | **D-04** | **Four docs gates, all green:** `make docs` (an orphan page or a dead sidebar link via `check-sidebar.mts`, a `ts` fence that does not compile via `check-snippets.mts`, then a dead link in the build), `make wiki-links-check` (a named source path that does not exist), `make wiki-anchors-check` (a `#fragment` that resolves nowhere; it reads the build), `make lint-wiki` (the wiki's own scripts). A red gate sends you back to the step that caused it; then re-run all four. |
 | **D-05** | **Build before the docs gates.** `check-snippets.mts` compiles every `ts` fence of a page as one program against the packages' `dist`, so run `make build-all` first; a stale `dist` passes or fails a fence for the wrong reason. Mark a deliberate fragment `ts no-check`. |
+| **D-06** | **Every export reachable from a published package's `exports` entry, except one marked `@internal`, carries TSDoc in the format of V-C-09**, because the generated API reference and the atlas `symbol` tool read it. It says only what the name and the types do not. It is written with the change that writes or changes the export, never as a sweep. A TSDoc that no longer matches the code is wrong and is fixed in the same change. For these exports, `@param` and `@default` lines, like `@example`, do not count against the three-line limit of V-C-09. |
 
 ## C - Code and writing
 
