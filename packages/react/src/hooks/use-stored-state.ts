@@ -7,7 +7,7 @@ import {
   type TStorageArea,
 } from '@venizia/ardor-kernel';
 
-/** The key, storage area and codec `useStoredState` reads and writes with. */
+/** What `useStoredState` stores, where and how. */
 export interface IUseStoredStateOptions<TValue> {
   /** The storage key. */
   key: string;

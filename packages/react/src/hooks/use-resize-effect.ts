@@ -3,7 +3,7 @@ import React from 'react';
 import { ElementTargets, type TElementTarget } from './element-target';
 import { type IResizeObservation, ResizeObservation, type TResizeBox } from './resize-observation';
 
-/** The elements `useResizeEffect` watches, the box it reads and the callback it calls. */
+/** What `useResizeEffect` watches and the callback it calls. */
 export interface IUseResizeEffectOptions {
   /** Read after every render: an element, a ref to one, or `null`, which is skipped. */
   targets: TElementTarget[];
