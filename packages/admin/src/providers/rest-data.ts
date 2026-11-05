@@ -35,7 +35,6 @@ import {
   ValueUtility,
   NetworkHeaders,
   type ISendParams,
-  type ISendResponse,
   RequestCountData,
   RequestMethods,
   RequestTypes,
@@ -425,7 +424,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   async send<TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
-  }): Promise<ISendResponse<TResult>> {
+  }): Promise<INetworkResponse<TResult>> {
     const { resource, params } = opts;
 
     if (!params?.method) {

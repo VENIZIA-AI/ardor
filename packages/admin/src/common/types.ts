@@ -9,8 +9,8 @@ import type { RouteProps } from 'react-router-dom';
 import type {
   DefaultNetworkRequestService,
   IDataSourceAuth,
+  INetworkResponse,
   ISendParams,
-  ISendResponse,
   RequestCountData,
   TConstValue,
   TRequestMethod,
@@ -69,7 +69,7 @@ export interface IDataProvider<
   send: <TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
-  }) => Promise<ISendResponse<TResult>>;
+  }) => Promise<INetworkResponse<TResult>>;
 
   /** The network service every request goes through. */
   getNetworkService(): DefaultNetworkRequestService;

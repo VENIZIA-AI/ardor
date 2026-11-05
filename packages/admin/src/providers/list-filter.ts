@@ -11,8 +11,6 @@ export interface IListFilter {
   limit?: number;
   /** IGNIS's offset; `ListFilterBuilder.build` sets this one. */
   skip?: number;
-  /** An alias of `skip`. */
-  offset?: number;
   include?: unknown;
   fields?: unknown;
   /** Not part of the filter sent: `ListFilterBuilder.build` moves it into the query string. */
@@ -69,7 +67,7 @@ export class ListFilterBuilder {
     } else {
       const { page = 1, perPage = 0 } = pagination ?? {};
 
-      // No `perPage` is no limit. `skip` is IGNIS's offset (`offset` is its alias): one is enough.
+      // No `perPage` is no limit. `skip` is IGNIS's offset.
       if (perPage > 0) {
         filter['limit'] = perPage;
         filter['skip'] = (Math.max(page, 1) - 1) * perPage;

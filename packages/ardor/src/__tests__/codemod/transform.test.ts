@@ -340,7 +340,61 @@ describe('NamespaceTransform: types that became plain types', () => {
   });
 });
 
+describe('NamespaceTransform: ISendResponse', () => {
+  test('renames the import and every use to INetworkResponse, generics and indexes included', () => {
+    const result = run(
+      [
+        "import { type ISendResponse, type ISendParams } from '@venizia/ardor';",
+        '',
+        'export type A = ISendResponse<number>;',
+        "export type B = ISendResponse['data'];",
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.text).toBe(
+      [
+        "import { type ISendParams, type INetworkResponse } from '@venizia/ardor';",
+        '',
+        'export type A = INetworkResponse<number>;',
+        "export type B = INetworkResponse['data'];",
+        '',
+      ].join('\n'),
+    );
+  });
+
+  test('lists it when the file already declares INetworkResponse itself', () => {
+    const text = [
+      "import type { ISendResponse } from '@venizia/ardor';",
+      'type INetworkResponse = number;',
+      'export type A = ISendResponse;',
+      '',
+    ].join('\n');
+    const result = run(text);
+
+    expect(result.text).toBe(text);
+    expect(result.findings.map((finding) => finding.name)).toEqual(['ISendResponse']);
+  });
+});
+
 describe('NamespaceTransform: removed with no replacement', () => {
+  test('lists .offset in a file that imports the list filter, and not elsewhere', () => {
+    const filter = [
+      "import type { IListFilter } from '@venizia/ardor';",
+      'export const a = (f: IListFilter) => f.offset;',
+      'export const b: IListFilter = { where: {}, offset: 5 };',
+      '',
+    ].join('\n');
+    const other =
+      "import { App } from '@venizia/ardor';\nexport const a = (f: { offset: number }) => f.offset;\n";
+
+    expect(run(filter).findings.map((finding) => [finding.name, finding.line])).toEqual([
+      ['.offset', 2],
+      ['.offset', 3],
+    ]);
+    expect(run(other).findings).toEqual([]);
+  });
+
   test('lists a removed export at its import and changes nothing', () => {
     const text = [
       "import { isEditableTarget, type ISyncFC, type TDataCount } from '@venizia/ardor';",

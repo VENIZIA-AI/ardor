@@ -18,7 +18,7 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
 | `HttpRepository` | class | Reads and writes one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
 | `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
-| `ISendParams` / `ISendResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
+| `ISendParams` / `INetworkResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
 | `useService` / `useRepository` | const | How a component resolves a service or a repository from the container. |
 
 ## BaseService: scope + logger
@@ -127,13 +127,13 @@ export class PricingService extends BaseService {
 When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service.
 
 ```ts no-check
-import { api, BaseService, ISendParams, ISendResponse } from '@venizia/ardor';
+import { api, BaseService, ISendParams, INetworkResponse } from '@venizia/ardor';
 
 export class PricingService extends BaseService {
   ...
 
   @api()
-  async list(opts: ISendParams): Promise<ISendResponse['data']> {
+  async list(opts: ISendParams): Promise<INetworkResponse['data']> {
     const response = await ... // your transport call, see the network reference
     return response.data;
   }
@@ -157,7 +157,7 @@ Do the same in a service. Throw, do not return `null` or `undefined` on failure.
 
 A service in the kernel layer should not import from `ra-core`. `GetListParams`, `RaRecord`, and friends belong to `IReactAdminDataProvider` in the admin package. That is the adapter between react-admin and your services.
 
-Inside a service, `ISendParams` and `ISendResponse` are enough. They describe what goes over the wire. If a service signature needs a react-admin type, the react-admin logic has leaked one layer too far. Move it into the data provider.
+Inside a service, `ISendParams` and `INetworkResponse` are enough. They describe what goes over the wire. If a service signature needs a react-admin type, the react-admin logic has leaked one layer too far. Move it into the data provider.
 
 ## One instance per application
 
@@ -195,5 +195,5 @@ The component never sees how the class was built. Swap the implementation in the
 - [Hooks](../references/hooks) - `useService`, `useRepository` and the other React hooks
 - [Network](../references/network) - the transport a service calls
 - [Data provider](../references/data-provider) - where react-admin types belong
-- [Types](../references/types) - `ISendParams`, `ISendResponse`, and other kernel types
+- [Types](../references/types) - `ISendParams`, `INetworkResponse`, and other kernel types
 - [Module augmentation](./module-augmentation) - typing your own binding keys

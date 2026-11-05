@@ -67,9 +67,6 @@ export interface ISendParams {
   extra?: TExtraRequest;
 }
 
-/** What `IDataProvider.send` answers: the network service's response. */
-export type ISendResponse<T = unknown> = INetworkResponse<T>;
-
 /** One of the `RequestBodyTypes` values. */
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 

@@ -110,6 +110,21 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('removed.ts:1 useSizer');
   });
 
+
+  test('--check exits 1 for IListFilter offset, and --write renames ISendResponse', async () => {
+    seed({
+      'src/alias.ts':
+        "import type { IListFilter, ISendResponse } from '@venizia/ardor';\nexport const a = (f: IListFilter, r: ISendResponse) => [f.offset, r];\n",
+    });
+    await run(['--write']);
+
+    expect(readFileSync(join(root, 'src/alias.ts'), 'utf8')).toContain('r: INetworkResponse');
+
+    const result = await run(['--check']);
+    expect(result).toBe(1);
+    expect(errors.join('\n')).toContain('alias.ts:2 .offset');
+  });
+
   test('--hooks moves a hook from the umbrella; without it the hook stays', async () => {
     seed({
       'src/hook.ts':
