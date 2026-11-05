@@ -322,6 +322,68 @@ describe('useResizeEffect', () => {
   });
 });
 
+describe('useResizeEffect with beforePaint', () => {
+  test('onResize runs inside the observer callback, with no animation frame requested', () => {
+    const element = document.createElement('div');
+    const { calls, onResize } = recorder();
+    renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize, beforePaint: true }));
+    const entry = entryOf({ width: 40, height: 30, target: element });
+
+    fire({ observer: observerAt(0), entries: [entry] });
+
+    expect(calls).toEqual([[entry]]);
+    expect(frames.size).toBe(0);
+  });
+
+  test('the entries of one observer callback give one call, and the next callback a new one', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const { calls, onResize } = recorder();
+    renderHook(() => {
+      useResizeEffect({ targets: [refOf(first), refOf(second)], onResize, beforePaint: true });
+    });
+    const one = entryOf({ width: 1, height: 1, target: first });
+    const two = entryOf({ width: 2, height: 2, target: second });
+    const three = entryOf({ width: 3, height: 3, target: first });
+
+    fire({ observer: observerAt(0), entries: [one, two] });
+    fire({ observer: observerAt(0), entries: [three] });
+
+    expect(calls).toEqual([[one, two], [three]]);
+  });
+
+  test('without the option the same resize waits for the animation frame', () => {
+    const element = document.createElement('div');
+    const { calls, onResize } = recorder();
+    renderHook(() => useResizeEffect({ targets: [refOf(element)], onResize }));
+
+    fire({
+      observer: observerAt(0),
+      entries: [entryOf({ width: 40, height: 30, target: element })],
+    });
+
+    expect(calls).toHaveLength(0);
+    expect(frames.size).toBe(1);
+  });
+
+  test('turning the option on observes again', () => {
+    const element = document.createElement('div');
+    const targets = [refOf(element)];
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { beforePaint: boolean }) => {
+        useResizeEffect({ targets, onResize, beforePaint: props.beforePaint });
+      },
+      { initialProps: { beforePaint: false } },
+    );
+
+    rerender({ beforePaint: true });
+
+    expect(observers).toHaveLength(2);
+    expect(observerAt(0).disconnected).toBe(true);
+  });
+});
+
 describe('useResizeEffect with children', () => {
   const waitForMutations = async () => {
     await act(async () => {

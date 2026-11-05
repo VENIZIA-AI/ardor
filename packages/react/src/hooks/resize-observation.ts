@@ -5,7 +5,9 @@ export interface IResizeObservationOptions {
   box: TResizeBox;
   /** Also observe the direct children of each target, and again whenever they change. @default false */
   children?: boolean;
-  /** Called at most once per animation frame, with the latest entry of each element that resized. */
+  /** Call `onFrame` inside the `ResizeObserver` callback, after layout and before paint, instead of on the next animation frame. */
+  beforePaint?: boolean;
+  /** Called with the latest entry of each element that resized: at most once per animation frame, or once per observer callback with `beforePaint`. */
   onFrame: (entries: ResizeObserverEntry[]) => void;
 }
 
@@ -18,7 +20,7 @@ export interface IResizeObservation {
 export class ResizeObservation {
   /** Does nothing without `ResizeObserver`. */
   static observe(opts: IResizeObservationOptions): IResizeObservation {
-    const { box, children = false, onFrame } = opts;
+    const { box, children = false, beforePaint = false, onFrame } = opts;
 
     if (typeof ResizeObserver === 'undefined') {
       return { sync: () => {}, stop: () => {} };
@@ -29,9 +31,24 @@ export class ResizeObservation {
     let current: Element[] = [];
     let frame: number | undefined;
 
+    const flush = () => {
+      const batch = [...latest.values()];
+      latest.clear();
+
+      if (batch.length > 0) {
+        onFrame(batch);
+      }
+    };
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         latest.set(entry.target, entry);
+      }
+
+      if (beforePaint) {
+        flush();
+
+        return;
       }
 
       if (frame !== undefined) {
@@ -40,12 +57,7 @@ export class ResizeObservation {
 
       frame = requestAnimationFrame(() => {
         frame = undefined;
-        const batch = [...latest.values()];
-        latest.clear();
-
-        if (batch.length > 0) {
-          onFrame(batch);
-        }
+        flush();
       });
     });
 

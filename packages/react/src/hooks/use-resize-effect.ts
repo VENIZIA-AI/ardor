@@ -13,12 +13,21 @@ export interface IUseResizeEffectOptions {
   box?: TResizeBox;
   /** Also observe the direct children of each target, and again whenever they change. @default false */
   children?: boolean;
+  /**
+   * Call `onResize` inside the `ResizeObserver` callback, after layout and before paint, instead of on
+   * the next animation frame, once per observer callback. What `onResize` draws or styles directly
+   * shows in the frame that resized; a state update renders later. Resizing an observed element from
+   * it can report "ResizeObserver loop completed with undelivered notifications".
+   * @default false
+   */
+  beforePaint?: boolean;
 }
 
 /**
- * Calls `onResize` at most once per animation frame when any of the targets resizes. A new
- * `onResize` is used without observing again, and the targets are read after every render, so an
- * element held in state, a ref whose element changed and a list that grows or shrinks are followed.
+ * Calls `onResize` at most once per animation frame when any of the targets resizes, or inside the
+ * observer callback with `beforePaint`. A new `onResize` is used without observing again, and the
+ * targets are read after every render, so an element held in state, a ref whose element changed and
+ * a list that grows or shrinks are followed.
  *
  * @example
  * ```tsx
@@ -33,7 +42,7 @@ export interface IUseResizeEffectOptions {
  * ```
  */
 export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
-  const { targets, onResize, box = 'content-box', children = false } = opts;
+  const { targets, onResize, box = 'content-box', children = false, beforePaint = false } = opts;
   const handleResize = React.useRef(onResize);
   const observation = React.useRef<IResizeObservation>(undefined);
 
@@ -47,12 +56,13 @@ export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
     const created = ResizeObservation.observe({
       box,
       children,
+      beforePaint,
       onFrame: (entries) => handleResize.current(entries),
     });
     observation.current = created;
 
     return created.stop;
-  }, [box, children]);
+  }, [box, children, beforePaint]);
 
   React.useEffect(() => {
     observation.current?.sync(
