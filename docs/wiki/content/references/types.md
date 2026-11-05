@@ -1,11 +1,11 @@
 ---
 title: Types
-description: The public type vocabulary of ARDOR grouped by package, with each type described on one line alongside where it is used across kernel, react, and admin.
+description: The main public types of ARDOR grouped by package, each described on one line, with where it is used across kernel, react, and admin.
 ---
 
 # Types
 
-ARDOR organizes its public type vocabulary across three packages: `@venizia/ardor-kernel` (primitives, constants, network options, and repositories), `@venizia/ardor-react` (React context and hooks), and `@venizia/ardor-admin` (react-admin providers and application components). All symbols can be imported directly from `@venizia/ardor` (or `@venizia/ardor/repository` for repository classes and datasource settings).
+This page lists the main public types of ARDOR, not every exported type (the hook option and return interfaces are on the [hooks page](./hooks)), across three packages: `@venizia/ardor-kernel` (primitives, constants, network options, and repositories), `@venizia/ardor-react` (React context and hooks), and `@venizia/ardor-admin` (react-admin providers and application components). All symbols can be imported directly from `@venizia/ardor` (or `@venizia/ardor/repository` for repository classes and datasource settings).
 
 ```ts
 import type { IdType, ISendParams, ValueOrPromise } from '@venizia/ardor';
@@ -145,9 +145,9 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 
 | Type | Kind | Definition and usage |
 |---|---|---|
-| `IReactAdminDataProvider<TResource>` | `interface` | Nine standard react-admin data methods with positional arguments `(resource, params)`. |
+| `IReactAdminDataProvider<TResource>` | `type` | Nine standard react-admin data methods with positional arguments `(resource, params)`. |
 | `IDataProvider<TResource>` | `interface` | ARDOR data provider contract extending react-admin with `send`, `getNetworkService`, and `getDataSourceAuth`. |
-| `IReactAdminAuthProvider` | `interface` | Standard react-admin auth provider contract (`login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess`). |
+| `IReactAdminAuthProvider` | `type` | Standard react-admin auth provider contract (`login`, `logout`, `checkAuth`, `checkError`, `getIdentity`, `getPermissions`, `canAccess`). |
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. |
 | `II18nProviderOptions` | `interface` | i18n configuration options (`i18nSources`, `languages`), bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. |
 | `TI18nSource` | `type` | The messages of one locale: an object, or a loader `() => Promise<object>` called the first time the locale is used. |

@@ -25,6 +25,7 @@ Hooks (`src/hooks/index.ts`):
 - `useUntypedTranslate` - ra-core's `useTranslate` with a `string` key, for keys that exist only at run time; `useTranslate` is that function with the narrower key type (`TUseTranslateFn`).
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
+- `useFeatures` - reads the features bound in the container; `[]` when none is bound. See [feature modules](/architecture/feature-modules.md).
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
 - `useDocumentTitle` - sets the tab title to the screen title plus `appTitle` and restores the title it replaced on change or unmount, unless a newer title was written since; `fallback: true` makes a layout's call a base title that screens override.
 - `useHtmlLang` - keeps `document.documentElement.lang` on the ra-core locale, for screen readers.

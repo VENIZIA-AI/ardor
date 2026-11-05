@@ -18,8 +18,8 @@ control and `@venizia/ignis-filter` for the query vocabulary the data layer spea
 
 | Package | Role | Depends on |
 |---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin. | IGNIS inversion + filter |
-| `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React |
+| `@venizia/ardor-kernel` | Isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin. | The IGNIS packages in its peer list |
+| `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React, the IGNIS packages in its peer list |
 | `@venizia/ardor-admin` | The react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles. | kernel, react, `ra-core` |
 | `@venizia/ardor` | Umbrella. Re-exports all three, so an application needs one dependency and one import specifier. | the three above |
 
@@ -47,7 +47,7 @@ File names follow the family convention - named by role, never repeating the fol
 
 ## Breaking changes
 
-There are exactly four renames. Every other exported symbol keeps its name.
+As of ra-core-infra 0.0.3-18 there are exactly four renames. Every other exported symbol keeps its name. Later ARDOR releases removed and moved names too: after the move, run `ardor codemod namespace` and read [Upgrading ARDOR](./upgrading-ardor).
 
 | Before | After |
 |---|---|

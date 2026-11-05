@@ -1,6 +1,6 @@
 ---
 title: BrowserStorage.keys and removeWhere list and sweep keys by prefix
-description: BrowserStorage.keys lists the keys of a storage area, and BrowserStorage.removeWhere removes the keys with a prefix, keeping the no-throw contract, the session guard and the subscriber notification.
+description: BrowserStorage.keys lists the keys of a storage area and removeWhere removes those with a prefix, without throwing.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 ---
 

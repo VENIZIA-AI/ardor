@@ -359,6 +359,22 @@ describe('NamespaceTransform: removed with no replacement', () => {
     expect(result.findings.every((finding) => finding.reason.startsWith('removed:'))).toBe(true);
   });
 
+  test('lists the removed hooks useSizer and useInjectableContainer at their import', () => {
+    const text = [
+      "import { useInjectableContainer, useSizer } from '@venizia/ardor';",
+      '',
+      'export const a = [useInjectableContainer, useSizer];',
+      '',
+    ].join('\n');
+    const result = run(text);
+
+    expect(result.text).toBe(text);
+    expect(result.findings.map((finding) => finding.name)).toEqual([
+      'useInjectableContainer',
+      'useSizer',
+    ]);
+  });
+
   test('lists the removed static members with their line', () => {
     const result = run(
       [

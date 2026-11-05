@@ -13,7 +13,7 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 | You are on | You move to | Read |
 |------------|-------------|------|
 | 0.4.0 or older | 0.4.1 | [ARDOR 0.4.0](../../changelogs/2026-10-24-ardor-0-4-0) and [ARDOR 0.4.1](../../changelogs/2026-10-25-ardor-0-4-1) |
-| 0.4.1 | 0.4.3 | [Everything since 0.4.1](../../changelogs/2026-10-25-batch-overview) |
+| 0.4.1 or 0.4.2 | 0.4.3 | [Everything since 0.4.1](../../changelogs/2026-10-25-batch-overview) |
 | 0.4.3 | 0.4.4 | [Everything since 0.4.3](../../changelogs/2026-10-26-batch-overview) |
 | 0.4.4 | 0.4.5 | [Everything since 0.4.4](../../changelogs/2026-10-28-batch-overview) |
 | 0.4.5 | 0.4.6 | No changelog entry: no change to the code of the packages (release tooling, devDependencies and the lib preset only) |
@@ -22,7 +22,7 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 
 ## The codemod
 
-`ardor codemod namespace` moves the names that 0.4.7 removed from `@venizia/ardor` to the class members that replace them, in your source files. The list of old and new names is in [how to update your project](../../changelogs/2026-11-01-class-namespaces#how-to-upgrade). It reads syntax only, so a name that the file also declares itself, a re-export by name and a class name already taken are listed with their line and left for you.
+`ardor codemod namespace` moves the names that 0.4.7 removed from `@venizia/ardor` to the class members that replace them, in your source files. It also rewrites `NullableType`, `NumberIdType` and `StringIdType` to the plain types, moves the kernel `Logger` stack to `@venizia/ignis-helpers/core`, and lists, without changing them, the removed names that have no replacement (`isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE`, two `HeaderConstants` members, the `enableDebug` prop, and the hooks `useSizer` and `useInjectableContainer`). It reads imports from the four ARDOR packages; with no path it reads the current directory, and a path may be one file. The list of old and new names is in [how to update your project](../../changelogs/2026-11-01-class-namespaces#how-to-upgrade). It reads syntax only, so a name that the file also declares itself, a re-export by name and a class name already taken are listed with their line and left for you.
 
 It needs `typescript` `>=5.0.0`, an optional peer of `@venizia/ardor`; without it the command exits with code 2. It reads `.ts`, `.tsx`, `.mts` and `.cts` files, not `.d.ts`. Commit your work first, then preview, write, and run your formatter:
 

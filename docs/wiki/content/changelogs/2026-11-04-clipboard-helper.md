@@ -1,12 +1,12 @@
 ---
-title: BrowserClipboard.writeText and BrowserClipboard.readText work outside React and never throw
-description: BrowserClipboard is a kernel helper that writes and reads the clipboard text and answers false or undefined on every refusal; useCopyToClipboard calls it and no longer throws where navigator is not declared.
+title: BrowserClipboard writes and reads the clipboard outside React
+description: BrowserClipboard.writeText and readText answer false or undefined on every refusal; useCopyToClipboard calls it and no longer throws on a server.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor']
 ---
 
 # Changelog - 2026-11-04
 
-## BrowserClipboard.writeText and BrowserClipboard.readText work outside React and never throw
+## BrowserClipboard writes and reads the clipboard outside React
 
 <Badge type="tip" text="New Feature" />
 
@@ -25,7 +25,7 @@ const pasted = await BrowserClipboard.readText();
 - **`BrowserClipboard.readText()`** answers the text, or `undefined`. Reading needs a permission and a user gesture, and some browsers do not offer it, so `undefined` is a normal answer.
 - **Every refusal is an answer, not an error.** No `navigator` (a server render), no `navigator.clipboard` (an insecure context, an old WebView), a denied permission, no user gesture, a document that is not focused, and a thrown error all give `false` or `undefined`.
 - **No fallback and no logging.** The helper does not use `document.execCommand('copy')` (deprecated, needs a DOM node) and logs nothing, so the caller decides what to show.
-- **`useCopyToClipboard` calls the helper.** It still returns `{ copy }` and a boolean, and still logs a warning when the text is not copied. It also no longer throws a `ReferenceError` where `navigator` is not declared, such as a server render.
+- **`useCopyToClipboard` calls the helper.** It returns `{ copy, isCopied }` (see [the `isCopied` entry](./2026-11-04-copy-is-copied)), and still logs a warning when the text is not copied. It also no longer throws a `ReferenceError` where `navigator` is not declared, such as a server render.
 
 ## Who is affected
 

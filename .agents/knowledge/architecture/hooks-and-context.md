@@ -34,7 +34,7 @@ Both are thin, single-purpose accessors: they exist so components do not need to
 ```ts
 type TUseInjectableOptions =
   | { container?: Container; key: TUseInjectableKeys; target?: never }
-  | { container?: Container; key?: never; target: TClass<AnyType> };
+  | { container?: Container; key?: never; target: TClass<unknown> };
 ```
 
 Resolution rules:
@@ -47,7 +47,7 @@ The type `TUseInjectableKeys` is the union of core binding key strings plus the 
 
 ## Per-stereotype hooks
 
-`useService`, `useProvider`, `useComponent` and `useConfiguration` (`packages/react/src/hooks/use-artifact.ts`) are built on `useInjectable` and need the same tree: a container on `ApplicationContext`, or an explicit `container` option. Each takes `{ target }` or `{ key }` in an options object, and `{ target }` carries the same stereotype requirement as above. With `{ target }` each hook infers the return type from the class and asserts that the class is bound under its own namespace; see the per-stereotype hooks section of [react](/packages/react.md) for the details.
+`useService`, `useProvider`, `useComponent`, `useConfiguration` and `useRepository` (`packages/react/src/hooks/use-artifact.ts`) are built on `useInjectable` and need the same tree: a container on `ApplicationContext`, or an explicit `container` option. Each takes `{ target }` or `{ key }` in an options object, and `{ target }` carries the same stereotype requirement as above. With `{ target }` each hook infers the return type from the class and asserts that the class is bound under its own namespace; see the per-stereotype hooks section of [react](/packages/react.md) for the details.
 
 ## ra-core hooks
 
@@ -57,6 +57,7 @@ ARDOR wraps several ra-core hooks to add typing and safe fallbacks. These need r
 - `useNotifyError` - turns an `ApplicationError` into a react-admin notification, reading `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. Needs the ra-core notification context. See [Error flow](/architecture/error-flow.md).
 - `useRefreshToken` - needs the ra-core auth provider context and a TanStack `QueryClientProvider`. See [Auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - needs ra-core locale state plus `DEFAULT_REST_DATA_PROVIDER` bound in the container, so it can push the current locale onto outgoing request headers. See [Header protocol](/architecture/header-protocol.md) and [Data provider pipeline](/architecture/data-provider-pipeline.md).
+- `useFeatures` - reads the features bound in the container (`CoreBindings.FEATURES`) and returns `[]` when none is bound. See [Feature modules](/architecture/feature-modules.md).
 - `useHtmlLang` - needs ra-core locale state; it writes the locale to `document.documentElement.lang` on every change. Like `useRequestHeaderLocale`, nothing in ARDOR calls it - mount it once in a component that stays mounted.
 
 Each of these hooks will throw or degrade differently if its required provider is missing, so when adding a new hook of this kind, document its tree requirements explicitly - see [Adding a hook](/process/adding-a-hook.md).
@@ -73,4 +74,4 @@ A second group of hooks needs nothing from React context at all - they only use 
 
 ## Test environment
 
-Because most of these hooks throw on a missing context or provider, tests that render components using them must set up the same tree the runtime application would provide: wrap with `ApplicationContext.Provider` supplying at least a `container` (and `logger` if the component under test needs it), and wrap ra-core dependent components with the relevant react-admin provider context. See [Testing conventions](/conventions/testing-conventions.md) and [Build, run, test](/overview/build-run-test.md) for how the test harness assembles these providers. Hooks with browser-only requirements (`useDebounce`, `useElementSize`, etc.) need no special test setup beyond a DOM environment.
+Because most of these hooks throw on a missing context or provider, tests that render components using them must set up the same tree the runtime application would provide: wrap with `ApplicationContext.Provider` supplying at least a `container` (and `logger` if the component under test needs it), and wrap ra-core dependent components with the relevant react-admin provider context. See [Testing conventions](/conventions/testing-conventions.md) and [Build, run, test](/overview/build-run-test.md) for how the test harness assembles these providers. Hooks with browser-only requirements (`useDebounce`, etc.) need no special test setup beyond a DOM environment; `useElementSize` and `useResizeEffect` also need `FakeResizeObserver`, because the test DOM's `ResizeObserver` does nothing.

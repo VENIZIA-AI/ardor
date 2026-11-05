@@ -34,7 +34,7 @@ export class AdminConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
-      url: '/api',
+      url: '/v1/api',
       noAuthPaths: [VertPaths.SIGN_IN],
       authRecovery: { refreshTokenPath: VertPaths.REFRESH_TOKEN },
     };

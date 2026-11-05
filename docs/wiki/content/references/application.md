@@ -200,10 +200,10 @@ Signatures:
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `binding` | `{ namespace: string; key: string }` | Derived from stereotype | Custom namespace and key to bind under instead of `<namespace>.<ClassName>` |
-| `scope` | `TBindingScope` | `BindingScopes.SINGLETON` | Inversion-of-control lifecycle scope for the class |
+| `scope` | `TBindingScope` | The scope declared on the class, else `BindingScopes.SINGLETON` | Inversion-of-control lifecycle scope for the class |
 | `allowOverride` | `boolean` | `true` | When `false`, refuses to replace a binding if the key is already bound |
 
-Each method binds the class into its stereotype namespace as a `BindingScopes.SINGLETON` and associates the key with the constructor in the metadata registry. For non-standard artifacts, `injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void` binds the class under `${scope}.${value.name}`.
+Each method binds the class into its stereotype namespace in the scope declared on the class, else as a `BindingScopes.SINGLETON`, and associates the key with the constructor in the metadata registry. For non-standard artifacts, `injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void` binds the class under `${scope}.${value.name}`.
 
 ```ts
 import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
@@ -239,7 +239,7 @@ export class ShopApplication extends BaseArdorApplication {
 | `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
 | `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
 | `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
-| `logger` | `ILogger` (`@venizia/ignis-helpers/core`) | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used. |
+| `logger` | `ILogger` (`@venizia/ignis-helpers/core`) | No | The logger `useApplicationLogger()` returns. Default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<RouteProps>` | No | Custom route definitions registered inside `CustomRoutes` before feature routes. |
 | `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list). |

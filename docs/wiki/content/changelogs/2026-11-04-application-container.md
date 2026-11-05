@@ -35,7 +35,7 @@ Replace the name in your code. One find and replace does it:
 grep -rl useInjectableContainer src | xargs sed -i 's/useInjectableContainer/useApplicationContainer/g'
 ```
 
-The codemod does not rename it for you.
+The codemod does not rename it, but `ardor codemod namespace --check` lists it, so a leftover shows up.
 
 ## Who is affected
 

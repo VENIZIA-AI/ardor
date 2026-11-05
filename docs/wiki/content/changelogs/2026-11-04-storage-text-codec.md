@@ -1,7 +1,7 @@
 ---
 title: StorageCodecs.text reads and writes a bare string
-description: StorageCodecs.text() stores a string as it is, with an optional list of allowed values, for a key whose data is not JSON; useStoredState and BrowserStorage take it as their codec.
-packages: ['@venizia/ardor-kernel', '@venizia/ardor']
+description: StorageCodecs.text() stores a string as it is, with an optional list of allowed values; useStoredState and BrowserStorage take it as a codec.
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor']
 ---
 
 # Changelog - 2026-11-04
@@ -33,6 +33,7 @@ export function ThemeSwitch() {
 - **A public plain-text codec.** `StorageCodecs.text()` returns an `IStorageCodec<string>`. Create it once, outside a component, because `useStoredState` asks for a stable `codec`.
 - **`allowed`.** The codec is typed by the list: `StorageCodecs.text({ allowed: ['light', 'dark'] })` is an `IStorageCodec<'light' | 'dark'>`, so `set` and `setValue` reject another literal at compile time, and `useStoredState` gives a `value` of that union. A stored text outside the list does not decode, so `BrowserStorage.get` gives its `fallback` and `useStoredState` gives its `defaultValue`. A value outside the list does not encode, so `BrowserStorage.set` returns `false` and leaves the storage as it was. The error names no value, because a stored text can be a token.
 - **`useStoredState` uses it too.** The hook reads the raw stored text through this codec instead of keeping its own, so no second plain-text codec exists. With `allowed`, a value outside the list is not stored, and `setValue` treats it like any write the storage refuses: the hook keeps it until the storage next changes.
+- **`IUseStoredState`.** It is the type of the hook's two overloads: with a `codec` the value type is the codec's, without one it is `TValue`.
 - **A fallback of another type.** With a `codec`, `BrowserStorage.get` accepts a `fallback` of another type than the codec's value, such as `null`, and answers the union. In the other direction, with a `codec` the value of `BrowserStorage.set` and the `defaultValue` of `useStoredState` are checked against the codec's type instead of widening a literal past it. These are type changes only; nothing changes at run time.
 
 ## Who is affected

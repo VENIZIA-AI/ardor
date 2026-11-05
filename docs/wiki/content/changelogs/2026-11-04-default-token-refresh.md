@@ -1,6 +1,6 @@
 ---
 title: A refreshTokenPath now refreshes the token without a subclass
-description: When authRecovery.refreshTokenPath is set, the default refreshToken posts to it and saves the new token, keeping the stored identity and roles, so a 401 is recovered without writing a network service.
+description: With authRecovery.refreshTokenPath set, the default refreshToken posts to it and saves the new token, so a 401 recovers with no subclass.
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 ---
 

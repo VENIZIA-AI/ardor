@@ -33,7 +33,13 @@ export const Orders = () => {
 
 ## Moving to the new names
 
-`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it, `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package.
+`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it (it refuses a file with local changes unless you add `--allow-dirty`), `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package.
+
+## Subpaths
+
+- `@venizia/ardor/repository` - `HttpRepository` and the datasource settings; needs the optional peer `@venizia/ignis-connectors`.
+- `@venizia/ardor/testing` - `assertArdorApplicationBoots` and `FakeResizeObserver`, for your test suite.
+- `@venizia/ardor/vite` - `buildInfoFile`, a Vite plugin that writes the build info file; needs the optional peers `@venizia/ignis-boot` and `vite`.
 
 ## Quick start
 

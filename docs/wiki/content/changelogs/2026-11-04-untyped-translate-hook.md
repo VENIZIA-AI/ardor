@@ -26,7 +26,7 @@ export function ErrorLine(props: { code: string }) {
 
 - **A second hook, next to the typed one.** Both read the same i18n provider, so they share the catalogs, the locale and the lazy sources. They are one function, ra-core's `useTranslate`: `useTranslate` is `useUntypedTranslate` with the key narrowed to `TUseTranslateKeys`, so they cannot drift.
 - **Same behavior for a missing key and a missing provider.** A key the catalogs do not hold comes back unchanged, or as the `_` text of the options. With no i18n provider, ra-core's default provider answers the same way and fills `%{token}` placeholders from the options.
-- **Also in `Ardor`.** `Ardor.useUntypedTranslate` joins the namespace, so it holds 26 hooks, and `ardor codemod namespace --hooks` knows it.
+- **Also in `Ardor`.** `Ardor.useUntypedTranslate` joins the namespace, and `ardor codemod namespace --hooks` knows it.
 - **A new type.** `TUseUntypedTranslateFn` is the function the hook returns.
 
 ## Who is affected

@@ -146,7 +146,7 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 ## Extended provider methods
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
-1. `send<TResult = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+1. `send<TResult = unknown>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 

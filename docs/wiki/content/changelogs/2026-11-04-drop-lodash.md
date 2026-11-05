@@ -1,6 +1,6 @@
 ---
 title: ardor-react and ardor-admin no longer depend on lodash
-description: The six lodash calls are replaced by rest destructuring, an existing check and two small helpers, which takes about 10 KB off an app bundle that carried those lodash modules.
+description: Six lodash calls are replaced by destructuring, an existing check and two small helpers, about 10 KB less in an app bundle.
 packages: ['@venizia/ardor-react', '@venizia/ardor-admin']
 ---
 

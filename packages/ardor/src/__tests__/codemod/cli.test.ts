@@ -97,6 +97,19 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('b.ts:1 isDefined');
   });
 
+  test('--check exits 1 for the removed hooks useSizer and useInjectableContainer', async () => {
+    seed({
+      'src/removed.ts':
+        "import { useInjectableContainer, useSizer } from '@venizia/ardor';\nexport const a = [useInjectableContainer, useSizer];\n",
+    });
+    await run(['--write']);
+
+    const result = await run(['--check']);
+    expect(result).toBe(1);
+    expect(errors.join('\n')).toContain('removed.ts:1 useInjectableContainer');
+    expect(errors.join('\n')).toContain('removed.ts:1 useSizer');
+  });
+
   test('--hooks moves a hook from the umbrella; without it the hook stays', async () => {
     seed({
       'src/hook.ts':

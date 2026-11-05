@@ -1,6 +1,6 @@
 ---
 title: useStoredState updaters compose, and the sign-out order is documented
-description: setValue(updater) of useStoredState runs against the value at the moment of the call, so two updaters in one tick both apply, and the hooks reference says how to sign out without a flash.
+description: setValue(updater) of useStoredState runs against the value at the call, so two updaters in one tick both apply; the reference covers sign-out.
 packages: ['@venizia/ardor-react', '@venizia/ardor']
 ---
 
