@@ -415,7 +415,10 @@ export class NamespaceTransform {
 
     if (rename.typeText !== undefined) {
       // A type is a name in a type position only: `NullableType[]` needs parentheses once replaced.
-      if (ts.isTypeReferenceNode(parent) && parent.typeName === node) {
+      if (
+        (ts.isTypeReferenceNode(parent) && parent.typeName === node) ||
+        (ts.isExpressionWithTypeArguments(parent) && parent.expression === node)
+      ) {
         const grand = parent.parent;
         const wrap =
           rename.typeText.includes('|') &&
@@ -475,13 +478,24 @@ export class NamespaceTransform {
     const imported = new Set(owners.values());
 
     const visit = (node: TS.Node): void => {
-      const name =
+      let name: TS.Node | undefined;
+
+      if (
         ts.isPropertyAccessExpression(node) ||
         ts.isPropertyAssignment(node) ||
         ts.isShorthandPropertyAssignment(node)
-          ? node.name
-          : undefined;
-      const key = name && ts.isIdentifier(name) ? name : undefined;
+      ) {
+        name = node.name;
+      } else if (ts.isBindingElement(node)) {
+        name = node.propertyName ?? node.name;
+      } else if (
+        ts.isElementAccessExpression(node) &&
+        ts.isStringLiteral(node.argumentExpression)
+      ) {
+        name = node.argumentExpression;
+      }
+
+      const key = name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name : undefined;
       const property =
         key && Object.hasOwn(RemovedNames.PROPERTIES, key.text)
           ? RemovedNames.PROPERTIES[key.text]
@@ -557,13 +571,18 @@ export class NamespaceTransform {
         added.add(owner);
       }
 
-      const types = used
-        .filter((rename) => rename.declaration === declaration && rename.importName)
-        .map((rename) => `${rename.specifier.isTypeOnly ? 'type ' : ''}${rename.importName}`)
-        .filter((name) => !bindings.imported.has(name.replace('type ', '')) && !added.has(name));
+      const types: string[] = [];
 
-      for (const name of types) {
-        added.add(name);
+      for (const { declaration: from, importName, specifier } of used) {
+        if (
+          from === declaration &&
+          importName &&
+          !bindings.imported.has(importName) &&
+          !added.has(importName)
+        ) {
+          added.add(importName);
+          types.push(`${specifier.isTypeOnly ? 'type ' : ''}${importName}`);
+        }
       }
 
       const names = [...kept, ...owners, ...types];

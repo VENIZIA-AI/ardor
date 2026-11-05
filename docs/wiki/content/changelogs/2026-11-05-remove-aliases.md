@@ -27,7 +27,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 
 - **`ISendResponse` is gone** from `@venizia/ardor-kernel` and `@venizia/ardor`. It was `INetworkResponse`; `IDataProvider.send` now names `INetworkResponse<TResult>` in its signature, which is the same type.
 - **`IListFilter.offset` is gone.** `skip` is the field `ListFilterBuilder.build` sets, and nothing in ARDOR read `offset`. A list filter still carries any other key you put on it.
-- **The codemod follows.** `ardor codemod namespace --write` renames `ISendResponse` to `INetworkResponse` in your imports and uses. It cannot tell a list filter from another object without types, so in a file that imports `IListFilter` or `ListFilterBuilder` it lists each `.offset` with its line, and `--check` exits 1 until you change it to `skip`.
+- **The codemod follows.** `ardor codemod namespace --write` renames `ISendResponse` to `INetworkResponse` in your imports and uses. It cannot tell a list filter from another object without types, so in a file that imports `IListFilter` or `ListFilterBuilder` it lists each `.offset` (property, destructuring or `['offset']`) with its line, and `--check` exits 1 until you change it to `skip`. Another object's `.offset` in such a file is listed too; rename or move it, since `--check` has no way to skip a line.
 
 ## Who is affected
 

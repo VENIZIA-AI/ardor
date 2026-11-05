@@ -110,7 +110,6 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('removed.ts:1 useSizer');
   });
 
-
   test('--check exits 1 for IListFilter offset, and --write renames ISendResponse', async () => {
     seed({
       'src/alias.ts':

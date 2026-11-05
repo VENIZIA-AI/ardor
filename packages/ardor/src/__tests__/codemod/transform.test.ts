@@ -363,6 +363,45 @@ describe('NamespaceTransform: ISendResponse', () => {
     );
   });
 
+  test('renames a use in extends and implements', () => {
+    const result = run(
+      [
+        "import type { ISendResponse } from '@venizia/ardor';",
+        'export interface Mine extends ISendResponse<number> {}',
+        'export class Impl implements ISendResponse<string> {}',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.text).toBe(
+      [
+        "import type { INetworkResponse } from '@venizia/ardor';",
+        'export interface Mine extends INetworkResponse<number> {}',
+        'export class Impl implements INetworkResponse<string> {}',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  test('imports INetworkResponse once for two imports of ISendResponse', () => {
+    const result = run(
+      [
+        "import type { ISendResponse } from '@venizia/ardor-kernel';",
+        "import { type ISendResponse as Other } from '@venizia/ardor';",
+        'export type A = [ISendResponse, Other];',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.text).toBe(
+      [
+        "import type { INetworkResponse } from '@venizia/ardor-kernel';",
+        'export type A = [INetworkResponse, INetworkResponse];',
+        '',
+      ].join('\n'),
+    );
+  });
+
   test('lists it when the file already declares INetworkResponse itself', () => {
     const text = [
       "import type { ISendResponse } from '@venizia/ardor';",
@@ -378,6 +417,22 @@ describe('NamespaceTransform: ISendResponse', () => {
 });
 
 describe('NamespaceTransform: removed with no replacement', () => {
+  test('lists a destructured offset and filter["offset"] in a file that imports the list filter', () => {
+    const result = run(
+      [
+        "import type { IListFilter } from '@venizia/ardor';",
+        'export const a = (f: IListFilter) => { const { offset } = f; return offset; };',
+        "export const b = (f: IListFilter) => f['offset'];",
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.findings.map((finding) => [finding.name, finding.line])).toEqual([
+      ['.offset', 2],
+      ['.offset', 3],
+    ]);
+  });
+
   test('lists .offset in a file that imports the list filter, and not elsewhere', () => {
     const filter = [
       "import type { IListFilter } from '@venizia/ardor';",
