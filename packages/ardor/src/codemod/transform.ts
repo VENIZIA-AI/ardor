@@ -486,7 +486,7 @@ export class NamespaceTransform {
         ts.isShorthandPropertyAssignment(node)
       ) {
         name = node.name;
-      } else if (ts.isBindingElement(node)) {
+      } else if (ts.isBindingElement(node) && ts.isObjectBindingPattern(node.parent)) {
         name = node.propertyName ?? node.name;
       } else if (
         ts.isElementAccessExpression(node) &&

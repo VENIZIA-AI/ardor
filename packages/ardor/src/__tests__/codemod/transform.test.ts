@@ -423,6 +423,7 @@ describe('NamespaceTransform: removed with no replacement', () => {
         "import type { IListFilter } from '@venizia/ardor';",
         'export const a = (f: IListFilter) => { const { offset } = f; return offset; };',
         "export const b = (f: IListFilter) => f['offset'];",
+        'export const c = () => { const [offset, setOffset] = useState(0); return [offset, setOffset]; };',
         '',
       ].join('\n'),
     );
