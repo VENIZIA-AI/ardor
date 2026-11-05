@@ -149,7 +149,7 @@ class AuthRecovery {
 }
 ```
 
-`refreshTokenPath` and `noAuthPaths` are two separate guards. Putting the refresh path in `noAuthPaths` stops the expired token from being attached to the refresh request. Setting `refreshTokenPath` stops a `401` from the refresh request from starting another refresh. Set both.
+`refreshTokenPath` and `noAuthPaths` are two separate guards. Setting `refreshTokenPath` stops a `401` from the refresh request from starting another refresh; set it in every case. Putting the refresh path in `noAuthPaths` stops the expired token from being attached to the refresh request; do it only when the endpoint identifies the session by other means, such as a cookie. The default `refreshToken` posts no body, so an endpoint that reads the session from the expired token needs the path left out of `noAuthPaths`.
 
 ## The default refresh
 
