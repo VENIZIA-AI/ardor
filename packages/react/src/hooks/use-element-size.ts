@@ -2,6 +2,7 @@ import React from 'react';
 
 import { ResizeObservation, type TResizeBox } from './resize-observation';
 
+/** Which element `useElementSize` measures, which box it reads, and how it rounds. */
 export interface IUseElementSizeOptions {
   /** The element to measure. Leave it out to measure the element the returned `ref` is given to. */
   ref?: React.RefObject<Element | null>;
@@ -11,6 +12,7 @@ export interface IUseElementSizeOptions {
   round?: boolean;
 }
 
+/** The size `useElementSize` read, in CSS pixels. */
 export interface IUseElementSizeReturn {
   width: number;
   height: number;
@@ -18,6 +20,7 @@ export interface IUseElementSizeReturn {
   measured: boolean;
 }
 
+/** The size of `useElementSize` called without a `ref` option, with the ref to give an element. */
 export interface IUseElementSizeRefReturn extends IUseElementSizeReturn {
   /** Give it to the element to measure. */
   ref: React.RefCallback<Element>;

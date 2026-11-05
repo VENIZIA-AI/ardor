@@ -7,6 +7,7 @@ import {
   type TStorageArea,
 } from '@venizia/ardor-kernel';
 
+/** What `useStoredState` stores, where and how. */
 export interface IUseStoredStateOptions<TValue> {
   /** The storage key. */
   key: string;
@@ -20,6 +21,7 @@ export interface IUseStoredStateOptions<TValue> {
   writeDelayMs?: number;
 }
 
+/** The value `useStoredState` holds, and how to change or remove it. */
 export interface IUseStoredStateReturn<TValue> {
   /** The stored value, or `defaultValue` when the key holds nothing. */
   value: TValue;
@@ -29,6 +31,7 @@ export interface IUseStoredStateReturn<TValue> {
   remove: () => void;
 }
 
+/** The call signatures of `useStoredState`. */
 export interface IUseStoredState {
   /** With a codec, the value type is the codec's: a literal `defaultValue` is checked against it, not widened past it. */
   <TValue>(

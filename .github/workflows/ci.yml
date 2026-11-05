@@ -148,6 +148,10 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make surface-check
 
+      - name: Published exports have TSDoc
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make api-undocumented
+
       - name: Bundle budgets
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make size-check

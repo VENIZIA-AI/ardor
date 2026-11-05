@@ -2,6 +2,7 @@ import React from 'react';
 
 type TDocumentTitleSegment = string | false | null | undefined;
 
+/** What `useDocumentTitle` writes into the tab title, and when. */
 export interface IUseDocumentTitleOptions {
   /** The screen title, or a list of segments in order; `false`, `null`, `undefined` and empty segments are dropped. */
   title: TDocumentTitleSegment | Array<TDocumentTitleSegment>;

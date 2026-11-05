@@ -4,6 +4,7 @@ import { LoggerFactory } from '@venizia/ignis-helpers/core';
 
 import { useDebounce } from './use-debounce';
 
+/** What `useAutosave` saves, through which callback, and when. */
 export interface IUseAutosaveOptions<TData, TReturn> {
   /** The value to save; a change starts the `interval` wait. */
   data: TData;

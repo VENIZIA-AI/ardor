@@ -6,6 +6,7 @@ import type { DefaultRestDataProvider } from '@/providers/rest-data';
 import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { useInjectable } from '@venizia/ardor-react';
 
+/** The header `useRequestHeaderLocale` sends the locale in. */
 export interface IUseRequestHeaderLocaleOptions {
   /**
    * The header the locale is sent in.

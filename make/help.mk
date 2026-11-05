@@ -66,6 +66,7 @@ help:
 	@$(HELP_ROW) "okf-viz" "Build the offline knowledge-graph explorer."
 	@$(HELP_ROW) "split-report" "Report hub files, stray types, missing barrels, long files, cycles (informational)."
 	@$(HELP_ROW) "surface-gen" "Snapshot every exported symbol into .agents/knowledge/reference/public-surface.md."
+	@$(HELP_ROW) "api-undocumented" "Gate: every published export has TSDoc. Needs a build."
 	@$(HELP_ROW) "surface-check" "Gate: the public surface equals the snapshot."
 	@$(HELP_ROW) "atlas-symbols" "Print the symbols atlas reads from the built .d.ts. Needs a build."
 	@$(HELP_ROW) "atlas-releases" "Print the release table atlas computes from the tags."

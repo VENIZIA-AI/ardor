@@ -6,6 +6,7 @@ import type { UnresolvedPolicies } from './constants';
 /** `'error'` or `'unspecified'`; see `UnresolvedPolicies`. */
 export type TUnresolvedPolicy = TConstValue<typeof UnresolvedPolicies>;
 
+/** The options of the `buildInfoFile` plugin. */
 export interface IBuildInfoFileOptions {
   /**
    * The app folder, where its package.json is.

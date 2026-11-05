@@ -1,5 +1,6 @@
 import React from 'react';
 
+/** The state of one confirmation prompt, and the handlers that settle it. */
 export interface IUseConfirmReturn {
   /** The pending prompt text; `undefined` when none is open. */
   message?: string;
