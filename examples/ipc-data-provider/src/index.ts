@@ -9,8 +9,8 @@ import {
   type IApplicationInfo,
   type IDataProvider,
   inject,
+  type INetworkResponse,
   type ISendParams,
-  type ISendResponse,
   provide,
   RequestMethods,
 } from '@venizia/ardor';
@@ -42,7 +42,7 @@ const COMMANDS: Record<string, TCommand> = {
 const invoke = <TResponse>(opts: {
   command: string;
   payload: ISendParams;
-}): Promise<ISendResponse<TResponse>> => {
+}): Promise<INetworkResponse<TResponse>> => {
   const handler = COMMANDS[opts.command];
   if (!handler) {
     return Promise.reject({ message: `[ipc] unknown command ${opts.command}`, statusCode: 404 });
@@ -56,7 +56,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   override send<TResponse = unknown>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<ISendResponse<TResponse>> {
+  }): Promise<INetworkResponse<TResponse>> {
     return invoke<TResponse>({ command: opts.resource, payload: opts.params });
   }
 }

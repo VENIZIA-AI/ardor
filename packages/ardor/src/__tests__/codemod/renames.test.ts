@@ -33,6 +33,7 @@ describe('the codemod tables match the packages', () => {
     expect(exported.isEditableTarget).toBeUndefined();
     expect(exported.useSizer).toBeUndefined();
     expect(exported.useInjectableContainer).toBeUndefined();
+    expect(exported.ISendResponse).toBeUndefined();
   });
 });
 

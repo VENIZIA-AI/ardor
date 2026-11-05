@@ -39,7 +39,7 @@ Worker port.
 
 Before touching ARDOR at all, model whatever channel you're bridging to. Here it's a `COMMANDS`
 map keyed by resource name, each entry a function taking `ISendParams` and returning raw data. An
-`invoke()` helper looks up the command and returns a `Promise<ISendResponse<TResponse>>`, rejecting
+`invoke()` helper looks up the command and returns a `Promise<INetworkResponse<TResponse>>`, rejecting
 with a `{ message, statusCode }` shape if the command doesn't exist - matching the error shape the
 rest of ARDOR expects, per [Error flow](/architecture/error-flow.md).
 
@@ -50,7 +50,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   override send<TResponse = unknown>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<ISendResponse<TResponse>> {
+  }): Promise<INetworkResponse<TResponse>> {
     return invoke<TResponse>({ command: opts.resource, payload: opts.params });
   }
 }

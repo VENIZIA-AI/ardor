@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (95)
+### `@venizia/ardor-kernel` (94)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -67,7 +67,6 @@ generated:
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
 - `ISendParams` interface
-- `ISendResponse` type
 - `ISignInSession` interface
 - `IStorageCodec` interface
 - `LocalStorageKeys` class
@@ -237,7 +236,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (185)
+### `@venizia/ardor` (184)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -314,7 +313,6 @@ generated:
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
 - `ISendParams` interface
-- `ISendResponse` type
 - `ISignInSession` interface
 - `IStorageCodec` interface
 - `IUseArtifactByKey` interface

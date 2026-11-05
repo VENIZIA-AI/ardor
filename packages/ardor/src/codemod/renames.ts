@@ -101,6 +101,17 @@ export class TypeRenames {
   }
 }
 
+/** Types removed in favour of another export of the same packages: the import and each use are renamed. */
+export class TypeExportRenames {
+  static readonly TARGETS: Readonly<Record<string, string>> = {
+    ISendResponse: 'INetworkResponse',
+  };
+
+  static find(opts: { name: string }): string | undefined {
+    return Object.hasOwn(this.TARGETS, opts.name) ? this.TARGETS[opts.name] : undefined;
+  }
+}
+
 /** Exports and members removed with no code the codemod can write in their place. */
 export class RemovedNames {
   static readonly EXPORTS: Readonly<Record<string, string>> = {
@@ -118,6 +129,16 @@ export class RemovedNames {
     HeaderConstants: {
       REQUEST_DEVICE_INFO: 'nothing in ARDOR sent or read this header',
       RESPONSE_FORMAT: 'nothing in ARDOR sent or read this header',
+    },
+  };
+
+  /** A property removed from the list filter: listed in a file that imports one of `owners`, as the file may use it. */
+  static readonly PROPERTIES: Readonly<
+    Record<string, { owners: ReadonlySet<string>; reason: string }>
+  > = {
+    offset: {
+      owners: new Set(['IListFilter', 'ListFilterBuilder']),
+      reason: 'the list filter has no offset, use skip',
     },
   };
 

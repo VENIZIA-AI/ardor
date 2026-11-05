@@ -71,7 +71,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `TRequestBodyType` | `type` | Payload format union (`'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'`), used in requests. |
 | `TEnvironment` | `type` | Environment names union (`'development' \| 'production'`), used for runtime environment checks. |
 | `ISendParams` | `interface` | Parameters object for `dataProvider.send` (`method`, `requestType`, `bodyType`, `body`, `query`, `headers`, `requestCountData`, `extra`), used for arbitrary endpoint calls. It names every field it accepts: a typo is a compile error. |
-| `ISendResponse<T>` | `type` | Envelope returned by `dataProvider.send`: an `INetworkResponse<T>` (`data`, and `total`, `count`, `filename`, `contentDisposition`, `extra` where the response has them). |
+| `INetworkResponse<T>` | `interface` | Envelope returned by `dataProvider.send` and the network service (`data`, and `total`, `count`, `filename`, `contentDisposition`, `extra` where the response has them). |
 | `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. |
 | `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. |
 | `ICustomParams` | `interface` | Parameter bag merged into react-admin calls via `params`. |
