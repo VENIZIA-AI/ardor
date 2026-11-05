@@ -63,7 +63,6 @@ help:
 	@$(HELP_ROW) "okf-check-strict" "Gate: okf-check plus links, style, coverage, freshness."
 	@$(HELP_ROW) "okf-gen" "Regenerate source-derived reference content."
 	@$(HELP_ROW) "okf-coverage" "Report bundle coverage against the source inventory."
-	@$(HELP_ROW) "okf-viz" "Build the offline knowledge-graph explorer."
 	@$(HELP_ROW) "split-report" "Report hub files, stray types, missing barrels, long files, cycles (informational)."
 	@$(HELP_ROW) "surface-gen" "Snapshot every exported symbol into .agents/knowledge/reference/public-surface.md."
 	@$(HELP_ROW) "api-undocumented" "Gate: every published export has TSDoc. Needs a build."

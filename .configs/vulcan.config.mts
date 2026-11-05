@@ -59,17 +59,6 @@ export default {
     regions: [
       { id: 'packages-table', file: 'overview/monorepo-layout.md', renderer: 'packages-table' },
     ],
-    sections: {
-      order: [
-        'overview',
-        'architecture',
-        'packages',
-        'conventions',
-        'process',
-        'examples',
-        'reference',
-      ],
-    },
     coverage: [
       { name: 'packages', path: 'packages/*' },
       { name: 'examples', path: 'examples/*' },

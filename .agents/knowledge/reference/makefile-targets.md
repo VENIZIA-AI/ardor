@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**83 targets.**
+**82 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -62,7 +62,6 @@ generated:
 | `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |
 | `make okf-gen` | - | Regenerate source-derived reference content. |
-| `make okf-viz` | - | Build the offline knowledge-graph explorer. |
 | `make preset-build` | - | - |
 | `make preset-smoke` | - | - |
 | `make purity` | - | Gate: every entry claimed browser-pure has no node builtin or global. |
