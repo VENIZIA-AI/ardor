@@ -15,18 +15,19 @@ export interface IUseResizeEffectOptions {
   children?: boolean;
   /**
    * Call `onResize` inside the `ResizeObserver` callback, after layout and before paint, instead of on
-   * the next animation frame, so what it draws shows in the frame that resized. It then runs once per
-   * observer callback, not once per frame.
+   * the next animation frame, once per observer callback. What `onResize` draws or styles directly
+   * shows in the frame that resized; a state update renders later. Resizing an observed element from
+   * it can report "ResizeObserver loop completed with undelivered notifications".
    * @default false
    */
   beforePaint?: boolean;
 }
 
 /**
- * Calls `onResize` at most once per animation frame when any of the targets resizes (inside the
- * observer callback, before paint, with `beforePaint`). A new
- * `onResize` is used without observing again, and the targets are read after every render, so an
- * element held in state, a ref whose element changed and a list that grows or shrinks are followed.
+ * Calls `onResize` at most once per animation frame when any of the targets resizes, or inside the
+ * observer callback with `beforePaint`. A new `onResize` is used without observing again, and the
+ * targets are read after every render, so an element held in state, a ref whose element changed and
+ * a list that grows or shrinks are followed.
  *
  * @example
  * ```tsx
