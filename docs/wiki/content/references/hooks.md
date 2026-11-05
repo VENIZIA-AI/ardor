@@ -18,7 +18,7 @@ export function StatusWidget() {
 
 ## One name for every hook: `Ardor`
 
-`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page, the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
+`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page except the Redux factories (`DispatchHooks.create`, `SelectorHooks.create`), the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
 
 ```tsx
 import { Ardor } from '@venizia/ardor';
@@ -298,7 +298,7 @@ export function SaveButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`).
+- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: TUseTranslateOptions) => string`).
 - **Gotcha**: With no i18n provider mounted, ra-core's default provider answers instead of throwing: it returns the `_` text of the options when given, else the key, and fills `%{token}` placeholders from the options. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
 
 ### useUntypedTranslate
@@ -328,7 +328,7 @@ export function RefreshTokenButton() {
 ```
 
 - **Parameters**: None.
-- **Return value**: A callback function `() => Promise<boolean>`: `true` when the token was refreshed, `false` when there is no auth provider or no refresh to make.
+- **Return value**: A callback function `() => Promise<boolean>`: `true` when the token was refreshed, `false` when there is no auth provider or no refresh to make; it rejects when the auth provider's `refreshToken` rejects.
 - **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
 
 ### useNotifyError

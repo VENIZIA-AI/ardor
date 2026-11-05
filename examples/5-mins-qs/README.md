@@ -5,7 +5,7 @@ declared with `@repository`, one resource page, sign-in through the auth provide
 against.
 
 ```bash
-bun install                # from the repository root
+bun install && make build  # from the repository root: the example runs on the built packages
 cd examples/5-mins-qs
 bun run server:dev          # the stub API on :3100 (sign in with admin / admin) and Vite on :5173, proxying /api
 ```

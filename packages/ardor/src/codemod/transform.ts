@@ -51,7 +51,7 @@ interface IBindings {
 }
 
 /**
- * Rewrites the deprecated bare names of `@venizia/ardor` to their class members, in source text:
+ * Rewrites the removed bare names of `@venizia/ardor` to their class members, in source text:
  * `isDefined(x)` becomes `ValueUtility.isDefined(x)` and the import follows. With `hooks`, a hook
  * imported from `@venizia/ardor` itself becomes `Ardor.useX` (never one imported from the react or
  * admin package, which cannot import `Ardor`).

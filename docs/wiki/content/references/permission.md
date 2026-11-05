@@ -47,7 +47,7 @@ export class PermissionConfiguration {
 | `IPermissionProvider` | interface | `@venizia/ardor-kernel` | Contract for authorization checks: `canAccess({ resource, action, record })` |
 | `CoreBindings.PERMISSION_PROVIDER` | const | `@venizia/ardor-kernel` | Container key (`@app/application/permission/provider`) where the provider is bound |
 | `DefaultAuthProvider` | class | `@venizia/ardor-admin` | Auth provider that delegates `canAccess` to the bound `IPermissionProvider` |
-| `IReactAdminAuthProvider` | interface | `@venizia/ardor-admin` | React-admin auth provider contract including optional `canAccess` |
+| `IReactAdminAuthProvider` | type | `@venizia/ardor-admin` | React-admin auth provider contract including optional `canAccess` |
 | `IAuthProvider` | interface | `@venizia/ardor-admin` | ARDOR auth provider extending `IReactAdminAuthProvider` with `getRoles` and `refreshToken` |
 | `DefaultAuthService` | class | `@venizia/ardor-kernel` | Service providing `getRoles()` to inspect the signed-in user's roles |
 

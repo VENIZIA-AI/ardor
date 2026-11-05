@@ -130,7 +130,7 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   container: Container;
 
   /**
-   * The logger `useApplicationLogger()` returns. Absent, a console logger named after the application
+   * The logger `useApplicationLogger()` returns. Absent, a console logger named `ArdorApplication`
    * (IGNIS's, so a provider registered with `LoggerFactory.use` is the one behind it).
    */
   logger?: ILogger;

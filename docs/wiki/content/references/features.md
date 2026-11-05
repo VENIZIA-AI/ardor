@@ -66,7 +66,7 @@ export class CommerceApplication extends BaseArdorApplication {
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
-| `Features` | class | Static helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes |
+| `Features` | class | Static helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources |
 | `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
 | `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) declared in `packages/kernel/src/common/types.ts` |
 | `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |

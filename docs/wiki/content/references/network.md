@@ -41,14 +41,15 @@ export class AuditReportService {
       },
     });
 
+    // `doRequest` sends only the headers it is given; `getRequestHeader` returns the session headers, including the ones set above, and `Authorization`.
+    const headers = networkService.getRequestHeader({ resource: '/audit/export' });
+
     const response = await networkService.doRequest<AuditReport>({
       type: RequestTypes.SEND,
       method: RequestMethods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
-      headers: {
-        'content-type': 'application/json',
-      },
+      headers: { ...headers, 'content-type': 'application/json' },
       requestCountData: RequestCountData.DATA_ONLY,
     });
 
@@ -98,7 +99,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Options
 
-`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
+`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
@@ -108,6 +109,7 @@ The configuration relies on the following defaults and container keys:
 | `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
 | `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
 | `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to. |
+| `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request. |
 | `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
 
 ## Fetch transport and timeout
@@ -148,7 +150,7 @@ Headers are assembled in layers:
 1. **Base and session headers:** Constructed from constructor `headers` and dynamic headers added via `setHeaders({ headers })` (or removed via `removeHeaders({ keys })`). Session headers automatically include `timezone` (`App.TIMEZONE`) and `timezone-offset` (`App.TIMEZONE_OFFSET`).
 2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HeaderConstants.X_LOCALE]: locale } })` so that subsequent requests include the active locale.
 3. **Tracing headers:** `x-request-channel` is set to `restDataProviderOptions.requestTracingChannel` (default `RequestChannel.WEB` which is `'100_WEB'`). `x-request-id` is generated via `buildRequestTracingId({ applicationInfo })`, defaulting to `${applicationInfo.name}_${uuidV4()}`.
-4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. By default, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type ?? 'Bearer'} ${value}`. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
+4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. By default, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type} ${value}`, with `Bearer` as the type when it is empty or absent. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
 
 If an endpoint path matches an entry in `noAuthPaths` or matches a pattern in `noAuthPathRegex`, the `Authorization` header is omitted:
 

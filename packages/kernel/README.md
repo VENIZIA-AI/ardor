@@ -16,14 +16,14 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
-| Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()` and `service()` helpers |
+| Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()`, `service()`, `repository()`, `dataSource()` and `component()` helpers |
 | Services | `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
 | Providers | `BaseProvider` |
-| Decorators | `api()` - logs and rethrows a failing API method |
-| Bindings | `CoreBindings`, `LocalStorageKeys` |
-| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
+| Decorators | `api()` - logs and rethrows a failing API method; the IGNIS stereotypes it re-exports (`component`, `configuration`, `datasource`, `inject`, `injectable`, `model`, `provide`, `repository`, `service`) |
+| Bindings | `CoreBindings`, `LocalStorageKeys`, `BindingKeys`, `BindingNamespaces` |
+| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App`, `Authentication`, `StorageAreas`, `RequestChannel` |
 | Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
-| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
+| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get` (with `RUNTIME_CONFIG_GLOBAL` and `RUNTIME_CONFIG_REQUIRED_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
 | Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License

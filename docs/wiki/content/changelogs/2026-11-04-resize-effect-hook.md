@@ -1,6 +1,6 @@
 ---
 title: useResizeEffect runs one callback when any of several elements resizes
-description: useResizeEffect observes several elements, and with children their direct children, and calls onResize at most once per animation frame, so a check that runs on resize needs no hand-written ResizeObserver.
+description: useResizeEffect observes several elements, and with children their direct children, and calls onResize once per animation frame or before paint.
 packages: ['@venizia/ardor-react', '@venizia/ardor']
 ---
 
@@ -40,7 +40,7 @@ export function Toolbar() {
 - **Targets are elements, refs or `null`.** They are read after every render, so an element held in state, a ref whose element changed, a conditional mount and a list that grows or shrinks are followed; the observer diffs the set and leaves the elements it already watches alone, so a list made anew in each render observes nothing again. A `null` is skipped.
 - **The first entries are delivered.** `onResize` runs once when observing starts, as the browser delivers the first entries. A child added later delivers its first entry too.
 - **`useElementSize` shares the code.** Both hooks observe through one internal, so the observer set-up, the frame coalescing and the clean-up are the same. `useElementSize` keeps its behavior.
-- **Also in `Ardor`.** `Ardor.useResizeEffect` joins the namespace, so it holds 27 hooks, and `ardor codemod namespace --hooks` knows it.
+- **Also in `Ardor`.** `Ardor.useResizeEffect` joins the namespace, and `ardor codemod namespace --hooks` knows it.
 - **New types.** `IUseResizeEffectOptions` is the options object and `TElementTarget` the type of one target.
 
 ## Who is affected

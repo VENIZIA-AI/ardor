@@ -1,6 +1,6 @@
 ---
 title: useIntersection tells whether an element is in view
-description: useIntersection returns the latest IntersectionObserverEntry of an element, so lazy content, a load-more sentinel or a sticky header needs no hand-written IntersectionObserver.
+description: useIntersection returns the latest IntersectionObserverEntry of an element, so lazy content or a load-more sentinel needs no own observer.
 packages: ['@venizia/ardor-react', '@venizia/ardor']
 ---
 

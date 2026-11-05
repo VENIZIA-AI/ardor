@@ -36,6 +36,16 @@ export function ChartContainer() {
 - **The replacement** is `useElementSize({ ref, box: 'border-box', round: true })`. It is close to what `useSizer` read (`offsetWidth` and `offsetHeight`), not the same: the value is the border box rounded with `Math.round`, which can differ by 1 px from the browser's own snapping of `offsetWidth`; it updates once per animation frame, so one frame later than `useSizer` did; and in a browser without `borderBoxSize` it falls back to the content box. It takes a `ref` object instead of an element id.
 - **One more field.** `useSizer` gave `0` by `0` until the element existed; `useElementSize` also returns `measured`, `false` until the first size is read, so you can tell an unmeasured element from an empty one.
 
+## Upgrade
+
+```diff
+-const { width, height } = useSizer({ containerId: 'chart' });
++const ref = React.useRef<HTMLDivElement>(null);
++const { width, height } = useElementSize({ ref, box: 'border-box', round: true });
+```
+
+Give the element the `ref` in place of the `id`.
+
 ## Who is affected
 
 - **An app that calls `useSizer`.** Move it to `useElementSize` as above: give the element a `ref` and pass it, in place of the `id`.

@@ -4,7 +4,7 @@ import { NamespaceCommand } from './cli';
 const USAGE = `Usage: ardor <command>
 
 Commands:
-  codemod namespace   move the deprecated bare names to the class members that replace them
+  codemod namespace   move the removed bare names to the class members that replace them
 
 Run "ardor codemod namespace --help" for the options.`;
 

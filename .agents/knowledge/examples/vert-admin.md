@@ -34,15 +34,14 @@ inventing their own auth wiring.
 
 ```bash
 cd ../../../ignis/examples/vert
-cp .env.example .env.development
+cp .env.example .env
 bun install && bun run migrate:dev && bun run server:dev
 ```
 
-Then start the console itself with `bun run server:dev` from `examples/vert-admin`. Vite proxies `/api`,
-unrewritten, to `127.0.0.1:3000` - but vert's `.env.example` sets `APP_ENV_SERVER_PORT=1190` and
-`APP_ENV_SERVER_BASE_PATH=/v1/api` (port 3000 is only vert's fallback when the variable is unset or blank). Set
-those to `3000` and `/api` in vert's env file, or point the proxy at vert's real port and base path,
-before the console can connect. Sign in with a user seeded by `bun run seed:authz` in vert. See
+Then start the console itself with `bun run server:dev` from `examples/vert-admin`. Vite proxies `/v1/api`,
+unrewritten, to `127.0.0.1:1190`, which is what vert's `.env.example` sets (`APP_ENV_SERVER_PORT=1190`,
+`APP_ENV_SERVER_BASE_PATH=/v1/api`). Create a user with `POST /v1/api/auth/sign-up`; `bun run seed:authz` in vert
+makes organizations, roles and permissions, no user. See
 [Build, run, test](/overview/build-run-test.md) for the general pattern this follows.
 
 ## VertPaths

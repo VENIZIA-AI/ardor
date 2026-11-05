@@ -5,6 +5,7 @@ shell (Tauri's `invoke`, an Electron bridge, a Worker port) uses while keeping t
 `IDataProvider` shape every hook and service expects. Runs as a plain Bun script:
 
 ```bash
+bun install && make build   # from the repository root: the example runs on the built packages
 cd examples/ipc-data-provider
 bun run server:dev
 ```

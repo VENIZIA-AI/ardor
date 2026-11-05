@@ -31,6 +31,8 @@ describe('the codemod tables match the packages', () => {
     expect(headers.REQUEST_DEVICE_INFO).toBeUndefined();
     expect(headers.RESPONSE_FORMAT).toBeUndefined();
     expect(exported.isEditableTarget).toBeUndefined();
+    expect(exported.useSizer).toBeUndefined();
+    expect(exported.useInjectableContainer).toBeUndefined();
   });
 });
 

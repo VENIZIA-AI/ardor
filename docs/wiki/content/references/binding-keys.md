@@ -27,9 +27,9 @@ export const useRestDataProvider = () => {
 | `APPLICATION_INFO` | `@app/application/info` | Framework (`preConfigure()`) | `DefaultRestDataProvider`, network request tracing | Always bound |
 | `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | Application (`@provide`) | `ArdorApplication` | Optional |
 | `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | Application (`@provide`) | `ArdorApplication` | Required |
-| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Application (`@provide`) | `ArdorApplication`, `DefaultAuthProvider` | Required |
+| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Application (`@provide`) | `ArdorApplication`, `DefaultAuthProvider`, `useRequestHeaderLocale` | Required |
 | `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provide`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
-| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Application (`@provide`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
+| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Application (`@provide`) | `DefaultAuthProvider`; `DefaultRestDataProvider` (optional) | Required when `DEFAULT_AUTH_PROVIDER` is bound |
 | `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provide`) | `DefaultRestDataProvider` | Required by `DefaultRestDataProvider` |
 | `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provide`) | `DefaultI18nProvider` | Required by `DefaultI18nProvider` |
 | `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
@@ -45,7 +45,9 @@ For binding order in the application lifecycle, see [The bind order in Configura
 |---|---|---|
 | `KEY_AUTH_TOKEN` | `@app/auth/token` | Serialized authentication token record (`IAuthTokenRecord`) |
 | `KEY_AUTH_IDENTITY` | `@app/auth/identity` | Stored user identity |
-| `KEY_AUTH_PERMISSION` | `@app/auth/permission` | Stored user permissions and roles |
+| `KEY_AUTH_PERMISSION` | `@app/auth/permission` | Stored user roles, a JSON array of names |
+| `PREFIX_AUTH` | `@app/auth/` | Prefix of the session keys; `DefaultAuthService.cleanUp` removes everything under it |
+| `PREFIX_STORE` | `@app/store/` | The namespace `BrowserStorage` recommends for an application's own keys |
 
 Each key belongs to `LocalStorageKeys.SCHEME_SET` and can be verified with `LocalStorageKeys.isValid(value)`.
 

@@ -1,6 +1,6 @@
 ---
 title: useStoredState writeDelayMs writes the storage once after a burst of changes
-description: useStoredState takes writeDelayMs, so a value that changes many times a second, such as a panel width during a drag, updates the UI at once and writes localStorage once, after the delay.
+description: useStoredState writeDelayMs updates the UI at once and writes localStorage once after the delay, for a value that changes many times a second.
 packages: ['@venizia/ardor-react', '@venizia/ardor']
 ---
 

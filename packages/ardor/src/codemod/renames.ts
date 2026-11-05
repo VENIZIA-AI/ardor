@@ -107,6 +107,9 @@ export class RemovedNames {
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
+    useInjectableContainer: 'renamed: call useApplicationContainer',
+    useSizer:
+      'use useElementSize({ ref, box: "border-box", round: true }) with a ref in place of the id',
   };
 
   /** Class name to removed static member to the reason. */

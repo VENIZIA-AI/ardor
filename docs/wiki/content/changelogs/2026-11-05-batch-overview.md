@@ -31,7 +31,7 @@ bun add @venizia/ardor
 | New feature | `useStoredState` takes `writeDelayMs`, one storage write after a burst | `@venizia/ardor-react`, `@venizia/ardor` | [writeDelayMs](./2026-11-04-stored-state-write-delay) |
 | Bug fix | `useStoredState` updaters compose, and the sign-out order is documented | `@venizia/ardor-react`, `@venizia/ardor` | [Chained updaters](./2026-11-04-stored-state-chained-updaters) |
 | New feature | `BrowserStorage.keys` and `removeWhere` list and sweep keys by prefix | `@venizia/ardor-kernel`, `@venizia/ardor` | [Storage keys](./2026-11-04-browser-storage-keys) |
-| New feature | `StorageCodecs.text` reads and writes a bare string | `@venizia/ardor-kernel`, `@venizia/ardor` | [Text codec](./2026-11-04-storage-text-codec) |
+| New feature | `StorageCodecs.text` reads and writes a bare string | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | [Text codec](./2026-11-04-storage-text-codec) |
 | New feature | `BrowserClipboard.writeText` and `readText` work outside React and never throw | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | [Clipboard helper](./2026-11-04-clipboard-helper) |
 | New feature | `useUntypedTranslate` translates a key that exists only at run time | `@venizia/ardor-admin`, `@venizia/ardor` | [useUntypedTranslate](./2026-11-04-untyped-translate-hook) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
@@ -65,7 +65,7 @@ In ARDOR 0.4.8-1, a range that starts at a prerelease (`^0.4.8-0`) matches 0.4.8
 2. **If you call `useSizer`,** give the element a `ref` and call `useElementSize({ ref, box: 'border-box', round: true })`. The value is close to what `useSizer` read, not the same, and the hook also returns `measured`. See [useSizer is removed](./2026-11-04-remove-use-sizer).
 3. **If you call `useInjectableContainer`,** find and replace it with `useApplicationContainer`. The codemod does not rename it. See [useApplicationContainer](./2026-11-04-application-container).
 4. **If you import `lodash` in your own code,** add it to your `package.json`; ARDOR no longer installs it. A `useDeepEqualSelector` selector that returns a `Map`, a `Set` or a class instance now re-renders whenever the instance changes. See [No lodash](./2026-11-04-drop-lodash).
-5. **If you set `authRecovery.refreshTokenPath`,** a `401` now sends a POST with no body to that path. The expired token is attached only when the path is not in `noAuthPaths`. If the path is not a refresh endpoint, remove the setting or override `refreshToken`. If your own `refreshToken` subclass only posts to the path and saves the token, delete it. See [Default token refresh](./2026-11-04-default-token-refresh).
+5. **If you set `authRecovery.refreshTokenPath` and the auth service is bound,** a `401` now sends a POST with no body to that path. The expired token is attached only when the path is not in `noAuthPaths`. If the path is not a refresh endpoint, remove the setting or override `refreshToken`. If your own `refreshToken` subclass only posts to the path and saves the token, delete it. See [Default token refresh](./2026-11-04-default-token-refresh).
 6. **If a tool reads the source maps of an ARDOR package** (a source-map loader warning, a debugger that opens `node_modules/@venizia/ardor-*/dist/**/*.map`), it finds none; stack traces point into `dist`.
 7. **Optional: use the new hooks and helpers** in place of your own subscribe-and-cleanup code. Each entry in the table has an example.
 

@@ -1,12 +1,12 @@
 ---
-title: useMediaQuery, useDocumentVisibility and useOnlineStatus keep browser state in a component
-description: Three SSR-safe hooks over useSyncExternalStore, for a media query, the tab visibility and the online status, so an app stops writing the same subscribe and cleanup by hand.
+title: useMediaQuery, useDocumentVisibility and useOnlineStatus read browser state
+description: Three SSR-safe hooks over useSyncExternalStore for a media query, tab visibility and online status, with no hand-written subscribe.
 packages: ['@venizia/ardor-react', '@venizia/ardor']
 ---
 
 # Changelog - 2026-11-04
 
-## useMediaQuery, useDocumentVisibility and useOnlineStatus keep browser state in a component
+## useMediaQuery, useDocumentVisibility and useOnlineStatus read browser state
 
 <Badge type="tip" text="New Feature" />
 
