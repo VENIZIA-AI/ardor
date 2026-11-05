@@ -622,12 +622,17 @@ import { useIntersection } from '@venizia/ardor';
 export function LoadMore({ onLoad }: { onLoad: () => void }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const entry = useIntersection({ target: ref, rootMargin: '200px' });
+  const latest = React.useRef(onLoad);
+
+  React.useEffect(() => {
+    latest.current = onLoad;
+  });
 
   React.useEffect(() => {
     if (entry?.isIntersecting) {
-      onLoad();
+      latest.current();
     }
-  }, [entry?.isIntersecting, onLoad]);
+  }, [entry?.isIntersecting]);
 
   return <div ref={ref} />;
 }
@@ -637,7 +642,7 @@ Use it to know whether an element is in view: lazy content, a "load more" sentin
 
 - **Parameters**: `opts: IUseIntersectionOptions` - `target: Element | React.RefObject<Element | null> | null` (read after every render; `null` observes nothing), optional `rootMargin` (default `'0px'`), optional `threshold`: one number from `0` to `1` (default `0`).
 - **Return value**: the latest `IntersectionObserverEntry`, or `undefined`.
-- **Gotcha**: The value is `undefined` before the first entry, where there is no `IntersectionObserver` (a server render), while `target` is `null`, and again right after a new element, `rootMargin` or `threshold` starts a new observation. The state changes only when `isIntersecting` or `intersectionRatio` changed, so the rectangles of the entry can be one delivery old. The viewport is the root: an app with a scrolling root passes `rootMargin`. There is no option for several thresholds or for one delivery only; for those write an `IntersectionObserver` of your own. Defined in `packages/react/src/hooks/use-intersection.ts`.
+- **Gotcha**: The value is `undefined` before the first entry, where there is no `IntersectionObserver` (a server render), while `target` is `null`, and again right after a new element, `rootMargin` or `threshold` starts a new observation. The state changes only when `isIntersecting` or `intersectionRatio` changed, so the rectangles of the entry can be one delivery old. The viewport is the root: an app with a scrolling root passes `rootMargin`. There is no option for several thresholds or for one delivery only; for those write an `IntersectionObserver` of your own. The load-more example calls `onLoad` once each time the sentinel enters view, through a ref that holds the latest one; the caller still guards against a load already in flight, and asks again after a load ends with the sentinel still in view (for example by keying on the item count). Defined in `packages/react/src/hooks/use-intersection.ts`.
 
 ### useStoredState
 

@@ -19,12 +19,17 @@ import { useIntersection } from '@venizia/ardor';
 export function LoadMore({ onLoad }: { onLoad: () => void }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const entry = useIntersection({ target: ref, rootMargin: '200px' });
+  const latest = React.useRef(onLoad);
+
+  React.useEffect(() => {
+    latest.current = onLoad;
+  });
 
   React.useEffect(() => {
     if (entry?.isIntersecting) {
-      onLoad();
+      latest.current();
     }
-  }, [entry?.isIntersecting, onLoad]);
+  }, [entry?.isIntersecting]);
 
   return <div ref={ref} />;
 }
