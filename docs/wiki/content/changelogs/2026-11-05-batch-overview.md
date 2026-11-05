@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admi
 
 <Badge type="warning" text="Breaking Change" /> <Badge type="warning" text="Behavior Change" /> <Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="info" text="Bug Fix" />
 
-**In one line.** ARDOR 0.4.8 removes `useSizer`, renames `useInjectableContainer` to `useApplicationContainer`, and stops depending on `lodash`, so an application on 0.4.7 changes a few names. The prerelease ARDOR 0.4.8-1 also peers on prerelease IGNIS ranges, so it changes its IGNIS versions too. The release adds new hooks and helpers and a default token refresh.
+**In one line.** ARDOR 0.4.8 removes `useSizer`, renames `useInjectableContainer` to `useApplicationContainer`, and stops depending on `lodash`, so an application on 0.4.7 changes a few names. The prerelease ARDOR 0.4.8-3 also peers on prerelease IGNIS ranges, so it changes its IGNIS versions too. The release adds new hooks and helpers and a default token refresh.
 
 ```bash
 bun add @venizia/ardor
@@ -36,7 +36,7 @@ bun add @venizia/ardor
 | New feature | `useUntypedTranslate` translates a key that exists only at run time | `@venizia/ardor-admin`, `@venizia/ardor` | [useUntypedTranslate](./2026-11-04-untyped-translate-hook) |
 | Breaking Change | `ISendResponse` and `IListFilter.offset` are removed; use `INetworkResponse` and `skip` | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Aliases removed](./2026-11-05-remove-aliases) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
-| Breaking Change | ARDOR 0.4.8-1 (prerelease) peers on IGNIS `^0.4.8-0` and `^0.4.7-0`, so IGNIS 0.4.7 does not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
+| Breaking Change | ARDOR 0.4.8-3 (prerelease) peers on IGNIS `^0.4.8-2` and `^0.4.7-2`, so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
 
 The `Ardor` namespace holds 30 hooks (25 in 0.4.7), and `ardor codemod namespace --hooks` knows each of them.
 
@@ -44,16 +44,16 @@ The `Ardor` namespace holds 30 hooks (25 in 0.4.7), and `ardor codemod namespace
 |---------|-------------|-------------|
 | `@venizia/ardor`, `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin` | 0.4.7 | 0.4.8 |
 
-| Peer | ARDOR 0.4.7 | ARDOR 0.4.8-1 (prerelease) |
+| Peer | ARDOR 0.4.7 | ARDOR 0.4.8-3 (prerelease) |
 |------|-------|-------|
-| `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.7` | `^0.4.8-0` |
-| `@venizia/ignis-inversion`, `-filter` | `^0.4.6` | `^0.4.7-0` |
+| `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.7` | `^0.4.8-2` |
+| `@venizia/ignis-inversion`, `-filter` | `^0.4.6` | `^0.4.7-2` |
 
-In ARDOR 0.4.8-1, a range that starts at a prerelease (`^0.4.8-0`) matches 0.4.8-0 and every later 0.4.8 version, and it does not match IGNIS 0.4.7. IGNIS inversion and filter are published as 0.4.7-0, so `^0.4.7-0` is the range that matches them. Install the IGNIS versions that satisfy these ranges before you install ARDOR 0.4.8-1. The stable 0.4.8 takes stable IGNIS ranges, refreshed by the stable release run; these are not its ranges.
+In ARDOR 0.4.8-3, a range that starts at a prerelease (`^0.4.8-2`) matches 0.4.8-2 and every later 0.4.8 version, and it does not match IGNIS 0.4.7 or 0.4.8-1. IGNIS inversion and filter are published as 0.4.7-2, so `^0.4.7-2` is the range that matches them. Install the IGNIS versions that satisfy these ranges before you install ARDOR 0.4.8-3. (ARDOR 0.4.8-1 and 0.4.8-2 peer on `^0.4.8-0` / `^0.4.7-0` and `^0.4.8-1` / `^0.4.7-1`.) The stable 0.4.8 takes stable IGNIS ranges, refreshed by the stable release run; these are not its ranges.
 
 ## Who is affected
 
-- **An application that moves to 0.4.8-1 on IGNIS 0.4.7 or older.** Step 1.
+- **An application that moves to 0.4.8-3 on IGNIS 0.4.7 or an earlier prerelease.** Step 1.
 - **An application that calls `useSizer`.** Step 2.
 - **An application that calls `useInjectableContainer`, or `Ardor.useInjectableContainer`.** Step 3.
 - **An application that imported `lodash` and relied on ARDOR to install it.** Step 4.
@@ -63,7 +63,7 @@ In ARDOR 0.4.8-1, a range that starts at a prerelease (`^0.4.8-0`) matches 0.4.8
 
 ## Upgrade checklist
 
-1. **Move the four ARDOR packages together** to `0.4.8`, and every `@venizia/ignis-*` package to a version that satisfies the peers of the ARDOR version you install. For 0.4.8-1 they are in the table above.
+1. **Move the four ARDOR packages together** to `0.4.8`, and every `@venizia/ignis-*` package to a version that satisfies the peers of the ARDOR version you install. For 0.4.8-3 they are in the table above.
 2. **If you call `useSizer`,** give the element a `ref` and call `useElementSize({ ref, box: 'border-box', round: true })`. The value is close to what `useSizer` read, not the same, and the hook also returns `measured`. See [useSizer is removed](./2026-11-04-remove-use-sizer).
 3. **If you call `useInjectableContainer`,** find and replace it with `useApplicationContainer`. The codemod does not rename it. See [useApplicationContainer](./2026-11-04-application-container).
 4. **If you import `lodash` in your own code,** add it to your `package.json`; ARDOR no longer installs it. A `useDeepEqualSelector` selector that returns a `Map`, a `Set` or a class instance now re-renders whenever the instance changes. See [No lodash](./2026-11-04-drop-lodash).
