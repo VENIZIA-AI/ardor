@@ -41,7 +41,7 @@ export class AuditReportService {
       },
     });
 
-    // `doRequest` sends only the headers it is given; `getRequestHeader` adds the ones set above and `Authorization`.
+    // `doRequest` sends only the headers it is given; `getRequestHeader` returns the session headers, including the ones set above, and `Authorization`.
     const headers = networkService.getRequestHeader({ resource: '/audit/export' });
 
     const response = await networkService.doRequest<AuditReport>({

@@ -1,6 +1,6 @@
 ---
 title: Testing - prove the application boots
-description: assertArdorApplicationBoots in @venizia/ardor/testing starts an application, resolves every binding it made and what the first render resolves, with no browser and no network, and fails with the error opening the app would raise. FakeResizeObserver delivers a size to code that observes an element.
+description: assertArdorApplicationBoots starts an application and resolves its bindings with no browser or network; FakeResizeObserver delivers a size to observing code.
 ---
 
 # Testing - prove the application boots

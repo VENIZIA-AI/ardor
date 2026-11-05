@@ -22,7 +22,7 @@ Moves the names removed from @venizia/ardor to what replaces them:
   Logger (a type)                                       ILogger
 
 Removed with nothing to write in their place, so only listed with their line: isEditableTarget,
-TDataCount, ISyncFC, App.DEFAULT_LOCALE, HeaderConstants.REQUEST_DEVICE_INFO, HeaderConstants.RESPONSE_FORMAT,
+TDataCount, ISyncFC, useSizer (use useElementSize), useInjectableContainer (renamed useApplicationContainer), App.DEFAULT_LOCALE, HeaderConstants.REQUEST_DEVICE_INFO, HeaderConstants.RESPONSE_FORMAT,
 the enableDebug prop of ArdorApplication (pass logger instead), and a Logger use with no one-line form.
 
 It rewrites a name imported from @venizia/ardor, @venizia/ardor-kernel, @venizia/ardor-react or
