@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
+import { FakeClipboard } from '@venizia/ardor-kernel/testing';
 import { useAutosave } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
@@ -89,15 +90,11 @@ describe('hooks log through the application logger', () => {
 
   test('useCopyToClipboard reports a failure through its scoped logger', async () => {
     const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
-    const original = navigator.clipboard;
+    const clipboard = new FakeClipboard();
+    clipboard.isDenied = true;
+    const restore = clipboard.install();
 
     try {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: { writeText: () => Promise.reject(new Error('denied')) },
-        configurable: true,
-        writable: true,
-      });
-
       const { result } = renderHook(() => useCopyToClipboard());
       let copied = true;
       await act(async () => {
@@ -109,11 +106,7 @@ describe('hooks log through the application logger', () => {
       expect(consoleSpy).toHaveBeenCalledTimes(1);
       expect(String(consoleSpy.mock.calls[0]?.[0])).toContain('[useCopyToClipboard]');
     } finally {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: original,
-        configurable: true,
-        writable: true,
-      });
+      restore();
       consoleSpy.mockRestore();
     }
   });

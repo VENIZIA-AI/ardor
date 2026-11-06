@@ -135,6 +135,14 @@ generated:
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
+### `@venizia/ardor-kernel/testing` (5)
+
+- `FakeClipboard` class
+- `FakeIntersectionObserver` class
+- `FakeMatchMedia` class
+- `FakeResizeObserver` class
+- `FakeStorage` class
+
 ## react
 
 ### `@venizia/ardor-react` (48)
@@ -449,10 +457,14 @@ generated:
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
-### `@venizia/ardor/testing` (4)
+### `@venizia/ardor/testing` (8)
 
 - `assertArdorApplicationBoots` const
+- `FakeClipboard` class
+- `FakeIntersectionObserver` class
+- `FakeMatchMedia` class
 - `FakeResizeObserver` class
+- `FakeStorage` class
 - `IAssertArdorApplicationBootsOptions` interface
 - `TBootSkip` type
 

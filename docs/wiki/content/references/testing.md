@@ -1,6 +1,6 @@
 ---
 title: Testing - prove the application boots
-description: assertArdorApplicationBoots starts an application and resolves its bindings with no browser or network; FakeResizeObserver delivers a size to observing code.
+description: assertArdorApplicationBoots resolves an application's bindings with no browser; fakes for ResizeObserver, IntersectionObserver, matchMedia, storage and the clipboard.
 ---
 
 # Testing - prove the application boots
@@ -42,24 +42,40 @@ The first argument is an instance or a function that returns one. Pass a functio
 
 - Anything that fails only in a real browser: CSS, layout, the router, a page's own rendering.
 - A request a service makes with its own transport, or a socket it opens when it is built. Name such a binding in `skipBindings`.
-- A wrong API url, a server that is down, an expired token: nothing here reaches the network.
+- A wrong API url, a server that is down, an expired token: nothing here reaches the n## Fake the browser APIs your code reads
 
-## Test a ResizeObserver
-
-happy-dom and some other test hosts have a `ResizeObserver` whose `observe()` does nothing, so a hook such as `useElementSize` never gets a size. `FakeResizeObserver` replaces it and delivers the size you choose.
+happy-dom and some other test hosts have a `ResizeObserver` or `IntersectionObserver` whose `observe()` does nothing, no `matchMedia`, a `localStorage` that never fails and a `navigator.clipboard` that does not exist. ARDOR's hooks and helpers read all of them, so the same entry holds a fake of each. Each `install` returns a function that puts back what was there; call it in `afterEach`.
 
 ```ts
-import { FakeResizeObserver } from '@venizia/ardor/testing';
+import {
+  FakeClipboard,
+  FakeIntersectionObserver,
+  FakeMatchMedia,
+  FakeResizeObserver,
+  FakeStorage,
+} from '@venizia/ardor/testing';
 
-declare const element: Element; // the element the component under test observes
+declare const element: Element; // an element the component under test observes
 
-const restore = FakeResizeObserver.install();
+const restore = [
+  FakeResizeObserver.install(),
+  FakeIntersectionObserver.install(),
+  FakeMatchMedia.install(),
+  new FakeStorage().install(),
+  new FakeClipboard().install(),
+];
 // render the component, then:
 FakeResizeObserver.flush({ element, width: 320, height: 200 });
-restore();
+FakeIntersectionObserver.flush({ element, isIntersecting: true });
+FakeMatchMedia.set({ query: '(min-width: 600px)', matches: true });
+restore.forEach((undo) => undo());
 ```
 
-- **`FakeResizeObserver.install()`** puts the fake on `globalThis.ResizeObserver` and returns a function that leaves `ResizeObserver` as it was before that call. Call it before the code under test creates its observer. It does not nest: an inner `install()` forgets the observers of the outer one, so install once per test.
-- **`FakeResizeObserver.flush({ element, width, height })`** calls every observer of `element` at once, with one entry whose content box and border box have that size. An element nobody observes, an element that was unobserved and a disconnected observer get nothing.
+The same classes are in `@venizia/ardor-kernel/testing`, for a project that uses the kernel without the umbrella. They need no DOM of their own.
+
+- **`FakeResizeObserver.install()` and `FakeIntersectionObserver.install()`** put the fake on `globalThis` and forget the observers of an earlier install, so install once per test. `FakeResizeObserver.all` and `FakeIntersectionObserver.all` list the observers the code created; each has its `callback`, `targets` (the elements observed now), `isDisconnected`, and `options` (the `FakeResizeObserver` one has an entry per `observe` call, and an `unobserved` list).
+- **`flush`** calls every observer of `element` at once: `FakeResizeObserver.flush({ element, width, height })` with one entry whose content box and border box have that size, `FakeIntersectionObserver.flush({ element, isIntersecting, ratio })` with one entry (`ratio` is 1 or 0 by `isIntersecting` unless you give it). An element nobody observes, an element that was unobserved and a disconnected observer get nothing. For an entry of your own, call `FakeResizeObserver.all[0].callback`.
 - **Animation frames are yours.** `useElementSize` and `useResizeEffect` apply a size on the next animation frame (`useResizeEffect` with `beforePaint: true` calls inside the observer callback, with no frame), so the test also runs its frames, with a fake `requestAnimationFrame` or its runner's timers, inside `act`.
-- It needs no DOM of its own. Call the function `install` returned in `afterEach`.
+- **`FakeMatchMedia.install()`** replaces `matchMedia` with a function that answers one list per query, `false` until `FakeMatchMedia.set({ query, matches })` sets it and tells the listeners with a `change` event. `FakeMatchMedia.queries` holds the queries the code asked about, so `size === 0` shows that it never asked.
+- **`new FakeStorage()`** is a `Storage` that keeps its keys as own properties, as the real one does. `storage.install()` makes it `localStorage`; `storage.install('session')` makes it `sessionStorage`. Set `failWrites = true` for a full or blocked storage (`setItem` throws `QuotaExceededError`, `removeItem` throws `SecurityError`) and `failReads = true` for a blocked one (reads throw `SecurityError`); `writes` lists the values it accepted. Flip them at any time to see the code recover.
+- **`new FakeClipboard()`** replaces `navigator.clipboard` with one that keeps the text: `written` lists every `writeText`, `text` is what `readText` answers, and `isDenied = true` makes both reject with `NotAllowedError`. To test a missing clipboard, or one that throws before it returns a promise, replace `navigator.clipboard` yourself.

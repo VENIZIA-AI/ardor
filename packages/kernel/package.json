@@ -56,6 +56,11 @@
       "import": "./dist/base/repositories/index.js",
       "default": "./dist/base/repositories/index.js"
     },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js",
+      "default": "./dist/testing.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -105,6 +110,11 @@
         "reflect-metadata"
       ],
       "limit": "7660 B"
+    },
+    {
+      "path": "dist/testing.js",
+      "import": "*",
+      "limit": "1270 B"
     }
   ],
   "engines": {

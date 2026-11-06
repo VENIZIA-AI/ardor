@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
+import { FakeResizeObserver } from '@venizia/ardor-kernel/testing';
 import { useResizeEffect } from '@/hooks/use-resize-effect';
 import {
   cancelled,
@@ -10,7 +11,6 @@ import {
   frames,
   installObserverStubs,
   observerAt,
-  observers,
   restoreObserverStubs,
 } from '../resize-observer-stub';
 
@@ -42,7 +42,7 @@ describe('useResizeEffect', () => {
 
     renderHook(() => useResizeEffect({ targets: [refOf(first), refOf(second)], onResize }));
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([first, second]);
     expect(observerAt(0).options).toEqual([{ box: 'content-box' }, { box: 'content-box' }]);
   });
@@ -138,7 +138,7 @@ describe('useResizeEffect', () => {
     fire({ observer: observerAt(0), entries: [entryOf({ width: 5, height: 5, target: element })] });
     flushFrames();
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(old.calls).toHaveLength(0);
     expect(next.calls).toHaveLength(1);
   });
@@ -155,8 +155,8 @@ describe('useResizeEffect', () => {
 
     rerender({ box: 'border-box' });
 
-    expect(observers).toHaveLength(2);
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(FakeResizeObserver.all).toHaveLength(2);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(observerAt(1).options).toEqual([{ box: 'border-box' }]);
   });
 
@@ -174,9 +174,9 @@ describe('useResizeEffect', () => {
 
     rerender({ targets: [refOf(second), refOf(third)] });
 
-    expect(observers).toHaveLength(1);
-    expect(observerAt(0).disconnected).toBe(false);
-    expect(observerAt(0).targets).toEqual([first, second, third]);
+    expect(FakeResizeObserver.all).toHaveLength(1);
+    expect(observerAt(0).isDisconnected).toBe(false);
+    expect(observerAt(0).targets).toEqual([second, third]);
     expect(observerAt(0).unobserved).toEqual([first]);
   });
 
@@ -190,7 +190,7 @@ describe('useResizeEffect', () => {
     rerender();
     rerender();
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([element]);
     expect(observerAt(0).unobserved).toEqual([]);
   });
@@ -208,7 +208,7 @@ describe('useResizeEffect', () => {
 
     rerender({ element });
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([element]);
   });
 
@@ -226,7 +226,7 @@ describe('useResizeEffect', () => {
     rerender({ list: [first, second] });
     rerender({ list: [second] });
 
-    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).targets).toEqual([second]);
     expect(observerAt(0).unobserved).toEqual([first]);
   });
 
@@ -240,7 +240,7 @@ describe('useResizeEffect', () => {
     ref.current = second;
     rerender();
 
-    expect(observerAt(0).targets).toEqual([first, second]);
+    expect(observerAt(0).targets).toEqual([second]);
     expect(observerAt(0).unobserved).toEqual([first]);
   });
 
@@ -259,7 +259,7 @@ describe('useResizeEffect', () => {
     rerender({ list: [second, first] });
     rerender({ list: [second, first, second] });
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([first, second]);
     expect(observerAt(0).unobserved).toEqual([]);
   });
@@ -302,7 +302,7 @@ describe('useResizeEffect', () => {
 
     unmount();
 
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(cancelled).toEqual(pending);
     expect(frames.size).toBe(0);
     expect(calls).toHaveLength(0);
@@ -317,7 +317,7 @@ describe('useResizeEffect', () => {
     });
     unmount();
 
-    expect(observers).toHaveLength(0);
+    expect(FakeResizeObserver.all).toHaveLength(0);
     expect(calls).toHaveLength(0);
   });
 });
@@ -379,8 +379,8 @@ describe('useResizeEffect with beforePaint', () => {
 
     rerender({ beforePaint: true });
 
-    expect(observers).toHaveLength(2);
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(FakeResizeObserver.all).toHaveLength(2);
+    expect(observerAt(0).isDisconnected).toBe(true);
   });
 });
 
@@ -408,7 +408,7 @@ describe('useResizeEffect with children', () => {
 
     renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize, children: true }));
 
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([parent, first, second]);
   });
 
@@ -443,8 +443,8 @@ describe('useResizeEffect with children', () => {
     parent.removeChild(first);
     await waitForMutations();
 
-    expect(observers).toHaveLength(1);
-    expect(observerAt(0).targets).toEqual([parent, first, second, added]);
+    expect(FakeResizeObserver.all).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([parent, second, added]);
     expect(observerAt(0).unobserved).toEqual([first]);
   });
 
@@ -474,14 +474,7 @@ describe('useResizeEffect with children', () => {
 
     rerender({ parent: next.parent });
 
-    expect(observerAt(0).targets).toEqual([
-      old.parent,
-      old.first,
-      old.second,
-      next.parent,
-      next.first,
-      next.second,
-    ]);
+    expect(observerAt(0).targets).toEqual([next.parent, next.first, next.second]);
     expect(observerAt(0).unobserved).toEqual([old.parent, old.first, old.second]);
   });
 

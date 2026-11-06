@@ -37,6 +37,10 @@ Kernel sits below the other framework packages in the [monorepo layout](/overvie
 
 Kernel declares `@venizia/ignis-filter`, `@venizia/ignis-inversion`, `@venizia/ignis-kernel`, `reflect-metadata` as required peers (and `@venizia/ignis-helpers`, which holds the transport). `@venizia/ignis-connectors` is an optional peer, needed only for the `./repository` sub-path, which re-exports `@venizia/ignis-connectors/http`. It has no runtime dependency, and no socket client: that is IGNIS's.
 
+## The testing entry
+
+`@venizia/ardor-kernel/testing` (`src/testing.ts`, outside the root barrel) holds the fakes of the browser APIs that ARDOR's hooks and helpers read; `@venizia/ardor/testing` re-exports them, and the React and admin tests import them from the kernel (react depends on the kernel, so there is no cycle). `FakeResizeObserver` and `FakeIntersectionObserver` are classes with static `install()` (swaps the global, forgets the earlier observers, answers the restore function), `all` (the observers created, each with `callback`, `targets` that `unobserve` and `disconnect` shrink, `isDisconnected`; the resize one also `options` and `unobserved` per call) and `flush` (delivers one entry to the observers of an element). `FakeMatchMedia.install()` answers one list per query (`queries`, `of`) and `set({ query, matches })` changes it and dispatches `change`. `FakeStorage` stores keys as own properties like the real `Storage` (kernel code enumerates `Object.keys(localStorage)`), keeps its controls in private fields behind accessors so a key named `writes` cannot break them, and fails on demand (`failReads`, `failWrites`). `FakeClipboard` keeps the text; `isDenied` rejects with `NotAllowedError`. The entry uses only globals, so the purity gate claims it like the root. Its budget is 1270 B (1243 B measured).
+
 ## Build, test, size
 
 Scripts follow the standard package layout described in [Build/run/test](/overview/build-run-test.md) and [the build system](/process/build-system.md):
