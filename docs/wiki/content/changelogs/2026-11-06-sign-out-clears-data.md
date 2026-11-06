@@ -19,5 +19,5 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 
 ## Who is affected
 
-- **An app that keeps a preference under `@app/store/`**, such as a theme or a sidebar width, and wants it to outlive a sign-out: move it to another prefix, or override `clearStoredData`.
+- **An app that keeps a preference under `@app/store/`**, such as a theme or a sidebar width, and wants it to outlive a sign-out: move the key to `@app/prefs/<name>` (the reference examples now use it), or override `clearStoredData`. The old key is not migrated.
 - **All other apps.** No action needed.

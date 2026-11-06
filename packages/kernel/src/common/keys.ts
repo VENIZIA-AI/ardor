@@ -33,7 +33,7 @@ export class CoreBindings {
 export class LocalStorageKeys {
   /** Everything under this prefix is the session: `DefaultAuthService.cleanUp` removes it all. */
   static readonly PREFIX_AUTH = '@app/auth/';
-  /** The namespace `BrowserStorage` recommends for the keys of an application. */
+  /** The data of the signed-in user: sign-out removes everything under it. Preferences that outlive a sign-out go under `@app/prefs/`. */
   static readonly PREFIX_STORE = '@app/store/';
 
   /** The stored `IAuthTokenRecord`, as JSON. */

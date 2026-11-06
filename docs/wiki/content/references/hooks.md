@@ -650,7 +650,7 @@ Use it to know whether an element is in view: lazy content, a "load more" sentin
 import { useStoredState } from '@venizia/ardor';
 
 export function ThemeToggle() {
-  const { value, setValue } = useStoredState({ key: '@app/store/theme', defaultValue: 'light' });
+  const { value, setValue } = useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
 
   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
 }
@@ -663,7 +663,7 @@ import { useStoredState } from '@venizia/ardor';
 
 export function SidebarWidth() {
   const { value, setValue } = useStoredState({
-    key: '@app/store/sidebar-width',
+    key: '@app/prefs/sidebar-width',
     defaultValue: 240,
     writeDelayMs: 200,
   });
@@ -672,7 +672,7 @@ export function SidebarWidth() {
 }
 ```
 
-- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default; [`StorageCodecs.text()`](./index#a-bare-string-as-the-stored-text) for a key whose data is a bare string), optional `writeDelayMs` (default `0`: write at once).
+- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/prefs/<name>` to keep it after a sign-out, `@app/store/<name>` for the user's data, which sign-out removes), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default; [`StorageCodecs.text()`](./index#a-bare-string-as-the-stored-text) for a key whose data is a bare string), optional `writeDelayMs` (default `0`: write at once).
 - **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
 - **Gotcha**: An updater passed to `setValue` runs against the value at the moment you call it (the stored one, or the one the hook keeps after a refused write), not the value of the last render, so several updaters in one tick compose like a functional `setState`. The one value the hook cannot see is a write it is not told about: after the storage refused a write, the hook keeps its own value, and an updater builds on that kept value, not on a raw `localStorage.setItem` made meanwhile that fired no event. A write through `BrowserStorage`, or a `storage` event from another tab, replaces the kept value. Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. With `writeDelayMs` above `0`, `value` changes at once and the storage is written once, that many milliseconds after the last `setValue`; the value waits in the hook in the meantime, the place a refused write is kept, so an updater builds on it and other hooks and tabs see it only after the write. `remove()` cancels the pending write, and so does any change of the storage from outside (a write through `BrowserStorage`, or a `storage` event from another tab): the later write wins. An unmount, or a new `key` or `storage`, writes the pending value at once, to the key it was set for. A `pagehide` event, or the page turning hidden, writes the pending value at once, so a tab closed inside the delay loses nothing. Two hooks on one key in a tab each keep their own timer, and the first write to land cancels the pending write of the other, so the earlier timer wins, not the last `setValue`; give a key one writer. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
 

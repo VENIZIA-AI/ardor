@@ -77,7 +77,7 @@ interface IDecoded<TValue> {
  * import { useStoredState } from '@venizia/ardor';
  *
  * export function ThemeToggle() {
- *   const { value, setValue } = useStoredState({ key: '@app/store/theme', defaultValue: 'light' });
+ *   const { value, setValue } = useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
  *   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
  * }
  * ```

@@ -77,9 +77,9 @@ try {
 ```typescript
 import { BrowserStorage, StorageAreas } from '@venizia/ardor';
 
-BrowserStorage.set({ key: '@app/store/theme', value: { mode: 'dark' } });
-const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: { mode: 'light' } });
-BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
+BrowserStorage.set({ key: '@app/prefs/theme', value: { mode: 'dark' } });
+const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: { mode: 'light' } });
+BrowserStorage.remove({ key: '@app/prefs/theme', storage: StorageAreas.LOCAL });
 ```
 
 | Method | Returns | Meaning |
@@ -102,13 +102,13 @@ import { BrowserStorage, StorageCodecs } from '@venizia/ardor';
 
 const THEME = StorageCodecs.text({ allowed: ['light', 'dark'] });
 
-BrowserStorage.set({ key: '@app/store/theme', value: 'dark', codec: THEME });
-const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: 'light', codec: THEME });
+BrowserStorage.set({ key: '@app/prefs/theme', value: 'dark', codec: THEME });
+const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: 'light', codec: THEME });
 ```
 
 Create the codec once, outside a component: `useStoredState` asks for a stable `codec`. The error of a refused value names no value, because a stored text can be a token.
 
-Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. Sign-out also removes every key under `@app/store/`, in `localStorage` and `sessionStorage`, so the next user does not see them; keep what must outlive a sign-out, such as a theme, under another prefix (or override `DefaultAuthProvider.clearStoredData`). The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
+Keys are used as you give them. Two prefixes are yours: `@app/prefs/<name>` for what outlives a sign-out (a theme, a sidebar width) and `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE`) for the data of the signed-in user, which sign-out removes in `localStorage` and `sessionStorage` so the next user does not see it (override `DefaultAuthProvider.clearStoredData` to change that). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 
 ## Browser clipboard
 
