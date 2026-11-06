@@ -358,6 +358,36 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
   });
 
+  test('is emptied after the redirect, not at once, and not when the next user signed in meanwhile', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    const clear = spyOn(queryClient, 'clear');
+
+    authService.cleanUp();
+    expect(clear).not.toHaveBeenCalled();
+    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    await settle();
+
+    expect(clear).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+  });
+
+  test('stops listening when the application unmounts', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    const clear = spyOn(queryClient, 'clear');
+
+    cleanup();
+    authService.cleanUp();
+    await settle();
+
+    expect(clear).not.toHaveBeenCalled();
+  });
+
   test('is kept while the session lives', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');

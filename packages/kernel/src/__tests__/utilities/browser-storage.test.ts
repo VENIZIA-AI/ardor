@@ -233,6 +233,39 @@ describe('BrowserStorage.removeWhere', () => {
     sessionStorage.setItem('@app/store/old/session', '3');
   });
 
+  test('tells the subscribers of a key under the prefix, stored or not, and no one else', () => {
+    const heard: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({ key: '@app/store/old/a', listener: () => heard.push('stored') }),
+      BrowserStorage.subscribe({
+        key: '@app/store/old/never',
+        listener: () => heard.push('never'),
+      }),
+      BrowserStorage.subscribe({ key: '@app/store/theme', listener: () => heard.push('theme') }),
+      BrowserStorage.subscribe({ key: '@app/other', listener: () => heard.push('other') }),
+      BrowserStorage.subscribe({
+        key: '@app/store/old/never',
+        storage: StorageAreas.SESSION,
+        listener: () => heard.push('session'),
+      }),
+    ];
+
+    BrowserStorage.removeWhere({ prefix: '@app/store/old/' });
+
+    expect(heard.filter((who) => who !== 'session').toSorted()).toEqual([
+      'never',
+      'stored',
+      'stored',
+    ]);
+    expect(heard).not.toContain('theme');
+    expect(heard).not.toContain('other');
+    expect(heard).not.toContain('session');
+
+    for (const stop of stops) {
+      stop();
+    }
+  });
+
   test('removes every key with the prefix, answers how many, and leaves the others', () => {
     expect(BrowserStorage.removeWhere({ prefix: '@app/store/old/' })).toBe(2);
     expect(BrowserStorage.keys()).toEqual(['@app/store/theme']);
@@ -265,7 +298,7 @@ describe('BrowserStorage.removeWhere', () => {
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
   });
 
-  test('notifies the subscribers of each removed key, and of no other', () => {
+  test('notifies the subscribers of the removed keys, and of no key outside the prefix', () => {
     const calls: Array<string> = [];
     const stops = [
       BrowserStorage.subscribe({ key: '@app/store/old/a', listener: () => calls.push('a') }),
@@ -279,7 +312,7 @@ describe('BrowserStorage.removeWhere', () => {
       stop();
     }
 
-    expect(calls.sort()).toEqual(['a', 'b']);
+    expect([...new Set(calls)].sort()).toEqual(['a', 'b']);
   });
 
   test('answers 0, and never throws, when the area is missing, cannot be listed or refuses removals', () => {

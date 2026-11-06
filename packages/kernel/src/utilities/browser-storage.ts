@@ -139,14 +139,22 @@ export class BrowserStorage {
 
   /**
    * Removes every key that starts with `prefix` and answers how many it removed. An empty `prefix`
-   * removes nothing, and a session key is never removed, as in `remove`. A key another tab removed
+   * removes nothing, and a session key is never removed, as in `remove`. Every subscriber of a key under the
+   * prefix is told, whether or not the key was stored. A key another tab removed
    * after the listing still counts: `removeItem` of a missing key does not throw.
    */
   static removeWhere(opts: { storage?: TStorageArea; prefix: string }): number {
     const { storage, prefix } = opts;
     const keys = prefix ? BrowserStorage.keys({ storage, prefix }) : [];
 
-    return keys.filter((key) => BrowserStorage.remove({ key, storage })).length;
+    const removed = keys.filter((key) => BrowserStorage.remove({ key, storage })).length;
+
+    // A key not stored yet, with a write waiting for it, is under the prefix too: tell its subscribers.
+    if (prefix) {
+      BrowserStorage.notify({ key: undefined, area: BrowserStorage.area({ storage }), prefix });
+    }
+
+    return removed;
   }
 
   /** `listener` runs after a write through `BrowserStorage` and after another tab changes the key. */
@@ -201,10 +209,10 @@ export class BrowserStorage {
     });
   }
 
-  private static notify(opts: { key: unknown; area: unknown }): void {
+  private static notify(opts: { key: unknown; area: unknown; prefix?: string }): void {
     for (const { key, storage, listener } of BrowserStorage.subs) {
       if (
-        (opts.key === null || opts.key === key) &&
+        (opts.key === null || opts.key === key || (!!opts.prefix && key.startsWith(opts.prefix))) &&
         opts.area === BrowserStorage.area({ storage })
       ) {
         BrowserStorage.safe<void>({ run: listener, fallback: undefined });

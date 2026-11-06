@@ -675,6 +675,28 @@ describe('data stored by the signed-in user', () => {
     expect(sessionStorage.getItem(STORE_KEY)).toBe('secret-session');
   });
 
+  test('an override that throws does not stop the session from ending', async () => {
+    const cleared: Array<string> = [];
+
+    class ThrowingProvider extends DefaultAuthProvider {
+      protected override clearStoredData(): void {
+        throw new Error('boom');
+      }
+
+      protected override onSessionCleared(opts: { reason: string }): void {
+        cleared.push(opts.reason);
+      }
+    }
+    const { authService, provider } = build(ThrowingProvider);
+    signIn(authService);
+    await provider.checkAuth({});
+
+    authService.cleanUp();
+    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+
+    expect(cleared).toHaveLength(1);
+  });
+
   test('clearStoredData can be overridden to keep preferences', () => {
     class KeepingProvider extends DefaultAuthProvider {
       protected override clearStoredData(): void {}

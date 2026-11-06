@@ -689,6 +689,20 @@ describe('useStoredState writeDelayMs', () => {
     });
   });
 
+  test('a sweep of the prefix drops a pending write for a key that was not stored yet', () => {
+    const { result, storage, unmount } = delayed();
+    act(() => result.current.setValue(5));
+
+    act(() => {
+      BrowserStorage.removeWhere({ prefix: '@app/store/' });
+    });
+    advance(DELAY);
+    unmount();
+
+    expect(storage.writes).toEqual([]);
+    expect(storage.getItem(KEY)).toBeNull();
+  });
+
   test('a delay that is not a number writes at once', () => {
     const storage = new FakeStorage();
     installFake(storage);

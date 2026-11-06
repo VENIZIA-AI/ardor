@@ -17,6 +17,13 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 - **`@app/store/` keys are removed.** `DefaultAuthProvider.clearStoredData` runs when the session is gone and removes every key under `LocalStorageKeys.PREFIX_STORE` in `localStorage` and `sessionStorage`. Override it to keep some.
 - **The query cache is emptied.** `ArdorApplication` owns the `QueryClient` (yours, if you pass `queryClient`) and empties it when the stored session disappears, after the redirect, as react-admin's own sign-out does. Before, only a sign-out through react-admin's logout emptied it.
 
+- **A pending write is dropped too.** `BrowserStorage.removeWhere` tells every subscriber of a key under the prefix, stored or not, so a `useStoredState` with `writeDelayMs` that has not stored its first value yet does not write it after the sign-out.
+- **A throwing `clearStoredData` does not stop the session from ending**; the error is logged.
+
+## What this does not cover
+
+It covers the `@app/store/` keys and the `QueryClient` that `ArdorApplication` owns, in the tab where the session ends. It does not clear react-admin's own store (react-admin's sign-out does), your Redux store, IndexedDB, cookies or the Cache API, and another tab clears when it next ends its own session. Reset those from `onSessionCleared` of your auth provider.
+
 ## Who is affected
 
 - **An app that keeps a preference under `@app/store/`**, such as a theme or a sidebar width, and wants it to outlive a sign-out: move the key to `@app/prefs/<name>` (the reference examples now use it), or override `clearStoredData`. The old key is not migrated.

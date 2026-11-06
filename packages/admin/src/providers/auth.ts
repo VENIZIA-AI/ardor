@@ -394,7 +394,12 @@ export class DefaultAuthProvider<
       return this.startStoredSession();
     }
 
-    this.clearStoredData();
+    try {
+      this.clearStoredData();
+    } catch (error) {
+      // An override that throws must not stop the session from ending.
+      this.logger.error('[clearStoredData] failed, the session ends anyway | error: %o', error);
+    }
 
     return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
   }

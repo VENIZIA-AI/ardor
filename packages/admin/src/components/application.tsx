@@ -142,7 +142,12 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       listener: () => {
         if (!authService.getAuth()?.value) {
           // After the redirect to the sign-in page, as react-admin's own sign-out does.
-          setTimeout(() => queryClient.clear(), 0);
+          setTimeout(() => {
+            // Not when the next user signed in meanwhile.
+            if (!authService.getAuth()?.value) {
+              queryClient.clear();
+            }
+          }, 0);
         }
       },
     });
