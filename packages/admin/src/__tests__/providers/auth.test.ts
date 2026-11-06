@@ -697,6 +697,42 @@ describe('data stored by the signed-in user', () => {
     expect(cleared).toHaveLength(1);
   });
 
+  test('two applications with ids on one origin sweep their own store keys only', async () => {
+    const buildOf = (id: string) => {
+      const container = new Container();
+      container
+        .bind({ key: CoreBindings.APPLICATION_INFO })
+        .toValue({ name: id, version: '1', description: '', id });
+      container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+      container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+      container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
+      container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+      return {
+        authService: container.get<DefaultAuthService>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }),
+        provider: container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+      };
+    };
+
+    const shop = buildOf('shop');
+    const blog = buildOf('blog');
+    signIn(shop.authService);
+    blog.authService.saveAuth({
+      userId: 9,
+      username: 'bob',
+      token: { value: 'bob-jwt', type: 'Bearer' },
+    });
+    localStorage.setItem('@app/store/shop/draft', 'shop-draft');
+    localStorage.setItem('@app/store/blog/draft', 'blog-draft');
+
+    await shop.provider.logout({});
+
+    expect(localStorage.getItem('@app/store/shop/draft')).toBeNull();
+    expect(localStorage.getItem('@app/store/blog/draft')).toBe('blog-draft');
+    expect(blog.authService.getAuth()?.value).toBe('bob-jwt');
+    expect(shop.authService.getAuth()).toBeNull();
+  });
+
   test('clearStoredData can be overridden to keep preferences', () => {
     class KeepingProvider extends DefaultAuthProvider {
       protected override clearStoredData(): void {}

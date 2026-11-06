@@ -306,7 +306,7 @@ The data provider must be a singleton. Declare it with `@provide` in a `@configu
 - **Overriding `refreshToken` on the auth provider.** `DefaultAuthProvider.refreshToken()` only calls the service's `refresh()`. The refresh itself belongs to the service's hook, so a `401` and `useRefreshToken` make it in one place.
 - **Using `noAuthPathRegex: /./` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`AuthRecovery.canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.
 - **Using an invalid string in `noAuthPathRegex`.** The service logs it and drops it. The path stays authenticated and you find out from the `401`, not from a build error. Prefer a `RegExp` literal.
-- **Storing the token under your own key.** The default `resolveAuthToken()` only reads `LocalStorageKeys.KEY_AUTH_TOKEN`. A token elsewhere is invisible to it unless you override the hook.
+- **Storing the token under your own key.** The default `resolveAuthToken()` reads the token through the auth service the request service was built with (`authService.keys.token`: `LocalStorageKeys.KEY_AUTH_TOKEN`, or the key scoped by the application `id`), or `LocalStorageKeys.KEY_AUTH_TOKEN` with no auth service. A token elsewhere is invisible to it unless you override the hook.
 - **Binding the plain `DefaultRestDataProvider`.** Overriding `createNetworkService()` on a subclass changes nothing until that subclass is what sits under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`.
 
 ## Related

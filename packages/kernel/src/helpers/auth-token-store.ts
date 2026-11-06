@@ -7,13 +7,13 @@ import { type IAuthTokenRecord, LocalStorageKeys } from '@/common';
 export class AuthTokenStore {
   private static readonly logger = LoggerFactory.getLogger(['AuthTokenStore']);
 
-  /** The stored token, or `undefined` when none is stored, it is unusable, or there is no `localStorage`. */
-  static read(): IAuthTokenRecord | undefined {
+  /** The stored token (under `key`, `LocalStorageKeys.KEY_AUTH_TOKEN` by default), or `undefined` when none is stored, it is unusable, or there is no `localStorage`. */
+  static read(opts: { key?: string } = {}): IAuthTokenRecord | undefined {
     if (typeof localStorage === 'undefined') {
       return undefined;
     }
 
-    const stored = localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+    const stored = localStorage.getItem(opts.key ?? LocalStorageKeys.KEY_AUTH_TOKEN);
 
     if (!stored?.length) {
       return undefined;
@@ -34,8 +34,12 @@ export class AuthTokenStore {
     }
   }
 
-  /** Stores the token with its `provider` under `LocalStorageKeys.KEY_AUTH_TOKEN`. Throws when `localStorage` is not available. */
-  static write(opts: { token: { value: string; type: string }; provider: string }): void {
+  /** Stores the token with its `provider` under `key` (`LocalStorageKeys.KEY_AUTH_TOKEN` by default). Throws when `localStorage` is not available. */
+  static write(opts: {
+    token: { value: string; type: string };
+    provider: string;
+    key?: string;
+  }): void {
     // Not a silent skip: a sign-in that is not kept would look like it worked.
     if (typeof localStorage === 'undefined') {
       throw getError({ message: '[write] localStorage is not available' });
@@ -43,7 +47,7 @@ export class AuthTokenStore {
 
     const { token, provider } = opts;
     localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_TOKEN,
+      opts.key ?? LocalStorageKeys.KEY_AUTH_TOKEN,
       JSON.stringify(Object.assign({}, token, { provider })),
     );
   }

@@ -59,6 +59,16 @@ export const readStoredToken = (): string | null => {
 };
 ```
 
+### Two applications on one origin
+
+Browser storage is shared by every page of an origin. Two ARDOR applications served from one origin, say under `/shop` and `/blog`, would share one session and one `@app/store/` namespace. Give each an `id` in its application info (`IApplicationInfo.id`, letters, digits, `.`, `_` and `-`):
+
+```ts
+const info = { name: 'Shop', version: '1.0.0', description: 'The shop', id: 'shop' };
+```
+
+`LocalStorageKeys.scoped({ id })` answers the keys of one application: with the id `shop` the session is `@app/auth/shop/token`, `@app/auth/shop/identity` and `@app/auth/shop/permission`, and the store prefix is `@app/store/shop/`. `DefaultAuthService` takes the id from `CoreBindings.APPLICATION_INFO` and exposes the keys as `authService.keys`; its `cleanUp`, the auth provider's sign-out sweep and the request service's token all use them, so a sign-out in one application leaves the other's session and data alone. Name your own store keys with `authService.keys.storePrefix`. Without an `id` the keys are the ones in the table above, so an application that is alone on its origin changes nothing. An application without an `id` on a shared origin still sweeps all of `@app/auth/` and `@app/store/`, the others' keys included: give every application of an origin an `id`. The session keys all stay under `@app/auth/`, which `BrowserStorage` refuses to write.
+
 ## Key resolution in useInjectable
 
 `useInjectable` accepts keys from the `TUseInjectableKeys` union:

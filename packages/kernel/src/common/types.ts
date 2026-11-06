@@ -367,6 +367,12 @@ export interface IApplicationInfo {
   name: string;
   version: string;
   description: string;
+  /**
+   * Scopes the session and store keys in browser storage to this application (`LocalStorageKeys.scoped`),
+   * so two applications on one origin do not share a session. Give every application of an origin an id.
+   * Without one the keys are the unscoped ones.
+   */
+  id?: string;
   author?: { name: string; email: string; url?: string };
 }
 

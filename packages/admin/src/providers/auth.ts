@@ -11,7 +11,6 @@ import {
   type IAuthTokenRecord,
   type ISignInSession,
   type IPermissionProvider,
-  LocalStorageKeys,
   RequestMethods,
   StorageAreas,
   type TStringConstValue,
@@ -429,12 +428,12 @@ export class DefaultAuthProvider<
 
   /**
    * Runs when the session is gone, however it ended (sign-out, a `401`, a failed refresh, other
-   * code calling `cleanUp`): removes what the user stored under `LocalStorageKeys.PREFIX_STORE`
-   * (`@app/store/`) in `localStorage` and `sessionStorage`, so the next user does not see it.
+   * code calling `cleanUp`): removes what the user stored under the store prefix of this
+   * application (`@app/store/`, or `@app/store/<id>/` with an application `id`) in `localStorage` and `sessionStorage`, so the next user does not see it.
    * Override it to keep preferences, or put them under another prefix.
    */
   protected clearStoredData(): void {
-    const prefix = LocalStorageKeys.PREFIX_STORE;
+    const prefix = this.authService.keys.storePrefix;
 
     BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix });
     BrowserStorage.removeWhere({ storage: StorageAreas.SESSION, prefix });

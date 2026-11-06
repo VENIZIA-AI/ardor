@@ -1,15 +1,31 @@
-import { getError } from '@venizia/ignis-inversion';
+import { getError, inject } from '@venizia/ignis-inversion';
 
-import { type AnyType, type IAuthTokenRecord, type IdType, LocalStorageKeys } from '@/common';
+import {
+  type AnyType,
+  CoreBindings,
+  type IApplicationInfo,
+  type IAuthTokenRecord,
+  type IdType,
+  type IScopedKeys,
+  LocalStorageKeys,
+} from '@/common';
 import { AuthTokenStore } from '@/helpers';
 import { BaseService } from './base';
 
-/** Keeps the signed-in session (token, identity, roles) in `localStorage`; everything under `LocalStorageKeys.PREFIX_AUTH`. */
+/**
+ * Keeps the signed-in session (token, identity, roles) in `localStorage`, everything under
+ * `keys.authPrefix`: `LocalStorageKeys.PREFIX_AUTH`, or `@app/auth/<id>/` when the application has an `id`.
+ */
 export class DefaultAuthService extends BaseService {
   private readonly listeners = new Set<() => void>();
+  /** The keys of this application's session and store: the application's `id` scopes them. */
+  readonly keys: IScopedKeys;
 
-  constructor() {
+  constructor(
+    @inject({ key: CoreBindings.APPLICATION_INFO, isOptional: true }) info?: IApplicationInfo,
+  ) {
     super({ scope: DefaultAuthService.name });
+    this.keys = LocalStorageKeys.scoped({ id: info?.id });
   }
 
   /** `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes. */
@@ -64,7 +80,7 @@ export class DefaultAuthService extends BaseService {
   /** The stored identity; `{}` when nothing usable is stored, also outside a browser. */
   getUser(): AnyType {
     const identity = this.parseStored({
-      key: LocalStorageKeys.KEY_AUTH_IDENTITY,
+      key: this.keys.identity,
       method: 'getUser',
     });
     const isRecord = typeof identity === 'object' && identity !== null && !Array.isArray(identity);
@@ -79,7 +95,7 @@ export class DefaultAuthService extends BaseService {
    */
   getRoles() {
     const stored = this.parseStored({
-      key: LocalStorageKeys.KEY_AUTH_PERMISSION,
+      key: this.keys.permission,
       method: 'getRoles',
     });
     const roles = Array.isArray(stored) ? stored.filter((role) => typeof role === 'string') : [];
@@ -89,7 +105,7 @@ export class DefaultAuthService extends BaseService {
 
   /** The stored token, `null` for every visitor who has not signed in. */
   getAuth(): IAuthTokenRecord | null {
-    return AuthTokenStore.read() ?? null;
+    return AuthTokenStore.read({ key: this.keys.token }) ?? null;
   }
 
   /**
@@ -122,27 +138,27 @@ export class DefaultAuthService extends BaseService {
     }
 
     const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
-    AuthTokenStore.write({ token, provider });
+    AuthTokenStore.write({ token, provider, key: this.keys.token });
     localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      this.keys.identity,
       JSON.stringify({ userId, username, referenceId, provider }),
     );
 
     if (roles) {
-      localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, JSON.stringify(roles));
+      localStorage.setItem(this.keys.permission, JSON.stringify(roles));
     }
 
     this.notify();
   }
 
-  /** Removes every key under `LocalStorageKeys.PREFIX_AUTH`, then notifies the subscribers; does nothing outside a browser. */
+  /** Removes every key under `keys.authPrefix`, then notifies the subscribers; does nothing outside a browser. */
   cleanUp() {
     if (typeof localStorage === 'undefined') {
       return;
     }
 
     Object.keys(localStorage).forEach((key) => {
-      if (!key.startsWith(LocalStorageKeys.PREFIX_AUTH)) {
+      if (!key.startsWith(this.keys.authPrefix)) {
         return;
       }
 

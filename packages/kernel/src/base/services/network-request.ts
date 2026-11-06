@@ -119,7 +119,10 @@ export class DefaultNetworkRequestService extends BaseService {
    * store, or to hold the token in memory.
    */
   protected resolveAuthToken(): IAuthTokenRecord | undefined {
-    return DefaultNetworkRequestService.readAuthTokenFromStorage();
+    // The auth service knows where this application's session is kept (its `id` scopes the keys).
+    return this.authService
+      ? (this.authService.getAuth() ?? undefined)
+      : DefaultNetworkRequestService.readAuthTokenFromStorage();
   }
 
   /**
