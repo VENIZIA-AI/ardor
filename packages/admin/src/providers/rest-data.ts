@@ -47,18 +47,17 @@ import { type IListFilter, ListFilterBuilder } from './list-filter';
 
 /**
  * The path of one record: the id is a single path segment, whatever characters it holds. `.` and
- * `..` stay dot segments even when written `%2E`, so such an id is refused.
+ * `..` stay dot segments even when written `%2E`, and a lone surrogate cannot be encoded, so such
+ * an id is refused (without naming it).
  */
 const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> => {
-  const segment = encodeURIComponent(`${opts.id}`);
+  const text = `${opts.id}`;
 
-  if (segment === '.' || segment === '..') {
-    throw getError({
-      message: `[recordPaths] The record id '${segment}' is not a valid path segment`,
-    });
+  if (text === '.' || text === '..' || !text.isWellFormed()) {
+    throw getError({ message: '[recordPaths] The record id is not a valid path segment' });
   }
 
-  return [opts.resource, segment];
+  return [opts.resource, encodeURIComponent(text)];
 };
 
 /**

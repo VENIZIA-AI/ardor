@@ -915,7 +915,12 @@ describe('DefaultNetworkRequestService', () => {
       [['items', '%2E%2e', 'x']],
       [['items/../x']],
       [['items\\x']],
-      [['//other-host/x']],
+      [['.\t.']],
+      [['..\n']],
+      [['%2e%2e\t']],
+      [['a/.\t./b']],
+      [['posts?x=1']],
+      [['posts#frag']],
     ])('refuses the path %p before any request', async (paths) => {
       const before = recordedRequests.length;
       const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
@@ -933,6 +938,27 @@ describe('DefaultNetworkRequestService', () => {
       });
       expect(recordedRequests.length).toBe(before);
     });
+
+    test.each([[['', '/other-host']], [['/', 'other-host']], [['/', '/other-host']]])(
+      'under the base "/" the path %p cannot become a protocol-relative URL',
+      async (paths) => {
+        const before = recordedRequests.length;
+        const service = createService({ baseUrl: '/', isOpen: true });
+
+        const result = await RejectionHelper.rejectionOf({
+          task: service.doRequest({
+            paths,
+            method: RequestMethods.GET,
+            type: RequestTypes.GET_ONE,
+          }),
+        });
+
+        expect(result).toMatchObject({
+          message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        });
+        expect(recordedRequests.length).toBe(before);
+      },
+    );
 
     test('accepts a path with dots inside a segment and a leading slash', async () => {
       serverHandler = () =>

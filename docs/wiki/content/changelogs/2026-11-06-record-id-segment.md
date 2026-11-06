@@ -15,9 +15,9 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 ## What changed
 
 - **The id is encoded.** An id with `/`, `?`, `#`, a space or `%` is sent as one segment. A numeric or a UUID id is unchanged.
-- **`.` and `..` are rejected.** They are dot segments even when encoded, so the call rejects before any request.
+- **`.`, `..` and a lone surrogate are rejected.** The first two are dot segments even when encoded, and a lone surrogate cannot be encoded, so the call rejects before any request.
 
-- **`doRequest` refuses a path that leaves the base.** A path with a `.` or `..` segment (also written `%2E`), a backslash, or a leading `//` rejects with `[doRequest] Invalid path to send request!` before any request.
+- **`doRequest` refuses a request that leaves the base.** A `paths` entry with a control character, `?`, `#`, a backslash or a `.` or `..` segment (also written `%2E`), and any request whose resolved URL has another origin than `baseUrl` or a path outside it (a base of `/` with a `//` joined in front of a name, for example), rejects with `[doRequest] Invalid path to send request!` before any request. Query parameters go in `query`, not in `paths`.
 
 ## Who is affected
 
