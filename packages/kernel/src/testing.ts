@@ -6,17 +6,40 @@ import type { TStorageArea } from '@/common';
  * which returns the function that puts the previous value back.
  */
 
-/** Defines `name` on `target` and answers the function that puts the previous own property back. */
-const swap = (opts: { target: object; name: string; value: unknown }): (() => void) => {
-  const { target, name, value } = opts;
-  const previous = Object.getOwnPropertyDescriptor(target, name);
-  Object.defineProperty(target, name, { value, configurable: true, writable: true });
+/**
+ * Defines `name` on the global and, where `window` is another object (happy-dom), on `window` too, so
+ * code that reads `window.matchMedia` or `window.localStorage` meets the fake. `at` names a member of
+ * them instead (`navigator`). Answers the function that puts the previous properties back.
+ */
+const swap = (opts: { name: string; value: unknown; at?: string }): (() => void) => {
+  const { name, value, at } = opts;
+  const roots: Array<unknown> = [globalThis, Reflect.get(globalThis, 'window')];
+  const targets = new Set<object>();
+
+  for (const root of roots) {
+    const target: unknown = at && root ? Reflect.get(Object(root), at) : root;
+
+    if (typeof target === 'object' && target !== null) {
+      targets.add(target);
+    }
+  }
+
+  const restores = [...targets].map((target) => {
+    const previous = Object.getOwnPropertyDescriptor(target, name);
+    Object.defineProperty(target, name, { value, configurable: true, writable: true });
+
+    return () => {
+      if (previous) {
+        Object.defineProperty(target, name, previous);
+      } else {
+        Reflect.deleteProperty(target, name);
+      }
+    };
+  });
 
   return () => {
-    if (previous) {
-      Object.defineProperty(target, name, previous);
-    } else {
-      Reflect.deleteProperty(target, name);
+    for (const restore of restores) {
+      restore();
     }
   };
 };
@@ -55,7 +78,7 @@ export class FakeResizeObserver implements ResizeObserver {
   static install(): () => void {
     FakeResizeObserver.all = [];
 
-    return swap({ target: globalThis, name: 'ResizeObserver', value: FakeResizeObserver });
+    return swap({ name: 'ResizeObserver', value: FakeResizeObserver });
   }
 
   /** Calls every observer of `element` with one entry of that size, for the content and the border box alike. */
@@ -96,10 +119,45 @@ export class FakeResizeObserver implements ResizeObserver {
   }
 }
 
-/** An `IntersectionObserver` whose `observe()` records the element; `flush` delivers one entry to the observers of an element. */
+const intersectionEntryOf = (opts: {
+  element: Element;
+  isIntersecting: boolean;
+  ratio: number;
+}): IntersectionObserverEntry => {
+  const box = { x: 0, y: 0, width: 10, height: 10, top: 0, left: 0, right: 10, bottom: 10 };
+  const rect = { ...box, toJSON: () => box };
+
+  return {
+    target: opts.element,
+    isIntersecting: opts.isIntersecting,
+    intersectionRatio: opts.ratio,
+    boundingClientRect: rect,
+    intersectionRect: rect,
+    rootBounds: null,
+    time: 0,
+  };
+};
+
+/**
+ * An `IntersectionObserver` whose `observe()` records the element and reports nothing by itself: `settle`
+ * delivers the first report of a browser, `flush` delivers an entry to the observers of an element.
+ */
 export class FakeIntersectionObserver implements IntersectionObserver {
   /** The observers created since the last `install`, in creation order. */
   static all: Array<FakeIntersectionObserver> = [];
+
+  /** How many observers were created since the last `install`. */
+  static get created(): number {
+    return FakeIntersectionObserver.all.length;
+  }
+
+  /** The observers created since the last `install` that are not disconnected. */
+  static live(): Array<FakeIntersectionObserver> {
+    return FakeIntersectionObserver.all.filter((observer) => !observer.isDisconnected);
+  }
+
+  /** The targets this observer has reported on: a browser reports each newly observed target once, at first. */
+  readonly #reported = new Set<Element>();
 
   readonly root = null;
   readonly rootMargin = '';
@@ -120,31 +178,41 @@ export class FakeIntersectionObserver implements IntersectionObserver {
   static install(): () => void {
     FakeIntersectionObserver.all = [];
 
-    return swap({
-      target: globalThis,
-      name: 'IntersectionObserver',
-      value: FakeIntersectionObserver,
-    });
+    return swap({ name: 'IntersectionObserver', value: FakeIntersectionObserver });
   }
 
   /** Calls every observer of `element` with one entry. `ratio` is 1 when the element intersects and 0 when not, unless given. */
   static flush(opts: { element: Element; isIntersecting: boolean; ratio?: number }): void {
     const { element, isIntersecting, ratio = isIntersecting ? 1 : 0 } = opts;
-    const box = { x: 0, y: 0, width: 10, height: 10, top: 0, left: 0, right: 10, bottom: 10 };
-    const rect = { ...box, toJSON: () => box };
-    const entry: IntersectionObserverEntry = {
-      target: element,
-      isIntersecting,
-      intersectionRatio: ratio,
-      boundingClientRect: rect,
-      intersectionRect: rect,
-      rootBounds: null,
-      time: 0,
-    };
+    const entry = intersectionEntryOf({ element, isIntersecting, ratio });
 
     for (const observer of FakeIntersectionObserver.all) {
       if (observer.targets.includes(element)) {
+        observer.#reported.add(element);
         observer.callback([entry], observer);
+      }
+    }
+  }
+
+  /**
+   * The first report of a browser: every live observer is called, once per target it has not reported
+   * on yet, with the entry for `isIntersecting` (not intersecting by default). A target already
+   * reported on, by `settle` or `flush`, is skipped.
+   */
+  static settle(opts: { isIntersecting?: boolean; ratio?: number } = {}): void {
+    const { isIntersecting = false, ratio = isIntersecting ? 1 : 0 } = opts;
+
+    for (const observer of FakeIntersectionObserver.live()) {
+      const entries = observer.targets
+        .filter((element) => !observer.#reported.has(element))
+        .map((element) => {
+          observer.#reported.add(element);
+
+          return intersectionEntryOf({ element, isIntersecting, ratio });
+        });
+
+      if (entries.length > 0) {
+        observer.callback(entries, observer);
       }
     }
   }
@@ -156,6 +224,7 @@ export class FakeIntersectionObserver implements IntersectionObserver {
   }
 
   unobserve(target: Element): void {
+    this.#reported.delete(target);
     drop({ list: this.targets, item: target });
   }
 
@@ -174,6 +243,8 @@ export class FakeMatchMedia extends EventTarget {
   /** The queries asked since the last `install`, with the list each one got. */
   static readonly queries = new Map<string, FakeMatchMedia>();
 
+  readonly #listeners = new Set<EventListenerOrEventListenerObject>();
+
   constructor(
     readonly media: string,
     public matches = false,
@@ -181,12 +252,40 @@ export class FakeMatchMedia extends EventTarget {
     super();
   }
 
+  /** How many distinct `change` listeners are subscribed now, to assert a subscribe and an unsubscribe. */
+  get listenerCount(): number {
+    return this.#listeners.size;
+  }
+
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    if (type === 'change' && listener) {
+      this.#listeners.add(listener);
+    }
+
+    super.addEventListener(type, listener, options);
+  }
+
+  override removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void {
+    if (type === 'change' && listener) {
+      this.#listeners.delete(listener);
+    }
+
+    super.removeEventListener(type, listener, options);
+  }
+
   /** Replaces `window.matchMedia` with a function that answers the list of the query. */
   static install(): () => void {
     FakeMatchMedia.queries.clear();
 
     return swap({
-      target: globalThis,
       name: 'matchMedia',
       value: (query: string): FakeMatchMedia => FakeMatchMedia.of(query),
     });
@@ -210,9 +309,9 @@ export class FakeMatchMedia extends EventTarget {
 
 /**
  * A `Storage` that behaves like the real one: stored keys are own properties, so `Object.keys` lists
- * them. Set `failReads` for a blocked storage (reads throw `SecurityError`) and `failWrites` for a
- * full or blocked one (`setItem` and `clear` throw `QuotaExceededError`, `removeItem` throws
- * `SecurityError`); both can change at any time. A key named like a member of the fake (`getItem`,
+ * them. Each way to fail has its own switch, and each can change at any time: `failReads` makes
+ * `getItem` throw `SecurityError`, `failListing` makes `key` and `length` throw it, `failWrites` makes
+ * `setItem` and `clear` throw `QuotaExceededError` and `removeItem` throw `SecurityError`. A key named like a member of the fake (`getItem`,
  * `length`, `writes`, `failWrites` and the rest) would shadow it, so `setItem` throws a `TypeError`
  * for it, where the real `Storage` accepts it.
  */
@@ -220,6 +319,7 @@ export class FakeStorage implements Storage {
   [name: string]: unknown;
 
   #failReads = false;
+  #failListing = false;
   #failWrites = false;
   readonly #writes: Array<string> = [];
 
@@ -229,6 +329,14 @@ export class FakeStorage implements Storage {
 
   set failReads(value: boolean) {
     this.#failReads = value;
+  }
+
+  get failListing(): boolean {
+    return this.#failListing;
+  }
+
+  set failListing(value: boolean) {
+    this.#failListing = value;
   }
 
   get failWrites(): boolean {
@@ -245,14 +353,16 @@ export class FakeStorage implements Storage {
   }
 
   get length(): number {
-    return this.#keys().length;
+    this.#assertListable();
+
+    return Object.keys(this).length;
   }
 
   /** Makes this the `localStorage` (the default) or the `sessionStorage` of the global. */
   install(area: TStorageArea = 'local'): () => void {
     const name = area === 'session' ? 'sessionStorage' : 'localStorage';
 
-    return swap({ target: globalThis, name, value: this });
+    return swap({ name, value: this });
   }
 
   getItem(key: string): string | null {
@@ -281,28 +391,27 @@ export class FakeStorage implements Storage {
 
   removeItem(key: string): void {
     this.#assertWritable('Access is denied', 'SecurityError');
-    this.#assertReadable();
     Reflect.deleteProperty(this, key);
   }
 
   clear(): void {
     this.#assertWritable('The quota has been exceeded', 'QuotaExceededError');
 
-    for (const key of this.#keys()) {
+    for (const key of Object.keys(this)) {
       Reflect.deleteProperty(this, key);
     }
   }
 
   key(index: number): string | null {
-    this.#assertReadable();
+    this.#assertListable();
 
-    return this.#keys()[index] ?? null;
+    return Object.keys(this)[index] ?? null;
   }
 
-  #keys(): Array<string> {
-    this.#assertReadable();
-
-    return Object.keys(this);
+  #assertListable(): void {
+    if (this.#failListing) {
+      throw new DOMException('Access is denied', 'SecurityError');
+    }
   }
 
   #assertReadable(): void {
@@ -328,7 +437,7 @@ export class FakeClipboard {
 
   /** Makes this the `navigator.clipboard`. */
   install(): () => void {
-    return swap({ target: globalThis.navigator, name: 'clipboard', value: this });
+    return swap({ at: 'navigator', name: 'clipboard', value: this });
   }
 
   writeText(text: string): Promise<void> {

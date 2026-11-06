@@ -201,6 +201,77 @@ describe('FakeIntersectionObserver', () => {
   });
 });
 
+describe('FakeIntersectionObserver first report', () => {
+  const reports = () => {
+    const reported: Array<[Element, boolean]> = [];
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        reported.push([entry.target, entry.isIntersecting]);
+      }
+    });
+
+    return { observer, reported };
+  };
+
+  test('settle reports each observed target once, not intersecting unless said, and skips what it reported', () => {
+    const restore = FakeIntersectionObserver.install();
+    const first = targetOf();
+    const second = targetOf();
+    const { observer, reported } = reports();
+    observer.observe(first);
+    expect(reported).toEqual([]);
+
+    FakeIntersectionObserver.settle();
+    observer.observe(second);
+    FakeIntersectionObserver.settle({ isIntersecting: true });
+    FakeIntersectionObserver.settle();
+
+    expect(reported).toEqual([
+      [first, false],
+      [second, true],
+    ]);
+    restore();
+  });
+
+  test('flush counts as the report, and a target observed again is reported again', () => {
+    const restore = FakeIntersectionObserver.install();
+    const element = targetOf();
+    const { observer, reported } = reports();
+    observer.observe(element);
+
+    FakeIntersectionObserver.flush({ element, isIntersecting: true });
+    FakeIntersectionObserver.settle();
+    expect(reported).toEqual([[element, true]]);
+
+    observer.unobserve(element);
+    observer.observe(element);
+    FakeIntersectionObserver.settle();
+    expect(reported).toEqual([
+      [element, true],
+      [element, false],
+    ]);
+    restore();
+  });
+
+  test('a disconnected observer reports nothing, and live and created tell the observers apart', () => {
+    const restore = FakeIntersectionObserver.install();
+    const kept = reports();
+    const dropped = reports();
+    kept.observer.observe(targetOf());
+    dropped.observer.observe(targetOf());
+    dropped.observer.disconnect();
+
+    expect(FakeIntersectionObserver.created).toBe(2);
+    expect(FakeIntersectionObserver.live()).toHaveLength(1);
+
+    FakeIntersectionObserver.settle();
+
+    expect(kept.reported).toHaveLength(1);
+    expect(dropped.reported).toEqual([]);
+    restore();
+  });
+});
+
 describe('FakeMatchMedia', () => {
   test('install answers a list per query, false until set, and the returned function puts the previous matchMedia back', () => {
     const previous = Reflect.get(globalThis, 'matchMedia');
@@ -230,6 +301,28 @@ describe('FakeMatchMedia', () => {
     expect(matchMedia('(a)').matches).toBe(true);
     expect(matchMedia('(b)').matches).toBe(false);
     expect(seen).toEqual(['a']);
+    restore();
+  });
+
+  test('listenerCount counts the distinct change listeners of a query, to assert subscribe and unsubscribe', () => {
+    const restore = FakeMatchMedia.install();
+    const list = FakeMatchMedia.of('(a)');
+
+    const one = () => {};
+
+    const two = () => {};
+
+    list.addEventListener('change', one);
+    list.addEventListener('change', one);
+    list.addEventListener('change', two);
+    list.addEventListener('resize', () => {});
+    expect(list.listenerCount).toBe(2);
+
+    list.removeEventListener('change', one);
+    expect(list.listenerCount).toBe(1);
+    list.removeEventListener('change', two);
+    expect(list.listenerCount).toBe(0);
+    expect(FakeMatchMedia.of('(b)').listenerCount).toBe(0);
     restore();
   });
 
@@ -317,14 +410,29 @@ describe('FakeStorage', () => {
     expect(storage.getItem('b')).toBe('2');
   });
 
-  test('failReads makes every read throw SecurityError', () => {
+  test('failReads makes getItem throw SecurityError and nothing else', () => {
     const storage = new FakeStorage();
     storage.setItem('a', '1');
     storage.failReads = true;
 
     expect(() => storage.getItem('a')).toThrow(expect.objectContaining({ name: 'SecurityError' }));
+    expect(storage.key(0)).toBe('a');
+    expect(storage.length).toBe(1);
+    storage.setItem('b', '2');
+    storage.removeItem('a');
+    expect(Object.keys(storage)).toEqual(['b']);
+  });
+
+  test('failListing makes key and length throw SecurityError and nothing else', () => {
+    const storage = new FakeStorage();
+    storage.setItem('a', '1');
+    storage.failListing = true;
+
     expect(() => storage.key(0)).toThrow(expect.objectContaining({ name: 'SecurityError' }));
     expect(() => storage.length).toThrow(expect.objectContaining({ name: 'SecurityError' }));
+    expect(storage.getItem('a')).toBe('1');
+    storage.removeItem('a');
+    storage.clear();
   });
 
   test('install makes it the localStorage or the sessionStorage, and restores the previous one', () => {
@@ -341,6 +449,76 @@ describe('FakeStorage', () => {
     restoreSession();
     expect(Reflect.get(globalThis, 'localStorage')).toBe(previous);
     expect(Reflect.get(globalThis, 'sessionStorage')).not.toBe(storage);
+  });
+});
+
+describe('install on window as well as on the global', () => {
+  // A DOM test host such as happy-dom has a `window` that is not `globalThis`; code reads `window.x`.
+  const withWindow = <T>(run: (host: Record<string, unknown>) => T): T => {
+    const host: Record<string, unknown> = { navigator: {}, tag: 'host' };
+    const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    Object.defineProperty(globalThis, 'window', {
+      value: host,
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      return run(host);
+    } finally {
+      if (previous) {
+        Object.defineProperty(globalThis, 'window', previous);
+      } else {
+        Reflect.deleteProperty(globalThis, 'window');
+      }
+    }
+  };
+
+  test('matchMedia, storage and the observers are on both, and restored on both', () => {
+    withWindow((host) => {
+      const restores = [
+        FakeMatchMedia.install(),
+        new FakeStorage().install(),
+        FakeResizeObserver.install(),
+        FakeIntersectionObserver.install(),
+      ];
+
+      for (const name of ['matchMedia', 'localStorage', 'ResizeObserver', 'IntersectionObserver']) {
+        expect(host[name]).toBeDefined();
+        expect(Reflect.get(globalThis, name)).toBe(host[name]);
+      }
+
+      expect((host.matchMedia as (query: string) => FakeMatchMedia)('(a)').media).toBe('(a)');
+
+      for (const restore of restores.toReversed()) {
+        restore();
+      }
+
+      for (const name of ['matchMedia', 'localStorage', 'ResizeObserver', 'IntersectionObserver']) {
+        expect(host[name]).toBeUndefined();
+      }
+    });
+  });
+
+  test('the clipboard is on the navigator of both', () => {
+    const clipboard = new FakeClipboard();
+
+    withWindow((host) => {
+      const restore = clipboard.install();
+
+      expect((host.navigator as { clipboard?: unknown }).clipboard).toBe(clipboard);
+      expect(Reflect.get(Object(globalThis.navigator), 'clipboard')).toBe(clipboard);
+
+      restore();
+      expect((host.navigator as { clipboard?: unknown }).clipboard).toBeUndefined();
+    });
+  });
+
+  test('with no window, or window being the global, nothing is installed twice', () => {
+    const restore = FakeMatchMedia.install();
+    expect(Reflect.get(globalThis, 'matchMedia')).toBeDefined();
+    restore();
+    expect(Reflect.get(globalThis, 'matchMedia')).toBeUndefined();
   });
 });
 
