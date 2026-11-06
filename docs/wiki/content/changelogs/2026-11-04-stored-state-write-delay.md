@@ -30,8 +30,7 @@ export function SidebarWidth() {
 
 - **One write for a burst.** Each `setValue` restarts the delay. Updaters keep working: they build on the pending value, so chained updaters inside the delay lose nothing.
 - **The last writer wins.** `remove()` cancels the pending write. So does a change of the storage from outside: a write through `BrowserStorage`, or a `storage` event from another tab. The hook's own write is not such a change.
-- **Nothing is lost on unmount.** An unmount, or a new `key` or `storage`, writes the pending value at once, to the key it was set for. A write the storage refuses is kept in the hook, as before.
-- **No `pagehide` handler.** A tab closed inside the delay loses the last value, so keep the delay short.
+- **Nothing is lost on unmount or when the page closes.** An unmount, a new `key` or `storage`, a `pagehide` event, or the page turning hidden (`visibilitychange`) writes the pending value at once, to the key it was set for. A write the storage refuses is kept in the hook, as before.
 
 ## Who is affected
 
