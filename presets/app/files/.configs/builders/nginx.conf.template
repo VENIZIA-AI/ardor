@@ -8,6 +8,9 @@ server {
   listen 8080;
   server_name _;
 
+  # The Server header and the error pages name no nginx version.
+  server_tokens off;
+
   root /usr/share/nginx/html;
   index index.html;
 

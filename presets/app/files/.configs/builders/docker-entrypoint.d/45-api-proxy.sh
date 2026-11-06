@@ -10,6 +10,8 @@
 # The upstream is written into the nginx configuration, so it must be an address and nothing else: a value with a
 # character outside letters, digits, brackets (an IPv6 address) and `._:/@%+-` stops the container, naming the variable and never the value.
 #
+# NGINX_LOCAL_RESOLVERS is checked the same way: addresses and spaces.
+#
 # API_PROXY_SOURCE and API_PROXY_TARGET name other files, for the tests; they are not VITE_ names, so never published.
 set -eu
 
@@ -27,6 +29,15 @@ fi
 case "$API_UPSTREAM" in
   *[!][A-Za-z0-9._:/@%+-]*)
     echo "[api-proxy] FATAL: API_UPSTREAM has a character that is not part of an address" >&2
+    exit 1
+    ;;
+esac
+
+# The resolvers are written into the nginx configuration too: addresses (IPv4, IPv6 in brackets) and
+# spaces between them, nothing else.
+case "${NGINX_LOCAL_RESOLVERS:-}" in
+  *[!][0-9A-Fa-f.:\ ]*)
+    echo "[api-proxy] FATAL: NGINX_LOCAL_RESOLVERS has a character that is not part of an address" >&2
     exit 1
     ;;
 esac

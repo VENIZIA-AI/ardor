@@ -89,7 +89,8 @@ BEGIN {
     if (name !~ /^VITE_[A-Z0-9_]+$/) {
       continue
     }
-    if (name ~ /SECRET|PASSWORD|TOKEN/) {
+    # Names that say secret, and a URL that carries a user and a password; a value is never printed.
+    if (name ~ /SECRET|PASSWORD|PASSWD|(^|_)PASS(_|$)|PRIVATE|CREDENTIAL|TOKEN/ || ENVIRON[name] ~ /:\/\/[^\/@ ]+:[^\/@ ]*@/) {
       print "[runtime-config] " name " looks like a secret, and every VITE_ variable is published to every visitor: rename it or keep it out of VITE_" > "/dev/stderr"
       failed = 1
       continue

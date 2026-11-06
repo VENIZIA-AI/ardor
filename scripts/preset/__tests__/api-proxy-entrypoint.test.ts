@@ -113,6 +113,36 @@ describe.skipIf(Bun.which('envsubst') === null)('45-api-proxy.sh', () => {
     expect(existsSync(target)).toBe(false);
   });
 
+  test('stops on resolvers that are not addresses, naming the variable and never the value', () => {
+    for (const hostile of [
+      '127.0.0.11; return 418',
+      '127.0.0.11}',
+      '$(id)',
+      '127.0.0.11\nroot /',
+      'dns.local',
+    ]) {
+      const { code, target, stderr, stdout } = run({
+        env: { API_UPSTREAM: 'http://api:3000', NGINX_LOCAL_RESOLVERS: hostile },
+      });
+
+      expect(code).toBe(1);
+      expect(existsSync(target)).toBe(false);
+      expect(stderr).toContain('NGINX_LOCAL_RESOLVERS');
+      expect(`${stdout}${stderr}`).not.toContain('418');
+    }
+  });
+
+  test('accepts one or several IPv4 and IPv6 resolvers', () => {
+    for (const resolvers of ['127.0.0.11', '10.0.0.2 10.0.0.3', '[::1]', '[fe80::1] 8.8.8.8']) {
+      const { code, target } = run({
+        env: { API_UPSTREAM: 'http://api:3000', NGINX_LOCAL_RESOLVERS: resolvers },
+      });
+
+      expect(code).toBe(0);
+      expect(readFileSync(target, 'utf8')).toContain(`resolver ${resolvers} valid=10s ipv6=off;`);
+    }
+  });
+
   test('stops on a value that is not an address, naming the variable and never the value', () => {
     for (const hostile of [
       'http://api:3000; return 418',

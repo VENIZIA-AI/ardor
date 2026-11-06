@@ -172,20 +172,57 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     expect(existsSync('/tmp/runtime-config-pwned')).toBe(false);
   });
 
-  test.each(['VITE_API_SECRET', 'VITE_DB_PASSWORD', 'VITE_AUTH_TOKEN', 'VITE_X_TOKEN_Y'])(
-    '%s stops the container and writes nothing',
-    (name) => {
-      const { code, stderr, target } = run({
-        path,
-        env: { VITE_API_URL: 'https://api.example.com', [name]: 'do-not-publish' },
-      });
+  test.each([
+    'VITE_API_SECRET',
+    'VITE_DB_PASSWORD',
+    'VITE_DB_PASSWD',
+    'VITE_DB_PASS',
+    'VITE_PASS_X',
+    'VITE_PRIVATE_KEY',
+    'VITE_SERVICE_CREDENTIALS',
+    'VITE_AUTH_TOKEN',
+    'VITE_X_TOKEN_Y',
+  ])('%s stops the container and writes nothing', (name) => {
+    const { code, stderr, target } = run({
+      path,
+      env: { VITE_API_URL: 'https://api.example.com', [name]: 'do-not-publish' },
+    });
 
-      expect(code).toBe(1);
-      expect(stderr).toContain(name);
-      expect(stderr).not.toContain('do-not-publish');
-      expect(existsSync(target)).toBe(false);
-    },
-  );
+    expect(code).toBe(1);
+    expect(stderr).toContain(name);
+    expect(stderr).not.toContain('do-not-publish');
+    expect(existsSync(target)).toBe(false);
+  });
+
+  test('a URL that carries a user and a password stops the container, without printing it', () => {
+    const { code, stderr, target } = run({
+      path,
+      env: { VITE_DB_URL: 'postgres://admin:hunter2@db.internal/app' },
+    });
+
+    expect(code).toBe(1);
+    expect(stderr).toContain('VITE_DB_URL');
+    expect(stderr).not.toContain('hunter2');
+    expect(existsSync(target)).toBe(false);
+  });
+
+  test('a URL without credentials, a public DSN and a name that only contains PASS are published', () => {
+    const { code, target } = run({
+      path,
+      env: {
+        VITE_API_URL: 'https://api.example.com/v1',
+        VITE_SENTRY_DSN: 'https://abc@o1.ingest.sentry.io/2',
+        VITE_BYPASS_MODE: 'on',
+      },
+    });
+
+    expect(code).toBe(0);
+    expect(evaluate(target).config).toEqual({
+      VITE_API_URL: 'https://api.example.com/v1',
+      VITE_BYPASS_MODE: 'on',
+      VITE_SENTRY_DSN: 'https://abc@o1.ingest.sentry.io/2',
+    });
+  });
 
   test('a public key is not a secret: a name with KEY is published', () => {
     const { code, target } = run({ path, env: { VITE_GOOGLE_RECAPTCHA_SITE_KEY: 'site-key' } });
