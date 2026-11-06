@@ -1,4 +1,13 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  type Stats,
+  writeFileSync,
+} from 'node:fs';
 import { relative, resolve } from 'node:path';
 
 import { CodemodFiles } from './files';
@@ -138,6 +147,15 @@ export class NamespaceCommand {
     const paths = args.filter((argument) => !argument.startsWith('-'));
     const targets = (paths.length > 0 ? paths : ['.']).map((path) => resolve(root, path));
     const hooks = args.includes(CodemodFlags.HOOKS);
+    const missing = targets.filter((target) => !existsSync(target));
+
+    if (missing.length > 0) {
+      console.error(
+        `ardor codemod: no such file or folder: ${missing.map(NamespaceCommand.clean).join(', ')}`,
+      );
+
+      return USAGE_ERROR_CODE;
+    }
 
     return NamespaceCommand.sweep({ root, ts, targets, hooks, isWrite, isCheck, isAllowDirty });
   }
@@ -177,7 +195,7 @@ export class NamespaceCommand {
 
     const dirty = new Set(isAllowDirty ? [] : dirtyOf.flatMap((paths) => [...(paths ?? [])]));
     const changes: Array<{ path: string; renamed: number }> = [];
-    const pending: Array<{ path: string; text: string }> = [];
+    const pending: Array<{ path: string; text: string; stat: Stats }> = [];
     const refused: string[] = [];
     const failed: Array<{ path: string; reason: string }> = [];
     const left: Array<{ path: string; finding: IFinding }> = [];
@@ -185,6 +203,7 @@ export class NamespaceCommand {
 
     for (const path of files) {
       try {
+        const stat = lstatSync(path);
         const bytes = readFileSync(path);
         const text = bytes.toString('utf8');
         const result = Migration.run({ ts, fileName: path, text, hooks });
@@ -208,16 +227,14 @@ export class NamespaceCommand {
         }
 
         changes.push({ path, renamed: result.renamed });
-        pending.push({ path, text: result.text });
+        pending.push({ path, text: result.text, stat });
       } catch (error) {
         failed.push({ path, reason: error instanceof Error ? error.message : String(error) });
       }
     }
 
     if (isWrite && failed.length === 0) {
-      for (const { path, text } of pending) {
-        writeFileSync(path, text);
-      }
+      failed.push(...NamespaceCommand.writeAll({ pending }));
     }
 
     return NamespaceCommand.report({
@@ -230,6 +247,61 @@ export class NamespaceCommand {
       left,
       notes,
     });
+  }
+
+  /**
+   * Writes every file next to itself first, and renames them into place only when all were written,
+   * so a failure leaves no file changed. A file that is not the file that was read (a link swapped in,
+   * an edit made meanwhile) is refused: the rename replaces a link instead of following it, and a
+   * hard link is not written through.
+   */
+  private static writeAll(opts: {
+    pending: Array<{ path: string; text: string; stat: Stats }>;
+  }): Array<{ path: string; reason: string }> {
+    const staged: Array<{ path: string; temp: string }> = [];
+    const failures: Array<{ path: string; reason: string }> = [];
+
+    for (const { path, text, stat } of opts.pending) {
+      const temp = `${path}.${process.pid}.codemod`;
+
+      try {
+        const now = lstatSync(path);
+
+        if (!now.isFile() || now.mtimeMs !== stat.mtimeMs || now.size !== stat.size) {
+          failures.push({
+            path,
+            reason: 'it changed while the codemod ran, so it was not written',
+          });
+          continue;
+        }
+
+        writeFileSync(temp, text);
+        chmodSync(temp, now.mode & 0o7777);
+        staged.push({ path, temp });
+      } catch (error) {
+        rmSync(temp, { force: true });
+        failures.push({ path, reason: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
+    if (failures.length > 0) {
+      for (const { temp } of staged) {
+        rmSync(temp, { force: true });
+      }
+
+      return failures;
+    }
+
+    for (const { path, temp } of staged) {
+      renameSync(temp, path);
+    }
+
+    return [];
+  }
+
+  /** Text for the terminal: control, format and line-separator characters, such as an escape sequence in a file name, become `?`. */
+  private static clean(text: string): string {
+    return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, '?');
   }
 
   private static report(opts: {
@@ -246,7 +318,7 @@ export class NamespaceCommand {
     // Nothing is written when a file failed, so the files are not "changed".
     const verb = isWrite && failed.length === 0 ? 'changed' : 'would change';
     // A path comes from the file system: a control character in it is shown as `?`, never sent to the terminal.
-    const show = (path: string): string => (relative(root, path) || path).replace(/\p{Cc}/gu, '?');
+    const show = (path: string): string => NamespaceCommand.clean(relative(root, path) || path);
 
     for (const change of changes) {
       console.log(
@@ -261,7 +333,7 @@ export class NamespaceCommand {
     }
 
     for (const { path, reason } of failed) {
-      console.error(`failed ${show(path)}: ${reason}`);
+      console.error(NamespaceCommand.clean(`failed ${show(path)}: ${reason}`));
     }
 
     // A note is a change made on purpose that is worth knowing; it is not work left, so --check ignores it.

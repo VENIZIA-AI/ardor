@@ -49,4 +49,4 @@ The command prints one line per finding and a summary:
 - `left <path>:<line> <name>`: the codemod could not rewrite it. Change it by hand.
 - `note <path>:<line> <name>`: a change made on purpose that is worth knowing. `--check` ignores it.
 
-The exit code is 0 when the run is done, 1 when a file was refused or failed, when `--write` found no git repository to protect it, or when `--check` found work, and 2 for an unknown option, a pair of options that contradict each other (`--write` with `--check`, `--allow-dirty` without `--write`), or when `typescript` is not installed.
+The exit code is 0 when the run is done, 1 when a file was refused or failed, when `--write` found no git repository to protect it, or when `--check` found work, and 2 for a path that does not exist, an unknown option, a pair of options that contradict each other (`--write` with `--check`, `--allow-dirty` without `--write`), or when `typescript` is not installed.

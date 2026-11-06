@@ -16,13 +16,13 @@ export class CodemodFiles {
     return SOURCE_PATTERN.test(opts.name) && !DECLARATION_PATTERN.test(opts.name);
   }
 
-  /** Every source file under `target`; a file target is returned as it is. A symlink is never returned. */
+  /** Every source file under `target`; a file target is returned as it is. A symlink or a file that is not a source file is never returned. */
   static collect(opts: { target: string }): string[] {
     const { target } = opts;
 
     // Read without following a link: a symlink is never a file to write, whatever it points to.
     if (lstatSync(target).isFile()) {
-      return [target];
+      return CodemodFiles.isSource({ name: target }) ? [target] : [];
     }
 
     if (!statSync(target).isDirectory()) {

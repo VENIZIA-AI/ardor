@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  linkSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { NamespaceCommand } from '@/codemod/cli';
@@ -363,6 +373,109 @@ describe('ardor codemod namespace', () => {
 
         removeScratch({ root: outside });
       }
+    });
+
+    test('a failure while writing leaves every file as it was and no temporary file behind', async () => {
+      if (process.getuid?.() === 0) {
+        return;
+      }
+
+      seed({ 'sub/b.ts': OLD });
+      chmodSync(join(root, 'sub'), 0o555);
+
+      try {
+        const code = await run(['--write']);
+
+        expect(code).toBe(1);
+        expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+        expect(readFileSync(join(root, 'sub/b.ts'), 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('failed sub/b.ts');
+        expect(readdirSync(join(root, 'src')).filter((name) => name.endsWith('.codemod'))).toEqual(
+          [],
+        );
+      } finally {
+        chmodSync(join(root, 'sub'), 0o755);
+      }
+    });
+
+    test('a file swapped for a symlink while the codemod runs is not written through', async () => {
+      const elsewhere = makeScratch({ prefix: 'ardor-codemod-swap-' });
+      const outside = join(elsewhere, 'outside.ts');
+      writeFileSync(outside, OLD);
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        const result = original(opts);
+
+        if (opts.fileName.endsWith('src/a.ts')) {
+          rmSync(opts.fileName);
+          symlinkSync(outside, opts.fileName);
+        }
+
+        return result;
+      });
+      spies.push(spy);
+
+      try {
+        const code = await run(['--write']);
+
+        expect(code).toBe(1);
+        expect(readFileSync(outside, 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('failed src/a.ts: it changed while the codemod ran');
+      } finally {
+        removeScratch({ root: elsewhere });
+      }
+    });
+
+    test('a hard link to a file outside the project is not written through, and the mode is kept', async () => {
+      const elsewhere = makeScratch({ prefix: 'ardor-codemod-hard-' });
+      const outside = join(elsewhere, 'outside.ts');
+      writeFileSync(outside, OLD);
+      rmSync(join(root, 'src/a.ts'));
+      linkSync(outside, join(root, 'src/a.ts'));
+      chmodSync(join(root, 'src/a.ts'), 0o755);
+
+      try {
+        const code = await run(['--write', '--allow-dirty']);
+
+        expect(code).toBe(0);
+        expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+        expect(readFileSync(outside, 'utf8')).toBe(OLD);
+        expect(statSync(join(root, 'src/a.ts')).mode & 0o777).toBe(0o755);
+      } finally {
+        removeScratch({ root: elsewhere });
+      }
+    });
+
+    test('the reason of a failure is cleaned too, and --check exits 1 for it', async () => {
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        if (opts.fileName.endsWith('src/a.ts')) {
+          throw new Error(`bad ${String.fromCharCode(27)}]0;title${String.fromCharCode(7)} \u202e`);
+        }
+
+        return original(opts);
+      });
+      spies.push(spy);
+
+      const code = await run(['--check']);
+
+      expect(code).toBe(1);
+      const text = errors.join('\n');
+      expect(text).toContain('failed src/a.ts: bad ?]0;title? ?');
+      expect(text).not.toContain(String.fromCharCode(27));
+      expect(text).not.toContain('\u202e');
+    });
+
+    test('a path that does not exist is a usage error, and a file that is not a source file is left alone', async () => {
+      writeFiles({ root, files: { 'notes.md': OLD } });
+
+      const result3 = await run(['nope']);
+      expect(result3).toBe(2);
+      expect(errors.join('\n')).toContain('no such file or folder');
+      const result4 = await run(['notes.md', '--write', '--allow-dirty']);
+      expect(result4).toBe(0);
+      expect(readFileSync(join(root, 'notes.md'), 'utf8')).toBe(OLD);
+      expect(existsSync(join(root, 'notes.md'))).toBe(true);
     });
 
     test('a control character in a file name is not sent to the terminal', async () => {
