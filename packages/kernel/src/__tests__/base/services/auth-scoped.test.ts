@@ -55,10 +55,16 @@ describe('LocalStorageKeys.scoped', () => {
     expect(keys.token.startsWith(LocalStorageKeys.PREFIX_AUTH)).toBe(true);
   });
 
+  test.each([[null], [5], [true], [['a']], [{}]])('a non-string id %p is refused', (id) => {
+    expect(() => LocalStorageKeys.scoped({ id: id as unknown as string })).toThrow(
+      'IApplicationInfo.id',
+    );
+  });
+
   test.each(['', '.', '..', '...', 'a/b', 'a b', '../x', 'a\\b', 'é', 'a?b', 'a#b'])(
     'the id %p is refused',
     (id) => {
-      expect(() => LocalStorageKeys.scoped({ id })).toThrow('application id');
+      expect(() => LocalStorageKeys.scoped({ id })).toThrow('IApplicationInfo.id');
     },
   );
 });
@@ -107,6 +113,32 @@ describe('DefaultAuthService with an application id', () => {
     expect(blog.getUser()).toMatchObject({ userId: 'bob' });
   });
 
+  test('the roles of two applications on one storage stay apart', () => {
+    const shop = serviceOf('shop');
+    const blog = serviceOf('blog');
+    signIn(shop, 'alice');
+    signIn(blog, 'bob');
+
+    expect([...shop.getRoles()]).toEqual(['alice-role']);
+    expect([...blog.getRoles()]).toEqual(['bob-role']);
+  });
+
+  test('a subclass that forwards the application info keeps the id, one that does not has the unscoped keys', () => {
+    class Forwarding extends DefaultAuthService {
+      constructor(applicationInfo?: IApplicationInfo) {
+        super(applicationInfo);
+      }
+    }
+    class Forgetting extends DefaultAuthService {
+      constructor() {
+        super();
+      }
+    }
+
+    expect(new Forwarding(info('shop')).keys.token).toBe('@app/auth/shop/token');
+    expect(new Forgetting().keys.token).toBe(LocalStorageKeys.KEY_AUTH_TOKEN);
+  });
+
   test('an id that is a prefix of another id does not reach it', () => {
     const short = serviceOf('app');
     const long = serviceOf('app-2');
@@ -132,7 +164,7 @@ describe('DefaultAuthService with an application id', () => {
   });
 
   test('an invalid id stops the service from being built', () => {
-    expect(() => serviceOf('a/b')).toThrow('application id');
+    expect(() => serviceOf('a/b')).toThrow('IApplicationInfo.id');
   });
 
   test('the network service sends the token of its auth service, not of another application', () => {

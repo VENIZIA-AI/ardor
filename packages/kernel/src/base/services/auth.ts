@@ -21,6 +21,7 @@ export class DefaultAuthService extends BaseService {
   /** The keys of this application's session and store: the application's `id` scopes them. */
   readonly keys: IScopedKeys;
 
+  /** A subclass with its own constructor passes `info` on to `super(info)`; otherwise its keys are the unscoped ones. */
   constructor(
     @inject({ key: CoreBindings.APPLICATION_INFO, isOptional: true }) info?: IApplicationInfo,
   ) {

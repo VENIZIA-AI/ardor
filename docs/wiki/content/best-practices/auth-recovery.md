@@ -167,15 +167,10 @@ Write the subclass below only for a refresh the default does not cover: a body, 
 
 The refresh is written once, as the `refreshToken` hook of a `DefaultNetworkRequestService` subclass. The subclass reaches the application in two steps.
 
-First, write the subclass. `refreshToken` sends the refresh request, stores the new token under `LocalStorageKeys.KEY_AUTH_TOKEN`, and resolves `true`. `onAuthFailure` is the place to send the user back to sign-in:
+First, write the subclass. `refreshToken` sends the refresh request, saves the new token through the auth service (it knows the keys of this application, which an application `id` scopes), and resolves `true`. `onAuthFailure` is the place to send the user back to sign-in:
 
 ```ts
-import {
-  DefaultNetworkRequestService,
-  LocalStorageKeys,
-  RequestMethods,
-  RequestTypes,
-} from '@venizia/ardor';
+import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
 
 export class AppNetworkService extends DefaultNetworkRequestService {
   protected override async refreshToken(): Promise<boolean> {
@@ -186,10 +181,20 @@ export class AppNetworkService extends DefaultNetworkRequestService {
       headers: this.getRequestHeader({ resource: '/auth/token/refresh' }),
     });
 
-    localStorage.setItem(
-      LocalStorageKeys.KEY_AUTH_TOKEN,
-      JSON.stringify({ value: data.token, type: 'Bearer' }),
-    );
+    const user = this.authService?.getUser();
+
+    if (!this.authService || user?.userId === undefined) {
+      return false;
+    }
+
+    this.authService.saveAuth({
+      userId: user.userId,
+      username: user.username,
+      referenceId: user.referenceId,
+      provider: user.provider,
+      token: { value: data.token, type: 'Bearer' },
+    });
+
     return true;
   }
 
@@ -216,6 +221,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
       noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery, // { refreshTokenPath: '/auth/token/refresh' }
+      authService: this.authService, // the session of this application, with its keys
     });
   }
 }

@@ -73,10 +73,10 @@ export class LocalStorageKeys {
   static scoped(opts: { id?: string } = {}): IScopedKeys {
     const { id } = opts;
 
-    if (id !== undefined && !/^(?!\.+$)[A-Za-z0-9._-]+$/.test(id)) {
+    if (id !== undefined && !(typeof id === 'string' && /^(?!\.+$)[A-Za-z0-9._-]+$/.test(id))) {
       throw getError({
         message:
-          "[LocalStorageKeys.scoped] The application id is letters, digits, '.', '_' and '-', and not dots only",
+          "[LocalStorageKeys.scoped] IApplicationInfo.id is letters, digits, '.', '_' and '-', and not dots only",
       });
     }
 

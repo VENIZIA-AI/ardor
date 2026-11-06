@@ -8,9 +8,11 @@ import {
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
+  type IApplicationInfo,
   type IAuthTokenRecord,
   type ISignInSession,
   type IPermissionProvider,
+  LocalStorageKeys,
   RequestMethods,
   StorageAreas,
   type TStringConstValue,
@@ -604,6 +606,20 @@ export class DefaultAuthProvider<
   }
 
   override value(container: Container): IAuthProvider {
+    // A subclass of DefaultAuthService with its own constructor must forward the application info to
+    // super(info): without it the service keeps the unscoped session, silently shared with every other
+    // application of the origin. Refuse that here, where the application info is at hand.
+    const id = container.get<IApplicationInfo>({
+      key: CoreBindings.APPLICATION_INFO,
+      isOptional: true,
+    })?.id;
+
+    if (id !== undefined && this.authService.keys.token !== LocalStorageKeys.scoped({ id }).token) {
+      throw getError({
+        message: `[DefaultAuthProvider] The auth service does not use the application id '${id}': a subclass of DefaultAuthService with its own constructor passes the application info to super(info)`,
+      });
+    }
+
     // A subclass with its own constructor rarely forwards the optional 4th argument to `super`.
     const permissionProvider =
       this.permissionProvider ??

@@ -98,7 +98,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   IDataProvider<TResource>
 > {
   private cachedNetworkService?: DefaultNetworkRequestService;
-  private authService?: DefaultAuthService;
+  /** The auth service of the container, set when `value` builds the provider; pass it to the network service you return from `createNetworkService`. */
+  protected authService?: DefaultAuthService;
 
   constructor(
     @inject({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
