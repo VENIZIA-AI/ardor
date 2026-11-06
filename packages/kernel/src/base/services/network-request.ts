@@ -155,31 +155,78 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * Refreshes the session after a 401. `true`: refreshed, the request is retried; `false`: this
-   * service has no refresh; a throw: the refresh failed and `onAuthFailure` runs. The default posts
-   * to `authRecovery.refreshTokenPath` with no body and saves the new token through `authService`,
-   * keeping the stored identity and roles; with no path or no `authService` it answers `false`.
+   * service has no refresh, or the session changed while the request was in flight (another user
+   * signed in, the user signed out, or another tab refreshed): the new token is not saved, and the
+   * failure of a refresh made for a session that is gone is not reported; a throw: the refresh
+   * failed and `onAuthFailure` runs. The default posts to `authRecovery.refreshTokenPath` with no
+   * body and saves the new token through `authService`, keeping the stored identity and roles;
+   * with no path or no `authService` it answers `false`.
    */
   protected async refreshToken(): Promise<boolean> {
     const path = this.authRecovery?.refreshTokenPath;
+    const { authService } = this;
 
-    if (!path || !this.authService) {
+    if (!path || !authService) {
       return false;
     }
 
-    const response = await this.doRequest({
-      paths: [path],
-      method: RequestMethods.POST,
-      type: RequestTypes.SEND,
-      headers: this.getRequestHeader({ resource: path }),
+    // The session this refresh is for: the answer belongs to it and to no other.
+    const readSession = () => ({
+      userId: `${authService.getUser().userId}`,
+      token: authService.getAuth()?.value,
     });
-    const user = this.authService.getUser();
+    const startedFor = readSession();
+
+    // `false`: another user, or none, is signed in now. `true`: the same user holds another token
+    // now (another tab refreshed, or a new sign-in), which the retry uses. `undefined`: unchanged.
+    const readChange = (): boolean | undefined => {
+      const now = readSession();
+
+      if (now.userId !== startedFor.userId) {
+        return false;
+      }
+
+      return now.token === startedFor.token ? undefined : true;
+    };
+
+    let response: INetworkResponse<unknown>;
+
+    try {
+      const result = await this.doRequest({
+        paths: [path],
+        method: RequestMethods.POST,
+        type: RequestTypes.SEND,
+        headers: this.getRequestHeader({ resource: path }),
+      });
+      response = result;
+    } catch (error) {
+      const change = readChange();
+
+      if (change === undefined) {
+        throw error;
+      }
+
+      return change;
+    }
+
+    const user = authService.getUser();
+    const change = readChange();
 
     // Signed out while the request was in flight: saving the token would start a session with no user.
     if (user.userId === undefined) {
       return false;
     }
 
-    this.authService.saveAuth({
+    // The session moved on: this answer is for the one that asked, so it is not saved.
+    if (change !== undefined) {
+      this.logger.warn(
+        '[refreshToken] The session changed while the refresh was in flight, its answer is dropped',
+      );
+
+      return change;
+    }
+
+    authService.saveAuth({
       userId: user.userId,
       username: user.username,
       referenceId: user.referenceId,
@@ -518,9 +565,15 @@ export class DefaultNetworkRequestService extends BaseService {
       );
     };
 
+    // Who sends: a 401 that arrives after another user signed in is not this user's to refresh.
+    const sentBy = `${this.authService?.getUser().userId}`;
     let fetched = await sendOnce(headers);
 
-    if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
+    if (
+      fetched.status === 401 &&
+      `${this.authService?.getUser().userId}` === sentBy &&
+      this.recovery.canRecover({ paths })
+    ) {
       const isRefreshed = await this.refresh();
 
       if (isRefreshed) {
