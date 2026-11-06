@@ -40,6 +40,7 @@ bun add @venizia/ardor
 | Bug fix | `ardor codemod namespace` never writes through a symlink | `@venizia/ardor` | [Codemod and symlinks](./2026-11-06-codemod-symlink) |
 | Behavior Change | `ardor codemod namespace --write` is all or nothing, reports a file it cannot rewrite, and refuses outside a git repository without `--allow-dirty` | `@venizia/ardor` | [Safe codemod write](./2026-11-06-codemod-safe-write) |
 | Enhancement | The docs and TSDoc say that client-side roles only show or hide interface and the backend must check every permission | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Client-side roles](./2026-11-06-client-roles-ui-only) |
+| Behavior Change | Sign-out removes the keys under `@app/store/` and empties the query cache, by any route that ends the session | `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-out clears user data](./2026-11-06-sign-out-clears-data) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
 | Breaking Change | ARDOR 0.4.8-5 (prerelease) peers on IGNIS `^0.4.8-4` and `^0.4.7-2`, so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
 

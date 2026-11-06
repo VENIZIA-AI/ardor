@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IDataProvider } from '@/common';
@@ -597,6 +597,117 @@ describe('logout', () => {
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
     expect(localStorage.getItem('other-app-config')).toBe('persisted-data');
+  });
+});
+
+describe('data stored by the signed-in user', () => {
+  const STORE_KEY = `${LocalStorageKeys.PREFIX_STORE}draft`;
+
+  const build = (providerClass: TClass<DefaultAuthProvider> = DefaultAuthProvider) => {
+    const authService = new DefaultAuthService();
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(providerClass);
+
+    return {
+      authService,
+      provider: container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+    };
+  };
+
+  const fill = () => {
+    localStorage.setItem(STORE_KEY, 'secret-local');
+    sessionStorage.setItem(STORE_KEY, 'secret-session');
+    localStorage.setItem('other-app-config', 'kept');
+  };
+
+  const signIn = (authService: DefaultAuthService) => {
+    authService.saveAuth({ userId: 7, username: 'alice', token: { value: 'jwt', type: 'Bearer' } });
+  };
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  test('is removed from both storage areas when the user signs out, and other keys stay', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+
+    await provider.logout({});
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(STORE_KEY)).toBeNull();
+    expect(localStorage.getItem('other-app-config')).toBe('kept');
+  });
+
+  test('is removed when other code clears the session, such as a failed refresh', () => {
+    const { authService } = build();
+    signIn(authService);
+    fill();
+
+    authService.cleanUp();
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(STORE_KEY)).toBeNull();
+  });
+
+  test('is removed on a 401', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+
+    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+  });
+
+  test('stays while the session lives, including when a token is saved again', () => {
+    const { authService } = build();
+    signIn(authService);
+    fill();
+
+    signIn(authService);
+
+    expect(localStorage.getItem(STORE_KEY)).toBe('secret-local');
+    expect(sessionStorage.getItem(STORE_KEY)).toBe('secret-session');
+  });
+
+  test('an override that throws does not stop the session from ending', async () => {
+    const cleared: Array<string> = [];
+
+    class ThrowingProvider extends DefaultAuthProvider {
+      protected override clearStoredData(): void {
+        throw new Error('boom');
+      }
+
+      protected override onSessionCleared(opts: { reason: string }): void {
+        cleared.push(opts.reason);
+      }
+    }
+    const { authService, provider } = build(ThrowingProvider);
+    signIn(authService);
+    await provider.checkAuth({});
+
+    authService.cleanUp();
+    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+
+    expect(cleared).toHaveLength(1);
+  });
+
+  test('clearStoredData can be overridden to keep preferences', () => {
+    class KeepingProvider extends DefaultAuthProvider {
+      protected override clearStoredData(): void {}
+    }
+    const { authService } = build(KeepingProvider);
+    signIn(authService);
+    fill();
+
+    authService.cleanUp();
+
+    expect(localStorage.getItem(STORE_KEY)).toBe('secret-local');
   });
 });
 
