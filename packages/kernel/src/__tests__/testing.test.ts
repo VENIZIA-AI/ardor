@@ -76,6 +76,22 @@ describe('FakeResizeObserver', () => {
     restore();
   });
 
+  test('observing an element again records nothing more, as the real observer ignores it', () => {
+    const restore = FakeResizeObserver.install();
+    const element = targetOf();
+    const calls: Array<string> = [];
+    const observer = new ResizeObserver(() => calls.push('a'));
+
+    observer.observe(element, { box: 'border-box' });
+    observer.observe(element);
+    observer.unobserve(element);
+    FakeResizeObserver.flush({ element, width: 1, height: 1 });
+
+    expect(calls).toEqual([]);
+    expect(FakeResizeObserver.all[0]?.options).toEqual([{ box: 'border-box' }]);
+    restore();
+  });
+
   test('install forgets the observers of an earlier install', () => {
     const restoreFirst = FakeResizeObserver.install();
     const element = targetOf();
@@ -253,16 +269,32 @@ describe('FakeStorage', () => {
     expect(storage.length).toBe(0);
   });
 
-  test('a key named like a control is stored and read like any other', () => {
+  test('a key named like a member of the fake is refused, whatever the member, and other names are stored', () => {
     const storage = new FakeStorage();
 
-    storage.setItem('writes', 'x');
-    storage.setItem('failReads', 'y');
+    for (const key of [
+      'getItem',
+      'setItem',
+      'removeItem',
+      'clear',
+      'key',
+      'length',
+      'install',
+      'writes',
+      'failReads',
+      'failWrites',
+    ]) {
+      expect(() => storage.setItem(key, 'x')).toThrow(TypeError);
+    }
 
-    expect(storage.getItem('writes')).toBe('x');
-    expect(storage.getItem('failReads')).toBe('y');
-    storage.setItem('c', 'z');
-    expect(storage.getItem('c')).toBe('z');
+    storage.setItem('hasOwnProperty', 'y');
+    storage.setItem('toString', 'z');
+    storage.failWrites = true;
+    expect(storage.getItem('hasOwnProperty')).toBe('y');
+    expect(() => storage.setItem('c', '1')).toThrow(
+      expect.objectContaining({ name: 'QuotaExceededError' }),
+    );
+    expect(storage.writes).toEqual(['y', 'z']);
   });
 
   test('failWrites makes setItem throw QuotaExceededError and removeItem throw SecurityError, and writes can resume', () => {

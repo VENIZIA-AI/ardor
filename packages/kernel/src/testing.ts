@@ -79,8 +79,10 @@ export class FakeResizeObserver implements ResizeObserver {
   }
 
   observe(target: Element, options?: ResizeObserverOptions): void {
-    this.targets.push(target);
-    this.options.push(options);
+    if (!this.targets.includes(target)) {
+      this.targets.push(target);
+      this.options.push(options);
+    }
   }
 
   unobserve(target: Element): void {
@@ -148,7 +150,9 @@ export class FakeIntersectionObserver implements IntersectionObserver {
   }
 
   observe(target: Element): void {
-    this.targets.push(target);
+    if (!this.targets.includes(target)) {
+      this.targets.push(target);
+    }
   }
 
   unobserve(target: Element): void {
@@ -208,7 +212,9 @@ export class FakeMatchMedia extends EventTarget {
  * A `Storage` that behaves like the real one: stored keys are own properties, so `Object.keys` lists
  * them. Set `failReads` for a blocked storage (reads throw `SecurityError`) and `failWrites` for a
  * full or blocked one (`setItem` and `clear` throw `QuotaExceededError`, `removeItem` throws
- * `SecurityError`); both can change at any time.
+ * `SecurityError`); both can change at any time. A key named like a member of the fake (`getItem`,
+ * `length`, `writes`, `failWrites` and the rest) would shadow it, so `setItem` throws a `TypeError`
+ * for it, where the real `Storage` accepts it.
  */
 export class FakeStorage implements Storage {
   [name: string]: unknown;
@@ -258,6 +264,11 @@ export class FakeStorage implements Storage {
 
   setItem(key: string, value: string): void {
     this.#assertWritable('The quota has been exceeded', 'QuotaExceededError');
+
+    if (Object.hasOwn(FakeStorage.prototype, key)) {
+      throw new TypeError(`FakeStorage cannot store the key "${key}": it is a member of the fake`);
+    }
+
     const text = String(value);
     Object.defineProperty(this, key, {
       value: text,
