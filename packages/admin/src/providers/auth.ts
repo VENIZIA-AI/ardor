@@ -124,8 +124,8 @@ export class DefaultAuthProvider<
     return this.authProviderOptions.paths?.signIn ?? '/auth/sign-in';
   }
 
-  /** Where the admin goes once `login` resolves: `paths.afterLogin`, else `/`. */
-  protected get afterLoginPath(): string {
+  /** Where the admin goes once `login` resolves: `paths.afterLogin`, else `/`; `false` stays on the page. */
+  protected get afterLoginPath(): string | false {
     return this.authProviderOptions.paths?.afterLogin ?? '/';
   }
 
@@ -445,7 +445,7 @@ export class DefaultAuthProvider<
 
   /**
    * Posts the sign-in body to `signInPath`, stores the session and resolves `{ ...response,
-   * redirectTo }`, where `redirectTo` is `afterLoginPath`. Rejects when the request fails, when the
+   * redirectTo }`, where `redirectTo` is `afterLoginPath` (`false` when it is `false`). Rejects when the request fails, when the
    * response carries no token or user id, or when `beforeSaveSession` throws; no session is stored
    * then. Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling.
    */
@@ -470,9 +470,11 @@ export class DefaultAuthProvider<
         : { token: session.token, user: { userId: session.userId, username } },
     );
 
+    const afterLogin = this.afterLoginPath;
+
     return {
       ...response,
-      redirectTo: removeDoubleSlashes(`/${this.afterLoginPath}`),
+      redirectTo: afterLogin === false ? false : removeDoubleSlashes(`/${afterLogin}`),
     };
   }
 

@@ -89,7 +89,7 @@ export class AuthConfiguration {
 | `paths` | `object` | `undefined` | Endpoint routing settings (the whole object is optional) |
 | `paths.signIn` | `string` | `'/auth/sign-in'` | API resource route where `login` sends a `POST` request with credentials |
 | `paths.checkAuth` | `string` | not called; the stored token is enough | API resource route where `checkAuth` sends a `GET` request to validate the token against the backend. When omitted, `checkAuth` verifies token existence in `localStorage` without making a network call |
-| `paths.afterLogin` | `string` | `'/'` | Target redirect path returned in `redirectTo` when `login` succeeds |
+| `paths.afterLogin` | `string \| false` | `'/'` | Target redirect path returned in `redirectTo` when `login` succeeds; `false` returns `redirectTo: false` and the page stays (a guest or kiosk shell) |
 
 > [!NOTE]
 > The post-login redirect is `paths.afterLogin` inside `IAuthProviderOptions` (`CoreBindings.AUTH_PROVIDER_OPTIONS`), not a top-level option.

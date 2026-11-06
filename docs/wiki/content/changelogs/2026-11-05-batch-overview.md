@@ -43,6 +43,7 @@ bun add @venizia/ardor
 | Behavior Change | Sign-out removes the keys under `@app/store/` and empties the query cache, by any route that ends the session | `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-out clears user data](./2026-11-06-sign-out-clears-data) |
 | New feature | `IApplicationInfo.id` scopes the session and store keys, so two applications on one origin share no session | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Application id](./2026-11-06-application-id-keys) |
 | Behavior Change | The generated app sends a `Content-Security-Policy-Report-Only` header, hides the nginx version, refuses more secret-looking `VITE_` names and a URL with a password, and checks `NGINX_LOCAL_RESOLVERS` | `@venizia/ardor` | [Preset hardening](./2026-11-06-preset-hardening) |
+| New feature | `paths.afterLogin: false` keeps the page after sign-in, and `ApplicationProviders.resolve({ isAuthRequired: true })` types the auth provider as present | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-in that stays](./2026-11-06-after-login-false) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
 | Breaking Change | ARDOR 0.4.8-5 (prerelease) peers on IGNIS `^0.4.8-4` and `^0.4.7-2`, so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
 
