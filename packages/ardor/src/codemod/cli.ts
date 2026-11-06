@@ -1,4 +1,13 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  type Stats,
+  writeFileSync,
+} from 'node:fs';
 import { relative, resolve } from 'node:path';
 
 import { CodemodFiles } from './files';
@@ -38,6 +47,12 @@ itself, a re-export by name and a class name already taken are listed with their
              just changed (devz codemod namespace-functions --write leaves the tree dirty)
   --check    dry run that exits 1 when anything would change or is left (for CI)
   --help     print this text and exit
+
+--write is all or nothing: it reads and rewrites every file in memory first, and writes only if every
+file went through. A file that cannot be parsed or rewritten is listed as "failed" with its path, the
+run exits 1 and nothing is written. A file that is not valid UTF-8 and would change is a failure too:
+it is left alone rather than damaged. Outside a git repository nothing can undo a write, so --write
+refuses unless you give --allow-dirty.
 
 With no flag it lists what would change and writes nothing. Inside a git repository it reads the
 files git knows (tracked, or untracked and not ignored), and --write refuses a file with local
@@ -132,6 +147,15 @@ export class NamespaceCommand {
     const paths = args.filter((argument) => !argument.startsWith('-'));
     const targets = (paths.length > 0 ? paths : ['.']).map((path) => resolve(root, path));
     const hooks = args.includes(CodemodFlags.HOOKS);
+    const missing = targets.filter((target) => !existsSync(target));
+
+    if (missing.length > 0) {
+      console.error(
+        `ardor codemod: no such file or folder: ${missing.map(NamespaceCommand.clean).join(', ')}`,
+      );
+
+      return USAGE_ERROR_CODE;
+    }
 
     return NamespaceCommand.sweep({ root, ts, targets, hooks, isWrite, isCheck, isAllowDirty });
   }
@@ -159,40 +183,125 @@ export class NamespaceCommand {
   }): number {
     const { root, ts, targets, hooks, isWrite, isCheck, isAllowDirty } = opts;
     const files = [...new Set(targets.flatMap((target) => CodemodFiles.collect({ target })))];
-    const dirty =
-      isWrite && !isAllowDirty
-        ? new Set(targets.flatMap((target) => [...(CodemodFiles.dirty({ target }) ?? [])]))
-        : new Set<string>();
+    const dirtyOf = targets.map((target) => CodemodFiles.dirty({ target }));
+
+    if (isWrite && !isAllowDirty && dirtyOf.some((dirty) => dirty === undefined)) {
+      console.error(
+        `ardor codemod: this is not a git repository, so nothing can undo ${CodemodFlags.WRITE}; run again with ${CodemodFlags.ALLOW_DIRTY} to write anyway`,
+      );
+
+      return 1;
+    }
+
+    const dirty = new Set(isAllowDirty ? [] : dirtyOf.flatMap((paths) => [...(paths ?? [])]));
     const changes: Array<{ path: string; renamed: number }> = [];
+    const pending: Array<{ path: string; text: string; stat: Stats }> = [];
     const refused: string[] = [];
+    const failed: Array<{ path: string; reason: string }> = [];
     const left: Array<{ path: string; finding: IFinding }> = [];
     const notes: Array<{ path: string; finding: IFinding }> = [];
 
     for (const path of files) {
-      const text = readFileSync(path, 'utf8');
-      const result = Migration.run({ ts, fileName: path, text, hooks });
+      try {
+        const stat = lstatSync(path);
+        const bytes = readFileSync(path);
+        const text = bytes.toString('utf8');
+        const result = Migration.run({ ts, fileName: path, text, hooks });
 
-      for (const finding of result.findings) {
-        (finding.kind === 'note' ? notes : left).push({ path, finding });
-      }
+        for (const finding of result.findings) {
+          (finding.kind === 'note' ? notes : left).push({ path, finding });
+        }
 
-      if (result.text === text) {
-        continue;
-      }
+        if (result.text === text) {
+          continue;
+        }
 
-      if (isWrite && dirty.has(path)) {
-        refused.push(path);
-        continue;
-      }
+        if (!Buffer.from(text, 'utf8').equals(bytes)) {
+          failed.push({ path, reason: 'it is not valid UTF-8, so a rewrite would damage it' });
+          continue;
+        }
 
-      changes.push({ path, renamed: result.renamed });
+        if (isWrite && dirty.has(path)) {
+          refused.push(path);
+          continue;
+        }
 
-      if (isWrite) {
-        writeFileSync(path, result.text);
+        changes.push({ path, renamed: result.renamed });
+        pending.push({ path, text: result.text, stat });
+      } catch (error) {
+        failed.push({ path, reason: error instanceof Error ? error.message : String(error) });
       }
     }
 
-    return NamespaceCommand.report({ root, isWrite, isCheck, changes, refused, left, notes });
+    if (isWrite && failed.length === 0) {
+      failed.push(...NamespaceCommand.writeAll({ pending }));
+    }
+
+    return NamespaceCommand.report({
+      root,
+      isWrite,
+      isCheck,
+      changes,
+      refused,
+      failed,
+      left,
+      notes,
+    });
+  }
+
+  /**
+   * Writes every file next to itself first, and renames them into place only when all were written,
+   * so a failure leaves no file changed. A file that is not the file that was read (a link swapped in,
+   * an edit made meanwhile) is refused: the rename replaces a link instead of following it, and a
+   * hard link is not written through.
+   */
+  private static writeAll(opts: {
+    pending: Array<{ path: string; text: string; stat: Stats }>;
+  }): Array<{ path: string; reason: string }> {
+    const staged: Array<{ path: string; temp: string }> = [];
+    const failures: Array<{ path: string; reason: string }> = [];
+
+    for (const { path, text, stat } of opts.pending) {
+      const temp = `${path}.${process.pid}.codemod`;
+
+      try {
+        const now = lstatSync(path);
+
+        if (!now.isFile() || now.mtimeMs !== stat.mtimeMs || now.size !== stat.size) {
+          failures.push({
+            path,
+            reason: 'it changed while the codemod ran, so it was not written',
+          });
+          continue;
+        }
+
+        writeFileSync(temp, text);
+        chmodSync(temp, now.mode & 0o7777);
+        staged.push({ path, temp });
+      } catch (error) {
+        rmSync(temp, { force: true });
+        failures.push({ path, reason: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
+    if (failures.length > 0) {
+      for (const { temp } of staged) {
+        rmSync(temp, { force: true });
+      }
+
+      return failures;
+    }
+
+    for (const { path, temp } of staged) {
+      renameSync(temp, path);
+    }
+
+    return [];
+  }
+
+  /** Text for the terminal: control, format and line-separator characters, such as an escape sequence in a file name, become `?`. */
+  private static clean(text: string): string {
+    return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, '?');
   }
 
   private static report(opts: {
@@ -201,12 +310,15 @@ export class NamespaceCommand {
     isCheck: boolean;
     changes: Array<{ path: string; renamed: number }>;
     refused: string[];
+    failed: Array<{ path: string; reason: string }>;
     left: Array<{ path: string; finding: IFinding }>;
     notes: Array<{ path: string; finding: IFinding }>;
   }): number {
-    const { root, isWrite, isCheck, changes, refused, left, notes } = opts;
-    const verb = isWrite ? 'changed' : 'would change';
-    const show = (path: string): string => relative(root, path) || path;
+    const { root, isWrite, isCheck, changes, refused, failed, left, notes } = opts;
+    // Nothing is written when a file failed, so the files are not "changed".
+    const verb = isWrite && failed.length === 0 ? 'changed' : 'would change';
+    // A path comes from the file system: a control character in it is shown as `?`, never sent to the terminal.
+    const show = (path: string): string => NamespaceCommand.clean(relative(root, path) || path);
 
     for (const change of changes) {
       console.log(
@@ -220,6 +332,10 @@ export class NamespaceCommand {
       );
     }
 
+    for (const { path, reason } of failed) {
+      console.error(NamespaceCommand.clean(`failed ${show(path)}: ${reason}`));
+    }
+
     // A note is a change made on purpose that is worth knowing; it is not work left, so --check ignores it.
     for (const { path, finding } of notes) {
       console.log(`note ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
@@ -229,13 +345,18 @@ export class NamespaceCommand {
       console.error(`left ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
     }
 
-    const refusedNote = refused.length > 0 ? `, ${refused.length} refused (listed above)` : '';
+    const refusedNote = [
+      refused.length > 0 ? `, ${refused.length} refused (listed above)` : '',
+      failed.length > 0
+        ? `, ${failed.length} failed (listed above)${isWrite ? ', nothing was written' : ''}`
+        : '',
+    ].join('');
 
     console.log(
       `${changes.length} file${changes.length === 1 ? '' : 's'} ${verb}${refusedNote}, ${left.length} left for you${isWrite || changes.length === 0 ? '' : '. Run again with --write to apply.'}`,
     );
 
-    if (refused.length > 0) {
+    if (refused.length > 0 || failed.length > 0) {
       return 1;
     }
 
