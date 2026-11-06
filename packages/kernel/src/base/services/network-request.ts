@@ -105,8 +105,9 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * The stored token (`AuthTokenStore.read`), `undefined` outside a browser. The default of
-   * `resolveAuthToken`, and what to hand an `HttpDataSource` as its `authTokenResolver`.
+   * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an
+   * application with no `id`. With an application `id` the session is under other keys: hand the
+   * `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`, instead.
    */
   static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
     return AuthTokenStore.read();
@@ -119,7 +120,10 @@ export class DefaultNetworkRequestService extends BaseService {
    * store, or to hold the token in memory.
    */
   protected resolveAuthToken(): IAuthTokenRecord | undefined {
-    return DefaultNetworkRequestService.readAuthTokenFromStorage();
+    // The auth service knows where this application's session is kept (its `id` scopes the keys).
+    return this.authService
+      ? (this.authService.getAuth() ?? undefined)
+      : DefaultNetworkRequestService.readAuthTokenFromStorage();
   }
 
   /**

@@ -105,6 +105,7 @@ describe('AuthTokenStore', () => {
       expect(write).toHaveBeenCalledWith({
         token: { value: 'tok', type: 'Bearer' },
         provider: 'oidc',
+        key: LocalStorageKeys.KEY_AUTH_TOKEN,
       });
     } finally {
       write.mockRestore();

@@ -128,6 +128,8 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `@app/auth/identity` | `LocalStorageKeys.KEY_AUTH_IDENTITY` | `JSON.stringify({ userId, username, referenceId, provider })` |
 | `@app/auth/permission` | `LocalStorageKeys.KEY_AUTH_PERMISSION` | `JSON.stringify(roles)` (array of role name strings) |
 
+With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<id>/token`, `@app/auth/<id>/identity` and `@app/auth/<id>/permission`; see [Two applications on one origin](./binding-keys#two-applications-on-one-origin).
+
 `username` defaults to `params.username ?? ''`, while `provider` and `referenceId` default to empty strings. When `roles` is omitted in `saveAuth()`, as occurs during token refreshes, the existing stored permissions remain untouched.
 
 > [!WARNING]

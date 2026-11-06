@@ -6,19 +6,6 @@ resource: examples/vert-admin/src/application.ts
 tags: [example, vert-admin, ignis, auth, crud]
 ---
 
-<!-- okf:generated:contents start -->
-**Contents**
-
-- [What it is](#what-it-is)
-- [Run vert first](#run-vert-first)
-- [VertPaths](#vertpaths)
-- [checkAuth against who-am-i](#checkauth-against-who-am-i)
-- [The 401 refresh as a network service hook](#the-401-refresh-as-a-network-service-hook)
-- [configurations CRUD list](#configurations-crud-list)
-- [Module augmentation and i18n](#module-augmentation-and-i18n)
-- [Where things live](#where-things-live)
-<!-- okf:generated:contents end -->
-
 ## What it is
 
 `vert-admin` is the family reference example that pairs an ARDOR console with the IGNIS `examples/vert`
@@ -63,15 +50,13 @@ response rejects to login. The rest of `DefaultAuthProvider` is described in
 [Auth recovery](/architecture/auth-recovery.md), and the header protocol used by the data provider is
 covered in [Header protocol](/architecture/header-protocol.md).
 
-## The 401 refresh as a network service hook
+## The 401 refresh
 
 The REST data provider options include an `authRecovery` block with only `refreshTokenPath`, set to
-`VertPaths.REFRESH_TOKEN` (data). The refresh itself is a hook: `VertNetworkService` extends
-`DefaultNetworkRequestService` and overrides the protected `refreshToken()`, which POSTs the refresh
-route through its own `doRequest` and stores the token IGNIS re-issues under `LocalStorageKeys.KEY_AUTH_TOKEN`
-(the retry re-reads it), resolving `true`. `VertRestDataProvider` extends `DefaultRestDataProvider` and
-overrides `createNetworkService()` to return it, and `AdminConfiguration` binds that provider under
-`CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The refresh endpoint itself is not listed in `noAuthPaths`
+`VertPaths.REFRESH_TOKEN` (data). The app uses the default refresh of `DefaultNetworkRequestService`: it POSTs that
+path with no body and saves the `{ token: '<jwt>' }` IGNIS answers through the auth service, keeping the stored
+identity (the retry re-reads it), so the example has no network service or provider subclass. `AdminConfiguration` binds
+`DefaultRestDataProvider` under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`. The refresh endpoint itself is not listed in `noAuthPaths`
 (only sign-in is), and `AuthRecovery.canRecover()` (behind `DefaultNetworkRequestService`) excludes `authRecovery.refreshTokenPath`,
 so a failed refresh surfaces as a real error instead of looping - the general shape of this mechanism is
 documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
@@ -104,8 +89,7 @@ keys to the English message bundle on top of `englishMessages`, following
 
 - `src/application.ts` - the `Application` class alone, whose `artifacts()` returns `AutoArtifacts`; the
   Vite plugin lists the decorated classes under `src/`. One decorated class per file: `src/constants/vert-paths.ts`
-  (`VertPaths`), `src/services/identity.service.ts` (`IdentityService`), `src/services/vert-network.service.ts`,
-  `src/providers/vert-rest-data.provider.ts` and `src/configurations/admin.configuration.ts` (rest, auth and
+  (`VertPaths`), `src/services/identity.service.ts` (`IdentityService`) and `src/configurations/admin.configuration.ts` (rest, auth and
   i18n provider options).
 - `src/pages/configurations.tsx` - the CRUD list page.
 

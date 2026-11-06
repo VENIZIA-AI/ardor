@@ -8,6 +8,7 @@ import {
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
+  type IApplicationInfo,
   type IAuthTokenRecord,
   type ISignInSession,
   type IPermissionProvider,
@@ -429,12 +430,12 @@ export class DefaultAuthProvider<
 
   /**
    * Runs when the session is gone, however it ended (sign-out, a `401`, a failed refresh, other
-   * code calling `cleanUp`): removes what the user stored under `LocalStorageKeys.PREFIX_STORE`
-   * (`@app/store/`) in `localStorage` and `sessionStorage`, so the next user does not see it.
+   * code calling `cleanUp`): removes what the user stored under the store prefix of this
+   * application (`@app/store/`, or `@app/store/<id>/` with an application `id`) in `localStorage` and `sessionStorage`, so the next user does not see it.
    * Override it to keep preferences, or put them under another prefix.
    */
   protected clearStoredData(): void {
-    const prefix = LocalStorageKeys.PREFIX_STORE;
+    const prefix = this.authService.keys.storePrefix;
 
     BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix });
     BrowserStorage.removeWhere({ storage: StorageAreas.SESSION, prefix });
@@ -605,6 +606,20 @@ export class DefaultAuthProvider<
   }
 
   override value(container: Container): IAuthProvider {
+    // A subclass of DefaultAuthService with its own constructor must forward the application info to
+    // super(info): without it the service keeps the unscoped session, silently shared with every other
+    // application of the origin. Refuse that here, where the application info is at hand.
+    const id = container.get<IApplicationInfo>({
+      key: CoreBindings.APPLICATION_INFO,
+      isOptional: true,
+    })?.id;
+
+    if (id !== undefined && this.authService.keys.token !== LocalStorageKeys.scoped({ id }).token) {
+      throw getError({
+        message: `[DefaultAuthProvider] The auth service does not use the application id '${id}': a subclass of DefaultAuthService with its own constructor passes the application info to super(info)`,
+      });
+    }
+
     // A subclass with its own constructor rarely forwards the optional 4th argument to `super`.
     const permissionProvider =
       this.permissionProvider ??

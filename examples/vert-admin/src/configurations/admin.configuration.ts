@@ -5,6 +5,7 @@ import {
   DefaultAuthProvider,
   DefaultAuthService,
   DefaultI18nProvider,
+  DefaultRestDataProvider,
   englishMessages,
   inject,
   type IRestDataProviderOptions,
@@ -12,7 +13,6 @@ import {
 } from '@venizia/ardor';
 
 import { VertPaths } from '@/constants/vert-paths';
-import { VertRestDataProvider } from '@/providers/vert-rest-data.provider';
 
 declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides {
@@ -66,7 +66,7 @@ export class AdminConfiguration {
 
   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
   restDataProvider() {
-    return this.application.instantiate(VertRestDataProvider).value(this.application);
+    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
   }
 
   @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
