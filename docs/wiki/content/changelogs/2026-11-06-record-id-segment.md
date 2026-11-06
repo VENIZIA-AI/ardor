@@ -15,9 +15,9 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 ## What changed
 
 - **The id is encoded.** An id with `/`, `?`, `#`, a space or `%` is sent as one segment. A numeric or a UUID id is unchanged.
-- **`.`, `..` and a lone surrogate are rejected.** The first two are dot segments even when encoded, and a lone surrogate cannot be encoded, so the call rejects before any request.
+- **An empty id, `.`, `..` and a lone surrogate are rejected.** `.` and `..` are dot segments even when encoded, an empty id would address the collection, and a lone surrogate cannot be encoded, so the call rejects before any request.
 
-- **`doRequest` refuses a request that leaves the base.** A `paths` entry with a control character, `?`, `#`, a backslash or a `.` or `..` segment (also written `%2E`), and any request whose resolved URL has another origin than `baseUrl` or a path outside it (a base of `/` with a `//` joined in front of a name, for example), rejects with `[doRequest] Invalid path to send request!` before any request. Query parameters go in `query`, not in `paths`.
+- **`doRequest` refuses a request that leaves the base.** A `paths` entry with a tab, a line break, a backslash or a `.` or `..` segment (also written `%2E`), and any request whose resolved URL has another origin than `baseUrl` or a path outside it (a base of `/` with a `//` joined in front of a name, for example), rejects with `[doRequest] Invalid path to send request!` before any request. A `?` or `#` in a path you configure (`refreshTokenPath: '/auth/refresh?grant=refresh'`) is still sent as written; only the record id is encoded for you, so never join a user value into a resource name.
 
 ## Who is affected
 

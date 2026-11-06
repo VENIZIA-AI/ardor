@@ -390,19 +390,14 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * Whether the request stays where `baseUrl` points: no entry of `paths` carries a tab, a line break,
-   * `?`, `#`, a backslash or a dot segment (also written `%2E`), and the URL built from
+   * a backslash or a dot segment (also written `%2E`), and the URL built from
    * them, resolved the way a browser does, has the origin of the base and a path under it.
    */
   private static isUnderBase(opts: { baseUrl: string; paths: string[]; url: string }): boolean {
     const { baseUrl, paths, url } = opts;
-    const isPlain = paths.every((path) => {
-      return (
-        !/[?#\\\t\n\r]/.test(path) &&
-        !path.split('/').some((segment) => /^(\.|%2e){1,2}$/i.test(segment))
-      );
-    });
 
-    if (!isPlain) {
+    // The joined path, so a dot segment is found whichever entry holds it.
+    if (/[\\\t\n\r]|(^|\/)(\.|%2e){1,2}(\/|$)/i.test(paths.join('/'))) {
       return false;
     }
 

@@ -385,13 +385,13 @@ describe('the record id in the path', () => {
     expect(recordedRequests).toEqual([]);
   });
 
-  test('a lone surrogate id and a resource with a query or fragment character are refused before any request', async () => {
+  test('an empty id, a lone surrogate id and a resource with a line break are refused before any request', async () => {
     const provider = createProvider({ baseUrl });
 
     const outcomes = await Promise.allSettled([
+      provider.getOne({ resource: 'posts', params: { id: '' } }),
+      provider.delete({ resource: 'posts', params: { id: '' } }),
       provider.getOne({ resource: 'posts', params: { id: '\uD800' } }),
-      provider.getOne({ resource: 'posts?x=1', params: { id: '1' } }),
-      provider.getOne({ resource: 'posts#frag', params: { id: '1' } }),
       provider.getOne({ resource: '.\t.', params: { id: '1' } }),
     ]);
 

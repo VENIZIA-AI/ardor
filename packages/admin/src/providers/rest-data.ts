@@ -46,18 +46,25 @@ import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
 /**
- * The path of one record: the id is a single path segment, whatever characters it holds. `.` and
- * `..` stay dot segments even when written `%2E`, and a lone surrogate cannot be encoded, so such
- * an id is refused (without naming it).
+ * The path of one record: the id is a single path segment, whatever characters it holds. An empty
+ * id, `.` and `..` (dot segments even when written `%2E`) and a lone surrogate (which cannot be
+ * encoded) are refused, without naming the id.
  */
 const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> => {
-  const text = `${opts.id}`;
+  let segment = '';
 
-  if (text === '.' || text === '..' || !text.isWellFormed()) {
+  try {
+    segment = encodeURIComponent(`${opts.id}`);
+    // eslint-disable-next-line venizia/no-silent-catch -- a lone surrogate cannot be encoded: the empty segment below refuses it
+  } catch {
+    segment = '';
+  }
+
+  if (segment === '' || segment === '.' || segment === '..') {
     throw getError({ message: '[recordPaths] The record id is not a valid path segment' });
   }
 
-  return [opts.resource, encodeURIComponent(text)];
+  return [opts.resource, segment];
 };
 
 /**
