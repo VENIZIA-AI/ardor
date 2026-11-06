@@ -116,6 +116,16 @@ describe.skipIf(Bun.which('envsubst') === null)('45-api-proxy.sh', () => {
   test('stops on resolvers that are not addresses, naming the variable and never the value', () => {
     for (const hostile of [
       '127.0.0.11; return 418',
+      '127.0.0.11 # x',
+      '127.0.0.11\\',
+      '127.0.0.11\"',
+      "127.0.0.11'",
+      '127.0.0.11\t8.8.8.8',
+      '127.0.0.11%eth0',
+      '-1.1.1.1',
+      '127.0.0.11,8.8.8.8',
+      '127.0.0.11/8',
+      '127.0.0.11@x',
       '127.0.0.11}',
       '$(id)',
       '127.0.0.11\nroot /',
@@ -129,6 +139,18 @@ describe.skipIf(Bun.which('envsubst') === null)('45-api-proxy.sh', () => {
       expect(existsSync(target)).toBe(false);
       expect(stderr).toContain('NGINX_LOCAL_RESOLVERS');
       expect(`${stdout}${stderr}`).not.toContain('418');
+    }
+  });
+
+  test('stops on blank resolvers, since nginx needs at least one for /api', () => {
+    for (const blank of ['', '   ']) {
+      const { code, target, stderr } = run({
+        env: { API_UPSTREAM: 'http://api:3000', NGINX_LOCAL_RESOLVERS: blank },
+      });
+
+      expect(code).toBe(1);
+      expect(existsSync(target)).toBe(false);
+      expect(stderr).toContain('NGINX_LOCAL_RESOLVERS is empty');
     }
   });
 

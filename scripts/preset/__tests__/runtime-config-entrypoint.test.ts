@@ -176,6 +176,8 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     'VITE_API_SECRET',
     'VITE_DB_PASSWORD',
     'VITE_DB_PASSWD',
+    'VITE_PASSPHRASE',
+    'VITE_PASSCODE',
     'VITE_DB_PASS',
     'VITE_PASS_X',
     'VITE_PRIVATE_KEY',
@@ -192,6 +194,34 @@ describe.each(awks)('40-runtime-config.sh with $name', ({ path }) => {
     expect(stderr).toContain(name);
     expect(stderr).not.toContain('do-not-publish');
     expect(existsSync(target)).toBe(false);
+  });
+
+  test.each([
+    'postgres://admin:hunter2@db.internal/app',
+    'redis://:hunter2@cache:6379',
+    '//admin:hunter2@db.internal/app',
+    'https://:hunter2@db.internal',
+  ])('a URL with a password, %s, stops the container without printing it', (value) => {
+    const { code, stderr, target } = run({ path, env: { VITE_DB_URL: value } });
+
+    expect(code).toBe(1);
+    expect(stderr).toContain('VITE_DB_URL');
+    expect(stderr).not.toContain('hunter2');
+    expect(existsSync(target)).toBe(false);
+  });
+
+  test.each([
+    'https://host:8080?contact=a@b.com',
+    'https://app.example.com?return=mailto:me@x.com',
+    'http://localhost:3000#user:me@x',
+    'https://example.com/a:b@c',
+    'https://key@o1.ingest.sentry.io/2',
+    'mailto:me@example.com',
+  ])('a value that only has an @ in it, %s, is published', (value) => {
+    const { code, target } = run({ path, env: { VITE_CONTACT: value } });
+
+    expect(code).toBe(0);
+    expect(evaluate(target).config).toEqual({ VITE_CONTACT: value });
   });
 
   test('a URL that carries a user and a password stops the container, without printing it', () => {

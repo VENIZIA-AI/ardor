@@ -36,6 +36,14 @@ esac
 # The resolvers are written into the nginx configuration too: addresses (IPv4, IPv6 in brackets) and
 # spaces between them, nothing else.
 case "${NGINX_LOCAL_RESOLVERS:-}" in
+  *[!\ ]*) ;;
+  *)
+    echo "[api-proxy] FATAL: NGINX_LOCAL_RESOLVERS is empty, and nginx needs at least one resolver for /api" >&2
+    exit 1
+    ;;
+esac
+
+case "${NGINX_LOCAL_RESOLVERS:-}" in
   *[!][0-9A-Fa-f.:\ ]*)
     echo "[api-proxy] FATAL: NGINX_LOCAL_RESOLVERS has a character that is not part of an address" >&2
     exit 1
