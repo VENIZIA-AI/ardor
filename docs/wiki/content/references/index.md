@@ -18,7 +18,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 <a href="./features" class="guide-card"><h3>Features</h3><p>Feature package definitions, configuration classes, and route mounting</p></a>
 <a href="./repository" class="guide-card"><h3>Repository</h3><p>HttpRepository and HttpDataSource for resource-level operations</p></a>
 <a href="./hooks" class="guide-card"><h3>Hooks</h3><p>Container resolution, Redux hooks, ra-core helpers, and UI utilities</p></a>
-<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network; FakeResizeObserver delivers a size in a test</p></a>
+<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network; fakes for the observers, matchMedia, storage and the clipboard</p></a>
 <a href="./types" class="guide-card"><h3>Types</h3><p>Kernel type aliases, const classes, path helpers, and options shapes</p></a>
 </div>
 

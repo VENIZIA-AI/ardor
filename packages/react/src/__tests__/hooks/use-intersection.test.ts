@@ -1,28 +1,53 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
+import { FakeIntersectionObserver } from '@venizia/ardor-kernel/testing';
 import { useIntersection } from '@/hooks/use-intersection';
-import {
-  fireIntersection,
-  installIntersectionStub,
-  intersectionAt,
-  intersectionEntryOf,
-  intersections,
-  restoreIntersectionStub,
-} from '../intersection-observer-stub';
 
-beforeEach(installIntersectionStub);
+let restore: (() => void) | undefined;
+
+beforeEach(() => {
+  restore = FakeIntersectionObserver.install();
+});
 
 afterEach(() => {
   cleanup();
-  restoreIntersectionStub();
+  restore?.();
 });
+
+const observerAt = (index: number): FakeIntersectionObserver => {
+  const observer = FakeIntersectionObserver.all[index];
+
+  if (!observer) {
+    throw new Error(`No IntersectionObserver was created at ${index}`);
+  }
+
+  return observer;
+};
+
+const intersectionEntryOf = (opts: {
+  target: Element;
+  isIntersecting: boolean;
+  ratio: number;
+}): IntersectionObserverEntry => {
+  const rect = new DOMRectReadOnly(0, 0, 10, 10);
+
+  return {
+    target: opts.target,
+    isIntersecting: opts.isIntersecting,
+    intersectionRatio: opts.ratio,
+    boundingClientRect: rect,
+    intersectionRect: rect,
+    rootBounds: null,
+    time: 0,
+  };
+};
 
 const refOf = (element: Element | null) => ({ current: element });
 
 const deliver = (entry: IntersectionObserverEntry, index = 0) => {
   act(() => {
-    fireIntersection({ record: intersectionAt(index), entries: [entry] });
+    observerAt(index).callback([entry], observerAt(index));
   });
 };
 
@@ -35,9 +60,9 @@ describe('useIntersection', () => {
     });
 
     expect(result.current).toBeUndefined();
-    expect(intersections).toHaveLength(1);
-    expect(intersectionAt(0).targets).toEqual([element]);
-    expect(intersectionAt(0).options).toEqual({ rootMargin: '10px', threshold: 0.5 });
+    expect(FakeIntersectionObserver.all).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
+    expect(observerAt(0).options).toEqual({ rootMargin: '10px', threshold: 0.5 });
   });
 
   test('gives the entry of the first observation and of each change', () => {
@@ -61,7 +86,7 @@ describe('useIntersection', () => {
     const late = intersectionEntryOf({ target: element, isIntersecting: true, ratio: 1 });
 
     act(() => {
-      fireIntersection({ record: intersectionAt(0), entries: [early, late] });
+      observerAt(0).callback([early, late], observerAt(0));
     });
 
     expect(result.current).toBe(late);
@@ -93,14 +118,14 @@ describe('useIntersection', () => {
     deliver(intersectionEntryOf({ target: element, isIntersecting: true, ratio: 1 }));
 
     rerender({ rootMargin: '20px', threshold: 0 });
-    expect(intersections).toHaveLength(2);
-    expect(intersectionAt(0).disconnected).toBe(true);
-    expect(intersectionAt(1).options).toEqual({ rootMargin: '20px', threshold: 0 });
+    expect(FakeIntersectionObserver.all).toHaveLength(2);
+    expect(observerAt(0).isDisconnected).toBe(true);
+    expect(observerAt(1).options).toEqual({ rootMargin: '20px', threshold: 0 });
     expect(result.current).toBeUndefined();
 
     rerender({ rootMargin: '20px', threshold: 0.5 });
-    expect(intersections).toHaveLength(3);
-    expect(intersectionAt(1).disconnected).toBe(true);
+    expect(FakeIntersectionObserver.all).toHaveLength(3);
+    expect(observerAt(1).isDisconnected).toBe(true);
   });
 
   test('an element held in state, set after the mount, is observed', () => {
@@ -109,12 +134,12 @@ describe('useIntersection', () => {
       (props) => useIntersection({ target: props.element }),
       { initialProps: { element: null } },
     );
-    expect(intersections).toHaveLength(0);
+    expect(FakeIntersectionObserver.all).toHaveLength(0);
 
     rerender({ element });
 
-    expect(intersections).toHaveLength(1);
-    expect(intersectionAt(0).targets).toEqual([element]);
+    expect(FakeIntersectionObserver.all).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
   });
 
   test('a ref whose element changes is followed at the next render, from an empty entry', () => {
@@ -127,8 +152,8 @@ describe('useIntersection', () => {
     ref.current = second;
     rerender();
 
-    expect(intersectionAt(0).disconnected).toBe(true);
-    expect(intersectionAt(1).targets).toEqual([second]);
+    expect(observerAt(0).isDisconnected).toBe(true);
+    expect(observerAt(1).targets).toEqual([second]);
     expect(result.current).toBeUndefined();
   });
 
@@ -142,7 +167,7 @@ describe('useIntersection', () => {
 
     rerender({ element: null });
 
-    expect(intersectionAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(result.current).toBeUndefined();
   });
 
@@ -153,7 +178,7 @@ describe('useIntersection', () => {
     rerender();
     rerender();
 
-    expect(intersections).toHaveLength(1);
+    expect(FakeIntersectionObserver.all).toHaveLength(1);
   });
 
   test('unmount disconnects', () => {
@@ -162,7 +187,7 @@ describe('useIntersection', () => {
 
     unmount();
 
-    expect(intersectionAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
   });
 
   test('a host with no IntersectionObserver gives undefined and does not throw', () => {
@@ -172,6 +197,6 @@ describe('useIntersection', () => {
     const { result } = renderHook(() => useIntersection({ target: element }));
 
     expect(result.current).toBeUndefined();
-    expect(intersections).toHaveLength(0);
+    expect(FakeIntersectionObserver.all).toHaveLength(0);
   });
 });

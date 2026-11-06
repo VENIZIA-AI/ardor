@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
+import { FakeResizeObserver } from '@venizia/ardor-kernel/testing';
 import { useElementSize } from '@/hooks/use-element-size';
 import {
   cancelled,
@@ -11,7 +12,6 @@ import {
   installObserverStubs,
   LegacyEntry,
   observerAt,
-  observers,
   restoreObserverStubs,
 } from '../resize-observer-stub';
 
@@ -36,7 +36,7 @@ describe('useElementSize', () => {
     });
 
     expect(result.current).toEqual({ width: 0, height: 0, measured: false });
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([element]);
     expect(observerAt(0).options).toEqual([{ box: 'content-box' }]);
 
@@ -93,7 +93,7 @@ describe('useElementSize', () => {
 
     unmount();
 
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(cancelled).toEqual(pending);
     expect(frames.size).toBe(0);
   });
@@ -110,8 +110,8 @@ describe('useElementSize', () => {
 
     rerender({ element: second });
 
-    expect(observers).toHaveLength(2);
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(FakeResizeObserver.all).toHaveLength(2);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(observerAt(1).targets).toEqual([second]);
   });
 
@@ -137,7 +137,7 @@ describe('useElementSize', () => {
 
     rerender({ box: 'border-box' });
 
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(observerAt(1).options).toEqual([{ box: 'border-box' }]);
     expect(result.current).toEqual({ width: 0, height: 0, measured: false });
   });
@@ -168,14 +168,14 @@ describe('useElementSize', () => {
 
     const { result } = renderHook(() => useElementSize({ ref }));
 
-    expect(observers).toHaveLength(0);
+    expect(FakeResizeObserver.all).toHaveLength(0);
     expect(result.current).toEqual({ width: 0, height: 0, measured: false });
   });
 
   test('a ref with no element observes nothing and does not throw', () => {
     const { result } = renderHook(() => useElementSize({ ref: refOf(null) }));
 
-    expect(observers).toHaveLength(0);
+    expect(FakeResizeObserver.all).toHaveLength(0);
     expect(result.current).toEqual({ width: 0, height: 0, measured: false });
   });
 });
@@ -186,13 +186,13 @@ describe('useElementSize callback ref, round and measured', () => {
     const second = document.createElement('div');
     const { result } = renderHook(() => useElementSize());
 
-    expect(observers).toHaveLength(0);
+    expect(FakeResizeObserver.all).toHaveLength(0);
     expect(result.current).toMatchObject({ width: 0, height: 0, measured: false });
 
     act(() => {
       result.current.ref(first);
     });
-    expect(observers).toHaveLength(1);
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([first]);
 
     fire({ observer: observerAt(0), entries: [entryOf({ width: 100, height: 50 })] });
@@ -202,15 +202,15 @@ describe('useElementSize callback ref, round and measured', () => {
     act(() => {
       result.current.ref(second);
     });
-    expect(observerAt(0).disconnected).toBe(true);
+    expect(observerAt(0).isDisconnected).toBe(true);
     expect(observerAt(1).targets).toEqual([second]);
     expect(result.current).toMatchObject({ width: 0, height: 0, measured: false });
 
     act(() => {
       result.current.ref(null);
     });
-    expect(observerAt(1).disconnected).toBe(true);
-    expect(observers).toHaveLength(2);
+    expect(observerAt(1).isDisconnected).toBe(true);
+    expect(FakeResizeObserver.all).toHaveLength(2);
   });
 
   test('the returned ref keeps its identity between renders', () => {
@@ -265,7 +265,7 @@ describe('useElementSize callback ref, round and measured', () => {
 
     rerender({ round: true });
 
-    expect(observers).toHaveLength(2);
+    expect(FakeResizeObserver.all).toHaveLength(2);
     expect(result.current).toEqual({ width: 0, height: 0, measured: false });
   });
 

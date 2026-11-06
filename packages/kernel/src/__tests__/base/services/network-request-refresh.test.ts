@@ -5,38 +5,7 @@ import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestMethods, RequestTypes } from '@/common';
-
-class StorageStub implements Storage {
-  [name: string]: unknown;
-
-  get length(): number {
-    return Object.keys(this).length;
-  }
-
-  getItem(key: string): string | null {
-    const value = Object.getOwnPropertyDescriptor(this, key)?.value;
-
-    return typeof value === 'string' ? value : null;
-  }
-
-  setItem(key: string, value: string): void {
-    this[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this[key];
-  }
-
-  clear(): void {
-    for (const key of Object.keys(this)) {
-      delete this[key];
-    }
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this)[index] ?? null;
-  }
-}
+import { FakeStorage } from '@/testing';
 
 interface IRecorded {
   method: string;
@@ -96,7 +65,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
         roles: [{ identifier: 'ignored' }],
       });
     Object.defineProperty(globalThis, 'localStorage', {
-      value: new StorageStub(),
+      value: new FakeStorage(),
       configurable: true,
       writable: true,
     });

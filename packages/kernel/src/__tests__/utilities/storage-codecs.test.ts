@@ -2,38 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { BrowserStorage } from '@/utilities/browser-storage';
 import { StorageCodecs } from '@/utilities/storage-codecs';
-
-class StorageStub implements Storage {
-  [name: string]: unknown;
-
-  get length(): number {
-    return Object.keys(this).length;
-  }
-
-  getItem(key: string): string | null {
-    const value = Object.getOwnPropertyDescriptor(this, key)?.value;
-
-    return typeof value === 'string' ? value : null;
-  }
-
-  setItem(key: string, value: string): void {
-    this[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this[key];
-  }
-
-  clear(): void {
-    for (const key of Object.keys(this)) {
-      delete this[key];
-    }
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this)[index] ?? null;
-  }
-}
+import { FakeStorage } from '@/testing';
 
 const KEY = '@app/store/theme';
 
@@ -48,7 +17,7 @@ const installLocal = (storage: Storage | undefined) => {
 };
 
 beforeEach(() => {
-  installLocal(new StorageStub());
+  installLocal(new FakeStorage());
 });
 
 afterEach(() => {

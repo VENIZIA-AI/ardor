@@ -1,53 +1,15 @@
 import { act } from '@testing-library/react';
 
-export interface IObserverRecord {
-  readonly callback: ResizeObserverCallback;
-  readonly targets: Array<Element>;
-  readonly unobserved: Array<Element>;
-  readonly options: Array<ResizeObserverOptions | undefined>;
-  disconnected: boolean;
-  readonly instance: ResizeObserver;
-}
+import { FakeResizeObserver } from '@venizia/ardor-kernel/testing';
 
-export const observers: Array<IObserverRecord> = [];
+export const observerAt = (index: number): FakeResizeObserver => {
+  const observer = FakeResizeObserver.all[index];
 
-class StubResizeObserver implements ResizeObserver {
-  private readonly record: IObserverRecord;
-
-  constructor(callback: ResizeObserverCallback) {
-    this.record = {
-      callback,
-      targets: [],
-      unobserved: [],
-      options: [],
-      disconnected: false,
-      instance: this,
-    };
-    observers.push(this.record);
-  }
-
-  observe = (target: Element, options?: ResizeObserverOptions): void => {
-    this.record.targets.push(target);
-    this.record.options.push(options);
-  };
-
-  unobserve = (target: Element): void => {
-    this.record.unobserved.push(target);
-  };
-
-  disconnect = (): void => {
-    this.record.disconnected = true;
-  };
-}
-
-export const observerAt = (index: number): IObserverRecord => {
-  const record = observers[index];
-
-  if (!record) {
+  if (!observer) {
     throw new Error(`No ResizeObserver was created at ${index}`);
   }
 
-  return record;
+  return observer;
 };
 
 export const frames = new Map<number, FrameRequestCallback>();
@@ -95,22 +57,25 @@ export class LegacyEntry implements ResizeObserverEntry {
   }
 }
 
-export const fire = (opts: { observer: IObserverRecord; entries: Array<ResizeObserverEntry> }) => {
-  opts.observer.callback(opts.entries, opts.observer.instance);
+export const fire = (opts: {
+  observer: FakeResizeObserver;
+  entries: Array<ResizeObserverEntry>;
+}) => {
+  opts.observer.callback(opts.entries, opts.observer);
 };
 
 const original = {
-  observer: globalThis.ResizeObserver,
   request: globalThis.requestAnimationFrame,
   cancel: globalThis.cancelAnimationFrame,
 };
 
+let restoreObserver: (() => void) | undefined;
+
 export const installObserverStubs = () => {
-  observers.length = 0;
   frames.clear();
   cancelled.length = 0;
   nextFrame = 1;
-  globalThis.ResizeObserver = StubResizeObserver;
+  restoreObserver = FakeResizeObserver.install();
 
   globalThis.requestAnimationFrame = (callback) => {
     const id = nextFrame++;
@@ -126,7 +91,7 @@ export const installObserverStubs = () => {
 };
 
 export const restoreObserverStubs = () => {
-  globalThis.ResizeObserver = original.observer;
+  restoreObserver?.();
   globalThis.requestAnimationFrame = original.request;
   globalThis.cancelAnimationFrame = original.cancel;
 };

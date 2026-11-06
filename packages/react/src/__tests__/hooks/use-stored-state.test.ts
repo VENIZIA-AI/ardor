@@ -7,6 +7,7 @@ import {
   StorageAreas,
   StorageCodecs,
 } from '@venizia/ardor-kernel';
+import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { useStoredState } from '@/hooks/use-stored-state';
 
 const KEY = '@app/store/theme';
@@ -15,60 +16,10 @@ const storageEvent = (opts: { key: string | null; storageArea: Storage }): Event
   return new StorageEvent('storage', opts);
 };
 
-class SwitchStorage implements Storage {
-  [name: string]: unknown;
+const restores: Array<() => void> = [];
 
-  failReads = false;
-  failWrites = false;
-  readonly writes: Array<string> = [];
-  private readonly items = new Map<string, string>();
-
-  get length(): number {
-    return this.items.size;
-  }
-
-  getItem(key: string): string | null {
-    if (this.failReads) {
-      throw new DOMException('Access is denied', 'SecurityError');
-    }
-
-    return this.items.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    if (this.failWrites) {
-      throw new DOMException('The quota has been exceeded', 'QuotaExceededError');
-    }
-
-    this.items.set(key, value);
-    this.writes.push(value);
-  }
-
-  removeItem(key: string): void {
-    if (this.failWrites) {
-      throw new DOMException('Access is denied', 'SecurityError');
-    }
-
-    this.items.delete(key);
-  }
-
-  clear(): void {
-    this.items.clear();
-  }
-
-  key(index: number): string | null {
-    return [...this.items.keys()][index] ?? null;
-  }
-}
-
-const realLocalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-
-const replaceLocalStorage = (storage: Storage): void => {
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: storage,
-    configurable: true,
-    writable: true,
-  });
+const installFake = (storage: FakeStorage): void => {
+  restores.push(storage.install());
 };
 
 const upperCase: IStorageCodec<string> = {
@@ -84,8 +35,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
 
-  if (realLocalStorage) {
-    Object.defineProperty(globalThis, 'localStorage', realLocalStorage);
+  while (restores.length > 0) {
+    restores.pop()?.();
   }
 
   localStorage.clear();
@@ -112,10 +63,10 @@ describe('useStoredState reads', () => {
 
   test('gives the default value, and does not crash, when the accessor throws', () => {
     localStorage.setItem(KEY, JSON.stringify('dark'));
-    const blocked = new SwitchStorage();
+    const blocked = new FakeStorage();
     blocked.setItem(KEY, JSON.stringify('dark'));
     blocked.failReads = true;
-    replaceLocalStorage(blocked);
+    installFake(blocked);
 
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
 
@@ -259,8 +210,8 @@ describe('useStoredState writes', () => {
   });
 
   test('updaters in one tick compose on a storage that refuses the writes', () => {
-    const quota = new SwitchStorage();
-    replaceLocalStorage(quota);
+    const quota = new FakeStorage();
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
     quota.failWrites = true;
 
@@ -274,8 +225,8 @@ describe('useStoredState writes', () => {
   });
 
   test('after a refused write, an updater builds on the kept value, not on a write the hook was not told about', () => {
-    const quota = new SwitchStorage();
-    replaceLocalStorage(quota);
+    const quota = new FakeStorage();
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
     quota.failWrites = true;
     act(() => result.current.setValue(5));
@@ -290,8 +241,8 @@ describe('useStoredState writes', () => {
   });
 
   test('after a refused write, a write the hook is told about, by an event or by BrowserStorage, wins over the kept value', () => {
-    const quota = new SwitchStorage();
-    replaceLocalStorage(quota);
+    const quota = new FakeStorage();
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
     quota.failWrites = true;
     act(() => result.current.setValue(5));
@@ -306,9 +257,9 @@ describe('useStoredState writes', () => {
   });
 
   test('an updater after a refused removal starts again from the default value', () => {
-    const quota = new SwitchStorage();
+    const quota = new FakeStorage();
     quota.setItem(KEY, JSON.stringify(5));
-    replaceLocalStorage(quota);
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
     quota.failWrites = true;
 
@@ -340,8 +291,8 @@ describe('useStoredState writes', () => {
   });
 
   test('a write the quota refuses is kept in the hook, so the UI still reacts, and is not stored', () => {
-    const quota = new SwitchStorage();
-    replaceLocalStorage(quota);
+    const quota = new FakeStorage();
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
     quota.failWrites = true;
 
@@ -354,10 +305,10 @@ describe('useStoredState writes', () => {
   });
 
   test('a write on a storage that is blocked entirely is kept in the hook and does not throw', () => {
-    const blocked = new SwitchStorage();
+    const blocked = new FakeStorage();
     blocked.failReads = true;
     blocked.failWrites = true;
-    replaceLocalStorage(blocked);
+    installFake(blocked);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
 
     act(() => result.current.setValue('dark'));
@@ -366,8 +317,8 @@ describe('useStoredState writes', () => {
   });
 
   test('a value kept after a refused write gives way to the next change of the storage', () => {
-    const quota = new SwitchStorage();
-    replaceLocalStorage(quota);
+    const quota = new FakeStorage();
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
     quota.failWrites = true;
     act(() => result.current.setValue('dark'));
@@ -382,9 +333,9 @@ describe('useStoredState writes', () => {
   });
 
   test('a removal the storage refuses shows the default value in the hook', () => {
-    const quota = new SwitchStorage();
+    const quota = new FakeStorage();
     quota.setItem(KEY, JSON.stringify('dark'));
-    replaceLocalStorage(quota);
+    installFake(quota);
     const { result } = renderHook(() => useStoredState({ key: KEY, defaultValue: 'light' }));
     expect(result.current.value).toBe('dark');
     quota.failWrites = true;
@@ -472,8 +423,8 @@ describe('useStoredState writeDelayMs', () => {
   };
 
   const delayed = () => {
-    const storage = new SwitchStorage();
-    replaceLocalStorage(storage);
+    const storage = new FakeStorage();
+    installFake(storage);
     const view = renderHook(() => {
       return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: DELAY });
     });
@@ -558,9 +509,9 @@ describe('useStoredState writeDelayMs', () => {
   });
 
   test('a changed key writes the pending value to the old key and starts from the new one', () => {
-    const storage = new SwitchStorage();
+    const storage = new FakeStorage();
     storage.setItem('@app/store/b', JSON.stringify(40));
-    replaceLocalStorage(storage);
+    installFake(storage);
     const { result, rerender } = renderHook(
       (props: { key: string }) => {
         return useStoredState({ key: props.key, defaultValue: 0, writeDelayMs: DELAY });
@@ -739,8 +690,8 @@ describe('useStoredState writeDelayMs', () => {
   });
 
   test('a delay that is not a number writes at once', () => {
-    const storage = new SwitchStorage();
-    replaceLocalStorage(storage);
+    const storage = new FakeStorage();
+    installFake(storage);
     const { result } = renderHook(() => {
       return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: Number.NaN });
     });
@@ -752,8 +703,8 @@ describe('useStoredState writeDelayMs', () => {
   });
 
   test('a delay of 0, or none, writes at once and sets no timer', () => {
-    const storage = new SwitchStorage();
-    replaceLocalStorage(storage);
+    const storage = new FakeStorage();
+    installFake(storage);
     const none = renderHook(() => useStoredState({ key: KEY, defaultValue: 0 }));
     const zero = renderHook(() => {
       return useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: 0 });

@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 import { configureStore, createSlice, type Dispatch, type UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
+import { FakeClipboard } from '@venizia/ardor-kernel/testing';
 import { useDebounce, type IUseDebounceOptions } from '@/hooks/use-debounce';
 import { useAutosave, type IUseAutosaveOptions } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -241,15 +242,8 @@ describe('useCopyToClipboard', () => {
   });
 
   test('resolves true and writes text when navigator.clipboard.writeText exists', async () => {
-    const writeTextMock = mock(async (_text: string): Promise<void> => {});
-
-    Object.defineProperty(navigator, 'clipboard', {
-      value: {
-        writeText: writeTextMock,
-      },
-      configurable: true,
-      writable: true,
-    });
+    const clipboard = new FakeClipboard();
+    clipboard.install();
 
     const { result } = renderHook(() => {
       return useCopyToClipboard();
@@ -262,8 +256,7 @@ describe('useCopyToClipboard', () => {
     });
 
     expect(copyResult).toBe(true);
-    expect(writeTextMock).toHaveBeenCalledTimes(1);
-    expect(writeTextMock).toHaveBeenCalledWith('ARDOR text');
+    expect(clipboard.written).toEqual(['ARDOR text']);
   });
 
   test('resolves false when navigator.clipboard is absent', async () => {

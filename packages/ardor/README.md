@@ -38,7 +38,7 @@ export const Orders = () => {
 ## Subpaths
 
 - `@venizia/ardor/repository` - `HttpRepository` and the datasource settings; needs the optional peer `@venizia/ignis-connectors`.
-- `@venizia/ardor/testing` - `assertArdorApplicationBoots` and `FakeResizeObserver`, for your test suite.
+- `@venizia/ardor/testing` - `assertArdorApplicationBoots` and fakes of `ResizeObserver`, `IntersectionObserver`, `matchMedia`, storage and the clipboard, for your test suite.
 - `@venizia/ardor/vite` - `buildInfoFile`, a Vite plugin that writes the build info file; needs the optional peers `@venizia/ignis-boot` and `vite`.
 
 ## Quick start

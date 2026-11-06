@@ -3,49 +3,22 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 
+import { FakeMatchMedia } from '@venizia/ardor-kernel/testing';
 import { useDocumentVisibility } from '@/hooks/use-document-visibility';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useOnlineStatus } from '@/hooks/use-online-status';
-
-class FakeMediaQueryList extends EventTarget {
-  constructor(
-    readonly media: string,
-    public matches: boolean,
-  ) {
-    super();
-  }
-}
-
-const lists = new Map<string, FakeMediaQueryList>();
-let matchMediaCalls = 0;
-const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
-
-const listOf = (query: string): FakeMediaQueryList => {
-  const list = lists.get(query) ?? new FakeMediaQueryList(query, false);
-  lists.set(query, list);
-
-  return list;
-};
 
 let visibility: DocumentVisibilityState = 'visible';
 let isOnline = true;
 let stateReads = 0;
 
+let restoreMatchMedia: (() => void) | undefined;
+
 beforeEach(() => {
-  lists.clear();
-  matchMediaCalls = 0;
+  restoreMatchMedia = FakeMatchMedia.install();
   stateReads = 0;
   visibility = 'visible';
   isOnline = true;
-  Object.defineProperty(window, 'matchMedia', {
-    configurable: true,
-    writable: true,
-    value: (query: string) => {
-      matchMediaCalls += 1;
-
-      return listOf(query);
-    },
-  });
   Object.defineProperty(document, 'visibilityState', {
     configurable: true,
     get: () => {
@@ -68,9 +41,7 @@ afterEach(() => {
   cleanup();
   mock.restore();
 
-  if (originalMatchMedia) {
-    Object.defineProperty(window, 'matchMedia', originalMatchMedia);
-  }
+  restoreMatchMedia?.();
 
   Reflect.deleteProperty(document, 'visibilityState');
   Reflect.deleteProperty(navigator, 'onLine');
@@ -78,22 +49,20 @@ afterEach(() => {
 
 describe('useMediaQuery', () => {
   test('reads whether the query matches, and follows each change', () => {
-    listOf('(min-width: 600px)').matches = true;
+    FakeMatchMedia.set({ query: '(min-width: 600px)', matches: true });
 
     const { result } = renderHook(() => useMediaQuery({ query: '(min-width: 600px)' }));
     expect(result.current).toBe(true);
 
     act(() => {
-      const list = listOf('(min-width: 600px)');
-      list.matches = false;
-      list.dispatchEvent(new Event('change'));
+      FakeMatchMedia.set({ query: '(min-width: 600px)', matches: false });
     });
     expect(result.current).toBe(false);
   });
 
   test('follows a changed query, and stops listening to the old one', () => {
-    listOf('(a)').matches = true;
-    listOf('(b)').matches = false;
+    FakeMatchMedia.set({ query: '(a)', matches: true });
+    FakeMatchMedia.set({ query: '(b)', matches: false });
 
     const { result, rerender } = renderHook((props: { query: string }) => useMediaQuery(props), {
       initialProps: { query: '(a)' },
@@ -104,19 +73,14 @@ describe('useMediaQuery', () => {
     expect(result.current).toBe(false);
 
     act(() => {
-      const old = listOf('(a)');
-      old.matches = false;
-      old.dispatchEvent(new Event('change'));
-      const next = listOf('(b)');
-      next.matches = true;
-      next.dispatchEvent(new Event('change'));
+      FakeMatchMedia.set({ query: '(a)', matches: false });
+      FakeMatchMedia.set({ query: '(b)', matches: true });
     });
     expect(result.current).toBe(true);
   });
 
   test('stops listening on unmount', () => {
-    const list = listOf('(a)');
-    const removed = spyOn(list, 'removeEventListener');
+    const removed = spyOn(FakeMatchMedia.of('(a)'), 'removeEventListener');
 
     const { unmount } = renderHook(() => useMediaQuery({ query: '(a)' }));
     unmount();
@@ -129,7 +93,7 @@ describe('useMediaQuery', () => {
     const Probe = () => React.createElement('p', null, String(useMediaQuery({ query: '(a)' })));
 
     expect(renderToString(React.createElement(Probe))).toContain('false');
-    expect(matchMediaCalls).toBe(0);
+    expect(FakeMatchMedia.queries.size).toBe(0);
   });
 });
 

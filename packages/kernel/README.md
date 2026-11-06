@@ -9,6 +9,8 @@ bun add @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @ve
 
 `@venizia/ignis-connectors` is an optional peer, needed only for `./repository`.
 
+`@venizia/ardor-kernel/testing` holds fakes of `ResizeObserver`, `IntersectionObserver`, `matchMedia`, `Storage` and `navigator.clipboard` for your tests; the main entry does not include them.
+
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
 which re-exports this package.
 

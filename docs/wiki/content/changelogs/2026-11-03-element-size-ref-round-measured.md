@@ -34,4 +34,4 @@ export function Panel({ open }: { open: boolean }) {
 - **An app that compares the whole return of `useElementSize` with `toEqual({ width, height })`.** The return now has `measured`. Read `width` and `height`, or add `measured` to the expectation.
 - **All other apps.** No action needed. The new options and the new field are additive.
 
-See [Hooks](../references/hooks#useelementsize) and [Test a ResizeObserver](../references/testing#test-a-resizeobserver).
+See [Hooks](../references/hooks#useelementsize) and [Fake the browser APIs](../references/testing#fake-the-browser-apis-your-code-reads).

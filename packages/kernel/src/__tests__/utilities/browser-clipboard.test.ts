@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
+import { FakeClipboard } from '@/testing';
 import { BrowserClipboard } from '@/utilities/browser-clipboard';
 
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
@@ -18,21 +19,13 @@ afterEach(() => {
 
 describe('BrowserClipboard.writeText', () => {
   test('puts the text on the clipboard and answers true', async () => {
-    const written: Array<string> = [];
-    installNavigator({
-      clipboard: {
-        writeText: (text: string) => {
-          written.push(text);
-
-          return Promise.resolve();
-        },
-      },
-    });
+    const clipboard = new FakeClipboard();
+    installNavigator({ clipboard });
 
     const isWritten = await BrowserClipboard.writeText({ text: 'hello' });
 
     expect(isWritten).toBe(true);
-    expect(written).toEqual(['hello']);
+    expect(clipboard.written).toEqual(['hello']);
   });
 
   test('answers false, and never throws, for every refusal', async () => {
@@ -40,11 +33,7 @@ describe('BrowserClipboard.writeText', () => {
       undefined,
       {},
       { clipboard: undefined },
-      {
-        clipboard: {
-          writeText: () => Promise.reject(new DOMException('denied', 'NotAllowedError')),
-        },
-      },
+      { clipboard: Object.assign(new FakeClipboard(), { isDenied: true }) },
       {
         clipboard: {
           writeText: () => {
@@ -66,10 +55,12 @@ describe('BrowserClipboard.writeText', () => {
 
 describe('BrowserClipboard.readText', () => {
   test('answers the text on the clipboard, an empty string included', async () => {
-    installNavigator({ clipboard: { readText: () => Promise.resolve('pasted') } });
+    const clipboard = new FakeClipboard();
+    installNavigator({ clipboard });
+    clipboard.text = 'pasted';
     const pasted = await BrowserClipboard.readText();
 
-    installNavigator({ clipboard: { readText: () => Promise.resolve('') } });
+    clipboard.text = '';
     const empty = await BrowserClipboard.readText();
 
     expect(pasted).toBe('pasted');
@@ -81,11 +72,7 @@ describe('BrowserClipboard.readText', () => {
       undefined,
       {},
       { clipboard: undefined },
-      {
-        clipboard: {
-          readText: () => Promise.reject(new DOMException('denied', 'NotAllowedError')),
-        },
-      },
+      { clipboard: Object.assign(new FakeClipboard(), { isDenied: true }) },
       {
         clipboard: {
           readText: () => {

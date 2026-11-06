@@ -2,46 +2,15 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 
 import { type IStorageCodec, LocalStorageKeys, StorageAreas } from '@/common';
 import { BrowserStorage } from '@/utilities/browser-storage';
+import { FakeStorage } from '@/testing';
 
-class StorageStub implements Storage {
-  [name: string]: unknown;
-
-  get length(): number {
-    return Object.keys(this).length;
-  }
-
-  getItem(key: string): string | null {
-    const value = Object.getOwnPropertyDescriptor(this, key)?.value;
-
-    return typeof value === 'string' ? value : null;
-  }
-
-  setItem(key: string, value: string): void {
-    this[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this[key];
-  }
-
-  clear(): void {
-    for (const key of Object.keys(this)) {
-      delete this[key];
-    }
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this)[index] ?? null;
-  }
-}
-
-class QuotaStorage extends StorageStub {
+class QuotaStorage extends FakeStorage {
   override setItem(_key: string, _value: string): void {
     throw new DOMException('The quota has been exceeded', 'QuotaExceededError');
   }
 }
 
-class BlockedStorage extends StorageStub {
+class BlockedStorage extends FakeStorage {
   override getItem(_key: string): string | null {
     throw new DOMException('Access is denied', 'SecurityError');
   }
@@ -51,7 +20,7 @@ class BlockedStorage extends StorageStub {
   }
 }
 
-class UnlistableStorage extends StorageStub {
+class UnlistableStorage extends FakeStorage {
   override get length(): number {
     throw new DOMException('Access is denied', 'SecurityError');
   }
@@ -80,8 +49,8 @@ const storageEvent = (opts: { key: string | null; storageArea: Storage }): Event
 };
 
 beforeEach(() => {
-  install({ name: 'localStorage', storage: new StorageStub() });
-  install({ name: 'sessionStorage', storage: new StorageStub() });
+  install({ name: 'localStorage', storage: new FakeStorage() });
+  install({ name: 'sessionStorage', storage: new FakeStorage() });
 });
 
 afterEach(() => {
