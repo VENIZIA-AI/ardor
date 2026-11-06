@@ -543,7 +543,10 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  /** Resolves the roles of the stored session. */
+  /**
+   * Resolves the roles of the stored session. They are read from browser storage, which the user can
+   * edit: use them to show or hide interface only, and let the backend check every permission.
+   */
   getRoles(_params?: unknown) {
     return Promise.resolve(this.authService.getRoles());
   }

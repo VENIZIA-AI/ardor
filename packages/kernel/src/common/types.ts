@@ -273,7 +273,11 @@ export interface IArtifactIndex {
   controllers?: ReadonlyArray<TClass<unknown>>;
 }
 
-/** Answers whether the current actor may act on a resource. Bound by the application under `CoreBindings.PERMISSION_PROVIDER`. */
+/**
+ * Answers whether the current actor may act on a resource. Bound by the application under
+ * `CoreBindings.PERMISSION_PROVIDER`. It decides what the interface shows, not what a user is allowed
+ * to do: the backend must check every permission on every request.
+ */
 export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
