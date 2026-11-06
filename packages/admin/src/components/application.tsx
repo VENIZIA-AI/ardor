@@ -3,11 +3,13 @@ import React from 'react';
 import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
+import { QueryClient } from '@tanstack/react-query';
 import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Route } from 'react-router-dom';
 
 import { type TFeature, Features } from '@/features/feature';
+import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
 import { ApplicationProviders } from './resolve';
@@ -124,7 +126,29 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return ApplicationProviders.resolve({ container });
   }, [container]);
 
-  const adminProps = { ...providers, ...reactAdminProps };
+  // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
+  // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not).
+  const queryClient = React.useMemo(() => {
+    return reactAdminProps.queryClient ?? new QueryClient();
+  }, [reactAdminProps.queryClient]);
+
+  React.useEffect(() => {
+    const authService = container.get<DefaultAuthService>({
+      key: CoreBindings.DEFAULT_AUTH_SERVICE,
+      isOptional: true,
+    });
+
+    return authService?.subscribe({
+      listener: () => {
+        if (!authService.getAuth()?.value) {
+          // After the redirect to the sign-in page, as react-admin's own sign-out does.
+          setTimeout(() => queryClient.clear(), 0);
+        }
+      },
+    });
+  }, [container, queryClient]);
+
+  const adminProps = { ...providers, ...reactAdminProps, queryClient };
 
   const isMessagesReady = useFeatureMessagesReady({
     features,

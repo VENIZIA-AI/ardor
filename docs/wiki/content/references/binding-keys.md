@@ -47,7 +47,7 @@ For binding order in the application lifecycle, see [The bind order in Configura
 | `KEY_AUTH_IDENTITY` | `@app/auth/identity` | Stored user identity |
 | `KEY_AUTH_PERMISSION` | `@app/auth/permission` | Stored user roles, a JSON array of names |
 | `PREFIX_AUTH` | `@app/auth/` | Prefix of the session keys; `DefaultAuthService.cleanUp` removes everything under it |
-| `PREFIX_STORE` | `@app/store/` | The namespace `BrowserStorage` recommends for an application's own keys |
+| `PREFIX_STORE` | `@app/store/` | The namespace `BrowserStorage` recommends for an application's own keys; sign-out removes everything under it |
 
 Each key belongs to `LocalStorageKeys.SCHEME_SET` and can be verified with `LocalStorageKeys.isValid(value)`.
 

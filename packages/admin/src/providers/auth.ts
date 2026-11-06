@@ -4,13 +4,16 @@ import { removeDoubleSlashes } from 'ra-core';
 import {
   type AnyType,
   BaseProvider,
+  BrowserStorage,
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
   type IAuthTokenRecord,
   type ISignInSession,
   type IPermissionProvider,
+  LocalStorageKeys,
   RequestMethods,
+  StorageAreas,
   type TStringConstValue,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
@@ -387,9 +390,13 @@ export class DefaultAuthProvider<
 
   /** Announces or ends the session after the service saved or cleared it. */
   private syncSession(): Promise<void> {
-    return this.authService.getAuth()?.value
-      ? this.startStoredSession()
-      : this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+    if (this.authService.getAuth()?.value) {
+      return this.startStoredSession();
+    }
+
+    this.clearStoredData();
+
+    return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
   }
 
   private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {
@@ -413,6 +420,19 @@ export class DefaultAuthProvider<
     }
 
     return this.startSession({ token, user: this.authService.getUser() });
+  }
+
+  /**
+   * Runs when the session is gone, however it ended (sign-out, a `401`, a failed refresh, other
+   * code calling `cleanUp`): removes what the user stored under `LocalStorageKeys.PREFIX_STORE`
+   * (`@app/store/`) in `localStorage` and `sessionStorage`, so the next user does not see it.
+   * Override it to keep preferences, or put them under another prefix.
+   */
+  protected clearStoredData(): void {
+    const prefix = LocalStorageKeys.PREFIX_STORE;
+
+    BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix });
+    BrowserStorage.removeWhere({ storage: StorageAreas.SESSION, prefix });
   }
 
   // --- react-admin's auth provider -------------------------------------------------------------

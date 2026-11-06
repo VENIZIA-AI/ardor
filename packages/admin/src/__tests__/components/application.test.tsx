@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore } from '@reduxjs/toolkit';
+import { QueryClient } from '@tanstack/react-query';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
@@ -10,7 +11,7 @@ import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { useApplicationLogger } from '@venizia/ardor-react';
-import { CoreBindings } from '@venizia/ardor-kernel';
+import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -317,5 +318,54 @@ describe('ArdorApplication logger', () => {
     const calls = await mountAndRead({ level: LogLevels.DEBUG });
 
     expect(calls.debug).toBeGreaterThan(0);
+  });
+});
+
+describe('ArdorApplication and the data cache of a signed-out user', () => {
+  const renderWithSession = () => {
+    const authService = new DefaultAuthService();
+    const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['reports', 'getList'], [{ id: 1, title: 'private' }]);
+
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          queryClient={queryClient}
+        />
+      </MemoryRouter>,
+    );
+
+    return { authService, queryClient };
+  };
+
+  const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 20)));
+
+  test('is emptied when the session ends by any route', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+
+    authService.cleanUp();
+    await settle();
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+  });
+
+  test('is kept while the session lives', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    authService.saveAuth({ userId: 7, token: { value: 'jwt2', type: 'Bearer' } });
+    await settle();
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
   });
 });
