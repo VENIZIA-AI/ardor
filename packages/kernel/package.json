@@ -114,7 +114,7 @@
     {
       "path": "dist/testing.js",
       "import": "*",
-      "limit": "1340 B"
+      "limit": "1640 B"
     }
   ],
   "engines": {

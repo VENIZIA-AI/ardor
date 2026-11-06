@@ -29,8 +29,9 @@ restoreObserver();
 
 ## What changed
 
-- **Four new fakes.** `FakeIntersectionObserver` (`install`, `flush`), `FakeMatchMedia` (`install`, `set`, `queries`), `FakeStorage` (`install`, `failReads`, `failWrites`, `writes`) and `FakeClipboard` (`install`, `written`, `text`, `isDenied`). See [Testing](../references/testing).
+- **Four new fakes.** `FakeIntersectionObserver` (`install`, `flush`, `settle` for the first report, `live`, `created`), `FakeMatchMedia` (`install`, `set`, `queries`, `listenerCount`), `FakeStorage` (`install`, `failReads`, `failListing`, `failWrites`, `writes`) and `FakeClipboard` (`install`, `written`, `text`, `isDenied`). See [Testing](../references/testing).
 - **`FakeResizeObserver` shows what it holds.** `FakeResizeObserver.all` lists the observers a test created; each has `callback`, `targets`, `options`, `unobserved` and `isDisconnected`. It was private before.
+- **They reach `window` too.** `install` also puts the fake on `window` where that is another object than the global, as in happy-dom, so `useMediaQuery` and code that reads `window.localStorage` meet it.
 - **A second import path.** The fakes live in `@venizia/ardor-kernel/testing`, which `@venizia/ardor/testing` re-exports. A project that uses only the kernel imports them from there. The kernel's main entry does not include them.
 
 ## Who is affected
