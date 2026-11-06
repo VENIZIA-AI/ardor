@@ -388,6 +388,17 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /** A path stays under the base: no dot segment (also written `%2E`), no backslash, no leading `//`. */
+  private static isPathUnderBase(opts: { path: string }): boolean {
+    const { path } = opts;
+
+    return (
+      !path.includes('\\') &&
+      !path.startsWith('//') &&
+      !path.split('/').some((segment) => /^(\.|%2e){1,2}$/i.test(segment))
+    );
+  }
+
   /** The body as it is sent and the content type to send it under. Override to encode another way. */
   protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
     return RequestBodyEncoder.encode(opts);
@@ -468,6 +479,10 @@ export class DefaultNetworkRequestService extends BaseService {
       throw getError({
         message: '[doRequest] Invalid baseUrl to send request!',
       });
+    }
+
+    if (paths.some((path) => !DefaultNetworkRequestService.isPathUnderBase({ path }))) {
+      throw getError({ message: '[doRequest] Invalid path to send request!' });
     }
 
     const url = this.networkRequest.getRequestUrl({ baseUrl, paths });

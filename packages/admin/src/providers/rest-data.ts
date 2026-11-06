@@ -46,6 +46,22 @@ import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
 /**
+ * The path of one record: the id is a single path segment, whatever characters it holds. `.` and
+ * `..` stay dot segments even when written `%2E`, so such an id is refused.
+ */
+const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> => {
+  const segment = encodeURIComponent(`${opts.id}`);
+
+  if (segment === '.' || segment === '..') {
+    throw getError({
+      message: `[recordPaths] The record id '${segment}' is not a valid path segment`,
+    });
+  }
+
+  return [opts.resource, segment];
+};
+
+/**
  * The react-admin data provider over an IGNIS REST API. Each method takes one `opts` object
  * (`{ resource, params }`) and resolves the result react-admin expects; it rejects with the error
  * the network service throws (a non-2xx response, an empty base URL, an auth failure that cannot be
@@ -250,7 +266,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.GET_ONE,
       method: RequestMethods.GET,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
       query: { ...queryKey, filter },
     });
   }
@@ -318,7 +334,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.UPDATE,
       method: RequestMethods.PATCH,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
       body: params.data,
     });
   }
@@ -384,7 +400,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.DELETE,
       method: RequestMethods.DELETE,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
     });
   }
 

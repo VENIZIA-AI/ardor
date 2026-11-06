@@ -910,6 +910,44 @@ describe('DefaultNetworkRequestService', () => {
       });
     });
 
+    test.each([
+      [['items', '..']],
+      [['items', '%2E%2e', 'x']],
+      [['items/../x']],
+      [['items\\x']],
+      [['//other-host/x']],
+    ])('refuses the path %p before any request', async (paths) => {
+      const before = recordedRequests.length;
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+
+      const result = await RejectionHelper.rejectionOf({
+        task: service.doRequest({
+          paths,
+          method: RequestMethods.GET,
+          type: RequestTypes.GET_ONE,
+        }),
+      });
+
+      expect(result).toMatchObject({
+        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+      });
+      expect(recordedRequests.length).toBe(before);
+    });
+
+    test('accepts a path with dots inside a segment and a leading slash', async () => {
+      serverHandler = () =>
+        new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+
+      await service.doRequest({
+        paths: ['/v1.2/items', 'a..b', '...'],
+        method: RequestMethods.GET,
+        type: RequestTypes.GET_ONE,
+      });
+
+      expect(recordedRequests.at(-1)?.pathname).toBe('/v1.2/items/a..b/...');
+    });
+
     test('returns empty data object on 204 No Content response', async () => {
       serverHandler = () => {
         return new Response(null, { status: 204 });
