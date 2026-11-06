@@ -160,6 +160,93 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(authService.getUser()).toEqual({});
   });
 
+  test('the answer belongs to the session that asked: another user signed in meanwhile gets no token', async () => {
+    refreshAnswer = () => {
+      authService.cleanUp();
+      authService.saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'bob-token', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'fresh' });
+    };
+
+    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+    expect(authService.getAuth()?.value).toBe('bob-token');
+    expect(authService.getUser()).toMatchObject({ userId: 8, username: 'bob' });
+  });
+
+  test('the same user signed in again meanwhile keeps the new session, not the old refresh', async () => {
+    refreshAnswer = () => {
+      authService.cleanUp();
+      authService.saveAuth({
+        userId: 7,
+        username: 'alice',
+        token: { value: 'second-login', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'fresh' });
+    };
+
+    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(authService.getAuth()?.value).toBe('second-login');
+  });
+
+  test('a token saved by another tab meanwhile is not overwritten', async () => {
+    refreshAnswer = () => {
+      authService.saveAuth({
+        userId: 7,
+        username: 'alice',
+        token: { value: 'other-tab', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'fresh' });
+    };
+
+    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(authService.getAuth()?.value).toBe('other-tab');
+  });
+
+  test('a refresh that fails after the session changed is not a failure of the new session', async () => {
+    const failures: Array<number> = [];
+
+    class FailureService extends DefaultNetworkRequestService {
+      protected override onAuthFailure(): Promise<void> {
+        failures.push(1);
+
+        return Promise.resolve();
+      }
+    }
+    const service = new FailureService({
+      name: 'failing',
+      baseUrl,
+      authRecovery: { refreshTokenPath: REFRESH_PATH },
+      authService,
+    });
+
+    refreshAnswer = () => {
+      authService.cleanUp();
+      authService.saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'bob-token', type: 'Bearer' },
+      });
+
+      return new Response('nope', { status: 500 });
+    };
+
+    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+    expect(failures).toEqual([]);
+    expect(authService.getAuth()?.value).toBe('bob-token');
+  });
+
   test('a refresh request that is answered 401 does not start another refresh', async () => {
     refreshAnswer = () => Response.json({ error: 'expired' }, { status: 401 });
 
