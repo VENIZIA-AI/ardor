@@ -147,7 +147,7 @@
     },
     "packages/ardor": {
       "name": "@venizia/ardor",
-      "version": "0.4.8-4",
+      "version": "0.4.8-5",
       "bin": {
         "ardor": "./dist/codemod/bin.js",
       },
