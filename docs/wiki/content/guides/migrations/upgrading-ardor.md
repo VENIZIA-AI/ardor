@@ -36,8 +36,8 @@ bun run ardor codemod namespace src --write
 | Flag | What it does |
 |------|--------------|
 | none | Lists what would change and writes nothing. |
-| `--write` | Writes the changed files. Inside a git repository, a file with local changes (changed, staged or untracked) is refused, so git can undo the codemod. |
-| `--allow-dirty` | With `--write`, also writes a file that has local changes, such as one another codemod just changed. |
+| `--write` | Writes the changed files, all or none: every file is read and rewritten in memory first, and nothing is written if one fails. Inside a git repository, a file with local changes (changed, staged or untracked) is refused, so git can undo the codemod. Outside one nothing can undo it, so the command refuses unless you add `--allow-dirty`. |
+| `--allow-dirty` | With `--write`, also writes a file that has local changes, such as one another codemod just changed, and writes outside a git repository. |
 | `--check` | A dry run that exits 1 when anything would change or is left; for CI. It cannot go with `--write`. |
 | `--hooks` | Also moves a hook imported from `@venizia/ardor` to the `Ardor` namespace: `useRepository()` becomes `Ardor.useRepository()`. A hook imported from `@venizia/ardor-react` or `@venizia/ardor-admin` is never touched. |
 | `--help`, `-h` | Prints the usage and exits. |
@@ -45,7 +45,8 @@ bun run ardor codemod namespace src --write
 The command prints one line per finding and a summary:
 
 - `refused <path>`: the file has local changes. Commit or stash it, or add `--allow-dirty`.
+- `failed <path>: <reason>`: the file could not be parsed or rewritten, or it is not valid UTF-8 and would change. Nothing is written until you fix or remove it.
 - `left <path>:<line> <name>`: the codemod could not rewrite it. Change it by hand.
 - `note <path>:<line> <name>`: a change made on purpose that is worth knowing. `--check` ignores it.
 
-The exit code is 0 when the run is done, 1 when a file was refused or `--check` found work, and 2 for an unknown option, a pair of options that contradict each other (`--write` with `--check`, `--allow-dirty` without `--write`), or when `typescript` is not installed.
+The exit code is 0 when the run is done, 1 when a file was refused or failed, when `--write` found no git repository to protect it, or when `--check` found work, and 2 for an unknown option, a pair of options that contradict each other (`--write` with `--check`, `--allow-dirty` without `--write`), or when `typescript` is not installed.

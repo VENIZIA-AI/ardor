@@ -3,6 +3,7 @@ import { readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { NamespaceCommand } from '@/codemod/cli';
+import { Migration } from '@/codemod/migrate';
 import { makeScratch, removeScratch, writeFiles } from '../vite/fixture';
 
 const OLD = "import { isDefined } from '@venizia/ardor';\nexport const a = isDefined(1);\n";
@@ -264,7 +265,10 @@ describe('ardor codemod namespace', () => {
         },
       });
 
-      const result = await NamespaceCommand.run({ root: outside, args: ['--write'] });
+      const result = await NamespaceCommand.run({
+        root: outside,
+        args: ['--write', '--allow-dirty'],
+      });
       expect(result).toBe(0);
       expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(NEW);
       expect(readFileSync(join(outside, 'node_modules/x/b.ts'), 'utf8')).toBe(OLD);
@@ -279,6 +283,97 @@ describe('ardor codemod namespace', () => {
 
       removeScratch({ root: outside });
     }
+  });
+
+  describe('--write is all or nothing and safe on odd input', () => {
+    test('a file that fails stops every write, is named, and exits 1', async () => {
+      seed({ 'src/b.ts': OLD, 'src/z-bad.ts': OLD });
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        if (opts.fileName.endsWith('z-bad.ts')) {
+          throw new RangeError('Maximum call stack size exceeded');
+        }
+
+        return original(opts);
+      });
+      spies.push(spy);
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(1);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+      expect(readFileSync(join(root, 'src/b.ts'), 'utf8')).toBe(OLD);
+      expect(errors.join('\n')).toContain('failed src/z-bad.ts: Maximum call stack size exceeded');
+      expect(output.join('\n')).toContain('1 failed (listed above), nothing was written');
+    });
+
+    test('a file that is not valid UTF-8 and would change is left alone and fails', async () => {
+      const bytes = Buffer.concat([Buffer.from(OLD), Buffer.from([0x2f, 0x2f, 0xe9, 0x0a])]);
+      writeFileSync(join(root, 'src/latin1.ts'), bytes);
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'latin1'] });
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(1);
+      expect(readFileSync(join(root, 'src/latin1.ts')).equals(bytes)).toBe(true);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+      expect(errors.join('\n')).toContain('failed src/latin1.ts: it is not valid UTF-8');
+    });
+
+    test('a file that is not valid UTF-8 and needs no change does not stop the others', async () => {
+      writeFileSync(join(root, 'src/latin1.ts'), Buffer.from([0x2f, 0x2f, 0xe9, 0x0a]));
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'latin1'] });
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+    });
+
+    test('outside git --write refuses and writes nothing, unless --allow-dirty is given', async () => {
+      const outside = makeScratch({ prefix: 'ardor-codemod-nogit2-' });
+      const ceiling = process.env.GIT_CEILING_DIRECTORIES;
+      process.env.GIT_CEILING_DIRECTORIES = join(outside, '..');
+
+      try {
+        writeFiles({ root: outside, files: { 'src/a.ts': OLD } });
+
+        const refused = await NamespaceCommand.run({ root: outside, args: ['--write'] });
+        expect(refused).toBe(1);
+        expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('not a git repository');
+
+        const dry = await NamespaceCommand.run({ root: outside, args: [] });
+        expect(dry).toBe(0);
+
+        const written = await NamespaceCommand.run({
+          root: outside,
+          args: ['--write', '--allow-dirty'],
+        });
+        expect(written).toBe(0);
+        expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(NEW);
+      } finally {
+        if (ceiling === undefined) {
+          delete process.env.GIT_CEILING_DIRECTORIES;
+        } else {
+          process.env.GIT_CEILING_DIRECTORIES = ceiling;
+        }
+
+        removeScratch({ root: outside });
+      }
+    });
+
+    test('a control character in a file name is not sent to the terminal', async () => {
+      const name = `src/evil${String.fromCharCode(27)}[2Jx.ts`;
+      seed({ [name]: OLD });
+
+      await run([]);
+
+      expect([...output, ...errors].join('\n')).not.toContain(String.fromCharCode(27));
+      expect(output.join('\n')).toContain('src/evil?[2Jx.ts');
+    });
   });
 
   test('a usage error exits 2 and touches nothing', async () => {
