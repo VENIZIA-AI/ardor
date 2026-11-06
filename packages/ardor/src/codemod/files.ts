@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { lstatSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist', 'build', '.git']);
@@ -16,12 +16,17 @@ export class CodemodFiles {
     return SOURCE_PATTERN.test(opts.name) && !DECLARATION_PATTERN.test(opts.name);
   }
 
-  /** Every source file under `target`; a file target is returned as it is. */
+  /** Every source file under `target`; a file target is returned as it is. A symlink is never returned. */
   static collect(opts: { target: string }): string[] {
     const { target } = opts;
 
-    if (statSync(target).isFile()) {
+    // Read without following a link: a symlink is never a file to write, whatever it points to.
+    if (lstatSync(target).isFile()) {
       return [target];
+    }
+
+    if (!statSync(target).isDirectory()) {
+      return [];
     }
 
     return CodemodFiles.fromGit({ target }) ?? CodemodFiles.fromWalk({ target });
@@ -53,7 +58,7 @@ export class CodemodFiles {
       .filter((path) => path !== '' && CodemodFiles.isSource({ name: path }))
       .filter((path) => !path.split('/').some((segment) => SKIPPED_DIRECTORIES.has(segment)))
       .map((path) => join(target, path))
-      .filter((path) => existsSync(path) && statSync(path).isFile());
+      .filter((path) => lstatSync(path, { throwIfNoEntry: false })?.isFile() === true);
   }
 
   private static fromWalk(opts: { target: string }): string[] {

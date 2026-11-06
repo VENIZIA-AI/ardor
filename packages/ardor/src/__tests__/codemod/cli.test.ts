@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { NamespaceCommand } from '@/codemod/cli';
@@ -212,6 +212,38 @@ describe('ardor codemod namespace', () => {
     await run(['--write']);
 
     expect(readFileSync(join(root, 'ignored/c.ts'), 'utf8')).toBe(OLD);
+  });
+
+  describe('a symlink', () => {
+    let elsewhere = '';
+
+    beforeEach(() => {
+      elsewhere = makeScratch({ prefix: 'ardor-codemod-target-' });
+      writeFiles({ root: elsewhere, files: { 'other.ts': OLD } });
+      symlinkSync(join(elsewhere, 'other.ts'), join(root, 'src/linked.ts'));
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'link'] });
+    });
+
+    afterEach(() => {
+      removeScratch({ root: elsewhere });
+    });
+
+    test('is never written through, and is not listed', async () => {
+      const code = await run(['--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(elsewhere, 'other.ts'), 'utf8')).toBe(OLD);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+      expect(output.join('\n')).not.toContain('linked.ts');
+    });
+
+    test('given as the target, is skipped too', async () => {
+      const code = await run(['src/linked.ts', '--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(elsewhere, 'other.ts'), 'utf8')).toBe(OLD);
+    });
   });
 
   test('outside git it walks the folder and skips node_modules, dist and dot-directories', async () => {
