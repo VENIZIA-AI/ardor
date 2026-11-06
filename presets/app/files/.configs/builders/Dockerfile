@@ -17,6 +17,11 @@
 FROM docker.io/oven/bun:1.4.3-alpine AS deps
 
 # A private registry, when the build runs where the public one is not reachable. Empty by default.
+# The URL stays in the metadata of this stage and the next two (not in the final image): never put a user or a
+# password in it. For a registry that needs credentials, mount a bunfig.toml for the install only, with BuildKit:
+#   RUN --mount=type=secret,id=bunfig,target=/home/bun/.bunfig.toml,uid=1000 bun install ...
+#   docker build --secret id=bunfig,src=./bunfig.toml ...
+# A project that wants fixed base images pins them by digest (FROM image@sha256:...).
 ARG BUN_CONFIG_REGISTRY=
 ENV BUN_CONFIG_REGISTRY=${BUN_CONFIG_REGISTRY}
 

@@ -10,8 +10,9 @@
 # What is published: the variables named VITE_ followed by capitals, digits and underscores, and nothing
 # else. That is Vite's own rule for what reaches the browser, so the same names work in dev and here.
 # Every published value is readable by every visitor: never put a secret in a VITE_ variable. A name
-# with SECRET, PASSWORD or TOKEN in it stops the container, to catch that mistake early (a name with KEY
-# is fine: public keys are normal). Values are escaped as JavaScript string content, so no value can
+# naming a secret (SECRET, PASSWORD, PASSWD, PASSPHRASE, PASSCODE, PASS as a word, PRIVATE, CREDENTIAL or TOKEN),
+# or a value that is a URL carrying a user and a password, stops the container, to catch that mistake early
+# (a name with KEY is fine, public keys are normal; this is a best-effort tripwire, not a secret scanner). Values are escaped as JavaScript string content, so no value can
 # end its string or the file.
 #
 # Required variables: APP_REQUIRED_ENV lists, comma separated, the variables the app cannot run without,
@@ -89,7 +90,8 @@ BEGIN {
     if (name !~ /^VITE_[A-Z0-9_]+$/) {
       continue
     }
-    if (name ~ /SECRET|PASSWORD|TOKEN/) {
+    # Names that say secret, and a URL that carries a user and a password; a value is never printed.
+    if (name ~ /SECRET|PASSWORD|PASSWD|PASSPHRASE|PASSCODE|(^|_)PASS(_|$)|PRIVATE|CREDENTIAL|TOKEN/ || ENVIRON[name] ~ /(^|:)\/\/[^\/@?# ]*:[^\/@?# ]+@/) {
       print "[runtime-config] " name " looks like a secret, and every VITE_ variable is published to every visitor: rename it or keep it out of VITE_" > "/dev/stderr"
       failed = 1
       continue
