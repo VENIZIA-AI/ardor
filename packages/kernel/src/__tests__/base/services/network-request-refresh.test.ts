@@ -22,6 +22,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl = '';
   let refreshAnswer: () => Response;
+  let itemsHook: (() => void) | undefined;
   const recorded: Array<IRecorded> = [];
 
   beforeAll(() => {
@@ -42,6 +43,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
           return refreshAnswer();
         }
 
+        itemsHook?.();
+
         return req.headers.get('authorization') === 'Bearer fresh'
           ? Response.json({ data: 'ok' })
           : Response.json({ error: 'expired' }, { status: 401 });
@@ -58,6 +61,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   beforeEach(() => {
     recorded.length = 0;
+    itemsHook = undefined;
     refreshAnswer = () =>
       Response.json({
         token: { value: 'fresh', type: 'Bearer' },
@@ -245,6 +249,75 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(error).toMatchObject({ statusCode: 401 });
     expect(failures).toEqual([]);
     expect(authService.getAuth()?.value).toBe('bob-token');
+  });
+
+  test('another tab that refreshed the same user meanwhile: its token is used for the retry, nothing is overwritten', async () => {
+    refreshAnswer = () => {
+      authService.saveAuth({
+        userId: 7,
+        username: 'alice',
+        token: { value: 'fresh', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'from-this-refresh' });
+    };
+
+    const response = await getItems(createService());
+
+    expect(response.data).toEqual({ data: 'ok' });
+    expect(authService.getAuth()?.value).toBe('fresh');
+  });
+
+  test('a 401 that arrives after another user signed in starts no refresh and spares that session', async () => {
+    itemsHook = () => {
+      authService.cleanUp();
+      authService.saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'bob-token', type: 'Bearer' },
+      });
+    };
+
+    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+    expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toEqual([]);
+    expect(authService.getAuth()?.value).toBe('bob-token');
+  });
+
+  test('another user with the very same token is still another session', async () => {
+    refreshAnswer = () => {
+      authService.cleanUp();
+      authService.saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'stale', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'fresh' });
+    };
+
+    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(authService.getAuth()?.value).toBe('stale');
+    expect(authService.getUser()).toMatchObject({ userId: 8 });
+  });
+
+  test('the same user id written as a string instead of a number is the same session', async () => {
+    refreshAnswer = () => {
+      authService.saveAuth({
+        userId: '7',
+        username: 'alice',
+        token: { value: 'stale', type: 'Bearer' },
+      });
+
+      return Response.json({ token: 'fresh' });
+    };
+
+    const response = await getItems(createService());
+
+    expect(response.data).toEqual({ data: 'ok' });
+    expect(authService.getAuth()?.value).toBe('fresh');
   });
 
   test('a refresh request that is answered 401 does not start another refresh', async () => {

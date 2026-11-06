@@ -171,9 +171,24 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     // The session this refresh is for: the answer belongs to it and to no other.
-    const readSession = () =>
-      JSON.stringify([authService.getUser().userId, authService.getAuth()?.value]);
+    const readSession = () => ({
+      userId: `${authService.getUser().userId}`,
+      token: authService.getAuth()?.value,
+    });
     const startedFor = readSession();
+
+    // `false`: another user, or none, is signed in now. `true`: the same user holds another token
+    // now (another tab refreshed, or a new sign-in), which the retry uses. `undefined`: unchanged.
+    const readChange = (): boolean | undefined => {
+      const now = readSession();
+
+      if (now.userId !== startedFor.userId) {
+        return false;
+      }
+
+      return now.token === startedFor.token ? undefined : true;
+    };
+
     let response: INetworkResponse<unknown>;
 
     try {
@@ -185,19 +200,30 @@ export class DefaultNetworkRequestService extends BaseService {
       });
       response = result;
     } catch (error) {
-      if (readSession() !== startedFor) {
-        return false;
+      const change = readChange();
+
+      if (change === undefined) {
+        throw error;
       }
 
-      throw error;
+      return change;
     }
 
     const user = authService.getUser();
+    const change = readChange();
 
-    // Signed out, or signed in as someone else, while the request was in flight: saving the token
-    // would start a session with no user, or give it to the wrong one.
-    if (user.userId === undefined || readSession() !== startedFor) {
+    // Signed out while the request was in flight: saving the token would start a session with no user.
+    if (user.userId === undefined) {
       return false;
+    }
+
+    // The session moved on: this answer is for the one that asked, so it is not saved.
+    if (change !== undefined) {
+      this.logger.warn(
+        '[refreshToken] The session changed while the refresh was in flight, its answer is dropped',
+      );
+
+      return change;
     }
 
     authService.saveAuth({
@@ -539,9 +565,15 @@ export class DefaultNetworkRequestService extends BaseService {
       );
     };
 
+    // Who sends: a 401 that arrives after another user signed in is not this user's to refresh.
+    const sentBy = `${this.authService?.getUser().userId}`;
     let fetched = await sendOnce(headers);
 
-    if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
+    if (
+      fetched.status === 401 &&
+      `${this.authService?.getUser().userId}` === sentBy &&
+      this.recovery.canRecover({ paths })
+    ) {
       const isRefreshed = await this.refresh();
 
       if (isRefreshed) {
