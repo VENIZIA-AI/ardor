@@ -5,6 +5,9 @@ description: Bind IPermissionProvider under CoreBindings.PERMISSION_PROVIDER to 
 
 # Permission provider
 
+> [!WARNING]
+> Roles and `canAccess` answers on the client only show or hide interface. The roles are kept in browser storage and the permission provider runs in the browser, so anyone who controls the browser can change both. The backend must check every permission on every request; treat the interface as a convenience, never as the check.
+
 To control who may do what in ARDOR, implement `IPermissionProvider` and bind it under `CoreBindings.PERMISSION_PROVIDER` in an application configuration class. ARDOR's `DefaultAuthProvider` exposes `canAccess` to react-admin and delegates each check to your permission provider; when unbound, `DefaultAuthProvider` omits `canAccess`, and react-admin allows every check.
 
 ```ts

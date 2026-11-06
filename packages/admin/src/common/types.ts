@@ -97,7 +97,10 @@ export interface IAuthRejection {
 
 /** The auth provider of an ARDOR application: react-admin's methods, the user's roles and a token refresh. */
 export interface IAuthProvider extends IReactAdminAuthProvider {
-  /** The roles of the signed-in user. */
+  /**
+   * The roles of the signed-in user, as the browser holds them: they only show or hide interface, and
+   * the backend must check every permission on every request.
+   */
   getRoles: (params?: unknown) => Promise<Set<string>>;
   /** `true` when the session was refreshed, `false` when there is no refresh to make. */
   refreshToken: () => Promise<boolean>;

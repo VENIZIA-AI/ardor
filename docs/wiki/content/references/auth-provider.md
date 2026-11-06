@@ -130,6 +130,9 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 
 `username` defaults to `params.username ?? ''`, while `provider` and `referenceId` default to empty strings. When `roles` is omitted in `saveAuth()`, as occurs during token refreshes, the existing stored permissions remain untouched.
 
+> [!WARNING]
+> The roles in `@app/auth/permission` are data in the browser: anyone who controls the browser can change them. `getRoles` and `canAccess` are for showing and hiding interface. The backend must check every permission on every request, with the token it receives.
+
 ## Auth provider methods
 
 `DefaultAuthProvider.value()` binds each method to the provider instance before handing it to react-admin:
@@ -142,7 +145,7 @@ If the response lacks a valid token or user identifier, `login` throws an error 
 | `checkError(params)` | Reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, calls `authService.cleanUp()` and rejects with `{ redirectTo: loginPagePath }`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }` | `Promise<void>` (resolves for any status other than 401 or 403) |
 | `getIdentity(params)` | Reads stored identity from `authService.getUser()`. Rejects if `userId` is absent | `Promise<UserIdentity>` returning `{ userId, username, referenceId, provider }` |
 | `getPermissions(params)` | Default implementation performs no operation | `Promise<void>` resolving to `undefined` |
-| `getRoles(params)` | Reads stored roles from `authService.getRoles()` | `Promise<Set<string>>` containing stored role names |
+| `getRoles(params)` | Reads stored roles from `authService.getRoles()`; they only show or hide interface | `Promise<Set<string>>` containing stored role names |
 | `refreshToken()` | Calls `restDataProvider.getNetworkService().refresh()`. Also invoked by the `useRefreshToken` hook | `Promise<boolean>` (`true` if refreshed, `false` when no refresh is configured) |
 | `canAccess(params)` | Calls `permissionProvider.canAccess({ resource, action, record })` when `CoreBindings.PERMISSION_PROVIDER` is bound in the container | `Promise<boolean>`. When unbound, `canAccess` is omitted from the provider so react-admin permits access by default |
 

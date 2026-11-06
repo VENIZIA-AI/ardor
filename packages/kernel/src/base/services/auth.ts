@@ -72,7 +72,11 @@ export class DefaultAuthService extends BaseService {
     return isRecord ? identity : {};
   }
 
-  /** The stored roles; empty when nothing usable is stored, also outside a browser. */
+  /**
+   * The stored roles; empty when nothing usable is stored, also outside a browser. They are data in
+   * the browser, so whoever controls the browser can change them: use them to show or hide interface,
+   * never to decide what a user may do. The backend must check every permission on every request.
+   */
   getRoles() {
     const stored = this.parseStored({
       key: LocalStorageKeys.KEY_AUTH_PERMISSION,

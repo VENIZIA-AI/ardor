@@ -255,6 +255,8 @@ You do not have to call `cleanUp` in `onAuthFailure` when the request came from 
 
 ## Where tokens live
 
+What the browser stores about the user is not proof of anything. The roles (`@app/auth/permission`) and the identity (`@app/auth/identity`) can be edited by whoever controls the browser, so they only show or hide interface; the backend decides from the token on every request.
+
 The request service stores nothing itself. It asks its `resolveAuthToken()` hook, which by default is `DefaultNetworkRequestService.readAuthTokenFromStorage()` (it delegates to `AuthTokenStore.read()`, which `DefaultAuthService.getAuth()` uses too) - `localStorage` under `LocalStorageKeys.KEY_AUTH_TOKEN`, parsed as a JSON object with a `value` and an optional `type` (defaults to `Bearer`) and `provider`. It returns `undefined` where there is no `localStorage` or the stored value does not parse.
 
 `resolveAuthToken()` is the one way to supply a token from somewhere else. Override it in the service subclass to read another store or to hold the token in memory:
