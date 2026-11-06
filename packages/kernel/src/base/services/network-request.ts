@@ -388,6 +388,35 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /**
+   * Whether the request stays where `baseUrl` points: no entry of `paths` carries a tab, a line break,
+   * a backslash or a dot segment (also written `%2E`), and the URL built from
+   * them, resolved the way a browser does, has the origin of the base and a path under it.
+   */
+  private static isUnderBase(opts: { baseUrl: string; paths: string[]; url: string }): boolean {
+    const { baseUrl, paths, url } = opts;
+
+    // The joined path, so a dot segment is found whichever entry holds it.
+    if (/[\\\t\n\r]|(^|\/)(\.|%2e){1,2}(\/|$)/i.test(paths.join('/'))) {
+      return false;
+    }
+
+    try {
+      const origin = 'http://base.invalid';
+      const base = new URL(baseUrl, origin);
+      const target = new URL(url, origin);
+      const prefix = base.pathname.replace(/\/+$/, '');
+
+      return (
+        target.origin === base.origin &&
+        (target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))
+      );
+      // eslint-disable-next-line venizia/no-silent-catch -- a URL that does not parse is the answer: the request is refused
+    } catch {
+      return false;
+    }
+  }
+
   /** The body as it is sent and the content type to send it under. Override to encode another way. */
   protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
     return RequestBodyEncoder.encode(opts);
@@ -471,6 +500,10 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     const url = this.networkRequest.getRequestUrl({ baseUrl, paths });
+
+    if (!DefaultNetworkRequestService.isUnderBase({ baseUrl, paths, url })) {
+      throw getError({ message: '[doRequest] Invalid path to send request!' });
+    }
 
     const sendOnce = (sendHeaders?: HeadersInit) => {
       return this.networkRequest.getNetworkService().send(

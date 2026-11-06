@@ -46,6 +46,28 @@ import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
 /**
+ * The path of one record: the id is a single path segment, whatever characters it holds. An empty
+ * id, `.` and `..` (dot segments even when written `%2E`) and a lone surrogate (which cannot be
+ * encoded) are refused, without naming the id.
+ */
+const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> => {
+  let segment = '';
+
+  try {
+    segment = encodeURIComponent(`${opts.id}`);
+    // eslint-disable-next-line venizia/no-silent-catch -- a lone surrogate cannot be encoded: the empty segment below refuses it
+  } catch {
+    segment = '';
+  }
+
+  if (segment === '' || segment === '.' || segment === '..') {
+    throw getError({ message: '[recordPaths] The record id is not a valid path segment' });
+  }
+
+  return [opts.resource, segment];
+};
+
+/**
  * The react-admin data provider over an IGNIS REST API. Each method takes one `opts` object
  * (`{ resource, params }`) and resolves the result react-admin expects; it rejects with the error
  * the network service throws (a non-2xx response, an empty base URL, an auth failure that cannot be
@@ -250,7 +272,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.GET_ONE,
       method: RequestMethods.GET,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
       query: { ...queryKey, filter },
     });
   }
@@ -318,7 +340,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.UPDATE,
       method: RequestMethods.PATCH,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
       body: params.data,
     });
   }
@@ -384,7 +406,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.DELETE,
       method: RequestMethods.DELETE,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
     });
   }
 

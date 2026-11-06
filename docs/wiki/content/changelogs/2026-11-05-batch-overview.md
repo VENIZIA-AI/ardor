@@ -36,6 +36,7 @@ bun add @venizia/ardor
 | New feature | `useUntypedTranslate` translates a key that exists only at run time | `@venizia/ardor-admin`, `@venizia/ardor` | [useUntypedTranslate](./2026-11-04-untyped-translate-hook) |
 | Breaking Change | `ISendResponse` and `IListFilter.offset` are removed; use `INetworkResponse` and `skip` | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Aliases removed](./2026-11-05-remove-aliases) |
 | New feature | `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard` join `FakeResizeObserver` in `@venizia/ardor/testing` | `@venizia/ardor-kernel`, `@venizia/ardor` | [Test fakes](./2026-11-06-test-fakes) |
+| Bug fix | The REST data provider sends the record id as one path segment | `@venizia/ardor-admin`, `@venizia/ardor` | [Record id](./2026-11-06-record-id-segment) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
 | Breaking Change | ARDOR 0.4.8-5 (prerelease) peers on IGNIS `^0.4.8-4` and `^0.4.7-2`, so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
 

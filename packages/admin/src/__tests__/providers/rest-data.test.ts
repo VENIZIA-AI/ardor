@@ -345,6 +345,69 @@ describe('getList behavior', () => {
   });
 });
 
+describe('the record id in the path', () => {
+  const ids = ['a/b', 'a?b=c', 'a#b', 'a b', 'a%2Fb', '...', 'a..b'];
+
+  test.each(ids)('getOne, update and delete send the id %p as one path segment', async (id) => {
+    const provider = createProvider({ baseUrl });
+    const segment = encodeURIComponent(id);
+
+    await provider.getOne({ resource: 'posts', params: { id } });
+    await provider.update({
+      resource: 'posts',
+      params: { id, data: { title: 'x' }, previousData: {} },
+    });
+    await provider.delete({ resource: 'posts', params: { id } });
+
+    expect(recordedRequests.map((request) => request.method)).toEqual(['GET', 'PATCH', 'DELETE']);
+
+    for (const request of recordedRequests) {
+      expect(request.pathname).toBe(`/posts/${segment}`);
+      expect(Object.keys(request.query).filter((key) => key !== 'filter')).toEqual([]);
+    }
+  });
+
+  test.each(['.', '..'])('the id %p is refused before any request', async (id) => {
+    const provider = createProvider({ baseUrl });
+
+    const outcomes = await Promise.allSettled([
+      provider.getOne({ resource: 'posts', params: { id } }),
+      provider.delete({ resource: 'posts', params: { id } }),
+    ]);
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual(['rejected', 'rejected']);
+    expect(
+      outcomes.map((outcome) => (outcome.status === 'rejected' ? String(outcome.reason) : '')),
+    ).toEqual([
+      expect.stringContaining('not a valid path segment'),
+      expect.stringContaining('not a valid path segment'),
+    ]);
+    expect(recordedRequests).toEqual([]);
+  });
+
+  test('an empty id, a lone surrogate id and a resource with a line break are refused before any request', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const outcomes = await Promise.allSettled([
+      provider.getOne({ resource: 'posts', params: { id: '' } }),
+      provider.delete({ resource: 'posts', params: { id: '' } }),
+      provider.getOne({ resource: 'posts', params: { id: '\uD800' } }),
+      provider.getOne({ resource: '.\t.', params: { id: '1' } }),
+    ]);
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual(Array(4).fill('rejected'));
+    expect(recordedRequests).toEqual([]);
+  });
+
+  test('a numeric id is sent as it is', async () => {
+    const provider = createProvider({ baseUrl });
+
+    await provider.getOne({ resource: 'posts', params: { id: 77 } });
+
+    expect(recordedRequests[0]?.pathname).toBe('/posts/77');
+  });
+});
+
 describe('getOne behavior', () => {
   test('requests resource by id and forwards meta.filter without params as query', async () => {
     const provider = createProvider({ baseUrl });

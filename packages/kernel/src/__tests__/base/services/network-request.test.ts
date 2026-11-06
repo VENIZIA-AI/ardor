@@ -910,6 +910,104 @@ describe('DefaultNetworkRequestService', () => {
       });
     });
 
+    test.each([
+      [['items', '..']],
+      [['items', '%2E%2e', 'x']],
+      [['items/../x']],
+      [['items\\x']],
+      [['.\t.']],
+      [['..\n']],
+      [['%2e%2e\t']],
+      [['a/.\t./b']],
+    ])('refuses the path %p before any request', async (paths) => {
+      const before = recordedRequests.length;
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+
+      const result = await RejectionHelper.rejectionOf({
+        task: service.doRequest({
+          paths,
+          method: RequestMethods.GET,
+          type: RequestTypes.GET_ONE,
+        }),
+      });
+
+      expect(result).toMatchObject({
+        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+      });
+      expect(recordedRequests.length).toBe(before);
+    });
+
+    test.each([[['', '/other-host']], [['/', 'other-host']], [['/', '/other-host']]])(
+      'under the base "/" the path %p cannot become a protocol-relative URL',
+      async (paths) => {
+        const before = recordedRequests.length;
+        const service = createService({ baseUrl: '/', isOpen: true });
+
+        const result = await RejectionHelper.rejectionOf({
+          task: service.doRequest({
+            paths,
+            method: RequestMethods.GET,
+            type: RequestTypes.GET_ONE,
+          }),
+        });
+
+        expect(result).toMatchObject({
+          message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        });
+        expect(recordedRequests.length).toBe(before);
+      },
+    );
+
+    test.each([
+      ['https://h.com/api', ['.. ']],
+      ['https://h.com/api', ['..\u0001']],
+      ['https://h.com/api', ['%2e%2e\u001f']],
+      ['/api', ['..', 'api-admin']],
+      ['/api/v1', ['..', 'v2']],
+      ['http://h.com:8080/api', ['a', '..', '..', 'b']],
+    ])('under the base %p the path %p stays inside it or is refused', async (base, paths) => {
+      const before = recordedRequests.length;
+      const service = createService({ baseUrl: base, isOpen: true });
+
+      const result = await RejectionHelper.rejectionOf({
+        task: service.doRequest({ paths, method: RequestMethods.GET, type: RequestTypes.GET_ONE }),
+      });
+
+      expect(result).toMatchObject({
+        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+      });
+      expect(recordedRequests.length).toBe(before);
+    });
+
+    test('a path with a query of its own is sent as it is', async () => {
+      serverHandler = () =>
+        new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+
+      await service.doRequest({
+        paths: ['/auth/refresh?grant=refresh'],
+        method: RequestMethods.GET,
+        type: RequestTypes.GET_ONE,
+      });
+
+      expect(recordedRequests.at(-1)?.pathname).toBe('/auth/refresh');
+      expect(recordedRequests.at(-1)?.search).toBe('?grant=refresh');
+    });
+
+    test('accepts a path with dots inside a segment and a leading slash', async () => {
+      serverHandler = () =>
+        new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+      const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
+
+      await service.doRequest({
+        paths: ['/v1.2/items', 'a..b', '...'],
+        method: RequestMethods.GET,
+        type: RequestTypes.GET_ONE,
+      });
+
+      expect(recordedRequests.at(-1)?.pathname).toBe('/v1.2/items/a..b/...');
+    });
+
     test('returns empty data object on 204 No Content response', async () => {
       serverHandler = () => {
         return new Response(null, { status: 204 });

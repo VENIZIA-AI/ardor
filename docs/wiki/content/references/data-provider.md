@@ -133,6 +133,9 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 > [!NOTE]
 > `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string to avoid HTTP 414 and 431 errors on long ID lists. Backend endpoints handling bulk operations must support body-based selectors.
 
+> [!NOTE]
+> The `{id}` of `getOne`, `update` and `delete` is one path segment: the provider percent-encodes it, so an id with `/`, `?` or `#` reaches the server whole. The ids `.` and `..` cannot be a segment, and the call rejects before any request.
+
 ## Filter and pagination encoding
 
 `getList` and `getManyReference` build filter parameters through the protected method `buildListFilter({ params })`, which delegates to `ListFilterBuilder.build` in `packages/admin/src/providers/list-filter.ts`:
