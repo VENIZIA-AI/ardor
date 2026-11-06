@@ -670,6 +670,74 @@ describe('useStoredState writeDelayMs', () => {
     expect(storage.getItem(KEY)).toBeNull();
   });
 
+  describe('when the page is hidden or closed', () => {
+    const hide = (state: 'hidden' | 'visible') => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        get: () => state === 'hidden',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    afterEach(() => {
+      Reflect.deleteProperty(document, 'visibilityState');
+      Reflect.deleteProperty(document, 'hidden');
+    });
+
+    test('pagehide writes the pending value once, and the delay does not write it again', () => {
+      const { result, storage } = delayed();
+      act(() => result.current.setValue(8));
+
+      window.dispatchEvent(new Event('pagehide'));
+
+      expect(storage.writes).toEqual(['8']);
+      advance(DELAY);
+      expect(storage.writes).toEqual(['8']);
+    });
+
+    test('visibilitychange to hidden writes the pending value, to visible does not', () => {
+      const { result, storage } = delayed();
+      act(() => result.current.setValue(8));
+
+      hide('visible');
+      expect(storage.writes).toEqual([]);
+
+      hide('hidden');
+      expect(storage.writes).toEqual(['8']);
+    });
+
+    test('with no pending write, nothing is written', () => {
+      const { result, storage } = delayed();
+
+      window.dispatchEvent(new Event('pagehide'));
+      hide('hidden');
+      expect(storage.writes).toEqual([]);
+
+      act(() => result.current.setValue(8));
+      advance(DELAY);
+      storage.writes.length = 0;
+      window.dispatchEvent(new Event('pagehide'));
+      expect(storage.writes).toEqual([]);
+    });
+
+    test('a hook without a delay adds no listener, and unmount removes them', () => {
+      const added = spyOn(window, 'addEventListener');
+      const removed = spyOn(window, 'removeEventListener');
+      renderHook(() => useStoredState({ key: KEY, defaultValue: 0 })).unmount();
+      expect(added.mock.calls.filter(([type]) => type === 'pagehide')).toHaveLength(0);
+
+      removed.mockClear();
+      renderHook(() =>
+        useStoredState({ key: KEY, defaultValue: 0, writeDelayMs: DELAY }),
+      ).unmount();
+      expect(added.mock.calls.filter(([type]) => type === 'pagehide')).toHaveLength(1);
+      expect(removed.mock.calls.filter(([type]) => type === 'pagehide')).toHaveLength(1);
+      added.mockRestore();
+      removed.mockRestore();
+    });
+  });
+
   test('a delay that is not a number writes at once', () => {
     const storage = new SwitchStorage();
     replaceLocalStorage(storage);

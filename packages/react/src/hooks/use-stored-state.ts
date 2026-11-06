@@ -70,7 +70,7 @@ interface IDecoded<TValue> {
  * that writes through `BrowserStorage`, and with other tabs. Pass a stable `codec` and `defaultValue`.
  * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
  * With `writeDelayMs` the value waits in the same place for the delay: a change of the storage from
- * outside drops it, and an unmount or a new key or storage writes it at once.
+ * outside drops it, and an unmount, a new key or storage, a `pagehide` event or a hidden page writes it at once.
  *
  * @example
  * ```tsx
@@ -106,14 +106,34 @@ export const useStoredState: IUseStoredState = <TValue>(
     [keep],
   );
 
-  // A new key or storage, and an unmount, write the pending value to the key it was set for.
+  const isDelayed = writeDelayMs > 0;
+
+  const flush = React.useCallback(() => {
+    if (timerRef.current !== undefined && keptRef.current) {
+      write(keptRef.current);
+    }
+  }, [write]);
+
+  // A new key or storage, an unmount, and a page that closes or hides write the pending value to the
+  // key it was set for: closing a tab does not unmount.
   React.useEffect(() => {
-    return () => {
-      if (timerRef.current !== undefined && keptRef.current) {
-        write(keptRef.current);
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') {
+        flush();
       }
     };
-  }, [key, storage, write]);
+
+    if (isDelayed) {
+      window.addEventListener('pagehide', flush);
+      document.addEventListener('visibilitychange', onHide);
+    }
+
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+      flush();
+    };
+  }, [key, storage, isDelayed, flush]);
 
   const subscribe = React.useCallback(
     (listener: () => void) => {
