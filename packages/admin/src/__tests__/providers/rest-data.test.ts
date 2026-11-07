@@ -990,7 +990,8 @@ describe('network service creation', () => {
     }
 
     recordedRequests.length = 0;
-    await new TokenProvider({ url: baseUrl }, applicationInfo).getOne({
+    const tokenProvider = new TokenProvider({ url: baseUrl }, applicationInfo);
+    await tokenProvider.getOne({
       resource: 'posts',
       params: { id: 1 },
     });

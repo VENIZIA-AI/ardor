@@ -32,7 +32,7 @@ base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
 | [D - Docs](#d---docs) | D-01 … D-06 | Where a wiki page goes, its style, its wiring and its gates |
-| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
+| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18, C-19 | The container and error rules, ARDOR's stack and one await shape; the rest of the style is V-C |
 
 ---
 
@@ -150,6 +150,7 @@ leaves to each project (V-C-18).
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
 | **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model). |
+| **C-19** | **Declare the instance, then await on its own line.** Never `await new X({...}).method(...)`: write `const runner = new X({...});` and then `await runner.method(...);`. It holds in source, examples, docs and tests. `await new Promise(...)` is not this shape. A reviewer checks it; no tool blocks it yet (a `venizia/` ESLint rule belongs in `@venizia/dev-configs`, next to `no-inline-await`). |
 
 ---
 

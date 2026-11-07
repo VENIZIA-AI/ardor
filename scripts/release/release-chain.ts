@@ -1327,7 +1327,8 @@ const readArgs = (opts: { argv: string[] }) => {
 const realPorts = (): IChainPorts => ({
   run: async ({ command, cwd }) => {
     const proc = Bun.spawn(command, { cwd, stdout: 'pipe', stderr: 'inherit' });
-    const stdout = await new Response(proc.stdout).text();
+    const stdoutResponse = new Response(proc.stdout);
+    const stdout = await stdoutResponse.text();
     const exitCode = await proc.exited;
     if (!command.includes('-xzOf')) {
       process.stdout.write(stdout);

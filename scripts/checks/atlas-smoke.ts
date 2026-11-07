@@ -32,7 +32,8 @@ const readMessage = async (): Promise<Record<string, unknown>> => {
     }
     const { value, done } = await reader.read();
     if (done) {
-      const stderr = await new Response(server.stderr).text();
+      const stderrResponse = new Response(server.stderr);
+      const stderr = await stderrResponse.text();
       throw new Error(`atlas exited: ${stderr}`);
     }
     buffer += decoder.decode(value);
