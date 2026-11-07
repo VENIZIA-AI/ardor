@@ -9,8 +9,8 @@ import {
 
 /** What `useStoredState` stores, where and how. */
 export interface IUseStoredStateOptions<TValue> {
-  /** The storage key. */
-  key: string;
+  /** The storage key. `null` turns the storage off: nothing is read, written or watched, `value` starts from `defaultValue` and `setValue` keeps it in memory only, as `useState` does. */
+  key: string | null;
   /** The value while the key holds nothing. */
   defaultValue: TValue;
   /** @default 'local' */
@@ -47,7 +47,8 @@ export interface IUseStoredState {
 const RAW_TEXT = StorageCodecs.text();
 
 interface IKept<TValue> {
-  key: string;
+  /** `null`: kept in memory, with no key to write to. */
+  key: string | null;
   storage?: TStorageArea;
   codec?: IStorageCodec<TValue>;
   value: TValue;
@@ -100,7 +101,7 @@ export const useStoredState: IUseStoredState = <TValue>(
   }, []);
 
   const write = React.useCallback(
-    (entry: IKept<TValue>) => {
+    (entry: IKept<TValue> & { key: string }) => {
       keep(BrowserStorage.set(entry) ? undefined : entry);
     },
     [keep],
@@ -109,8 +110,10 @@ export const useStoredState: IUseStoredState = <TValue>(
   const isDelayed = writeDelayMs > 0;
 
   const flush = React.useCallback(() => {
-    if (timerRef.current !== undefined && keptRef.current) {
-      write(keptRef.current);
+    const pending = keptRef.current;
+
+    if (timerRef.current !== undefined && pending?.key != null) {
+      write({ ...pending, key: pending.key });
     }
   }, [write]);
 
@@ -123,6 +126,11 @@ export const useStoredState: IUseStoredState = <TValue>(
       }
     };
 
+    // The value kept in memory under a `null` key does not follow the hook to a real key, or back to a later `null`.
+    if (key !== null && keptRef.current?.key === null) {
+      keep(undefined);
+    }
+
     if (isDelayed) {
       window.addEventListener('pagehide', flush);
       document.addEventListener('visibilitychange', onHide);
@@ -133,10 +141,14 @@ export const useStoredState: IUseStoredState = <TValue>(
       document.removeEventListener('visibilitychange', onHide);
       flush();
     };
-  }, [key, storage, isDelayed, flush]);
+  }, [key, storage, isDelayed, flush, keep]);
 
   const subscribe = React.useCallback(
     (listener: () => void) => {
+      if (key === null) {
+        return () => {};
+      }
+
       return BrowserStorage.subscribe({
         key,
         storage,
@@ -150,6 +162,10 @@ export const useStoredState: IUseStoredState = <TValue>(
   );
 
   const getSnapshot = React.useCallback((): TValue => {
+    if (key === null) {
+      return defaultValue;
+    }
+
     const text = BrowserStorage.get({ key, storage, fallback: null, codec: RAW_TEXT });
 
     if (text === null) {
@@ -175,7 +191,15 @@ export const useStoredState: IUseStoredState = <TValue>(
     (next: TValue | ((current: TValue) => TValue)) => {
       const hit = keptRef.current;
       const current = hit?.key === key && hit.storage === storage ? hit.value : getSnapshot();
-      const entry = { key, storage, codec, value: isUpdater(next) ? next(current) : next };
+      const nextValue = isUpdater(next) ? next(current) : next;
+
+      if (key === null) {
+        keep({ key, storage, codec, value: nextValue });
+
+        return;
+      }
+
+      const entry = { key, storage, codec, value: nextValue };
 
       if (!(writeDelayMs > 0)) {
         write(entry);
@@ -190,6 +214,12 @@ export const useStoredState: IUseStoredState = <TValue>(
   );
 
   const remove = React.useCallback(() => {
+    if (key === null) {
+      keep(undefined);
+
+      return;
+    }
+
     const isRemoved = BrowserStorage.remove({ key, storage });
 
     keep(isRemoved ? undefined : { key, storage, value: defaultValue });
