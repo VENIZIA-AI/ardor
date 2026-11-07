@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (95)
+### `@venizia/ardor-kernel` (96)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -69,6 +69,7 @@ generated:
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
+- `IStorageChange` interface
 - `IStorageCodec` interface
 - `LocalStorageKeys` class
 - `model` const
@@ -245,7 +246,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (185)
+### `@venizia/ardor` (186)
 
 - `AbstractArdorApplication` class
 - `AnyObject` type
@@ -324,6 +325,7 @@ generated:
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
+- `IStorageChange` interface
 - `IStorageCodec` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface

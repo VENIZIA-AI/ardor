@@ -28,6 +28,7 @@ bun add @venizia/ardor
 | New feature | `useIntersection` tells whether an element is in view | `@venizia/ardor-react`, `@venizia/ardor` | [useIntersection](./2026-11-04-intersection-hook) |
 | New feature | `useIntersection` watches several targets, takes a root and a list of thresholds | `@venizia/ardor-react`, `@venizia/ardor` | [Several targets](./2026-11-08-intersection-several-targets) |
 | New feature | `useStoredState` takes a `null` key to turn its storage off | `@venizia/ardor-react`, `@venizia/ardor` | [Null key](./2026-11-08-stored-state-null-key) |
+| New feature | `BrowserStorage.subscribe` tells a change of this tab from one of another tab | `@venizia/ardor-kernel`, `@venizia/ardor` | [isExternal](./2026-11-08-storage-subscribe-is-external) |
 | New feature | `useMediaQuery`, `useDocumentVisibility` and `useOnlineStatus` | `@venizia/ardor-react`, `@venizia/ardor` | [Browser state hooks](./2026-11-04-browser-state-hooks) |
 | New feature | `useCopyToClipboard` returns `isCopied` and takes `resetMs` | `@venizia/ardor-react`, `@venizia/ardor` | [isCopied](./2026-11-04-copy-is-copied) |
 | New feature | `useStoredState` takes `writeDelayMs`, one storage write after a burst | `@venizia/ardor-react`, `@venizia/ardor` | [writeDelayMs](./2026-11-04-stored-state-write-delay) |
