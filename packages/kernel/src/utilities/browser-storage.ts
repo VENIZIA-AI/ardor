@@ -1,9 +1,15 @@
 import { type IStorageCodec, LocalStorageKeys, StorageAreas, type TStorageArea } from '@/common';
 
+/** What `BrowserStorage.subscribe` tells its listener about a change. */
+export interface IStorageChange {
+  /** `true` when another tab or window changed the storage (a `storage` event); `false` for a write or removal through `BrowserStorage` in this one. */
+  isExternal: boolean;
+}
+
 interface ISubscription {
   key: string;
   storage?: TStorageArea;
-  listener: () => void;
+  listener: (change: IStorageChange) => void;
 }
 
 /**
@@ -151,17 +157,26 @@ export class BrowserStorage {
 
     // A key not stored yet, with a write waiting for it, is under the prefix too: tell its subscribers.
     if (prefix) {
-      BrowserStorage.notify({ key: undefined, area: BrowserStorage.area({ storage }), prefix });
+      BrowserStorage.notify({
+        key: undefined,
+        area: BrowserStorage.area({ storage }),
+        prefix,
+        isExternal: false,
+      });
     }
 
     return removed;
   }
 
-  /** `listener` runs after a write through `BrowserStorage` and after another tab changes the key. */
+  /**
+   * `listener` runs after a write through `BrowserStorage` and after another tab changes the key, and says which
+   * of the two it was in `change.isExternal`: a listener that writes back can skip the change of another tab, and one that
+   * shows "changed in another tab" can skip its own. A listener that takes no argument is called the same way.
+   */
   static subscribe(opts: {
     key: string;
     storage?: TStorageArea;
-    listener: () => void;
+    listener: (change: IStorageChange) => void;
   }): () => void {
     const subscription: ISubscription = { ...opts };
 
@@ -201,7 +216,7 @@ export class BrowserStorage {
     return BrowserStorage.safe({
       run: () => {
         opts.run(area);
-        BrowserStorage.notify({ key: opts.key, area });
+        BrowserStorage.notify({ key: opts.key, area, isExternal: false });
 
         return true;
       },
@@ -209,20 +224,28 @@ export class BrowserStorage {
     });
   }
 
-  private static notify(opts: { key: unknown; area: unknown; prefix?: string }): void {
+  private static notify(opts: {
+    key: unknown;
+    area: unknown;
+    prefix?: string;
+    isExternal: boolean;
+  }): void {
     for (const { key, storage, listener } of BrowserStorage.subs) {
       if (
         (opts.key === null || opts.key === key || (!!opts.prefix && key.startsWith(opts.prefix))) &&
         opts.area === BrowserStorage.area({ storage })
       ) {
-        BrowserStorage.safe<void>({ run: listener, fallback: undefined });
+        BrowserStorage.safe<void>({
+          run: () => listener({ isExternal: opts.isExternal }),
+          fallback: undefined,
+        });
       }
     }
   }
 
   private static readonly onEvent = (event: Event): void => {
     if ('key' in event && 'storageArea' in event) {
-      BrowserStorage.notify({ key: event.key, area: event.storageArea });
+      BrowserStorage.notify({ key: event.key, area: event.storageArea, isExternal: true });
     }
   };
 }
