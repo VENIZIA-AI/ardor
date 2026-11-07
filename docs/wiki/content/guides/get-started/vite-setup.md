@@ -36,7 +36,18 @@ export default defineConfig({
 
 The extra weight is in the `vendor` chunk, which the browser caches across deploys. This was measured on Vite 8.3.5 with Rolldown 1.2.14, and the built app loads in a real browser with no console error. An app on Vite 8.1.0 reported `React$12 is not defined` with the flag on. Keep Vite at 8.3.5 or newer, and check the built app in a browser after you turn the flag on.
 
-**The flag costs size, and the cost grows with the number of chunks.** Rolldown wraps modules with runtime helpers and can duplicate shared code. Rolldown's own documentation warns that the option increases bundle size. An app with hundreds of lazy chunks and locale files pays more than the four-chunk example above: one team measured 5 to 8% more raw JavaScript and CSS and 10 to 12% more gzip on its production apps.
+**The flag costs size, and the cost grows with the number of chunks.** Rolldown wraps modules with runtime helpers and can duplicate shared code. Rolldown's own documentation warns that the option increases bundle size. An app with hundreds of lazy chunks and locale files pays more than the four-chunk example above. One team built six apps twice, with the flag off and on, and added up every JavaScript file of each build (Vite 8.3.5, Rolldown 1.2.15, each file gzipped by itself):
+
+| App | JavaScript files, off → on | gzip, off | gzip, on vs off | raw, on vs off |
+|---|---|---|---|---|
+| 1 | 33 → 34 | 1.43 MB | +2.9% | +1.9% |
+| 2 | 35 → 51 | 2.00 MB | +3.2% | +1.8% |
+| 3 | 1,432 → 1,479 | 2.77 MB | +7.2% | +3.8% |
+| 4 | 1,815 → 1,887 | 2.77 MB | +10.0% | +5.6% |
+| 5 | 2,014 → 2,393 | 5.35 MB | +12.8% | +7.1% |
+| 6 | 2,032 → 2,329 | 5.56 MB | +12.1% | +7.3% |
+
+So the "about 3%" of the example holds for an app with a few dozen chunks, and the cost is 7 to 13% of the gzip total for an app with more than a thousand lazy chunks. These are totals over every chunk, not what the first screen loads. All six apps booted in a headless browser with no module-order error with the flag off, so for them the flag is a guard that costs size, not a fix.
 
 ### Decide for your app
 
@@ -47,6 +58,23 @@ The preset keeps the flag on because a new app cannot tell why a production-only
 3. Turn the flag off only if the built app boots clean and you keep a check of the built app in CI: a later import can change how chunks are shared and bring the failure back.
 
 An app that wants no size cost can instead make sure `reflect-metadata` loads before each DI module it owns, for example with a Vite `transform` hook that adds `import 'reflect-metadata'` at the top of the DI package's files. That is measured by the team that uses it, not by ARDOR.
+
+### The `vendor` group is for apps with few lazy routes
+
+The preset's `codeSplitting` has two groups: `react` (React, its DOM renderer and the scheduler) and `vendor`, whose test is `/node_modules/`. The `vendor` group takes every module under `node_modules` into one chunk, including the modules that only a lazy route uses, so an app with many lazy routes, or with many locale files, ends with one very large chunk and loses most of its code splitting. The same team built the same six apps with the whole preset config (the flag and both groups) and compared the result with each app's build before that change:
+
+| App | JavaScript files, before → preset | gzip, all JS | Largest chunk |
+|---|---|---|---|
+| 1 | 33 → 31 | −7.7% | 1.64 MB |
+| 2 | 35 → 32 | −4.2% | 3.86 MB |
+| 3 | 1,432 → 68 | −7.6% | 6.48 MB |
+| 4 | 1,815 → 143 | −9.1% | 4.00 MB |
+| 5 | 2,014 → build failed | - | 6.57 MB, as reported by the build |
+| 6 | 2,032 → build failed | - | 6.67 MB, as reported by the build |
+
+The sizes of apps 1 to 4 are raw bytes. The total went down for the four apps that build, and the number of files fell sharply. The cost is in the shape: one chunk of 4 to 6.7 MB, which every page that imports it must fetch whole. Apps 5 and 6 use `vite-plugin-pwa`, whose build stopped with `assets/vendor-….js is 6.57 MB, and won't be precached` (6.67 MB for the other): a file over the precache limit fails the build. Raising `workbox.maximumFileSizeToCacheInBytes` lets the build pass but leaves the chunk as large.
+
+For an app with many lazy routes, remove the `vendor` group and keep `react`, then measure what the first screen loads in a real browser with the group on and off (`vite preview`, not `vite dev`); the totals above do not say it. The flag and the groups are separate choices: the flag orders modules, the groups decide the chunk shapes, and the table above shows the flag's own cost separately.
 
 The ARDOR repository pins this: a test builds a DI module that guards on `Reflect.getMetadata` in a chunk of its own, and it fails with the flag off and passes with it on. The same test fails the day Rolldown orders that module correctly by itself, which is when the flag can go.
 
