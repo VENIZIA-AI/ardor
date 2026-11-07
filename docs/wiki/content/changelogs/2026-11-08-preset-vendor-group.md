@@ -13,12 +13,15 @@ packages: ['@venizia/ardor']
 **In one line.** The `vendor` group in the `vite.config` of a new ARDOR app took every third-party module into one chunk, so the first screen loaded libraries that only a rare lazy route needs. It now takes only the modules that two chunks or more import.
 
 ```ts
-codeSplitting: {
-  groups: [
-    { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
-    { name: 'vendor', test: /node_modules/, minShareCount: 2 },
-  ],
-},
+// build.rolldownOptions.output of the preset's vite.config.mts
+export const output = {
+  codeSplitting: {
+    groups: [
+      { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+      { name: 'vendor', test: /node_modules/, minShareCount: 2 },
+    ],
+  },
+};
 ```
 
 ## What changed
