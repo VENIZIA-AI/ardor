@@ -59,9 +59,11 @@ The preset keeps the flag on because a new app cannot tell why a production-only
 
 An app that wants no size cost can instead make sure `reflect-metadata` loads before each DI module it owns, for example with a Vite `transform` hook that adds `import 'reflect-metadata'` at the top of the DI package's files. That is measured by the team that uses it, not by ARDOR.
 
-### The `vendor` group is for apps with few lazy routes
+### The `vendor` group takes the modules that two chunks share
 
-The preset's `codeSplitting` has two groups: `react` (React, its DOM renderer and the scheduler) and `vendor`, whose test is `/node_modules/`. The `vendor` group takes every module under `node_modules` into one chunk, including the modules that only a rare lazy route uses, so an app with many lazy routes, or with many locale files, ends with one very large chunk that its first screen loads. The same team added the preset's two groups after its own groups (an `infra` group and an icons chunk), on top of the flag, and compared the result with its own committed config:
+The preset's `codeSplitting` has two groups: `react` (React, its DOM renderer and the scheduler) and `vendor`, whose test is `/node_modules/` and whose `minShareCount` is 2. `minShareCount` counts the chunks that import a module, so `vendor` takes only the modules that two chunks or more import. A library that one lazy route imports stays in that route's chunk, and the first screen does not load it.
+
+Until ARDOR 0.4.8-6 the preset had no `minShareCount`. Then `vendor` took every module under `node_modules` into one chunk, including the modules that only a rare lazy route uses, so an app with many lazy routes, or with many locale files, ended with one very large chunk that its first screen loads. One team added those two groups after its own groups (an `infra` group and an icons chunk), on top of the flag, and compared the result with its own committed config:
 
 | App | JavaScript files, before → preset | All files, gzip | First screen requests, before → preset | First screen, gzip | Largest chunk, raw |
 |---|---|---|---|---|---|
@@ -74,7 +76,18 @@ The preset's `codeSplitting` has two groups: `react` (React, its DOM renderer an
 
 The total went down for the four apps that build, and so did the number of requests for the first screen of apps 3 and 4. The first screen still got heavier in every app, by 11% to 119% of its gzip: modules that the first screen does not need now sit in a chunk that it loads. Apps 5 and 6 use `vite-plugin-pwa`, whose build stopped with `assets/vendor-….js is 6.57 MB, and won't be precached` (6.67 MB for the other) because the file was over the 5 MB precache limit; the build still wrote `dist`, and the first-screen figures of those two come from that output. Raising `workbox.maximumFileSizeToCacheInBytes` lets the build pass but leaves the chunk as large. The `react` group on its own added about 4% of first-screen gzip to apps 5 and 6 and nothing to the other four.
 
-For an app with many lazy routes, remove the `vendor` group and keep `react`, then measure what the first screen loads in a real browser with the group on and off (`vite preview`, not `vite dev`). The flag and the groups are separate choices: the flag orders modules, and the groups decide the chunk shapes.
+The preset now sets `minShareCount: 2`. ARDOR measured it on a fixture, not on those six apps: one entry that imports a 600 KB library and 80 lazy routes that each import a library of their own (20 KB), with the flag on and the `react` group.
+
+| `vendor` group | Chunks | First screen, raw | First screen, gzip |
+|---|---|---|---|
+| without `minShareCount` (before) | 84 | 2,407 KB | 1,363 KB |
+| `minShareCount: 2` (the preset) | 84 | 809 KB | 443 KB |
+| no `vendor` group | 84 | 809 KB | 443 KB |
+| `entriesAware: true` | 165 | 811 KB | 443 KB |
+
+`entriesAware: true` also keeps the lazy libraries off the first screen, and it keeps the modules only the entry imports in a chunk of their own, but it doubled the number of chunks here, one more for each route with libraries of its own. An `entriesAwareMergeThreshold` large enough to merge them put the lazy libraries back into the chunk of the first screen. A test in the ARDOR repository builds a smaller fixture of this shape and checks that the first screen has the entry's library and none of the lazy ones, that every lazy library is still built, and that no chunk is larger than 100 KB.
+
+**What you give up.** The modules that only the entry imports now sit in the entry chunk, with your application code, so a deploy that changes your code makes the browser fetch them again. In `examples/5-mins-qs` the old build was an 11 KB `index` chunk and a 362 KB `vendor` chunk (the `vendor` chunk stayed cached across deploys); with `minShareCount: 2` it is one 373 KB `index` chunk, under Vite's 500 KB warning. An app with few lazy routes and frequent deploys may prefer the old shape: remove `minShareCount` from the `vendor` group. Whatever you choose, measure what the first screen loads in a real browser (`vite preview`, not `vite dev`). The flag and the groups are separate choices: the flag orders modules, and the groups decide the chunk shapes.
 
 The ARDOR repository pins this: a test builds a DI module that guards on `Reflect.getMetadata` in a chunk of its own, and it fails with the flag off and passes with it on. The same test fails the day Rolldown orders that module correctly by itself, which is when the flag can go.
 

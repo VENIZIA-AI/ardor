@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import { getError } from '@venizia/ignis-inversion';
@@ -56,11 +64,13 @@ export interface IFixtureBuildOptions {
   strictExecutionOrder?: boolean;
   /** Split each of these module patterns into a chunk of its own, then the rest of node_modules into `vendor`. */
   chunkGroups?: Array<{ name: string; test: RegExp }>;
+  /** `minShareCount` of the closing `vendor` group; the preset sets 2. Left out, the group takes every module under node_modules. */
+  vendorMinShareCount?: number;
 }
 
 /** A production build of `src/main.ts` of the fixture, written to its `dist`. */
 export const buildFixture = async (opts: IFixtureBuildOptions): Promise<void> => {
-  const { root, plugins = [], strictExecutionOrder, chunkGroups = [] } = opts;
+  const { root, plugins = [], strictExecutionOrder, chunkGroups = [], vendorMinShareCount } = opts;
 
   const config: InlineConfig = {
     root,
@@ -74,7 +84,12 @@ export const buildFixture = async (opts: IFixtureBuildOptions): Promise<void> =>
         input: 'src/main.ts',
         output: {
           strictExecutionOrder,
-          codeSplitting: { groups: [...chunkGroups, { name: 'vendor', test: /node_modules/ }] },
+          codeSplitting: {
+            groups: [
+              ...chunkGroups,
+              { name: 'vendor', test: /node_modules/, minShareCount: vendorMinShareCount },
+            ],
+          },
         },
       },
     },
@@ -120,4 +135,60 @@ export const runBuiltEntry = (opts: { root: string }): Promise<IRunResult> => {
   }
 
   return runNode({ args: [join(assets, entry)], cwd: opts.root });
+};
+
+export interface IBuiltChunk {
+  file: string;
+  /** Raw size in bytes. */
+  size: number;
+  code: string;
+}
+
+/** Every JavaScript chunk a fixture build wrote. */
+export const readChunks = (opts: { root: string }): IBuiltChunk[] => {
+  const assets = join(opts.root, 'dist', 'assets');
+
+  return [...new Bun.Glob('*.js').scanSync({ cwd: assets })].map((file) => {
+    const code = readFileSync(join(assets, file), 'utf8');
+
+    return { file, size: Buffer.byteLength(code), code };
+  });
+};
+
+/**
+ * The chunks a browser fetches for the first screen: the main chunk and everything it imports
+ * statically, at any depth. A chunk reached only by a dynamic `import()` is not in it.
+ */
+export const firstLoadChunks = (opts: { root: string }): IBuiltChunk[] => {
+  const chunks = new Map(readChunks(opts).map((chunk) => [chunk.file, chunk]));
+  const main = [...chunks.values()].find((chunk) => chunk.file.startsWith('main-'));
+
+  if (!main) {
+    throw getError({ message: `[firstLoadChunks] no main chunk in ${opts.root}` });
+  }
+
+  const loaded = new Set<IBuiltChunk>();
+
+  const visit = (chunk: IBuiltChunk): void => {
+    if (loaded.has(chunk)) {
+      return;
+    }
+
+    loaded.add(chunk);
+
+    // `import x from "./a.js"`, `export * from "./a.js"` and `import "./a.js"`; `import("./a.js")` has a parenthesis first.
+    for (const match of chunk.code.matchAll(
+      /(?:import|export)\s*(?:[^'"(]*?from\s*)?["']\.\/([^"']+)["']/g,
+    )) {
+      const dependency = chunks.get(match[1] ?? '');
+
+      if (dependency) {
+        visit(dependency);
+      }
+    }
+  };
+
+  visit(main);
+
+  return [...loaded];
 };
