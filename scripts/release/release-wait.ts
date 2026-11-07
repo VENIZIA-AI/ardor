@@ -40,11 +40,17 @@ const waitForTarball = async (opts: {
   } = opts;
 
   const url = tarballUrl({ packageName, version });
+  let lastFailure = 'none';
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = await fetchFn(url, { method: 'HEAD' }).catch(() => undefined);
-    if (response?.ok) {
-      return;
+    try {
+      const response = await fetchFn(url, { method: 'HEAD' });
+
+      if (response.ok) {
+        return;
+      }
+    } catch (error) {
+      lastFailure = String(error);
     }
 
     if (attempt < attempts) {
@@ -53,7 +59,7 @@ const waitForTarball = async (opts: {
   }
 
   throw new Error(
-    `${packageName}@${version} is listed on the registry, but its tarball still does not answer 200 after ${Math.round((attempts * intervalMs) / 60_000)} minutes (${url}). The next package would fail its clean install; check the registry before dispatching it.`,
+    `${packageName}@${version} is listed on the registry, but its tarball still does not answer 200 after ${Math.round((attempts * intervalMs) / 60_000)} minutes (${url}; last network failure: ${lastFailure}). The next package would fail its clean install; check the registry before dispatching it.`,
   );
 };
 

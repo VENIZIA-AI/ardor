@@ -815,8 +815,16 @@ export const runChain = async (opts: {
   for (const dir of ReleaseChain.WORKSPACE) {
     try {
       workspaceNames.set(dir, ports.readManifest({ path: `packages/${dir}/package.json` }).name);
-    } catch {
+    } catch (error) {
       // A folder that is not there is not a sibling.
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('code' in error) ||
+        error.code !== 'ENOENT'
+      ) {
+        throw error;
+      }
     }
   }
   let stopped: IChainStop | undefined;
@@ -1018,12 +1026,16 @@ export const runChain = async (opts: {
         // registry serves it minutes later, which is why there is no wait here), or one outside the plan.
         for (const [name, pinned] of Object.entries(state?.pins ?? {})) {
           const inRun = states.find((candidate) => candidate.packageName === name);
-          const isOut = inRun !== undefined && atLeast({ stage: inRun.stage, than: 'published' });
-          if (
-            inRun === undefined
-              ? !(await ports.hasVersion({ packageName: name, version: pinned }))
-              : !isOut
-          ) {
+          let isMissing = !(
+            inRun !== undefined && atLeast({ stage: inRun.stage, than: 'published' })
+          );
+
+          if (inRun === undefined) {
+            const isOnNpm = await ports.hasVersion({ packageName: name, version: pinned });
+            isMissing = !isOnNpm;
+          }
+
+          if (isMissing) {
             return { ok: false, detail: `${name}@${pinned} is not on npm` };
           }
         }

@@ -41,7 +41,7 @@ generated:
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
-| `make lint` | `lint-packages` | lint-<pkg> for every package. |
+| `make lint` | `lint-packages lint-scripts` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |

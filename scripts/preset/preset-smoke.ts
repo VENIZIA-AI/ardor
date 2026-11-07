@@ -92,6 +92,9 @@ type TRecord = Record<string, unknown>;
 const isRecord = (value: unknown): value is TRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const errorCodeOf = (error: unknown): unknown =>
+  isRecord(error) && 'code' in error ? error.code : undefined;
+
 const readJson = (opts: { path: string }): TRecord => {
   const value: unknown = JSON.parse(readFileSync(opts.path, 'utf8'));
 
@@ -286,7 +289,11 @@ const downloadTagged = async (opts: {
         JSON.parse(new TextDecoder().decode(body));
 
         return true;
-      } catch {
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+          throw error;
+        }
+
         return false;
       }
     },
@@ -685,13 +692,14 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
 
   // Vite listens on `localhost`, which a CI runner may resolve to ::1 only; ask every address.
   const hosts = ['localhost', '127.0.0.1', '[::1]'];
+  let lastFailure = 'none';
   const answer = async (path: string): Promise<Response | undefined> => {
     for (const host of hosts) {
       try {
         const result = await fetch(`http://${host}:${port}${path}`);
         return result;
-      } catch {
-        // not listening on this address (yet)
+      } catch (error) {
+        lastFailure = `${host}: ${String(error)}`;
       }
     }
 
@@ -714,7 +722,7 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
         condition:
           response?.ok === true &&
           (path === '/' || (response.headers.get('content-type') ?? '').includes('javascript')),
-        message: `the dev server answers ${path} (${response?.status ?? `no answer; server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
+        message: `the dev server answers ${path} (${response?.status ?? `no answer (last failure ${lastFailure}); server output: ${output.split('\n').slice(-15).join(' | ')}`})`,
       });
     }
 
@@ -881,7 +889,11 @@ const main = async () => {
           stderr: 'ignore',
         }).exitCode === 0
       );
-    } catch {
+    } catch (error) {
+      if (errorCodeOf(error) !== 'ENOENT') {
+        throw error;
+      }
+
       return false;
     }
   })();

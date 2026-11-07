@@ -24,7 +24,7 @@ FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
         fmt-files fmt-scripts \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
-lint: lint-packages
+lint: lint-packages lint-scripts
 	@echo "✅ Linting completed."
 
 lint-all: lint-packages lint-wiki lint-scripts lint-files
@@ -65,7 +65,9 @@ fmt-files:
 fmt-scripts:
 	@cd scripts && bun fmt --no-script $(FMT_GLOB)
 
+# ESLint here runs the five async-style rules only: the scripts run on Bun and throw plain errors.
 lint-scripts:
 	@echo "🔍 Linting scripts/..."
+	@node_modules/.bin/eslint -c scripts/.configs/lints/eslint.config.mjs scripts
 	@cd scripts && bun fmt --no-script --check $(FMT_GLOB)
 	@bun check --no-pretty -p scripts/tsconfig.json
