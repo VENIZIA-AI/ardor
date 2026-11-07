@@ -731,3 +731,200 @@ describe('useStoredState writeDelayMs', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 });
+
+describe('useStoredState with a null key', () => {
+  test('starts from the default value and neither reads, writes nor watches storage', () => {
+    const storage = new FakeStorage();
+    installFake(storage);
+    localStorage.setItem(KEY, JSON.stringify('dark'));
+    const getItem = spyOn(Storage.prototype, 'getItem');
+    const setItem = spyOn(Storage.prototype, 'setItem');
+    const subscribe = spyOn(BrowserStorage, 'subscribe');
+    const writesBefore = storage.writes.length;
+
+    const { result } = renderHook(() => useStoredState({ key: null, defaultValue: 'light' }));
+    act(() => {
+      result.current.setValue('dark');
+    });
+
+    expect(result.current.value).toBe('dark');
+    expect(getItem).not.toHaveBeenCalled();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(storage.writes).toHaveLength(writesBefore);
+    getItem.mockRestore();
+    setItem.mockRestore();
+    subscribe.mockRestore();
+  });
+
+  test('the default value is the value before any setValue, even when a key holds something', () => {
+    localStorage.setItem(KEY, JSON.stringify('dark'));
+
+    const { result } = renderHook(() => useStoredState({ key: null, defaultValue: 'light' }));
+
+    expect(result.current.value).toBe('light');
+  });
+
+  test('setValue with an updater works on the value in memory, as useState does', () => {
+    const { result } = renderHook(() => useStoredState({ key: null, defaultValue: 1 }));
+
+    act(() => {
+      result.current.setValue((current) => current + 1);
+      result.current.setValue((current) => current + 1);
+    });
+
+    expect(result.current.value).toBe(3);
+    expect(localStorage.length).toBe(0);
+  });
+
+  test('remove returns the default value and touches no storage', () => {
+    localStorage.setItem(KEY, JSON.stringify('dark'));
+    const { result } = renderHook(() => useStoredState({ key: null, defaultValue: 'light' }));
+    act(() => {
+      result.current.setValue('blue');
+    });
+
+    act(() => {
+      result.current.remove();
+    });
+
+    expect(result.current.value).toBe('light');
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify('dark'));
+  });
+
+  test('a storage event for any key renders nothing', () => {
+    let renders = 0;
+    renderHook(() => {
+      renders += 1;
+
+      return useStoredState({ key: null, defaultValue: 'light' });
+    });
+    const before = renders;
+
+    act(() => {
+      localStorage.setItem(KEY, JSON.stringify('dark'));
+      window.dispatchEvent(storageEvent({ key: KEY, storageArea: localStorage }));
+    });
+
+    expect(renders).toBe(before);
+  });
+
+  test('from null to a key it reads that key and drops the value held in memory', () => {
+    localStorage.setItem(KEY, JSON.stringify('dark'));
+    const { result, rerender } = renderHook(
+      (props: { key: string | null }) => useStoredState({ key: props.key, defaultValue: 'light' }),
+      { initialProps: { key: null as string | null } },
+    );
+    act(() => {
+      result.current.setValue('blue');
+    });
+    expect(result.current.value).toBe('blue');
+
+    rerender({ key: KEY });
+
+    expect(result.current.value).toBe('dark');
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify('dark'));
+  });
+
+  test('from null to a key that holds nothing it gives the default value and then writes there', () => {
+    const { result, rerender } = renderHook(
+      (props: { key: string | null }) => useStoredState({ key: props.key, defaultValue: 'light' }),
+      { initialProps: { key: null as string | null } },
+    );
+    act(() => {
+      result.current.setValue('blue');
+    });
+
+    rerender({ key: KEY });
+    expect(result.current.value).toBe('light');
+
+    act(() => {
+      result.current.setValue('green');
+    });
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify('green'));
+  });
+
+  test('from a key to null the stored value is left alone and the value is the default again', () => {
+    localStorage.setItem(KEY, JSON.stringify('dark'));
+    const { result, rerender } = renderHook(
+      (props: { key: string | null }) => useStoredState({ key: props.key, defaultValue: 'light' }),
+      { initialProps: { key: KEY as string | null } },
+    );
+    expect(result.current.value).toBe('dark');
+
+    rerender({ key: null });
+    expect(result.current.value).toBe('light');
+
+    act(() => {
+      result.current.setValue('blue');
+    });
+    expect(result.current.value).toBe('blue');
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify('dark'));
+  });
+
+  test('a memory value does not come back when the key goes null again', () => {
+    const { result, rerender } = renderHook(
+      (props: { key: string | null }) => useStoredState({ key: props.key, defaultValue: 'light' }),
+      { initialProps: { key: null as string | null } },
+    );
+    act(() => {
+      result.current.setValue('blue');
+    });
+
+    rerender({ key: KEY });
+    rerender({ key: null });
+
+    expect(result.current.value).toBe('light');
+  });
+
+  describe('with a write delay', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('a pending write for the old key is still written to that key when the key turns null', () => {
+      const { result, rerender } = renderHook(
+        (props: { key: string | null }) => {
+          return useStoredState({ key: props.key, defaultValue: 0, writeDelayMs: 200 });
+        },
+        { initialProps: { key: KEY as string | null } },
+      );
+      act(() => {
+        result.current.setValue(7);
+      });
+      expect(localStorage.getItem(KEY)).toBeNull();
+
+      rerender({ key: null });
+
+      expect(localStorage.getItem(KEY)).toBe('7');
+      expect(result.current.value).toBe(0);
+    });
+
+    test('under a null key setValue sets no timer and writes nothing, however long it waits', () => {
+      const { result } = renderHook(() => {
+        return useStoredState({ key: null, defaultValue: 0, writeDelayMs: 200 });
+      });
+      act(() => {
+        result.current.setValue(5);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      expect(result.current.value).toBe(5);
+      expect(localStorage.length).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  test('the server snapshot and a host with no key both give the default value', () => {
+    const { result } = renderHook(() => useStoredState({ key: null, defaultValue: { a: 1 } }));
+
+    expect(result.current.value).toEqual({ a: 1 });
+  });
+});
