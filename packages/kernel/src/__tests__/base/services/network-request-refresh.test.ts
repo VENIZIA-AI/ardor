@@ -392,4 +392,50 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
     expect(heard).toHaveLength(1);
   });
+
+  test('a retry that answers 401 again is thrown: one refresh, one retry, no second refresh', async () => {
+    // The refresh succeeds, but the server still refuses the token it handed out.
+    refreshAnswer = () =>
+      Response.json({ token: { value: 'still-bad', type: 'Bearer' }, userId: 7 });
+    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+
+    expect(recorded.map((entry) => [entry.pathname, entry.authorization])).toEqual([
+      ['/items', 'Bearer stale'],
+      [REFRESH_PATH, 'Bearer stale'],
+      ['/items', 'Bearer still-bad'],
+    ]);
+    expect(authService.getAuth()?.value).toBe('still-bad');
+  });
+
+  test('a failed refresh ends the session when the application clears it in onAuthFailure', async () => {
+    const heard: Array<boolean> = [];
+    authService.subscribe({ listener: () => heard.push(!!authService.getAuth()) });
+
+    class EndingService extends DefaultNetworkRequestService {
+      protected override onAuthFailure(): Promise<void> {
+        authService.cleanUp();
+
+        return Promise.resolve();
+      }
+    }
+    const service = new EndingService({
+      name: 'ending',
+      baseUrl,
+      authRecovery: { refreshTokenPath: REFRESH_PATH },
+      authService,
+    });
+    refreshAnswer = () => new Response('nope', { status: 500 });
+    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+
+    expect(error).toMatchObject({ statusCode: 401 });
+
+    expect(authService.getAuth()).toBeNull();
+    expect(authService.getRoles()).toEqual(new Set());
+    expect(Object.keys(localStorage)).toEqual([]);
+    expect(heard).toEqual([false]);
+    // The request that failed is not retried.
+    expect(recorded.filter((entry) => entry.pathname === '/items')).toHaveLength(1);
+  });
 });
