@@ -14,10 +14,20 @@ type THolder = { name: string; peers: string[] };
 const { holders } = JSON.parse(process.argv[2]) as { holders: THolder[] };
 const sandbox = process.cwd();
 
+const isNotFound = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  (error.code === 'ERR_MODULE_NOT_FOUND' || error.code === 'ENOENT');
+
 const resolveFrom = (opts: { name: string; from: string }): string | undefined => {
   try {
     return realpathSync(Bun.resolveSync(opts.name, opts.from));
-  } catch {
+  } catch (error) {
+    if (!isNotFound(error)) {
+      throw error;
+    }
+
     return undefined;
   }
 };

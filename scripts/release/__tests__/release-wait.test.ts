@@ -76,19 +76,42 @@ describe('waitForTarball', () => {
   test('throws, naming the package and version, when it never answers 200', async () => {
     const { fetchFn, calls } = statuses({ sequence: [404] });
 
-    const error = await waitForTarball({
-      packageName: '@venizia/ardor-react',
-      version: '0.1.4-4',
-      fetchFn,
-      attempts: 4,
-      ...fast,
-    }).then(
-      () => undefined,
-      (caught: unknown) => caught,
-    );
+    let error: unknown;
+
+    try {
+      await waitForTarball({
+        packageName: '@venizia/ardor-react',
+        version: '0.1.4-4',
+        fetchFn,
+        attempts: 4,
+        ...fast,
+      });
+    } catch (caught) {
+      error = caught;
+    }
 
     expect(String(error)).toContain('@venizia/ardor-react@0.1.4-4');
     expect(calls).toHaveLength(4);
+  });
+
+  test('names the last network failure when the registry never answers', async () => {
+    let error: unknown;
+
+    try {
+      await waitForTarball({
+        packageName: 'a',
+        version: '1.0.0',
+        fetchFn: async () => {
+          throw new Error('socket closed');
+        },
+        attempts: 2,
+        ...fast,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(String(error)).toContain('socket closed');
   });
 });
 
