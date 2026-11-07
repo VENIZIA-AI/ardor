@@ -23,7 +23,7 @@ Behavior only. Project *facts* live in the [knowledge bundle](knowledge/index.md
 
 IDs are stable and grouped by domain, so new rules never renumber old ones. Cite them by ID in
 reviews, pull requests and reports ("breaks B-05", "breaks V-C-10"). A retired C rule is cited by its
-base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C-06 to V-C-17.
+base ID: C-01, C-02, C-04, C-06 to C-11, C-13 and C-14 became the V-C rules of the same number. The base dropped V-C-03, V-C-05, V-C-12, V-C-15, V-C-16, V-C-17 and V-C-19, and C-19 (await on its own line) is now V-C-20.
 
 | Group | IDs | One line |
 |---|---|---|
@@ -32,7 +32,7 @@ base ID: C-01, C-02, C-04 and C-06 to C-17 became V-C-01, V-C-02, V-C-04 and V-C
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
 | [D - Docs](#d---docs) | D-01 … D-06 | Where a wiki page goes, its style, its wiring and its gates |
-| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18, C-19 | The container and error rules, ARDOR's stack and one await shape; the rest of the style is V-C |
+| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
 
@@ -150,7 +150,6 @@ leaves to each project (V-C-18).
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
 | **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model). |
-| **C-19** | **Declare the instance, then await on its own line.** Never `await new X({...}).method(...)`: write `const runner = new X({...});` and then `await runner.method(...);`. It holds in source, examples, docs and tests. `await new Promise(...)` is not this shape. A reviewer checks it; no tool blocks it yet (a `venizia/` ESLint rule belongs in `@venizia/dev-configs`, next to `no-inline-await`). |
 
 ---
 

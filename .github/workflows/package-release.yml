@@ -247,7 +247,7 @@ jobs:
         if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
-          VULCAN_CMD: bun x @venizia/vulcan@0.4.10-4
+          VULCAN_CMD: bun x @venizia/vulcan@0.4.10-7
         run: make preset-smoke
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
@@ -468,7 +468,7 @@ jobs:
       - name: Publish the atlas index of the kernel tag
         if: ${{ steps.tags.outputs.kernel != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@382e75e8bc0328206079327b730534cf05ba1f9b # v0.4.10-4
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@79c80132de47230795844283c0873ef28d6cb82b # v0.4.10-7
         with:
           ref: ${{ steps.tags.outputs.kernel }}
         env:
@@ -477,7 +477,7 @@ jobs:
       - name: Publish the atlas index of the react tag
         if: ${{ steps.tags.outputs.react != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@382e75e8bc0328206079327b730534cf05ba1f9b # v0.4.10-4
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@79c80132de47230795844283c0873ef28d6cb82b # v0.4.10-7
         with:
           ref: ${{ steps.tags.outputs.react }}
         env:
@@ -486,7 +486,7 @@ jobs:
       - name: Publish the atlas index of the admin tag
         if: ${{ steps.tags.outputs.admin != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@382e75e8bc0328206079327b730534cf05ba1f9b # v0.4.10-4
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@79c80132de47230795844283c0873ef28d6cb82b # v0.4.10-7
         with:
           ref: ${{ steps.tags.outputs.admin }}
         env:
@@ -495,7 +495,7 @@ jobs:
       - name: Publish the atlas index of the ardor tag
         if: ${{ steps.tags.outputs.ardor != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@382e75e8bc0328206079327b730534cf05ba1f9b # v0.4.10-4
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@79c80132de47230795844283c0873ef28d6cb82b # v0.4.10-7
         with:
           ref: ${{ steps.tags.outputs.ardor }}
         env:
