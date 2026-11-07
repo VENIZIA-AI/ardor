@@ -64,13 +64,16 @@ export interface IFixtureBuildOptions {
   strictExecutionOrder?: boolean;
   /** Split each of these module patterns into a chunk of its own, then the rest of node_modules into `vendor`. */
   chunkGroups?: Array<{ name: string; test: RegExp }>;
-  /** `minShareCount` of the closing `vendor` group; the preset sets 2. Left out, the group takes every module under node_modules. */
-  vendorMinShareCount?: number;
+  /**
+   * The closing `vendor` group. By default the catch-all of `/node_modules/` that the strict-order tests need;
+   * `false` leaves it out, as the preset does; an object sets its options (the opt-in of the Vite setup guide).
+   */
+  vendorGroup?: false | { minShareCount?: number; entriesAware?: boolean };
 }
 
 /** A production build of `src/main.ts` of the fixture, written to its `dist`. */
 export const buildFixture = async (opts: IFixtureBuildOptions): Promise<void> => {
-  const { root, plugins = [], strictExecutionOrder, chunkGroups = [], vendorMinShareCount } = opts;
+  const { root, plugins = [], strictExecutionOrder, chunkGroups = [], vendorGroup = {} } = opts;
 
   const config: InlineConfig = {
     root,
@@ -87,7 +90,9 @@ export const buildFixture = async (opts: IFixtureBuildOptions): Promise<void> =>
           codeSplitting: {
             groups: [
               ...chunkGroups,
-              { name: 'vendor', test: /node_modules/, minShareCount: vendorMinShareCount },
+              ...(vendorGroup === false
+                ? []
+                : [{ name: 'vendor', test: /node_modules/, ...vendorGroup }]),
             ],
           },
         },

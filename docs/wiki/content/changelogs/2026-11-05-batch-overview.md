@@ -29,7 +29,7 @@ bun add @venizia/ardor
 | New feature | `useIntersection` watches several targets, takes a root and a list of thresholds | `@venizia/ardor-react`, `@venizia/ardor` | [Several targets](./2026-11-08-intersection-several-targets) |
 | New feature | `useStoredState` takes a `null` key to turn its storage off | `@venizia/ardor-react`, `@venizia/ardor` | [Null key](./2026-11-08-stored-state-null-key) |
 | New feature | `BrowserStorage.subscribe` tells a change of this tab from one of another tab | `@venizia/ardor-kernel`, `@venizia/ardor` | [isExternal](./2026-11-08-storage-subscribe-is-external) |
-| Behavior change | The app preset's `vendor` group takes only the modules that two chunks import, so lazy-route libraries leave the first screen | `@venizia/ardor` | [Vendor group](./2026-11-08-preset-vendor-group) |
+| Behavior change | The app preset keeps only the `react` group in `codeSplitting`: its catch-all `vendor` group put the libraries of lazy routes into the first screen | `@venizia/ardor` | [Vendor group](./2026-11-08-preset-vendor-group) |
 | New feature | `useMediaQuery`, `useDocumentVisibility` and `useOnlineStatus` | `@venizia/ardor-react`, `@venizia/ardor` | [Browser state hooks](./2026-11-04-browser-state-hooks) |
 | New feature | `useCopyToClipboard` returns `isCopied` and takes `resetMs` | `@venizia/ardor-react`, `@venizia/ardor` | [isCopied](./2026-11-04-copy-is-copied) |
 | New feature | `useStoredState` takes `writeDelayMs`, one storage write after a burst | `@venizia/ardor-react`, `@venizia/ardor` | [writeDelayMs](./2026-11-04-stored-state-write-delay) |
