@@ -14,6 +14,14 @@ export default {
   // A write outside the project folder is denied, not asked about.
   guard: { outside: 'deny' },
 
+  // The wiki palette is read from the manifest copy of this theme (docs/wiki/site/.vitepress/config.mts).
+  theme: {
+    accent: '#0277bd',
+    accentDark: '#38bdf8',
+    accentText: '#01579b',
+    tokens: { 'accent-ink': { dark: '#03121c' } },
+  },
+
   // Team-shared Claude settings that `vulcan sync` merges into `.claude/settings.json`. The two
   // plugins are off here by choice of the team, not a VULCAN default.
   claude: {

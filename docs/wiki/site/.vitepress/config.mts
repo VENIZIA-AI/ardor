@@ -1,6 +1,13 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
 import { venziaCodeTheme } from './theme/shared/code-theme.ts';
+import { WikiTheme } from './theme/shared/wiki-theme.ts';
+
+// The colours of the wiki are the project's resolved theme, as `vulcan sync` wrote it to the manifest.
+const THEME = WikiTheme.read({
+  manifest: new URL('../../../../.agents/vulcan.manifest.json', import.meta.url).pathname,
+});
+const ACCENT_2 = '#0091ea';
 
 // Every page under content/ must be reachable from a sidebar below - scripts/check-sidebar.mts fails
 // the build on an orphan page or a dead link.
@@ -114,8 +121,8 @@ const config = defineConfig({
   appearance: 'dark',
   markdown: {
     // The code windows are dark in both themes (theme/shared/tokens.css), so one dark theme serves both: the
-    // shared theme built from ARDOR's accent on dark (the same value as --accent-on-dark in theme/product.css).
-    theme: venziaCodeTheme({ accent: '#38bdf8' }),
+    // shared theme built from the accent on dark of the manifest theme (the value of --accent-on-dark).
+    theme: venziaCodeTheme({ accent: THEME.dark.accent ?? '' }),
   },
   srcDir: '../content',
   outDir: './.vitepress/dist',
@@ -134,6 +141,7 @@ const config = defineConfig({
     });
   },
   head: [
+    WikiTheme.head({ theme: THEME, accent2: ACCENT_2 }),
     [
       'link',
       {
