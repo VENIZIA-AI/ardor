@@ -14,6 +14,7 @@ import {
   type IGetRequestPropsResult,
   type INetworkResponse,
   type INoAuthOptions,
+  LocalStorageKeys,
   RequestChannel,
   RequestCountData,
   RequestMethods,
@@ -106,11 +107,27 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an
-   * application with no `id`. With an application `id` the session is under other keys: hand the
-   * `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`, instead.
+   * application with no `id`. With an application `id` the session is under other keys: use
+   * `createAuthTokenReader({ id })`, the `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`.
    */
   static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
     return AuthTokenStore.read();
+  }
+
+  /**
+   * A reader of the stored token of the application with this `id` (`IApplicationInfo.id`): the same
+   * key `DefaultAuthService.getAuth` reads (`LocalStorageKeys.scoped({ id }).token`). Without an `id` it
+   * is `readAuthTokenFromStorage`. Throws for an invalid `id`, when it is created.
+   *
+   * @example
+   * ```ts
+   * super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) });
+   * ```
+   */
+  static createAuthTokenReader(opts: { id?: string } = {}): () => IAuthTokenRecord | undefined {
+    const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
+
+    return () => AuthTokenStore.read({ key });
   }
 
   // --- Hooks -----------------------------------------------------------------------------------

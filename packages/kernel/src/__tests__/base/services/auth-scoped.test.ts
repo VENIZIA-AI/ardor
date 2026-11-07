@@ -184,4 +184,42 @@ describe('DefaultAuthService with an application id', () => {
     expect(probe(shop)?.value).toBe('alice-token');
     expect(probe(blog)?.value).toBe('bob-token');
   });
+
+  test('createAuthTokenReader reads the token of its application, as the auth service does', () => {
+    const shop = serviceOf('shop');
+    const blog = serviceOf('blog');
+    signIn(shop, 'alice');
+    signIn(blog, 'bob');
+
+    const readShop = DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' });
+    const readBlog = DefaultNetworkRequestService.createAuthTokenReader({ id: 'blog' });
+
+    expect(readShop()?.value).toBe('alice-token');
+    expect(readShop()).toEqual(shop.getAuth() ?? undefined);
+    expect(readBlog()?.value).toBe('bob-token');
+    // The unscoped reader does not see an application that has an id.
+    expect(DefaultNetworkRequestService.readAuthTokenFromStorage()).toBeUndefined();
+  });
+
+  test('createAuthTokenReader reads at call time, and is undefined after sign-out', () => {
+    const shop = serviceOf('shop');
+    const read = DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' });
+
+    expect(read()).toBeUndefined();
+
+    signIn(shop, 'alice');
+    expect(read()?.value).toBe('alice-token');
+
+    shop.cleanUp();
+    expect(read()).toBeUndefined();
+  });
+
+  test('createAuthTokenReader without an id is the unscoped reader, and an invalid id is refused', () => {
+    signIn(serviceOf(), 'carol');
+
+    expect(DefaultNetworkRequestService.createAuthTokenReader()()?.value).toBe('carol-token');
+    expect(() => DefaultNetworkRequestService.createAuthTokenReader({ id: 'a/b' })).toThrow(
+      'IApplicationInfo.id',
+    );
+  });
 });
