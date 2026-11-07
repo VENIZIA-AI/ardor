@@ -40,7 +40,9 @@ export class ResizeObservation {
       }
     };
 
-    const observer = new ResizeObserver((entries) => {
+    let observer: ResizeObserver | undefined;
+
+    const onEntries: ResizeObserverCallback = (entries) => {
       for (const entry of entries) {
         latest.set(entry.target, entry);
       }
@@ -59,12 +61,19 @@ export class ResizeObservation {
         frame = undefined;
         flush();
       });
-    });
+    };
 
     const update = (targets: Element[]) => {
       const wanted = new Set(
         children ? targets.flatMap((target) => [target, ...target.children]) : targets,
       );
+
+      // No target and no observer yet: there is nothing to watch, so none is made.
+      if (!observer && wanted.size === 0) {
+        return;
+      }
+
+      observer ??= new ResizeObserver(onEntries);
 
       for (const element of watched) {
         if (!wanted.has(element)) {
@@ -82,7 +91,7 @@ export class ResizeObservation {
       watched = wanted;
     };
 
-    const mutations = children ? new MutationObserver(() => update(current)) : undefined;
+    let mutations: MutationObserver | undefined;
 
     return {
       sync: (targets) => {
@@ -97,13 +106,17 @@ export class ResizeObservation {
         update(targets);
 
         // A removed target stays registered on `mutations` until `stop`; its callback only updates the current targets.
-        for (const target of targets) {
-          mutations?.observe(target, { childList: true });
+        if (children && targets.length > 0) {
+          mutations ??= new MutationObserver(() => update(current));
+
+          for (const target of targets) {
+            mutations.observe(target, { childList: true });
+          }
         }
       },
       stop: () => {
         mutations?.disconnect();
-        observer.disconnect();
+        observer?.disconnect();
 
         if (frame !== undefined) {
           cancelAnimationFrame(frame);
