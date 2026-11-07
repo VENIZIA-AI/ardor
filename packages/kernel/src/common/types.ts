@@ -131,10 +131,11 @@ export interface IAuthProviderOptions {
     /** Where `checkAuth` validates the stored token. Default: not called; the stored token is enough. */
     checkAuth?: string;
     /**
-     * Where the admin goes once `login` resolves.
+     * Where the admin goes once `login` resolves. `false`: nowhere, `login` resolves with
+     * `redirectTo: false` and the page stays (a guest or kiosk shell).
      * @default '/'
      */
-    afterLogin?: string;
+    afterLogin?: string | false;
   };
 }
 

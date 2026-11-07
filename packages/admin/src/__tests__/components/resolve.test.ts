@@ -40,6 +40,23 @@ describe('ApplicationProviders.resolve', () => {
     expect(providers.i18nProvider as unknown).toEqual({ id: 'i18n' });
   });
 
+  test('with isAuthRequired the auth provider is typed as present, and an unbound one throws', () => {
+    const providers = ApplicationProviders.resolve({
+      container: createContainer({ withAuthProvider: true }),
+      isAuthRequired: true,
+    });
+    // No optional chaining or assertion: the type says the provider is there.
+    const login: unknown = providers.authProvider.login;
+
+    expect(login).toBe(authProvider.login);
+    expect(() => {
+      ApplicationProviders.resolve({
+        container: createContainer({ withAuthProvider: false }),
+        isAuthRequired: true,
+      });
+    }).toThrow();
+  });
+
   test('leaves the auth provider out when the application has no sign-in', () => {
     const providers = ApplicationProviders.resolve({
       container: createContainer({ withAuthProvider: false }),

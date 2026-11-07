@@ -287,6 +287,56 @@ const jwtOf = (payload: object): string => {
   return [encode({ alg: 'ES256' }), encode(payload), 'signature'].join('.');
 };
 
+describe('login and the page after it', () => {
+  const redirectOf = async (options: IAuthProviderOptions) => {
+    const outcome: unknown = await signInWith({ options }).login({
+      username: 'alice',
+      password: 'secret-password',
+    });
+
+    return Reflect.get(Object(outcome), 'redirectTo');
+  };
+
+  test('afterLogin false stays on the page: redirectTo is false', async () => {
+    const result2 = await redirectOf({ paths: { afterLogin: false } });
+    expect(result2).toBe(false);
+  });
+
+  test('afterLogin names the page, and the default is the root', async () => {
+    const result3 = await redirectOf({ paths: { afterLogin: 'dashboard' } });
+    expect(result3).toBe('/dashboard');
+    const result4 = await redirectOf({});
+    expect(result4).toBe('/');
+  });
+
+  test('a subclass that overrides afterLoginPath with a path or false is obeyed', async () => {
+    class Guest extends DefaultAuthProvider {
+      protected override get afterLoginPath() {
+        return false as const;
+      }
+    }
+    class Fixed extends DefaultAuthProvider {
+      protected override get afterLoginPath() {
+        return '/home';
+      }
+    }
+
+    const outcome = async (providerClass: TClass<DefaultAuthProvider>) => {
+      const result: unknown = await signInWith({ providerClass }).login({
+        username: 'a',
+        password: 'b',
+      });
+
+      return Reflect.get(Object(result), 'redirectTo');
+    };
+
+    const result5 = await outcome(Guest);
+    expect(result5).toBe(false);
+    const result6 = await outcome(Fixed);
+    expect(result6).toBe('/home');
+  });
+});
+
 describe('login against the sign-in response shapes', () => {
   test('stores a bare token string as a Bearer token, with the user id read from its payload', async () => {
     const token = jwtOf({ userId: 'u-9', roles: [{ id: '1', identifier: 'admin', priority: 0 }] });
