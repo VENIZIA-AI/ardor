@@ -50,8 +50,10 @@ const run = async (opts: {
   allowFailure?: boolean;
 }): Promise<{ stdout: string; exitCode: number }> => {
   const proc = Bun.spawn(opts.command, { stdout: 'pipe', stderr: 'pipe' });
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
+  const stdoutResponse = new Response(proc.stdout);
+  const stdout = await stdoutResponse.text();
+  const stderrResponse = new Response(proc.stderr);
+  const stderr = await stderrResponse.text();
   const exitCode = await proc.exited;
 
   if (exitCode !== 0 && !opts.allowFailure) {
