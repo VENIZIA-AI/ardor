@@ -89,7 +89,7 @@ BrowserStorage.remove({ key: '@app/prefs/theme', storage: StorageAreas.LOCAL });
 | `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
 | `keys({ storage?, prefix? })` | `Array<string>` | The keys of the area, only those that start with `prefix` when it is given. `[]` where the area is missing or throws. It lists the keys under `@app/auth/` too, because listing writes nothing. |
 | `removeWhere({ storage?, prefix })` | `number` | Removes every key that starts with `prefix` and answers how many it removed. `prefix` is required, and an empty one removes nothing, so a call cannot clear an area. A key under `@app/auth/` is never removed, as in `remove`, and is not counted. A key another tab removed after the listing still counts. |
-| `subscribe({ key, storage?, listener })` | a function that stops it | `listener` runs after a `set` or `remove` through `BrowserStorage` and after another tab changes the key. |
+| `subscribe({ key, storage?, listener })` | a function that stops it | `listener({ isExternal })` runs after a `set`, `remove` or `removeWhere` through `BrowserStorage` (`isExternal` is `false`) and after another tab changes the key (`true`), so a listener can skip its own writes. A listener that takes no argument still works. |
 
 `storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default. With a `codec`, `fallback` may be of another type, such as `null` for "nothing is stored", and `get` answers the union.
 

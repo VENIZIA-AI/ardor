@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 
 import { type IStorageCodec, LocalStorageKeys, StorageAreas } from '@/common';
-import { BrowserStorage } from '@/utilities/browser-storage';
+import { BrowserStorage, type IStorageChange } from '@/utilities/browser-storage';
 import { FakeStorage } from '@/testing';
 
 class QuotaStorage extends FakeStorage {
@@ -440,5 +440,73 @@ describe('BrowserStorage.subscribe across tabs', () => {
 
     add.mockRestore();
     remove.mockRestore();
+  });
+});
+
+describe('BrowserStorage.subscribe tells a change of this tab from one of another tab', () => {
+  test('a set, a remove and a removeWhere through BrowserStorage are not external', () => {
+    const changes: Array<IStorageChange> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: (change) => changes.push(change),
+    });
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    BrowserStorage.remove({ key: '@app/store/a' });
+    BrowserStorage.removeWhere({ prefix: '@app/store/' });
+
+    expect(changes).toEqual([{ isExternal: false }, { isExternal: false }, { isExternal: false }]);
+    stop();
+  });
+
+  test('a storage event of another tab is external, for a key and for a clear', () => {
+    const changes: Array<IStorageChange> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: (change) => changes.push(change),
+    });
+
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+    globalThis.dispatchEvent(storageEvent({ key: null, storageArea: localStorage }));
+
+    expect(changes).toEqual([{ isExternal: true }, { isExternal: true }]);
+    stop();
+  });
+
+  test('one listener can tell its own write from a remote one in a row', () => {
+    const seen: Array<string> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: ({ isExternal }) => seen.push(isExternal ? 'remote' : 'own'),
+    });
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+    BrowserStorage.set({ key: '@app/store/a', value: 2 });
+
+    expect(seen).toEqual(['own', 'remote', 'own']);
+    stop();
+  });
+
+  test('a listener that takes no argument is called as before, and one that throws does not stop the others', () => {
+    const calls: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({
+        key: '@app/store/a',
+        listener: () => {
+          throw new Error('listener failed');
+        },
+      }),
+      BrowserStorage.subscribe({ key: '@app/store/a', listener: () => calls.push('plain') }),
+    ];
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+
+    expect(calls).toEqual(['plain', 'plain']);
+
+    for (const stop of stops) {
+      stop();
+    }
   });
 });
