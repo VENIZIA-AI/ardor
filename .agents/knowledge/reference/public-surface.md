@@ -187,7 +187,7 @@ generated:
 - `useDocumentVisibility` const
 - `useElementSize` function
 - `useInjectable` const
-- `useIntersection` const
+- `useIntersection` function
 - `useMediaQuery` const
 - `useOnlineStatus` const
 - `useProvider` const
@@ -412,7 +412,7 @@ generated:
 - `useFeatures` const
 - `useHtmlLang` const
 - `useInjectable` const
-- `useIntersection` const
+- `useIntersection` function
 - `useMediaQuery` const
 - `useNotifyError` const
 - `useOnlineStatus` const
