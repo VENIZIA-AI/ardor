@@ -29,7 +29,8 @@ export default defineConfig(({ mode }) => {
         output: {
           // Runs each module after the modules it imports: a split chunk can otherwise run a DI package
           // before reflect-metadata (vitejs/vite#21866). It costs about 3% of the gzip size of a small app
-          // and 7 to 13% of an app with more than a thousand chunks: keep it on, or measure (the Vite setup guide).
+          // and 3 to 20% of the first screen of an app with more than a thousand chunks: keep it on, or
+          // measure (the Vite setup guide).
           strictExecutionOrder: true,
           // React, react-admin and the router weigh about 500 KB before any application code. Two
           // vendor chunks keep the application's own chunk small, cacheable across a deploy, and
