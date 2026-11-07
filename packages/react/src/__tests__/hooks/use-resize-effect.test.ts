@@ -204,7 +204,7 @@ describe('useResizeEffect', () => {
       },
       { initialProps: { element: null } },
     );
-    expect(observerAt(0).targets).toEqual([]);
+    expect(FakeResizeObserver.all).toHaveLength(0);
 
     rerender({ element });
 
@@ -282,15 +282,49 @@ describe('useResizeEffect', () => {
     expect(calls).toHaveLength(0);
   });
 
-  test('a null target, and an empty list, observe nothing and do not throw', () => {
+  test('a null target is skipped and the others are observed', () => {
     const element = document.createElement('div');
     const { onResize } = recorder();
 
     renderHook(() => useResizeEffect({ targets: [null, refOf(null), refOf(element)], onResize }));
-    renderHook(() => useResizeEffect({ targets: [], onResize }));
 
+    expect(FakeResizeObserver.all).toHaveLength(1);
     expect(observerAt(0).targets).toEqual([element]);
-    expect(observerAt(1).targets).toEqual([]);
+  });
+
+  test('an empty list, and targets that all resolve to null, create no observer', () => {
+    const { onResize } = recorder();
+
+    const empty = renderHook(() => useResizeEffect({ targets: [], onResize }));
+    const nulls = renderHook(() => useResizeEffect({ targets: [null, refOf(null)], onResize }));
+    empty.rerender();
+    nulls.unmount();
+    empty.unmount();
+
+    expect(FakeResizeObserver.all).toHaveLength(0);
+  });
+
+  test('the observer is created when the first target appears, and kept when the list empties again', () => {
+    const element = document.createElement('div');
+    const { onResize } = recorder();
+    const { rerender } = renderHook(
+      (props: { targets: Array<Element | null> }) =>
+        useResizeEffect({ targets: props.targets, onResize }),
+      { initialProps: { targets: [] as Array<Element | null> } },
+    );
+
+    expect(FakeResizeObserver.all).toHaveLength(0);
+
+    rerender({ targets: [element] });
+
+    expect(FakeResizeObserver.all).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([element]);
+
+    rerender({ targets: [] });
+
+    expect(FakeResizeObserver.all).toHaveLength(1);
+    expect(observerAt(0).targets).toEqual([]);
+    expect(observerAt(0).isDisconnected).toBe(false);
   });
 
   test('unmount disconnects and cancels a pending frame, so a late resize calls nothing', () => {
@@ -524,6 +558,9 @@ describe('useResizeEffect with children', () => {
 
     try {
       renderHook(() => useResizeEffect({ targets: [refOf(parent)], onResize }));
+      expect(created).toHaveLength(0);
+
+      renderHook(() => useResizeEffect({ targets: [], onResize, children: true }));
       expect(created).toHaveLength(0);
 
       const { unmount } = renderHook(() => {
