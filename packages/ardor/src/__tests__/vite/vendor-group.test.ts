@@ -11,9 +11,9 @@ import {
   writeFiles,
 } from './fixture';
 
-// vendor-group: the preset's `vendor` group of `codeSplitting` takes every module under node_modules into one
-// chunk unless it sets `minShareCount`, so the libraries that only a lazy route imports land in a chunk the first
-// screen loads (issue #668, measured on six apps in the Vite setup guide).
+// The preset has no catch-all `vendor` group in `codeSplitting`: it takes every module under node_modules into one
+// chunk, so the libraries that only a lazy route imports land in a chunk the first screen loads (issue #668,
+// measured on six apps in the Vite setup guide). The opt-in of the guide, `minShareCount: 2` with `entriesAware`, is pinned too.
 const PRESET_VITE_CONFIG = resolve(
   import.meta.dir,
   '../../../../../presets/app/files/.configs/builders/vite.config.mts',
@@ -88,17 +88,41 @@ const files: Record<string, string> = {
   ),
 };
 
+/** Every lazy library, and the one two routes share, sit in chunks that the first screen does not load. */
+const expectLazyLibrariesLater = (opts: { root: string }): void => {
+  const first = new Set(firstLoadChunks(opts).map((chunk) => chunk.file));
+  const later = readChunks(opts)
+    .filter((chunk) => !first.has(chunk.file))
+    .map((chunk) => chunk.code)
+    .join('\n');
+
+  expect(later).toContain('MARK-SHARED-');
+
+  for (const index of routes) {
+    expect(later).toContain(`MARK-LAZY-${index}-`);
+  }
+};
+
 const firstLoadCode = (root: string): string => {
   return firstLoadChunks({ root })
     .map((chunk) => chunk.code)
     .join('\n');
 };
 
-describe('the preset sets minShareCount on its vendor group', () => {
-  test('the vendor group takes the modules two chunks share, not every module under node_modules', () => {
-    expect(readFileSync(PRESET_VITE_CONFIG, 'utf8')).toMatch(
-      /\{\s*name:\s*'vendor',\s*test:\s*\/node_modules\/,\s*minShareCount:\s*2\s*\}/,
-    );
+describe('the preset has a react group and no vendor group', () => {
+  const groups = (): string => {
+    const text = readFileSync(PRESET_VITE_CONFIG, 'utf8');
+
+    return text.slice(text.indexOf('codeSplitting'));
+  };
+
+  test('codeSplitting holds the react group', () => {
+    expect(groups()).toMatch(/name:\s*'react',\s*test:\s*\/node_modules/);
+  });
+
+  test('codeSplitting holds no group that takes all of node_modules', () => {
+    expect(groups()).not.toMatch(/name:\s*'vendor'/);
+    expect(groups()).not.toMatch(/test:\s*\/node_modules\/\s*[,}]/);
   });
 });
 
@@ -114,8 +138,8 @@ describe('an eager entry and lazy routes that each import a library of their own
     removeScratch({ root });
   });
 
-  // Fails the day Rolldown stops putting every module of the group in one chunk by default: then the option has no case left.
-  test('without minShareCount the lazy libraries are in the chunk the first screen loads', async () => {
+  // Fails the day Rolldown stops putting every module of a catch-all group in one chunk: then the preset has no case left to avoid.
+  test('with a catch-all vendor group the lazy libraries are in the chunk the first screen loads', async () => {
     await buildFixture({ root, strictExecutionOrder: true });
     const code = firstLoadCode(root);
 
@@ -128,37 +152,45 @@ describe('an eager entry and lazy routes that each import a library of their own
     );
   });
 
-  test('with minShareCount 2 the first screen has the entry library and no lazy library', async () => {
-    await buildFixture({ root, strictExecutionOrder: true, vendorMinShareCount: 2 });
+  test('without a vendor group, as the preset is, the first screen has the entry library and no lazy library', async () => {
+    await buildFixture({ root, strictExecutionOrder: true, vendorGroup: false });
     const code = firstLoadCode(root);
 
     expect(code).toContain('MARK-EAGER-');
-    expect(code).not.toContain('MARK-SHARED-');
 
     for (const index of routes) {
       expect(code).not.toContain(`MARK-LAZY-${index}-`);
     }
   });
 
-  test('with minShareCount 2 every lazy library is still built, in a chunk the first screen does not load', async () => {
-    await buildFixture({ root, strictExecutionOrder: true, vendorMinShareCount: 2 });
-    const first = new Set(firstLoadChunks({ root }).map((chunk) => chunk.file));
-    const later = readChunks({ root })
-      .filter((chunk) => !first.has(chunk.file))
-      .map((chunk) => chunk.code)
-      .join('\n');
+  test('without a vendor group every lazy library is still built, in a chunk the first screen does not load', async () => {
+    await buildFixture({ root, strictExecutionOrder: true, vendorGroup: false });
 
-    expect(later).toContain('MARK-SHARED-');
-
-    for (const index of routes) {
-      expect(later).toContain(`MARK-LAZY-${index}-`);
-    }
+    expectLazyLibrariesLater({ root });
   });
 
-  test(`with minShareCount 2 no chunk is larger than ${MAX_CHUNK_BYTES / 1000} KB`, async () => {
-    await buildFixture({ root, strictExecutionOrder: true, vendorMinShareCount: 2 });
+  test(`without a vendor group no chunk is larger than ${MAX_CHUNK_BYTES / 1000} KB`, async () => {
+    await buildFixture({ root, strictExecutionOrder: true, vendorGroup: false });
     const largest = Math.max(...readChunks({ root }).map((chunk) => chunk.size));
 
     expect(largest).toBeLessThan(MAX_CHUNK_BYTES);
+  });
+
+  // The opt-in of the guide: it keeps the lazy libraries off the first screen too, in chunks of their own.
+  test('the opt-in vendor group, minShareCount 2 with entriesAware, keeps the lazy libraries off the first screen', async () => {
+    await buildFixture({
+      root,
+      strictExecutionOrder: true,
+      vendorGroup: { minShareCount: 2, entriesAware: true },
+    });
+    const code = firstLoadCode(root);
+
+    expect(code).toContain('MARK-EAGER-');
+
+    for (const index of routes) {
+      expect(code).not.toContain(`MARK-LAZY-${index}-`);
+    }
+
+    expectLazyLibrariesLater({ root });
   });
 });
