@@ -7,8 +7,8 @@ adds three small things on top of it:
 
 | File | What it holds |
 | --- | --- |
-| [`site/.vitepress/theme/product.css`](./site/.vitepress/theme/product.css) | ARDOR's accent: the blue the shared theme uses for links, buttons and decorators |
-| [`site/.vitepress/theme/design-tokens.css`](./site/.vitepress/theme/design-tokens.css) | the brand ramp `product.css` takes its values from |
+| `theme` in [`.configs/vulcan.config.mts`](../../.configs/vulcan.config.mts) | ARDOR's accent: the blue the shared theme uses for links, buttons and decorators; `vulcan sync` copies it to the manifest and `shared/wiki-theme.ts` writes it into every page |
+| [`site/.vitepress/theme/design-tokens.css`](./site/.vitepress/theme/design-tokens.css) | the brand ramp the `theme` accent takes its values from |
 | [`site/.vitepress/theme/style.css`](./site/.vitepress/theme/style.css) | the two page components only ARDOR has: the guide cards (`.guide-card`) and the roadmap (`.roadmap-stage`) |
 
 The home page is the shared `HomeLayout.vue` with ARDOR's words in `site/.vitepress/theme/home-content.ts`.

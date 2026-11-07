@@ -2,7 +2,7 @@
  * ARDOR DOCS - DESIGN TOKENS
  * -----------------------------------------------------------------------------
  * ARDOR's brand ramp, the colours of the icon (#0091EA, #7DF3FF) on the devglow Tide palette without its
- * teal. product.css sets ARDOR's accent from these values; the shared theme (theme/shared) owns every other
+ * teal. The `theme` of .configs/vulcan.config.mts takes ARDOR's accent from these values; the shared theme (theme/shared) owns every other
  * token. The shared index loads this file by its fixed name, so it stays even though it is small: add a token
  * only when a rule uses it (docs/wiki/DESIGN-SYSTEM.md).
  * ============================================================================= */
