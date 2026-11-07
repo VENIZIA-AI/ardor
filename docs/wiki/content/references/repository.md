@@ -180,7 +180,7 @@ export class InvoiceRepository extends HttpRepository<Invoice> {
 export const useInvoices = () => useRepository({ target: InvoiceRepository });
 ```
 
-`readAuthTokenFromStorage` reads the session of an application with no `id`. An application with an `id` (`IApplicationInfo.id`, see [Two applications on one origin](./binding-keys#two-applications-on-one-origin)) keeps its session under other keys: build the data source from the data provider's `getDataSourceAuth()` or pass `authTokenResolver: () => authService.getAuth() ?? undefined`.
+`readAuthTokenFromStorage` reads the session of an application with no `id`. An application with an `id` (`IApplicationInfo.id`, see [Two applications on one origin](./binding-keys#two-applications-on-one-origin)) keeps its session under other keys: pass `authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' })` (the same key `authService.getAuth()` reads), or build the data source from the data provider's `getDataSourceAuth()`.
 
 ## Related
 

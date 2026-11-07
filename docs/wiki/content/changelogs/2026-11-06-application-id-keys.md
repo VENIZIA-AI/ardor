@@ -26,6 +26,7 @@ const info = { name: 'Shop', version: '1.0.0', description: 'The shop', id: 'sho
 - **A subclass of `DefaultAuthService` with its own constructor passes the application info on** (`super(info)`); `DefaultAuthProvider` refuses to start with a service that lost the id, so the session cannot silently stay shared.
 - **An old session is left where it was.** Keys under a previous scope (the unscoped ones, or another id) are not read, moved or removed, so an old token stays on disk until it is removed by hand or by an application that sweeps that scope.
 - **`DefaultNetworkRequestService.readAuthTokenFromStorage` is for applications with no id.** An application with an id hands its data source `getDataSourceAuth()` of the data provider instead.
+- **Added `DefaultNetworkRequestService.createAuthTokenReader`**: Returns a token reader for an application by its ID so `HttpDataSource` instances can resolve the matching sign-in token from storage. Omitting the ID preserves the default application token lookup, while an invalid ID throws immediately on creation.
 - **No id, no change.** An application without an `id` keeps the keys it has, so there is nothing to migrate. An application with an `id` starts with an empty session under the new keys: its users sign in once.
 
 ## Who is affected
