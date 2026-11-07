@@ -10,7 +10,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor']
 
 <Badge type="tip" text="New Feature" />
 
-**In one line.** `useIntersection({ target, rootMargin?, threshold? })` returns the latest `IntersectionObserverEntry` of the target, or `undefined` before the first one and where there is no `IntersectionObserver`. Read `entry?.isIntersecting` for the boolean. Give it a list of targets and it returns one entry per target, in the same order.
+**In one line.** `useIntersection({ target, rootMargin?, threshold? })` returns the latest `IntersectionObserverEntry` of the target, or `undefined` before the first one and where there is no `IntersectionObserver`. Read `entry?.isIntersecting` for the boolean.
 
 ```tsx
 import React from 'react';
@@ -38,10 +38,8 @@ export function LoadMore({ onLoad }: { onLoad: () => void }) {
 ## What changed
 
 - **The entry, not a boolean.** It carries the ratio and the rectangles when you need them. The state changes only when `isIntersecting` or the ratio changed, so an unchanged entry does not render.
-- **The target is an element, a ref or `null`.** It is read after every render, as for `useResizeEffect`, so an element held in state or mounted later is followed.
-- **Several targets.** `useIntersection` accepts an array of elements or refs for `target` and returns an array of matching observer entries in the same order, leaving any missing or unready item as `undefined`. Passing a single target continues to return a single entry.
-- **A root and a threshold list.** You can pass an element or a ref via the `root` option to observe scrolling inside a specific container, or omit it (or pass `null`) to use the viewport. A ref whose element is not there yet observes nothing until it is. The `threshold` option also accepts an array of numbers alongside single values.
-- **A change starts again.** Changing the targets, root, `rootMargin` or `threshold` resets all tracked entries back to `undefined`. The browser then immediately reports every target again.
+- **The target is an element, a ref or `null`.** It is read after every render, as for `useResizeEffect`, so an element held in state or mounted later is followed. A new element, `rootMargin` or `threshold` observes again from `undefined`.
+- **One `threshold`, no `root`.** `threshold` is a single number; the viewport is the root, and `rootMargin` covers a scrolling root.
 - **Also in `Ardor`.** `Ardor.useIntersection` joins the namespace, and `ardor codemod namespace --hooks` knows it.
 - **A new type.** `IUseIntersectionOptions` is the options object, and `TElementTarget` is the type of a target, shared with `useResizeEffect` (it was `TResizeTarget`, unreleased).
 
