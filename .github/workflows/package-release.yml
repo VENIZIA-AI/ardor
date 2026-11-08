@@ -186,67 +186,16 @@ jobs:
       - name: Install
         run: bun install
 
-      # Every ARDOR sibling is a member of this workspace, so resolving one to a registry tarball is
-      # always wrong: the build would validate code that is not in this repository. The failure mode is
-      # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
-      - name: Assert internal dependencies link to the workspace
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            bun scripts/release/release-gates.ts links "packages/$package"
-          done
-
-      # One copy of every @venizia/* package. A workspace member that does not declare an IGNIS package
-      # itself gets the stable copy for its peer range (it excludes the prerelease), and two copies of
-      # inversion are two sets of types: the build fails far from the cause. This names the member.
-      - name: Assert one copy of every @venizia package
-        run: bun scripts/release/release-gates.ts single-copy
-
-      # -------------------------------------------------------------------------
-      # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
-      # -------------------------------------------------------------------------
-      - name: Build
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "$package"
-          done
-
-      - name: Lint
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "lint-$package"
-          done
-
-      - name: Test the package
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "test-$package"
-          done
-
-      - name: Test the repository scripts
-        run: make test-scripts
-
-      # The gate's own regression tests run first: a probe that silently stopped detecting anything
-      # would leave every `purity-*` target green for the wrong reason.
-      - name: Purity probe self-test
-        run: make purity-test
-
-      - name: Purity gate
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "purity-$package"
-          done
-
-      - name: Check dependency catalog
-        run: make catalog-check
-
-      # An app created from the PACKED preset typechecks, lints, builds and starts without a warning.
-      # Before the bump and the publish: a preset that cannot create a working app must not ship.
-      - name: VULCAN preset smoke
-        if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
+      # The gates of `make gates`, for the packages of this run, in the order that target lists them: every ARDOR
+      # sibling links to the workspace and every @venizia/* package resolves to one copy (a registry tarball or
+      # a second copy shows up as unrelated type errors), then build, lint, test, the scripts, purity, the
+      # catalog and, when the run holds ardor, the preset smoke: an app created from the PACKED preset
+      # typechecks, lints, builds and starts without a warning, before the bump and the publish.
+      - name: Gates
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
           VULCAN_CMD: bun x @venizia/vulcan@0.4.10-9
-        run: make preset-smoke
+        run: make gates PACKAGES="${PACKAGES//,/ }"
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
   # the gates, so the owner never approves a release that fails them, and its name carries the target version. The

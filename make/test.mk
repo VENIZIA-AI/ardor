@@ -29,12 +29,13 @@ test-scripts:
 	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__
 
 # ----------------------------------------------------------------------------
-# GATES - the local twin of the Test job of package-release.yml: the same targets, in the same order.
-# scripts/release/__tests__/gates-twin.test.ts keeps the two lists equal. Needs `bun install`. Run it
-# without -j: the order is the point.
+# GATES - what the Test job of package-release.yml runs, in this order: it calls `make gates` for the packages of
+# the run, so a local `make gates` is the same list. `PACKAGES="kernel react"` limits the per-package gates, and the
+# preset smoke runs only when ardor is among them. Needs `bun install`. Run it without -j: the order is the point.
 # ----------------------------------------------------------------------------
 GATE_TARGETS := links-check copies-check $(PACKAGES) $(addprefix lint-,$(PACKAGES)) $(addprefix test-,$(PACKAGES)) \
-                test-scripts purity-test $(addprefix purity-,$(PACKAGES)) catalog-check preset-smoke
+                test-scripts purity-test $(addprefix purity-,$(PACKAGES)) catalog-check \
+                $(if $(filter ardor,$(PACKAGES)),preset-smoke)
 
 gates:
 	@$(foreach target,$(GATE_TARGETS),$(MAKE) --no-print-directory $(target) &&) true
