@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient } from '@tanstack/react-query';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
@@ -10,7 +10,7 @@ import type { TI18nSource } from '@/common';
 import type { TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
-import { useApplicationLogger } from '@venizia/ardor-react';
+import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
@@ -397,5 +397,43 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     await settle();
 
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+  });
+});
+
+describe('ArdorApplication reduxStore', () => {
+  const { useAppSelector } = SelectorHooks.create<{ greeting: string }>();
+
+  const Greeting = () => {
+    return <p>{useAppSelector((state) => state.greeting)}</p>;
+  };
+
+  const renderApplication = (opts: { reduxStore?: Store; element: React.ReactElement }) => {
+    return render(
+      <MemoryRouter initialEntries={['/greeting']}>
+        <ArdorApplication
+          container={createContainer({ load: () => Promise.resolve({}), withAuthProvider: false })}
+          suspense={<span>loading</span>}
+          routes={[{ path: '/greeting', element: opts.element }]}
+          {...(opts.reduxStore ? { reduxStore: opts.reduxStore } : {})}
+        />
+      </MemoryRouter>,
+    );
+  };
+
+  test('is not needed: an application without one mounts and renders a route', async () => {
+    renderApplication({ element: <p>Hello without a store</p> });
+
+    const result = await screen.findByText('Hello without a store');
+    expect(result).toBeDefined();
+  });
+
+  test('is provided to the routes when passed', async () => {
+    renderApplication({
+      reduxStore: configureStore({ reducer: () => ({ greeting: 'Hello from the store' }) }),
+      element: <Greeting />,
+    });
+
+    const result2 = await screen.findByText('Hello from the store');
+    expect(result2).toBeDefined();
   });
 });

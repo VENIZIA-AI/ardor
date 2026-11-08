@@ -137,8 +137,8 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
    * (IGNIS's, so a provider registered with `LoggerFactory.use` is the one behind it).
    */
   logger?: ILogger;
-  /** The store the Redux provider of the shell serves. */
-  reduxStore: Store;
+  /** The store the Redux provider of the shell serves. Absent, the shell mounts no Redux provider. */
+  reduxStore?: Store;
   /** Rendered as the `Suspense` fallback and while feature messages for the locale load. */
   suspense: ReactNode;
 

@@ -48,7 +48,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 4. **Verifies internationalization readiness**: Calls `useFeatureMessagesReady`. If a feature supplies lazy translation loaders for the active locale, triggers `i18nProvider.changeLocale()` and renders the `suspense` fallback until ready.
 5. **Wraps the component hierarchy**:
    - `ApplicationContext.Provider` with `{ container, logger }` (the `logger` prop, else a console logger named after the application).
-   - `ReduxProvider` with `reduxStore`.
+   - `ReduxProvider` with `reduxStore`, only when the prop is passed.
    - `React.Suspense` with `suspense`.
 6. **Renders CoreAdmin**: Passes providers and forwarded props, mounting resources as `<Resource key={resource.name} {...resource} />` and routes inside `<CustomRoutes>` as `<Route key={route.id ?? route.path} {...route} />`.
 
@@ -59,7 +59,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 | Prop | Type | Required | Description |
 | --- | --- | --- | --- |
 | `container` | `Container` | Yes | The started IoC container instance (an instance of `BaseArdorApplication`). |
-| `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
+| `reduxStore` | `Store` | No | The Redux store the shell serves. Absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw. |
 | `suspense` | `ReactNode` | Yes | Fallback React node displayed while components or feature translations load. |
 | `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
