@@ -105,8 +105,7 @@ The full contract, and what goes stale, is in [Atlas MCP server](.agents/knowled
 
 Maintaining it is rule V-P-04: change a fact in the code, update the concept in the same change.
 Generated content (P-03) comes from `make okf-gen`; `make okf-check-strict` validates and is not a commit
-gate. The `knowledge-sync` skill (shipped by VULCAN) re-verifies the bundle against the code
-periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-areas.md).
+gate. The `docs-update` skill (shipped by VULCAN) keeps the bundle in step with the code.
 
 ## Shared agent assets (`.agents/`)
 
@@ -118,7 +117,7 @@ periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-a
 └── plans/            # gitignored - saved specs and plans, local to each developer
 ```
 
-VULCAN ships the shared skills (`knowledge-sync`, `docs-writing`, `docs-update`, which applies the D rules of `rules.md`) and hooks (the rules digest,
+VULCAN ships the shared skills (`docs-writing`, `docs-update`, which applies the D rules of `rules.md`) and hooks (the rules digest,
 which also prints the minimap block of `rules.md`, and `guard-writes`); a project adds its own and never redefines a shipped one. A skill is a procedure
 you follow; a concept is material you consult. Neither is duplicated in the other. Before adding a
 skill, check the task is not already covered by one here, by VULCAN or by Claude Code.
