@@ -48,6 +48,7 @@ bun add @venizia/ardor
 | New feature | `IApplicationInfo.id` scopes the session and store keys, so two applications on one origin share no session | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Application id](./2026-11-06-application-id-keys) |
 | Behavior Change | The generated app sends a `Content-Security-Policy-Report-Only` header, hides the nginx version, refuses more secret-looking `VITE_` names and a URL with a password, and checks `NGINX_LOCAL_RESOLVERS` | `@venizia/ardor` | [Preset hardening](./2026-11-06-preset-hardening) |
 | New feature | `paths.afterLogin: false` keeps the page after sign-in, and `ApplicationProviders.resolve({ isAuthRequired: true })` types the auth provider as present | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-in that stays](./2026-11-06-after-login-false) |
+| New feature | `reduxStore` is optional on `ArdorApplication`, so an app with no Redux mounts no Redux provider | `@venizia/ardor-admin`, `@venizia/ardor` | [reduxStore](./2026-11-08-redux-store-is-optional) |
 | Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
 | Breaking Change | ARDOR 0.4.8-7 (prerelease) peers on IGNIS `^0.4.8-6`, `^0.4.7-4` (filter) and `^0.4.7-3` (inversion), so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
 
@@ -60,8 +61,8 @@ The `Ardor` namespace holds 30 hooks (25 in 0.4.7), and `ardor codemod namespace
 | Peer | ARDOR 0.4.7 | ARDOR 0.4.8-7 (prerelease) |
 |------|-------|-------|
 | `@venizia/ignis-helpers`, `-kernel`, `-connectors`, `-boot` | `^0.4.7` | `^0.4.8-6` |
-| `@venizia/ignis-inversion` | `^0.4.6` | `^0.4.7-4` |
-| `@venizia/ignis-filter` | `^0.4.6` | `^0.4.7-3` |
+| `@venizia/ignis-inversion` | `^0.4.6` | `^0.4.7-3` |
+| `@venizia/ignis-filter` | `^0.4.6` | `^0.4.7-4` |
 
 In ARDOR 0.4.8-7, a range that starts at a prerelease (`^0.4.8-6`) matches 0.4.8-6 and every later version below 0.5.0, and it does not match IGNIS 0.4.7 or 0.4.8-5. IGNIS inversion is published as 0.4.7-3 and filter as 0.4.7-4, so `^0.4.7-3` matches inversion and `^0.4.7-4` matches filter. Install the IGNIS versions that satisfy these ranges before you install ARDOR 0.4.8-7. (ARDOR 0.4.8-1 to 0.4.8-6 peer on `^0.4.8-0` / `^0.4.7-0`, `^0.4.8-1` / `^0.4.7-1`, `^0.4.8-2` / `^0.4.7-2`, `^0.4.8-3` / `^0.4.7-2`, `^0.4.8-4` / `^0.4.7-2` and `^0.4.8-5` / `^0.4.7-3` (filter) and `^0.4.7-2` (inversion).) The stable 0.4.8 takes stable IGNIS ranges, refreshed by the stable release run; these are not its ranges.
 
