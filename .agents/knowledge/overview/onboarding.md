@@ -6,8 +6,8 @@ resource: AGENTS.md
 tags: [onboarding, playbook, getting-started]
 ---
 
-Start with `AGENTS.md`. It is routing only, holds no rules and no facts, and points to the two
-places that do: `.agents/rules.md` (the rules, cited by ID: W write boundaries, S security, P
+Start with `AGENTS.md`. It is routing only (apart from the blocks `make vulcan-sync` generates), holds no
+rules and no facts of its own, and points to the two places that do: `.agents/rules.md` (the rules, cited by ID: W write boundaries, S security, P
 process, B build, C code and writing) and `.agents/knowledge/index.md` (the facts - what ARDOR is,
 the monorepo layout, design decisions, conventions, per-package concepts, playbooks). Both are
 mandatory for every task, not optional background reading.
