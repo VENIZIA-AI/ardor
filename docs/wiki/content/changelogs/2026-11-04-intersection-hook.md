@@ -12,28 +12,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor']
 
 **In one line.** `useIntersection({ target, rootMargin?, threshold? })` returns the latest `IntersectionObserverEntry` of the target, or `undefined` before the first one and where there is no `IntersectionObserver`. Read `entry?.isIntersecting` for the boolean.
 
-```tsx
-import React from 'react';
-import { useIntersection } from '@venizia/ardor';
-
-export function LoadMore({ onLoad }: { onLoad: () => void }) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const entry = useIntersection({ target: ref, rootMargin: '200px' });
-  const latest = React.useRef(onLoad);
-
-  React.useEffect(() => {
-    latest.current = onLoad;
-  });
-
-  React.useEffect(() => {
-    if (entry?.isIntersecting) {
-      latest.current();
-    }
-  }, [entry?.isIntersecting]);
-
-  return <div ref={ref} />;
-}
-```
+The example is in [useIntersection](../references/hooks#useintersection).
 
 ## What changed
 

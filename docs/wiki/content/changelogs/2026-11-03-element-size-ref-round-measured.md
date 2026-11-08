@@ -12,15 +12,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor']
 
 **In one line.** `useElementSize()` with no `ref` returns a `ref` to give to the element, so it follows an element that mounts later or is replaced. It takes `round`, it returns `measured`, and `FakeResizeObserver` in `@venizia/ardor/testing` lets a test deliver a size.
 
-```tsx
-import { useElementSize } from '@venizia/ardor';
-
-export function Panel({ open }: { open: boolean }) {
-  const { ref, width, measured } = useElementSize({ round: true });
-
-  return open ? <div ref={ref}>{measured ? `${width}px` : '...'}</div> : null;
-}
-```
+The example is in [useElementSize](../references/hooks#useelementsize).
 
 ## What changed
 
