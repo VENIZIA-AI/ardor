@@ -12,12 +12,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor']
 
 **In one line.** `BrowserClipboard.writeText({ text })` and `BrowserClipboard.readText()` write and read the text on the clipboard from any code, a service, a util or a toast action, and answer `false` or `undefined` where the browser refuses. They never throw and never reject.
 
-```ts
-import { BrowserClipboard } from '@venizia/ardor';
-
-const isCopied = await BrowserClipboard.writeText({ text: 'https://example.com/share/42' });
-const pasted = await BrowserClipboard.readText();
-```
+The example is in [Browser clipboard](../references/index#browser-clipboard).
 
 ## What changed
 

@@ -12,25 +12,7 @@ packages: ['@venizia/ardor-react', '@venizia/ardor']
 
 **In one line.** `useResizeEffect({ targets, onResize, box?, children? })` calls `onResize(entries)` when any element of `targets` resizes, with `children: true` also when a direct child of one does. Use it for a check that keeps no size in state, such as an overflow test, the edges of a scroll area or a canvas fit; `useElementSize` stays for the size itself.
 
-```tsx
-import React from 'react';
-import { useResizeEffect } from '@venizia/ardor';
-
-export function Toolbar() {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [isOverflowing, setOverflowing] = React.useState(false);
-
-  useResizeEffect({
-    targets: [ref],
-    onResize: () => {
-      const element = ref.current;
-      setOverflowing(element !== null && element.scrollWidth > element.clientWidth);
-    },
-  });
-
-  return <div ref={ref}>{isOverflowing ? 'More...' : 'All'}</div>;
-}
-```
+The example is in [useResizeEffect](../references/hooks#useresizeeffect).
 
 ## What changed
 

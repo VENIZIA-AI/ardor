@@ -12,22 +12,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
 
 **In one line.** `onSessionStarted` now fires for a token refreshed by your network service's 401 recovery, `onSessionCleared` fires for a `cleanUp` made outside the provider, and a guest app can set what `checkAuth` and a 401 reject with.
 
-```ts
-import {
-  DefaultAuthProvider,
-  type IAuthRejection,
-  SessionClearReasons,
-  type TSessionClearReason,
-} from '@venizia/ardor';
-
-export class GuestAuthProvider extends DefaultAuthProvider {
-  protected override unauthenticatedRejection(opts: { reason: TSessionClearReason }): IAuthRejection {
-    return opts.reason === SessionClearReasons.UNAUTHORIZED
-      ? { logoutUser: false, message: false }
-      : { redirectTo: false, message: false };
-  }
-}
-```
+The example is in [Guest apps](../references/auth-provider#guest-apps).
 
 ## What changed
 

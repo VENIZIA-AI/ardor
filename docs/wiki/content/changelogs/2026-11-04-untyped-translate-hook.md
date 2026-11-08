@@ -12,15 +12,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 
 **In one line.** `useUntypedTranslate()` returns `translate(key: string, options?)`, for a key the compiler cannot know, such as `errors.${code}` or `status.${row.status}`. `useTranslate` is unchanged: it still accepts only the keys of the catalog and the keys you add by augmentation.
 
-```tsx
-import { useUntypedTranslate } from '@venizia/ardor';
-
-export function ErrorLine(props: { code: string }) {
-  const translate = useUntypedTranslate();
-
-  return <p>{translate(`errors.${props.code}`, { _: 'Something went wrong' })}</p>;
-}
-```
+The example is in [useUntypedTranslate](../references/hooks#useuntypedtranslate).
 
 ## What changed
 
