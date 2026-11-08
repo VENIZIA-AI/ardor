@@ -50,7 +50,7 @@ framework-level providers, bound under `services.<ClassName>`. Two ways to regis
 mark it `@service()` so the application discovers it, or call `this.service(X)` in `bindContext()`.
 Both record the key on the class, so `useService({ target })` resolves either and asserts the class
 landed in the `services` namespace. A repository is the same with `@repository` /
-`this.repository(X)` / `useRepository`. See [Hooks and services reference](/reference/hooks-and-services.md).
+`this.repository(X)` / `useRepository`. See [Public surface](/reference/public-surface.md).
 
 **ApplicationContext** - the React context in `ardor-react` that holds the `container` and the
 `logger` (`IApplicationContextValue`). `ArdorApplication` provides it, and `useInjectable` and the stereotype

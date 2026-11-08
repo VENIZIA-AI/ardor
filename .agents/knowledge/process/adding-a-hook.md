@@ -49,7 +49,7 @@ Add the new hook file to `packages/react/src/hooks/index.ts` (or the admin equiv
 
 If applicable, give the hook its own docs page describing options and gotchas, written per [Docs writing style](/conventions/docs-writing-style.md). The two reference catalogs are generated, never hand-edited:
 
-- Run `make okf-gen` to refresh [Hooks and services](/reference/hooks-and-services.md), which lists every exported hook from source.
+- Run `make surface-gen` (after `make build-all`) to refresh [Public surface](/reference/public-surface.md), which lists every exported hook from the built package.
 - Run `make build-all`, then `make surface-gen`, to refresh [Public surface](/reference/public-surface.md) - it reads the built `.d.ts`, not `src` (see [Build system](/process/build-system.md)).
 
 Skipping them does not hide the hook from consumers - the barrel export already ships it - but it leaves the catalogs stale: a stale hooks catalog fails `make okf-check`, and a stale public surface fails `make surface-check`. Both are steps of the CI workflow, which runs on a pull request to `develop` or `main` and on demand.

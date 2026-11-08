@@ -113,9 +113,6 @@ Curated lookups:
 
 Generated from source - never hand-edited, run `make okf-gen`:
 
-- [Source map](/reference/source-map.md) - subsystems and file counts
-- [Providers catalog](/reference/providers.md)
-- [Hooks and services catalog](/reference/hooks-and-services.md)
 - [Binding keys](/reference/binding-keys.md)
 - [Makefile targets](/reference/makefile-targets.md)
 - [Public surface](/reference/public-surface.md) - every exported symbol, run `make surface-gen`

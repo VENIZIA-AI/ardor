@@ -114,7 +114,6 @@ periodically, with ARDOR's [area map](.agents/knowledge/process/knowledge-sync-a
 .agents/
 ├── rules.md          # ARDOR's rules - W · S · P · B · D · C, cited by ID, on top of the VULCAN base
 ├── knowledge/        # THE knowledge bundle
-├── okf/              # ARDOR's okf renderers (providers, hooks-and-services) - named in .configs/vulcan.config.mts
 ├── vulcan.manifest.json # written by vulcan-sync; another project's atlas reads ARDOR through it
 └── plans/            # gitignored - saved specs and plans, local to each developer
 ```

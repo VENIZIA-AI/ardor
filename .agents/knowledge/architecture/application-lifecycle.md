@@ -70,6 +70,6 @@ The tree it mounts, outermost first:
 - `React.Suspense` with `suspense` as its fallback.
 - `CoreAdmin` with `adminProps`.
 
-See [hooks and context](/architecture/hooks-and-context.md) for how components reach back into the container, and [the providers reference](/reference/providers.md) for what each of the three default providers does.
+See [hooks and context](/architecture/hooks-and-context.md) for how components reach back into the container, and [the public surface](/reference/public-surface.md) for the providers and hooks each package exports.
 
 Because `ArdorApplication` resolves these bindings unconditionally, an application must bind all three default provider keys before `start()` finishes, or the React tree fails to mount - even when it passes its own provider props, since the three `container.get(...)` calls still run.
