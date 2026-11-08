@@ -16,7 +16,7 @@ PKG_NAME = $(shell sed -n 's/^  "name": "\(.*\)",$$/\1/p' packages/$(1)/package.
 # the wiki links point into. The generated reference tables name symbols and paths of the code, not links, so the
 # link gate does not read them.
 WIKI_REPO := VENIZIA-AI/ardor
-WIKI_LINKS_FLAGS := --skip .agents/knowledge/reference/public-surface.md,.agents/knowledge/reference/source-map.md,.agents/knowledge/reference/binding-keys.md,.agents/knowledge/reference/makefile-targets.md
+WIKI_LINKS_FLAGS := --skip .agents/knowledge/reference/public-surface.md,.agents/knowledge/reference/binding-keys.md,.agents/knowledge/reference/makefile-targets.md
 
 # VULCAN's targets (vulcan-sync, vulcan-doctor, okf-*, surface-*, atlas-symbols, atlas-releases).
 -include node_modules/@venizia/vulcan/base/make/vulcan.mk

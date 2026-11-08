@@ -123,4 +123,4 @@ To add a new transport to ARDOR: subclass the default provider, override `send()
 transport has no HTTP, the CRUD methods as well, since they bypass `send()` - bind the subclass in
 `bindContext()`, and consume it through the same `IDataProvider` interface everywhere else. See
 [Adding a provider](/process/adding-a-provider.md) for the general checklist and
-[Providers reference](/reference/providers.md) for what ships today.
+[Public surface](/reference/public-surface.md) for what ships today.

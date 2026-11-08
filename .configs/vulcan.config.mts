@@ -54,9 +54,6 @@ export default {
 
   okf: {
     renderers: [
-      'source-map',
-      { id: 'providers', module: '.agents/okf/providers.ts' },
-      { id: 'hooks-and-services', module: '.agents/okf/hooks-and-services.ts' },
       {
         id: 'binding-keys',
         options: {
