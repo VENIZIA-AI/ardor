@@ -32,7 +32,7 @@ base ID: C-01, C-02, C-04, C-06 to C-11, C-13 and C-14 became the V-C rules of t
 | [P - Process](#p---process) | P-01 … P-15 | How work starts, how it is tracked, how it is measured, how it is judged done |
 | [B - Build and quality](#b---build-and-quality) | B-01 … B-08 | Build, lint, verify, what a test suite really loads |
 | [D - Docs](#d---docs) | D-01 … D-06 | Where a wiki page goes, its style, its wiring and its gates |
-| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
+| [C - Code and writing](#c---code-and-writing) | C-03, C-05, C-18, C-21 | The container and error rules, and ARDOR's stack; the rest of the style is V-C |
 
 ---
 
@@ -142,14 +142,15 @@ reads its paths from the manifest and applies these rules. D-01 to D-04 mean the
 ## C - Code and writing
 
 The coding style is the base V-C rules. ARDOR keeps the two IGNIS rules the base retired (V-C-03,
-V-C-05) - ARDOR runs on IGNIS's container and errors - and states its own stack, which the base
-leaves to each project (V-C-18).
+V-C-05) - ARDOR runs on IGNIS's container and errors - states its own stack, which the base
+leaves to each project (V-C-18), and names its one docs exception to V-C-13 (C-21).
 
 | ID | Rule |
 |---|---|
 | **C-03** | **Every constructor parameter of a container-instantiated class carries `@inject`.** Mixing decorated and undecorated parameters is refused at boot - the container has no channel to supply an undecorated one. Options a controller needs go in `super({ scope: X.name })`, never as an undecorated parameter. |
 | **C-05** | **Errors are `getError` / `ApplicationError`. Never `new Error`.** Never `instanceof ApplicationError` across a package boundary - the container and the application may load two copies of `@venizia/ignis-inversion` when a consumer pins a different range; use `isApplicationError()`. |
 | **C-18** | **The hard stack.** React only; react-admin (`ra-core`) only inside `packages/admin` - `kernel` and `react` never import it; `@venizia/ignis-inversion` is the only container and `@venizia/ignis-filter` the only query vocabulary (never LoopBack, never a hand-rolled filter); Zod only. Derived types over duplicates is V-C-18 (`TFullPaths<typeof englishMessages>` is ARDOR's model). |
+| **C-21** | **The wiki's one custom theme is the shared Venizia theme, and nothing else is custom.** `V-C-13` keeps a docs site native to its generator; this repository's exception is the folder `docs/wiki/site/.vitepress/theme/shared` (components and CSS), canonical in VULCAN and copied unedited into ARDOR with VULCAN's `scripts/wiki-shared/copy.ts`. A component or a style outside that folder is not an exception. |
 
 ---
 
@@ -164,6 +165,7 @@ Most of these rules hold because agents read this file. Only these have tooling 
 | The base W rules, every rule in this file, the minimap shape | VULCAN's SessionStart hook prints the base W rules, every row of this file and the minimap block above - it reads the rule files at run time | Reminds, never blocks |
 | D-06 | `make api-undocumented` (`vulcan x atlas api undocumented`) in the CI job, after `make build-all`: fails when an export of a published package has no TSDoc | Blocks a pull request; it checks that TSDoc exists, not that it is true |
 | V-W-02, V-W-03 | VULCAN's `guard-writes` hook asks before a database write, a migration, a deploy or a mutating HTTP call | Asks |
+| C-21 | `scripts/checks/__tests__/wiki-shared.test.ts`, run by `make test-scripts` in CI, recomputes the hashes of the shared folder against its `SHARED.json`; VULCAN's release gate (`make wiki-shared-check` there) compares the folder with VULCAN's copy | Blocks a pull request when the folder changed by hand; a component or style outside the folder is not checked |
 | The VULCAN layout | `make vulcan-doctor` in CI: one config, the rule namespaces, no shipped skill, hook or make target redefined, adapters in sync | Fails CI |
 | everything else | this file | No |
 
