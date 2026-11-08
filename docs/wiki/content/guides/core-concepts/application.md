@@ -54,18 +54,7 @@ The `start()` method in `packages/kernel/src/base/applications/abstract.ts` awai
 
 ## Application Props
 
-`ArdorApplication` accepts `IApplication` props (in `packages/admin/src/common/types.ts`), extending `CoreAdminProps` (omitting `children`):
-
-| Prop | Type | Required | Description |
-| --- | --- | --- | --- |
-| `container` | `Container` | Yes | The started IoC container instance (an instance of `BaseArdorApplication`). |
-| `reduxStore` | `Store` | No | The Redux store the shell serves. Absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw. |
-| `suspense` | `ReactNode` | Yes | Fallback React node displayed while components or feature translations load. |
-| `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. Default is a console logger named after the application. |
-| `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
-| `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](../../references/features#mount-a-filtered-list). |
-| `routes` | `Array<RouteProps>` | No | Custom routes registered inside `CustomRoutes` before feature routes. |
-| `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`) passed directly to `CoreAdmin`. |
+`ArdorApplication` accepts `IApplication` props (in `packages/admin/src/common/types.ts`), extending `CoreAdminProps` (omitting `children`). Each prop, with its type and whether it is required, is in the [Application reference](../../references/application#props).
 
 ## Next Steps
 

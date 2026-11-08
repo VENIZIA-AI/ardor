@@ -1,14 +1,7 @@
 /* =============================================================================
  * ARDOR DOCS - DESIGN TOKENS
  * -----------------------------------------------------------------------------
- * ARDOR's brand ramp, the colours of the icon (#0091EA, #7DF3FF) on the devglow Tide palette without its
- * teal. The `theme` of .configs/vulcan.config.mts takes ARDOR's accent from these values; the shared theme (theme/shared) owns every other
- * token. The shared index loads this file by its fixed name, so it stays even though it is small: add a token
- * only when a rule uses it (docs/wiki/DESIGN-SYSTEM.md).
+ * ARDOR's accent colours are the `theme` of .configs/vulcan.config.mts; the shared theme (theme/shared) owns
+ * every token. The shared index loads this file by its fixed name, so it stays, empty: add a token only
+ * when a rule uses it (docs/wiki/DESIGN-SYSTEM.md).
  * ============================================================================= */
-
-:root {
-  --ar-brand: #0277bd; /* primary brand - button fill + large accents. 4.80:1 white-on, 4.80:1 on white */
-  --ar-brand-lt: #38bdf8; /* 9.31:1 on dark - link / accent text (dark theme) */
-  --ar-brand-deep: #01579b; /* 7.40:1 on white, 6.81:1 on the light surface - light-theme link and accent text; button hover */
-}
