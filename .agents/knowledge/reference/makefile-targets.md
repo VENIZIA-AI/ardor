@@ -62,8 +62,8 @@ generated:
 | `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |
 | `make okf-gen` | - | Regenerate source-derived reference content. |
-| `make preset-build` | - | - |
-| `make preset-smoke` | - | - |
+| `make preset-build` | - | Write the VULCAN app preset with this release's versions into packages/ardor/dist/presets/app. Run after the build. |
+| `make preset-smoke` | - | Gate: an app created from the packed preset typechecks, lints, builds and starts. Needs make build-all; ARGS=... as in scripts/preset/preset-smoke.ts. |
 | `make purity` | - | Gate: every entry claimed browser-pure has no node builtin or global. |
 | `make purity-admin` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-ardor` | - | Gate: one package's browser-pure entries. Needs a build. |

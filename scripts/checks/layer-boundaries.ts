@@ -1,7 +1,7 @@
 /**
  * The layering rule of the framework, read from the BUILT output so it measures what a consumer
- * installs: the kernel is isomorphic (no React, no react-admin), the React bindings never reach
- * react-admin, and only `admin` may import `ra-core`. `make purity` answers "is it browser-pure";
+ * installs: the kernel is isomorphic (no React, no react-admin) and the React bindings never reach
+ * react-admin; `admin` and `ardor` are not checked here. `make purity` answers "is it browser-pure";
  * this answers "is it in the right layer". Exit 1 on the first violation, with file and specifier.
  *
  * Usage: bun scripts/checks/layer-boundaries.ts

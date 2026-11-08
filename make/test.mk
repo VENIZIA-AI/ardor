@@ -43,7 +43,7 @@ gates:
 	@$(foreach target,$(GATE_TARGETS),$(MAKE) --no-print-directory $(target) &&) true
 
 # `gates` after the Test job's catalog refresh, in a scratch copy under .agents/local/tmp: what a plain checkout cannot see.
-# The commands come from the workflow (scripts/release/__tests__/gates-refreshed.test.ts). About two minutes; run it before every dispatch.
+# The commands come from the workflow (scripts/release/__tests__/gates-refreshed.test.ts). About four minutes; run it before every dispatch.
 gates-refreshed:
 	@bun scripts/release/gates-refreshed.ts
 
