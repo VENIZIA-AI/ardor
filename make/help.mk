@@ -77,7 +77,7 @@ help:
 	@echo "Release and dependencies:"
 	@$(HELP_ROW) "release-plan" "Print the release plan (dependency order), dispatch nothing."
 	@$(HELP_ROW) "release ARGS=\"...\"" "Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS=\"--yes\"."
-	@$(HELP_ROW) "catalog-check" "Gate: every catalogued dep is referenced as \"catalog:\", none drifted."
+	@$(HELP_ROW) "catalog-check" "Gate: every catalogued dep is referenced as \"catalog:\", none drifted, and no other @venizia/* dep is a range."
 	@echo ""
 	@echo "Development (use bun run directly):"
 	@$(HELP_ROW) "bun run docs:dev" "Start documentation site in development mode."

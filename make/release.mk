@@ -2,9 +2,11 @@
 
 .PHONY: catalog-check release-plan release preset-build preset-smoke
 
-# Every catalogued dependency is referenced as "catalog:" (root workspaces.catalog), none drifted.
+# Every catalogued dependency is referenced as "catalog:" (root workspaces.catalog), none drifted, and no other
+# @venizia/* dependency is a range (scripts/checks/catalog-scope.ts).
 catalog-check:
 	@bun x --no-install devz check catalog --glob 'examples/*/package.json' --glob 'docs/*/package.json' --glob 'presets/*/preset.json' --preset-prefix presets/
+	@bun scripts/checks/catalog-scope.ts
 
 # Plans one release run for the packages and dispatches the release workflow once; --dry-run prints the dispatch.
 release-plan:

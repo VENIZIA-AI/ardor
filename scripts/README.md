@@ -20,6 +20,7 @@ VitePress scripts are not here: they live in `docs/wiki/scripts/`.
 | `preset/` | `vulcan-preset.ts` | Writes the VULCAN presets (`presets/app`, `presets/lib`) into `packages/ardor/dist/presets` with exact versions | `make preset-build`, `release-chain.ts`, `preset-smoke.ts` |
 | `preset/` | `preset-smoke.ts` | Creates an app and a library from the packed preset and runs their checks | `make preset-smoke` (CI, release workflow) |
 | `checks/` | `layer-boundaries.ts` | No package imports a layer above it | `make layer-check` (CI) |
+| `checks/` | `catalog-scope.ts` | A `@venizia/*` dependency is `catalog:`, `workspace:` or one exact version, never a range | `make catalog-check` (CI, release workflow) |
 | `checks/` | `atlas-smoke.ts` | Proves the atlas MCP server answers over this checkout | `make atlas-smoke` (CI, build job) |
 | `checks/` | `purity/manifest.ts` | The claims only: which entries are browser-pure and what each leaves external. The engine is `devz check purity` | `make purity`, `make purity-<pkg>` (CI, release workflow) |
 | `checks/` | `clean-install/` | Loads each package's published sub-paths from packed tarballs in an empty project under `.agents/local/tmp`; every bare import must come from that project (`sandbox-guard.ts`, `bun-probe.ts`, `node-guard.mjs`) | `make clean-install`, `make clean-install-<pkg>` (CI, release workflow) |
