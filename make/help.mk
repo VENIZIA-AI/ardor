@@ -26,7 +26,6 @@ help:
 	@echo "Per package - <pkg> is one of:"
 	@echo "  $(PACKAGES)"
 	@$(HELP_ROW) "<pkg>" "Rebuild one package, after its dependencies."
-	@$(HELP_ROW) "update-<pkg>" "Force update one package's dependencies from NPM."
 	@$(HELP_ROW) "lint-<pkg>" "oxlint + ESLint (naming-convention) + bun fmt check of one package."
 	@$(HELP_ROW) "lint-fix-<pkg>" "Apply oxlint --fix, ESLint --fix and bun fmt to one package."
 	@$(HELP_ROW) "test-<pkg>" "Run one package's suite with BUN_TEST_FLAGS. Needs a build."

@@ -175,15 +175,13 @@ jobs:
       # PREPARE
       # -------------------------------------------------------------------------
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
-      # `force-update` rewrites version ranges; an install that ran first has already resolved the
+      # The catalog rewrites version ranges; an install that ran first has already resolved the
       # old ones. A prerelease tracks the HIGHEST published IGNIS line (prerelease included), a stable the IGNIS
-      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range, so it is refreshed
-      # first, then the per-package script refreshes any range the catalog does not own. Once per job, not per
-      # package: four refreshes could give four different catalogs inside one run.
-      - name: Force update workspace
+      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range. Once per job, not
+      # per package: four refreshes could give four different catalogs inside one run.
+      - name: Refresh the catalog
         run: |
           bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
-          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install
@@ -354,15 +352,13 @@ jobs:
       # The version, the kind and the IGNIS line were decided by the plan job and are not worked out again here:
       # the chain gets the plan's version and kind and refuses a run that would publish another.
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
-      # `force-update` rewrites version ranges; an install that ran first has already resolved the
+      # The catalog rewrites version ranges; an install that ran first has already resolved the
       # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
-      # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
-      # per-package script refreshes any range the catalog does not own. Once per job, not per package:
+      # `latest`: the root catalog owns every @venizia/* range. Once per job, not per package:
       # four refreshes could give four different catalogs inside one run.
-      - name: Force update workspace
+      - name: Refresh the catalog
         run: |
           bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
-          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install

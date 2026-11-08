@@ -6,7 +6,7 @@
 # The style is the [fmt] section of the root bunfig.toml, which bun fmt finds from the project folder up.
 # A bare `bun fmt` also formats markdown, so the glob is always given: every type bun fmt supports except markdown
 # (code, json, yaml, css, html, vue). Json includes package.json: bun fmt sorts its keys, and a release keeps them sorted
-# (`npm version` and force-update.sh change values in place). bun.lock, dist and node_modules are never reached.
+# (`npm version` changes values in place). bun.lock, dist and node_modules are never reached.
 # Paths are ignored through .gitignore: `ignorePatterns` resolve against .configs/, not the project.
 FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs,json,jsonc,yml,yaml,css,html,vue}"
 # The tracked files that belong to no project make lints: the root package.json (bun fmt sorts its keys), CI and release

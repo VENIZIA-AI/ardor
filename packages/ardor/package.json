@@ -75,7 +75,6 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {

@@ -345,7 +345,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
         order: [
           'Refuse a stable when a branch moved since the plan',
           'Install the npm that publishes',
-          'Force update workspace',
+          'Refresh the catalog',
           'Install',
           'Release the packages',
           'Report the run',
@@ -901,7 +901,6 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         return (
           job.includes('CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}') &&
           job.includes('refresh-catalog.ts "$CATALOG_TAG"') &&
-          job.includes('force-update "$CATALOG_TAG"') &&
           !job.includes('refresh-catalog.ts highest')
         );
       });

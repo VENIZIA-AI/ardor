@@ -7,13 +7,10 @@ import { GatesRefreshed } from '../gates-refreshed';
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 const workflow = readFileSync(resolve(ROOT, GatesRefreshed.WORKFLOW), 'utf8');
 
-const REFRESH = [
-  'bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"',
-  'bun run --filter "@venizia/*" force-update "$CATALOG_TAG"',
-];
+const REFRESH = ['bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"'];
 
 describe('make gates-refreshed replays the refresh of the Test job of package-release.yml', () => {
-  test('it runs the two lines of the workflow step, as they are written there', () => {
+  test('it runs the line of the workflow step, as it is written there', () => {
     expect(GatesRefreshed.refreshCommands({ workflow })).toEqual(REFRESH);
     expect(workflow).toContain(`        run: |\n          ${REFRESH.join('\n          ')}\n`);
   });
@@ -57,34 +54,34 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
 
     test('the refresh step is renamed', () => {
       const drifted = inTestJob((job) =>
-        job.replace(`- name: ${GatesRefreshed.REFRESH_STEP}`, '- name: Refresh the catalog'),
+        job.replace(`- name: ${GatesRefreshed.REFRESH_STEP}`, '- name: Update the catalog'),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /no step 'Force update workspace'/,
+        /no step 'Refresh the catalog'/,
       );
     });
 
-    test('a line of the refresh block changes', () => {
+    test('the line of the refresh block changes', () => {
       const drifted = inTestJob((job) =>
-        job.replace('force-update "$CATALOG_TAG"', 'force-update latest'),
+        job.replace('refresh-catalog.ts "$CATALOG_TAG"', 'refresh-catalog.ts highest'),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /not the two refresh commands/,
+        /not the refresh command/,
       );
     });
 
     test('a line is added to the refresh block', () => {
       const drifted = inTestJob((job) =>
         job.replace(
-          '          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"\n',
-          '          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"\n          bun scripts/other.ts\n',
+          '          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"\n',
+          '          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"\n          bun scripts/other.ts\n',
         ),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /not the two refresh commands/,
+        /not the refresh command/,
       );
     });
 

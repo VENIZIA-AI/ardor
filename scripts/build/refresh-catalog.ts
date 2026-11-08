@@ -3,8 +3,7 @@
  * dist-tag (prerelease included). ARDOR tracks the highest published IGNIS line, never `latest`:
  * a feature shipped on the prerelease line is what the framework builds on.
  *
- * `force-update.sh` inside a package deliberately skips catalogued ranges, so the catalog is the
- * only place these versions live - this script is what refreshes it.
+ * The catalog is the only place these versions live - this script is what refreshes it.
  *
  * Usage: bun scripts/build/refresh-catalog.ts [highest|next|latest]   (default: highest)
  */
