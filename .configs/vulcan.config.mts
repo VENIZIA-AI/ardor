@@ -1,7 +1,7 @@
 import type { VulcanConfig } from '@venizia/vulcan';
 
-// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). okf, atlas, make and
-// release all read the one `packages` list below.
+// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). okf, atlas and the manifest read
+// the one `packages` list below; the release scripts and the Makefile keep their own.
 export default {
   agents: ['claude'],
 

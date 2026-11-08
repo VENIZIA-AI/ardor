@@ -135,9 +135,9 @@ bun scripts/build/refresh-catalog.ts highest
   compile against a package one release behind.
 - Across the whole workspace: the root catalog owns every `@venizia/*` range outside the repository, so
   one refresh covers every package.
-- ARDOR always tracks the highest published line, prerelease included - never `npm`'s `latest` tag
-  directly - because a run in progress needs the just-published prerelease of an earlier
-  package before the later package's own release runs.
+- A prerelease run tracks the highest published line, prerelease included, because a run in progress
+  needs the just-published prerelease of an earlier package before the later package's own release
+  runs; a stable run tracks `latest` (the plan's `catalog_tag`).
 - This applies to dependencies outside the repository. The packages of THIS repository name each
   other as `workspace:*` (react -> kernel; admin -> kernel and react; ardor -> all three), which
   `bun pm pack` writes as the

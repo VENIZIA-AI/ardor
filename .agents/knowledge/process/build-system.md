@@ -72,7 +72,7 @@ Related repository-wide gates - `typecheck-all`, `test-all`, `size-check`, `surf
 
 The root `package.json` defines a `workspaces.catalog` map pinning every `@venizia/*` (IGNIS) dependency to one version, shared across all packages via `catalog:` references (visible in kernel's `dependencies`/`devDependencies` above). This is the single source of truth for IGNIS versions.
 
-ARDOR tracks the **highest** published IGNIS line, prerelease included - never `latest`. `bun scripts/build/refresh-catalog.ts highest` queries the npm registry's `dist-tags.highest` for each catalogued `@venizia/*` package and rewrites the catalog entries accordingly; the release workflow runs it, then installs. The catalog is refreshed once, at the root, and every package inherits it; the cross-package ranges inside the repository are `workspace:*`, and `bun pm pack` writes them as the sibling's own version.
+A prerelease of ARDOR tracks the **highest** published IGNIS line, prerelease included; a stable tracks `latest` (the plan chooses, `catalogTag` in `scripts/release/release-plan.ts`). `bun scripts/build/refresh-catalog.ts highest` queries the npm registry's `dist-tags.highest` for each catalogued `@venizia/*` package and rewrites the catalog entries accordingly; the release workflow runs it, then installs. The catalog is refreshed once, at the root, and every package inherits it; the cross-package ranges inside the repository are `workspace:*`, and `bun pm pack` writes them as the sibling's own version.
 
 ## One copy of each: peers
 

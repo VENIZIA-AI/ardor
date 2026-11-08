@@ -1,7 +1,7 @@
 /**
  * Rewrites every `@venizia/*` entry of the root `workspaces.catalog` to the registry's `highest`
- * dist-tag (prerelease included). ARDOR tracks the highest published IGNIS line, never `latest`:
- * a feature shipped on the prerelease line is what the framework builds on.
+ * dist-tag (prerelease included), the line a prerelease of ARDOR builds on: a feature shipped on the IGNIS
+ * prerelease line is what the framework builds on. A stable run passes `latest`.
  *
  * The catalog is the only place these versions live - this script is what refreshes it.
  *

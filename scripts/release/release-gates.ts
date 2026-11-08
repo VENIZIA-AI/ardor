@@ -858,7 +858,7 @@ const main = async (): Promise<void> => {
   }
 
   throw new Error(
-    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
+    '[release-gates] use: artifacts <dir> | links <dir> | single-copy [<root>] | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
   );
 };
 
