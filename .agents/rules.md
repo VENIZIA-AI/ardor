@@ -156,7 +156,7 @@ Most of these rules hold because agents read this file. Only these have tooling 
 | Rule | Enforced by | Actually blocks? |
 |---|---|---|
 | V-B-02 | `.githooks/pre-commit` runs `make lint-all` (after `make setup-hooks`); `make build-all` and the tests run by hand | Lint blocks a commit; build and tests are not gated |
-| P-03 | `make okf-check-strict` when the bundle is touched; the `knowledge-sync` skill periodically | No, by decision - a per-commit check cannot tell whether prose is still true |
+| P-03 | `make okf-check-strict` when the bundle is touched; the `docs-update` skill when code changes | No, by decision - a per-commit check cannot tell whether prose is still true |
 | The base W rules, every rule in this file, the minimap shape | VULCAN's SessionStart hook prints the base W rules, every row of this file and the minimap block above - it reads the rule files at run time | Reminds, never blocks |
 | D-06 | `make api-undocumented` (`vulcan x atlas api undocumented`) in the CI job, after `make build-all`: fails when an export of a published package has no TSDoc | Blocks a pull request; it checks that TSDoc exists, not that it is true |
 | V-W-02, V-W-03 | VULCAN's `guard-writes` hook asks before a database write, a migration, a deploy or a mutating HTTP call | Asks |
