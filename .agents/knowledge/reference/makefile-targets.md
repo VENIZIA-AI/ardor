@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**82 targets.**
+**78 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -88,10 +88,6 @@ generated:
 | `make typecheck` | `typecheck-all` | Type-check every package (tests included) without emitting. |
 | `make typecheck-all` | - | Type-check every package (tests included) without emitting. |
 | `make typecheck-examples` | - | Type-check every example against the built packages. Needs a build. |
-| `make update-admin` | - | Force update one package's dependencies from NPM. |
-| `make update-ardor` | - | Force update one package's dependencies from NPM. |
-| `make update-kernel` | - | Force update one package's dependencies from NPM. |
-| `make update-react` | - | Force update one package's dependencies from NPM. |
 | `make vulcan-doctor` | - | Gate: the project follows VULCAN (config, layout, rules, make, adapters, style). |
 | `make vulcan-sync` | - | Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links. |
 | `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |

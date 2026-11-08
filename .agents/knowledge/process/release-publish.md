@@ -14,7 +14,7 @@ tags: [process, release, ci]
 - [Release order](#release-order)
 - [The plan (kind, branch, promotion)](#the-plan-kind-branch-promotion)
 - [Version line](#version-line)
-- [Force-update the workspace before install](#force-update-the-workspace-before-install)
+- [Refresh the catalog before install](#refresh-the-catalog-before-install)
 - [Gates, bump, publish, record](#gates-bump-publish-record)
 - [GitHub Releases](#github-releases)
 - [Trusted publishing (no npm token)](#trusted-publishing-no-npm-token)
@@ -90,7 +90,7 @@ A release always goes through this script and the workflow: there is no way to p
 Because `admin` depends on `react`, `react` depends on `kernel`, and `ardor` bundles all three, the
 packages of a run release in dependency order: **kernel, then react, then admin, then ardor**. Releasing
 out of order means a downstream package builds against a stale floor for its own dependency, and the
-force-update step below cannot invent a published version that does not exist yet.
+catalog refresh below cannot invent a published version that does not exist yet.
 
 ## The plan (kind, branch, promotion)
 
@@ -121,27 +121,26 @@ ARDOR and IGNIS share a minor version (Phat's decision, 2026-10-20): ARDOR `X.Y.
 
 `build_mode` only offers the semver bumps (`patch`, `minor`, `major`, the `pre*` forms), and a plain `minor` from 0.1.5 gives 0.2.0, so a release to a given number takes the explicit `version` input: the workflow's `version`, `bun scripts/release/release.ts --version 0.3.0`. `--version` overrides `--mode`. With `--version` the plan holds every package still below that version, in dependency order; a package already at it is left alone, so a run that stopped half way runs again for the rest. The version must be semver and above the package's current one, or the run stops before any build. The rule - the parsing and the dist-tag - lives in `scripts/release/release-version.ts`, which the workflow calls (`scripts/release/release-version.ts target` and `tag`) and `release.ts` imports; `scripts/release/__tests__/release-version.test.ts` covers it. A stable version publishes to `latest`, one with a pre-release part to `next`. Both jobs resolve the one version of the run in a `Plan the run` step (`scripts/release/release-plan.ts resolve`, which reads the manifests of the named packages) before the install, so a malformed version, a package above it, or packages at different versions under a bump mode fail before anything is built.
 
-## Force-update the workspace before install
+## Refresh the catalog before install
 
 Each of the `test` and `publish` jobs runs the version-refresh step once, **before** `bun install`, and
 across the **whole workspace**, not just the packages being released:
 
 ```
 bun scripts/build/refresh-catalog.ts highest
-bun run --filter "@venizia/*" force-update highest
 ```
 
-- Before the install: `force-update` rewrites internal `@venizia/*` version ranges to the highest
+- Before the install: the refresh rewrites the `@venizia/*` entries of the root catalog to the highest
   published line. An install that ran first has already resolved the old ranges, so the build would
   compile against a package one release behind.
-- Across the whole workspace: the root catalog owns every `@venizia/*` range, so it is refreshed
-  first; the per-package force-update step then refreshes any range the catalog does not own.
+- Across the whole workspace: the root catalog owns every `@venizia/*` range outside the repository, so
+  one refresh covers every package.
 - ARDOR always tracks the highest published line, prerelease included - never `npm`'s `latest` tag
   directly - because a run in progress needs the just-published prerelease of an earlier
   package before the later package's own release runs.
 - This applies to dependencies outside the repository. The packages of THIS repository name each
   other as `workspace:*` (react -> kernel; admin -> kernel and react; ardor -> all three), which
-  `force-update` skips (a protocol specifier) and `bun pm pack` writes as the
+  `bun pm pack` writes as the
   sibling's own version: `@venizia/ardor` X needs `ardor-*` X exactly. A caret here let a fresh install
   of 0.1.4-3 pull 0.1.4-4 of the others and break (issue #85). `scripts/release/__tests__/sibling-versions.test.ts`
   pins it: the manifests, and the packed manifest of every package.
@@ -171,7 +170,7 @@ publish, and only then any git write. The `publish` job does its own setup (chec
 
 **Phase A, before the first publish, for every package of the run** (see [Build system](/process/build-system.md) and [Makefile targets](/reference/makefile-targets.md)):
 
-1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball. (The Test job also runs `single-copy`, once, before the build: see the force-update section.)
+1. `release-gates.ts links` - every ARDOR sibling the package declares resolves to this workspace, not to a registry tarball. (The Test job also runs `single-copy`, once, before the build: see the catalog refresh section.)
 2. `make <package>` - the build.
 3. `release-gates.ts artifacts` - every file the package's `exports` map names exists (derived from the map, never a hand-written list).
 4. `release-gates.ts pack` - the tarball is packed once, as a check before any mutation (the tarball that is published is packed again in phase P).
@@ -202,7 +201,7 @@ Then **one clean-install gate** for the whole run: `bun scripts/checks/clean-ins
    never installs something older than `bun add pkg`. A failure of either is a warning in the report, never a stop.
 3. Commit `package.json` AND `bun.lock` with `chore(<package>): release v<version> [<version>]` (prefixed `[#N]` when the `issue` input is set). The lockfile is re-synced in a scratch copy of HEAD
    (`bun install --lockfile-only`), so the committed lock matches the bumped manifest without the
-   force-updated ranges of the build leaking into the commit. Push `HEAD:<target branch>` (`develop` for a prerelease, `main` for a stable). **The chain never rebases:** a push rejected because the branch moved stops the run, since a rebase would pull commits the tests never saw into the tree that later packages are built and published from.
+   refreshed ranges of the build leaking into the commit. Push `HEAD:<target branch>` (`develop` for a prerelease, `main` for a stable). **The chain never rebases:** a push rejected because the branch moved stops the run, since a rebase would pull commits the tests never saw into the tree that later packages are built and published from.
 4. Create and push an annotated tag `<package>-v<version>`, tried three times, 10 s and 20 s apart. Its message is `<name> v<version>` and a line `built on: <@venizia/* catalog entry>=<version>, ...`, read from the refreshed catalog with the range prefix (`^`, `~`) dropped: the stable plan reads that line of the prerelease it promotes to check that IGNIS has a stable at least as new.
 
 A stop in phase P publishes nothing. A stop in phase B (a failed publish or a changed tarball) still runs phase R for the packages already published, so git keeps up with npm as far as it can, and then reports the stop; the same version dispatched again records the rest. A stop in phase R reports the package that stopped and the ones still waiting for their record. The dispatch again is the repair in every case: the chain classifies each package fresh (above) and does only what is missing.

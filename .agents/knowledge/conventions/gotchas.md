@@ -38,10 +38,6 @@ When you derive the keys you merge into `IUseInjectableKeysOverrides` or `IUseTr
 
 A boolean field with a `null` value shows nothing rather than a "false"-looking placeholder or a dash. This is intentional so that "unknown" is never visually confused with "false." Don't "fix" this into showing a default value.
 
-## `force-update` skips catalogued ranges
-
-`force-update` rewrites only the `@venizia/*` ranges in a package's `dependencies` and `devDependencies` that the root catalog does not own - a `catalog:` or `workspace:` range, or a peer-only dependency, is skipped on purpose. Every release runs it before `bun install`, which would otherwise have resolved the old ranges; the workflow runs `refresh-catalog` first, then `force-update`. The trap is expecting it to move a `catalog:` range: a per-package `make update-<package>` target, and the root `force-update` script both leave the catalog where it was - only `bun scripts/build/refresh-catalog.ts highest` rewrites it. See [release-publish](/process/release-publish.md) and [build-system](/process/build-system.md).
-
 ## Size budgets are measured with peers external
 
 When package size is checked against its budget, peer dependencies are treated as external and excluded from the measured bundle size. A size budget failure means the package's own code grew, not that a peer got heavier. See [build-system](/process/build-system.md).

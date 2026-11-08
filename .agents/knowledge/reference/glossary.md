@@ -107,7 +107,6 @@ changed, who is affected, and any breaking changes with their upgrade step. Inte
 which ARDOR tracks instead of npm's `latest` tag because a feature shipped on the IGNIS prerelease
 line is what the framework builds on. The `@venizia/*` entries of the root `workspaces.catalog` (the
 IGNIS packages and `dev-configs`) follow the npm dist-tag `highest` through
-`bun scripts/build/refresh-catalog.ts highest`. ARDOR's own cross-package ranges sit outside the catalog
-and follow the semver-highest published version through each package's `force-update highest`.
-The release workflow runs both. See [Build system](/process/build-system.md) and
+`bun scripts/build/refresh-catalog.ts highest`, which the release workflow runs. ARDOR's own cross-package
+ranges are `workspace:*`. See [Build system](/process/build-system.md) and
 [Release and publish](/process/release-publish.md).

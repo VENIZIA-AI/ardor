@@ -2,7 +2,7 @@
  * `make gates` after the Test job's catalog refresh, in a scratch copy of this tree.
  *
  * The Test job of `package-release.yml` first moves every IGNIS package to the highest published line
- * (`refresh-catalog.ts`, `force-update`, `bun install`) and only then runs the gates. A plain checkout
+ * (`refresh-catalog.ts`, `bun install`) and only then runs the gates. A plain checkout
  * never sees what that refresh moves, and two dispatches failed on it. This replays the job in a copy
  * that is a git repository of its own, so lint and the build-info test see a checkout:
  *
@@ -31,7 +31,7 @@ interface IRefreshStep {
 export class GatesRefreshed {
   static readonly WORKFLOW = '.github/workflows/package-release.yml';
 
-  static readonly REFRESH_STEP = 'Force update workspace';
+  static readonly REFRESH_STEP = 'Refresh the catalog';
 
   static readonly SMOKE_STEP = 'VULCAN preset smoke';
 
@@ -43,10 +43,7 @@ export class GatesRefreshed {
   } as const;
 
   /** What the refresh block may hold: each line is one of these, so a changed block fails here, not on a runner. */
-  static readonly REFRESH_LINES = [
-    /^bun scripts\/build\/refresh-catalog\.ts "\$CATALOG_TAG"$/,
-    /^bun run --filter "@venizia\/\*" force-update "\$CATALOG_TAG"$/,
-  ];
+  static readonly REFRESH_LINES = [/^bun scripts\/build\/refresh-catalog\.ts "\$CATALOG_TAG"$/];
 
   /** The text of the `test` job: from `  test:` under `jobs:` to the next job. */
   static testJobOf(opts: { workflow: string }): string {
@@ -89,7 +86,7 @@ export class GatesRefreshed {
     const shape = GatesRefreshed.REFRESH_LINES;
     if (lines.length !== shape.length || lines.some((line, i) => !shape[i]?.test(line))) {
       throw new Error(
-        `[gates-refreshed] the run block of '${GatesRefreshed.REFRESH_STEP}' is not the two refresh commands | found ${JSON.stringify(lines)}`,
+        `[gates-refreshed] the run block of '${GatesRefreshed.REFRESH_STEP}' is not the refresh command | found ${JSON.stringify(lines)}`,
       );
     }
 
