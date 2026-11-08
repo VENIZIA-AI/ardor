@@ -15,7 +15,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
     expect(workflow).toContain(`        run: |\n          ${REFRESH.join('\n          ')}\n`);
   });
 
-  test('it takes the VULCAN of the preset smoke step', () => {
+  test('it takes the VULCAN of the Gates step', () => {
     expect(GatesRefreshed.vulcanCmd({ workflow })).toMatch(/^bun x @venizia\/vulcan@\d+\.\d+\.\d+/);
   });
 
@@ -25,7 +25,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
     expect(steps.map((step) => step.label)).toEqual([
       GatesRefreshed.REFRESH_STEP,
       'Install',
-      'Gates',
+      GatesRefreshed.GATES_STEP,
       GatesRefreshed.CLEAN_INSTALL_STEP,
     ]);
     expect(steps.map((step) => step.script)).toEqual([
@@ -41,8 +41,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
 
     expect(at(GatesRefreshed.REFRESH_STEP)).toBeGreaterThan(-1);
     expect(at(GatesRefreshed.REFRESH_STEP)).toBeLessThan(at('Install'));
-    expect(at('Install')).toBeLessThan(at('Build'));
-    expect(at('Build')).toBeLessThan(at(GatesRefreshed.SMOKE_STEP));
+    expect(at('Install')).toBeLessThan(at(GatesRefreshed.GATES_STEP));
   });
 
   describe('a drifted workflow fails the parser instead of running something else', () => {
@@ -85,7 +84,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
       );
     });
 
-    test('the preset smoke step sets no VULCAN_CMD', () => {
+    test('the Gates step sets no VULCAN_CMD', () => {
       const drifted = inTestJob((job) => job.replace('VULCAN_CMD:', 'OTHER_CMD:'));
 
       expect(() => GatesRefreshed.vulcanCmd({ workflow: drifted })).toThrow(/sets no VULCAN_CMD/);

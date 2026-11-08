@@ -33,7 +33,7 @@ export class GatesRefreshed {
 
   static readonly REFRESH_STEP = 'Refresh the catalog';
 
-  static readonly SMOKE_STEP = 'VULCAN preset smoke';
+  static readonly GATES_STEP = 'Gates';
 
   /** The env of the Test job of a prerelease dispatch: the IGNIS line is the highest, the packages are all four. */
   static readonly ENV = {
@@ -93,15 +93,15 @@ export class GatesRefreshed {
     return lines;
   }
 
-  /** The `VULCAN_CMD` the preset smoke step sets: the VULCAN this repository pins. */
+  /** The `VULCAN_CMD` the Gates step sets for the preset smoke: the VULCAN this repository pins. */
   static vulcanCmd(opts: { workflow: string }): string {
     const step = GatesRefreshed.stepOf({
       workflow: opts.workflow,
-      name: GatesRefreshed.SMOKE_STEP,
+      name: GatesRefreshed.GATES_STEP,
     });
     const found = step.match(/^ {10}VULCAN_CMD: (\S.*)$/m)?.[1]?.trim();
     if (found === undefined || found === '') {
-      throw new Error(`[gates-refreshed] step '${GatesRefreshed.SMOKE_STEP}' sets no VULCAN_CMD`);
+      throw new Error(`[gates-refreshed] step '${GatesRefreshed.GATES_STEP}' sets no VULCAN_CMD`);
     }
 
     return found;
@@ -118,7 +118,7 @@ export class GatesRefreshed {
         script: GatesRefreshed.refreshCommands(opts).join('\n'),
       },
       { label: 'Install', script: 'bun install' },
-      { label: 'Gates', script: 'make gates' },
+      { label: GatesRefreshed.GATES_STEP, script: 'make gates' },
       // Not in the Test job (the chain installs each package after its sibling is out), but what a dispatch
       // fails on when the peer ranges name a mix of prerelease and stable IGNIS packages (issue #488): the four
       // packages packed together and installed from the live registry, like an application would.

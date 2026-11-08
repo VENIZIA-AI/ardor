@@ -303,30 +303,66 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   const workflow = workflowText;
   const testJob = jobsOf(workflow).test ?? '';
   const releaseJob = jobsOf(workflow).publish ?? '';
-  const loops = 'for package in ${PACKAGES//,/ }; do';
 
-  test.each([
-    'Assert internal dependencies link to the workspace',
-    'Build',
-    'Lint',
-    'Test the package',
-    'Purity gate',
-  ])('the test job runs "%s" for every package of the run', (name) => {
-    const step = stepsOf(testJob).find((candidate) => candidate.name === name);
+  test('the test job runs every gate in one step, for the packages of the run', () => {
+    const gates = stepsOf(testJob).filter((candidate) => candidate.name === 'Gates');
 
-    expect(step?.text).toContain(loops);
+    expect(gates).toHaveLength(1);
+    expect(gates[0]?.text).toContain(
+      '\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n',
+    );
   });
 
-  test.each([
-    'Test the repository scripts',
-    'Purity probe self-test',
-    'Check dependency catalog',
-    'VULCAN preset smoke',
-  ])('the test job runs "%s" once', (name) => {
-    const found = stepsOf(testJob).filter((candidate) => candidate.name === name);
+  describe('make gates lists the gates of the packages it is given', () => {
+    /** The first line `make -n gates` prints is the chain of sub-makes, one `make --no-print-directory <target>` each. */
+    const targets = (packages: string): string[] => {
+      const proc = Bun.spawnSync(
+        ['make', '-n', '--no-print-directory', 'gates', `GATE_PACKAGES=${packages}`],
+        { cwd: ROOT },
+      );
 
-    expect(found).toHaveLength(1);
-    expect(found[0]?.text).not.toContain(loops);
+      return (proc.stdout.toString().split('\n')[0] ?? '')
+        .split(' && ')
+        .map((part) => part.match(/^make --no-print-directory ([\w-]+)$/)?.[1])
+        .filter((target): target is string => target !== undefined);
+    };
+    const gatesOf = (names: string[]): string[] => [
+      'links-check',
+      'copies-check',
+      ...names,
+      ...names.map((name) => `lint-${name}`),
+      ...names.map((name) => `test-${name}`),
+      'test-scripts',
+      'purity-test',
+      ...names.map((name) => `purity-${name}`),
+      'catalog-check',
+    ];
+
+    test('all four packages: the links and copies gates first, the preset smoke last', () => {
+      expect(targets('kernel react admin ardor')).toEqual([
+        ...gatesOf(['kernel', 'react', 'admin', 'ardor']),
+        'preset-smoke',
+      ]);
+    });
+
+    test('a run without ardor has no preset smoke', () => {
+      expect(targets('kernel react')).toEqual(gatesOf(['kernel', 'react']));
+    });
+
+    test('a run of ardor alone still builds its three dependencies first', () => {
+      const proc = Bun.spawnSync(['make', '-n', 'gates', 'GATE_PACKAGES=ardor'], { cwd: ROOT });
+      const rebuilt = [
+        ...proc.stdout.toString().matchAll(/Rebuilding (@venizia\/ardor[\w-]*)\.\.\./g),
+      ];
+
+      expect(proc.exitCode).toBe(0);
+      expect(rebuilt.map((match) => match[1])).toEqual([
+        '@venizia/ardor-kernel',
+        '@venizia/ardor-react',
+        '@venizia/ardor-admin',
+        '@venizia/ardor',
+      ]);
+    });
   });
 
   test("clean-install is the chain's, after the sibling is out, and not the test job's", () => {
@@ -492,8 +528,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     expect(workflow).toContain('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true');
   });
 
-  test('the ARDOR-only steps stay: the preset, the version input, the catalog refresh', () => {
-    expect(workflow).toContain('make preset-smoke');
+  test('the ARDOR-only steps stay: the preset build, the version input, the catalog refresh', () => {
     expect(workflow).toContain('scripts/release/release-plan.ts plan');
     expect(workflow).toContain('scripts/build/refresh-catalog.ts "$CATALOG_TAG"');
     expect(chainText).toContain('scripts/preset/vulcan-preset.ts');
@@ -741,7 +776,6 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   ];
   const REPORT_STEP = 'Report the run';
   const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
-  const LOOP = 'for package in ${PACKAGES//,/ }; do';
 
   const guards = {
     // S4.5, C3.5: a heal runs on develop or main and nowhere else; a release is planned unless it is a heal.
@@ -1091,41 +1125,24 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       /\n {6}packages:\n {8}type: string\n/.test(workflow) &&
       !/\n {6}package:\n/.test(workflow) &&
       !workflow.includes('chain_released'),
-    // S1b.5: the test job loops each gate over the packages of the run, runs no clean-install, and the
-    // preset smoke runs when the run holds ardor.
-    testJobLoops: ({ workflow }: IFiles): boolean => {
+    // S1b.5: the test job runs `make gates` once, for the packages of the run, with the pinned VULCAN, and no clean-install.
+    testJobGates: ({ workflow }: IFiles): boolean => {
       const testJob = jobsOf(workflow).test ?? '';
-      const steps = stepsOf(testJob);
-      const looped = [
-        'Assert internal dependencies link to the workspace',
-        'Build',
-        'Lint',
-        'Test the package',
-        'Purity gate',
-      ];
-      const smoke = steps.find((step) => step.name === 'VULCAN preset smoke')?.text ?? '';
+      const gates = stepsOf(testJob).find((step) => step.name === 'Gates')?.text ?? '';
 
       return (
         !testJob.includes('clean-install') &&
-        looped.every(
-          (name) => steps.find((step) => step.name === name)?.text.includes(LOOP) === true,
-        ) &&
-        /\n {8}if: .*',ardor,'/.test(smoke)
+        gates.includes('\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n') &&
+        gates.includes('VULCAN_CMD:') &&
+        !/\n {8}(?:if|shell|continue-on-error):/.test(gates)
       );
     },
-    // #434: one copy of every @venizia package is checked in the test job, after the install and before the build,
-    // so a stable IGNIS copy next to a prerelease is named before it surfaces as a type error.
-    oneCopy: ({ workflow }: IFiles): boolean => {
+    // #434: the gates run after the install; their first ones (the links and the one copy of every @venizia package,
+    // named before it surfaces as a type error) come before the build because `make gates` lists them first.
+    installBeforeGates: ({ workflow }: IFiles): boolean => {
       const names = stepsOf(jobsOf(workflow).test ?? '').map((step) => step.name);
-      const step = stepsOf(jobsOf(workflow).test ?? '').find(
-        (candidate) => candidate.name === 'Assert one copy of every @venizia package',
-      );
 
-      return (
-        step?.text.includes('bun scripts/release/release-gates.ts single-copy') === true &&
-        names.indexOf('Install') < names.indexOf('Assert one copy of every @venizia package') &&
-        names.indexOf('Assert one copy of every @venizia package') < names.indexOf('Build')
-      );
+      return names.indexOf('Install') > -1 && names.indexOf('Install') < names.indexOf('Gates');
     },
     // S1b.3: the release job ends with a report that runs even when the job is cancelled or times out.
     reportAlways: ({ workflow }: IFiles): boolean => {
@@ -1772,50 +1789,58 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         ),
     },
     {
-      guard: 'oneCopy',
-      name: 'the copies gate runs after the build',
-      mutate: (text) =>
-        text
-          .replace(
-            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
-            '',
-          )
-          .replace(
-            '      - name: Lint\n',
-            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n\n      - name: Lint\n',
-          ),
+      guard: 'installBeforeGates',
+      name: 'the gates run without the install before them',
+      mutate: (text) => text.replace('      - name: Install\n        run: bun install\n', ''),
     },
     {
-      guard: 'oneCopy',
-      name: 'the copies gate is removed',
+      guard: 'testJobGates',
+      name: 'the Gates step names one package',
+      mutate: (text) => text.replace('GATE_PACKAGES="${PACKAGES//,/ }"', 'GATE_PACKAGES=kernel'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step ignores a failure with `|| true`',
       mutate: (text) =>
         text.replace(
-          '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
-          '',
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }"',
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }" || true',
         ),
     },
     {
-      guard: 'testJobLoops',
-      name: 'a gate of the test job names one package',
+      guard: 'testJobGates',
+      name: 'the Gates step continues on error',
       mutate: (text) =>
         text.replace(
-          'for package in ${PACKAGES//,/ }; do\n            make "lint-$package"',
-          'for package in kernel; do\n            make "lint-$package"',
+          '      - name: Gates\n',
+          '      - name: Gates\n        continue-on-error: true\n',
         ),
     },
     {
-      guard: 'testJobLoops',
+      guard: 'testJobGates',
+      name: 'the Gates step is switched off',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        if: false\n'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step runs in another shell',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        shell: sh\n'),
+    },
+    {
+      guard: 'testJobGates',
       name: 'the test job runs clean-install again',
       mutate: (text) =>
         text.replace(
-          '      - name: Check dependency catalog\n',
-          '      - name: Clean-install gate\n        run: make clean-install-kernel\n\n      - name: Check dependency catalog\n',
+          '      - name: Gates\n',
+          '      - name: Clean-install gate\n        run: make clean-install-kernel\n\n      - name: Gates\n',
         ),
     },
     {
-      guard: 'testJobLoops',
-      name: 'the preset smoke runs without ardor in the run',
-      mutate: (text) => text.replace(/\n {8}if: \$\{\{ contains\(format\([^\n]*\n/, '\n'),
+      guard: 'testJobGates',
+      name: 'the Gates step loses its VULCAN pin',
+      mutate: (text) => text.replace('VULCAN_CMD:', 'OTHER_CMD:'),
     },
     {
       guard: 'reportAlways',
