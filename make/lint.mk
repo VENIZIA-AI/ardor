@@ -13,9 +13,9 @@ FMT_GLOB := "**/*.{ts,mts,tsx,js,mjs,json,jsonc,yml,yaml,css,html,vue}"
 # workflows, the agent and VULCAN files, the presets (templates and preset.json), and the examples (their package.json
 # included).
 FILES_GLOBS := "package.json" ".github/**/*.{ts,mts,json,yml,yaml}" ".agents/**/*.{ts,mts,json}" ".configs/*.{ts,mts,json}" "presets/**/*.{ts,tsx,mts,js,mjs,json,css,html}" "examples/**/*.{ts,mts,tsx,js,mjs,json,yml,yaml,css,html,vue}"
-# $(1) project dir; $(2) what oxlint and ESLint lint (default .); $(3) what bun fmt checks.
-LINT_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --deny-warnings $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs $(or $(2),.) && bun fmt --no-script --check $(or $(3),$(FMT_GLOB))
-FIX_PROJECT = cd $(1) && node_modules/.bin/oxlint -c .configs/lints/oxlint.config.mts --fix $(or $(2),.) && node_modules/.bin/eslint -c .configs/lints/eslint.config.mjs --fix $(or $(2),.) && bun fmt --no-script $(or $(3),$(FMT_GLOB))
+# $(1) project dir.
+LINT_PROJECT = cd $(1) && node_modules/.bin/devz lint
+FIX_PROJECT = cd $(1) && node_modules/.bin/devz lint --fix
 
 LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
