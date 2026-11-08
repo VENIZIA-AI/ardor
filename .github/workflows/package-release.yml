@@ -195,7 +195,7 @@ jobs:
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
           VULCAN_CMD: bun x @venizia/vulcan@0.4.10-9
-        run: make gates PACKAGES="${PACKAGES//,/ }"
+        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
   # the gates, so the owner never approves a release that fails them, and its name carries the target version. The

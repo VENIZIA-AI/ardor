@@ -37,7 +37,7 @@ help:
 	@$(HELP_ROW) "lint-all" "lint-packages, lint-wiki, lint-scripts and lint-files."
 	@$(HELP_ROW) "lint-fix / lint-fix-packages" "lint-fix-<pkg> for every package."
 	@$(HELP_ROW) "test / test-all" "test-<pkg> for every package; one with no suite says so and passes."
-	@$(HELP_ROW) "gates" "What the Test job of the release workflow runs: links, copies, build, lint, test, scripts, purity, catalog, preset smoke (with ardor). PACKAGES=\"kernel react\" limits it. Run without -j."
+	@$(HELP_ROW) "gates" "What the Test job of the release workflow runs: links, copies, build, lint, test, scripts, purity, catalog, preset smoke (with ardor). GATE_PACKAGES=\"kernel react\" limits it. Run without -j."
 	@$(HELP_ROW) "gates-refreshed" "gates after the Test job's catalog refresh (highest IGNIS), then clean-install, in a scratch copy. About four minutes; run before every dispatch."
 	@$(HELP_ROW) "links-check" "Gate: every ARDOR sibling resolves to the workspace, not to the registry."
 	@$(HELP_ROW) "copies-check" "Gate: every @venizia/* package resolves to one version (no stable IGNIS copy next to a prerelease)."

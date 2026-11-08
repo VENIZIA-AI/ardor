@@ -34,7 +34,7 @@ generated:
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
-| `make gates` | - | What the Test job of the release workflow runs: links, copies, build, lint, test, scripts, purity, catalog, preset smoke (with ardor). PACKAGES="kernel react" limits it. Run without -j. |
+| `make gates` | - | What the Test job of the release workflow runs: links, copies, build, lint, test, scripts, purity, catalog, preset smoke (with ardor). GATE_PACKAGES="kernel react" limits it. Run without -j. |
 | `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), then clean-install, in a scratch copy. About four minutes; run before every dispatch. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |

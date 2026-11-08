@@ -30,12 +30,14 @@ test-scripts:
 
 # ----------------------------------------------------------------------------
 # GATES - what the Test job of package-release.yml runs, in this order: it calls `make gates` for the packages of
-# the run, so a local `make gates` is the same list. `PACKAGES="kernel react"` limits the per-package gates, and the
-# preset smoke runs only when ardor is among them. Needs `bun install`. Run it without -j: the order is the point.
+# the run, so a local `make gates` is the same list. `GATE_PACKAGES="kernel react"` limits the per-package gates, and the
+# preset smoke runs only when ardor is among them. PACKAGES stays the whole list: the build rules and the dependency
+# order (`react: kernel`) are generated from it. Needs `bun install`. Run it without -j: the order is the point.
 # ----------------------------------------------------------------------------
-GATE_TARGETS := links-check copies-check $(PACKAGES) $(addprefix lint-,$(PACKAGES)) $(addprefix test-,$(PACKAGES)) \
-                test-scripts purity-test $(addprefix purity-,$(PACKAGES)) catalog-check \
-                $(if $(filter ardor,$(PACKAGES)),preset-smoke)
+GATE_PACKAGES ?= $(PACKAGES)
+GATE_TARGETS := links-check copies-check $(GATE_PACKAGES) $(addprefix lint-,$(GATE_PACKAGES)) $(addprefix test-,$(GATE_PACKAGES)) \
+                test-scripts purity-test $(addprefix purity-,$(GATE_PACKAGES)) catalog-check \
+                $(if $(filter ardor,$(GATE_PACKAGES)),preset-smoke)
 
 gates:
 	@$(foreach target,$(GATE_TARGETS),$(MAKE) --no-print-directory $(target) &&) true
@@ -47,7 +49,7 @@ gates-refreshed:
 
 # Every ARDOR sibling resolves to the workspace, never to a registry tarball (the first gate of the Test job).
 links-check:
-	@$(foreach p,$(PACKAGES),bun scripts/release/release-gates.ts links packages/$(p) &&) true
+	@$(foreach p,$(GATE_PACKAGES),bun scripts/release/release-gates.ts links packages/$(p) &&) true
 
 # Every @venizia/* package resolves to one version, never a stable copy next to a prerelease (the second gate of the Test job).
 copies-check:

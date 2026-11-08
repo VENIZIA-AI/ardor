@@ -308,14 +308,16 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     const gates = stepsOf(testJob).filter((candidate) => candidate.name === 'Gates');
 
     expect(gates).toHaveLength(1);
-    expect(gates[0]?.text).toContain('make gates PACKAGES="${PACKAGES//,/ }"');
+    expect(gates[0]?.text).toContain(
+      '\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n',
+    );
   });
 
   describe('make gates lists the gates of the packages it is given', () => {
     /** The first line `make -n gates` prints is the chain of sub-makes, one `make --no-print-directory <target>` each. */
     const targets = (packages: string): string[] => {
       const proc = Bun.spawnSync(
-        ['make', '-n', '--no-print-directory', 'gates', `PACKAGES=${packages}`],
+        ['make', '-n', '--no-print-directory', 'gates', `GATE_PACKAGES=${packages}`],
         { cwd: ROOT },
       );
 
@@ -345,6 +347,21 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
 
     test('a run without ardor has no preset smoke', () => {
       expect(targets('kernel react')).toEqual(gatesOf(['kernel', 'react']));
+    });
+
+    test('a run of ardor alone still builds its three dependencies first', () => {
+      const proc = Bun.spawnSync(['make', '-n', 'gates', 'GATE_PACKAGES=ardor'], { cwd: ROOT });
+      const rebuilt = [
+        ...proc.stdout.toString().matchAll(/Rebuilding (@venizia\/ardor[\w-]*)\.\.\./g),
+      ];
+
+      expect(proc.exitCode).toBe(0);
+      expect(rebuilt.map((match) => match[1])).toEqual([
+        '@venizia/ardor-kernel',
+        '@venizia/ardor-react',
+        '@venizia/ardor-admin',
+        '@venizia/ardor',
+      ]);
     });
   });
 
@@ -1115,8 +1132,9 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
 
       return (
         !testJob.includes('clean-install') &&
-        gates.includes('make gates PACKAGES="${PACKAGES//,/ }"') &&
-        gates.includes('VULCAN_CMD:')
+        gates.includes('\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n') &&
+        gates.includes('VULCAN_CMD:') &&
+        !/\n {8}(?:if|shell|continue-on-error):/.test(gates)
       );
     },
     // #434: the gates run after the install; their first ones (the links and the one copy of every @venizia package,
@@ -1778,7 +1796,37 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     {
       guard: 'testJobGates',
       name: 'the Gates step names one package',
-      mutate: (text) => text.replace('PACKAGES="${PACKAGES//,/ }"', 'PACKAGES=kernel'),
+      mutate: (text) => text.replace('GATE_PACKAGES="${PACKAGES//,/ }"', 'GATE_PACKAGES=kernel'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step ignores a failure with `|| true`',
+      mutate: (text) =>
+        text.replace(
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }"',
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }" || true',
+        ),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step continues on error',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Gates\n',
+          '      - name: Gates\n        continue-on-error: true\n',
+        ),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step is switched off',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        if: false\n'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step runs in another shell',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        shell: sh\n'),
     },
     {
       guard: 'testJobGates',
