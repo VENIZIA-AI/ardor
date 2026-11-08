@@ -66,7 +66,7 @@ The remaining props are spread after these three resolved values, so an explicit
 The tree it mounts, outermost first:
 
 - `ApplicationContext.Provider`, whose value (`IApplicationContextValue`) carries the container and an IGNIS `ILogger`: the `logger` prop of `ArdorApplication`, else a console logger named after the application (built once per name, not per render) - see [debugging](/process/debugging.md). Hooks throughout the tree call `container.get(...)` through it for anything else the application bound.
-- A react-redux `Provider` over `reduxStore` - a Redux store is always required.
+- A react-redux `Provider` over `reduxStore`, mounted only when the prop is passed.
 - `React.Suspense` with `suspense` as its fallback.
 - `CoreAdmin` with `adminProps`.
 

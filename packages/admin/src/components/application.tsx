@@ -17,7 +17,7 @@ import { ApplicationProviders } from './resolve';
 const Wrapper: React.FC<{
   applicationName?: string;
   container: Container;
-  reduxStore: Store;
+  reduxStore?: Store;
   suspense: React.ReactNode;
   logger?: ILogger;
   children: React.ReactNode;
@@ -34,11 +34,11 @@ const Wrapper: React.FC<{
     return logger ?? LoggerFactory.getLogger([applicationName]);
   }, [logger, applicationName]);
 
+  const content = <React.Suspense fallback={suspense}>{children}</React.Suspense>;
+
   return (
     <ApplicationContext.Provider value={{ container, logger: applicationLogger }}>
-      <ReduxProvider store={reduxStore}>
-        <React.Suspense fallback={suspense}>{children}</React.Suspense>
-      </ReduxProvider>
+      {reduxStore ? <ReduxProvider store={reduxStore}>{content}</ReduxProvider> : content}
     </ApplicationContext.Provider>
   );
 };
@@ -95,9 +95,10 @@ const useFeatureMessagesReady = (opts: {
 /**
  * The application shell. It resolves the data, auth and i18n providers from `container`, mounts the
  * `resources` and `routes` of the application and of each feature inside react-admin, and wraps it
- * all in `ApplicationContext.Provider` (`container`, `logger`), the Redux provider and `Suspense`.
- * While a feature's lazy messages for the current locale load, it renders `suspense` instead of
- * react-admin; a failed load is thrown from render. Remaining props go to react-admin's `CoreAdmin`.
+ * all in `ApplicationContext.Provider` (`container`, `logger`), the Redux provider (only when
+ * `reduxStore` is passed) and `Suspense`. While a feature's lazy messages for the current locale
+ * load, it renders `suspense` instead of react-admin; a failed load is thrown from render. Remaining
+ * props go to react-admin's `CoreAdmin`.
  */
 export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
   const {

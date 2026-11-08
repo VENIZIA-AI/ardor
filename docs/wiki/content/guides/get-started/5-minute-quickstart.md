@@ -70,7 +70,7 @@ Create `src/main.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/main.tsx{tsx}
 
-`src/main.tsx` starts the application container and mounts the React root. `reduxStore` is required by `IApplication` and goes to the Redux provider. `await application.start()` binds the application, its info, the discovered classes and their `@provide` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
+`src/main.tsx` starts the application container and mounts the React root. `reduxStore` is optional in `IApplication`; passed, it goes to the Redux provider. `await application.start()` binds the application, its info, the discovered classes and their `@provide` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
 
 ## 7. Configure Vite
 

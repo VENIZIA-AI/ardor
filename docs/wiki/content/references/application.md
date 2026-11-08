@@ -237,7 +237,7 @@ export class ShopApplication extends BaseArdorApplication {
 | Prop | Type | Required | Description |
 |---|---|---|---|
 | `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
-| `reduxStore` | `Store` | Yes | Redux store instance used for react-admin state management. |
+| `reduxStore` | `Store` | No | The Redux store the shell serves. Absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw. |
 | `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
 | `logger` | `ILogger` (`@venizia/ignis-helpers/core`) | No | The logger `useApplicationLogger()` returns. Default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
@@ -255,7 +255,7 @@ When rendered, `ArdorApplication` executes the following sequence:
    - `CoreBindings.DEFAULT_I18N_PROVIDER`: Required. Resolves the `I18nProvider` implementation. See [i18n](./i18n).
 2. **Mounts Resources and Routes**: Reads features from `CoreBindings.FEATURES` via `Features.read({ container })`, or takes the `features` prop instead, and mounts the application's own `resources` and `routes`, followed by each feature's resources and routes in order via `Features.mount({ features, resources, routes })`. If duplicate resource names are detected across the application and mounted features, an error is thrown.
 3. **Verifies Translation Readiness**: Calls `useFeatureMessagesReady`. If any mounted feature supplies lazy translation loaders for the active locale, `changeLocale()` is triggered, and `suspense` is rendered until messages are loaded.
-4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`), and `React.Suspense` (`suspense`).
+4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`, only when passed), and `React.Suspense` (`suspense`).
 5. **Renders CoreAdmin**: Forwards providers and props to `CoreAdmin`, mounting each resource under `<Resource />` and routes under `<CustomRoutes>`.
 
 ```tsx
