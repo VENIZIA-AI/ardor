@@ -3,26 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "description": "Interactive documentation site for the ARDOR Framework. Includes a VitePress-powered documentation site with guides, API references, and best practices.",
-  "keywords": [
-    "api-docs",
-    "api-reference",
-    "bun",
-    "dev-tools",
-    "developer-tools",
-    "docs",
-    "documentation",
-    "examples",
-    "framework-docs",
-    "guide",
-    "ignis",
-    "nodejs",
-    "static-site",
-    "tutorials",
-    "typescript",
-    "venizia",
-    "vitepress",
-    "wiki"
-  ],
   "homepage": "https://ardor.venizia.ai",
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
