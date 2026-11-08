@@ -18,39 +18,7 @@ bun add @venizia/ardor
 
 ## What changed
 
-| Kind | Change | Packages | Entry |
-|------|--------|----------|-------|
-| Breaking Change | `useSizer` is removed; `useElementSize` does its job | `@venizia/ardor-react`, `@venizia/ardor` | [useSizer is removed](./2026-11-04-remove-use-sizer) |
-| Breaking Change | `useInjectableContainer` is `useApplicationContainer`, with no alias | `@venizia/ardor-react`, `@venizia/ardor` | [useApplicationContainer](./2026-11-04-application-container) |
-| Behavior Change | A `refreshTokenPath` now refreshes the token without a subclass, so an app that set the path only to stop a loop sends a refresh request | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Default token refresh](./2026-11-04-default-token-refresh) |
-| Enhancement | `@venizia/ardor-react` and `@venizia/ardor-admin` no longer depend on `lodash` | `@venizia/ardor-react`, `@venizia/ardor-admin` | [No lodash](./2026-11-04-drop-lodash) |
-| New feature | `useResizeEffect` runs one callback when any of several elements resizes | `@venizia/ardor-react`, `@venizia/ardor` | [useResizeEffect](./2026-11-04-resize-effect-hook) |
-| New feature | `useIntersection` tells whether an element is in view | `@venizia/ardor-react`, `@venizia/ardor` | [useIntersection](./2026-11-04-intersection-hook) |
-| New feature | `useIntersection` watches several targets, takes a root and a list of thresholds | `@venizia/ardor-react`, `@venizia/ardor` | [Several targets](./2026-11-08-intersection-several-targets) |
-| New feature | `useStoredState` takes a `null` key to turn its storage off | `@venizia/ardor-react`, `@venizia/ardor` | [Null key](./2026-11-08-stored-state-null-key) |
-| New feature | `BrowserStorage.subscribe` tells a change of this tab from one of another tab | `@venizia/ardor-kernel`, `@venizia/ardor` | [isExternal](./2026-11-08-storage-subscribe-is-external) |
-| Behavior change | The app preset keeps only the `react` group in `codeSplitting`: its catch-all `vendor` group put the libraries of lazy routes into the first screen | `@venizia/ardor` | [Vendor group](./2026-11-08-preset-vendor-group) |
-| New feature | `useMediaQuery`, `useDocumentVisibility` and `useOnlineStatus` | `@venizia/ardor-react`, `@venizia/ardor` | [Browser state hooks](./2026-11-04-browser-state-hooks) |
-| New feature | `useCopyToClipboard` returns `isCopied` and takes `resetMs` | `@venizia/ardor-react`, `@venizia/ardor` | [isCopied](./2026-11-04-copy-is-copied) |
-| New feature | `useStoredState` takes `writeDelayMs`, one storage write after a burst | `@venizia/ardor-react`, `@venizia/ardor` | [writeDelayMs](./2026-11-04-stored-state-write-delay) |
-| Bug fix | `useStoredState` updaters compose, and the sign-out order is documented | `@venizia/ardor-react`, `@venizia/ardor` | [Chained updaters](./2026-11-04-stored-state-chained-updaters) |
-| New feature | `BrowserStorage.keys` and `removeWhere` list and sweep keys by prefix | `@venizia/ardor-kernel`, `@venizia/ardor` | [Storage keys](./2026-11-04-browser-storage-keys) |
-| New feature | `StorageCodecs.text` reads and writes a bare string | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | [Text codec](./2026-11-04-storage-text-codec) |
-| New feature | `BrowserClipboard.writeText` and `readText` work outside React and never throw | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | [Clipboard helper](./2026-11-04-clipboard-helper) |
-| New feature | `useUntypedTranslate` translates a key that exists only at run time | `@venizia/ardor-admin`, `@venizia/ardor` | [useUntypedTranslate](./2026-11-04-untyped-translate-hook) |
-| Breaking Change | `ISendResponse` and `IListFilter.offset` are removed; use `INetworkResponse` and `skip` | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Aliases removed](./2026-11-05-remove-aliases) |
-| New feature | `FakeIntersectionObserver`, `FakeMatchMedia`, `FakeStorage` and `FakeClipboard` join `FakeResizeObserver` in `@venizia/ardor/testing` | `@venizia/ardor-kernel`, `@venizia/ardor` | [Test fakes](./2026-11-06-test-fakes) |
-| Bug fix | The REST data provider sends the record id as one path segment | `@venizia/ardor-admin`, `@venizia/ardor` | [Record id](./2026-11-06-record-id-segment) |
-| Bug fix | `ardor codemod namespace` never writes through a symlink | `@venizia/ardor` | [Codemod and symlinks](./2026-11-06-codemod-symlink) |
-| Behavior Change | `ardor codemod namespace --write` is all or nothing, reports a file it cannot rewrite, and refuses outside a git repository without `--allow-dirty` | `@venizia/ardor` | [Safe codemod write](./2026-11-06-codemod-safe-write) |
-| Enhancement | The docs and TSDoc say that client-side roles only show or hide interface and the backend must check every permission | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Client-side roles](./2026-11-06-client-roles-ui-only) |
-| Behavior Change | Sign-out removes the keys under `@app/store/` and empties the query cache, by any route that ends the session | `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-out clears user data](./2026-11-06-sign-out-clears-data) |
-| New feature | `IApplicationInfo.id` scopes the session and store keys, so two applications on one origin share no session | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Application id](./2026-11-06-application-id-keys) |
-| Behavior Change | The generated app sends a `Content-Security-Policy-Report-Only` header, hides the nginx version, refuses more secret-looking `VITE_` names and a URL with a password, and checks `NGINX_LOCAL_RESOLVERS` | `@venizia/ardor` | [Preset hardening](./2026-11-06-preset-hardening) |
-| New feature | `paths.afterLogin: false` keeps the page after sign-in, and `ApplicationProviders.resolve({ isAuthRequired: true })` types the auth provider as present | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | [Sign-in that stays](./2026-11-06-after-login-false) |
-| New feature | `reduxStore` is optional on `ArdorApplication`, so an app with no Redux mounts no Redux provider | `@venizia/ardor-admin`, `@venizia/ardor` | [reduxStore](./2026-11-08-redux-store-is-optional) |
-| Enhancement | The packages no longer ship source maps or declaration maps; the kernel tarball goes from 127 to 69 files | all four | this entry |
-| Breaking Change | ARDOR 0.4.8-8 (prerelease) peers on IGNIS `^0.4.8-7`, `^0.4.7-4` (filter) and `^0.4.7-3` (inversion), so IGNIS 0.4.7 and the earlier IGNIS prereleases do not satisfy them; the stable 0.4.8 takes stable IGNIS ranges | all four | this entry |
+Each change has its own entry in the [changelog list](./), newest first.
 
 The `Ardor` namespace holds 30 hooks (25 in 0.4.7), and `ardor codemod namespace --hooks` knows each of them.
 

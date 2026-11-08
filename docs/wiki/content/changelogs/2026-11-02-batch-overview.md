@@ -18,20 +18,7 @@ bun add @venizia/ardor
 
 ## What changed
 
-| Kind | Change | Packages | In | Entry |
-|------|--------|----------|----|-------|
-| Breaking Change | Utility functions and factories are static members of classes, and the old bare names, `isEditableTarget`, `TDataCount`, `ISyncFC`, `App.DEFAULT_LOCALE` and two `HeaderConstants` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces) |
-| Breaking Change | The logger is `ILogger` from IGNIS, `enableDebug` is replaced by the `logger` prop, and the kernel `Logger`, `LogLevels`, `ILogger`, `TLogLevel` and `BaseHelper` are removed | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-logger-from-ignis) |
-| Breaking Change | Sign-out removes only keys under `@app/auth/`, and `LocalStorageKeys.PREFIX_OAUTH2` is removed | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Sign-out and `@app/oauth2/`](./2026-11-02-sign-out-oauth2-prefix) |
-| New feature | `Ardor` holds all 25 hooks, and `ardor codemod namespace` updates your code | `@venizia/ardor` | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#the-ardor-namespace-for-hooks) |
-| New feature | An entry of `i18nSources` can be a loader, so a catalogue stays out of the boot bundle | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Lazy i18n sources](./2026-11-01-lazy-i18n-sources) |
-| New feature | `DefaultAuthProvider` has the hooks `onSessionStarted` and `onSessionCleared`, so a socket or a per-user cache stays in step with the session without overriding `checkAuth` | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Session hooks](./2026-11-03-session-lifecycle-hooks) |
-| New feature | `BrowserStorage` (typed, never-throwing `localStorage` and `sessionStorage`), the hooks `useStoredState` and `useElementSize` | `@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [Typed browser storage and useElementSize](./2026-11-03-browser-storage-and-element-size) |
-| New feature | The session hooks see every token change, a refresh by the network service included, and `unauthenticatedRejection` sets what `checkAuth` and a 401 reject with | `@venizia/ardor-kernel`, `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.7 | [Token hook and guest rejection](./2026-11-03-token-hook-and-guest-rejection) |
-| New feature | `useElementSize` returns a callback `ref` when you pass none, takes `round` and returns `measured`, and `FakeResizeObserver` in `@venizia/ardor/testing` delivers a size in a test | `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [useElementSize ref, round and measured](./2026-11-03-element-size-ref-round-measured) |
-| Bug fix | `useElementSize` no longer throws on a host without `ResizeObserver`; it stays at 0 by 0 | `@venizia/ardor-react`, `@venizia/ardor` | 0.4.7 | [useElementSize without ResizeObserver](./2026-11-03-element-size-without-resize-observer) |
-| New feature | `RequestBodyEncoder.encode` returns a `FormData`, a `URLSearchParams` or the body you passed, and `ResponseReader.readFilename` returns the file name of a download | `@venizia/ardor-kernel`, `@venizia/ardor` | 0.4.7 | [Typed request body and file name](./2026-11-03-typed-request-body-and-filename) |
-| Enhancement | The IGNIS peers are the IGNIS 0.4.7 release: `^0.4.7` and `^0.4.6` | all four | 0.4.7 | [Utilities move to classes](./2026-11-01-class-namespaces#how-to-upgrade) |
+Each change has its own entry in the [changelog list](./), newest first.
 
 Four size budgets are raised, and all are repository gates, not something an application does: the `@venizia/ardor` entry from 350 B to 700 B (the `Ardor` namespace), `@venizia/ardor-admin` from 10 KB to 10.65 KB (lazy sources, the session hooks and the token change hook), `@venizia/ardor-react` to 2.55 KB and the `@venizia/ardor/testing` entry from 900 B to 1.1 KB (`useElementSize` and `FakeResizeObserver`).
 

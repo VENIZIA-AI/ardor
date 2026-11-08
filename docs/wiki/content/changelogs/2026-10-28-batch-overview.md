@@ -18,9 +18,7 @@ bun add @venizia/ardor
 
 ## What changed
 
-| Kind | Change | Packages | In | Entry |
-|------|--------|----------|----|-------|
-| New feature | `useDocumentTitle` takes `fallback: true`: a layout's title shows only while no screen title is mounted, so a screen wins on the first mount and the fallback comes back when the screen unmounts | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.5 | [useDocumentTitle takes fallback](./2026-10-28-document-title-fallback) |
+Each change has its own entry in the [changelog list](./), newest first.
 
 | Package | ARDOR 0.4.4 | ARDOR 0.4.5 |
 |---------|------------|--------------|
