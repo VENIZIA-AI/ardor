@@ -87,9 +87,9 @@
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
     "@venizia/ignis-filter": "^0.4.7-4",
-    "@venizia/ignis-helpers": "^0.4.8-7",
+    "@venizia/ignis-helpers": "^0.4.8-8",
     "@venizia/ignis-inversion": "^0.4.7-3",
-    "@venizia/ignis-kernel": "^0.4.8-8",
+    "@venizia/ignis-kernel": "^0.4.8-9",
     "react": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "reflect-metadata": ">=0.2.2"
