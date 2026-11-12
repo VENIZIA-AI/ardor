@@ -64,7 +64,7 @@ export class AuditReportService {
 | Export | Kind | Purpose |
 |---|---|---|
 | `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `NodeFetchNetworkRequest` | class | The IGNIS transport helper (`@venizia/ignis-helpers/core`) `DefaultNetworkRequestService` sends through: standard `fetch` with timeout and abort support |
+| `NodeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with timeout and abort support |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
 | `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
@@ -80,6 +80,8 @@ export class AuditReportService {
 | `IAuthRecoveryOptions` | interface | Authentication recovery configuration (`refreshTokenPath`) |
 | `IGetRequestPropsParams` | interface | Input parameters passed to `getRequestProps` |
 | `IGetRequestPropsResult` | interface | Normalized headers and body returned by `getRequestProps` |
+
+`NodeFetchNetworkRequest` comes from `@venizia/ignis-helpers/core`.
 
 ## How to provide it
 
@@ -104,14 +106,23 @@ The configuration relies on the following defaults and container keys:
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `name` | `string` | *(required)* | Identifier scope used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`. |
-| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`. |
-| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. Keys are converted to lowercase and merged with runtime headers. |
-| `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
-| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to. |
-| `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request. |
-| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
+| `name` | `string` | *(required)* | Identifier scope for logger tagging and the transport instance. |
+| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. |
+| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. |
+| `noAuthPaths` | `string[]` | `undefined` | Exact resource paths that bypass the `Authorization` header. |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns tested against `resource` or joined paths to bypass authorization. |
+| `authRecovery.refreshTokenPath` | `string` | `undefined` | Path substring excluded from 401 recovery retries. |
+| `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. |
+| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel sent in the `x-request-channel` header. |
+
+- **`name`:** Used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
+- **`baseUrl` / `url`:** Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`.
+- **`headers`:** Keys are converted to lowercase and merged with runtime headers.
+- **`noAuthPaths`:** Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`.
+- **`noAuthPathRegex`:** A regular expression pattern or patterns. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints.
+- **`authRecovery.refreshTokenPath`:** Excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to.
+- **`authService`:** `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request.
+- **`requestTracingChannel`:** Sent when `getRequestProps` prepares request options from `IRestDataProviderOptions`.
 
 ## Fetch transport and timeout
 

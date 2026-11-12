@@ -185,8 +185,10 @@ Abstract method returning application metadata, bound under `CoreBindings.APPLIC
 | `name` | `string` | Name of the application |
 | `version` | `string` | Application version string |
 | `description` | `string` | Human-readable application description |
-| `id` | `string` | Optional. Scopes the session and store keys in browser storage to this application; see [Binding keys](./binding-keys#two-applications-on-one-origin) |
+| `id` | `string` | Optional. Scopes the session and store keys in browser storage to this application |
 | `author` | `{ name: string; email: string; url?: string }` | Optional author contact information |
+
+For `id`, see [Binding keys](./binding-keys#two-applications-on-one-origin).
 
 ### service(), repository(), dataSource(), component()
 
@@ -238,13 +240,18 @@ export class ShopApplication extends BaseArdorApplication {
 | Prop | Type | Required | Description |
 |---|---|---|---|
 | `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
-| `reduxStore` | `Store` | No | The Redux store the shell serves. Absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw. |
+| `reduxStore` | `Store` | No | The Redux store the shell serves. |
 | `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
-| `logger` | `ILogger` (`@venizia/ignis-helpers/core`) | No | The logger `useApplicationLogger()` returns. Default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used. |
+| `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<RouteProps>` | No | Custom route definitions registered inside `CustomRoutes` before feature routes. |
-| `features` | `Array<TFeature>` | No | The features to mount. Absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list). |
-| `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties passed directly to `CoreAdmin` (such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`). |
+| `features` | `Array<TFeature>` | No | The features to mount. |
+| `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties passed directly to `CoreAdmin`. |
+
+- `reduxStore`: absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw.
+- `logger`: the type is `ILogger` from `@venizia/ignis-helpers/core`. The default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used.
+- `features`: absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list).
+- `...reactAdminProps`: such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`.
 
 ### Render Lifecycle
 
@@ -280,16 +287,53 @@ export function renderAdmin(application: BaseArdorApplication, reduxStore: Store
 
 `packages/kernel/src/base/applications/abstract.ts` and `Features.mount()` throw errors during startup and render when configuration constraints or artifact expectations are violated:
 
-| Error Message | Method / Caller | Cause | Fix |
-|---|---|---|---|
-| `[registerArtifacts] Two classes derive the binding key '<key>'` | `registerArtifacts()` via `ArtifactBindingKeys.assertNoDerivedCollision` | Two discovered classes share the same name or were renamed to the same name by a minifier, causing colliding derived binding keys (`${namespace}.${name}`). | Set an explicit binding key via `@service({ binding: { namespace, key } })` or the `binding` registration option, or configure the bundler to preserve class names. |
-| `[artifacts] A group has neither content nor resolve` | `resolveArtifactIndexes()` in `start()` | An artifact group returned by `artifacts()` has `isArtifactGroup: true`, but has neither pre-inlined `content` nor a `resolve()` function. | Return `AutoArtifacts` from `@venizia/ignis-boot/auto`, or build with `IgnisArtifactsPlugin` so the group includes inlined content. |
-| `[artifacts] '<kind>' lists an entry that is not a class (position <pos>)` | `assertIndexed()` in `registerArtifacts()` | An artifact index entry is `undefined` or not a function. This is typically caused by circular imports evaluating a module before its class is defined. | Break the circular import cycle. Ensure the module importing the artifact index does not define decorated classes or get imported by them. |
-| `[artifacts] '<kind>' lists <Name>, which was never discovered` | `assertIndexed()` in `registerArtifacts()` | A class listed in an artifact index was not found in `MetadataRegistry.getDiscoveredArtifacts()`. The class is missing its stereotype decorator, was never imported, or the index is stale. | Decorate the class with its stereotype (`@service()`, `@repository()`, `@datasource()`, `@component()`, `@configuration()`), import its module, and regenerate the index. |
-| `[features] Two features are named '<name>'` | `registerFeatures()` in `preConfigure()` | Two feature definitions returned by `this.features()` have the same `name` property. | Ensure every mounted feature has a unique `name`. |
-| `[features] '<feature>' lists <Name>, which was never discovered` | `registerFeatures()` in `preConfigure()` | A configuration class listed in a feature's `configurations` array was not discovered in the metadata registry. | Decorate the class with `@configuration()` and import its module before calling `start()`. |
-| `[features] Resource '<name>' is mounted by both '<owner1>' and '<owner2>'` | `Features.mount()` in `ArdorApplication` | Two mounted features, or the application and a mounted feature, register a resource with the same `name`. | Ensure resource names are unique across the application and all mounted features. |
-| `[<caller>] '<key>' is already bound and allowOverride is false` | `service()`, `repository()`, `dataSource()`, `component()` | A registration method was called with `allowOverride: false` (or its decorator set `allowOverride: false`), but the key is already bound in the container. | Pass a distinct binding key via `opts.binding`, or omit `allowOverride: false` if replacing the existing binding is intentional. |
+### `[registerArtifacts] Two classes derive the binding key '<key>'`
+
+- Thrown by: `registerArtifacts()` via `ArtifactBindingKeys.assertNoDerivedCollision`
+- Cause: two discovered classes share the same name or were renamed to the same name by a minifier, causing colliding derived binding keys (`${namespace}.${name}`).
+- Fix: set an explicit binding key via `@service({ binding: { namespace, key } })` or the `binding` registration option, or configure the bundler to preserve class names.
+
+### `[artifacts] A group has neither content nor resolve`
+
+- Thrown by: `resolveArtifactIndexes()` in `start()`
+- Cause: an artifact group returned by `artifacts()` has `isArtifactGroup: true`, but has neither pre-inlined `content` nor a `resolve()` function.
+- Fix: return `AutoArtifacts` from `@venizia/ignis-boot/auto`, or build with `IgnisArtifactsPlugin` so the group includes inlined content.
+
+### `[artifacts] '<kind>' lists an entry that is not a class (position <pos>)`
+
+- Thrown by: `assertIndexed()` in `registerArtifacts()`
+- Cause: an artifact index entry is `undefined` or not a function. This is typically caused by circular imports evaluating a module before its class is defined.
+- Fix: break the circular import cycle. Ensure the module importing the artifact index does not define decorated classes or get imported by them.
+
+### `[artifacts] '<kind>' lists <Name>, which was never discovered`
+
+- Thrown by: `assertIndexed()` in `registerArtifacts()`
+- Cause: a class listed in an artifact index was not found in `MetadataRegistry.getDiscoveredArtifacts()`. The class is missing its stereotype decorator, was never imported, or the index is stale.
+- Fix: decorate the class with its stereotype (`@service()`, `@repository()`, `@datasource()`, `@component()`, `@configuration()`), import its module, and regenerate the index.
+
+### `[features] Two features are named '<name>'`
+
+- Thrown by: `registerFeatures()` in `preConfigure()`
+- Cause: two feature definitions returned by `this.features()` have the same `name` property.
+- Fix: ensure every mounted feature has a unique `name`.
+
+### `[features] '<feature>' lists <Name>, which was never discovered`
+
+- Thrown by: `registerFeatures()` in `preConfigure()`
+- Cause: a configuration class listed in a feature's `configurations` array was not discovered in the metadata registry.
+- Fix: decorate the class with `@configuration()` and import its module before calling `start()`.
+
+### `[features] Resource '<name>' is mounted by both '<owner1>' and '<owner2>'`
+
+- Thrown by: `Features.mount()` in `ArdorApplication`
+- Cause: two mounted features, or the application and a mounted feature, register a resource with the same `name`.
+- Fix: ensure resource names are unique across the application and all mounted features.
+
+### `[<caller>] '<key>' is already bound and allowOverride is false`
+
+- Thrown by: `service()`, `repository()`, `dataSource()`, `component()`
+- Cause: a registration method was called with `allowOverride: false` (or its decorator set `allowOverride: false`), but the key is already bound in the container.
+- Fix: pass a distinct binding key via `opts.binding`, or omit `allowOverride: false` if replacing the existing binding is intentional.
 
 ## Related
 

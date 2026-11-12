@@ -109,14 +109,12 @@ docker run --rm -p 8080:8080 \
 
 At start the image writes `/config.js` from the container's `VITE_` variables, as `window.__APP_CONFIG__`, and `index.html` loads it before the app. The app reads a value with `RuntimeConfig.get`: the value in `config.js`, else the build-time `import.meta.env` (this is what dev uses, from `.env`), else the default you give. Pass `required: true` for a value the app cannot run without: the result is then a `string`, and a missing value throws an error that names the key (never a value) and whose `normalized.code` is `RUNTIME_CONFIG_REQUIRED_CODE`, so code can tell it without reading the message. The preset calls it for `VITE_API_URL`, with the default `/api`, in `src/configurations/admin.configuration.ts`; `required: true` is for values you add.
 
-| Rule | What it means |
-|---|---|
-| Only `VITE_` variables are published | The name must be `VITE_` followed by capitals, digits and underscores. `DATABASE_URL`, `API_UPSTREAM` and every other variable stay in the container. |
-| A published value is public | Every visitor can read `/config.js`. Never put a secret in a `VITE_` variable. |
-| Secret-looking names stop the container | A `VITE_` name with `SECRET`, `PASSWORD`, `PASSWD`, `PASS`, `PRIVATE`, `CREDENTIAL` or `TOKEN` in it, or a value that is a URL with a user and a password in it, makes the container exit and name the variable (never the value), so a mistake shows at deploy. A name with `KEY` is fine: public keys are normal. |
-| Values are escaped | Quotes, backslashes, newlines and `<` cannot end the string or the file. |
-| `config.js` is never cached | nginx answers it with `Cache-Control: no-store`. |
-| A mounted `config.js` wins | If you mount a read-only file over it, the container keeps your file. |
+- **Only `VITE_` variables are published.** The name must be `VITE_` followed by capitals, digits and underscores. `DATABASE_URL`, `API_UPSTREAM` and every other variable stay in the container.
+- **A published value is public.** Every visitor can read `/config.js`. Never put a secret in a `VITE_` variable.
+- **Secret-looking names stop the container.** A `VITE_` name with `SECRET`, `PASSWORD`, `PASSWD`, `PASS`, `PRIVATE`, `CREDENTIAL` or `TOKEN` in it, or a value that is a URL with a user and a password in it, makes the container exit and name the variable (never the value), so a mistake shows at deploy. A name with `KEY` is fine: public keys are normal.
+- **Values are escaped.** Quotes, backslashes, newlines and `<` cannot end the string or the file.
+- **`config.js` is never cached.** nginx answers it with `Cache-Control: no-store`.
+- **A mounted `config.js` wins.** If you mount a read-only file over it, the container keeps your file.
 
 In dev and in `vite build`, `config.js` is the empty `src/public/config.js`, so the app falls back to `.env`.
 
@@ -133,15 +131,13 @@ docker run --rm -e API_UPSTREAM=http://api:3000 admin
 # [runtime-config] FATAL: required variable(s) missing or empty: VITE_API_URL
 ```
 
-| Rule | What it means |
-|---|---|
-| A comma-separated list | `VITE_API_URL,API_UPSTREAM`. Spaces around a name and empty entries are ignored. |
-| Unset or empty is missing | The container exits with code 1 and names every missing variable, in the order listed, once each. No `config.js` is written. |
-| Any variable name | The list is not limited to `VITE_` names, so `API_UPSTREAM` can be required. A name outside `VITE_` is still not published. |
-| No value is printed | Only names reach the message, so a secret cannot leak through a failed start. |
-| A bad entry stops the container | An entry that is not a variable name (letters, digits and `_`, not starting with a digit) exits with code 1 and gives its position in the list. |
-| Nothing listed, nothing checked | An unset or empty `APP_REQUIRED_ENV` keeps the start as it was. `-e APP_REQUIRED_ENV=...` overrides the list for one environment. |
-| A mounted `config.js` is not checked | A read-only file mounted over `config.js` is kept as supplied, and the variables are not checked. |
+- **A comma-separated list.** `VITE_API_URL,API_UPSTREAM`. Spaces around a name and empty entries are ignored.
+- **Unset or empty is missing.** The container exits with code 1 and names every missing variable, in the order listed, once each. No `config.js` is written.
+- **Any variable name.** The list is not limited to `VITE_` names, so `API_UPSTREAM` can be required. A name outside `VITE_` is still not published.
+- **No value is printed.** Only names reach the message, so a secret cannot leak through a failed start.
+- **A bad entry stops the container.** An entry that is not a variable name (letters, digits and `_`, not starting with a digit) exits with code 1 and gives its position in the list.
+- **Nothing listed, nothing checked.** An unset or empty `APP_REQUIRED_ENV` keeps the start as it was. `-e APP_REQUIRED_ENV=...` overrides the list for one environment.
+- **A mounted `config.js` is not checked.** A read-only file mounted over `config.js` is kept as supplied, and the variables are not checked.
 
 ### Expected API
 

@@ -16,12 +16,18 @@ ARDOR is the frontend member of the [VENIZIA](https://venizia.ai) family. IGNIS 
 consumer of IGNIS - it builds a frontend application on `@venizia/ignis-inversion` for inversion of
 control and `@venizia/ignis-filter` for the query vocabulary the data layer speaks.
 
-| Package | Role | Depends on |
-|---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin. | The IGNIS packages in its peer list |
-| `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React, the IGNIS packages in its peer list |
-| `@venizia/ardor-admin` | The react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles. | kernel, react, `ra-core` |
-| `@venizia/ardor` | Umbrella. Re-exports all three, so an application needs one dependency and one import specifier. | the three above |
+- **`@venizia/ardor-kernel`**
+  - Role: isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin.
+  - Depends on: the IGNIS packages in its peer list.
+- **`@venizia/ardor-react`**
+  - Role: the application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin.
+  - Depends on: kernel, React, the IGNIS packages in its peer list.
+- **`@venizia/ardor-admin`**
+  - Role: the react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles.
+  - Depends on: kernel, react, `ra-core`.
+- **`@venizia/ardor`**
+  - Role: umbrella. Re-exports all three, so an application needs one dependency and one import specifier.
+  - Depends on: the three above.
 
 Install `@venizia/ardor` unless a package genuinely needs only one layer.
 
@@ -30,7 +36,7 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `ra-core-infra` | ARDOR |
 |---|---|
 | `src/common/{constants,keys}.ts` | `@venizia/ardor-kernel` |
-| `src/common/types.ts` | split: the pure types to `ardor-kernel`, the `ra-core` provider contracts (`IDataProvider`, `IAuthProvider`, `II18nProviderOptions`) to `ardor-admin` |
+| `src/common/types.ts` | split between `ardor-kernel` and `ardor-admin` |
 | `src/common/locales/{en,vi}.ts` | `@venizia/ardor-admin` |
 | `src/helpers/**` (networks) | `@venizia/ardor-kernel`; the logger, fetchers and socket client moved to IGNIS helpers or were removed |
 | `src/utilities/**` | `@venizia/ardor-kernel` |
@@ -41,6 +47,8 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `src/ui/{context,hooks}` (framework-agnostic hooks) | `@venizia/ardor-react` |
 | `src/ui/hooks/{use-translate,use-notify-error,use-refresh-token,use-request-header-locale}` | `@venizia/ardor-admin` - each one calls a `ra-core` hook |
 | `src/ui/components/CoreRaApplication.tsx` | `@venizia/ardor-admin` as `ArdorApplication` |
+
+`src/common/types.ts` is split: the pure types go to `ardor-kernel`, and the `ra-core` provider contracts (`IDataProvider`, `IAuthProvider`, `II18nProviderOptions`) go to `ardor-admin`.
 
 File names follow the family convention - named by role, never repeating the folder - so
 `providers/default-rest-data.provider.ts` is now `providers/rest-data.ts`. This is invisible to consumers, which import from the barrel.

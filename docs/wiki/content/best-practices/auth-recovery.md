@@ -15,7 +15,7 @@ You have a `DefaultNetworkRequestService` (usually reached through `getNetworkSe
 
 | Export | Kind | Role on this page |
 | --- | --- | --- |
-| `DefaultNetworkRequestService` | class | Decides whether a request carries a token, and runs recovery on `401`. Its protected hooks `refreshToken`, `onAuthFailure`, `resolveAuthToken` and `isNoAuthPath` are what you override |
+| `DefaultNetworkRequestService` | class | Decides whether a request carries a token, and runs recovery on `401` |
 | `DefaultRestDataProvider` | class | `createNetworkService()` returns the service; override it to return your subclass |
 | `INoAuthOptions` | interface | `noAuthPaths`, `noAuthPathRegex` |
 | `TNoAuthPathRegex` | type | A string, a `RegExp`, or an array of either |
@@ -24,6 +24,8 @@ You have a `DefaultNetworkRequestService` (usually reached through `getNetworkSe
 | `DefaultAuthService` | class | `saveAuth`, `getAuth`, `getUser`, `cleanUp` |
 | `IAuthProviderOptions` | interface | `paths.signIn`, `paths.checkAuth`, `paths.afterLogin` |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN` - the storage key the request service reads |
+
+The protected hooks of `DefaultNetworkRequestService` that you override are `refreshToken`, `onAuthFailure`, `resolveAuthToken` and `isNoAuthPath`.
 
 ## Why a missing token is an error, not a silent skip
 

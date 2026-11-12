@@ -28,7 +28,7 @@ export default defineConfig({
 });
 ```
 
-| | Without the flag | With the flag |
+| Measure | Without the flag | With the flag |
 |---|---|---|
 | JavaScript chunks (`examples/5-mins-qs`, the preset's two groups) | 4 | 4 |
 | JavaScript, raw | 593,726 B | 609,757 B (+2.7%) |
@@ -128,13 +128,11 @@ It needs `@venizia/ignis-boot` (the resolver of the build stamp) and `vite` inst
 
 The shape is `IBuildInfoFile`, exported by `@venizia/ardor` for the browser code that reads the file:
 
-| Field | Source |
-|---|---|
-| `service`, `version` | `name` and `version` of the app's `package.json`; the version comes first from `APP_ENV_BUILD_VERSION`, `APP_BUILD_VERSION`, `CI_COMMIT_TAG` or `GITHUB_REF_NAME` |
-| `commit` | the first of `APP_ENV_BUILD_COMMIT_TAG`, `APP_BUILD_COMMIT`, `CI_COMMIT_SHA`, `GITHUB_SHA`, `COMMIT_SHA`, cut to 12 characters; else `git rev-parse` |
-| `branch` | the first of `APP_BUILD_BRANCH`, `CI_COMMIT_REF_NAME`, `GITHUB_REF_NAME`, `BRANCH_NAME`; else git |
-| `builtAt` | `APP_ENV_BUILD_DATE` or `APP_BUILD_DATE`; else the time of the build |
-| `frameworks` | the installed version of every dependency of the app whose name starts with `@venizia/`, sorted by name |
+- **`service`, `version`**: `name` and `version` of the app's `package.json`. The version comes first from `APP_ENV_BUILD_VERSION`, `APP_BUILD_VERSION`, `CI_COMMIT_TAG` or `GITHUB_REF_NAME`.
+- **`commit`**: the first of `APP_ENV_BUILD_COMMIT_TAG`, `APP_BUILD_COMMIT`, `CI_COMMIT_SHA`, `GITHUB_SHA`, `COMMIT_SHA`, cut to 12 characters; else `git rev-parse`.
+- **`branch`**: the first of `APP_BUILD_BRANCH`, `CI_COMMIT_REF_NAME`, `GITHUB_REF_NAME`, `BRANCH_NAME`; else git.
+- **`builtAt`**: `APP_ENV_BUILD_DATE` or `APP_BUILD_DATE`; else the time of the build.
+- **`frameworks`**: the installed version of every dependency of the app whose name starts with `@venizia/`, sorted by name.
 
 The text is the same for the same input: the keys keep one order and the file ends with a newline. The preset's Dockerfile passes `APP_BUILD_COMMIT` and `APP_BUILD_BRANCH`, so an image build needs no git.
 
@@ -146,9 +144,11 @@ The text is the same for the same input: the keys keep one order and the file en
 | Option | Type | Default | Meaning |
 |---|---|---|---|
 | `root` | `string` | the folder Vite runs in | The app folder, where `package.json` is. |
-| `fileName` | `string` | `'build-info.json'` | The path under the output folder and under the dev server's base: letters, digits, `.`, `_`, `-` and `/`, ending in `.json`, never `..`. |
+| `fileName` | `string` | `'build-info.json'` | The path under the output folder and under the dev server's base. |
 | `frameworkScope` | `string` | `'@venizia/'` | Dependencies whose name starts with this are listed under `frameworks`. |
 | `onUnresolved` | `'error' \| 'unspecified'` | `'error'` | What a build does when no commit is found in the pipeline or in git. |
+
+The `fileName` path allows letters, digits, `.`, `_`, `-` and `/`, ends in `.json`, and never contains `..`.
 
 A build with no commit fails with a message that says to build inside a git checkout or to set `APP_BUILD_COMMIT`. The dev server never refuses: it serves what it has, with `unspecified` fields, and warns. A missing branch, or a dependency that is not installed, is a warning in both.
 

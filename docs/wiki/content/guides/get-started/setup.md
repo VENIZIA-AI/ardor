@@ -13,7 +13,9 @@ Install the tools to build an ARDOR admin by hand: Bun, a Vite project with Reac
 |---|---|---|---|
 | **Bun** | >= 1.4 | Yes | Installs dependencies and runs builds; ARDOR uses Bun across all packages |
 | **REST API** | Any | Yes | Backing API for data and authentication; an IGNIS backend or `examples/5-mins-qs/api/server.ts` |
-| **Browser** | Current | Yes | The packages are compiled with `lib: ES2025, DOM, DOM.Iterable` (from `@venizia/dev-configs/tsconfig.browser.json`, which `packages/kernel/tsconfig.json` extends) |
+| **Browser** | Current | Yes | The packages are compiled with `lib: ES2025, DOM, DOM.Iterable` |
+
+The `lib` setting comes from `@venizia/dev-configs/tsconfig.browser.json`, which `packages/kernel/tsconfig.json` extends.
 
 ## Step 1: Install Bun
 
