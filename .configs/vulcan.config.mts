@@ -49,6 +49,7 @@ export default {
     bundle: '.agents/knowledge',
     wiki: 'docs/wiki/content',
     changelogs: 'docs/wiki/content/changelogs',
+    migrationFrom: '2026-11-13',
   },
 
   okf: {

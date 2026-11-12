@@ -13,6 +13,7 @@ tags: [process, changelog, docs]
 - [What gets an entry](#what-gets-an-entry)
 - [What every entry needs](#what-every-entry-needs)
 - [Optional frontmatter](#optional-frontmatter)
+- [The migration block](#the-migration-block)
 - [Template](#template)
 <!-- okf:generated:contents end -->
 
@@ -57,6 +58,22 @@ The title and the description (one plain sentence) are the entry's card on the i
 | `type: release` | Marks a release overview (the batch page with the upgrade checklist) as its own type. A file name with `batch-overview`, or a title ending "(Overview)", does the same. |
 | `release: '<npm name>@<version>'` | Places an entry git would place wrongly (a backfill); it must name a tag that exists. The index shows this version; without it the first x.y.z of the title is shown. |
 | `badges: [...]` | Overrides the `<Badge>` line when the types are wanted without the markup. |
+
+## The migration block
+
+A Breaking Change entry (badge text `Breaking Change`; `Breaking` is read as breaking too but reported on entries after the cutover) dated on or after `knowledge.migrationFrom` carries `migration:` in its frontmatter: how an app moves across the change, in both directions. `vulcan changelog check` (part of `make changelog-check`) fails when it is missing or invalid; entries before the cutover are never read.
+
+```yaml
+migration:
+  - id: redis-factory-per-topology       # lower-case words joined by -, unique across the folder
+    symbols: [RedisHelperFactory.create] # the names an app's code uses: Name, Name.member or a module specifier
+    upgrade: { before: "RedisHelper.new()", after: "RedisHelperFactory.create()" }  # or { steps: ["..."] }
+    downgrade: { steps: ["Call RedisHelper.new() again"] }   # required; an irreversible change says so here
+    data: "Stored tokens keep the old prefix."               # optional: stored data that does not cross the boundary
+    codemod: namespace-functions                             # optional: a `devz codemod` name
+```
+
+List the symbols as the app spells them before the change (a removed or renamed name is not in the new exports, so the check does not look them up). `before`/`after` and `steps` are alternatives, never both. The `## Breaking changes` section stays: it is the human version of the same steps.
 
 ## Template
 
