@@ -48,7 +48,7 @@ export class RestDataConfiguration {
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
-| `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that configures the default REST `IDataProvider`. |
+| `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that instantiates and configures the default REST `IDataProvider`. |
 | `CountRestDataProvider<TResource>` | class | Subclass of `DefaultRestDataProvider` that queries `/{resource}/count` for list totals. |
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |

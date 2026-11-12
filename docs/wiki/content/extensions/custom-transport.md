@@ -29,10 +29,10 @@ You have an application built with `ArdorApplication` and know how a binding key
 Every react-admin method in `DefaultRestDataProvider`, and `send()`, ends in one protected call:
 
 ```ts
-import { type AnyType, type INetworkResponse, type IRestRequestOptions } from '@venizia/ardor';
+import { type INetworkResponse, type IRestRequestOptions } from '@venizia/ardor';
 
 declare class DefaultRestDataProvider<TResource extends string = string> {
-  protected request<TResult = AnyType>(
+  protected request<TResult = unknown>(
     opts: IRestRequestOptions<TResource>,
   ): Promise<INetworkResponse<TResult>>;
 }
@@ -60,18 +60,23 @@ Keys of `filter.params` and of `meta` are lifted to the top level of `query`, ne
 Define a function type for your transport. It receives what the base would have handed to `doRequest` and resolves to an `INetworkResponse`.
 
 ```ts
-import { type AnyType, type INetworkResponse, type TRequestMethod, type TRequestType } from '@venizia/ardor';
+import { type INetworkResponse, type TRequestMethod, type TRequestType } from '@venizia/ardor';
 
 export interface ITransportRequest {
   type: TRequestType;
   method: TRequestMethod;
   paths: string[];
-  query?: Record<string, AnyType>;
+  query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
-  body?: AnyType;
+  body?: unknown;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse<AnyType>>;
+export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+
+// A transport answers parsed JSON, as a server does: `JSON.parse` is the typed boundary.
+const reply = <TResult>(opts: { data: unknown; total?: number }): INetworkResponse<TResult> => {
+  return { data: JSON.parse(JSON.stringify(opts.data)), total: opts.total };
+};
 
 // An in-memory transport, useful in tests.
 const products = [
@@ -82,14 +87,14 @@ const products = [
 export const memoryTransport: TTransport = async req => {
   const [resource, id] = req.paths;
   if (resource !== 'products') {
-    return { data: [] };
+    return reply({ data: [] });
   }
   if (id !== undefined) {
-    return { data: products.find(p => `${p.id}` === id) };
+    return reply({ data: products.find(p => `${p.id}` === id) });
   }
   const limit = req.query?.filter?.limit ?? products.length;
   const skip = req.query?.filter?.skip ?? 0;
-  return { data: products.slice(skip, skip + limit), total: products.length };
+  return reply({ data: products.slice(skip, skip + limit), total: products.length });
 };
 ```
 
@@ -102,7 +107,6 @@ The subclass keeps the two base injections, adds a third for the transport, and 
 ```ts
 import { inject } from '@venizia/ignis-inversion';
 import {
-  type AnyType,
   CoreBindings,
   DefaultRestDataProvider,
   type IApplicationInfo,
@@ -118,12 +122,12 @@ export interface ITransportRequest {
   type: TRequestType;
   method: TRequestMethod;
   paths: string[];
-  query?: Record<string, AnyType>;
+  query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
-  body?: AnyType;
+  body?: unknown;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse<AnyType>>;
+export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
 
 export const TRANSPORT_KEY = 'app.transport';
 
@@ -142,7 +146,7 @@ export class TransportDataProvider<
   }
 
   // getList, getOne, ..., send: every method has already mapped its params by the time it calls this.
-  protected override request<TResult = AnyType>(
+  protected override request<TResult = unknown>(
     opts: IRestRequestOptions<TResource>,
   ): Promise<INetworkResponse<TResult>> {
     const { resource, type, method, paths = [resource], query, body, bodyType, extra } = opts;
