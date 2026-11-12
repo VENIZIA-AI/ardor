@@ -111,7 +111,7 @@ generated:
 - `ValueOrPromise` type
 - `ValueUtility` class
 
-### `@venizia/ardor-kernel/repository` (23)
+### `@venizia/ardor-kernel/repository` (24)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -131,6 +131,7 @@ generated:
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
+- `THttpFetch` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
@@ -435,7 +436,7 @@ generated:
 - `ValueUtility` class
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (23)
+### `@venizia/ardor/repository` (24)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -455,6 +456,7 @@ generated:
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
+- `THttpFetch` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
