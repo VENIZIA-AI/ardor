@@ -91,8 +91,8 @@ declare module '@venizia/ardor' {
 }
 
 class UserService {
-  list() {
-    return [] as Array<string>;
+  list(): Array<string> {
+    return [];
   }
 }
 
