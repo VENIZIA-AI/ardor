@@ -46,8 +46,10 @@ For binding order in the application lifecycle, see [The bind order in Configura
 | `KEY_AUTH_TOKEN` | `@app/auth/token` | Serialized authentication token record (`IAuthTokenRecord`) |
 | `KEY_AUTH_IDENTITY` | `@app/auth/identity` | Stored user identity |
 | `KEY_AUTH_PERMISSION` | `@app/auth/permission` | Stored user roles, a JSON array of names |
-| `PREFIX_AUTH` | `@app/auth/` | Prefix of the session keys of an application with no `id`; `DefaultAuthService.cleanUp` removes everything under `keys.authPrefix` (this prefix, or `@app/auth/<id>/`) |
-| `PREFIX_STORE` | `@app/store/` | The namespace for the data of the signed-in user; sign-out removes everything under it. Keep what must outlive a sign-out (a theme) under `@app/prefs/<name>`, which no constant names |
+| `PREFIX_AUTH` | `@app/auth/` | Prefix of the session keys of an application with no `id` |
+| `PREFIX_STORE` | `@app/store/` | The namespace for the data of the signed-in user |
+
+`DefaultAuthService.cleanUp` removes everything under `keys.authPrefix` (`PREFIX_AUTH`, or `@app/auth/<id>/`). Sign-out removes everything under `PREFIX_STORE`. Keep what must outlive a sign-out (a theme) under `@app/prefs/<name>`, which no constant names.
 
 The three `KEY_AUTH_*` keys belong to `LocalStorageKeys.SCHEME_SET` and can be verified with `LocalStorageKeys.isValid(value)`; the two `PREFIX_*` constants do not.
 
@@ -89,8 +91,8 @@ declare module '@venizia/ardor' {
 }
 
 class UserService {
-  list() {
-    return [] as Array<string>;
+  list(): Array<string> {
+    return [];
   }
 }
 

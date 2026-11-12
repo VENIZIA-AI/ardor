@@ -63,7 +63,9 @@ ARDOR defines no options binding key for `IPermissionProvider`. Parameters are p
 | `resource` | `string` | None (required) | The react-admin resource name (for example `'orders'`, `'users'`) |
 | `action` | `string` | None (required) | The action being attempted (for example `'list'`, `'show'`, `'create'`, `'edit'`, `'delete'`) |
 | `record` | `unknown` | `undefined` | The record being accessed; present for record-level actions and omitted for resource-level actions |
-| `signal` | `AbortSignal` | `undefined` | React-admin query cancellation signal; received by `IReactAdminAuthProvider.canAccess` and not forwarded to `IPermissionProvider.canAccess` by `DefaultAuthProvider.value()` in `packages/admin/src/providers/auth.ts` |
+| `signal` | `AbortSignal` | `undefined` | React-admin query cancellation signal |
+
+`signal` is received by `IReactAdminAuthProvider.canAccess` and not forwarded to `IPermissionProvider.canAccess` by `DefaultAuthProvider.value()` in `packages/admin/src/providers/auth.ts`.
 
 ## How react-admin consumes canAccess
 

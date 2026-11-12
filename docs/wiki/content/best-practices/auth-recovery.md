@@ -15,7 +15,7 @@ You have a `DefaultNetworkRequestService` (usually reached through `getNetworkSe
 
 | Export | Kind | Role on this page |
 | --- | --- | --- |
-| `DefaultNetworkRequestService` | class | Decides whether a request carries a token, and runs recovery on `401`. Its protected hooks `refreshToken`, `onAuthFailure`, `resolveAuthToken` and `isNoAuthPath` are what you override |
+| `DefaultNetworkRequestService` | class | Decides whether a request carries a token, and runs recovery on `401` |
 | `DefaultRestDataProvider` | class | `createNetworkService()` returns the service; override it to return your subclass |
 | `INoAuthOptions` | interface | `noAuthPaths`, `noAuthPathRegex` |
 | `TNoAuthPathRegex` | type | A string, a `RegExp`, or an array of either |
@@ -24,6 +24,8 @@ You have a `DefaultNetworkRequestService` (usually reached through `getNetworkSe
 | `DefaultAuthService` | class | `saveAuth`, `getAuth`, `getUser`, `cleanUp` |
 | `IAuthProviderOptions` | interface | `paths.signIn`, `paths.checkAuth`, `paths.afterLogin` |
 | `LocalStorageKeys` | class | `KEY_AUTH_TOKEN` - the storage key the request service reads |
+
+The protected hooks of `DefaultNetworkRequestService` that you override are `refreshToken`, `onAuthFailure`, `resolveAuthToken` and `isNoAuthPath`.
 
 ## Why a missing token is an error, not a silent skip
 
@@ -170,7 +172,12 @@ The refresh is written once, as the `refreshToken` hook of a `DefaultNetworkRequ
 First, write the subclass. `refreshToken` sends the refresh request, saves the new token through the auth service (it knows the keys of this application, which an application `id` scopes), and resolves `true`. `onAuthFailure` is the place to send the user back to sign-in:
 
 ```ts
-import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
+import {
+  Authentication,
+  DefaultNetworkRequestService,
+  RequestMethods,
+  RequestTypes,
+} from '@venizia/ardor';
 
 export class AppNetworkService extends DefaultNetworkRequestService {
   protected override async refreshToken(): Promise<boolean> {
@@ -192,7 +199,7 @@ export class AppNetworkService extends DefaultNetworkRequestService {
       username: user.username,
       referenceId: user.referenceId,
       provider: user.provider,
-      token: { value: data.token, type: 'Bearer' },
+      token: { value: data.token, type: Authentication.TYPE_BEARER },
     });
 
     return true;

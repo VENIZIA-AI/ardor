@@ -36,11 +36,15 @@ bun run ardor codemod namespace src --write
 | Flag | What it does |
 |------|--------------|
 | none | Lists what would change and writes nothing. |
-| `--write` | Writes the changed files, all or none: every file is read and rewritten in memory first, and nothing is written if one fails. Inside a git repository, a file with local changes (changed, staged or untracked) is refused, so git can undo the codemod. Outside one nothing can undo it, so the command refuses unless you add `--allow-dirty`. |
-| `--allow-dirty` | With `--write`, also writes a file that has local changes, such as one another codemod just changed, and writes outside a git repository. |
+| `--write` | Writes the changed files, all or none. |
+| `--allow-dirty` | With `--write`, also writes a file that has local changes. |
 | `--check` | A dry run that exits 1 when anything would change or is left; for CI. It cannot go with `--write`. |
-| `--hooks` | Also moves a hook imported from `@venizia/ardor` to the `Ardor` namespace: `useRepository()` becomes `Ardor.useRepository()`. A hook imported from `@venizia/ardor-react` or `@venizia/ardor-admin` is never touched. |
+| `--hooks` | Also moves a hook imported from `@venizia/ardor` to the `Ardor` namespace. |
 | `--help`, `-h` | Prints the usage and exits. |
+
+- `--write` reads and rewrites every file in memory first, and nothing is written if one fails. Inside a git repository, a file with local changes (changed, staged or untracked) is refused, so git can undo the codemod. Outside one nothing can undo it, so the command refuses unless you add `--allow-dirty`.
+- `--allow-dirty` also writes a file that another codemod just changed, and writes outside a git repository.
+- `--hooks` makes `useRepository()` become `Ardor.useRepository()`. A hook imported from `@venizia/ardor-react` or `@venizia/ardor-admin` is never touched.
 
 The command prints one line per finding and a summary:
 

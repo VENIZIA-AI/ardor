@@ -82,14 +82,21 @@ const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: { mode: 'l
 BrowserStorage.remove({ key: '@app/prefs/theme', storage: StorageAreas.LOCAL });
 ```
 
-| Method | Returns | Meaning |
-|---|---|---|
-| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` | The key is missing, the accessor throws, or `decode` throws. |
-| `set({ key, value, storage?, codec? })` | `boolean` | `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`. |
-| `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
-| `keys({ storage?, prefix? })` | `Array<string>` | The keys of the area, only those that start with `prefix` when it is given. `[]` where the area is missing or throws. It lists the keys under `@app/auth/` too, because listing writes nothing. |
-| `removeWhere({ storage?, prefix })` | `number` | Removes every key that starts with `prefix` and answers how many it removed. `prefix` is required, and an empty one removes nothing, so a call cannot clear an area. A key under `@app/auth/` is never removed, as in `remove`, and is not counted. A key another tab removed after the listing still counts. |
-| `subscribe({ key, storage?, listener })` | a function that stops it | `listener({ isExternal })` runs after a `set`, `remove` or `removeWhere` through `BrowserStorage` (`isExternal` is `false`) and after another tab changes the key (`true`), so a listener can skip its own writes. A listener that takes no argument still works. |
+| Method | Returns |
+|---|---|
+| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` |
+| `set({ key, value, storage?, codec? })` | `boolean` |
+| `remove({ key, storage? })` | `boolean` |
+| `keys({ storage?, prefix? })` | `Array<string>` |
+| `removeWhere({ storage?, prefix })` | `number` |
+| `subscribe({ key, storage?, listener })` | a function that stops it |
+
+- **`get`:** Answers `fallback` when the key is missing, the accessor throws, or `decode` throws.
+- **`set`:** `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`.
+- **`remove`:** `false` when the key was not removed, and for a key under `@app/auth/`.
+- **`keys`:** The keys of the area, only those that start with `prefix` when it is given. `[]` where the area is missing or throws. It lists the keys under `@app/auth/` too, because listing writes nothing.
+- **`removeWhere`:** Removes every key that starts with `prefix` and answers how many it removed. `prefix` is required, and an empty one removes nothing, so a call cannot clear an area. A key under `@app/auth/` is never removed, as in `remove`, and is not counted. A key another tab removed after the listing still counts.
+- **`subscribe`:** `listener({ isExternal })` runs after a `set`, `remove` or `removeWhere` through `BrowserStorage` (`isExternal` is `false`) and after another tab changes the key (`true`), so a listener can skip its own writes. A listener that takes no argument still works.
 
 `storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default. With a `codec`, `fallback` may be of another type, such as `null` for "nothing is stored", and `get` answers the union.
 
@@ -124,7 +131,9 @@ const pasted = await BrowserClipboard.readText();
 | Method | Returns | Meaning |
 |---|---|---|
 | `writeText({ text })` | `Promise<boolean>` | `true` when the text is on the clipboard, `false` on any refusal. |
-| `readText()` | `Promise<string \| undefined>` | The text, or `undefined` on any refusal. Reading needs a permission and a user gesture, and some browsers do not offer it, so `undefined` is a normal answer. |
+| `readText()` | `Promise<string \| undefined>` | The text, or `undefined` on any refusal. |
+
+Reading needs a permission and a user gesture, and some browsers do not offer it, so `undefined` is a normal answer.
 
 There is no fallback to `document.execCommand('copy')`: it is deprecated and needs a DOM node, so a refusal returns `false` and the caller decides what to show. The helper logs nothing; [`useCopyToClipboard`](./hooks#usecopytoclipboard) calls it and keeps its warning. The source is `packages/kernel/src/utilities/browser-clipboard.ts`.
 

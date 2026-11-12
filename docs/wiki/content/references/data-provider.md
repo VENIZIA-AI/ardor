@@ -69,11 +69,16 @@ export class RestDataConfiguration {
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `url` | `string` | (Required) | Base URL prepended to all resource request paths. |
-| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource path strings requested without an `Authorization` header and excluded from 401 refresh. Entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression patterns matching resource paths that must omit `Authorization` headers. Set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path. |
+| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource paths requested without an `Authorization` header and excluded from 401 refresh |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns matching resource paths that must omit `Authorization` headers |
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
-| `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header. Defaults to `RequestChannel.WEB` (`'100_WEB'`). |
-| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint: a request to it never starts a refresh, and the default `refreshToken` posts to it. |
+| `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header |
+| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options for the token refresh |
+
+- `noAuthPaths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
+- `noAuthPathRegex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
+- `requestTracingChannel`: defaults to `RequestChannel.WEB` (`'100_WEB'`).
+- `authRecovery`: `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint. A request to it never starts a refresh, and the default `refreshToken` posts to it.
 
 ## Example
 
@@ -118,17 +123,61 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 ## HTTP request and response mapping
 
-| react-admin method | HTTP method | Path | Request body / query | Result conversion |
-| --- | --- | --- | --- | --- |
-| `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
-| `getOne` | `GET` | `/{resource}/{id}` | Query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body. | `{ data: RecordType }` from JSON response body. |
-| `getMany` | `GET` | `/{resource}` | Always a GET with the ids in `filter.where.id.inq` (query `filter` JSON string containing `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`). A very long id list can answer 414 or 431. No body. | `{ data: RecordType[] }` from JSON response array. |
-| `getManyReference` | `GET` | `/{resource}` | Same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
-| `create` | `POST` | `/{resource}` | JSON body `params.data`. No query. | `{ data: ResultRecordType }` containing the assigned `id`. |
-| `update` | `PATCH` | `/{resource}/{id}` | JSON body `params.data`. `previousData` is not sent. No query. | `{ data: RecordType }` from JSON response body. |
-| `updateMany` | `PATCH` | `/{resource}` | JSON body `{ ...params.data, where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty or if `params.data` contains a `where` property. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
-| `delete` | `DELETE` | `/{resource}/{id}` | No body. No query. | `{ data: RecordType }` from JSON response body. |
-| `deleteMany` | `DELETE` | `/{resource}` | JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
+Each react-admin method maps to one HTTP call:
+
+### `getList`
+
+- HTTP: `GET /{resource}`
+- Request: query `filter` JSON string (`where`, `order`, `limit`, `skip`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body.
+- Result: `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` is read from the `Content-Range` header, falling back to `data.length`.
+
+### `getOne`
+
+- HTTP: `GET /{resource}/{id}`
+- Request: query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `getMany`
+
+- HTTP: `GET /{resource}`
+- Request: always a GET with the ids in `filter.where.id.inq`. The query `filter` JSON string contains `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`. A very long id list can answer 414 or 431. No body.
+- Result: `{ data: RecordType[] }` from the JSON response array.
+
+### `getManyReference`
+
+- HTTP: `GET /{resource}`
+- Request: same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body.
+- Result: `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` is read from the `Content-Range` header, falling back to `data.length`.
+
+### `create`
+
+- HTTP: `POST /{resource}`
+- Request: JSON body `params.data`. No query.
+- Result: `{ data: ResultRecordType }` containing the assigned `id`.
+
+### `update`
+
+- HTTP: `PATCH /{resource}/{id}`
+- Request: JSON body `params.data`. `previousData` is not sent. No query.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `updateMany`
+
+- HTTP: `PATCH /{resource}`
+- Request: JSON body `{ ...params.data, where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty or if `params.data` contains a `where` property.
+- Result: `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if the response body is not an array.
+
+### `delete`
+
+- HTTP: `DELETE /{resource}/{id}`
+- Request: no body. No query.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `deleteMany`
+
+- HTTP: `DELETE /{resource}`
+- Request: JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty.
+- Result: `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if the response body is not an array.
 
 > [!NOTE]
 > `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string to avoid HTTP 414 and 431 errors on long ID lists. Backend endpoints handling bulk operations must support body-based selectors.

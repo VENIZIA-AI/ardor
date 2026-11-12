@@ -46,18 +46,18 @@ What ARDOR adds to ra-core:
 | Concern | In ARDOR |
 | :--- | :--- |
 | Services | An IGNIS container: `bindingList()`, `@inject`, `useInjectable` by key or by class |
-| Data layer | A REST data provider that sends the IGNIS filter language (`where`, `order`, `limit`, `skip`) and reads totals from `Content-Range` |
+| Data layer | A REST data provider that sends the IGNIS filter language and reads totals from `Content-Range` |
 | Sign-in | A 401 triggers one token refresh for a burst of requests, then retries them; no-auth paths are explicit |
 | Keys | `useInjectable` and `useTranslate` keys typed through module augmentation |
 
+The filter language uses `where`, `order`, `limit` and `skip`.
+
 ## Packages
 
-| Package | Contents |
-|---|---|
-| `@venizia/ardor` | Umbrella: re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository` sub-path and the VULCAN preset (`dist/presets`). |
-| `@venizia/ardor-kernel` | Container and service foundation, with no UI: application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository). |
-| `@venizia/ardor-react` | React bindings: application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `DispatchHooks.create` and `SelectorHooks.create`. |
-| `@venizia/ardor-admin` | ra-core adapter: `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`). |
+- **`@venizia/ardor`**: umbrella. Re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository` sub-path and the VULCAN preset (`dist/presets`).
+- **`@venizia/ardor-kernel`**: container and service foundation, with no UI. It holds the application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository).
+- **`@venizia/ardor-react`**: React bindings. It holds the application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `DispatchHooks.create` and `SelectorHooks.create`.
+- **`@venizia/ardor-admin`**: ra-core adapter. It holds `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`).
 
 The three layers use no Node builtins, so they run in the browser. Take `@venizia/ardor` unless you want only one layer.
 

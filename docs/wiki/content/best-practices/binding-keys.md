@@ -29,7 +29,7 @@ An application class that extends `BaseArdorApplication` (see [Application](../r
 
 The same two IGNIS offers: let the application discover decorated classes, or register them by hand. Mix them freely.
 
-| | Discovery | By hand |
+| Aspect | Discovery | By hand |
 | --- | --- | --- |
 | How | Decorate the class: `@service()`, `@component()`, `@datasource()`, `@repository(...)` | In `bindContext()`: `this.service(X)`, `this.repository(X)`, `this.dataSource(X)`, `this.component(X)` |
 | When | `start()` binds every stereotyped class that has been imported | When you call it |

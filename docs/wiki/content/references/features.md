@@ -66,24 +66,34 @@ export class CommerceApplication extends BaseArdorApplication {
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
-| `Features` | class | Static helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources |
+| `Features` | class | Static helpers to define, read and mount features and to load their messages |
 | `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
-| `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) declared in `packages/kernel/src/common/types.ts` |
+| `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) |
 | `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |
 | `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
-| `CoreBindings.FEATURES` | binding key | Binding key (`'@app/application/features'`) where `preConfigure()` binds the mounted feature array |
+| `CoreBindings.FEATURES` | binding key | Key `'@app/application/features'`, where `preConfigure()` binds the mounted feature array |
+
+The `Features` helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, and `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources. `IFeatureBase` is declared in `packages/kernel/src/common/types.ts`.
 
 ## Options
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `name` | `string` | None (required) | Unique identifier for the feature within an application. Used in resource ownership checks and diagnostic errors. |
-| `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes belonging to the feature. Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`. |
-| `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the application view tree. Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`. |
-| `routes` | `Array<RouteProps>` | `undefined` | Custom `<Route>` elements mounted under react-admin's `<CustomRoutes>`. Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. |
-| `messages` | `TFeatureMessages` | `undefined` | Dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`. |
-| `permissions` | `Array<string>` | `undefined` | Permission keys checked by the feature in the application's vocabulary. Preserved on the feature for consumers such as role editors; ARDOR enforces nothing. See [Permission](./permission). |
-| `[extension]` | `TExtension` | None | Custom shell metadata (such as menu entries, navigation paths, or icons) preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it. |
+| `name` | `string` | None (required) | Unique identifier for the feature within an application. |
+| `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes of the feature. |
+| `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the view tree. |
+| `routes` | `Array<RouteProps>` | `undefined` | Custom `<Route>` elements mounted under `<CustomRoutes>`. |
+| `messages` | `TFeatureMessages` | `undefined` | Locale codes mapped to message objects or lazy loaders. |
+| `permissions` | `Array<string>` | `undefined` | Permission keys the feature checks, in the application's vocabulary. |
+| `[extension]` | `TExtension` | None | Custom shell metadata, such as menu entries, navigation paths or icons. |
+
+- **`name`:** Used in resource ownership checks and diagnostic errors.
+- **`configurations`:** Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`.
+- **`resources`:** Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`.
+- **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`.
+- **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`.
+- **`permissions`:** Preserved on the feature for consumers such as role editors; ARDOR enforces nothing. See [Permission](./permission).
+- **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it.
 
 ## Mount order and conflict checks
 
