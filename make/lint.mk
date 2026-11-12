@@ -20,17 +20,21 @@ FIX_PROJECT = cd $(1) && node_modules/.bin/devz lint --fix
 LINT_PKG_TARGETS := $(addprefix lint-,$(PACKAGES))
 FIX_PKG_TARGETS := $(addprefix lint-fix-,$(PACKAGES))
 
-.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-files lint-fix lint-fix-packages lint-fix-wiki \
+# changelog-check is not in lint-packages: it reads the changelog folder, not a package.
+.PHONY: lint lint-all lint-packages lint-wiki lint-scripts lint-files changelog-check lint-fix lint-fix-packages lint-fix-wiki \
         fmt-files fmt-scripts \
         $(LINT_PKG_TARGETS) $(FIX_PKG_TARGETS)
 
 lint: lint-packages lint-scripts
 	@echo "✅ Linting completed."
 
-lint-all: lint-packages lint-wiki lint-scripts lint-files
+lint-all: lint-packages lint-wiki lint-scripts lint-files changelog-check
 	@echo "✅ All linting completed."
 
 lint-packages: $(LINT_PKG_TARGETS)
+
+changelog-check:
+	@bun x --no-install vulcan changelog check
 
 lint-fix: lint-fix-packages lint-fix-wiki fmt-files fmt-scripts
 

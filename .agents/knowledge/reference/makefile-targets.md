@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**78 targets.**
+**79 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -23,6 +23,7 @@ generated:
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted, and no other @venizia/* dep is a range. |
+| `make changelog-check` | - | Gate: every Breaking Change entry from knowledge.migrationFrom on carries a valid migration block. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
@@ -43,7 +44,7 @@ generated:
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
 | `make lint` | `lint-packages lint-scripts` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files changelog-check` | lint-packages, lint-wiki, lint-scripts, lint-files and changelog-check. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-files` | - | Format check of the files outside the projects: the root package.json, workflows, .agents, .configs, the presets, the examples. |
 | `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-files fmt-scripts` | lint-fix-<pkg> for every package. |

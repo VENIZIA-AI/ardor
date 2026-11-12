@@ -55,6 +55,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make okf-check-strict
 
+      - name: Changelog migration blocks
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make changelog-check
+
       # A fresh checkout has no adapters; sync writes them, so doctor checks the project, not the runner.
       - name: Agent setup (VULCAN)
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
