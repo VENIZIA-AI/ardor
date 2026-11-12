@@ -87,11 +87,11 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": "^0.4.8-12",
+    "@venizia/ignis-connectors": "^0.4.8-13",
     "@venizia/ignis-filter": "^0.4.7-4",
-    "@venizia/ignis-helpers": "^0.4.8-10",
+    "@venizia/ignis-helpers": "^0.4.8-11",
     "@venizia/ignis-inversion": "^0.4.7-3",
-    "@venizia/ignis-kernel": "^0.4.8-12",
+    "@venizia/ignis-kernel": "^0.4.8-13",
     "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {
