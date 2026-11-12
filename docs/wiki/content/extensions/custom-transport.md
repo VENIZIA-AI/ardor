@@ -71,7 +71,7 @@ export interface ITransportRequest {
   body?: AnyType;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
+export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse<AnyType>>;
 
 // An in-memory transport, useful in tests.
 const products = [
@@ -123,7 +123,7 @@ export interface ITransportRequest {
   body?: AnyType;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
+export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse<AnyType>>;
 
 export const TRANSPORT_KEY = 'app.transport';
 
@@ -164,7 +164,7 @@ export class TransportDataProvider<
       query,
       headers: props.headers,
       body: props.body,
-    }) as Promise<INetworkResponse<TResult>>;
+    });
   }
 }
 ```

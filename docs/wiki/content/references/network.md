@@ -10,6 +10,7 @@ ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps th
 ```ts
 import {
   CoreBindings,
+  HeaderConstants,
   type IDataProvider,
   inject,
   RequestCountData,
@@ -49,7 +50,7 @@ export class AuditReportService {
       method: RequestMethods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
-      headers: { ...headers, 'content-type': 'application/json' },
+      headers: { ...headers, [HeaderConstants.CONTENT_TYPE]: 'application/json' },
       requestCountData: RequestCountData.DATA_ONLY,
     });
 
