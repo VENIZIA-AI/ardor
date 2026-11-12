@@ -6,7 +6,7 @@ specifier, so the migration is four mechanical edits, not a redesign.
 
 > **`@minimaltech/ra-core-infra` is frozen at 0.0.3-18.** No further release will be cut from it.
 > ARDOR is the only home for this code - a fix belongs in `packages/kernel`, `packages/react` or
-> `packages/admin`, never in `aether/packages/ra-core-infra`. Export parity was verified against
+> `packages/admin`, never in the frozen package. Export parity was verified against
 > that final state: 146 exported symbols, all present in ARDOR under the same names except the
 > four renames below and `DIContainer`, which was dropped.
 
@@ -110,8 +110,8 @@ Grep for `DIContainer` before you start - it was dropped, and every use becomes 
 `Container` the application already is.
 
 Then install and type-check per application. The type checker is what catches what a manual pass
-misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.3
-requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
+misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.5 or newer
+(the peer range) requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
 
 ## Retiring the old package
 

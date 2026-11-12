@@ -185,6 +185,7 @@ Abstract method returning application metadata, bound under `CoreBindings.APPLIC
 | `name` | `string` | Name of the application |
 | `version` | `string` | Application version string |
 | `description` | `string` | Human-readable application description |
+| `id` | `string` | Optional. Scopes the session and store keys in browser storage to this application; see [Binding keys](./binding-keys#two-applications-on-one-origin) |
 | `author` | `{ name: string; email: string; url?: string }` | Optional author contact information |
 
 ### service(), repository(), dataSource(), component()

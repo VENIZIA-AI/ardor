@@ -79,10 +79,10 @@ Spread `englishMessages` (`packages/admin/src/common/locales/en.ts`) or `vietnam
 Call the `useTranslate` hook from `@venizia/ardor` to read messages inside React components:
 
 ```tsx
-import { useTranslate, type TUseTranslateFn } from '@venizia/ardor';
+import { useTranslate } from '@venizia/ardor';
 
 export const DashboardHeader = () => {
-  const translate: TUseTranslateFn = useTranslate();
+  const translate = useTranslate();
 
   return (
     <div>
@@ -94,7 +94,7 @@ export const DashboardHeader = () => {
 };
 ```
 
-Always assign `useTranslate()` to a local variable typed as `TUseTranslateFn`. In `packages/admin/src/hooks/use-translate.ts`, `useTranslate()` returns the typed function. With no i18n provider mounted, ra-core's default provider answers. Annotating `TUseTranslateFn` enforces type checking on your translation keys.
+`useTranslate()` already returns `TUseTranslateFn`, so a key is checked at compile time without an annotation. With no i18n provider mounted, ra-core's default provider answers.
 
 ## 3. Type custom keys with module augmentation
 
@@ -173,7 +173,6 @@ import {
   useHtmlLang,
   useRequestHeaderLocale,
   useTranslate,
-  type TUseTranslateFn,
 } from '@venizia/ardor';
 import type { CoreLayoutProps } from 'ra-core';
 
@@ -184,7 +183,7 @@ export const AdminLayout = ({ children }: CoreLayoutProps) => {
 };
 
 export const ProductsPage = () => {
-  const translate: TUseTranslateFn = useTranslate();
+  const translate = useTranslate();
 
   useDocumentTitle({
     title: translate('app.products.title'),

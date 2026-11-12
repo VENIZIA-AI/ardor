@@ -5,7 +5,7 @@ description: What an ARDOR app needs in its Vite 8 config - the chunk order flag
 
 # Vite setup
 
-An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` already has what is below (since ARDOR 0.4.4); this page is for an app that wrote its own config, and for the `buildInfoFile` plugin (`@venizia/ardor/vite`, also since 0.4.4), which the preset does not use.
+An ARDOR app builds with Vite 8.3.5 or newer. The preset's `vite.config.mts` already has what is below; this page is for an app that wrote its own config, and for the `buildInfoFile` plugin (`@venizia/ardor/vite`), which the preset does not use.
 
 ## Run modules in the order they import each other
 
@@ -57,11 +57,11 @@ The preset keeps the flag on because a new app cannot tell why a production-only
 2. Open the built app (`vite preview`, not `vite dev`) in a real browser and read the console.
 3. Turn the flag off only if the built app boots clean and you keep a check of the built app in CI: a later import can change how chunks are shared and bring the failure back.
 
-An app that wants no size cost can instead make sure `reflect-metadata` loads before each DI module it owns, for example with a Vite `transform` hook that adds `import 'reflect-metadata'` at the top of the DI package's files. That is measured by the team that uses it, not by ARDOR.
+An app that wants no size cost can instead make sure `reflect-metadata` loads before each DI module it owns, for example with a Vite `transform` hook that adds `import 'reflect-metadata'` at the top of the DI package's files. That is measured by the app that uses it, not by ARDOR.
 
 ### The preset has no `vendor` group
 
-The preset's `codeSplitting` has one group: `react` (React, its DOM renderer and the scheduler). Until ARDOR 0.4.8-6 it had a second one, `vendor`, whose test is `/node_modules/`. That group takes every module under `node_modules` into one chunk, including the modules that only a rare lazy route uses, so an app with many lazy routes, or with many locale files, ends with one very large chunk that its first screen loads. One team added those two groups after its own groups (an `infra` group and an icons chunk), on top of the flag, and compared the result with its own committed config:
+The preset's `codeSplitting` has one group: `react` (React, its DOM renderer and the scheduler). A second group, `vendor`, with the test `/node_modules/`, would take every module under `node_modules` into one chunk, including the modules that only a rare lazy route uses, so an app with many lazy routes, or with many locale files, ends with one very large chunk that its first screen loads. The table compares six large admin apps. Each was built with those two groups added after its own groups (an `infra` group and an icons chunk), on top of the flag, and compared with the app’s own committed config:
 
 | App | JavaScript files, before → preset | All files, gzip | First screen requests, before → preset | First screen, gzip | Largest chunk, raw |
 |---|---|---|---|---|---|
@@ -74,18 +74,18 @@ The preset's `codeSplitting` has one group: `react` (React, its DOM renderer and
 
 The total went down for the four apps that build, and so did the number of requests for the first screen of apps 3 and 4. The first screen still got heavier in every app, by 11% to 119% of its gzip: modules that the first screen does not need now sit in a chunk that it loads. Apps 5 and 6 use `vite-plugin-pwa`, whose build stopped with `assets/vendor-….js is 6.57 MB, and won't be precached` (6.67 MB for the other) because the file was over the 5 MB precache limit; the build still wrote `dist`, and the first-screen figures of those two come from that output. Raising `workbox.maximumFileSizeToCacheInBytes` lets the build pass but leaves the chunk as large. The `react` group on its own added about 4% of first-screen gzip to apps 5 and 6 and nothing to the other four.
 
-An intermediate change on `develop`, never released, gave the group `minShareCount: 2`, so that it took only the modules that two chunks or more import. The same team rebuilt its two largest apps with it, and with two other shapes of the group. Only the `vendor` group differs between the last three rows; the groups are a copy of the preset's `react` group and a `vendor` group, and the flag is on. First screen is what the page requests (service worker blocked, headless Chromium, nine seconds after `DOMContentLoaded`, `#/login`), JavaScript and CSS only for gzip, production mode, PWA plugins on:
+Giving the group `minShareCount: 2` makes it take only the modules that two chunks or more import. Apps 5 and 6, the two largest, were rebuilt with it, and with two other shapes of the group. Only the `vendor` group differs between the last three rows; the groups are a copy of the preset's `react` group and a `vendor` group, and the flag is on. First screen is what the page requests (service worker blocked, headless Chromium, nine seconds after `DOMContentLoaded`, `#/login`), JavaScript and CSS only for gzip, production mode, PWA plugins on:
 
 | App | `vendor` group | First screen requests | First screen, gzip vs the app's own config | Largest chunk, raw | Precache failures |
 |---|---|---|---|---|---|
-| web-bo | the old preset (the table above, app 5, matched by file count) | 274 | +117.2% | 6.57 MB | build failed |
-| web-bo | `minShareCount: 2` | 108 | +79.5% | 4.70 MB | 0 |
-| web-bo | `minShareCount: 2, entriesAware: true` | 165 (+20) | +5.0% | 1.94 MB | 0 |
-| web-bo | none (the `react` group only) | 146 (+1) | +4.3% | 2.10 MB | 0 |
-| web-manager | the old preset (the table above, app 6, matched by file count) | 237 | +118.9% | 6.67 MB | build failed |
-| web-manager | `minShareCount: 2` | 63 | +56.3% | 3.65 MB | 0 |
-| web-manager | `minShareCount: 2, entriesAware: true` | 96 (+16) | +5.0% | 1.95 MB | 0 |
-| web-manager | none (the `react` group only) | 81 (+1) | +4.3% | 2.56 MB | 0 |
+| app 5 | a `vendor` group over all of `node_modules` (the table above, matched by file count) | 274 | +117.2% | 6.57 MB | build failed |
+| app 5 | `minShareCount: 2` | 108 | +79.5% | 4.70 MB | 0 |
+| app 5 | `minShareCount: 2, entriesAware: true` | 165 (+20) | +5.0% | 1.94 MB | 0 |
+| app 5 | none (the `react` group only) | 146 (+1) | +4.3% | 2.10 MB | 0 |
+| app 6 | a `vendor` group over all of `node_modules` (the table above, matched by file count) | 237 | +118.9% | 6.67 MB | build failed |
+| app 6 | `minShareCount: 2` | 63 | +56.3% | 3.65 MB | 0 |
+| app 6 | `minShareCount: 2, entriesAware: true` | 96 (+16) | +5.0% | 1.95 MB | 0 |
+| app 6 | none (the `react` group only) | 81 (+1) | +4.3% | 2.56 MB | 0 |
 
 `minShareCount: 2` alone still loaded a 3.65 to 4.70 MB chunk on the first screen. Leaving the group out is the closest to the app's own config: the 4.3% is the `react` group, and the build passes the 5 MB precache limit. `entriesAware: true` groups the shared modules by the set of chunks that import them, so the modules of lazy routes stay out of the set of the entry; it kept the first screen near the base too and made the largest chunk a little smaller, for 16 to 20 more requests. So the preset has **no `vendor` group**.
 
@@ -103,9 +103,9 @@ export const output = {
 };
 ```
 
-**What you give up without it.** The modules of the third-party packages that the entry imports sit in the entry chunk, with your application code, so a deploy that changes your code makes the browser fetch them again. In `examples/5-mins-qs`, which keeps the old group, the build is an 11 KB `index` chunk and a 362 KB `vendor` chunk; without it, one 373 KB `index` chunk, under Vite's 500 KB warning. The cost of the lost deploy cache was not measured on the real apps. The opt-in costs the requests in the table.
+**What you give up without it.** The modules of the third-party packages that the entry imports sit in the entry chunk, with your application code, so a deploy that changes your code makes the browser fetch them again. In `examples/5-mins-qs`, which sets its own `vendor` group (test `/node_modules/`, no `minShareCount`), the build is an 11 KB `index` chunk and a 362 KB `vendor` chunk; without it, one 373 KB `index` chunk, under Vite's 500 KB warning. The cost of the lost deploy cache was not measured on the real apps. The opt-in costs the requests in the table.
 
-**What was measured, and what was not.** One run for each cell, and only on web-bo and web-manager for the `react`-only and `entriesAware` rows; the other four apps have the `minShareCount: 2` row only (first screen +7% to +18% gzip against their own configs). The boot harness was not run again for the last two shapes: only the login page was rendered. A test in the ARDOR repository pins the direction on a fixture of one eager entry and six lazy routes: with a catch-all `vendor` group the first screen holds every lazy library; without it, and with the opt-in above, it holds none of them and every library is still built. That fixture did not reproduce the size of the real apps, so the numbers above are the ones to rely on. Measure what the first screen loads in a real browser (`vite preview`, not `vite dev`). The flag and the groups are separate choices: the flag orders modules, and the groups decide the chunk shapes.
+**What was measured, and what was not.** One run for each cell, and only on apps 5 and 6 for the `react`-only and `entriesAware` rows; the other four apps have the `minShareCount: 2` row only (first screen +7% to +18% gzip against their own configs). The boot harness was not run again for the last two shapes: only the login page was rendered. A test in the ARDOR repository pins the direction on a fixture of one eager entry and six lazy routes: with a catch-all `vendor` group the first screen holds every lazy library; without it, and with the opt-in above, it holds none of them and every library is still built. That fixture did not reproduce the size of the real apps, so the numbers above are the ones to rely on. Measure what the first screen loads in a real browser (`vite preview`, not `vite dev`). The flag and the groups are separate choices: the flag orders modules, and the groups decide the chunk shapes.
 
 The ARDOR repository pins this: a test builds a DI module that guards on `Reflect.getMetadata` in a chunk of its own, and it fails with the flag off and passes with it on. The same test fails the day Rolldown orders that module correctly by itself, which is when the flag can go.
 
