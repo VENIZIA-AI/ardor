@@ -74,7 +74,7 @@ During `application.start()`, `preConfigure()` in `packages/kernel/src/base/appl
 
 1. `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this)` - Binds the application container instance itself. Bound directly by `preConfigure()`.
 2. `this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo())` - Binds the metadata object returned by `getAppInfo()`. Bound directly by `preConfigure()`.
-3. `this.registerArtifacts()` - Discovers all stereotyped classes (`@configuration()`, `@service()`, `@repository()`, `@datasource()`, `@component()`). Asserts that no two classes derive colliding binding keys. Binds each class under its derived key as a singleton. Binds each method decorated with `@provide({ key })` as a lazy provider (singleton by default).
+3. `this.registerArtifacts()` - Discovers all stereotyped classes (`@configuration()`, `@service()`, `@repository()`, `@datasource()`, `@component()`). Asserts that no two classes derive colliding binding keys. Binds each class under its derived key in the scope its stereotype declares (`SINGLETON` when none). Binds each method decorated with `@provide({ key })` as a lazy provider (singleton by default).
 4. `this.registerFeatures({ features: this.features() })` - Validates that feature names are unique and that all configuration classes listed by features were discovered. Binds `this.bind({ key: CoreBindings.FEATURES }).toValue(features)`. Bound directly by `preConfigure()`.
 5. `this.bindingList()` - Binds each class from the dictionary returned by `this.bindingList()` under its literal key as a singleton.
 6. `this.bindContext()` - Calls the application subclass's `bindContext()` method and returns its result.

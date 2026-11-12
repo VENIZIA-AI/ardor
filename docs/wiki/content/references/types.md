@@ -84,7 +84,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IAuthTokenRecord` | `interface` | Auth token payload (`value`, `type`, `provider`), returned by `resolveAuthToken()`. |
 | `IDataSourceRequestContext` | `interface` | Request context (`paths`) supplied to `HttpDataSource` auth hooks. |
 | `IDataSourceAuth` | `interface` | Bridge settings (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) returned by `getDataSourceAuth()`. |
-| `IApplicationInfo` | `interface` | Application metadata (`name`, `version`, `description`, `author`; no other key), bound under `CoreBindings.APPLICATION_INFO`. |
+| `IApplicationInfo` | `interface` | Application metadata (`name`, `version`, `description`, `id`, `author`; no other key), bound under `CoreBindings.APPLICATION_INFO`. |
 | `IFeatureBase` | `interface` | Base feature configuration (`name`, `configurations`, `permissions`), bound under `CoreBindings.FEATURES`. |
 | `IArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. |
 | `IPermissionProvider` | `interface` | Authorization checker contract (`canAccess`), bound under `CoreBindings.PERMISSION_PROVIDER`. |
@@ -151,7 +151,7 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. |
 | `II18nProviderOptions` | `interface` | i18n configuration options (`i18nSources`, `languages`), bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. |
 | `TI18nSource` | `type` | The messages of one locale: an object, or a loader `() => Promise<object>` called the first time the locale is used. |
-| `IApplication` | `interface` | Props accepted by `<ArdorApplication>` (`container`, `reduxStore`, `suspense`, `resources`, `routes`). |
+| `IApplication` | `interface` | Props accepted by `<ArdorApplication>` (`container`, `logger`, `reduxStore`, `suspense`, `resources`, `routes`, `features`, plus the `CoreAdmin` props). |
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. |
 

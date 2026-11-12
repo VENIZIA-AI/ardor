@@ -141,8 +141,8 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 
 | Method | What it calls | What it returns |
 | --- | --- | --- |
-| `login(params)` | Posts credentials to `signInPath` via `restDataProvider.send()`, parses session with `readSignInSession()`, runs `beforeSaveSession()`, and persists via `saveSession()` | `Promise<{ ...response, redirectTo: string }>` redirecting to `afterLoginPath` (default `'/'`) |
-| `logout(params)` | Invokes `authService.cleanUp()`, clearing all `localStorage` keys starting with `@app/auth/` | `Promise<void>` |
+| `login(params)` | Posts credentials to `signInPath` via `restDataProvider.send()`, parses session with `readSignInSession()`, runs `beforeSaveSession()`, and persists via `saveSession()` | `Promise<{ ...response, redirectTo: string \| false }>` redirecting to `afterLoginPath` (default `'/'`); `false` when `afterLoginPath` is `false`, and the page stays |
+| `logout(params)` | Invokes `authService.cleanUp()`, clearing every `localStorage` key under `keys.authPrefix` (`@app/auth/`, or `@app/auth/<id>/` when the application info has an `id`), and `clearStoredData()`, which sweeps `keys.storePrefix` (`@app/store/`) in `localStorage` and `sessionStorage` | `Promise<void>` |
 | `checkAuth(params)` | Reads `authService.getAuth()`. Rejects if no token value is stored. When `paths.checkAuth` is set, sends a `GET` request to that path and rejects if response data is missing | `Promise<void>` (resolves on success, rejects with `{ redirectTo: loginPagePath }` on failure) |
 | `checkError(params)` | Reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, calls `authService.cleanUp()` and rejects with `{ redirectTo: loginPagePath }`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }` | `Promise<void>` (resolves for any status other than 401 or 403) |
 | `getIdentity(params)` | Reads stored identity from `authService.getUser()`. Rejects if `userId` is absent | `Promise<UserIdentity>` returning `{ userId, username, referenceId, provider }` |
@@ -158,7 +158,7 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 | Hook / Property | Signature | Default Implementation | Purpose |
 | --- | --- | --- | --- |
 | `signInPath` | `protected get: string` | `paths.signIn ?? '/auth/sign-in'` | Target API route for sign-in requests |
-| `afterLoginPath` | `protected get: string` | `paths.afterLogin ?? '/'` | Redirect destination following successful sign-in |
+| `afterLoginPath` | `protected get: string \| false` | `paths.afterLogin ?? '/'` | Redirect destination following successful sign-in |
 | `loginPagePath` | `protected get: string` | `'/login'` | Route of login page redirected to on 401 or authentication failure |
 | `unauthorizedPagePath` | `protected get: string` | `'/unauthorized'` | Route redirected to on 403 authorization failure |
 | `buildSignInBody(opts)` | `opts: { params: ILoginParams } => unknown` | `{ identifier: { scheme: 'username', value: opts.params?.username }, credential: { scheme: 'basic', value: opts.params?.password } }` | Builds request payload sent to `signInPath` |
@@ -211,7 +211,7 @@ export class CustomAuthProvider extends DefaultAuthProvider {
 
 ## Session hooks
 
-To keep a socket or a per-user cache in step with the session, override `onSessionStarted` and `onSessionCleared`. You no longer override `checkAuth` for it.
+To keep a socket or a per-user cache in step with the session, override `onSessionStarted` and `onSessionCleared`. `checkAuth` needs no override for it.
 
 ```ts
 import {

@@ -192,7 +192,7 @@ Write a `DefaultNetworkRequestService` subclass only for a refresh the default d
 
 ## 6. Sign out and error handling
 
-To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invokes `DefaultAuthService.cleanUp()`, deleting all keys starting with `@app/auth/` from `localStorage`.
+To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invokes `DefaultAuthService.cleanUp()`, deleting every key under `keys.authPrefix` (`@app/auth/`, or `@app/auth/<id>/` for an application with an `id`) from `localStorage`, and `clearStoredData()` sweeps `@app/store/` in `localStorage` and `sessionStorage`.
 
 `DefaultAuthProvider.checkError` evaluates HTTP errors raised by the data provider or react-admin:
 

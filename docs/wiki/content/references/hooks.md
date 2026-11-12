@@ -77,7 +77,7 @@ import { useApplicationContext } from '@venizia/ardor';
 
 export function ContainerStatus() {
   const container = useApplicationContext();
-  return <span>{container ? 'container ready' : 'no container'}</span>;
+  return <span>{container.constructor.name}</span>;
 }
 ```
 
@@ -313,7 +313,7 @@ export function ErrorLine(props: { code: string }) {
 ```
 
 - **Parameters**: None.
-- **Return value**: `TUseUntypedTranslateFn` (`(key: string, options?: AnyType) => string`).
+- **Return value**: `TUseUntypedTranslateFn`, ra-core's `TranslateFunction`.
 - **Gotcha**: For a key that exists only at run time, such as a server error code or a data label. A key written in code belongs to [`useTranslate`](#usetranslate), which checks it at compile time; both read the same i18n provider and share one implementation. It is ra-core's own `useTranslate` with a `string` key. A key the catalogs do not hold comes back unchanged, or as the `_` text of the options; with no i18n provider, ra-core's default provider answers the same way. Defined in `packages/admin/src/hooks/use-translate.ts`.
 
 ### useRefreshToken
