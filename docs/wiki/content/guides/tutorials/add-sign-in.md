@@ -204,13 +204,13 @@ To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invo
 Set `paths.signIn` in `IAuthProviderOptions` and add the matching path to `noAuthPaths` in `IRestDataProviderOptions`. To modify the request body format, subclass `DefaultAuthProvider` and override `buildSignInBody`:
 
 ```ts
-import { type AnyType, DefaultAuthProvider } from '@venizia/ardor';
+import { DefaultAuthProvider, type ILoginParams } from '@venizia/ardor';
 
 export class CustomAuthProvider extends DefaultAuthProvider {
-  protected override buildSignInBody(opts: { params: AnyType }) {
+  protected override buildSignInBody(opts: { params: ILoginParams }) {
     return {
-      identifier: { scheme: 'email', value: opts.params?.email },
-      credential: { scheme: 'basic', value: opts.params?.password },
+      identifier: { scheme: 'email', value: opts.params.email },
+      credential: { scheme: 'basic', value: opts.params.password },
     };
   }
 }

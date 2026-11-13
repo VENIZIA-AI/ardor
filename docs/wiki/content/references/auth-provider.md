@@ -241,8 +241,8 @@ Subclasses can override any hook to customize authentication:
 
 ```ts
 import {
-  type AnyType,
   DefaultAuthProvider,
+  type ILoginParams,
   type ISignInSession,
 } from '@venizia/ardor';
 
@@ -251,20 +251,22 @@ export class CustomAuthProvider extends DefaultAuthProvider {
     return '/signin';
   }
 
-  protected override buildSignInBody(opts: { params: AnyType }): unknown {
+  protected override buildSignInBody(opts: { params: ILoginParams }): unknown {
     return {
-      email: opts.params?.email,
-      password: opts.params?.password,
+      email: opts.params.email,
+      password: opts.params.password,
     };
   }
 
-  protected override resolveUsername(opts: { params: AnyType }): string {
-    return opts.params?.email ?? '';
+  protected override resolveUsername(opts: { params: ILoginParams }): string {
+    const { email } = opts.params;
+
+    return typeof email === 'string' ? email : '';
   }
 
   protected override async beforeSaveSession(opts: {
     session: ISignInSession;
-    params: AnyType;
+    params: ILoginParams;
   }): Promise<void> {
     if (!opts.session.roles.includes('admin')) {
       throw new Error('[signIn] Only administrators may sign in');
@@ -279,7 +281,6 @@ To keep a socket or a per-user cache in step with the session, override `onSessi
 
 ```ts
 import {
-  type AnyType,
   DefaultAuthProvider,
   type IAuthTokenRecord,
   type TSessionClearReason,
@@ -293,7 +294,7 @@ declare const socket: {
 export class SocketAuthProvider extends DefaultAuthProvider {
   protected override async onSessionStarted(opts: {
     token: IAuthTokenRecord;
-    user: AnyType;
+    user: unknown;
   }): Promise<void> {
     await socket.connect({ token: opts.token.value });
   }

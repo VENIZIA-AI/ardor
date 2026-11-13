@@ -23,6 +23,7 @@ You have an ARDOR application with `REST_DATA_PROVIDER_OPTIONS` and `APPLICATION
 | `RequestCountData` | class | Both calls use `RequestCountData.DATA_ONLY` |
 | `CoreBindings` | class | Holds `DEFAULT_REST_DATA_PROVIDER`, the key you bind this class under |
 | `TRequestType` | type | Parameter type of `requestList` |
+| `IListFilter` | interface | The list filter `requestList` receives (`where`, `order`, `limit`, `skip`, ...) |
 
 ## What it overrides
 
@@ -32,11 +33,11 @@ You have an ARDOR application with `REST_DATA_PROVIDER_OPTIONS` and `APPLICATION
 class CountRestDataProvider<TResource extends string = string>
   extends DefaultRestDataProvider<TResource> {
 
-  protected override requestList<RecordType extends RaRecord = AnyType>(opts: {
+  protected override requestList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     type: TRequestType;
-    queryKey: Record<string, AnyType>;
-    filter: Record<string, AnyType>;
+    queryKey: Record<string, unknown>;
+    filter: IListFilter;
     extra?: TExtraRequest;
   }): Promise<{ data: RecordType[]; total: number; meta?: { extra: ... } }>;
   // ...
