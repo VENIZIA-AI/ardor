@@ -96,8 +96,8 @@ migration:
 +const bag: Record<string, unknown> = { page: 1 };
 
 -const tenant = authService.getUser().tenant.toUpperCase();
-+const { tenant } = authService.getUser();
-+const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
++const user = authService.getUser();
++const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
 ```
 
 ## What changed
@@ -256,7 +256,7 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 `IAppUser` is yours to trust: `getUser()` reads browser storage, so the extra fields are whatever your sign-in saved. Check them where a wrong value would do harm.
 
-**7. Run `bun run typecheck`.** The errors name each use left; there is no codemod, because the right replacement depends on the value.
+**7. Run `bun run typecheck`.** The errors name each use left. The `devz` codemod of step 1 rewrites the imports of the two names; the other replacements depend on the value, so there is no codemod for them.
 
 ## How to go back
 
