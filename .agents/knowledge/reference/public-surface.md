@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (96)
+### `@venizia/ardor-kernel` (97)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -46,6 +46,7 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
@@ -249,7 +250,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (188)
+### `@venizia/ardor` (189)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -296,6 +297,7 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface

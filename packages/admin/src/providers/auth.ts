@@ -99,7 +99,9 @@ export class DefaultAuthProvider<
   ) {
     super({ scope: DefaultAuthProvider.name });
 
-    this.stopSync = this.authService.subscribe({ listener: () => this.syncSession() });
+    this.stopSync = this.authService.subscribe({
+      listener: ({ isExternal }) => this.syncSession({ isExternal }),
+    });
   }
 
   /** Stops listening to the auth service. Call it when you discard a provider that you built yourself. */
@@ -111,6 +113,9 @@ export class DefaultAuthProvider<
 
   /** The session last announced to `onSessionStarted`: `undefined` when none is, or after it was cleared. */
   private announcedSession?: string;
+
+  /** The user of `announcedSession`. */
+  private announcedUserId?: string;
 
   /** The reason of the `cleanUp` this provider is running, for the listener of the service. */
   private clearing?: TSessionClearReason;
@@ -362,14 +367,29 @@ export class DefaultAuthProvider<
   }
 
   /** Announces a session unless it is the one announced last. The claim is made before the hook is awaited. */
-  private startSession(opts: { token: IAuthTokenRecord; user: IAuthUser }): Promise<void> {
+  private startSession(opts: {
+    token: IAuthTokenRecord;
+    user: IAuthUser;
+    isExternal?: boolean;
+  }): Promise<void> {
     const session = [opts.user?.userId, opts.token.value].join('|');
 
     if (session === this.announcedSession) {
       return this.hookQueue;
     }
 
+    const userId = `${opts.user?.userId}`;
+
+    // Another user over the one announced, with no sign-out between: that session ends first, with what it stored.
+    if (this.announcedUserId !== undefined && this.announcedUserId !== userId) {
+      this.clearStoredDataOfLeavingUser({ isExternal: opts.isExternal === true });
+      this.endSession({ reason: SessionClearReasons.EXTERNAL }).catch((error: unknown) => {
+        this.logger.error('[endSession] failed | error: %o', error);
+      });
+    }
+
     this.announcedSession = session;
+    this.announcedUserId = userId;
 
     return this.runSessionHook({
       name: 'onSessionStarted',
@@ -384,6 +404,7 @@ export class DefaultAuthProvider<
     }
 
     this.announcedSession = undefined;
+    this.announcedUserId = undefined;
 
     return this.runSessionHook({
       name: 'onSessionCleared',
@@ -392,19 +413,41 @@ export class DefaultAuthProvider<
   }
 
   /** Announces or ends the session after the service saved or cleared it. */
-  private syncSession(): Promise<void> {
+  private syncSession(opts: { isExternal: boolean }): Promise<void> {
     if (this.authService.getAuth()?.value) {
-      return this.startStoredSession();
+      return this.startStoredSession({ isExternal: opts.isExternal });
     }
 
+    this.runClearStoredData();
+
+    return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+  }
+
+  /** An override that throws must not stop the session from ending. */
+  private runClearStoredData(): void {
     try {
       this.clearStoredData();
     } catch (error) {
-      // An override that throws must not stop the session from ending.
       this.logger.error('[clearStoredData] failed, the session ends anyway | error: %o', error);
     }
+  }
 
-    return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+  /**
+   * What the user who leaves took into the page. A switch made in this tab clears the stored data as a
+   * sign-out does. A switch another tab made was cleared there before the new user wrote anything, so
+   * this tab clears only its own `sessionStorage`: the `localStorage` now holds the new user's data.
+   */
+  private clearStoredDataOfLeavingUser(opts: { isExternal: boolean }): void {
+    if (!opts.isExternal) {
+      this.runClearStoredData();
+
+      return;
+    }
+
+    BrowserStorage.removeWhere({
+      storage: StorageAreas.SESSION,
+      prefix: this.authService.keys.storePrefix,
+    });
   }
 
   private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {
@@ -420,14 +463,18 @@ export class DefaultAuthProvider<
   }
 
   /** Announces the session in the store, when there is one. */
-  private startStoredSession(): Promise<void> {
+  private startStoredSession(opts?: { isExternal?: boolean }): Promise<void> {
     const token = this.authService.getAuth();
 
     if (!token?.value) {
       return Promise.resolve();
     }
 
-    return this.startSession({ token, user: this.authService.getUser() });
+    return this.startSession({
+      token,
+      user: this.authService.getUser(),
+      isExternal: opts?.isExternal,
+    });
   }
 
   /**
@@ -509,10 +556,22 @@ export class DefaultAuthProvider<
     }
 
     const checked = this.announcedSession;
-    const response = await this.restDataProvider.send({
-      resource: this.authProviderOptions.paths.checkAuth as TResource,
-      params: { method: RequestMethods.GET },
+    const { response, isStale } = await this.askCheckAuth({
+      resource: this.authProviderOptions.paths.checkAuth,
     });
+
+    // The user who asked is gone: the answer says nothing about the session signed in now, which decides.
+    if (isStale) {
+      if (this.authService.getAuth()?.value) {
+        return Promise.resolve();
+      }
+
+      await this.endSession({ reason: SessionClearReasons.REJECTED });
+
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
+    }
 
     if (!response?.data) {
       // The answer belongs to the session announced before the request.
@@ -528,6 +587,24 @@ export class DefaultAuthProvider<
     await this.startStoredSession();
 
     return Promise.resolve();
+  }
+
+  /** The `checkAuth` request. `isStale` is a 401 that answers a user who is gone (`SESSION_CHANGED_CODE`): it has no answer. */
+  private async askCheckAuth(opts: { resource: string }) {
+    try {
+      const response = await this.restDataProvider.send({
+        resource: opts.resource as TResource,
+        params: { method: RequestMethods.GET },
+      });
+
+      return { response, isStale: false };
+    } catch (error) {
+      if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+        return { response: undefined, isStale: true };
+      }
+
+      throw error;
+    }
   }
 
   /**

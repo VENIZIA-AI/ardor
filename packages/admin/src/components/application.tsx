@@ -192,6 +192,16 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       return undefined;
     }
 
+    // `resetQueries`, not `clear`: a page that is open holds its query, and only a reset tells it to drop its data.
+    const resetCache = () => {
+      queryClient.resetQueries().catch((error: unknown) => {
+        LoggerFactory.getLogger(['ArdorApplication']).error(
+          '[resetCache] failed | error: %o',
+          error,
+        );
+      });
+    };
+
     // The user the cache belongs to: `undefined` when no session was announced since the last clear.
     let cachedUser = readSessionUser({ authService });
 
@@ -204,7 +214,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
           setTimeout(() => {
             // Not when the next user signed in meanwhile: that sign-in judged the cache itself.
             if (readSessionUser({ authService }) === undefined) {
-              queryClient.clear();
+              resetCache();
               cachedUser = undefined;
             }
           }, 0);
@@ -213,7 +223,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
         }
 
         if (cachedUser !== undefined && cachedUser !== user) {
-          queryClient.clear();
+          resetCache();
         }
 
         cachedUser = user;

@@ -232,6 +232,66 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     });
   });
 
+  describe('a service that has no auth service, so it cannot tell who is signed in', () => {
+    const createBare = (opts: { refreshes?: boolean } = {}) => {
+      class BareService extends DefaultNetworkRequestService {
+        protected override refreshToken(): Promise<boolean> {
+          signIn({ userId: 7, username: 'alice', token: 'fresh' });
+
+          return Promise.resolve(true);
+        }
+      }
+      const options = {
+        name: 'session-switch-bare',
+        baseUrl,
+        authRecovery: { refreshTokenPath: REFRESH_PATH },
+      };
+
+      return opts.refreshes ? new BareService(options) : new DefaultNetworkRequestService(options);
+    };
+
+    test('another token in the store while the request was in flight is a session change, and nothing is replayed', async () => {
+      itemsHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(createBare()) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(requested.filter((entry) => entry.authorization === 'Bearer bob-token')).toEqual([]);
+      expect(requested.filter((entry) => entry.pathname !== REFRESH_PATH)).toHaveLength(1);
+    });
+
+    test('through the data source hooks the same switch is a session change, and the retry carries no token', async () => {
+      const auth = createBare().getDataSourceAuth();
+      const context = contextOf();
+
+      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(auth.authTokenResolver(context)).toBeUndefined();
+    });
+
+    test('a token that its own refreshToken override saved is retried, as before', async () => {
+      const response = await getItems(createBare({ refreshes: true }));
+
+      expect(response.data).toEqual({ data: 'ok' });
+      expect(requested.filter((entry) => entry.authorization === 'Bearer fresh')).toHaveLength(1);
+    });
+
+    test('through the data source hooks a refresh of its own is retried with the new token', async () => {
+      const auth = createBare({ refreshes: true }).getDataSourceAuth();
+      const context = contextOf();
+
+      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      const isRefreshed = await auth.onUnauthorized(context);
+
+      expect(isRefreshed).toBe(true);
+      expect(auth.authTokenResolver(context)?.value).toBe('fresh');
+    });
+  });
+
   describe('through the data source hooks', () => {
     test('another user signed in between the send and the 401: no refresh and no retry', async () => {
       const auth = createService().getDataSourceAuth();
