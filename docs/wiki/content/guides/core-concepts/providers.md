@@ -141,7 +141,7 @@ export class ShopApplication extends BaseArdorApplication {
 }
 ```
 
-The container builds `CustomRestDataProvider` with the options of `REST_DATA_PROVIDER_OPTIONS` and the `APPLICATION_INFO`, and the key then holds the react-admin provider it returns. `bindContext()` runs last, so this binding wins over the default. The same one line replaces the auth or i18n provider, and the `CountRestDataProvider` of `@venizia/ardor` is bound the same way: `.toProvider(CountRestDataProvider)`.
+The container builds `CustomRestDataProvider` with the options of `REST_DATA_PROVIDER_OPTIONS` and the `APPLICATION_INFO`, and the key then holds the react-admin provider it returns. `bindContext()` runs last, so this binding wins over the default. The same one line replaces the auth or i18n provider, and the `CountRestDataProvider` of `@venizia/ardor` is bound the same way: `.toProvider(CountRestDataProvider).setScope(BindingScopes.SINGLETON)`. Keep the scope: a bare `bind()` is transient, so without it every `get()` would build a new data provider.
 
 ## Leave One Out
 

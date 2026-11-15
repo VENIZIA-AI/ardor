@@ -133,7 +133,14 @@ export class ShopApplication extends BaseArdorApplication {
       throw getError({ message: '[postConfigure] SettingsService is not registered' });
     }
 
-    await this.get<SettingsService>({ key }).load();
+    // Checked, not asserted: what the key holds must be the class.
+    const settings: unknown = this.get({ key });
+
+    if (!(settings instanceof SettingsService)) {
+      throw getError({ message: '[postConfigure] The key of SettingsService holds another class' });
+    }
+
+    await settings.load();
   }
 }
 ```
@@ -313,7 +320,7 @@ export class ShopApplication extends BaseArdorApplication {
 - `reduxStore`: absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw.
 - `logger`: the type is `ILogger` from `@venizia/ignis-helpers/core`. The default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used.
 - `features`: absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list).
-- `accessDenied`: react-admin sends a user whom `canAccess` denies a resource to `/access-denied`, and `DefaultAuthProvider` sends a 403 there (`unauthorizedPagePath`). `AccessDeniedPage` shows a title, a sentence and a link home, translated with the `ardor.access_denied` keys. Pass your own component to replace it. A custom route with `access` renders nothing when denied; it does not redirect.
+- `accessDenied`: react-admin sends a user whom `canAccess` denies a resource to `/access-denied`, and `DefaultAuthProvider` sends a 403 there (`unauthorizedPagePath`). `AccessDeniedPage` shows a title, a sentence and a link home, translated with the `ardor.access_denied` keys. Pass your own component to replace it. A custom route with `access` sends a denied user there too.
 - `...reactAdminProps`: such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`.
 
 ### Render Lifecycle

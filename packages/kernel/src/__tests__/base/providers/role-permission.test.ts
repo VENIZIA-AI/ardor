@@ -10,6 +10,7 @@ import { DefaultAuthService } from '@/base/services/auth';
 import {
   CoreBindings,
   type IApplicationInfo,
+  LocalStorageKeys,
   type IPermissionProvider,
   type IRolePermissionProviderOptions,
 } from '@/common';
@@ -161,6 +162,16 @@ describe('RolePermissionProvider', () => {
       action: Actions.LIST,
     });
     expect(result15).toBe(false);
+  });
+
+  test('roles with no token are denied: a session that lost its token is no one signed in', async () => {
+    const { service, provider } = create({ grants: { [Roles.ADMIN]: ['*'] } });
+    signIn({ service, userId: '1', roles: [Roles.ADMIN] });
+    localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
+
+    const result = await isAllowed({ provider, resource: Resources.ORDERS, action: Actions.LIST });
+
+    expect(result).toBe(false);
   });
 
   test('nobody signed in is denied', async () => {
