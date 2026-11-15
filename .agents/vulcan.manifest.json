@@ -43,7 +43,8 @@
     "bundle": ".agents/knowledge",
     "wiki": "docs/wiki/content",
     "changelogs": "docs/wiki/content/changelogs",
-    "migrationFrom": "2026-11-13"
+    "migrationFrom": "2026-11-13",
+    "codemodCommand": ["ardor", "codemod"]
   },
   "release": {
     "tagPattern": "<dir>-v<version>",
