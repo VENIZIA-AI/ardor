@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient } from '@tanstack/react-query';
 import { act, cleanup, render, screen } from '@testing-library/react';
@@ -322,6 +322,10 @@ describe('ArdorApplication logger', () => {
 });
 
 describe('ArdorApplication and the data cache of a signed-out user', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   const renderWithSession = () => {
     const authService = new DefaultAuthService();
     const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
@@ -358,7 +362,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
   });
 
-  test('is emptied after the redirect, not at once, and not when the next user signed in meanwhile', async () => {
+  test('is emptied after the redirect, not at once, when the session ends', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
@@ -367,11 +371,96 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
     authService.cleanUp();
     expect(clear).not.toHaveBeenCalled();
+    await settle();
+
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+  });
+
+  test('is emptied at once when another user signs in over the first, canAccess answers included', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
     authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
+  test('is emptied when the next user signs in within the same tick as the sign-out', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
+    authService.cleanUp();
+    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    await settle();
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
+  test('is kept when the token of the same user is refreshed', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+    const clear = spyOn(queryClient, 'clear');
+
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
     await settle();
 
     expect(clear).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBe(true);
+  });
+
+  test('is kept by the first sign-in of a visitor who had no session', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    const clear = spyOn(queryClient, 'clear');
+
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+
+    expect(clear).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+  });
+
+  test('is emptied when another user signs in over a session that was stored before the page loaded', async () => {
+    const authService = new DefaultAuthService();
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['reports', 'getList'], [{ id: 1, title: 'private' }]);
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          queryClient={queryClient}
+        />
+      </MemoryRouter>,
+    );
+    await screen.findByText('R');
+
+    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
   });
 
   test('stops listening when the application unmounts', async () => {
