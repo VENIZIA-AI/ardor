@@ -213,7 +213,7 @@ To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invo
 `DefaultAuthProvider.checkError` evaluates HTTP errors raised by the data provider or react-admin:
 
 - Status 401: calls `authService.cleanUp()` and rejects with `{ redirectTo: '/login' }`.
-- Status 403: rejects with `{ redirectTo: '/unauthorized', logoutUser: false }`.
+- Status 403: rejects with `{ redirectTo: '/access-denied', logoutUser: false }`. The user stays signed in and lands on the access-denied page `ArdorApplication` mounts: `AccessDeniedPage` (a title, a sentence and a link home), or the component you pass as `accessDenied`. react-admin sends a user whom `canAccess` denies a resource to the same page.
 
 ## 7. Custom sign-in route and body
 

@@ -24,6 +24,7 @@ import {
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
+import { AccessDeniedPage } from './access-denied';
 import { ApplicationProviders } from './resolve';
 
 const Wrapper: React.FC<{
@@ -244,7 +245,12 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return stop;
   }, [container, queryClient]);
 
-  const adminProps = { ...providers, ...reactAdminProps, queryClient };
+  const adminProps = {
+    ...providers,
+    ...reactAdminProps,
+    accessDenied: reactAdminProps.accessDenied ?? AccessDeniedPage,
+    queryClient,
+  };
 
   const isMessagesReady = useFeatureMessagesReady({
     features,

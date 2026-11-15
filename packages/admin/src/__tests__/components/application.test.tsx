@@ -961,3 +961,49 @@ describe('ArdorApplication route toggles', () => {
     }
   });
 });
+
+describe('ArdorApplication access-denied page', () => {
+  const createDeniedContainer = () => {
+    const container = new Container();
+    container.bind({ key: CoreBindings.FEATURES }).toValue([]);
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container
+      .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toValue(new DefaultI18nProvider({}, []).value(container));
+
+    return container;
+  };
+
+  test('mounts a default page at /access-denied, with a title, a sentence and a link home', async () => {
+    render(
+      <MemoryRouter initialEntries={['/access-denied']}>
+        <ArdorApplication container={createDeniedContainer()} suspense={<span>loading</span>} />
+      </MemoryRouter>,
+    );
+
+    const title = await screen.findByRole('heading', { name: 'Access denied' });
+    expect(title).toBeDefined();
+    expect(screen.getByText("You don't have permission to open this page.")).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Go to the home page' }).getAttribute('href')).toBe(
+      '/',
+    );
+  });
+
+  test('mounts the accessDenied the application passes instead', async () => {
+    const OwnPage = () => <h1>Ask your administrator</h1>;
+
+    render(
+      <MemoryRouter initialEntries={['/access-denied']}>
+        <ArdorApplication
+          container={createDeniedContainer()}
+          suspense={<span>loading</span>}
+          accessDenied={OwnPage}
+        />
+      </MemoryRouter>,
+    );
+
+    const result = await screen.findByText('Ask your administrator');
+    expect(result).toBeDefined();
+    expect(screen.queryByText('Access denied')).toBeNull();
+  });
+});

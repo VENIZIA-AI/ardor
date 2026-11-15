@@ -181,6 +181,13 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   /** Rendered while feature messages for the locale load, and inside the layout while a lazy route page loads. */
   suspense: ReactNode;
 
+  /**
+   * The page at `/access-denied`, where react-admin sends a user `canAccess` denies a resource and
+   * where `DefaultAuthProvider` sends a `403`.
+   * @default AccessDeniedPage
+   */
+  accessDenied?: CoreAdminProps['accessDenied'];
+
   /** The application's own resources; each feature's are mounted after them. */
   resources?: Array<ResourceProps>;
   /** The application's own routes; each feature's are mounted after them. */

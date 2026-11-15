@@ -272,11 +272,13 @@ export class ShopApplication extends BaseArdorApplication {
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<TArdorRoute>` | No | Custom routes, mounted before feature routes; each may declare `access`, `auth` and `layout`. |
 | `features` | `Array<TFeature>` | No | The features to mount. |
+| `accessDenied` | `ComponentType` | No | The page at `/access-denied`. Default: `AccessDeniedPage`. |
 | `...reactAdminProps` | `Omit<CoreAdminProps, 'children'>` | No | Additional react-admin properties passed directly to `CoreAdmin`. |
 
 - `reduxStore`: absent, no Redux provider is mounted, and the Redux hooks of `@venizia/ardor-react` throw.
 - `logger`: the type is `ILogger` from `@venizia/ignis-helpers/core`. The default is a console logger named `ArdorApplication`, behind IGNIS's `LoggerFactory`, so a provider registered with `LoggerFactory.use` is the one used.
 - `features`: absent, every feature bound under `CoreBindings.FEATURES` is mounted. See [Mount a filtered list](./features#mount-a-filtered-list).
+- `accessDenied`: react-admin sends a user whom `canAccess` denies a resource to `/access-denied`, and `DefaultAuthProvider` sends a 403 there (`unauthorizedPagePath`). `AccessDeniedPage` shows a title, a sentence and a link home, translated with the `ardor.access_denied` keys. Pass your own component to replace it. A custom route with `access` renders nothing when denied; it does not redirect.
 - `...reactAdminProps`: such as `loginPage`, `layout`, `dashboard`, `title`, `theme`, `catchAll`, `basename`.
 
 ### Render Lifecycle

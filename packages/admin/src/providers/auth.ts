@@ -145,9 +145,9 @@ export class DefaultAuthProvider<
     return '/login';
   }
 
-  /** The route a `403` redirects to; the application mounts it. */
+  /** The route a `403` redirects to: react-admin's `/access-denied`, where `ArdorApplication` mounts its `accessDenied` page. */
   protected get unauthorizedPagePath(): string {
-    return '/unauthorized';
+    return '/access-denied';
   }
 
   /** How long, in milliseconds, `login`, `logout` and the checks wait for a session hook before they log it and carry on. */

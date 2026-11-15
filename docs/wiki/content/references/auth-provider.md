@@ -199,10 +199,12 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 | `signInPath` | `protected get: string` | `paths.signIn ?? '/auth/sign-in'` | Target API route for sign-in requests |
 | `afterLoginPath` | `protected get: string \| false` | `paths.afterLogin ?? '/'` | Redirect destination following successful sign-in |
 | `loginPagePath` | `protected get: string` | `'/login'` | Route of login page redirected to on 401 or authentication failure |
-| `unauthorizedPagePath` | `protected get: string` | `'/unauthorized'` | Route redirected to on 403 authorization failure |
+| `unauthorizedPagePath` | `protected get: string` | `'/access-denied'` | Route a 403 redirects to; `ArdorApplication` mounts its `accessDenied` page there |
 | `sessionHookTimeout` | `protected get: number` | `10000` | Milliseconds a session hook may run before the provider logs it and carries on |
 
 For `sessionHookTimeout`, see [Session hooks](#session-hooks).
+
+`unauthorizedPagePath` is react-admin's own access-denied route, so a 403 and a resource `canAccess` denies end on one page: `AccessDeniedPage`, or the `accessDenied` prop of `ArdorApplication`. An app that mounts its own page at another path overrides the getter. See [ArdorApplication props](./application#props).
 
 ### Overridable methods
 

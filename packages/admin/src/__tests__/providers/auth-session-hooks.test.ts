@@ -686,7 +686,7 @@ describe('unauthenticatedRejection', () => {
     });
     await provider.checkError({ status: 500 });
 
-    expect(forbidden).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(forbidden).toEqual({ redirectTo: '/access-denied', logoutUser: false });
     expect(hooks.rejectionReasons).toEqual([]);
   });
 });
