@@ -690,3 +690,58 @@ describe('DefaultI18nProvider failed feature messages', () => {
     expect(i18n.translate('ra.action.save')).toBe('Save');
   });
 });
+
+describe('DefaultI18nProvider missing keys', () => {
+  const spies: Array<{ mockRestore: () => void }> = [];
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) {
+      spy.mockRestore();
+    }
+  });
+
+  const build = () => {
+    const provider = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { title: 'Quan tri' } } },
+      languages: [
+        { locale: 'en', name: 'English' },
+        { locale: 'vi', name: 'Tieng Viet' },
+      ],
+    });
+    const warn = spyOn(provider.logger, 'warn').mockImplementation(() => undefined);
+    spies.push(warn);
+
+    return { warn, i18n: provider.value(new Container()) };
+  };
+
+  test('a missing key is logged once per locale and still renders as the key', async () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('Missing');
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a different missing key is logged on its own', () => {
+    const { i18n, warn } = build();
+
+    i18n.translate('app.one');
+    i18n.translate('app.two');
+
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a key that exists, and a key with a default text, are not reported', () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+    expect(i18n.translate('app.other', { _: 'Hello %{name}', name: 'Ada' })).toBe('Hello Ada');
+    expect(warn).not.toHaveBeenCalled();
+  });
+});

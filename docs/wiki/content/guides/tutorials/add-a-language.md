@@ -71,7 +71,7 @@ export class I18nConfiguration {
 A catalogue lists only what it adds or changes. ARDOR's `englishMessages` (`packages/admin/src/common/locales/en.ts`) are always the bottom layer, so the standard react-admin keys (`ra.*`) read in English where a catalogue has no text for them, and a feature that ships only `en` shows its English texts in every language. A key a catalogue lacks falls back to English one key at a time; there is no need to spread `englishMessages` into it. Spread `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to take ARDOR's Vietnamese texts for `ra.*`, and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` layers the messages of `Features.define()` under `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features) and [Messages by layer](/references/i18n.md#messages-by-layer)). See [Configuration](../core-concepts/configuration) for configuration class details.
 
 > [!NOTE]
-> `DefaultI18nProvider` sets `allowMissing: true`. If a translation key is missing from the active dictionary, Polyglot outputs the key string instead of throwing an error.
+> `DefaultI18nProvider` sets `allowMissing: true`. If a translation key is missing from every layer, Polyglot outputs the key string instead of throwing an error, and the provider logs a warning once per key and locale.
 
 ## 2. Translate messages in UI components
 

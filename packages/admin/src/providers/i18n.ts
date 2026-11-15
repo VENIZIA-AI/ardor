@@ -197,6 +197,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     // takes what is there now, and ArdorApplication loads the rest through changeLocale() before
     // react-admin renders. Every later read may wait for a lazy bundle.
     let isBuilding = true;
+    const reported = new Set<string>();
 
     const i18nProvider = polyglotI18nProvider(
       (locale) => {
@@ -219,7 +220,16 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
       languages,
       {
         allowMissing: true,
-        onMissingKey: (key: string, _options: unknown, _locale: unknown) => key,
+        onMissingKey: (key: string, _options: unknown, locale: string) => {
+          const entry = `${locale}:${key}`;
+
+          if (!reported.has(entry)) {
+            reported.add(entry);
+            this.logger.warn('[translate] Missing message %s for locale %s', key, locale);
+          }
+
+          return key;
+        },
       },
     );
 
