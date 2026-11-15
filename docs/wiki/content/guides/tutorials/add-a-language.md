@@ -127,6 +127,8 @@ Always augment `@venizia/ardor` rather than internal packages directly. For deta
 
 `DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It inspects the browser language (`navigator.language`, taking the segment before `-`) and activates it if present in `languages`, falling back to `'en'`. If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
 
+The locale the user picks is stored in `localStorage` (`@app/prefs/locale`) and read first on the next visit, so a reload keeps the language. A sign-out does not remove it. Set `locale: { persist: { use: false } }` in the options to turn it off (see [The chosen locale is kept](/references/i18n.md#the-chosen-locale-is-kept)).
+
 Use `useLocaleState` and `useLocales` from `ra-core` to render a language switcher:
 
 ```tsx

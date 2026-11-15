@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).
 
-**16 keys across 2 binding classes.**
+**17 keys across 2 binding classes.**
 
 ## CoreBindings
 
@@ -34,6 +34,7 @@ generated:
 |---|---|
 | `PREFIX_AUTH` | `@app/auth/` |
 | `PREFIX_STORE` | `@app/store/` |
+| `PREFIX_PREFS` | `@app/prefs/` |
 | `KEY_AUTH_TOKEN` | `@app/auth/token` |
 | `KEY_AUTH_IDENTITY` | `@app/auth/identity` |
 | `KEY_AUTH_PERMISSION` | `@app/auth/permission` |

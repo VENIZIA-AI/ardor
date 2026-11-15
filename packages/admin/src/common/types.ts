@@ -144,6 +144,16 @@ export interface II18nProviderOptions {
    * @default { en: englishMessages }
    */
   i18nSources?: Record<string, TI18nSource>;
+  /** What `changeLocale` does with the choice. */
+  locale?: {
+    /**
+     * With `use: true` the chosen locale is kept in `localStorage` (`LocalStorageKeys.scoped({ id }).locale`,
+     * under `@app/prefs/`, so a sign-out keeps it) and read first when the provider is built. A stored
+     * locale that is not in `languages` is ignored. Outside a browser it does nothing.
+     * @default { use: true }
+     */
+    persist?: { use: boolean };
+  };
   /** The locale whose messages are layered under every other locale. */
   fallback?: {
     /** @default 'en' */

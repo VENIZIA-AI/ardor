@@ -1,10 +1,14 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
 import { Features } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 const inventory = Features.define({
   name: 'inventory',

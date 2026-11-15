@@ -57,6 +57,10 @@ const createContainer = (opts: {
   return container;
 };
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
 afterEach(() => {
   cleanup();
 });

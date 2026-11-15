@@ -36,6 +36,8 @@ describe('LocalStorageKeys.scoped', () => {
     expect(LocalStorageKeys.scoped()).toEqual({
       authPrefix: LocalStorageKeys.PREFIX_AUTH,
       storePrefix: LocalStorageKeys.PREFIX_STORE,
+      prefsPrefix: LocalStorageKeys.PREFIX_PREFS,
+      locale: '@app/prefs/locale',
       token: LocalStorageKeys.KEY_AUTH_TOKEN,
       identity: LocalStorageKeys.KEY_AUTH_IDENTITY,
       permission: LocalStorageKeys.KEY_AUTH_PERMISSION,
@@ -48,6 +50,8 @@ describe('LocalStorageKeys.scoped', () => {
     expect(keys).toEqual({
       authPrefix: '@app/auth/shop-1.eu/',
       storePrefix: '@app/store/shop-1.eu/',
+      prefsPrefix: '@app/prefs/shop-1.eu/',
+      locale: '@app/prefs/shop-1.eu/locale',
       token: '@app/auth/shop-1.eu/token',
       identity: '@app/auth/shop-1.eu/identity',
       permission: '@app/auth/shop-1.eu/permission',

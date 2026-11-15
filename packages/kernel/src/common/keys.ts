@@ -57,6 +57,10 @@ export interface IScopedKeys {
    * an origin sets an `id`.
    */
   storePrefix: string;
+  /** The preferences of this application's user: they outlive a sign-out. */
+  prefsPrefix: string;
+  /** The stored locale of the i18n provider. */
+  locale: string;
   token: string;
   identity: string;
   permission: string;
@@ -76,6 +80,8 @@ export class LocalStorageKeys {
    * under `@app/prefs/`.
    */
   static readonly PREFIX_STORE = '@app/store/';
+  /** Preferences that outlive a sign-out, such as the chosen language: nothing sweeps them. */
+  static readonly PREFIX_PREFS = '@app/prefs/';
 
   /** The stored `IAuthTokenRecord`, as JSON. */
   static readonly KEY_AUTH_TOKEN = '@app/auth/token';
@@ -94,7 +100,7 @@ export class LocalStorageKeys {
   /**
    * The keys of one application. With no `id` they are the constants above, so an application that is
    * alone on its origin changes nothing. With an `id` (`IApplicationInfo.id`) the session sits under
-   * `@app/auth/<id>/` and the store under `@app/store/<id>/`, so two applications on one origin share
+   * `@app/auth/<id>/`, the store under `@app/store/<id>/` and the preferences under `@app/prefs/<id>/`, so two applications on one origin share
    * no session and no sign-out sweeps the other's data. The `id` is letters, digits, `.`, `_` and `-`,
    * and is not made of dots only. Applications on one origin must ALL set an `id`: the store prefix
    * without one is a prefix of every scoped store prefix, so its sign-out removes their data too.
@@ -114,6 +120,8 @@ export class LocalStorageKeys {
     return {
       authPrefix: `${this.PREFIX_AUTH}${scope}`,
       storePrefix: `${this.PREFIX_STORE}${scope}`,
+      prefsPrefix: `${this.PREFIX_PREFS}${scope}`,
+      locale: `${this.PREFIX_PREFS}${scope}locale`,
       token: `${this.PREFIX_AUTH}${scope}token`,
       identity: `${this.PREFIX_AUTH}${scope}identity`,
       permission: `${this.PREFIX_AUTH}${scope}permission`,

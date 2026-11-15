@@ -97,7 +97,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | Class | Kind | Definition and usage | Shape |
 |---|---|---|---|
 | `CoreBindings` | `class` | The eleven container keys for instances, options, providers, and features. | - |
-| `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the two prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE` |
+| `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the three prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE`, `PREFIX_PREFS` |
 | `RequestMethods` | `class` | HTTP method constants, with `SCHEME_SET` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
 | `RequestTypes` | `class` | Data operation constants with `SCHEME_SET` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
 | `RequestBodyTypes` | `class` | Request body formats with `SCHEME_SET` and `isValid`. | `NONE`, `FORM_DATA`, `FORM_URL_ENCODED`, `JSON`, `BINARY` |

@@ -1,10 +1,16 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
+
+import { CoreBindings, LocalStorageKeys } from '@venizia/ardor-kernel';
 
 import type { TI18nSource } from '@/common';
 import { englishMessages } from '@/common/locales';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('DefaultI18nProvider', () => {
   test('translates ra.action.add to Add from englishMessages and uses en as initial locale with default options', () => {
@@ -374,5 +380,101 @@ describe('DefaultI18nProvider English fallback', () => {
     expect(i18n.translate('app.title')).toBe('Admin');
     expect(i18n.translate('app.other')).toBe('Khac');
     expect(Features.hasPendingMessages({ features: [], i18nProvider: i18n })).toBe(false);
+  });
+});
+
+describe('DefaultI18nProvider persisted locale', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const key = LocalStorageKeys.scoped().locale;
+
+  test('changeLocale stores the choice under the preferences prefix', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(key).toBe('@app/prefs/locale');
+    expect(localStorage.getItem(key)).toBe('vi');
+  });
+
+  test('the next provider starts in the stored locale', async () => {
+    const defaultI18nProvider = new DefaultI18nProvider({ languages }).value(new Container());
+    await defaultI18nProvider.changeLocale('vi');
+
+    const next = new DefaultI18nProvider({ languages }).value(new Container());
+
+    expect(next.getLocale()).toBe('vi');
+  });
+
+  test('a stored locale that is not offered is ignored', () => {
+    localStorage.setItem(key, 'fr');
+
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('en');
+  });
+
+  test('a locale that is not offered is not stored', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('fr');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('choosing the locale already shown stores nothing', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('en');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('locale.persist.use false neither stores nor reads', async () => {
+    localStorage.setItem(key, 'vi');
+    const i18n = new DefaultI18nProvider({
+      languages,
+      locale: { persist: { use: false } },
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('en');
+
+    localStorage.clear();
+    await i18n.changeLocale('vi');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('the application id scopes the key', async () => {
+    const container = new Container();
+    container
+      .bind({ key: CoreBindings.APPLICATION_INFO })
+      .toValue({ name: 'shop', version: '1', description: '', id: 'shop' });
+
+    const defaultI18nProvider2 = new DefaultI18nProvider({ languages }).value(container);
+    await defaultI18nProvider2.changeLocale('vi');
+
+    expect(localStorage.getItem('@app/prefs/shop/locale')).toBe('vi');
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('without a browser storage it neither throws nor stores', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', { value: undefined, configurable: true });
+
+    try {
+      const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+      await i18n.changeLocale('vi');
+
+      expect(i18n.getLocale()).toBe('vi');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'localStorage', descriptor);
+      }
+    }
+
+    expect(localStorage.getItem(key)).toBeNull();
   });
 });

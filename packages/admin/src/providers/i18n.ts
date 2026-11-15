@@ -2,7 +2,14 @@ import { type Container, inject } from '@venizia/ignis-inversion';
 import type { I18nProvider, TranslationMessages } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';
 
-import { BaseProvider, CoreBindings } from '@venizia/ardor-kernel';
+import {
+  BaseProvider,
+  BrowserStorage,
+  CoreBindings,
+  type IApplicationInfo,
+  LocalStorageKeys,
+  StorageCodecs,
+} from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
 import { deepMerge } from '@/common/merge';
@@ -38,6 +45,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   private static readonly DEFAULT_LOCALE = 'en';
 
   protected localeSources: LocaleSources;
+  /** Where the chosen locale is kept; absent when it is not persisted. Set by `value()` before the initial locale is read. */
+  private localeKey?: string;
 
   constructor(
     @inject({ key: CoreBindings.I18N_PROVIDER_OPTIONS, isOptional: true })
@@ -58,6 +67,18 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
    * language is `en-US`.
    */
   protected resolveInitialLocale(opts: { locales: Array<string> }): string {
+    const stored = this.localeKey
+      ? BrowserStorage.get({
+          key: this.localeKey,
+          fallback: undefined,
+          codec: StorageCodecs.text({ allowed: opts.locales }),
+        })
+      : undefined;
+
+    if (stored) {
+      return stored;
+    }
+
     const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
     const [language] = (browserLanguage?.length ? browserLanguage : 'en-US').split('-');
 
@@ -94,13 +115,21 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     return this.i18nProviderOptions.fallback?.locale ?? DefaultI18nProvider.DEFAULT_LOCALE;
   }
 
-  override value(_container: Container): I18nProvider {
+  override value(container: Container): I18nProvider {
     const { languages = [{ locale: 'en', name: 'English' }] } = this.i18nProviderOptions;
     const { fallbackLocale } = this;
+    const locales = languages.map(({ locale }) => locale);
 
-    const initialLocale = this.resolveInitialLocale({
-      locales: languages.map(({ locale }) => locale),
-    });
+    const id = container.get<IApplicationInfo>({
+      key: CoreBindings.APPLICATION_INFO,
+      isOptional: true,
+    })?.id;
+    this.localeKey =
+      this.i18nProviderOptions.locale?.persist?.use === false
+        ? undefined
+        : LocalStorageKeys.scoped({ id }).locale;
+
+    const initialLocale = this.resolveInitialLocale({ locales });
 
     const featureMessages = new FeatureMessages({ features: this.features });
 
@@ -155,6 +184,23 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     );
 
     isBuilding = false;
+
+    const { localeKey } = this;
+
+    if (localeKey) {
+      const change = i18nProvider.changeLocale;
+
+      // Only a real change is a choice: the shell's load of the starting locale is not one.
+      i18nProvider.changeLocale = async (locale, options) => {
+        const previous = i18nProvider.getLocale();
+        await change(locale, options);
+
+        if (locale !== previous && locales.includes(locale)) {
+          BrowserStorage.set({ key: localeKey, value: locale, codec: StorageCodecs.text() });
+        }
+      };
+    }
+
     LazyLocales.register({
       provider: i18nProvider,
       isPending: (opts) => isPending(opts.locale),
