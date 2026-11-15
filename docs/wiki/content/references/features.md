@@ -193,7 +193,7 @@ Feature messages are merged per locale by `FeatureMessages` in `packages/admin/s
 - **Duplicate message keys:** If two features define the same leaf key for a locale, ARDOR throws:
   `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`
 - **Application overrides:** Application dictionaries in `i18nSources` override feature messages. See [Internationalization](./i18n).
-- **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. For the initial locale, `ArdorApplication` displays the configured `suspense` fallback until the loader resolves.
+- **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. A loader may resolve to the messages or to an ES module whose default export is the messages, so `vi: () => import('./vi')` works and the keys are read unprefixed. For the initial locale, `ArdorApplication` displays the configured `suspense` fallback until the loader resolves.
 
 ## Reading features with useFeatures
 

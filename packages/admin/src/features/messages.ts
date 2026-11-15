@@ -1,6 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 
 import { deepMerge, isRecord } from '@/common/merge';
+import { unwrapMessages } from '@/providers/i18n-sources';
 import type { TFeature } from './feature';
 
 interface IFeatureBundle {
@@ -71,12 +72,13 @@ export class FeatureMessages {
     const bundles = await Promise.all(
       this.opts.features.map(async (feature) => {
         const messages = feature.messages?.[locale];
-        let bundle = typeof messages === 'function' ? undefined : messages;
 
-        if (typeof messages === 'function') {
-          const result = await messages();
-          bundle = result;
+        if (typeof messages !== 'function') {
+          return { feature: feature.name, bundle: messages };
         }
+
+        const result = await messages();
+        const bundle = unwrapMessages({ value: result, owner: `'${feature.name}' (${locale})` });
 
         return { feature: feature.name, bundle };
       }),

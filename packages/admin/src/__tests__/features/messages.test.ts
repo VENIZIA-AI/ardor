@@ -110,3 +110,39 @@ describe('DefaultI18nProvider with features', () => {
     expect(i18n.translate('commerce.title')).toBe('Don hang');
   });
 });
+
+describe('a feature loader that resolves to an ES module', () => {
+  const orders = Features.define({
+    name: 'orders',
+    messages: { vi: () => import('./fixtures/orders-vi') },
+  });
+
+  test('gives the keys of its default export, unprefixed', async () => {
+    const messages = new FeatureMessages({ features: [orders] });
+
+    const result2 = await messages.read({ locale: 'vi' });
+    expect(result2).toEqual({ orders: { title: 'Don hang' } });
+  });
+
+  test('reaches the provider as the same unprefixed keys', async () => {
+    const i18n = new DefaultI18nProvider({ languages: [{ locale: 'vi', name: 'Tieng Viet' }] }, [
+      orders,
+    ]).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('orders.title')).toBe('Don hang');
+  });
+
+  test('a loader that resolves to something that is not messages is a failed load', async () => {
+    const broken = Features.define({
+      name: 'broken',
+      messages: { vi: () => Promise.resolve(JSON.parse('"not messages"')) },
+    });
+    const messages = new FeatureMessages({ features: [broken] });
+
+    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'vi' }) });
+
+    expect(result).toMatchObject({ message: expect.stringContaining("loader of 'broken'") });
+  });
+});
