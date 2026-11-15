@@ -17,7 +17,6 @@ import {
 import {
   CoreBindings,
   type IApplicationInfo,
-  type IArdorApplication,
   type IArtifactIndex,
   type IFeatureBase,
   type ValueOrPromise,
@@ -55,7 +54,7 @@ export interface IArtifactRegistration {
  * `dataSource()`/`component()` by hand. Both record the key on the class. Every kind defaults to
  * SINGLETON (IGNIS's server uses transient): a hook resolves on every render.
  */
-export abstract class AbstractArdorApplication extends Container implements IArdorApplication {
+export abstract class AbstractArdorApplication extends Container {
   /** The application's own bindings; `preConfigure` runs it last, so they win over discovered and feature bindings. */
   abstract bindContext(): ValueOrPromise<void>;
   /** The `IApplicationInfo` that `preConfigure` binds under `CoreBindings.APPLICATION_INFO`. */
@@ -83,7 +82,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   private bindInfoAndArtifacts(opts: { info: IApplicationInfo }): ValueOrPromise<void> {
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(opts.info);
 
-    // Least explicit first, so the most explicit wins: stereotype, features, bindingList(), bindContext().
+    // Least explicit first, so the most explicit wins: defaults, stereotypes and @provide, features,
+    // bindingList(), bindContext().
+    this.bindDefaults();
     this.registerArtifacts();
     this.registerFeatures({ features: this.features() });
 
@@ -408,15 +409,13 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     });
   }
 
-  /** `<scope>.<ClassName>`, singleton, with tags. Prefer the per-kind methods above. */
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>) {
-    const { key } = ArtifactBindingKeys.resolve({ target: value, namespace: scope });
-    this.getMetadataRegistry().setBindingKey({ target: value, key });
-    this.bind({ key })
-      .toClass(value)
-      .setScope(BindingScopes.SINGLETON)
-      .setTags(...(tags ?? []));
-  }
+  /**
+   * The bindings a framework layer supplies before anything of the application, so a stereotype, a
+   * `@provide` method, a feature, `bindingList()` or `bindContext()` under the same key replaces
+   * them. Runs once `APPLICATION_INSTANCE` and `APPLICATION_INFO` are bound. Empty here: the
+   * `BaseArdorApplication` of `@venizia/ardor-admin` binds the default providers.
+   */
+  protected bindDefaults(): void {}
 
   /** Resolves the artifact indexes, then runs `preConfigure`, then `postConfigure`, in that order. */
   async start() {
@@ -460,6 +459,3 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       .setScope(opts.opts?.scope ?? declared?.scope ?? BindingScopes.SINGLETON);
   }
 }
-
-/** The base to extend for an application: implement `bindContext` and `getAppInfo`. */
-export abstract class BaseArdorApplication extends AbstractArdorApplication {}

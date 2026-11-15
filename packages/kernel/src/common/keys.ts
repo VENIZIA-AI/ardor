@@ -14,7 +14,7 @@ export class CoreBindings {
   /** The REST data provider. */
   static readonly DEFAULT_REST_DATA_PROVIDER = '@app/application/data/rest/default';
 
-  /** The `IAuthProviderOptions`. */
+  /** The `TAuthProviderOptions`: `{ use: true }` turns sign-in on; unbound means `{ use: false }`. */
   static readonly AUTH_PROVIDER_OPTIONS = '@app/application/options/auth';
   /** The `DefaultAuthService`. */
   static readonly DEFAULT_AUTH_SERVICE = '@app/application/service/auth/default';
@@ -22,7 +22,7 @@ export class CoreBindings {
   /** The `IRestDataProviderOptions`. */
   static readonly REST_DATA_PROVIDER_OPTIONS = '@app/application/options/rest/data';
 
-  /** The options of the i18n provider. */
+  /** The options of the i18n provider; unbound means English only. */
   static readonly I18N_PROVIDER_OPTIONS = '@app/application/options/i18n';
 
   /** The `features()` an application mounts, bound by `preConfigure()`. */

@@ -12,6 +12,8 @@ import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import type { TClass } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
+import type { AbstractArdorApplication } from '@/base/applications/abstract';
+
 import type {
   Environments,
   RequestBodyTypes,
@@ -130,7 +132,10 @@ export interface ISignInSession {
   roles: Array<string>;
 }
 
-/** Data only: where the auth provider talks to. Behaviour is in `DefaultAuthProvider`'s protected hooks. */
+/**
+ * Data only: where the auth provider talks to, the `use: true` half of `TAuthProviderOptions`.
+ * Behaviour is in `DefaultAuthProvider`'s protected hooks.
+ */
 export interface IAuthProviderOptions {
   paths?: {
     /**
@@ -148,6 +153,13 @@ export interface IAuthProviderOptions {
     afterLogin?: string | false;
   };
 }
+
+/**
+ * What `CoreBindings.AUTH_PROVIDER_OPTIONS` holds: sign-in on with its `paths`, or off. Unbound means
+ * `{ use: false }`: `ApplicationProviders.resolve` then hands react-admin no auth provider, and
+ * every page is public.
+ */
+export type TAuthProviderOptions = { use: false } | ({ use: true } & IAuthProviderOptions);
 
 /** How a request recovers from a 401. */
 export interface IAuthRecoveryOptions {
@@ -293,35 +305,24 @@ export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
 
-/** The contract of an application: lifecycle hooks, registration of artifacts, and `start`. */
-export interface IArdorApplication {
-  /** Binds the application instance and info, then the discovered, feature and listed classes. */
-  preConfigure(): ValueOrPromise<void>;
-  /** Runs after `preConfigure` in `start`. */
-  postConfigure(): ValueOrPromise<void>;
-  /** The application's own bindings, bound last in `preConfigure`. */
-  bindContext(): ValueOrPromise<void>;
-  /** Classes bound by key as singletons. */
-  bindingList(): Record<string, TClass<unknown>>;
-  /** The features this application mounts. */
-  features(): Array<IFeatureBase>;
-  /** The artifact indexes `start` checks every stereotyped class against. */
-  artifacts(): Array<IArtifactIndex>;
-
-  /** Binds `value` under `<scope>.<ClassName>` as a singleton. */
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  /** Binds `value` in the service namespace. */
-  service<T>(value: TClass<T>): unknown;
-  /** Binds `value` in the repository namespace. */
-  repository<T>(value: TClass<T>): unknown;
-  /** Binds `value` in the data source namespace. */
-  dataSource<T>(value: TClass<T>): unknown;
-  /** Binds `value` in the component namespace. */
-  component<T>(value: TClass<T>): unknown;
-
-  /** Runs the whole startup: resolves the indexes, then `preConfigure`, then `postConfigure`. */
-  start(): ValueOrPromise<void>;
-}
+/**
+ * The contract of an application: lifecycle hooks, registration of artifacts, and `start`. Picked
+ * from `AbstractArdorApplication`, so its signatures are the class's own.
+ */
+export interface IArdorApplication extends Pick<
+  AbstractArdorApplication,
+  | 'preConfigure'
+  | 'postConfigure'
+  | 'bindContext'
+  | 'bindingList'
+  | 'features'
+  | 'artifacts'
+  | 'service'
+  | 'repository'
+  | 'dataSource'
+  | 'component'
+  | 'start'
+> {}
 
 type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 

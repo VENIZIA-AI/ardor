@@ -38,6 +38,7 @@ const createContainer = (opts: {
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
 
   if (opts.withAuthProvider ?? true) {
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
       checkAuth: () => Promise.resolve(),
       checkError: () => Promise.resolve(),

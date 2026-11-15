@@ -141,7 +141,11 @@ const createContainer = (opts?: {
   });
   container
     .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-    .toValue(opts?.withCheckPath === false ? {} : { paths: { checkAuth: '/auth/whoami' } });
+    .toValue(
+      opts?.withCheckPath === false
+        ? { use: true }
+        : { use: true, paths: { checkAuth: '/auth/whoami' } },
+    );
   container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(service);
   container
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
