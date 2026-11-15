@@ -35,6 +35,8 @@ import { LazyLocales, LocaleSources } from './i18n-sources';
  * ```
  */
 export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
+  private static readonly DEFAULT_LOCALE = 'en';
+
   protected localeSources: LocaleSources;
 
   constructor(
@@ -63,28 +65,67 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   }
 
   /**
-   * The messages of a locale: the features' messages first, the application's own source over them
-   * (the application may relabel a feature), English for a locale the application has no source for
-   * or whose lazy source has not loaded or failed to.
+   * The messages of a locale, later over earlier: ARDOR's English, the features' and the
+   * application's messages of the fallback locale, then the features' (`messages`) and the
+   * application's own of the locale. A lazy source that has not loaded or failed to load adds nothing.
    */
-  protected composeMessages(opts: { locale: string; messages: object }): TranslationMessages {
-    const source = this.localeSources.readNow({ locale: opts.locale });
+  protected composeMessages(opts: {
+    locale: string;
+    messages: object;
+    fallback?: { locale: string; messages: object };
+  }): TranslationMessages {
+    const { locale, messages } = opts;
+    const fallback = opts.fallback ?? { locale: this.fallbackLocale, messages: {} };
 
     // A merge of (partial) message sets is a set of messages, which a merge that takes any object
     // cannot say in its type: the assertion is here, where the sources are known, not inside it.
     return deepMerge({
-      sources: [opts.messages, source ?? englishMessages],
+      sources: [
+        englishMessages,
+        fallback.messages,
+        messages,
+        this.localeSources.readNow({ locale: fallback.locale }) ?? {},
+        this.localeSources.readNow({ locale }) ?? {},
+      ],
     }) as TranslationMessages;
+  }
+
+  protected get fallbackLocale(): string {
+    return this.i18nProviderOptions.fallback?.locale ?? DefaultI18nProvider.DEFAULT_LOCALE;
   }
 
   override value(_container: Container): I18nProvider {
     const { languages = [{ locale: 'en', name: 'English' }] } = this.i18nProviderOptions;
+    const { fallbackLocale } = this;
 
     const initialLocale = this.resolveInitialLocale({
       locales: languages.map(({ locale }) => locale),
     });
 
     const featureMessages = new FeatureMessages({ features: this.features });
+
+    // The locales a read of `locale` needs: the fallback's messages are layered under its own.
+    const readSet = (locale: string) => [...new Set([fallbackLocale, locale])];
+
+    const isPending = (locale: string) => {
+      return readSet(locale).some((item) => {
+        return (
+          featureMessages.isPending({ locale: item }) ||
+          this.localeSources.isPending({ locale: item })
+        );
+      });
+    };
+
+    const composeNow = (locale: string) => {
+      return this.composeMessages({
+        locale,
+        messages: featureMessages.readNow({ locale }),
+        fallback: {
+          locale: fallbackLocale,
+          messages: featureMessages.readNow({ locale: fallbackLocale }),
+        },
+      });
+    };
 
     // ra-i18n-polyglot reads the initial locale synchronously, once, while it is built: that read
     // takes what is there now, and ArdorApplication loads the rest through changeLocale() before
@@ -93,18 +134,17 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
 
     const i18nProvider = polyglotI18nProvider(
       (locale) => {
-        const isPending =
-          featureMessages.isPending({ locale }) || this.localeSources.isPending({ locale });
-
-        if (isBuilding || !isPending) {
-          return this.composeMessages({ locale, messages: featureMessages.readNow({ locale }) });
+        if (isBuilding || !isPending(locale)) {
+          return composeNow(locale);
         }
 
         // The sources never reject (a failed one is logged and left to English); a feature's load can.
-        return Promise.all([
-          featureMessages.read({ locale }),
-          this.localeSources.read({ locale }),
-        ]).then(([messages]) => this.composeMessages({ locale, messages }));
+        return Promise.all(
+          readSet(locale).flatMap((item) => [
+            featureMessages.read({ locale: item }),
+            this.localeSources.read({ locale: item }),
+          ]),
+        ).then(() => composeNow(locale));
       },
       initialLocale,
       languages,
@@ -117,7 +157,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     isBuilding = false;
     LazyLocales.register({
       provider: i18nProvider,
-      isPending: (opts) => this.localeSources.isPending(opts),
+      isPending: (opts) => isPending(opts.locale),
     });
 
     return i18nProvider;

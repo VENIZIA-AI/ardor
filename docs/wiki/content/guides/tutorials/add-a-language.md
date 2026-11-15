@@ -13,14 +13,12 @@ import {
   configuration,
   CoreBindings,
   DefaultI18nProvider,
-  englishMessages,
   inject,
   provide,
   vietnameseMessages,
 } from '@venizia/ardor';
 
 export const messagesEnglish = {
-  ...englishMessages,
   app: {
     title: 'Acme Admin',
     welcome: 'Welcome back',
@@ -68,8 +66,9 @@ export class I18nConfiguration {
 
 - `i18nSources`: A dictionary mapping locale codes to translation objects, or to loaders (`vi: () => import('./vi')`) that keep a catalogue out of the boot bundle until its locale is used. Defaults to `{ en: englishMessages }`. See [Lazy sources](/references/i18n.md#lazy-sources).
 - `languages`: An array of available locales and their display labels. Defaults to `[{ locale: 'en', name: 'English' }]`.
+- `fallback`: The locale whose messages sit under every other locale. Defaults to `{ locale: 'en' }`.
 
-Spread `englishMessages` (`packages/admin/src/common/locales/en.ts`) or `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to retain standard react-admin keys (`ra.*`), and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` merges messages from `Features.define()` before applying `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features)). See [Configuration](../core-concepts/configuration) for configuration class details.
+A catalogue lists only what it adds or changes. ARDOR's `englishMessages` (`packages/admin/src/common/locales/en.ts`) are always the bottom layer, so the standard react-admin keys (`ra.*`) read in English where a catalogue has no text for them, and a feature that ships only `en` shows its English texts in every language. A key a catalogue lacks falls back to English one key at a time; there is no need to spread `englishMessages` into it. Spread `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to take ARDOR's Vietnamese texts for `ra.*`, and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` layers the messages of `Features.define()` under `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features) and [Messages by layer](/references/i18n.md#messages-by-layer)). See [Configuration](../core-concepts/configuration) for configuration class details.
 
 > [!NOTE]
 > `DefaultI18nProvider` sets `allowMissing: true`. If a translation key is missing from the active dictionary, Polyglot outputs the key string instead of throwing an error.
@@ -126,7 +125,7 @@ Always augment `@venizia/ardor` rather than internal packages directly. For deta
 
 ## 4. Language switcher and initial locale
 
-`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It inspects the browser language (`navigator.language`, taking the segment before `-`) and activates it if present in `languages`, falling back to `'en'`. If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` falls back to `englishMessages`.
+`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It inspects the browser language (`navigator.language`, taking the segment before `-`) and activates it if present in `languages`, falling back to `'en'`. If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
 
 Use `useLocaleState` and `useLocales` from `ra-core` to render a language switcher:
 

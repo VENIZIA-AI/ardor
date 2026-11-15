@@ -138,10 +138,17 @@ export type TI18nSource = object | (() => Promise<object>);
 /** What `DefaultI18nProvider` is built from: the message sources and the languages on offer. */
 export interface II18nProviderOptions {
   /**
-   * Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed.
+   * Messages by locale, layered from the bottom: ARDOR's `englishMessages`, the features' and the
+   * application's messages of the fallback locale, then the features' and the application's own
+   * messages of the chosen locale. A key a locale lacks reads in the layer below it.
    * @default { en: englishMessages }
    */
   i18nSources?: Record<string, TI18nSource>;
+  /** The locale whose messages are layered under every other locale. */
+  fallback?: {
+    /** @default 'en' */
+    locale: string;
+  };
   /**
    * The locales the app offers.
    * @default [{ locale: 'en', name: 'English' }]

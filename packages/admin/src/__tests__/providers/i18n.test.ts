@@ -2,6 +2,7 @@ import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
 import type { TI18nSource } from '@/common';
+import { englishMessages } from '@/common/locales';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 
@@ -264,5 +265,114 @@ describe('DefaultI18nProvider lazy sources', () => {
 
     expect(i18n.translate('reports.title')).toBe('Bao cao');
     expect(i18n.translate('ra.action.add')).toBe('Add');
+  });
+});
+
+describe('DefaultI18nProvider English fallback', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+
+  test('a partial catalogue keeps the framework English for the keys it lacks', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { title: 'Quan tri' } } },
+      languages,
+    }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('app.title')).toBe('Quan tri');
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+  });
+
+  test('a feature that ships only English shows its English text in another locale', async () => {
+    const reports = Features.define({
+      name: 'reports',
+      messages: { en: { reports: { title: 'Reports' } } },
+    });
+    const i18n = new DefaultI18nProvider(
+      { i18nSources: { vi: { app: { title: 'Quan tri' } } }, languages },
+      [reports],
+    ).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('reports.title')).toBe('Reports');
+  });
+
+  test('layers English, the features, then the application, the chosen locale over English at each step', async () => {
+    const reports = Features.define({
+      name: 'reports',
+      messages: {
+        en: { a: 'feature en', b: 'feature en', c: 'feature en' },
+        vi: { b: 'feature vi', c: 'feature vi' },
+      },
+    });
+    const i18n = new DefaultI18nProvider(
+      {
+        i18nSources: {
+          en: { c: 'app en', d: 'app en' },
+          vi: { d: 'app vi' },
+        },
+        languages,
+      },
+      [reports],
+    ).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('a')).toBe('feature en');
+    expect(i18n.translate('b')).toBe('feature vi');
+    expect(i18n.translate('c')).toBe('app en');
+    expect(i18n.translate('d')).toBe('app vi');
+  });
+
+  test('an application that spreads englishMessages into its own catalogue still works', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { ...englishMessages, app: { title: 'Quan tri' } } },
+      languages,
+    }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+    expect(i18n.translate('app.title')).toBe('Quan tri');
+  });
+
+  test('fallback.locale picks the locale layered underneath', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { onlyVi: 'Chi co' } }, en: { app: { onlyEn: 'Only' } } },
+      languages,
+      fallback: { locale: 'vi' },
+    }).value(new Container());
+
+    await i18n.changeLocale('en');
+
+    expect(i18n.translate('app.onlyVi')).toBe('Chi co');
+    expect(i18n.translate('app.onlyEn')).toBe('Only');
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+  });
+
+  test('a lazy fallback locale is awaited before the first render', async () => {
+    const english = { app: { title: 'Admin' } };
+    const load = mock(() => Promise.resolve(english));
+    class ViProvider extends DefaultI18nProvider {
+      protected override resolveInitialLocale(): string {
+        return 'vi';
+      }
+    }
+    const i18n = new ViProvider({
+      i18nSources: { en: load, vi: { app: { other: 'Khac' } } },
+      languages,
+    }).value(new Container());
+
+    expect(Features.hasPendingMessages({ features: [], i18nProvider: i18n })).toBe(true);
+
+    await Features.loadMessages({ features: [], i18nProvider: i18n });
+
+    expect(i18n.translate('app.title')).toBe('Admin');
+    expect(i18n.translate('app.other')).toBe('Khac');
+    expect(Features.hasPendingMessages({ features: [], i18nProvider: i18n })).toBe(false);
   });
 });
