@@ -25,7 +25,7 @@ Your own classes (a service, a repository) are the other case. You decorate them
 
 ## Classes are found by the build, not listed by hand
 
-Applications avoid manual registration lists and centralized barrels for decorated classes. The build system scans `src/` at compile time and emits `AutoArtifacts`, which lists decorated configurations, data sources, components, repositories, and services. In `packages/kernel/src/base/applications/abstract.ts`, `artifacts()` returns this index, and `preConfigure()` checks that every class the index lists was discovered, throwing an error that names the class when one was not. See [Quickstart](./5-minute-quickstart).
+Applications avoid manual registration lists and centralized barrels for decorated classes. The build system scans `src/` at compile time and emits `AutoArtifacts`, which lists decorated configurations, data sources, components, repositories, and services. In `packages/kernel/src/base/applications/abstract.ts`, `artifacts()` returns this index, and `preConfigure()` checks that every class the index lists was discovered, throwing an error that names the class when one was not. See [Quickstart](./5-minute-quickstart). The [Auto boot](../core-concepts/auto-boot) guide covers the setup, what is skipped, kits and features.
 
 ## Same IGNIS packages on browser and server
 
