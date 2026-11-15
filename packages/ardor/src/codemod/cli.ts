@@ -63,9 +63,9 @@ one after the other in a dirty tree, give this one --write --allow-dirty.
 Run your formatter afterwards: the new names are appended to the import they join.`;
 
 /** A usage error: nothing was read or written. */
-const USAGE_ERROR_CODE = 2;
+export const USAGE_ERROR_CODE = 2;
 
-class CodemodFlags {
+export class CodemodFlags {
   static readonly WRITE = '--write';
   static readonly CHECK = '--check';
   static readonly HOOKS = '--hooks';
@@ -89,6 +89,7 @@ class CodemodFlags {
 
 /** `ardor codemod namespace`: a dry run unless `--write`; `--check` is the dry run that fails on work left. */
 export class NamespaceCommand {
+  static readonly NAME = 'namespace';
   static readonly USAGE = USAGE;
 
   /** Runs the command and returns the exit code; prints to the console. */
