@@ -103,7 +103,14 @@ describe('saveAuth and credential retrieval', () => {
   test('getUser reads an identity whose known field has the wrong type as an empty object', () => {
     const service = new DefaultAuthService();
 
-    for (const stored of [{ userId: { id: 1 } }, { userId: 1, username: 7 }, ['usr-1'], null]) {
+    for (const stored of [
+      { userId: { id: 1 } },
+      { userId: 1, username: 7 },
+      { userId: 1, referenceId: { id: 2 } },
+      { userId: 1, provider: 5 },
+      ['usr-1'],
+      null,
+    ]) {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, JSON.stringify(stored));
 
       expect(service.getUser()).toEqual({});

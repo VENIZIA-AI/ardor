@@ -104,12 +104,12 @@ export interface IGetRequestPropsResult {
 }
 
 /**
- * Keys react-admin does not know ride on its params and become filter keys. The index signature is
- * `any` because react-admin's param types are interfaces, which fit an index signature only of `any`.
+ * Keys react-admin does not know ride on its params and become filter keys. A react-admin param type
+ * is an interface, which has no index signature: spread it (`{ ...params }`) where this is expected.
  */
 export interface ICustomParams {
   params?: Record<string, unknown>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

@@ -21,7 +21,7 @@ migration:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
-    data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod `bun x devz codemod any-aliases --all` rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
+    data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun x devz codemod any-aliases --all` is a dry run that only reports, and `bun x devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
   - id: typed-do-request-query
     symbols: [DefaultNetworkRequestService.doRequest]
     upgrade:
@@ -60,7 +60,7 @@ migration:
     downgrade:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and an override may return any shape.
-    data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService.
+    data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService. An override that returns a plain object type with a tenant string field compiled before, as getUser returned any, and now fails with TS2416, so return an interface that extends IAuthUser and adds the field.
   - id: typed-user-id
     symbols: [DefaultAuthService.getUser, DefaultAuthProvider.getIdentity, IAuthUser]
     upgrade:
@@ -77,6 +77,21 @@ migration:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the user id is any.
     data: The user id is a string or a number (IdType), and absent when nothing is stored. A function that takes a string needs the value converted. In a test, expect(getUser()).toEqual with a key that is not on IAuthUser fails with TS2769; use toMatchObject, or expect with unknown as the type argument.
+  - id: typed-list-params
+    symbols: [DefaultRestDataProvider.getList, DefaultRestDataProvider.getManyReference, ICustomParams]
+    upgrade:
+      before: |-
+        override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
+          return super.getList(opts);
+        }
+      after: |-
+        override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
+          return super.getList({ resource: opts.resource, params: { ...opts.params } });
+        }
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the index signature of ICustomParams is any and an interface fits it.
+    data: Nothing stored changes. ICustomParams has an index signature of unknown, not any, and the params of getList and getManyReference must have one, because a react-admin params type is an interface, so an override that passes it to super spreads it. getOne and getMany no longer ask for ICustomParams, so an override of them that calls super needs no change. TypeScript reports TS2345 on the call to super.
 ---
 
 # Changelog - 2026-11-15
@@ -106,14 +121,16 @@ migration:
 - **The `query` of `doRequest` is `Record<string, unknown>`.** It was `any`. An object literal or a `type` alias fits; an `interface` value does not (see the fifth step below).
 - **`getUser()` returns `IAuthUser`.** The fields `saveAuth` stores (`userId`, `username`, `referenceId`, `provider`) have their types and are absent when nothing is stored; `IAuthUser` has no index signature, so a field you added yourself is not on the type until you check it with `in`, and an interface of your own with these fields fits it. `IAuthUser` is new in `@venizia/ardor-kernel` and `@venizia/ardor`.
 - **A stored identity with a wrong field type is read as `{}`.** `getUser()` used to return any stored object. Now a `userId` or `referenceId` that is not a string or a number, or a `username` or `provider` that is not a string, makes it read as empty, as a stored array already did. `saveAuth` never writes that.
-- **`onSessionStarted` takes `user: IAuthUser`.** A subclass that names a narrower user type still overrides it (see below).
+- **`onSessionStarted` takes `user: IAuthUser`.** A subclass that names a type that extends `IAuthUser` still overrides it (see below); a plain `{ tenant: string }` does not.
 - **`getIdentity` resolves an `id`.** It resolves the stored user with `id` set to its `userId`, the field react-admin's `UserIdentity` requires; before, it resolved the stored fields only, and `useGetIdentity` returned no `id`.
+- **`ICustomParams` has an index signature of `unknown`, not `any`.** `getList` and `getManyReference` take it; `getOne` and `getMany` do not, because they read no key besides `meta.filter`. A react-admin params type is an interface, which has no index signature, so an override that passes it to `super` spreads it (see below).
 - **`TPaths` and `TFullPaths` give the same paths.** Only the types they test a value against changed.
 
 ## Who is affected
 
 - **An app that imports `AnyType` or `AnyObject` from `@venizia/ardor` or `@venizia/ardor-kernel`.** TypeScript reports `has no exported member`. Replace each use as shown below.
 - **An app that passes an `interface` value as the `query` of `doRequest`.** Spread it.
+- **An app whose subclass overrides `getList` or `getManyReference` and passes react-admin's params to `super`.** Spread them.
 - **An app that reads a field of `getUser()` other than the four above, or of the `user` of `onSessionStarted`, without a check.** It compiled because the type was `any`; now the field is not on the type.
 - **An app that passes the user id, or the `id` of `getIdentity`, where a `string` is wanted.** The id is a string or a number.
 - **An app with its own auth service, or a stub of it,** whose `getUser` returns a shape that does not fit `IAuthUser`.
@@ -123,7 +140,7 @@ migration:
 
 ## Breaking changes
 
-**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). If the project uses `@venizia/dev-configs`, `bun x devz codemod any-aliases --all` rewrites the imports of both names, the ones from `@venizia/ardor` and `@venizia/ardor-kernel` too, and lists what it cannot; replace those by hand. With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
+**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). If the project uses `@venizia/dev-configs`, the IGNIS codemod rewrites the imports of both names, the ones from `@venizia/ardor` and `@venizia/ardor-kernel` too, and lists what it cannot. `bun x devz codemod any-aliases --all` is a dry run that only reports; `bun x devz codemod any-aliases --write --all` applies it. Replace what it lists by hand. With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
 
 ```diff
 -import type { AnyType } from '@venizia/ardor';
@@ -229,6 +246,15 @@ An override of `getUser`, or a stub of the auth service, must return fields that
  }
 ```
 
+An override that returns a plain `{ tenant: string }` fails the same way, because the type must extend `IAuthUser`. Return an interface that extends it (`IAppUser` is in step 7).
+
+```diff
+-override getUser(): { tenant: string } {
++override getUser(): IAppUser {
+   return { tenant: 'acme' };
+ }
+```
+
 In a test, `expect(getUser()).toEqual({ userId: 3, tenant: 'acme' })` fails with TS2769, because `toEqual` takes the type of the value and `tenant` is not on it. Use `toMatchObject`, or `expect<unknown>(getUser())`.
 
 **5. Pass the query of `doRequest` as a plain object.** Its type was `any`; an `interface` value no longer fits, so spread it. TypeScript says "Index signature for type 'string' is missing in type 'IListOptions'".
@@ -238,7 +264,16 @@ In a test, `expect(getUser()).toEqual({ userId: 3, tenant: 'acme' })` fails with
 +await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
 ```
 
-**6. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
+**6. Spread react-admin's params when an override of `getList` or `getManyReference` calls `super`.** The params type is an interface and `ICustomParams` has an index signature; TypeScript reports TS2345. An override of `getOne` or `getMany` needs no change.
+
+```diff
+ override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
+-  return super.getList(opts);
++  return super.getList({ resource: opts.resource, params: { ...opts.params } });
+ }
+```
+
+**7. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
 
 ```ts
 import { DefaultAuthProvider, type IAuthTokenRecord, type IAuthUser } from '@venizia/ardor';
@@ -256,10 +291,10 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 `IAppUser` is yours to trust: `getUser()` reads browser storage, so the extra fields are whatever your sign-in saved. Check them where a wrong value would do harm.
 
-**7. Run `bun run typecheck`.** The errors name each use left. The `devz` codemod of step 1 rewrites the imports of the two names; the other replacements depend on the value, so there is no codemod for them.
+**8. Run `bun run typecheck`.** The errors name each use left. The `devz` codemod of step 1 rewrites the imports of the two names; the other replacements depend on the value, so there is no codemod for them.
 
 ## How to go back
 
-Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 6. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
+Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 7. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
 
 Nothing stored changes: the identity in `localStorage` has the same shape before and after.

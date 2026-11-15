@@ -94,7 +94,10 @@ export class DefaultAuthService extends BaseService {
       return false;
     }
 
-    const { userId, username, referenceId, provider } = Object.fromEntries(Object.entries(value));
+    const userId = 'userId' in value ? value.userId : undefined;
+    const username = 'username' in value ? value.username : undefined;
+    const referenceId = 'referenceId' in value ? value.referenceId : undefined;
+    const provider = 'provider' in value ? value.provider : undefined;
     const isId = (field: unknown) =>
       field === undefined || ['string', 'number'].includes(typeof field);
     const isText = (field: unknown) => field === undefined || typeof field === 'string';
