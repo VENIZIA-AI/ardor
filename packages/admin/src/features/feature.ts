@@ -28,7 +28,11 @@ export type TArdorRoute = RouteProps & {
    * `requireAuth`, only a route outside the layout is reachable signed out.
    */
   auth?: { use: boolean };
-  /** `{ use: false }`: the route renders outside the layout, whatever the sign-in status of the app. */
+  /**
+   * `{ use: false }`: the route renders outside the layout. react-admin guards only the pages of the layout
+   * under `requireAuth`, so ARDOR guards a route outside it too: it needs a signed-in user unless it says
+   * `auth: { use: false }` (a sign-in or accept-invite page).
+   */
   layout?: { use: false };
 };
 
@@ -128,7 +132,7 @@ export class Features {
     const paths = new Map<string, string>();
 
     for (const [name, owner] of owners) {
-      paths.set(name, `'${owner}' (resource '${name}')`);
+      paths.set(Features.normalizePath({ path: name }), `'${owner}' (resource '${name}')`);
     }
 
     const claimRoutes = (entry: { owner: string; routes: Array<TArdorRoute> }) => {
@@ -139,12 +143,15 @@ export class Features {
           continue;
         }
 
-        const path = Features.normalizePath({ path: route.path });
+        const path = Features.normalizePath({
+          path: route.path,
+          isCaseSensitive: route.caseSensitive === true,
+        });
         const owner = paths.get(path);
 
         if (owner) {
           throw getError({
-            message: `[features] Route '/${path}' is mounted by both ${owner} and '${entry.owner}' | A route path is unique within an application and is not the path of a resource`,
+            message: `[features] Route '/${route.path.replace(/^\/+|\/+$/g, '')}' is mounted by both ${owner} and '${entry.owner}' | A route path is unique within an application and is not the path of a resource`,
           });
         }
 
@@ -180,9 +187,14 @@ export class Features {
     }
   }
 
-  /** The path without its leading slashes, so `orders` and `/orders` compare equal. */
-  private static normalizePath(opts: { path: string }): string {
-    return opts.path.replace(/^\/+/, '');
+  /**
+   * The path as react-router compares it: without its leading and trailing slashes, and in lower case unless
+   * the route is `caseSensitive`, so `orders`, `/orders`, `/Orders/` compare equal.
+   */
+  private static normalizePath(opts: { path: string; isCaseSensitive?: boolean }): string {
+    const trimmed = opts.path.replace(/^\/+|\/+$/g, '');
+
+    return opts.isCaseSensitive ? trimmed : trimmed.toLowerCase();
   }
 
   /** Whether a feature or the application's own source loads the provider's current locale lazily, so a first render must wait for it. */

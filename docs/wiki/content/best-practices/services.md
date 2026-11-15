@@ -258,7 +258,7 @@ export function ProductPrice(props: { id: number }) {
 }
 ```
 
-The classes here stand in for yours, which live in their own files. The component never sees how the class was built. Swap the implementation in the container and the component does not change. `Ardor.useX` and `useX` are the same function. See [binding keys](./binding-keys) for how keys are built and [hooks](../references/hooks) for the hook signatures.
+The classes here stand in for yours, which live in their own files. The component never sees how the class was built. Swap the implementation in the container and the component does not change, as long as the replacement extends the class it replaces (the hook checks the bound class) or is a value binding. `Ardor.useX` and `useX` are the same function. See [binding keys](./binding-keys) for how keys are built and [hooks](../references/hooks) for the hook signatures.
 
 ## Common pitfalls
 

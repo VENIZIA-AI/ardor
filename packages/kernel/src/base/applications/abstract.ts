@@ -65,7 +65,7 @@ export abstract class AbstractArdorApplication extends Container {
   private resolvedIndexes: Array<IArtifactIndex> | undefined;
 
   /** The keys bound with `allowOverride: false`, each with the class that holds it; only `bindContext()` may replace them. */
-  private readonly lockedKeys = new Map<TBindingKey, string>();
+  private readonly lockedKeys = new Map<TBindingKey, Function>();
 
   /** Stays synchronous unless `getAppInfo()` returns a promise: a subclass may still return either. */
   preConfigure(): ValueOrPromise<void> {
@@ -95,7 +95,7 @@ export abstract class AbstractArdorApplication extends Container {
 
       if (holder !== undefined) {
         throw getError({
-          message: `[bindingList] '${key}' is held by ${holder} with allowOverride false, and bindingList() would replace it with ${target.name} | Bind it in bindContext() to override on purpose, or drop allowOverride: false`,
+          message: `[bindingList] '${key}' is held by ${holder.name} with allowOverride false, and bindingList() would replace it with ${target.name} | Bind it in bindContext() to override on purpose, or drop allowOverride: false`,
         });
       }
 
@@ -151,14 +151,17 @@ export abstract class AbstractArdorApplication extends Container {
       const metadata = registry.getArtifactMetadata({ target });
       const holder = this.lockedKeys.get(key);
 
-      if (holder !== undefined && holder !== target.name) {
+      if (
+        holder !== undefined &&
+        !AbstractArdorApplication.isSameDeclaration({ left: holder, right: target })
+      ) {
         throw getError({
-          message: `[registerArtifacts] '${String(key)}' is held by ${holder} with allowOverride false, and ${target.name} would replace it | Give one of them another key, or bind the intended one in bindContext()`,
+          message: `[registerArtifacts] '${String(key)}' is held by ${holder.name} with allowOverride false, and ${target.name} would replace it | Give one of them another key, or bind the intended one in bindContext()`,
         });
       }
 
       if (metadata?.allowOverride === false) {
-        this.lockedKeys.set(key, target.name);
+        this.lockedKeys.set(key, target);
       }
 
       this.bind({ key })
@@ -201,7 +204,9 @@ export abstract class AbstractArdorApplication extends Container {
       }
 
       const isSameDeclaration =
-        !owner.isDerived && !isDerived && owner.target.name === entry.target.name;
+        !owner.isDerived &&
+        !isDerived &&
+        AbstractArdorApplication.isSameDeclaration({ left: owner.target, right: entry.target });
 
       if ((owner.isDerived && isDerived) || isSameDeclaration) {
         continue;
@@ -211,6 +216,21 @@ export abstract class AbstractArdorApplication extends Container {
         message: `[registerArtifacts] The key '${key}' is claimed by both ${owner.target.name} and ${entry.target.name}, and the one imported last would silently replace the other | Give one of them another key, select one with 'when', or bind the intended one in bindContext()`,
       });
     }
+  }
+
+  /**
+   * Whether two classes are one declaration evaluated twice, as a hot reload does: the same name and the same
+   * source text. Two different classes that share a name (a minifier does it) are not, and the later one would
+   * silently replace the earlier.
+   */
+  private static isSameDeclaration(opts: { left: Function; right: Function }): boolean {
+    const { left, right } = opts;
+
+    return (
+      left === right ||
+      (left.name === right.name &&
+        Function.prototype.toString.call(left) === Function.prototype.toString.call(right))
+    );
   }
 
   /**
@@ -467,7 +487,7 @@ export abstract class AbstractArdorApplication extends Container {
     }
 
     if (!allowOverride) {
-      this.lockedKeys.set(key, target.name);
+      this.lockedKeys.set(key, target);
     }
 
     this.getMetadataRegistry().setBindingKey({ target, key });
