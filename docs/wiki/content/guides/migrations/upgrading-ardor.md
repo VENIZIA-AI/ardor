@@ -1,3 +1,8 @@
+---
+title: Upgrading ARDOR
+description: Which changelog entry to read for the version you are on, and the codemods that move the removed names and add the sign-in toggle.
+---
+
 # Upgrading ARDOR
 
 Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is affected and what to do. A release that changes a few names comes with a batch overview: a table of every change since the last overview, and an ordered checklist. This page says which one to read for the version you are on, and how to run the codemods that do the mechanical part of an upgrade.

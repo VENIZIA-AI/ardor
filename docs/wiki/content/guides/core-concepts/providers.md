@@ -1,30 +1,30 @@
 ---
 title: Providers
-description: Understand ARDOR framework providers, how options configure them, how ArdorApplication injects them, and how to replace or leave out one.
+description: Understand ARDOR framework providers, how an application binds their options, how ArdorApplication resolves them, and how to replace or leave out one.
 ---
 
 # Providers
 
-ARDOR coordinates data, authentication, and internationalization through providers configured in `@configuration()` classes. `ArdorApplication` resolves them from the container and supplies them to react-admin:
+ARDOR coordinates data, authentication, and internationalization through providers. `BaseArdorApplication` binds the default providers itself, so an application binds only their options, in a `@configuration()` class with `@provideOption` methods. `ArdorApplication` resolves the providers from the container and supplies them to react-admin:
 
 <<< @/../../../examples/5-mins-qs/src/configurations/admin.configuration.ts{ts}
 
 ## Framework Providers
 
-| Piece | What it does | Default class | Bound key | Options key | Required or optional | Reference |
+| Piece | What it does | Default class | Bound key | Options key | Options | Reference |
 | --- | --- | --- | --- | --- | --- | --- |
 | Data provider | Maps react-admin data calls onto REST requests and provides custom HTTP sending methods | `DefaultRestDataProvider` | `CoreBindings.DEFAULT_REST_DATA_PROVIDER` | `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Required | [REST data provider](../../references/data-provider) |
-| Auth provider | Manages authentication sessions, credentials, token storage, and auth error redirection | `DefaultAuthProvider` | `CoreBindings.DEFAULT_AUTH_PROVIDER` | `CoreBindings.AUTH_PROVIDER_OPTIONS` | Optional | [Auth provider](../../references/auth-provider) |
-| i18n provider | Resolves translations, handles locale changes, and composes feature message bundles | `DefaultI18nProvider` | `CoreBindings.DEFAULT_I18N_PROVIDER` | `CoreBindings.I18N_PROVIDER_OPTIONS` | Required | [Internationalization](../../references/i18n) |
+| Auth provider | Manages authentication sessions, credentials, token storage, and auth error redirection | `DefaultAuthProvider` | `CoreBindings.DEFAULT_AUTH_PROVIDER` | `CoreBindings.AUTH_PROVIDER_OPTIONS` | `{ use: true }` to sign in, else none | [Auth provider](../../references/auth-provider) |
+| i18n provider | Resolves translations, handles locale changes, and composes feature message bundles | `DefaultI18nProvider` | `CoreBindings.DEFAULT_I18N_PROVIDER` | `CoreBindings.I18N_PROVIDER_OPTIONS` | Optional: none means English only | [Internationalization](../../references/i18n) |
 | Network service (transport) | Executes HTTP requests via fetch, attaches headers and tracing ids, and recovers from 401 errors | `DefaultNetworkRequestService` | None (constructed by data provider) | `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Required | [Network](../../references/network) |
-| Permission provider | Evaluates authorization checks for resources, actions, and records via `canAccess` | None (`IPermissionProvider`) | `CoreBindings.PERMISSION_PROVIDER` | None | Optional | [Permission provider](../../references/permission) |
+| Permission provider | Evaluates authorization checks for resources, actions, and records via `canAccess` | None (`IPermissionProvider`) | `CoreBindings.PERMISSION_PROVIDER` | None (`RolePermissionProvider` reads `PERMISSION_PROVIDER_OPTIONS`) | Optional | [Permission provider](../../references/permission) |
 | Features | Bundles resources, custom routes, translation messages, and configuration classes for modular domains | None (array of `TFeature`) | `CoreBindings.FEATURES` | None | Optional | [Features](../../references/features) |
 
 ## Provider Flow into react-admin
 
 <svg viewBox="0 0 684 272" role="img" aria-labelledby="providers-flow-title providers-flow-desc" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;font:12px var(--vp-font-family-base);color:var(--vp-c-text-1)">
 <title id="providers-flow-title">Provider flow into react-admin</title>
-<desc id="providers-flow-desc">Three configuration bindings each inject one provider into the container: the REST data provider, the auth provider (optional) and the i18n provider. The container hands each to CoreAdmin inside ArdorApplication as dataProvider, authProvider and i18nProvider.</desc>
+<desc id="providers-flow-desc">Three options bindings each configure one provider the base application binds in the container: the REST data provider, the auth provider (optional) and the i18n provider. The container hands each to CoreAdmin inside ArdorApplication as dataProvider, authProvider and i18nProvider.</desc>
 <defs><marker id="providers-flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--vp-c-text-2)"/></marker></defs>
 <g style="fill:none;stroke:var(--vp-c-divider);stroke-dasharray:5 4">
 <rect x="4" y="6" width="210" height="260" rx="10"/>
@@ -32,7 +32,7 @@ ARDOR coordinates data, authentication, and internationalization through provide
 <rect x="574" y="6" width="106" height="260" rx="10"/>
 </g>
 <g fill="currentColor" font-weight="600">
-<text x="109" y="30" text-anchor="middle">Configuration (@provide)</text>
+<text x="109" y="30" text-anchor="middle">Options (@provideOption)</text>
 <text x="379" y="30" text-anchor="middle">IoC Container (Singletons)</text>
 <text x="627" y="30" text-anchor="middle">ArdorApplication</text>
 </g>
@@ -76,18 +76,45 @@ ARDOR coordinates data, authentication, and internationalization through provide
 </g>
 </svg>
 
-`ArdorApplication` reads providers by key from the container when building props for react-admin; see [Application](./application). Components resolve them with `useProvider` or `useInjectable` (see [Dependency Injection](./dependency-injection)). When passed a `{ target }` class, `useProvider` checks that the class is registered under the `providers` namespace (`BindingNamespaces.PROVIDER`), throwing only when the class is bound under a different namespace.
+`ArdorApplication` resolves the providers from the container when it builds props for react-admin (`ApplicationProviders.resolve`, `packages/admin/src/components/resolve.ts`); see [Application](./application).
+
+## Reading a provider
+
+A framework provider is a value under a `CoreBindings` key, never a class you resolve by `{ target }`. Inside react-admin, read it with react-admin's own hooks. Elsewhere, `Ardor.useProvider({ key })` is typed for the keys of `CoreBindings`, with no generic and no augmentation (see [Dependency Injection](./dependency-injection)):
+
+```tsx
+import { Ardor, CoreBindings, type IDataProvider } from '@venizia/ardor';
+import { useAuthProvider, useDataProvider } from 'ra-core';
+
+export function Providers() {
+  const dataProvider = useDataProvider<IDataProvider>();
+  const authProvider = useAuthProvider();
+  const restDataProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+
+  return (
+    <span>
+      {typeof dataProvider.send} {typeof authProvider?.login} {typeof restDataProvider.getList}
+    </span>
+  );
+}
+```
 
 ## Replace One
 
-To customize or replace a default provider, create a subclass that extends the default class, override the specific method, and bind the subclass under the corresponding `CoreBindings` key in a `@configuration()` class.
+To replace a default provider, extend its class, override the method, and bind the subclass on the same key in `bindContext()`. The application binds nothing else for it: its options stay in the `@configuration()` class.
 
 In `DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`), the helper and transport methods are public or protected methods of the class: `request` and `requestList` (protected), `buildListFilter` (protected, a delegate of `ListFilterBuilder.build`), `toAffectedIds` (protected), `createNetworkService` (protected), `getDataSourceAuth` (public), and `getNetworkService` (public).
 
-The following complete file illustrates subclassing `DefaultRestDataProvider` to override `getOne` and append a derived field to the returned record, registering the replacement provider under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`:
+The following complete file subclasses `DefaultRestDataProvider` to override `getOne` and append a derived field to the returned record, then binds the replacement under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` as a singleton. The subclass keeps the constructor of its parent, so the container supplies the options and the application info:
 
 ```ts
-import { type BaseArdorApplication, configuration, CoreBindings, DefaultRestDataProvider, inject, provide } from '@venizia/ardor';
+import {
+  BaseArdorApplication,
+  CoreBindings,
+  DefaultRestDataProvider,
+  type IApplicationInfo,
+} from '@venizia/ardor';
+import { BindingScopes } from '@venizia/ignis-inversion';
 import { type GetOneParams, type GetOneResult, type RaRecord } from 'ra-core';
 
 export class CustomRestDataProvider extends DefaultRestDataProvider {
@@ -96,22 +123,25 @@ export class CustomRestDataProvider extends DefaultRestDataProvider {
     params: GetOneParams<RecordType>;
   }): Promise<GetOneResult<RecordType>> {
     const result = await super.getOne(opts);
+
     return { ...result, data: { ...result.data, isLoaded: true } };
   }
 }
 
-@configuration()
-export class CustomDataConfiguration {
-  constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
+export class ShopApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
+  }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(CustomRestDataProvider).value(this.application);
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(CustomRestDataProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 ```
 
-Calling `this.application.instantiate(CustomRestDataProvider).value(this.application)` resolves constructor dependencies (`REST_DATA_PROVIDER_OPTIONS` and `APPLICATION_INFO`) and returns the react-admin provider.
+The container builds `CustomRestDataProvider` with the options of `REST_DATA_PROVIDER_OPTIONS` and the `APPLICATION_INFO`, and the key then holds the react-admin provider it returns. `bindContext()` runs last, so this binding wins over the default. The same one line replaces the auth or i18n provider, and the `CountRestDataProvider` of `@venizia/ardor` is bound the same way: `.toProvider(CountRestDataProvider)`.
 
 ## Leave One Out
 
@@ -119,10 +149,10 @@ Some administrative applications do not require authentication, authorization, o
 
 ### Authentication (No Sign-In)
 
-An application with no sign-in leaves `DEFAULT_AUTH_PROVIDER` unbound; `ArdorApplication` then runs without an auth provider:
+An application with no sign-in binds `{ use: false }` for `AUTH_PROVIDER_OPTIONS`, or binds no auth options at all (the two mean the same). `ArdorApplication` resolves the auth provider only when the options say `{ use: true }`:
 
-1. **Leave `DEFAULT_AUTH_PROVIDER` unbound**: Do not declare `@provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })` or `@provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })`.
-2. **`ArdorApplication` handles omission**: When resolving `CoreBindings.DEFAULT_AUTH_PROVIDER`, `ArdorApplication` uses `isOptional: true`. When unbound, `authProvider` is omitted from the props passed to `CoreAdmin`.
+1. **Bind `{ use: false }`**: a `@provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })` method returns `{ use: false }`, typed `TAuthProviderOptions`. The base application still binds `DefaultAuthProvider`; it is never resolved.
+2. **`ArdorApplication` handles omission**: With `use: false` or no options, `authProvider` is omitted from the props passed to `CoreAdmin`.
 3. **React-admin runs without auth**: No sign-in screen is rendered, and all resource routes and custom routes are immediately accessible.
 4. **Configure network options**: In `REST_DATA_PROVIDER_OPTIONS`, set `noAuthPathRegex: /./` so that `DefaultNetworkRequestService` sends every HTTP request without attempting to attach an `Authorization` header.
 
@@ -132,11 +162,11 @@ An application with no sign-in leaves `DEFAULT_AUTH_PROVIDER` unbound; `ArdorApp
 
 ### Features
 
-`BaseArdorApplication.features()` returns an empty array (`[]`) by default. When no features are mounted, `ArdorApplication` mounts only the resources and custom routes provided directly via application props (`<ArdorApplication resources={...} routes={...} />`).
+`AbstractArdorApplication.features()` returns an empty array (`[]`) by default. When no features are mounted, `ArdorApplication` mounts only the resources and custom routes provided directly via application props (`<ArdorApplication resources={...} routes={...} />`).
 
 ## Next Steps
 
-- [Configuration](./configuration) - Configure provider options and singleton bindings
+- [Configuration](./configuration) - Bind provider options in a configuration class
 - [Application](./application) - Mount providers in `<ArdorApplication />`
 - [REST data provider](../../references/data-provider) - Complete data provider API reference
 - [Auth provider](../../references/auth-provider) - Authentication options and session management

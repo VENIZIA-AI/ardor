@@ -103,7 +103,7 @@ If you have your own IGNIS API, skip the stub and point the proxy in `vite.confi
 ## Your API is not this one
 
 - **No sign-in.** If your API requires no authentication, bind `{ use: false }` for `AUTH_PROVIDER_OPTIONS` (or bind nothing: unbound means the same), omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`. The admin runs with all pages public.
-- **A different sign-in path.** If your API signs in at a custom path or expects different credentials, set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the route to `noAuthPaths` in `REST_DATA_PROVIDER_OPTIONS`. Subclass `DefaultAuthProvider` and override `buildSignInBody` if you need custom request formatting (see [Add sign-in](../tutorials/add-sign-in#7-custom-sign-in-route-and-body)).
+- **A different sign-in path.** If your API signs in at a custom path or expects different credentials, set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the route to `noAuthPaths` in `REST_DATA_PROVIDER_OPTIONS`. Subclass `DefaultAuthProvider` and override `buildSignInBody` if you need custom request formatting (see [Add sign-in](../tutorials/add-sign-in#_7-custom-sign-in-route-and-body)).
 
 For complete authentication options and contracts, see [Auth provider](../../references/auth-provider).
 

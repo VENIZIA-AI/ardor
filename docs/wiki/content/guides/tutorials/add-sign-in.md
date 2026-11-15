@@ -5,53 +5,32 @@ description: Add authentication to an ARDOR admin against an IGNIS API with Defa
 
 # Add Sign-In
 
-Configure `DefaultAuthProvider` and `DefaultAuthService` in an application configuration class, declare the sign-in endpoint in `noAuthPaths`, and supply a login page.
+Turn sign-in on by binding the auth options `{ use: true, paths }` in an application configuration class, declare the sign-in endpoint in `noAuthPaths`, and supply a login page. `BaseArdorApplication` binds `DefaultAuthProvider` and `DefaultAuthService` itself, so you bind options only:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultRestDataProvider,
-  inject,
-  provide,
+  type IRestDataProviderOptions,
+  provideOption,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AuthConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
-    return { paths: { afterLogin: '/dashboard' } };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService() {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: true, paths: { afterLogin: '/dashboard' } };
   }
 }
 ```
+
+`@configuration()` registers the class, and the build finds it. `use: true` is what turns sign-in on: without it, or with `{ use: false }`, the app has no sign-in and every page is public.
 
 ## 1. What default sign-in expects from IGNIS
 
@@ -88,13 +67,13 @@ Response payload read by `readSignInSession`:
 
 ## 2. Authentication container bindings
 
-`AuthConfiguration` establishes the authentication pipeline:
+`AuthConfiguration` binds the options of the authentication pipeline; the base application binds what reads them:
 
 - `CoreBindings.REST_DATA_PROVIDER_OPTIONS`: provides `IRestDataProviderOptions` (`packages/kernel/src/common/types.ts`). List `/auth/sign-in` in `noAuthPaths`; omitting it causes `DefaultNetworkRequestService` to throw 401 before sending because no token exists in storage.
-- `CoreBindings.AUTH_PROVIDER_OPTIONS`: provides `IAuthProviderOptions` with post-login redirect `paths.afterLogin` (default `/`).
-- `CoreBindings.DEFAULT_AUTH_SERVICE`: provides `DefaultAuthService`, managing tokens and identity in `localStorage`.
-- `CoreBindings.DEFAULT_AUTH_PROVIDER`: provides `DefaultAuthProvider` for react-admin.
-- `CoreBindings.DEFAULT_REST_DATA_PROVIDER`: provides the data provider executing network calls.
+- `CoreBindings.AUTH_PROVIDER_OPTIONS`: provides `TAuthProviderOptions`. `{ use: true }` turns sign-in on, and `paths.afterLogin` sets the post-login redirect (default `/`).
+- `CoreBindings.DEFAULT_AUTH_SERVICE`: bound by the base application, `DefaultAuthService` manages tokens and identity in `localStorage`.
+- `CoreBindings.DEFAULT_AUTH_PROVIDER`: bound by the base application, `DefaultAuthProvider` for react-admin. `ArdorApplication` resolves it only when `use` is `true`.
+- `CoreBindings.DEFAULT_REST_DATA_PROVIDER`: bound by the base application, the data provider that executes network calls.
 
 See [Configuration](../core-concepts/configuration).
 
@@ -142,8 +121,8 @@ Pass `LoginPage` to the `loginPage` prop of `ArdorApplication` ([Quickstart](../
 
 - `checkAuth`: resolves if a token exists in `localStorage`, or issues `GET` to `paths.checkAuth` if configured.
 - `getRoles`: resolves with `Set<string>` of stored roles.
-- `getIdentity`: reads `@app/auth/identity` through `authService.getUser()` (`{ userId, username, referenceId, provider }`) and resolves it with `id` set to `userId`.
-- `getPermissions`: resolves with `Promise.resolve()`.
+- `getIdentity`: reads `@app/auth/identity` through `authService.getUser()` (`{ userId, username, referenceId, provider }`; `{}` when nothing is stored) and resolves it with `id` set to `userId`. It rejects when there is no `userId`.
+- `getPermissions`: resolves with nothing; the roles come from `getRoles`.
 
 To authorize UI components and resources through react-admin's `canAccess` contract, bind a permission provider under `CoreBindings.PERMISSION_PROVIDER`. Unbound, `canAccess` remains undefined and react-admin permits access to all actions.
 
@@ -192,7 +171,7 @@ export class ShopApplication extends BaseArdorApplication {
 }
 ```
 
-Components check permissions with `useCanAccess` from `ra-core`, and read the roles with `useRoles`. For a source other than a role table, write your own `IPermissionProvider`. These checks decide what the interface shows: the backend must check every request. See [Permission provider](../../references/permission).
+Components check permissions with `useCanAccess` from `ra-core`, and read the roles with `Ardor.useRoles()`. For a source other than a role table, write your own `IPermissionProvider`. These checks decide what the interface shows: the backend must check every request. See [Permission provider](../../references/permission).
 
 ## 5. Token recovery and refresh
 
@@ -204,7 +183,7 @@ Set `authRecovery: { refreshTokenPath: '/auth/token/refresh' }` in `REST_DATA_PR
 
 Write a `DefaultNetworkRequestService` subclass only for a refresh the default does not cover: a request body, another answer shape, or a token store that is not the auth service. See [The default refresh](../../best-practices/auth-recovery#the-default-refresh).
 
-`useRefreshToken` from `@venizia/ardor` calls `DefaultAuthProvider.refreshToken()`, which delegates to `refresh()` on the network service and shares the same coalesced promise. See [No-auth paths and token recovery](../../best-practices/auth-recovery).
+`Ardor.useRefreshToken()` calls `DefaultAuthProvider.refreshToken()`, which delegates to `refresh()` on the network service and shares the same coalesced promise. See [No-auth paths and token recovery](../../best-practices/auth-recovery).
 
 ## 6. Sign out and error handling
 
@@ -217,10 +196,17 @@ To log out, call `useLogout` from `ra-core`. `DefaultAuthProvider.logout()` invo
 
 ## 7. Custom sign-in route and body
 
-Set `paths.signIn` in `IAuthProviderOptions` and add the matching path to `noAuthPaths` in `IRestDataProviderOptions`. To modify the request body format, subclass `DefaultAuthProvider` and override `buildSignInBody`:
+Set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the matching path to `noAuthPaths` in `IRestDataProviderOptions`. To modify the request body format, subclass `DefaultAuthProvider` and override `buildSignInBody`, then bind the subclass in place of the default in `bindContext()`:
 
 ```ts
-import { DefaultAuthProvider, type ILoginParams } from '@venizia/ardor';
+import {
+  BaseArdorApplication,
+  CoreBindings,
+  DefaultAuthProvider,
+  type IApplicationInfo,
+  type ILoginParams,
+} from '@venizia/ardor';
+import { BindingScopes } from '@venizia/ignis-inversion';
 
 export class CustomAuthProvider extends DefaultAuthProvider {
   protected override buildSignInBody(opts: { params: ILoginParams }) {
@@ -230,12 +216,26 @@ export class CustomAuthProvider extends DefaultAuthProvider {
     };
   }
 }
+
+export class ShopApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'A shop back office' };
+  }
+
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toProvider(CustomAuthProvider)
+      .setScope(BindingScopes.SINGLETON);
+  }
+}
 ```
+
+The subclass keeps the constructor of `DefaultAuthProvider`, so the container supplies its dependencies, and `bindContext()` runs after the defaults, so this binding replaces the default.
 
 To send the login form directly without schema wrapping, return `opts.params`.
 
 > [!NOTE]
-> If an application requires no authentication at all, leave `CoreBindings.DEFAULT_AUTH_PROVIDER` unbound, omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`.
+> If an application requires no authentication at all, bind `{ use: false }` for `CoreBindings.AUTH_PROVIDER_OPTIONS` (or bind nothing: unbound means the same), omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`.
 
 ## Related
 

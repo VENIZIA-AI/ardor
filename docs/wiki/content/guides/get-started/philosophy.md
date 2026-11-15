@@ -50,7 +50,7 @@ What ARDOR adds to ra-core:
 | Services | An IGNIS container: stereotypes, `@inject`, and `Ardor.useService({ target })`, one hook per namespace |
 | Data layer | A REST data provider that sends the IGNIS filter language and reads totals from `Content-Range` |
 | Sign-in | A 401 triggers one token refresh for a burst of requests, then retries them; no-auth paths are explicit |
-| Keys | A key only for a binding with no class, typed through `IUseInjectableKeyTypes`; `useTranslate` keys typed through module augmentation |
+| Keys | `useTranslate` keys typed through module augmentation; a string key only for a binding with no class |
 
 The filter language uses `where`, `order`, `limit` and `skip`.
 
