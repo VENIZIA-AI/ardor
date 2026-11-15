@@ -13,6 +13,7 @@ import {
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
+  SESSION_CHANGED_CODE,
 } from '@venizia/ardor-kernel';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -565,6 +566,29 @@ describe('checkError', () => {
 
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
+  });
+
+  test('a 401 that answers a request of a session that is gone resolves and leaves the signed-in session alone', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      JSON.stringify({ userId: 8, username: 'bob' }),
+    );
+
+    const result = await authProvider.checkError(
+      getError({
+        statusCode: 401,
+        messageCode: SESSION_CHANGED_CODE,
+        message: 'the session that sent this request ended',
+      }),
+    );
+
+    expect(result).toBeUndefined();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).not.toBeNull();
   });
 
   test('rejects with redirect to unauthorized and preserves session on 403 status', async () => {

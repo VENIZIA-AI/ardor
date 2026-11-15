@@ -35,6 +35,15 @@ import {
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
+/** Who sent a request, and with which token: what a 401 is judged against. */
+interface ISentSession {
+  userId: string;
+  token?: string;
+}
+
+/** The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight. */
+export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
+
 /**
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
@@ -53,6 +62,9 @@ export class DefaultNetworkRequestService extends BaseService {
   protected authService?: DefaultAuthService;
 
   private readonly recovery: AuthRecovery;
+
+  /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
+  private readonly sentSessions = new WeakMap<object, ISentSession>();
 
   constructor(
     opts: INoAuthOptions & {
@@ -340,6 +352,29 @@ export class DefaultNetworkRequestService extends BaseService {
     return this.recovery.refresh();
   }
 
+  /** The session signed in now: who, and with which token. */
+  private readSession(): ISentSession {
+    return {
+      userId: `${this.authService?.getUser().userId}`,
+      token: this.resolveAuthToken()?.value,
+    };
+  }
+
+  /**
+   * How the session changed since `sent`: `undefined` when it did not, `true` when the same user holds
+   * another token now (the request can be sent again with it), `false` when the user who sent is gone.
+   */
+  private readSessionChange(opts: { sent: ISentSession }): boolean | undefined {
+    const { sent } = opts;
+    const now = this.readSession();
+
+    if (now.userId === sent.userId && now.token === sent.token) {
+      return undefined;
+    }
+
+    return now.userId === sent.userId && !!now.token;
+  }
+
   // --- Requests --------------------------------------------------------------------------------
 
   /**
@@ -351,18 +386,31 @@ export class DefaultNetworkRequestService extends BaseService {
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
   ): IDataSourceAuth {
     return {
-      authTokenResolver: ({ paths }) => {
-        return this.isNoAuthPath({ resource: paths[0], paths })
+      authTokenResolver: (context) => {
+        const { paths } = context;
+        const token = this.isNoAuthPath({ resource: paths[0], paths })
           ? undefined
           : this.resolveAuthToken();
+
+        // Both hooks receive this very object, and a retry sends again under the session of that moment.
+        this.sentSessions.set(context, { userId: this.readSession().userId, token: token?.value });
+
+        return token;
       },
       headersResolver: () => {
         return NetworkHeaders.merge({
           sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
         });
       },
-      onUnauthorized: ({ paths }) => {
-        return this.recovery.canRecover({ paths }) ? this.refresh() : Promise.resolve(false);
+      onUnauthorized: (context) => {
+        if (!this.recovery.canRecover({ paths: context.paths })) {
+          return Promise.resolve(false);
+        }
+
+        const sent = this.sentSessions.get(context);
+        const change = sent ? this.readSessionChange({ sent }) : undefined;
+
+        return change === undefined ? this.refresh() : Promise.resolve(change);
       },
       errorRootKey: ResponseReader.ERROR_ROOT_KEY,
     };
@@ -586,16 +634,27 @@ export class DefaultNetworkRequestService extends BaseService {
       );
     };
 
-    // Who sends: a 401 that arrives after another user signed in is not this user's to refresh.
-    const sentBy = `${this.authService?.getUser().userId}`;
+    const sent = this.readSession();
     let fetched = await sendOnce(headers);
 
-    if (
-      fetched.status === 401 &&
-      `${this.authService?.getUser().userId}` === sentBy &&
-      this.recovery.canRecover({ paths })
-    ) {
-      const isRefreshed = await this.refresh();
+    if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
+      // A 401 that arrives after the session changed is not the new session's to refresh or to end.
+      const change = this.readSessionChange({ sent });
+
+      if (change === false) {
+        throw getError({
+          statusCode: 401,
+          messageCode: SESSION_CHANGED_CODE,
+          message: '[doRequest] The session that sent this request ended while it was in flight',
+        });
+      }
+
+      let isRefreshed = change === true;
+
+      if (change === undefined) {
+        const result3 = await this.refresh();
+        isRefreshed = result3;
+      }
 
       if (isRefreshed) {
         const authHeader = this.getRequestAuthorizationHeader();
