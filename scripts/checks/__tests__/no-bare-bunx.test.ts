@@ -36,11 +36,9 @@ describe('documented bunx commands', () => {
     const offenders = SCANNED.flatMap((path) => filesUnder({ path })).flatMap((file) => {
       const text = readFileSync(join(ROOT, file), 'utf8');
 
-      return text
-        .split('\n')
-        .flatMap((line, index) => {
-          return [...line.matchAll(BARE_BUNX)].map((match) => `${file}:${index + 1} ${match[0]}`);
-        });
+      return text.split('\n').flatMap((line, index) => {
+        return [...line.matchAll(BARE_BUNX)].map((match) => `${file}:${index + 1} ${match[0]}`);
+      });
     });
 
     expect(offenders).toEqual([]);
