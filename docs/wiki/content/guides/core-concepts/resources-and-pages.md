@@ -167,7 +167,7 @@ When a page requires data or actions outside the data provider's CRUD contract, 
 
 - **`useRepository`**: Resolves an injected repository instance from the container (under `repositories.`) to run specialized domain queries.
 - **`useTranslate`**: Translates message keys against the internationalization bundles provided to `CoreBindings.I18N_PROVIDER_OPTIONS`.
-- **`useRefreshToken`**: Manually calls `authProvider.refreshToken()` and invalidates the cached permissions query in TanStack Query.
+- **`useRefreshToken`**: Manually calls `authProvider.refreshToken()` and invalidates the cached `canAccess` answers (the queries under `['auth', 'canAccess']`) in TanStack Query, so every permission check runs again with the new token.
 - **`useNotifyError`**: Accepts an `ApplicationError` (from `@venizia/ignis-inversion`) and optional `NotificationOptions`, dispatching the code and arguments to react-admin's notification system.
 
 Decorated repository and datasource classes must be bound into the container before `useRepository` resolves them. The datasource below spreads `dataProvider.getDataSourceAuth()`, so its repository sends the same token and session headers as the data provider and joins its 401 refresh:

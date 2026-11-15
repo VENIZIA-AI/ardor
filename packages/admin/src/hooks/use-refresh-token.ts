@@ -10,7 +10,8 @@ const logger = LoggerFactory.getLogger(['useRefreshToken']);
 
 /**
  * Returns a function that refreshes the session through the auth provider's `refreshToken` and, once
- * that resolves, invalidates the cached permissions. It rejects when `refreshToken` rejects.
+ * that resolves, invalidates the cached `canAccess` answers (react-admin's `useCanAccess`, key
+ * `['auth', 'canAccess', ...]`), so every permission check runs again with the new token. It rejects when `refreshToken` rejects.
  */
 export const useRefreshToken = (): TRefreshToken => {
   const authProvider = useAuthProvider<IAuthProvider>();
@@ -23,11 +24,9 @@ export const useRefreshToken = (): TRefreshToken => {
     }
 
     return authProvider.refreshToken().then((isRefreshed) => {
-      queryClient
-        .invalidateQueries({ queryKey: ['auth', 'getPermissions'] })
-        .catch((error: unknown) => {
-          logger.error('[refreshToken] Failed to invalidate permissions cache | error: %s', error);
-        });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'canAccess'] }).catch((error: unknown) => {
+        logger.error('[refreshToken] Failed to invalidate the canAccess cache | error: %s', error);
+      });
 
       return isRefreshed;
     });
