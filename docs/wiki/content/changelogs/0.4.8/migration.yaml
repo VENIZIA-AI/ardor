@@ -143,7 +143,7 @@ remove-any-aliases:
       const slot: TClass<Pick<HttpRepository<TNamedEntity>, 'find' | 'count'>> = OrganizerRepository;
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where AnyType and AnyObject exist, and undo the replacements.
       - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
   data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun x devz codemod any-aliases --all` is a dry run that only reports, and `bun x devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity. An interface value does not fit Record<string, unknown>; spread it, type it as object, or declare it as a type alias.
 
@@ -156,7 +156,7 @@ typed-do-request-query:
       await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the query of doRequest is any.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the query of doRequest is any.
   data: Nothing stored changes. The query is sent as it was.
 
 typed-stored-user:
@@ -175,7 +175,7 @@ typed-stored-user:
       const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and onSessionStarted takes user as any.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and onSessionStarted takes user as any.
       - Remove the id that getIdentity now adds from any test that compares its result with toEqual.
   data: The identity in localStorage has the same shape before and after. A stored identity whose userId or referenceId is not a string or a number, or whose username or provider is not a string, now reads as an empty object; saveAuth never writes one.
 
@@ -192,7 +192,7 @@ typed-user-override:
       }
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and an override may return any shape.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and an override may return any shape.
   data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService. An override that returns a plain object type with a tenant string field compiled before, as getUser returned any, and now fails with TS2416, so return an interface that extends IAuthUser and adds the field.
 
 typed-user-id:
@@ -209,7 +209,7 @@ typed-user-id:
       setViewer(String(identity.id));
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the user id is any.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the user id is any.
   data: The user id is a string or a number (IdType), and absent when nothing is stored. A function that takes a string needs the value converted. In a test, expect(getUser()).toEqual with a key that is not on IAuthUser fails with TS2769; use toMatchObject, or expect with unknown as the type argument.
 
 typed-list-params:
@@ -232,5 +232,34 @@ typed-list-params:
       }
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the index signature of ICustomParams is any and an interface fits it.
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the index signature of ICustomParams is any and an interface fits it.
   data: Nothing stored changes. ICustomParams has an index signature of unknown, not any, and the params of getList and getManyReference must have one, because a react-admin params type is an interface, so an override that passes it to super spreads it. getOne and getMany no longer ask for ICustomParams, so an override of them that calls super needs no change. TypeScript reports TS2345 on the call to super.
+
+codemod-safe-write:
+  symbols:
+    - '@venizia/ardor'
+  upgrade:
+    steps:
+      - 'In a CI step or a script that runs ardor codemod namespace --write on a folder that is not a git repository, such as an exported tree, add --allow-dirty. Without it the command exits 1 and writes nothing.'
+      - 'Inside a git repository nothing changes for a clean tree. A file with local changes is still refused unless you add --allow-dirty.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 writes outside a git repository without the flag.'
+  data: Nothing stored.
+
+ignis-peers:
+  symbols:
+    - '@venizia/ignis-kernel'
+    - '@venizia/ignis-connectors'
+    - '@venizia/ignis-helpers'
+    - '@venizia/ignis-boot'
+    - '@venizia/ignis-inversion'
+    - '@venizia/ignis-filter'
+  upgrade:
+    steps:
+      - 'Move @venizia/ignis-kernel and -connectors to ^0.4.8-16 or newer, @venizia/ignis-helpers and -boot to ^0.4.8-14, @venizia/ignis-inversion to ^0.4.7-5 and @venizia/ignis-filter to ^0.4.7-6, together with the four ARDOR packages at 0.4.8, in one install.'
+      - 'Keep one copy of each. An ARDOR package of 0.4.7 or older does not compile on these IGNIS versions, because they no longer export AnyType and AnyObject.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7 and the IGNIS packages to the 0.4.7 line together. ARDOR 0.4.7 imports AnyType and AnyObject, which the IGNIS 0.4.8 packages no longer export.'
+  data: Nothing stored.
