@@ -227,7 +227,7 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 
 ### `` [ArtifactScanner] <file> | class <Class> carries <n> stereotypes (<list>) - one class is one artifact ``
 
-- **Where:** `packages/boot/src/generator/scanner.ts:162` of `@venizia/ignis-boot` 0.4.8-14
+- **Where:** `boot/src/generator/scanner.ts:162` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** A class wears two stereotypes.
 - **Fix:** Keep one. A class that is both a service and a repository is two classes.
 
@@ -239,37 +239,37 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 
 ### `` Skipped <Class> in <file> | abstract` and `Skipped <Class> in <file> | not a named export ``
 
-- **Where:** `packages/boot/src/generator/scanner.ts` of `@venizia/ignis-boot` 0.4.8-14 (a warning, not an error)
+- **Where:** `boot/src/generator/scanner.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14) (a warning, not an error)
 - **Why:** The class is abstract, or it is a default export or has no `export`: the scanner leaves it out.
 - **Fix:** Make it a concrete class with a named export, or leave it out on purpose.
 
 ### `` [IgnisArtifactsPlugin] <dir> has no src directory (<path>) | Auto artifacts scan the src beside the package.json of the entry module; pass IgnisArtifactsPlugin.create({ root }), or use ArtifactGroup.application() in the application's own source ``
 
-- **Where:** `packages/boot/src/bun/plugin.ts:48` of `@venizia/ignis-boot` 0.4.8-14
+- **Where:** `boot/src/bun/plugin.ts:48` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** The scan root does not exist: there is no `src` beside the `package.json`, or `root` points at a folder that is not there.
 - **Fix:** Pass the folder: `IgnisArtifactsVitePlugin.create({ root: 'src' })`.
 
 ### `` [IgnisArtifactsPlugin] An ArtifactGroup call at <file>:<line> cannot be rewritten | <reason> - write ArtifactGroup.define({ folder: '<name>' }) or ArtifactGroup.application() with the class imported under its own name ``
 
-- **Where:** `packages/boot/src/bun/plugin.ts:94` of `@venizia/ignis-boot` 0.4.8-14
+- **Where:** `boot/src/bun/plugin.ts:94` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** The plugin could not read the call: `ArtifactGroup` is imported under another name, the argument is not an object literal, or `folder` is not a string literal.
 - **Fix:** Write the call as the message says.
 
 ### `` [IgnisArtifactsPlugin] ArtifactGroup '<folder>' resolved to no class | <file> - check the folder name and that its classes carry a stereotype decorator ``
 
-- **Where:** `packages/boot/src/bun/plugin.ts:105` of `@venizia/ignis-boot` 0.4.8-14
+- **Where:** `boot/src/bun/plugin.ts:105` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** No decorated class sits under a folder of that name in the package of the file.
 - **Fix:** Fix the folder name, or add a stereotype to the classes.
 
 ### `` [@venizia/ignis-boot/auto] The application artifacts are resolved when artifacts are registered | A function that walks configs.artifacts must pass a group through untouched (check `isArtifactGroup`) instead of reading its kinds ``
 
-- **Where:** `packages/boot/src/bun/auto-group.ts:36` of `@venizia/ignis-boot` 0.4.8-14
+- **Where:** `boot/src/bun/auto-group.ts:36` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** Code read `.services` (or another kind) off a group such as `AutoArtifacts`.
 - **Fix:** Do not read the kinds of what `artifacts()` returns; the application resolves them at start.
 
 ### `` [registerArtifacts] Two classes derive the binding key '<key>' from their class name, and the second would silently replace the first | A minified build renames classes - pin 'binding: { namespace, key }' or build with names kept (keepNames). A module evaluated twice by hot reload does the same - set 'bootChecks.allowDerivedKeyCollision' in that development setup ``
 
-- **Where:** `ArtifactBindingKeys.describeCollision`, `packages/kernel/src/base/metadata/artifact-keys.ts:45` of `@venizia/ignis-kernel` 0.4.8-14, called from `registerArtifacts()` in `abstract.ts`
+- **Where:** `ArtifactBindingKeys.describeCollision`, `kernel/src/base/metadata/artifact-keys.ts:45` in the IGNIS repository (`@venizia/ignis-kernel` 0.4.8-14), called from `registerArtifacts()` in `abstract.ts`
 - **Why:** Two classes of one name in two files.
 - **Fix:** Rename one, or pin the key: `@service({ binding: { namespace: 'services', key: 'billing' } })`.
 
