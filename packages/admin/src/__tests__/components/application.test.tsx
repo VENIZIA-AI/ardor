@@ -463,6 +463,28 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
   });
 
+  test('is emptied when another tab signs in another user', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
+    // What another tab does: it writes the keys, and this tab hears the `storage` events.
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    for (const key of ['@app/auth/token', '@app/auth/identity']) {
+      globalThis.dispatchEvent(
+        Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+      );
+    }
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
   test('stops listening when the application unmounts', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');

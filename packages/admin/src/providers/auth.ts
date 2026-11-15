@@ -310,7 +310,7 @@ export class DefaultAuthProvider<
    * Runs when a session starts or its token is replaced: after `login` saved it, after a `checkAuth`
    * confirmed it (the first one of a page that finds a stored session too), and whenever anything saves
    * a new token through `DefaultAuthService.saveAuth`, such as the refresh the network service makes on
-   * a 401. `user` is the stored identity (`userId`, `username`,
+   * a 401, and when another tab of the application signs in or switches user. `user` is the stored identity (`userId`, `username`,
    * `referenceId`, `provider`), or `{ userId, username }` when `saveSession` keeps nothing in the
    * store. A re-check of the same session does not call it again. It is awaited; a throw or a
    * rejection is logged and the caller carries on.
@@ -326,8 +326,9 @@ export class DefaultAuthProvider<
    * Runs when the session this provider announced ends, with the reason: after `logout`, after the
    * 401 branch of `checkError`, when `checkAuth` rejects (that one does not clear the store), and when
    * other code calls `cleanUp` (reason `external`, for example the network service's `onAuthFailure`).
-   * It is called once for a session, and not at all for one that was never announced. It is awaited;
-   * a throw or a rejection is logged and the caller carries on.
+   * It is called once for a session, and not at all for one that was never announced. A sign-out, or a
+   * clear of the storage, in another tab of the application ends the session here too, with the reason
+   * `external`. It is awaited; a throw or a rejection is logged and the caller carries on.
    */
   protected onSessionCleared(_opts: { reason: TSessionClearReason }): void | Promise<void> {
     return undefined;
@@ -431,8 +432,9 @@ export class DefaultAuthProvider<
 
   /**
    * Runs when the session is gone, however it ended (sign-out, a `401`, a failed refresh, other
-   * code calling `cleanUp`): removes what the user stored under the store prefix of this
-   * application (`@app/store/`, or `@app/store/<id>/` with an application `id`) in `localStorage` and `sessionStorage`, so the next user does not see it.
+   * code calling `cleanUp`, a sign-out in another tab of the application): removes what the user stored under the store prefix of this
+   * application (`@app/store/`, or `@app/store/<id>/` with an application `id`) in `localStorage` and `sessionStorage`, so the next user does not see it. In another tab that
+   * hears the session end, the data of that tab is removed too.
    * Override it to keep preferences, or put them under another prefix.
    */
   protected clearStoredData(): void {

@@ -8,8 +8,10 @@ import {
   type IdType,
   type IScopedKeys,
   LocalStorageKeys,
+  StorageAreas,
 } from '@/common';
 import { AuthTokenStore } from '@/helpers';
+import { BrowserStorage, StorageCodecs } from '@/utilities';
 import { BaseService } from './base';
 
 /**
@@ -18,6 +20,8 @@ import { BaseService } from './base';
  */
 export class DefaultAuthService extends BaseService {
   private readonly listeners = new Set<() => void>();
+  private stopExternalSync?: () => void;
+  private snapshot = '';
   /** The keys of this application's session and store: the application's `id` scopes them. */
   readonly keys: IScopedKeys;
 
@@ -29,16 +33,74 @@ export class DefaultAuthService extends BaseService {
     this.keys = LocalStorageKeys.scoped({ id: info?.id });
   }
 
-  /** `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes. */
+  /**
+   * `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes,
+   * and after a sign-in, sign-out or user switch in another tab of the browser: the first
+   * subscriber starts listening to the `storage` event for the three session keys, the last one to leave stops.
+   * A change of another tab calls the listener once and writes nothing; a service never subscribed to
+   * listens to nothing, and outside a browser nothing is listened to.
+   */
   subscribe(opts: { listener: () => void }): () => void {
     this.listeners.add(opts.listener);
+    this.startExternalSync();
 
     return () => {
       this.listeners.delete(opts.listener);
+
+      if (this.listeners.size === 0) {
+        this.stopExternalSync?.();
+      }
+    };
+  }
+
+  /** What is stored for the session now, as one text: two reads of it are equal when nothing of the session changed. */
+  private readSnapshot(): string {
+    return [this.keys.token, this.keys.identity, this.keys.permission]
+      .map((key) => {
+        return BrowserStorage.get({
+          key,
+          fallback: null,
+          storage: StorageAreas.LOCAL,
+          codec: StorageCodecs.text(),
+        });
+      })
+      .join('\u0000');
+  }
+
+  private startExternalSync(): void {
+    if (this.stopExternalSync) {
+      return;
+    }
+
+    this.snapshot = this.readSnapshot();
+
+    const stops = [this.keys.token, this.keys.identity, this.keys.permission].map((key) => {
+      return BrowserStorage.subscribe({
+        key,
+        storage: StorageAreas.LOCAL,
+        listener: ({ isExternal }) => {
+          // A write of this tab announced itself; an event it caused must not announce it again.
+          if (isExternal && this.readSnapshot() !== this.snapshot) {
+            this.notify();
+          }
+        },
+      });
+    });
+
+    this.stopExternalSync = () => {
+      for (const stop of stops) {
+        stop();
+      }
+
+      this.stopExternalSync = undefined;
     };
   }
 
   private notify(): void {
+    if (this.stopExternalSync) {
+      this.snapshot = this.readSnapshot();
+    }
+
     for (const listener of this.listeners) {
       try {
         listener();
