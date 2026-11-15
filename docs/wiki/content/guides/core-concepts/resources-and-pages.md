@@ -191,6 +191,8 @@ export const PasswordFeature: TFeature = Features.define({
 });
 ```
 
+A feature can also list `menu` entries (`{ label, to, access?, icon? }`); `useMenuEntries()` returns those the user may open, for the menu your layout renders. See [Menu entries](../../references/features#menu-entries).
+
 In `packages/admin/src/features/feature.ts`, `Features.mount()` mounts the application's own `resources` and `routes` first, then each feature's in array order. A duplicated resource name, a duplicated route path or a route whose path is `/<resource name>` throws an error. For details on feature packaging, see the [Features reference](../../references/features).
 
 ## Reaching ARDOR from a page

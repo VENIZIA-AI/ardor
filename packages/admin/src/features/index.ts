@@ -2,6 +2,7 @@
 // admin package.
 export {
   Features,
+  type IMenuEntry,
   type IRouteAccess,
   type TArdorRoute,
   type TFeature,

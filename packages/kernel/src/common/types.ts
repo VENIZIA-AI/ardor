@@ -278,7 +278,18 @@ export interface IFeatureBase {
    * @default []
    */
   configurations?: Array<TClass<unknown>>;
-  /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
+  /**
+   * The feature's own stereotyped classes, by value, in the shape of the application's
+   * `artifacts()` index. Importing the feature module imports them, so discovery binds them, and
+   * `start()` checks each was discovered.
+   * @default {}
+   */
+  artifacts?: IArtifactIndex;
+  /**
+   * The permission names the feature's pages use, in the application's vocabulary: metadata for a
+   * role editor to list. Descriptive only, it enforces nothing; `access` on a route or a menu entry
+   * is what asks `canAccess`.
+   */
   permissions?: Array<string>;
 }
 

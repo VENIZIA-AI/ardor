@@ -21,7 +21,7 @@ which re-exports this package.
 | Component | `ArdorApplication` - the `CoreAdmin` root, wired from the container; `ApplicationProviders` |
 | Features | `Features`, `TFeature`, `useFeatures` |
 | Lists | `ListFilterBuilder` |
-| Hooks | `useTranslate`, `useUntypedTranslate`, `useNotifyError`, `useRefreshToken`, `useRequestHeaderLocale`, `useFeatures`, `useDocumentTitle`, `useHtmlLang` |
+| Hooks | `useTranslate`, `useUntypedTranslate`, `useNotifyError`, `useRefreshToken`, `useRequestHeaderLocale`, `useFeatures`, `useMenuEntries`, `useDocumentTitle`, `useHtmlLang` |
 | Types | `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`, `TI18nSource` |
 
 Every export, with its signature, is in the [references](https://ardor.venizia.ai/references/).

@@ -10,6 +10,7 @@ export {
   useDocumentTitle,
   useFeatures,
   useHtmlLang,
+  useMenuEntries,
   useNotifyError,
   useRefreshToken,
   useRequestHeaderLocale,

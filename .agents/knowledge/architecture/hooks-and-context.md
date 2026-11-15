@@ -59,8 +59,9 @@ ARDOR wraps several ra-core hooks to add typing and safe fallbacks. These need r
 - `useNotifyError` - turns an `ApplicationError` into a react-admin notification, reading `error.normalized.code` as the message key and `error.normalized.args` as `messageArgs`. Needs the ra-core notification context. See [Error flow](/architecture/error-flow.md).
 - `useRefreshToken` - needs the ra-core auth provider context and a TanStack `QueryClientProvider`. See [Auth recovery](/architecture/auth-recovery.md).
 - `useRequestHeaderLocale` - needs ra-core locale state plus `DEFAULT_REST_DATA_PROVIDER` bound in the container, so it can push the current locale onto outgoing request headers. See [Header protocol](/architecture/header-protocol.md) and [Data provider pipeline](/architecture/data-provider-pipeline.md).
-- `useFeatures` - reads the features bound in the container (`CoreBindings.FEATURES`) and returns `[]` when none is bound. See [Feature modules](/architecture/feature-modules.md).
+- `useFeatures` - inside `ArdorApplication`, the features it mounts (its `features` prop, else every bound one); outside, the features bound in the container (`CoreBindings.FEATURES`), `[]` when none is bound. See [Feature modules](/architecture/feature-modules.md).
 - `useRoles` - needs only `ApplicationContext`; it reads `DEFAULT_AUTH_SERVICE` as an optional binding and returns an empty set when there is none or nobody is signed in. Roles are read at sign-in, so a token refresh keeps them.
+- `useMenuEntries` - needs ra-core's auth context and the query client of `ArdorApplication`; the `menu` entries of the mounted features that `canAccess` allows, in feature order. See [Feature modules](/architecture/feature-modules.md).
 - `useHtmlLang` - needs ra-core locale state; it writes the locale to `document.documentElement.lang` on every change. Like `useRequestHeaderLocale`, nothing in ARDOR calls it - mount it once in a component that stays mounted.
 
 Each of these hooks will throw or degrade differently if its required provider is missing, so when adding a new hook of this kind, document its tree requirements explicitly - see [Adding a hook](/process/adding-a-hook.md).

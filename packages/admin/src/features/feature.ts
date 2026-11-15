@@ -35,10 +35,22 @@ export type TArdorRoute = RouteProps & {
 /** Per locale: the messages, or a loader for them. */
 export type TFeatureMessages = Record<string, object | (() => Promise<object>)>;
 
+/** A menu link of a feature, as `useMenuEntries` lists it. ARDOR renders no menu: the shell does. */
+export interface IMenuEntry {
+  /** A translation key. */
+  label: string;
+  /** The path the entry links to. */
+  to: string;
+  /** The entry is listed only for a user whom `canAccess` allows. */
+  access?: IRouteAccess;
+  /** An icon name the shell maps to an icon; ARDOR carries it and never reads it. */
+  icon?: string;
+}
+
 /**
  * A feature package: what it registers in the container (`IFeatureBase`), plus what it mounts in the
- * admin - resources, routes and messages. `TExtension` is what a shell adds on top, such as menu
- * entries; ARDOR carries it and never reads it.
+ * admin - resources, routes, messages and menu entries. `TExtension` is what a shell adds on top;
+ * ARDOR carries it and never reads it.
  */
 export type TFeature<TExtension extends object = {}> = IFeatureBase &
   TExtension & {
@@ -46,6 +58,8 @@ export type TFeature<TExtension extends object = {}> = IFeatureBase &
     routes?: Array<TArdorRoute>;
     /** The application's own `i18nSources` override these. */
     messages?: TFeatureMessages;
+    /** The feature's menu links, in order; `useMenuEntries` lists those the user may open. */
+    menu?: Array<IMenuEntry>;
   };
 
 /**

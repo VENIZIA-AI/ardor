@@ -5,40 +5,43 @@ description: Package domain modules with configurations, resources, routes, and 
 
 # Features
 
-Features package domain configurations, react-admin resources, custom routes, and localized messages into self-contained modules mounted by `BaseArdorApplication`.
+Features package domain configurations, stereotyped classes, react-admin resources, custom routes, menu entries and localized messages into self-contained modules mounted by `BaseArdorApplication`.
 
 ```tsx
 import React from 'react';
 import {
   BaseArdorApplication,
+  BaseService,
   configuration,
   Features,
   provide,
+  service,
   type IApplicationInfo,
   type IFeatureBase,
-  type TFeature,
 } from '@venizia/ardor';
 
-export class OrderService {}
+@service()
+export class OrderService extends BaseService {
+  constructor() {
+    super({ scope: OrderService.name });
+  }
+}
 
 @configuration()
 export class OrdersConfiguration {
-  @provide({ key: 'services.orders' })
-  orderService(): OrderService {
-    return new OrderService();
+  @provide({ key: 'orders.pageSize' })
+  pageSize(): number {
+    return 25;
   }
 }
 
 const OrderList: React.FC = () => <div>Order list</div>;
 const OrderAnalyticsPage: React.FC = () => <div>Order analytics</div>;
 
-interface IShellMenuExtension {
-  menu: { label: string; path: string };
-}
-
-export const ordersFeature = Features.define<IShellMenuExtension>({
+export const ordersFeature = Features.define({
   name: 'orders',
   configurations: [OrdersConfiguration],
+  artifacts: { services: [OrderService] },
   resources: [{ name: 'orders', list: OrderList }],
   routes: [{ path: '/orders/analytics', element: <OrderAnalyticsPage /> }],
   messages: {
@@ -46,7 +49,14 @@ export const ordersFeature = Features.define<IShellMenuExtension>({
     vi: () => Promise.resolve({ orders: { title: 'Đơn hàng', analytics: 'Thống kê' } }),
   },
   permissions: ['orders.read', 'orders.export'],
-  menu: { label: 'orders.title', path: '/orders' },
+  menu: [
+    { label: 'orders.title', to: '/orders', icon: 'cart' },
+    {
+      label: 'orders.analytics',
+      to: '/orders/analytics',
+      access: { resource: 'orders', action: 'export' },
+    },
+  ],
 });
 
 export class CommerceApplication extends BaseArdorApplication {
@@ -67,12 +77,14 @@ export class CommerceApplication extends BaseArdorApplication {
 | Export | Kind | Purpose |
 | --- | --- | --- |
 | `Features` | class | Static helpers to define, read and mount features and to load their messages |
-| `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
-| `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) |
+| `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, menu, and optional shell extensions |
+| `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `artifacts`, `permissions`) |
+| `IMenuEntry` | interface | A menu link of a feature: `label`, `to`, optional `access` and `icon` |
 | `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |
 | `TArdorRoute` | type | A React Router route plus `access`, `auth` and `layout`: who may open it, and where it renders |
 | `IRouteAccess` | interface | The `resource` and `action` a route with `access` asks the permission provider |
-| `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
+| `useFeatures` | hook | The features `ArdorApplication` mounts, within React components |
+| `useMenuEntries` | hook | The menu entries of the mounted features that the user may open |
 | `CoreBindings.FEATURES` | binding key | Key `'@app/application/features'`, where `preConfigure()` binds the mounted feature array |
 
 The `Features` helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources, and `verifyMessages({ features, locales })` loads and merges the features' messages of each locale, without changing a provider's locale, and rejects on the first failure (`assertArdorApplicationBoots` uses it). `IFeatureBase` is declared in `packages/kernel/src/common/types.ts`.
@@ -83,19 +95,23 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 | --- | --- | --- | --- |
 | `name` | `string` | None (required) | Unique identifier for the feature within an application. |
 | `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes of the feature. |
+| `artifacts` | `IArtifactIndex` | `undefined` | The feature's own stereotyped classes, by value, per group (`services`, `repositories`, ...). |
 | `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the view tree. |
 | `routes` | `Array<TArdorRoute>` | `undefined` | Custom routes; each may declare `access`, `auth` and `layout`. |
 | `messages` | `TFeatureMessages` | `undefined` | Locale codes mapped to message objects or lazy loaders. |
-| `permissions` | `Array<string>` | `undefined` | Permission keys the feature checks, in the application's vocabulary. |
-| `[extension]` | `TExtension` | None | Custom shell metadata, such as menu entries, navigation paths or icons. |
+| `menu` | `Array<IMenuEntry>` | `undefined` | Menu links, in order. `useMenuEntries()` lists those the user may open. |
+| `permissions` | `Array<string>` | `undefined` | Permission names the feature's pages use. Metadata only: it enforces nothing. |
+| `[extension]` | `TExtension` | None | Custom shell metadata, such as the industries a feature serves. |
 
 - **`name`:** Used in resource ownership checks and diagnostic errors.
 - **`configurations`:** Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`.
+- **`artifacts`:** The shape of the application's `artifacts()` index. A feature package that lists its own classes carries them: importing the feature module imports their modules, so discovery binds them, and `start()` checks each was discovered.
+- **`menu`:** Each entry is `{ label, to, access?, icon? }`. `label` is a translation key; `icon` is a name your shell maps to an icon, since ARDOR renders no menu. See [Menu entries](#menu-entries).
 - **`resources`:** Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`.
 - **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. A route without `access` or `auth: { use: true }` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. See [A route that needs permission](#a-route-that-needs-permission) and [Public pages and pages outside the layout](#public-pages-and-pages-outside-the-layout).
 - **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`.
-- **`permissions`:** Preserved on the feature for consumers such as role editors; ARDOR enforces nothing with it. A route enforces a permission only through its own `access`. See [Permission](./permission).
-- **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it.
+- **`permissions`:** Descriptive metadata: the permission names the feature's pages use, for a role editor to list. ARDOR enforces nothing with it. A permission is enforced only by `access`, on a route or on a menu entry. See [Permission](./permission).
+- **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it. An extension must not declare a field ARDOR declares, such as `menu`.
 
 ## A route that needs permission
 
@@ -168,6 +184,8 @@ ARDOR enforces isolation during startup and mount:
   `[features] Two features are named '${feature.name}' | A feature name is unique within an application`
 - **Undiscovered configuration (`start`):** If a class in `configurations` was not discovered by the metadata registry, `registerFeatures()` in `packages/kernel/src/base/applications/abstract.ts` throws:
   `[features] '${feature.name}' lists ${target.name}, which was never discovered | Decorate it with @configuration() and import its module before start()`
+- **Undiscovered artifact (`start`):** If a class in `artifacts` was not discovered, `registerFeatures()` throws, naming the group:
+  `[features] 'orders' lists OrderService in artifacts.services, which was never discovered | Decorate it with its stereotype and import its module before start()`
 - **Duplicate resource name (`mount`):** If a resource name is mounted more than once, `Features.mount()` in `packages/admin/src/features/feature.ts` throws:
   `[features] Resource '${resource.name}' is mounted by both '${owner}' and '${entry.owner}' | A resource name is unique within an application`
 - **Duplicate route path (`mount`):** Two routes with one path, or a route whose path is `/<resource name>`, throw and name both owners; `orders` and `/orders` are one path:
@@ -230,33 +248,55 @@ Feature messages are merged per locale by `FeatureMessages` in `packages/admin/s
 - **Application overrides:** Application dictionaries in `i18nSources` override feature messages. See [Internationalization](./i18n).
 - **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. A loader may resolve to the messages or to an ES module whose default export is the messages, so `vi: () => import('./vi')` works and the keys are read unprefixed. For the initial locale, `ArdorApplication` displays the configured `suspense` fallback until the loader resolves. A loader that fails (or a key that two lazy bundles both define) is logged, the locale shows the fallback messages, and the next `changeLocale()` tries the loader again.
 
+## Menu entries
+
+`useMenuEntries()` returns the `menu` entries of the mounted features, in feature order, each with the name of its `feature`. An entry without `access` is always listed. An entry with `access` is listed once the `canAccess` of the [permission provider](./permission) allows it, so a menu never flashes a link the user may not open: while the check runs, or when it fails, the entry is left out. Without a permission provider, or without sign-in, every entry is listed.
+
+```tsx
+import React from 'react';
+import { useMenuEntries, useUntypedTranslate } from '@venizia/ardor';
+
+export const ShellMenu: React.FC = () => {
+  const entries = useMenuEntries();
+  const translate = useUntypedTranslate();
+
+  return (
+    <nav>
+      <ul>
+        {entries.map((entry) => (
+          <li key={`${entry.feature}:${entry.to}`}>
+            <a href={entry.to}>{translate(entry.label)}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+};
+```
+
+- **Call it inside `ArdorApplication`**, such as in the `layout` or `menu` you pass: it reads react-admin's auth provider and query cache.
+- **The answers share react-admin's cache** under `['auth', 'canAccess', { resource, action }]`, so a sign-in of another user or `useRefreshToken` renews them.
+- **Hiding a link is not protection.** Give the route the same `access`, and let the backend check every request.
+
 ## Reading features with useFeatures
 
 The `useFeatures()` hook returns the features `ArdorApplication` mounts: the `features` prop when the shell passed one, else every feature bound under `CoreBindings.FEATURES`. Outside `ArdorApplication` it reads the container, and returns an empty array when `CoreBindings.FEATURES` is not bound.
 
 ```tsx
 import React from 'react';
-import { type TFeature, useFeatures } from '@venizia/ardor';
+import { useFeatures } from '@venizia/ardor';
 
-interface IMenuExtension {
-  menu?: { label: string; path: string };
-}
-
-export const FeatureNavigationMenu: React.FC = () => {
-  const features = useFeatures<TFeature<IMenuExtension>>();
+export const RoleEditorPermissions: React.FC = () => {
+  const features = useFeatures();
 
   return (
-    <nav>
-      <ul>
-        {features.map((feature) =>
-          feature.menu ? (
-            <li key={feature.name}>
-              <a href={feature.menu.path}>{feature.menu.label}</a>
-            </li>
-          ) : null,
-        )}
-      </ul>
-    </nav>
+    <ul>
+      {features.map((feature) => (
+        <li key={feature.name}>
+          {feature.name}: {(feature.permissions ?? []).join(', ')}
+        </li>
+      ))}
+    </ul>
   );
 };
 ```

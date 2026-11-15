@@ -339,8 +339,8 @@ export abstract class AbstractArdorApplication extends Container {
 
   /**
    * Binds the features after the stereotypes, so `bindingList()` and `bindContext()` still override
-   * what a feature provides. A name is unique, and every configuration a feature lists must have
-   * been discovered: one that was not means the feature's bindings were silently never made.
+   * what a feature provides. A name is unique, and every configuration and artifact a feature lists
+   * must have been discovered: one that was not means its binding was silently never made.
    */
   private registerFeatures(opts: { features: Array<IFeatureBase> }): void {
     const { features } = opts;
@@ -361,6 +361,22 @@ export abstract class AbstractArdorApplication extends Container {
           throw getError({
             message: `[features] '${feature.name}' lists ${target.name}, which was never discovered | Decorate it with @configuration() and import its module before start()`,
           });
+        }
+      }
+
+      for (const group of ArtifactIndexKinds) {
+        for (const [position, target] of (feature.artifacts?.[group] ?? []).entries()) {
+          if (typeof target !== 'function') {
+            throw getError({
+              message: `[features] '${feature.name}' lists an entry in artifacts.${group} that is not a class (position ${position}) | Usually an import cycle: the feature module must not be imported by the classes it lists`,
+            });
+          }
+
+          if (!discovered.has(target)) {
+            throw getError({
+              message: `[features] '${feature.name}' lists ${target.name} in artifacts.${group}, which was never discovered | Decorate it with its stereotype and import its module before start()`,
+            });
+          }
         }
       }
     }

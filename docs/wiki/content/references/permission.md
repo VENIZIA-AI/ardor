@@ -179,6 +179,10 @@ export class PermissionConfiguration {
 
 react-admin asks `canAccess` for its own resource pages, and for a custom route only when the route declares `access`. A route without `access` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. The feature route [above](#a-role-table-with-rolepermissionprovider) asks for `audit` and `list` before it renders; see [A route that needs permission](./features#a-route-that-needs-permission).
 
+A feature's `menu` entries take the same `access`: `useMenuEntries()` lists an entry only once `canAccess` allows it. See [Menu entries](./features#menu-entries).
+
+`IFeatureBase.permissions` enforces nothing. It is descriptive metadata: the permission names a feature's pages use, for a role editor to list. Only `access` on a route or a menu entry asks `canAccess`.
+
 ra-core's `useCanAccess` queries the auth provider with `queryKey: ['auth', 'canAccess', { ...restParams, recordId: record?.id, resource }]`.
 
 When switching tenant, account, or workspace, call `invalidateQueries({ queryKey: ['auth'] })` to clear cached authorization results:

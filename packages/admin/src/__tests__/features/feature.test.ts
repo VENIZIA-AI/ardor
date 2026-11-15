@@ -11,22 +11,22 @@ import { Container } from '@venizia/ignis-inversion';
 
 const List = () => null;
 
-// What a shell adds on top: a project's menu entries, typed through the extension parameter.
-interface IMenuExtension {
-  menu: Array<{ id: string; label: string }>;
+// What a shell adds on top: the industries a feature serves, typed through the extension parameter.
+interface IIndustryExtension {
+  industries: Array<string>;
 }
 
-const inventory = Features.define<IMenuExtension>({
+const inventory = Features.define<IIndustryExtension>({
   name: 'inventory',
   resources: [{ name: 'stocks', list: List }],
   routes: [{ path: '/stock-report', element: null }],
-  menu: [{ id: 'stocks', label: 'inventory.menu.stocks' }],
+  industries: ['retail'],
 });
 
-const commerce = Features.define<IMenuExtension>({
+const commerce = Features.define<IIndustryExtension>({
   name: 'commerce',
   resources: [{ name: 'orders', list: List }],
-  menu: [{ id: 'orders', label: 'commerce.menu.orders' }],
+  industries: ['retail', 'food'],
 });
 
 const containerWith = (opts: { features?: Array<TFeature> }) => {
@@ -174,11 +174,11 @@ describe('useFeatures', () => {
         children,
       );
 
-    const { result } = renderHook(() => useFeatures<TFeature<IMenuExtension>>(), { wrapper });
+    const { result } = renderHook(() => useFeatures<TFeature<IIndustryExtension>>(), { wrapper });
 
-    expect(result.current.flatMap((feature) => feature.menu.map((entry) => entry.id))).toEqual([
-      'stocks',
-      'orders',
+    expect(result.current.map((feature) => feature.industries)).toEqual([
+      ['retail'],
+      ['retail', 'food'],
     ]);
   });
 });

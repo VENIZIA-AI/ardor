@@ -28,6 +28,8 @@ Hooks (`src/hooks/index.ts`):
 - `useUntypedTranslate` - ra-core's `useTranslate` with a `string` key, for keys that exist only at run time; `useTranslate` is that function with the narrower key type (`TUseTranslateFn`).
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
+- `useMenuEntries` - the `menu` entries of the mounted features that `canAccess` allows (all without a `canAccess`; none with `access` while a check is pending), as `TFeatureMenuEntry`. In `Ardor`. See [feature modules](/architecture/feature-modules.md).
+- `AccessDeniedPage` - the default `accessDenied` page of `ArdorApplication`, at `/access-denied`.
 - `useFeatures` - the features `ArdorApplication` mounts (its `features` prop, else every bound one), through an internal context holding a container that binds only `CoreBindings.FEATURES`; outside the shell, the features bound in the container, `[]` when none is bound. See [feature modules](/architecture/feature-modules.md).
 - `useRoles` - the signed-in user's roles as a `ReadonlySet<string>`, from the `DefaultAuthService` bound under `DEFAULT_AUTH_SERVICE` (optional; empty when none is bound). It follows `subscribe`, so it re-renders on a session change in this tab or another, and keeps one set while the roles are equal.
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
