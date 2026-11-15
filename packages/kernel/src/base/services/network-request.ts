@@ -771,10 +771,10 @@ export class DefaultNetworkRequestService extends BaseService {
         throw this.sessionChangedError();
       }
 
-      if (isRefreshed) {
-        // The shared refresh is never aborted for one request; only this request's retry is.
-        signal?.throwIfAborted();
+      // The shared refresh is never aborted for one request: this request stops when it returns.
+      signal?.throwIfAborted();
 
+      if (isRefreshed) {
         const authHeader = this.getRequestAuthorizationHeader();
         const retryHeaders = NetworkHeaders.merge({
           sources: [

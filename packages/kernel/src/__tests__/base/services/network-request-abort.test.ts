@@ -27,6 +27,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl = '';
   let refreshDelay = 0;
+  let refreshStatus = 200;
   const requested: Array<{ pathname: string; authorization: string | null }> = [];
 
   beforeAll(() => {
@@ -45,6 +46,10 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
         if (url.pathname === REFRESH_PATH) {
           await Bun.sleep(refreshDelay);
+
+          if (refreshStatus !== 200) {
+            return Response.json({ error: 'refused' }, { status: refreshStatus });
+          }
 
           return Response.json({ token: { value: 'fresh', type: 'Bearer' } });
         }
@@ -70,6 +75,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
   beforeEach(() => {
     requested.length = 0;
     refreshDelay = 0;
+    refreshStatus = 200;
     Object.defineProperty(globalThis, 'localStorage', {
       value: new FakeStorage(),
       configurable: true,
@@ -199,6 +205,24 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
   test('a timeout that is off takes no milliseconds', () => {
     expect(() => createService({ timeout: { use: false } })).not.toThrow();
+  });
+
+  test('aborting a call while a refresh that then fails is in flight rejects with the abort, not the 401', async () => {
+    refreshDelay = 120;
+    refreshStatus = 500;
+    const controller = new AbortController();
+
+    const aborted = RejectionHelper.rejectionOf({
+      task: get({ service: createService(), path: 'guarded', signal: controller.signal }),
+    });
+
+    await Bun.sleep(40);
+    controller.abort();
+
+    const error = await aborted;
+
+    expect(nameOf(error)).toBe('AbortError');
+    expect(codeOf(error)).toBeUndefined();
   });
 
   test('aborting a call whose 401 started the refresh leaves the refresh running and the other caller unaffected', async () => {
