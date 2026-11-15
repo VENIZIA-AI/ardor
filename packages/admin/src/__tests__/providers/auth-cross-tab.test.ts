@@ -47,8 +47,8 @@ const buildProvider = (opts: { service: DefaultAuthService }): RecordingAuthProv
 const SESSION_KEYS = ['@app/auth/token', '@app/auth/identity', '@app/auth/permission'];
 
 describe('DefaultAuthProvider and the session of another tab', () => {
-  let service = new DefaultAuthService();
-  let provider = buildProvider({ service });
+  let service: DefaultAuthService;
+  let provider: ReturnType<typeof buildProvider>;
 
   const otherTabSignsIn = (opts: { userId: number; token: string }) => {
     new DefaultAuthService().saveAuth({
