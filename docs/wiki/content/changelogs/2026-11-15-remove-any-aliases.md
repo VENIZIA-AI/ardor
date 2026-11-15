@@ -81,12 +81,18 @@ migration:
     symbols: [DefaultRestDataProvider.getList, DefaultRestDataProvider.getManyReference, ICustomParams]
     upgrade:
       before: |-
-        override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
-          return super.getList(opts);
+        override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+          resource: string;
+          params: GetListParams & QueryFunctionContext;
+        }) {
+          return super.getList<RecordType>(opts);
         }
       after: |-
-        override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
-          return super.getList({ resource: opts.resource, params: { ...opts.params } });
+        override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+          resource: string;
+          params: GetListParams & QueryFunctionContext;
+        }) {
+          return super.getList<RecordType>({ resource: opts.resource, params: { ...opts.params } });
         }
     downgrade:
       steps:
@@ -264,12 +270,17 @@ In a test, `expect(getUser()).toEqual({ userId: 3, tenant: 'acme' })` fails with
 +await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
 ```
 
-**6. Spread react-admin's params when an override of `getList` or `getManyReference` calls `super`.** The params type is an interface and `ICustomParams` has an index signature; TypeScript reports TS2345. An override of `getOne` or `getMany` needs no change.
+**6. Spread react-admin's params when an override of `getList` or `getManyReference` calls `super`.** The params type is an interface and `ICustomParams` has an index signature; TypeScript reports TS2345. An override of `getOne` or `getMany` needs no change. `getManyReference` takes the same change as `getList`.
 
 ```diff
- override async getList(opts: { resource: string; params: GetListParams & QueryFunctionContext }) {
--  return super.getList(opts);
-+  return super.getList({ resource: opts.resource, params: { ...opts.params } });
+ import type { GetListParams, QueryFunctionContext, RaRecord } from 'ra-core';
+
+ override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+   resource: string;
+   params: GetListParams & QueryFunctionContext;
+ }) {
+-  return super.getList<RecordType>(opts);
++  return super.getList<RecordType>({ resource: opts.resource, params: { ...opts.params } });
  }
 ```
 
