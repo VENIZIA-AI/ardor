@@ -199,7 +199,7 @@ describe('useRequestHeaderLocale', () => {
     expect(harness.setHeadersMock).toHaveBeenLastCalledWith({ headers: { 'x-locale': 'vi' } });
   });
 
-  test('keeps one data provider across renders, so a locale change does not re-resolve it', () => {
+  test('sets the locale header once, however many times the component renders', () => {
     const harness = createTestHarness({});
 
     const { rerender } = renderHook(

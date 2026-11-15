@@ -12,7 +12,7 @@ import {
 /** By class: the return type is inferred from the target. */
 export interface IUseArtifactByTarget<TInstance> extends IUseInjectableByTarget<TInstance> {}
 
-/** By key: the type comes from `IUseInjectableKeyTypes` when the key is listed there, else from the caller. */
+/** By key: `useProvider` takes the type from `IUseInjectableKeyTypes` when the key is listed there; the other hooks take it from the caller. */
 export interface IUseArtifactByKey<
   TKey extends TUseInjectableKeys = TUseInjectableKeys,
 > extends IUseInjectableByKey<TKey> {}
