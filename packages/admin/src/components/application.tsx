@@ -53,17 +53,21 @@ const Wrapper: React.FC<{
 /**
  * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
  * checks, with `auth: { use: true }` in a sign-in check: a custom route has neither in react-admin.
+ * Each page has its own `Suspense`, so a lazy page leaves the layout mounted while it loads.
  */
-const renderRoute = (opts: { route: TArdorRoute }) => {
+const renderRoute = (opts: { route: TArdorRoute; suspense: React.ReactNode }) => {
   const { access, auth, layout: _layout, ...routeProps } = opts.route;
+  const { Component, element, ...rest } = routeProps;
   const key = routeProps.id ?? routeProps.path;
+  const page = (
+    <React.Suspense fallback={opts.suspense}>
+      {element ?? (Component ? <Component /> : <Outlet />)}
+    </React.Suspense>
+  );
 
   if (!access && auth?.use !== true) {
-    return <Route key={key} {...routeProps} />;
+    return <Route key={key} {...rest} element={page} />;
   }
-
-  const { Component, element, ...rest } = routeProps;
-  const page = element ?? (Component ? <Component /> : <Outlet />);
 
   return (
     <Route
@@ -253,7 +257,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
           {mounted.routes
             .filter((route) => route.layout?.use !== false)
             .map((route) => {
-              return renderRoute({ route });
+              return renderRoute({ route, suspense });
             })}
         </CustomRoutes>
 
@@ -263,7 +267,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
             {mounted.routes
               .filter((route) => route.layout?.use === false)
               .map((route) => {
-                return renderRoute({ route });
+                return renderRoute({ route, suspense });
               })}
           </CustomRoutes>
         ) : null}

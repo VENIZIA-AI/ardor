@@ -267,7 +267,7 @@ export class ShopApplication extends BaseArdorApplication {
 |---|---|---|---|
 | `container` | `Container` | Yes | The started IoC container instance (`BaseArdorApplication`). |
 | `reduxStore` | `Store` | No | The Redux store the shell serves. |
-| `suspense` | `ReactNode` | Yes | Fallback element displayed while suspense resolves and while feature translation messages load. |
+| `suspense` | `ReactNode` | Yes | Fallback while feature messages load, and inside the layout while a lazy route page loads. |
 | `logger` | `ILogger` | No | The logger `useApplicationLogger()` returns. |
 | `resources` | `Array<ResourceProps>` | No | Resource definitions registered before feature resources. |
 | `routes` | `Array<TArdorRoute>` | No | Custom routes, mounted before feature routes; each may declare `access`, `auth` and `layout`. |
@@ -289,7 +289,7 @@ When rendered, `ArdorApplication` executes the following sequence:
    - `CoreBindings.DEFAULT_I18N_PROVIDER`: Required. Resolves the `I18nProvider` implementation. See [i18n](./i18n).
 2. **Mounts Resources and Routes**: Reads features from `CoreBindings.FEATURES` via `Features.read({ container })`, or takes the `features` prop instead, and mounts the application's own `resources` and `routes`, followed by each feature's resources and routes in order via `Features.mount({ features, resources, routes })`. A duplicate resource name, a duplicate route path, a route whose path is `/<resource name>` and a route with neither `id` nor `path` throw. See [Mount order and conflict checks](./features#mount-order-and-conflict-checks).
 3. **Verifies Translation Readiness**: Calls `useFeatureMessagesReady`. If any mounted feature supplies lazy translation loaders for the active locale, `changeLocale()` is triggered, and `suspense` is rendered until messages are loaded.
-4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`, only when passed), and `React.Suspense` (`suspense`).
+4. **Assembles Component Context**: Wraps the tree in `ApplicationContext.Provider` (`{ container, logger }`), `ReduxProvider` (`reduxStore`, only when passed), and `React.Suspense` (`suspense`). Each route page also has its own `React.Suspense` with the same fallback, so a `React.lazy` page shows `suspense` inside the layout and the layout stays mounted while it loads.
 5. **Renders CoreAdmin**: Forwards providers and props to `CoreAdmin`, mounting each resource under `<Resource />`, routes under `<CustomRoutes>`, and routes with `layout: { use: false }` under a second `<CustomRoutes noLayout>`. See [Public pages and pages outside the layout](./features#public-pages-and-pages-outside-the-layout).
 
 ```tsx

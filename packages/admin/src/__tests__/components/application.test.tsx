@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
@@ -875,6 +876,34 @@ describe('ArdorApplication route toggles', () => {
     const result = await screen.findByText('Status');
     expect(result).toBeDefined();
     expect(checkAuth).toHaveBeenCalledTimes(0);
+  });
+
+  test('a lazy page shows the fallback inside the layout, and the layout stays mounted', async () => {
+    let resolvePage: (value: { default: React.ComponentType }) => void = () => undefined;
+    const LazyPage = React.lazy(
+      () =>
+        new Promise<{ default: React.ComponentType }>((resolve) => {
+          resolvePage = resolve;
+        }),
+    );
+
+    renderAt({
+      path: '/lazy',
+      container: createToggleContainer({ checkAuth: () => Promise.resolve() }),
+      routes: [{ path: '/lazy', element: <LazyPage /> }],
+    });
+
+    const fallback = await screen.findByText('loading');
+    expect(fallback).toBeDefined();
+    expect(screen.getByText('the layout')).toBeDefined();
+
+    await act(async () => {
+      resolvePage({ default: () => <Page text="Lazy page" /> });
+    });
+
+    const result = await screen.findByText('Lazy page');
+    expect(result).toBeDefined();
+    expect(screen.getByText('the layout')).toBeDefined();
   });
 
   test('throws when a route of the application has the path of a feature route', () => {

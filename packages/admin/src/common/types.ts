@@ -178,7 +178,7 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   logger?: ILogger;
   /** The store the Redux provider of the shell serves. Absent, the shell mounts no Redux provider. */
   reduxStore?: Store;
-  /** Rendered as the `Suspense` fallback and while feature messages for the locale load. */
+  /** Rendered while feature messages for the locale load, and inside the layout while a lazy route page loads. */
   suspense: ReactNode;
 
   /** The application's own resources; each feature's are mounted after them. */
