@@ -18,12 +18,12 @@ tags: [process, docs, wiki]
    in subfolders), `references/` (one page per API area - application, providers, binding keys,
    hooks, network, types), `extensions/` (one flat page per optional add-on such as the
    socket client), `best-practices/` (architectural conventions), `changelogs/` (what changed for
-   users of the published packages, never internal work - indexed by `atlas` as their own `changelog` corpus). A new dated changelog
-   page is searchable at once, but the atlas release table behind `changes` only lists it once
-   regenerated - `scripts/release/release.ts` does that after the next release chain. The changelog index
-   (`/changelogs/`, a filterable list with an RSS feed at `/changelog.xml`) is built from the entries by the
-   shared theme, so a new entry needs no table row and no sidebar link; the template to copy is
-   [Writing a changelog entry](/process/writing-a-changelog-entry.md).
+   users of the published packages, never internal work - indexed by `atlas` as their own `changelog` corpus). A change a user sees is
+   an item in the `changelogs/<X.Y.Z>/log.md` of the version in progress; it is searchable at once, but the atlas
+   release table behind `changes` only lists it once regenerated - `scripts/release/release.ts` does that after the
+   next release chain. The changelog index (`/changelogs/`, a filterable list with an RSS feed at
+   `/changelog.xml`) is built from the version folders by the shared theme, so a new item needs no table row and
+   no sidebar link; the shape is in [Writing a changelog entry](/process/writing-a-changelog-entry.md).
 3. To add a new doc page: create the `.md` file under the right `content/` subdirectory, then add
    it to the VitePress sidebar config at `docs/wiki/site/.vitepress/config.mts` - a page that
    exists but isn't in the sidebar config is unreachable from site navigation. This is enforced,

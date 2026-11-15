@@ -112,6 +112,11 @@ frontmatter:
   entry counts as newer than every release, and a `release: '<npm name>@<version>'` line places it
   by hand.
 
+From 0.4.5 on the changelog is one folder per version (`changelogs/<X.Y.Z>/`). `search` and `get` cite an item as
+`changelog:<version>#<item-id>` with its migration block, and `changes` lists the items of a version window with their
+block; a dated file that a folder covers is left out of a window that holds the folder's items, and kept in one that
+does not.
+
 ## When an answer is stale
 
 - **The tags move.** The release table is built when the server starts, so a tag pushed or fetched

@@ -261,8 +261,9 @@ Before trusting a release chain, measure the downstream consumer - a project tha
 
 ## Changelog entry for a user-visible release
 
-A release that changes what a user of the published packages sees or can use needs a changelog entry
-describing what changed and what to do about it, before or alongside the version bump commit. This is what
+A release that changes what a user of the published packages sees or can use needs an item in the
+`changelogs/<X.Y.Z>/log.md` of its version describing what changed and what to do about it, before or alongside
+the version bump commit. This is what
 lets a later `tsc` error in the consumer be traced back to an intended change instead of a regression. A
 release of internal work only (release tooling, CI, refactors, tests) has no entry: see
 [Writing a changelog entry](/process/writing-a-changelog-entry.md) for what counts. See

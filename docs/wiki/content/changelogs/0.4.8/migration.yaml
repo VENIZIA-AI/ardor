@@ -1,0 +1,265 @@
+remove-use-sizer:
+  symbols: [useSizer, IUseSizerOptions, IUseSizerReturn, Ardor.useSizer]
+  upgrade:
+    before: |-
+      const { width, height } = useSizer({ containerId: 'chart' });
+    after: |-
+      const ref = React.useRef<HTMLDivElement>(null);
+      const { width, height } = useElementSize({ ref, box: 'border-box', round: true });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7 or earlier, where useSizer exists.
+      - Give the element back its id and call useSizer({ containerId }) in place of useElementSize.
+  data: Nothing stored changes.
+
+rename-use-injectable-container:
+  symbols: [useInjectableContainer, Ardor.useInjectableContainer]
+  upgrade:
+    before: |-
+      const container = useInjectableContainer();
+    after: |-
+      const container = useApplicationContainer();
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier and rename useApplicationContainer back to useInjectableContainer.
+  data: Nothing stored changes. A test that matches the old error text must match `[useApplicationContainer] Failed to determine the application container!`.
+
+remove-send-response:
+  symbols: [ISendResponse]
+  upgrade:
+    before: |-
+      import type { ISendResponse } from '@venizia/ardor';
+      const reply: ISendResponse<Product[]> = await dataProvider.send({ resource, params });
+    after: |-
+      import type { INetworkResponse } from '@venizia/ardor';
+      const reply: INetworkResponse<Product[]> = await dataProvider.send({ resource, params });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier and rename INetworkResponse back to ISendResponse where you changed it (INetworkResponse also exists in 0.4.7, so leaving it is safe).
+  codemod: namespace
+
+remove-list-filter-offset:
+  symbols: [IListFilter.offset]
+  upgrade:
+    before: |-
+      const filter: IListFilter = { where: {}, offset: 20 };
+    after: |-
+      const filter: IListFilter = { where: {}, skip: 20 };
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier; skip stays valid there, so leaving skip is safe.
+  data: Nothing stored changes. `ardor codemod namespace --check` lists each `.offset` in a file that imports IListFilter or ListFilterBuilder, but does not rewrite it.
+
+remove-http-repository-update-all-delete-all:
+  symbols: [HttpRepository.updateAll, HttpRepository.deleteAll, HttpRepository.deleteBy]
+  upgrade:
+    before: |-
+      await repository.updateAll({ where, data });
+      await repository.deleteAll({ where });
+    after: |-
+      await repository.updateBy({ where, data });
+      await repository.deleteBy({ where });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages and the IGNIS packages to the 0.4.7 line, where updateAll and deleteAll exist. updateBy and deleteBy also exist there, so leaving them is safe.
+  data: 'The requests are unchanged on the wire (PATCH or DELETE with where in the body). deleteBy now requires where. A call that left it out failed at run time before and no longer compiles.'
+
+drop-lodash:
+  symbols:
+    [
+      '@venizia/ardor-react',
+      '@venizia/ardor-admin',
+      SelectorHooks.create,
+      DefaultI18nProvider.composeMessages,
+    ]
+  upgrade:
+    steps:
+      - If your code imports lodash, add lodash (and @types/lodash) to your own package.json, because ARDOR no longer installs it.
+      - If a useDeepEqualSelector selector returns a Map, a Set or a class instance, return plain data or compare inside the selector.
+      - 'If two message sources hold the same array, the later source now replaces the earlier one instead of merging them. Put the whole array in the later source.'
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier, which depend on lodash again. Nothing else changes.
+  data: Nothing stored changes.
+
+default-token-refresh:
+  symbols:
+    [
+      IAuthRecoveryOptions.refreshTokenPath,
+      DefaultNetworkRequestService.refreshToken,
+      DefaultRestDataProvider.createNetworkService,
+    ]
+  upgrade:
+    before: |-
+      // authRecovery.refreshTokenPath only stopped the refresh endpoint from starting a refresh;
+      // a subclass overrode refreshToken to post to it and save the token.
+      class AppNetworkRequestService extends DefaultNetworkRequestService {
+        protected override async refreshToken(): Promise<boolean> { /* post and save */ return true; }
+      }
+    after: |-
+      const restDataProviderOptions: IRestDataProviderOptions = {
+        url: 'https://api.example.com',
+        authRecovery: { refreshTokenPath: '/auth/refresh' },
+        noAuthPaths: ['/auth/sign-in'],
+      };
+      // refreshToken() posts to the path itself; delete the subclass. A DefaultRestDataProvider subclass that overrides createNetworkService passes authService on.
+      // Override readRefreshedToken({ data }) for another answer shape.
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier and restore your refreshToken override, since the default refresh does not exist there. Remove the authService you pass in a createNetworkService override, because 0.4.7 has no such option.
+  data: The refresh keeps the stored user id, username, referenceId and provider and never passes roles. Nothing stored changes shape.
+
+sign-out-clears-store:
+  symbols:
+    [
+      DefaultAuthProvider.clearStoredData,
+      LocalStorageKeys.PREFIX_STORE,
+      DefaultAuthService.cleanUp,
+      ArdorApplication,
+    ]
+  upgrade:
+    before: |-
+      BrowserStorage.set({ key: '@app/store/sidebar', value: 'open' });
+    after: |-
+      BrowserStorage.set({ key: '@app/prefs/sidebar', value: 'open' });
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier, where sign-out removes only keys under @app/auth/ and empties the query cache only on react-admin's own logout. Keys you moved to @app/prefs/ stay valid there.
+  data: Keys under @app/store/ (or @app/store/<id>/ when the application has an id), in localStorage and sessionStorage, are removed at the end of every session, and the old key of a moved preference is not migrated. Another open tab clears when it next ends its own session. Override clearStoredData to keep some keys.
+
+remove-any-aliases:
+  symbols: [AnyType, AnyObject]
+  upgrade:
+    before: |-
+      import type { AnyObject, AnyType } from '@venizia/ardor';
+      const read = (value: AnyType) => value.name.toUpperCase();
+      const bag: AnyObject = { page: 1 };
+      const repository: HttpRepository<IProduct, AnyType> = products;
+      const slot: TClass<HttpRepository<TNamedEntity, AnyType>> = OrganizerRepository;
+    after: |-
+      const read = (value: { name: string }) => value.name.toUpperCase();
+      const bag: Record<string, unknown> = { page: 1 };
+      const repository: HttpRepository<IProduct> = products;
+      const slot: TClass<Pick<HttpRepository<TNamedEntity>, 'find' | 'count'>> = OrganizerRepository;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where AnyType and AnyObject exist, and undo the replacements.
+      - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
+  data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun x devz codemod any-aliases --all` is a dry run that only reports, and `bun x devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity. An interface value does not fit Record<string, unknown>; spread it, type it as object, or declare it as a type alias.
+
+typed-do-request-query:
+  symbols: [DefaultNetworkRequestService.doRequest]
+  upgrade:
+    before: |-
+      await networkService.doRequest({ type, method, paths, query: listOptions });
+    after: |-
+      await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the query of doRequest is any.
+  data: Nothing stored changes. The query is sent as it was.
+
+typed-stored-user:
+  symbols:
+    [
+      DefaultAuthService.getUser,
+      DefaultAuthProvider.onSessionStarted,
+      DefaultAuthProvider.getIdentity,
+      IAuthUser,
+    ]
+  upgrade:
+    before: |-
+      const tenant = authService.getUser().tenant.toUpperCase();
+    after: |-
+      const user = authService.getUser();
+      const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and onSessionStarted takes user as any.
+      - Remove the id that getIdentity now adds from any test that compares its result with toEqual.
+  data: The identity in localStorage has the same shape before and after. A stored identity whose userId or referenceId is not a string or a number, or whose username or provider is not a string, now reads as an empty object; saveAuth never writes one.
+
+typed-user-override:
+  symbols: [DefaultAuthService.getUser]
+  upgrade:
+    before: |-
+      override getUser(): { userId: string | null; role: string } {
+        return { userId: null, role: 'admin' };
+      }
+    after: |-
+      override getUser(): { userId: string; role: string } {
+        return { userId: 'u-1', role: 'admin' };
+      }
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and an override may return any shape.
+  data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService. An override that returns a plain object type with a tenant string field compiled before, as getUser returned any, and now fails with TS2416, so return an interface that extends IAuthUser and adds the field.
+
+typed-user-id:
+  symbols: [DefaultAuthService.getUser, DefaultAuthProvider.getIdentity, IAuthUser]
+  upgrade:
+    before: |-
+      setViewer(authService.getUser().userId);
+      setViewer(identity.id);
+    after: |-
+      const { userId } = authService.getUser();
+      if (userId !== undefined) {
+        setViewer(String(userId));
+      }
+      setViewer(String(identity.id));
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the user id is any.
+  data: The user id is a string or a number (IdType), and absent when nothing is stored. A function that takes a string needs the value converted. In a test, expect(getUser()).toEqual with a key that is not on IAuthUser fails with TS2769; use toMatchObject, or expect with unknown as the type argument.
+
+typed-list-params:
+  symbols:
+    [DefaultRestDataProvider.getList, DefaultRestDataProvider.getManyReference, ICustomParams]
+  upgrade:
+    before: |-
+      override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+        resource: string;
+        params: GetListParams & QueryFunctionContext;
+      }) {
+        return super.getList<RecordType>(opts);
+      }
+    after: |-
+      override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+        resource: string;
+        params: GetListParams & QueryFunctionContext;
+      }) {
+        return super.getList<RecordType>({ resource: opts.resource, params: { ...opts.params } });
+      }
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the index signature of ICustomParams is any and an interface fits it.
+  data: Nothing stored changes. ICustomParams has an index signature of unknown, not any, and the params of getList and getManyReference must have one, because a react-admin params type is an interface, so an override that passes it to super spreads it. getOne and getMany no longer ask for ICustomParams, so an override of them that calls super needs no change. TypeScript reports TS2345 on the call to super.
+
+codemod-safe-write:
+  symbols:
+    - '@venizia/ardor'
+  upgrade:
+    steps:
+      - 'In a CI step or a script that runs ardor codemod namespace --write on a folder that is not a git repository, such as an exported tree, add --allow-dirty. Without it the command exits 1 and writes nothing.'
+      - 'Inside a git repository nothing changes for a clean tree. A file with local changes is still refused unless you add --allow-dirty.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 writes outside a git repository without the flag.'
+  data: Nothing stored.
+
+ignis-peers:
+  symbols:
+    - '@venizia/ignis-kernel'
+    - '@venizia/ignis-connectors'
+    - '@venizia/ignis-helpers'
+    - '@venizia/ignis-boot'
+    - '@venizia/ignis-inversion'
+    - '@venizia/ignis-filter'
+  upgrade:
+    steps:
+      - 'Move @venizia/ignis-kernel and -connectors to ^0.4.8-16 or newer, @venizia/ignis-helpers and -boot to ^0.4.8-14, @venizia/ignis-inversion to ^0.4.7-5 and @venizia/ignis-filter to ^0.4.7-6, together with the four ARDOR packages at 0.4.8, in one install.'
+      - 'Keep one copy of each. An ARDOR package of 0.4.7 or older does not compile on these IGNIS versions, because they no longer export AnyType and AnyObject.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7 and the IGNIS packages to the 0.4.7 line together. ARDOR 0.4.7 imports AnyType and AnyObject, which the IGNIS 0.4.8 packages no longer export.'
+  data: Nothing stored.

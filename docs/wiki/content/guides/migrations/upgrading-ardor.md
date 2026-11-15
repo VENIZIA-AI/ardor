@@ -18,7 +18,7 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 | 0.4.4 | 0.4.5 | [Everything since 0.4.4](../../changelogs/2026-10-28-batch-overview) |
 | 0.4.5 | 0.4.6 | No changelog entry: no change to the code of the packages (release tooling, devDependencies and the lib preset only) |
 | 0.4.6 | 0.4.7 | [Everything since 0.4.6](../../changelogs/2026-11-02-batch-overview); run the codemod below |
-| 0.4.7 | 0.4.8 | [Everything since 0.4.7](../../changelogs/2026-11-05-batch-overview) |
+| 0.4.7 | 0.4.8 | [Everything since 0.4.7](../../changelogs/0.4.8) (in progress until 0.4.8 is released) |
 
 ## The codemod
 

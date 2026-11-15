@@ -23,7 +23,7 @@ generated:
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted, and no other @venizia/* dep is a range. |
-| `make changelog-check` | - | Gate: every Breaking Change entry from knowledge.migrationFrom on carries a valid migration block. |
+| `make changelog-check` | - | Gate: the version folders from knowledge.migrationFrom on are valid and every Breaking item carries a migration block. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |

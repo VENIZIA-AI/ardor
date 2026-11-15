@@ -1,0 +1,167 @@
+class-namespace-functions:
+  symbols:
+    - isDefined
+    - isString
+    - isNumber
+    - isObject
+    - isValidDate
+    - isBrowser
+    - toDataUrl
+    - getRuntimeConfig
+    - createAppDispatch
+    - createAppSelectors
+    - resolveApplicationProviders
+    - hasPendingFeatureMessages
+    - loadFeatureMessages
+    - ValueUtility
+    - BrowserUtility
+    - FileUtility
+    - RuntimeConfig.get
+    - DispatchHooks.create
+    - SelectorHooks.create
+    - ApplicationProviders.resolve
+    - Features.hasPendingMessages
+    - Features.loadMessages
+  upgrade:
+    before: |
+      import { getRuntimeConfig, isDefined } from '@venizia/ardor';
+
+      const url = getRuntimeConfig({ key: 'VITE_API_URL', defaultValue: '/api' });
+      const present = items.filter(isDefined);
+    after: |
+      import { RuntimeConfig, ValueUtility } from '@venizia/ardor';
+
+      const url = RuntimeConfig.get({ key: 'VITE_API_URL', defaultValue: '/api' });
+      const present = items.filter(ValueUtility.isDefined);
+  downgrade:
+    steps:
+      - 'Move all four ARDOR packages back to 0.4.6.'
+      - 'Change each class member back to the bare function: ValueUtility.isDefined, .isString, .isNumber, .isObject and .isValidDate to isDefined, isString, isNumber, isObject and isValidDate; BrowserUtility.isBrowser to isBrowser; FileUtility.toDataUrl to toDataUrl; RuntimeConfig.get to getRuntimeConfig; DispatchHooks.create to createAppDispatch; SelectorHooks.create to createAppSelectors; ApplicationProviders.resolve to resolveApplicationProviders; Features.hasPendingMessages to hasPendingFeatureMessages; Features.loadMessages to loadFeatureMessages.'
+      - 'The codemod has no reverse mode, so this step is by hand. The 0.4.6 names do not look at lazy i18nSources, so drop lazy sources first.'
+  codemod: namespace
+plain-id-types:
+  symbols:
+    - NumberIdType
+    - StringIdType
+    - NullableType
+  upgrade:
+    before: |
+      import type { NullableType } from '@venizia/ardor';
+
+      export type Maybe = string | NullableType;
+    after: |
+      export type Maybe = string | undefined | null | void;
+  downgrade:
+    steps:
+      - 'Move all four ARDOR packages back to 0.4.6 and import NumberIdType, StringIdType and NullableType again where you wrote number, string and undefined | null | void for them.'
+      - 'Leaving the plain types in place also compiles on 0.4.6, so nothing has to change.'
+  codemod: namespace
+removed-unused-exports:
+  symbols:
+    - isEditableTarget
+    - TDataCount
+    - ISyncFC
+    - App.DEFAULT_LOCALE
+    - HeaderConstants.REQUEST_DEVICE_INFO
+    - HeaderConstants.RESPONSE_FORMAT
+  upgrade:
+    before: |
+      import type { ISyncFC } from '@venizia/ardor-react';
+
+      export const Label: ISyncFC<{ text: string }> = (props) => <span>{props.text}</span>;
+    after: |
+      import type { ReactNode } from 'react';
+
+      export const Label = (props: { text: string }): ReactNode => <span>{props.text}</span>;
+  downgrade:
+    steps:
+      - 'Move all four ARDOR packages back to 0.4.6; the removed exports are there again.'
+      - 'Code you wrote in their place keeps working.'
+  data: 'App.DEFAULT_LOCALE was "en.UTF-8", not "en", and nothing read it. The i18n provider starts in the browser language when it is one of your languages, else "en". The codemod lists each use of these names for you to replace by hand; it writes no replacement.'
+  codemod: namespace
+ignis-logger:
+  symbols:
+    - Logger
+    - Logger.getInstance
+    - LogLevels
+    - ILogger
+    - TLogLevel
+    - BaseHelper
+    - AuthRecovery
+    - IApplicationContextValue.logger
+    - ArdorApplication
+    - enableDebug
+    - LoggerFactory.getLogger
+    - LoggerFactory.use
+    - '@venizia/ignis-helpers/core'
+  upgrade:
+    before: |
+      import { Logger } from '@venizia/ardor-kernel';
+
+      const logger = Logger.getInstance({ scope: 'Orders' });
+      logger.info('[load] done');
+    after: |
+      import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
+
+      LoggerFactory.use({ level: LogLevels.INFO });
+
+      const logger = LoggerFactory.getLogger(['Orders']);
+      logger.info('[load] done');
+  downgrade:
+    steps:
+      - 'Move all four ARDOR packages back to 0.4.6.'
+      - 'Import Logger, LogLevels, ILogger, TLogLevel and BaseHelper from @venizia/ardor-kernel again, and use Logger.getInstance({ scope }).'
+      - 'Remove the LoggerFactory.use({ level }) call: it has no effect on 0.4.6, where Logger.getInstance({ scope, enableDebug }) takes the flag.'
+      - 'Change <ArdorApplication logger={...} /> back to enableDebug, and remove emerg, log and for from a class that implements ILogger only if you want to.'
+      - 'The codemod has no reverse mode, so this is by hand.'
+  data: 'Debug lines are off by default: the console logger writes a debug line only when DEBUG is truthy and NODE_ENV allows it, and never in a browser without a process global. To show them, call LoggerFactory.use({ level }) once at start, in a module that is not a component. A Node process with DEBUG set and an allowed NODE_ENV (or none) writes them. Log calls take a format string first (logger.info(message, ...values)), and lines have the form [scope] message.'
+  codemod: namespace
+sign-out-oauth2-prefix:
+  symbols:
+    - LocalStorageKeys.PREFIX_OAUTH2
+    - DefaultAuthService.cleanUp
+  upgrade:
+    before: |
+      // cleanUp() removed every key under @app/auth/ and @app/oauth2/
+      authService.cleanUp();
+    after: |
+      authService.cleanUp();
+
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('@app/oauth2/')) {
+          localStorage.removeItem(key);
+        }
+      }
+  downgrade:
+    steps:
+      - 'Move the ARDOR packages back to 0.4.6; sign-out removes keys under @app/oauth2/ again.'
+      - 'Delete the clean-up loop you added, and read LocalStorageKeys.PREFIX_OAUTH2 again if you used it.'
+  data: 'ARDOR never wrote under @app/oauth2/. Keys your code put there stay in localStorage after sign-out until you remove them. A token left in the browser is a leak.'
+ignis-peer-floors:
+  symbols:
+    - '@venizia/ignis-helpers'
+    - '@venizia/ignis-kernel'
+    - '@venizia/ignis-boot'
+    - '@venizia/ignis-connectors'
+    - '@venizia/ignis-inversion'
+    - '@venizia/ignis-filter'
+  upgrade:
+    steps:
+      - 'Move @venizia/ignis-helpers, -kernel, -boot and -connectors to ^0.4.7 or newer, and @venizia/ignis-inversion and -filter to ^0.4.6 or newer, together with the four ARDOR packages at 0.4.7.'
+      - 'Keep one copy of each. IGNIS 0.4.6 does not satisfy ^0.4.7 for helpers, kernel, boot and connectors. -boot is an optional peer of @venizia/ardor, and -connectors of @venizia/ardor-kernel and @venizia/ardor.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.6. The 0.4.6 peers ask ^0.4.1 (^0.4.4 for inversion on @venizia/ardor), so the IGNIS packages may stay where they are.'
+
+i18n-sources-type:
+  symbols:
+    - II18nProviderOptions.i18nSources
+    - DefaultI18nProvider.composeMessages
+  upgrade:
+    steps:
+      - 'Where code reads an entry of i18nSources as an object, for example an override of DefaultI18nProvider.composeMessages, read the locale through this.localeSources.readNow({ locale }), which gives the messages whether the entry is an object or a loader that has run.'
+      - 'Where you build the options yourself, type i18nSources as Record<string, TI18nSource> or leave it to inference.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.6, where i18nSources is Record<string, object> and an entry cannot be a loader. Replace each loader by the object it loads.'
+  data: Nothing stored.
