@@ -1,6 +1,6 @@
 ---
 title: Binding keys
-description: Every CoreBindings and LocalStorageKeys constant in ARDOR, who binds each key, who reads it, required or optional status, and how to resolve a class or a value with no class.
+description: Every CoreBindings and LocalStorageKeys constant - who binds it, who reads it, whether it is required, and how to resolve a class or a value with no class.
 ---
 
 # Binding keys

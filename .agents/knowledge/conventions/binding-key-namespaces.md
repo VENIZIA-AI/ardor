@@ -40,8 +40,9 @@ export class CoreBindings {
 }
 ```
 
-The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is
-declared with `@provide` in the application's `@configuration()` class and bound by
+The framework binds the first two itself in `preConfigure()`, and `BaseArdorApplication` binds the four
+`DEFAULT_*` keys in `bindDefaults()`; every other `CoreBindings` key is declared with `@provide` (or
+`@provideOption` for an options key) in the application's `@configuration()` class and bound by
 `registerArtifacts()`. Which is which is listed per key in
 [binding keys](/reference/binding-keys.md).
 
@@ -71,8 +72,8 @@ services and repositories to transient; ARDOR does not, because every component 
 repository or service. `scope` overrides it per registration; a hook resolves on every render, so a transient
 binding gives a new instance each time.
 
-The older `injectable(scope, X, tags?)` still binds `<scope>.<ClassName>` as a singleton and records
-the key; prefer the per-kind methods, whose namespace is a constant rather than a string you type.
+The per-kind methods (`service`, `repository`, `dataSource`, `component`) take their namespace from a constant,
+not from a string you type; the older `injectable(scope, X, tags?)` was removed.
 
 ## Only the stereotype and the hooks check the namespace
 
@@ -168,7 +169,10 @@ A `useInjectable({ key })` miss names this cause in its error, after the contain
 
 ```typescript
 export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
+export type TUseInjectableKeys =
+  | TUseInjectableKeysDefault
+  | keyof IUseInjectableKeysOverrides
+  | keyof IUseInjectableKeyTypes;
 ```
 
 The first half is every `CoreBindings` value, free. The second half is empty until an application

@@ -136,11 +136,11 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 ### `checkAuth(params)`
 
 - Calls: `authService.getAuth()`. Rejects if no token value is stored. When `paths.checkAuth` is set, sends a `GET` request to that path and rejects if response data is missing.
-- Returns: `Promise<void>` (resolves on success; on failure it ends the session and rejects with `unauthenticatedRejection({ reason: 'rejected' })`, by default `{ redirectTo: loginPagePath }`)
+- Returns: `Promise<void>` (resolves on success; with no stored token, or when `paths.checkAuth` answers no data, it ends the session and rejects with `unauthenticatedRejection({ reason: 'rejected' })`, by default `{ redirectTo: loginPagePath }`; an error of the `paths.checkAuth` request is rethrown as it is)
 
 ### `checkError(params)`
 
-- Calls: reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: loginPagePath }`) and clears the session with `authService.cleanUp()`, unless that rejection says `logoutUser: false`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
+- Calls: reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: loginPagePath }`) and ends the session (`authService.cleanUp()` and `clearStoredData()`), unless that rejection says `logoutUser: false`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
 - Returns: `Promise<void>` (resolves for any status other than 401 or 403)
 
 ### `getIdentity(params)`

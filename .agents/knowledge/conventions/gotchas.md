@@ -58,7 +58,7 @@ A bare `bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(Defaul
 
 A started application with the old wiring showed it: react-admin's request carried `locale=null`, and a repository wired through `getDataSourceAuth()` sent no `authorization` at all.
 
-The fix is to declare the binding with `@provide({ key })` in a `@configuration()` class: `registerArtifacts()` binds it as a lazy provider and SINGLETON by default, so one data provider serves every consumer. `.setScope(BindingScopes.SINGLETON)` on a bare `bind()` in `bindContext()` remains only as the override form. See [DI in the browser](/architecture/di-in-the-browser.md).
+The fix is a SINGLETON binding: `BaseArdorApplication` binds the default data provider that way, and a replacement in `bindContext()` ends with `.toProvider(MyProvider).setScope(BindingScopes.SINGLETON)`; a `@provide({ key })` method in a `@configuration()` class is a lazy provider and SINGLETON by default too. See [DI in the browser](/architecture/di-in-the-browser.md).
 
 ## Every constructor parameter the container fills needs `@inject`
 
