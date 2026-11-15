@@ -21,7 +21,7 @@ migration:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
-    data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun x --no-install devz codemod any-aliases --all` is a dry run that only reports, and `bun x --no-install devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
+    data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun run devz codemod any-aliases --all` is a dry run that only reports, and `bun run devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
   - id: typed-do-request-query
     symbols: [DefaultNetworkRequestService.doRequest]
     upgrade:
@@ -146,7 +146,7 @@ migration:
 
 ## Breaking changes
 
-**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). If the project uses `@venizia/dev-configs`, the IGNIS codemod rewrites the imports of both names, the ones from `@venizia/ardor` and `@venizia/ardor-kernel` too, and lists what it cannot. `bun x --no-install devz codemod any-aliases --all` is a dry run that only reports; `bun x --no-install devz codemod any-aliases --write --all` applies it. Replace what it lists by hand. With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
+**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). If the project uses `@venizia/dev-configs`, the IGNIS codemod rewrites the imports of both names, the ones from `@venizia/ardor` and `@venizia/ardor-kernel` too, and lists what it cannot. `bun run devz codemod any-aliases --all` is a dry run that only reports; `bun run devz codemod any-aliases --write --all` applies it. Replace what it lists by hand. With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
 
 ```diff
 -import type { AnyType } from '@venizia/ardor';
