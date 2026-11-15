@@ -22,6 +22,15 @@ afterAll(() => {
   }
 });
 
+/** A scratch folder removed after the tests. */
+const scratch = (): string => {
+  const root = makeScratch({ prefix: 'merge-back-ardor-scratch-' });
+
+  roots.push(root);
+
+  return root;
+};
+
 const run = (opts: { cwd: string; args: string[] }): string =>
   ReleaseMergeBack.mustGit({ cwd: opts.cwd, args: [...MergeBackConstants.IDENTITY, ...opts.args] });
 
@@ -89,7 +98,7 @@ describe('ReleaseMergeBack.trial for the four ARDOR packages', () => {
       versions: allAt('0.4.9'),
       main: 'main',
       develop: 'develop',
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
     });
 
     expect(result.problems).toEqual([]);
@@ -107,7 +116,7 @@ describe('ReleaseMergeBack.trial for the four ARDOR packages', () => {
       versions: { ...allAt('0.4.9'), cli: '0.4.9' },
       main: 'main',
       develop: 'develop',
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
     });
 
     expect(result.problems.join('\n')).toContain('cli');
@@ -215,7 +224,7 @@ describe('ReleaseMergeBack.resolveStampConflict', () => {
   const resolveStamp = (opts: { base: string; ours: string; theirs: string }) =>
     ReleaseMergeBack.resolveStampConflict({
       ...opts,
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
     });
   const BASE = front('title: 0.4.9', "version: '0.4.9'");
 
@@ -278,7 +287,7 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
     const result = ReleaseMergeBack.mergeInto({
       cwd: root,
       from: 'release',
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
       commit: { message: 'Merge main into develop' },
     });
 
@@ -294,7 +303,7 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
     const result = ReleaseMergeBack.mergeInto({
       cwd: root,
       from: 'release',
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
     });
 
     expect(result.problems.join('\n')).toContain('docs/changelogs/0.4.9/notes.md');
@@ -327,7 +336,7 @@ describe('ReleaseMergeBack.trial: the stamp the release commit of ardor writes',
       versions: allAt('0.4.9'),
       main: 'main',
       develop: 'develop',
-      scratchRoot: makeScratch({ prefix: 'merge-back-ardor-scratch-' }),
+      scratchRoot: scratch(),
       stampDate: opts.stampDate,
     });
   const onDevelop = (opts: { root: string; text: string }): void => {
