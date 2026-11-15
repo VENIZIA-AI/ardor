@@ -167,6 +167,7 @@ export class ShopApplication extends BaseArdorApplication {
 
   bindContext(): void {}
 
+  // The options come from ShopConfiguration above, which start() discovers.
   override postConfigure(): void {
     super.postConfigure();
   }
@@ -268,7 +269,7 @@ Signatures:
 Each method binds the class into its stereotype namespace in the scope declared on the class, else as a `BindingScopes.SINGLETON`, and associates the key with the constructor in the metadata registry.
 
 ```ts
-import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
+import { BaseArdorApplication, BindingNamespaces, type IApplicationInfo } from '@venizia/ardor';
 
 // Registered by hand below: none of them carries a stereotype.
 class ApiClient {}
@@ -284,7 +285,7 @@ export class ShopApplication extends BaseArdorApplication {
     this.dataSource(ApiClient);
     this.repository(ProductRepository);
     this.service(EmailService, {
-      binding: { namespace: 'services', key: 'mail' },
+      binding: { namespace: BindingNamespaces.SERVICE, key: 'mail' },
       allowOverride: false,
     });
   }

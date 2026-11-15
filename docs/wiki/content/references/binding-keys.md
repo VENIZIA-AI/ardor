@@ -5,7 +5,7 @@ description: Every CoreBindings and LocalStorageKeys constant in ARDOR, who bind
 
 # Binding keys
 
-`CoreBindings` defines the twelve keys used in the ARDOR container for application instances, options, providers, and features. `LocalStorageKeys` defines the keys used in browser storage for authentication state. A class you register is never resolved by a key: use its stereotype and `{ target }`. A key is for a value with no class, such as the ones below.
+`CoreBindings` defines the twelve keys used in the ARDOR container for application instances, options, providers, and features. `LocalStorageKeys` defines the keys used in browser storage for authentication state. A class you register is never resolved by a key: use its stereotype and `{ target }`. A key is for a value with no class, such as the ones below. Examples read hooks through `Ardor.useX`, the same functions as the bare `useX` exports.
 
 ```ts
 import { Ardor, CoreBindings } from '@venizia/ardor';
@@ -32,7 +32,7 @@ export const useRestDataProvider = () => {
 | `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provideOption`) | `DefaultRestDataProvider` | Required |
 | `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provideOption`) | `DefaultI18nProvider` | Optional: unbound is English only |
 | `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
-| `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
+| `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`bindContext()`, or `@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
 | `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` | Application (`@provideOption`) | `RolePermissionProvider` | Required by `RolePermissionProvider` |
 
 `BaseArdorApplication` binds the defaults itself, before anything of the application. To replace one, bind your provider class under its key in `bindContext()`: `.toProvider(MyProvider).setScope(BindingScopes.SINGLETON)`.

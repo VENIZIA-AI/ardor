@@ -156,7 +156,7 @@ export class Application extends BaseArdorApplication {
 
 ## Listen in a component
 
-Resolve the service with `Ardor.useService({ target })`, subscribe in `useEffect` and unsubscribe in its clean-up, with the same handler. A payload comes from the network, so the handler takes `unknown` and checks its shape before it uses it:
+Resolve the service with `Ardor.useService({ target })` (the same function as the bare `useService`), subscribe in `useEffect` and unsubscribe in its clean-up, with the same handler. A payload comes from the network, so the handler takes `unknown` and checks its shape before it uses it:
 
 ```tsx
 import { Ardor } from '@venizia/ardor';

@@ -86,7 +86,7 @@ export function ProductTotal() {
 }
 ```
 
-The hook returns the `IDataProvider` the container built from `CountRestDataProvider`, with its positional `(resource, params)` methods and the auth service attached. Do not call the class's own methods on an instance you built: it has no auth service.
+`Ardor.useProvider` is the same function as the bare `useProvider`. It returns the `IDataProvider` the container built from `CountRestDataProvider`, with its positional `(resource, params)` methods and the auth service attached. Do not call the class's own methods on an instance you built: it has no auth service.
 
 ## Return shape
 

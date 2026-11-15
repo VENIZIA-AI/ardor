@@ -11,7 +11,7 @@ description: Using HttpRepository and HttpDataSource in ARDOR, bridging credenti
 
 <<< @/../../../examples/5-mins-qs/src/repositories/product.repository.ts{ts}
 
-`@datasource()` and `@repository()` register the classes when `start()` runs, and `@repository` injects the datasource into constructor parameter 0. A component reads the repository with `Ardor.useRepository({ target: ProductRepository })`. To register by hand instead, call `this.dataSource(ApiDataSource)` and `this.repository(ProductRepository)` in `bindContext()` (see [Application](./application)).
+`@datasource()` and `@repository()` register the classes when `start()` runs, and `@repository` injects the datasource into constructor parameter 0. A component reads the repository with `Ardor.useRepository({ target: ProductRepository })` (`Ardor.useX` is the same function as the bare `useX` export). To register by hand instead, call `this.dataSource(ApiDataSource)` and `this.repository(ProductRepository)` in `bindContext()` (see [Application](./application)).
 
 > [!NOTE]
 > `HttpRepository` and `HttpDataSource` come from `@venizia/ardor/repository`, which re-exports `@venizia/ignis-connectors/http`. That package is an optional peer: run `bun add @venizia/ignis-connectors` before you import the sub-path.

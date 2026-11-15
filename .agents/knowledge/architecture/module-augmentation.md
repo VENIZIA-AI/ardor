@@ -27,7 +27,7 @@ Only the `keyof` of the override interface matters - property values are ignored
 
 ## The per-stereotype hooks share the key union
 
-`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form, so one augmentation of `IUseInjectableKeysOverrides` on the React package types all six DI hooks. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form, so one augmentation of `IUseInjectableKeyTypes` on the React package types the `{ key }` form of all six DI hooks, for a value with no class. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
 
 ## The two override interfaces and their owning packages
 
