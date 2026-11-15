@@ -17,7 +17,7 @@ application's. Decided by Phat on 2026-10-07; design reviewed by a project that 
 ## Split by layer
 
 The kernel imports no React and no ra-core, so the type is split. `IFeatureBase` and
-`IPermissionProvider` live in `packages/kernel/src/common/types.ts`; `TFeature<TExtension>`,
+`IPermissionProvider` (and `IRolePermissionProviderOptions`, for the opt-in `RolePermissionProvider`) live in `packages/kernel/src/common/types.ts`; `TFeature<TExtension>`,
 `Features.define` and `useFeatures` in admin. `TExtension` is what a shell adds (a project's menu entries);
 ARDOR carries it and never reads it - a generic rather than an untyped `extensions` bag.
 

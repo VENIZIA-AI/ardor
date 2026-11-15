@@ -145,38 +145,54 @@ Pass `LoginPage` to the `loginPage` prop of `ArdorApplication` ([Quickstart](../
 - `getIdentity`: reads `@app/auth/identity` through `authService.getUser()` (`{ userId, username, referenceId, provider }`) and resolves it with `id` set to `userId`.
 - `getPermissions`: resolves with `Promise.resolve()`.
 
-To authorize UI components and resources through react-admin's `canAccess` contract, bind `IPermissionProvider` under `CoreBindings.PERMISSION_PROVIDER`. Unbound, `canAccess` remains undefined and react-admin permits access to all actions.
+To authorize UI components and resources through react-admin's `canAccess` contract, bind a permission provider under `CoreBindings.PERMISSION_PROVIDER`. Unbound, `canAccess` remains undefined and react-admin permits access to all actions.
+
+If you keep a table of roles and what each may do, ARDOR's `RolePermissionProvider` is that provider: write the table as options and bind the class. The roles are the role names `login` stored.
 
 ```ts
+import { BindingScopes } from '@venizia/ignis-inversion';
 import {
+  BaseArdorApplication,
   configuration,
   CoreBindings,
-  DefaultAuthService,
-  inject,
-  type IPermissionProvider,
-  provide,
+  provideOption,
+  RolePermissionProvider,
+  type IApplicationInfo,
+  type IRolePermissionProviderOptions,
 } from '@venizia/ardor';
+
+export class Roles {
+  static readonly ADMIN = 'admin';
+  static readonly EDITOR = 'editor';
+}
 
 @configuration()
 export class PermissionConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-    private readonly authService: DefaultAuthService,
-  ) {}
-
-  @provide({ key: CoreBindings.PERMISSION_PROVIDER })
-  permissionProvider(): IPermissionProvider {
+  @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+  permissionOptions(): IRolePermissionProviderOptions {
     return {
-      canAccess: async ({ resource, action }) => {
-        const roles = this.authService.getRoles();
-        return roles.has('admin') || (roles.has('editor') && action !== 'delete');
+      grants: {
+        [Roles.ADMIN]: ['*'],
+        [Roles.EDITOR]: ['orders.*', 'stocks.list', 'stocks.show'],
       },
     };
   }
 }
+
+export class ShopApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'A shop back office' };
+  }
+
+  bindContext(): void {
+    this.bind({ key: CoreBindings.PERMISSION_PROVIDER })
+      .toClass(RolePermissionProvider)
+      .setScope(BindingScopes.SINGLETON);
+  }
+}
 ```
 
-Components check permissions with `useCanAccess` from `ra-core`. See [Permission provider](../../references/permission).
+Components check permissions with `useCanAccess` from `ra-core`, and read the roles with `useRoles`. For a source other than a role table, write your own `IPermissionProvider`. These checks decide what the interface shows: the backend must check every request. See [Permission provider](../../references/permission).
 
 ## 5. Token recovery and refresh
 
