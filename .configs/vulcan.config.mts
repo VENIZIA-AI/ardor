@@ -50,6 +50,7 @@ export default {
     wiki: 'docs/wiki/content',
     changelogs: 'docs/wiki/content/changelogs',
     migrationFrom: '2026-11-13',
+    codemodCommand: ['ardor', 'codemod'],
   },
 
   okf: {
