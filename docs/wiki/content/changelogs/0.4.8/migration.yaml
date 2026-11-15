@@ -290,8 +290,8 @@ duplicate-explicit-key-throws:
     ]
   upgrade:
     steps:
-      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext(), or select one of them with when.'
-      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
+      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext() (it must extend the class it replaces, because the hooks check the bound class, or be a value binding), or select one of them with when.'
+      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement), where Replacement extends X, or this.bind({ key }).toValue(instance)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
   downgrade:
     steps:
       - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 lets the class imported last win a shared key and lets bindingList() replace a class declared allowOverride: false.'
@@ -321,7 +321,7 @@ auth-provider-toggle:
       - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line.'
       - 'Drop use from the auth options and bind { paths } again. A guest app with no sign-in leaves DEFAULT_AUTH_PROVIDER unbound, because 0.4.7 uses any auth provider that is bound.'
       - 'Type a DefaultAuthProvider subclass constructor parameter as IAuthProviderOptions again.'
-  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
+  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. An app that binds an auth provider of its own under DEFAULT_AUTH_PROVIDER (not a DefaultAuthProvider subclass) must also bind AUTH_PROVIDER_OPTIONS as { use: true, ...paths }, or { use: false }: without options start() fails and names both keys. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
   codemod: auth-options
 
 base-application-moved:
@@ -377,7 +377,24 @@ runtime-config-get-required:
     steps:
       - Pin the ARDOR packages to 0.4.7 or earlier, where RuntimeConfig.getRequired does not exist.
       - 'Write RuntimeConfig.get({ key, required: true }) again for each RuntimeConfig.getRequired({ key }), and remove any transform.'
-  data: Nothing stored.
+  data: 'Nothing stored. A call that has both required: true and a defaultValue never threw, because the default answered: write it as get({ key, defaultValue }), not getRequired.'
+
+hooks-check-the-bound-class:
+  symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
+  upgrade:
+    before: |-
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+    after: |-
+      class FakeMailer extends Mailer {
+        override send() {}
+      }
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where a hook returns whatever the key holds. A fake that extends the class it replaces keeps working.
+  data: 'Nothing stored changes. A hook that resolves a class bound under the key of another class that does not extend it now throws with the key and both class names, at render. A value binding (toValue) has no class to compare and is not checked.'
 
 feature-key-collision-at-startup:
   symbols: [DefaultI18nProvider, TFeature.messages]
@@ -392,3 +409,29 @@ feature-key-collision-at-startup:
     steps:
       - Pin the ARDOR packages to 0.4.7 and the IGNIS packages to the 0.4.7 line; the collision is found again only when a user switches to that language.
   data: Nothing stored changes. `assertArdorApplicationBoots` and any test that builds the i18n provider now fail on a collision in any offered language, which is the point.
+
+initial-locale-detection:
+  symbols: [DefaultI18nProvider.resolveInitialLocale, II18nProviderOptions.languages]
+  upgrade:
+    before: |-
+      languages: [{ locale: 'vi', name: 'Tieng Viet' }, { locale: 'en', name: 'English' }],
+    after: |-
+      // Put en first to keep English as the language of a visitor whose language is not offered.
+      languages: [{ locale: 'en', name: 'English' }, { locale: 'vi', name: 'Tieng Viet' }],
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where an unmatched visitor and a run with no navigator start in English, and the main part of the first browser language is compared.
+  data: 'Nothing stored changes shape. The chosen language is now kept in localStorage under @app/prefs/ (scoped by the application id); a downgrade leaves that key unread and it is harmless.'
+
+boot-test-every-locale:
+  symbols: [assertArdorApplicationBoots, Features.verifyMessages]
+  upgrade:
+    before: |-
+      await assertArdorApplicationBoots(application);
+    after: |-
+      // A loader that downloads its catalogue fails here (the test blocks fetch): limit the check to a language whose loader does not.
+      await assertArdorApplicationBoots(application, { locale: 'en' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where the boot test loads the messages of the first language only.
+  data: 'Nothing stored. A boot test that passed before can fail now: a loader that fails, or a key two features define, in any offered language fails it.'
