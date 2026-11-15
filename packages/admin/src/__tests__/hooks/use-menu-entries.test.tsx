@@ -110,6 +110,27 @@ describe('useMenuEntries', () => {
     );
   });
 
+  test('calls canAccess on the auth provider, so a method that reads this keeps it', async () => {
+    const receivers: Array<unknown> = [];
+
+    const canAccess = function (this: unknown): Promise<boolean> {
+      receivers.push(this);
+
+      return Promise.resolve(true);
+    };
+
+    renderMenu({ container: createContainer({ features: [orders], auth: { canAccess } }) });
+
+    const result = await screen.findByText(
+      'menu: orders/orders.menu.list,orders/orders.menu.refunds',
+    );
+    expect(result).toBeDefined();
+    expect(receivers.length).toBeGreaterThan(0);
+    expect(receivers.every((receiver) => typeof receiver === 'object' && receiver !== null)).toBe(
+      true,
+    );
+  });
+
   test('lists only the entries of the mounted features', async () => {
     renderMenu({
       container: createContainer({

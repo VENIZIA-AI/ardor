@@ -41,24 +41,24 @@ export const useMenuEntries = (): Array<TFeatureMenuEntry> => {
     return [...unique.entries()];
   }, [entries]);
 
-  const canAccess = authProvider?.canAccess;
+  const hasCanAccess = authProvider?.canAccess !== undefined;
   const supportAbortSignal = authProvider?.supportAbortSignal === true;
 
   const answers = useQueries({
     queries: checks.map(([, access]) => ({
       queryKey: ['auth', 'canAccess', { action: access.action, resource: access.resource }],
       queryFn: ({ signal }: { signal: AbortSignal }) => {
-        if (!canAccess) {
+        if (!authProvider?.canAccess) {
           return Promise.resolve(true);
         }
 
-        return canAccess({
+        return authProvider.canAccess({
           resource: access.resource,
           action: access.action,
           signal: supportAbortSignal ? signal : undefined,
         });
       },
-      enabled: canAccess !== undefined,
+      enabled: hasCanAccess,
       retry: false,
     })),
   });
@@ -69,7 +69,7 @@ export const useMenuEntries = (): Array<TFeatureMenuEntry> => {
     .join('\n');
 
   return React.useMemo(() => {
-    if (!canAccess) {
+    if (!hasCanAccess) {
       return entries;
     }
 
@@ -78,5 +78,5 @@ export const useMenuEntries = (): Array<TFeatureMenuEntry> => {
     return entries.filter((entry) => {
       return !entry.access || keys.has(accessKey({ access: entry.access }));
     });
-  }, [entries, canAccess, allowed]);
+  }, [entries, hasCanAccess, allowed]);
 };
