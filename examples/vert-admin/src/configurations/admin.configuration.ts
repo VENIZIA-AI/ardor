@@ -43,6 +43,7 @@ export class AdminConfiguration {
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     return {
+      use: true,
       paths: {
         signIn: VertPaths.SIGN_IN,
         checkAuth: VertPaths.WHO_AM_I,

@@ -37,7 +37,7 @@ export class AdminConfiguration {
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions() {
     // The sign-in path and body default to IGNIS's auth controller: POST /auth/sign-in.
-    return { paths: { afterLogin: '/products' } };
+    return { use: true, paths: { afterLogin: '/products' } };
   }
 
   @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
