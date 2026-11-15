@@ -1,6 +1,4 @@
 import type {
-  AnyObject,
-  AnyType,
   TConstValue,
   TNumberConstValue,
   TPrettify,
@@ -28,8 +26,6 @@ export type IdType = string | number;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
 export type {
-  AnyObject,
-  AnyType,
   TConstValue,
   TNumberConstValue,
   TPrettify,
@@ -107,10 +103,25 @@ export interface IGetRequestPropsResult {
   body?: unknown;
 }
 
-/** Keys react-admin does not know ride on its params and become filter keys; `any`, so ra-core's param interfaces stay assignable. */
+/**
+ * Keys react-admin does not know ride on its params and become filter keys. The index signature is
+ * `any` because react-admin's param types are interfaces, which fit an index signature only of `any`.
+ */
 export interface ICustomParams {
-  params?: Record<string, AnyType>;
-  [key: string]: AnyType;
+  params?: Record<string, unknown>;
+  [key: string]: any;
+}
+
+/**
+ * The identity `saveAuth` stores and `getUser` reads back: every field is absent when nothing is
+ * stored. Any other field of a stored identity is `unknown` until the code that reads it narrows it.
+ */
+export interface IAuthUser {
+  userId?: IdType;
+  username?: string;
+  referenceId?: IdType;
+  provider?: string;
+  [field: string]: unknown;
 }
 
 /** What `login` read from the sign-in response. `roles` are names. */
@@ -319,10 +330,10 @@ type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 type TPathLeaf =
   | Date
   | RegExp
-  | ReadonlySet<AnyType>
-  | ReadonlyMap<AnyType, AnyType>
-  | Promise<AnyType>
-  | ((...args: Array<AnyType>) => AnyType);
+  | ReadonlySet<unknown>
+  | ReadonlyMap<unknown, unknown>
+  | Promise<unknown>
+  | ((...args: never[]) => unknown);
 
 type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
 
@@ -332,14 +343,14 @@ type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
  */
 export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
   ? never
-  : T extends Array<AnyType> | TPathLeaf
+  : T extends Array<unknown> | TPathLeaf
     ? never
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
             ? TIsAny<T[K]> extends true
               ? `${K}`
-              : NonNullable<T[K]> extends Array<AnyType> | TPathLeaf
+              : NonNullable<T[K]> extends Array<unknown> | TPathLeaf
                 ? `${K}`
                 : NonNullable<T[K]> extends object
                   ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
@@ -356,7 +367,7 @@ export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends nev
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
-            ? T[K] extends Array<any> | object
+            ? T[K] extends object
               ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}`
               : `${K}`
             : never;

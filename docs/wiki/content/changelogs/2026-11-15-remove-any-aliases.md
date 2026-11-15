@@ -1,0 +1,158 @@
+---
+title: AnyType and AnyObject are removed, and the stored user is typed
+description: AnyType and AnyObject are gone from ARDOR, as they are from IGNIS; getUser and the session hooks use IAuthUser instead of any, and getIdentity resolves an id.
+packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin', '@venizia/ardor']
+migration:
+  - id: remove-any-aliases
+    symbols: [AnyType, AnyObject]
+    upgrade:
+      before: |-
+        import type { AnyObject, AnyType } from '@venizia/ardor';
+        const read = (value: AnyType) => value.name.toUpperCase();
+        const bag: AnyObject = { page: 1 };
+      after: |-
+        const read = (value: { name: string }) => value.name.toUpperCase();
+        const bag: Record<string, unknown> = { page: 1 };
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
+        - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
+    data: Nothing stored changes.
+  - id: typed-stored-user
+    symbols: [DefaultAuthService.getUser, DefaultAuthProvider.onSessionStarted, DefaultAuthProvider.getIdentity, IAuthUser]
+    upgrade:
+      before: |-
+        const tenant = authService.getUser().tenant.toUpperCase();
+      after: |-
+        const { tenant } = authService.getUser();
+        const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and onSessionStarted takes user as any.
+        - Remove the id that getIdentity now adds from any test that compares its result with toEqual.
+    data: The identity in localStorage has the same shape before and after. A stored identity whose userId or referenceId is not a string or a number, or whose username or provider is not a string, now reads as an empty object; saveAuth never writes one.
+---
+
+# Changelog - 2026-11-15
+
+## AnyType and AnyObject are removed, and the stored user is typed
+
+<Badge type="warning" text="Breaking Change" />
+
+**In one line.** `AnyType` and `AnyObject` are no longer exported by `@venizia/ardor-kernel` or `@venizia/ardor`, because IGNIS removed them. `getUser()` and the `user` of `onSessionStarted` are now `IAuthUser`, not `any`, and `getIdentity` resolves an `id`.
+
+```diff
+-import type { AnyObject, AnyType } from '@venizia/ardor';
+-
+-const read = (value: AnyType) => value.name.toUpperCase();
+-const bag: AnyObject = { page: 1 };
++const read = (value: { name: string }) => value.name.toUpperCase();
++const bag: Record<string, unknown> = { page: 1 };
+
+-const tenant = authService.getUser().tenant.toUpperCase();
++const { tenant } = authService.getUser();
++const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
+```
+
+## What changed
+
+- **`AnyType` and `AnyObject` are gone.** ARDOR re-exported them from IGNIS and no longer can. Nothing replaces them under the same name. ARDOR's own code uses the type that says what the value is: `unknown` where a value is only passed on, `Record<string, unknown>` for a bag of keys, `ReadonlySet<unknown>` and `(...args: never[]) => unknown` in `TPaths`.
+- **`getUser()` returns `IAuthUser`.** The fields `saveAuth` stores (`userId`, `username`, `referenceId`, `provider`) have their types and are absent when nothing is stored; any other field of the stored object is `unknown` until you narrow it. `IAuthUser` is new in `@venizia/ardor-kernel` and `@venizia/ardor`.
+- **A stored identity with a wrong field type is read as `{}`.** `getUser()` used to return any stored object. Now a `userId` or `referenceId` that is not a string or a number, or a `username` or `provider` that is not a string, makes it read as empty, as a stored array already did. `saveAuth` never writes that.
+- **`onSessionStarted` takes `user: IAuthUser`.** A subclass that names a narrower user type still overrides it (see below).
+- **`getIdentity` resolves an `id`.** It resolves the stored user with `id` set to its `userId`, the field react-admin's `UserIdentity` requires; before, it resolved the stored fields only, and `useGetIdentity` returned no `id`.
+- **`TPaths` and `TFullPaths` give the same paths.** Only the types they test a value against changed.
+
+## Who is affected
+
+- **An app that imports `AnyType` or `AnyObject` from `@venizia/ardor` or `@venizia/ardor-kernel`.** TypeScript reports `has no exported member`. Replace each use as shown below.
+- **An app that reads a field of `getUser()` other than the four above, or of the `user` of `onSessionStarted`, without a check.** It compiled because the type was `any`; now the field is `unknown`.
+- **An app that passes an `interface` value where it now writes `Record<string, unknown>`.** An interface has no index signature, so TypeScript rejects it. See the third case below.
+- **An app whose test compares `getIdentity()` with `toEqual`** and the stored fields only: the result now has `id` too.
+- **All other apps.** No action needed.
+
+## Breaking changes
+
+**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
+
+```diff
+-import type { AnyType } from '@venizia/ardor';
+-const read = (value: AnyType) => value.name.toUpperCase();
++const read = (value: { name: string }) => value.name.toUpperCase();
+```
+
+**2. Replace `AnyObject` with `Record<string, unknown>`.** Reading a key now gives `unknown`; narrow it before you use it.
+
+```diff
+-import type { AnyObject } from '@venizia/ardor';
+-const bag: AnyObject = { page: 1 };
+-const next = bag.page + 1;
++const bag: Record<string, unknown> = { page: 1 };
++const next = typeof bag.page === 'number' ? bag.page + 1 : 1;
+```
+
+**3. An `interface` does not fit `Record<string, unknown>`.** `AnyObject` accepted it; `Record<string, unknown>` does not, because an interface has no index signature. TypeScript says "Index signature for type 'string' is missing in type 'IProduct'".
+
+```diff
+ interface IProduct {
+   id: number;
+   name: string;
+ }
+ declare const product: IProduct;
+-const old: AnyObject = product;
++const bag: Record<string, unknown> = product;
+```
+
+The line with `+` does not compile. Any of these three does:
+
+```ts
+interface IProduct {
+  id: number;
+  name: string;
+}
+declare const product: IProduct;
+
+// A copy is a plain object type, which has the index signature an interface lacks.
+export const copy: Record<string, unknown> = { ...product };
+// When you only need "an object".
+export const anything: object = product;
+
+// A `type` alias has the index signature too.
+type TProduct = { id: number; name: string };
+declare const aliased: TProduct;
+export const bag: Record<string, unknown> = aliased;
+```
+
+**4. Read the fields of the stored user through `IAuthUser`.** A field you added yourself is `unknown`: check it before you use it. TypeScript reports that the old line reads a value of type `unknown`.
+
+```diff
+-const tenant = authService.getUser().tenant.toUpperCase();
++const { tenant } = authService.getUser();
++const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
+```
+
+**5. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
+
+```ts
+import { DefaultAuthProvider, type IAuthTokenRecord, type IAuthUser } from '@venizia/ardor';
+
+interface IAppUser extends IAuthUser {
+  tenant: string;
+}
+
+export class AppAuthProvider extends DefaultAuthProvider {
+  protected override onSessionStarted(opts: { token: IAuthTokenRecord; user: IAppUser }) {
+    this.logger.info('[onSessionStarted] tenant %s', opts.user.tenant);
+  }
+}
+```
+
+`IAppUser` is yours to trust: `getUser()` reads browser storage, so the extra fields are whatever your sign-in saved. Check them where a wrong value would do harm.
+
+**6. Run `bun run typecheck`.** The errors name each use left; there is no codemod, because the right replacement depends on the value.
+
+## How to go back
+
+Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 5. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
+
+Nothing stored changes: the identity in `localStorage` has the same shape before and after.

@@ -13,7 +13,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin']
 **In one line.** ARDOR is IGNIS's frontend, so `DefaultAuthProvider` signs in the way IGNIS's auth controller expects; an application on the previous contract sets a path and overrides one hook.
 
 ```typescript
-import { type AnyType, DefaultAuthProvider, type IAuthProviderOptions } from '@venizia/ardor';
+import { DefaultAuthProvider, type IAuthProviderOptions, type ILoginParams } from '@venizia/ardor';
 
 // Keep the previous contract: its path in the options, and the login form as the body.
 export const previousContract: IAuthProviderOptions = {
@@ -21,7 +21,7 @@ export const previousContract: IAuthProviderOptions = {
 };
 
 export class FormAuthProvider extends DefaultAuthProvider {
-  protected override buildSignInBody(opts: { params: AnyType }) {
+  protected override buildSignInBody(opts: { params: ILoginParams }) {
     return opts.params;
   }
 }

@@ -12,11 +12,9 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (96)
+### `@venizia/ardor-kernel` (95)
 
 - `AbstractArdorApplication` class
-- `AnyObject` type
-- `AnyType` type
 - `api` const
 - `App` class
 - `ArtifactBindingKeys` class
@@ -51,6 +49,7 @@ generated:
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
+- `IAuthUser` interface
 - `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
@@ -247,11 +246,9 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (186)
+### `@venizia/ardor` (185)
 
 - `AbstractArdorApplication` class
-- `AnyObject` type
-- `AnyType` type
 - `api` const
 - `App` class
 - `ApplicationContext` const
@@ -301,6 +298,7 @@ generated:
 - `IAuthRecoveryOptions` interface
 - `IAuthRejection` interface
 - `IAuthTokenRecord` interface
+- `IAuthUser` interface
 - `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataProvider` interface

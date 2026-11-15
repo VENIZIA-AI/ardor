@@ -1,4 +1,3 @@
-import type { AnyType } from '@/common';
 import type { ILogger } from '@venizia/ignis-helpers/core';
 import type { BaseService } from '../services';
 
@@ -9,7 +8,7 @@ export const api = () => {
 
     descriptor.value = async function (
       this: { logger: ILogger; resource?: string },
-      ...args: AnyType[]
+      ...args: unknown[]
     ) {
       try {
         const result = await Reflect.apply(originalMethod, this, args);

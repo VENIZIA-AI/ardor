@@ -100,6 +100,26 @@ describe('saveAuth and credential retrieval', () => {
     });
   });
 
+  test('getUser reads an identity whose known field has the wrong type as an empty object', () => {
+    const service = new DefaultAuthService();
+
+    for (const stored of [{ userId: { id: 1 } }, { userId: 1, username: 7 }, ['usr-1'], null]) {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, JSON.stringify(stored));
+
+      expect(service.getUser()).toEqual({});
+    }
+  });
+
+  test('getUser keeps a field it does not know as unknown data', () => {
+    const service = new DefaultAuthService();
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      JSON.stringify({ userId: 3, tenant: 'acme' }),
+    );
+
+    expect(service.getUser()).toEqual({ userId: 3, tenant: 'acme' });
+  });
+
   test('saveAuth applies default empty strings when optional identity parameters are omitted', () => {
     const service = new DefaultAuthService();
 

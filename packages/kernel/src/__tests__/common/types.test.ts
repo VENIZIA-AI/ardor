@@ -7,7 +7,6 @@ import {
   RequestTypes,
 } from '@/common/constants';
 import type {
-  AnyType,
   TConstValue,
   TEnvironment,
   TNumberConstValue,
@@ -119,7 +118,7 @@ interface ITreeState {
   visited: Set<string>;
   lookup: Map<string, number>;
   onClick: () => void;
-  payload: AnyType;
+  payload: any;
   deep: { a: { b: { c: { d: { e: { f: number } } } } } };
 }
 

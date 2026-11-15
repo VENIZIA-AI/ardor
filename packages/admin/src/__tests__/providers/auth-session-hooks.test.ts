@@ -9,10 +9,10 @@ import {
   type TSessionClearReason,
 } from '@/providers/auth';
 import {
-  type AnyType,
   CoreBindings,
   DefaultAuthService,
   type IAuthTokenRecord,
+  type IAuthUser,
   type ISignInSession,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
@@ -20,7 +20,7 @@ import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface IStartedCall {
   readonly token: IAuthTokenRecord;
-  readonly user: AnyType;
+  readonly user: IAuthUser;
 }
 
 interface IHooks {
