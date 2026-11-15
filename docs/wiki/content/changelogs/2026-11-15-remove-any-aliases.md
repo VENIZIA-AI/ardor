@@ -161,7 +161,7 @@ A type argument is the same: `HttpRepository<IProduct, AnyType>` becomes `HttpRe
 +const repository: HttpRepository<IProduct> = products;
 ```
 
-A class slot typed for one entity does not accept the repository class of another, which matters when one slot holds several repositories (`OrganizerRepository` extends `HttpRepository<TOrganizer>`, the slot is typed with `TNamedEntity`). The `AnyType` argument is not what made it compile: IGNIS's new `TClass` is `new (...args: never[]) => T`, where it was that type joined with an index signature of `any`, and with the new one even `HttpRepository<TNamedEntity, any>` is refused. TypeScript reports "Types of construct signatures are incompatible", through `resolveFindFilter`. Type the slot on the members the code calls, or take the entity as a type parameter.
+A class slot typed for one entity does not accept the repository class of another, which matters when one slot holds several repositories (`OrganizerRepository` extends `HttpRepository<TOrganizer>`, the slot is typed with `TNamedEntity`). The `AnyType` argument is not what made it compile: IGNIS's new `TClass` is `new (...args: never[]) => T`, where it was that type joined with an index signature of `any`, and with the new one even `HttpRepository<TNamedEntity, any>` is refused. TypeScript reports TS2322, "Type 'typeof OrganizerRepository' is not assignable to type 'TClass<HttpRepository<TNamedEntity, ...>>'", through `resolveFindFilter`. Type the slot on the members the code calls, or take the entity as a type parameter.
 
 ```ts
 import type { TClass } from '@venizia/ignis-inversion';
