@@ -708,6 +708,9 @@ describe('ArdorApplication route access', () => {
 
     expect(canAccess.mock.calls[0]?.[0]).toMatchObject({ resource: 'settings', action: 'edit' });
     expect(screen.queryByText('Admin only')).toBeNull();
+    // The one default page holds here too, not a blank layout.
+    const title = await screen.findByRole('heading', { name: 'Access denied' });
+    expect(title).toBeDefined();
   });
 
   test('a route with access renders when canAccess says yes', async () => {
@@ -876,9 +879,10 @@ describe('ArdorApplication route toggles', () => {
     path: '/login',
     element: <Page text="Login page" />,
     layout: { use: false },
+    auth: { use: false },
   };
 
-  test('a route outside the layout renders without the layout and without sign-in', async () => {
+  test('a route outside the layout with auth: { use: false } renders without the layout and without sign-in, also under requireAuth', async () => {
     const checkAuth = mock(() => Promise.reject(new Error('signed out')));
 
     renderAt({
@@ -886,13 +890,51 @@ describe('ArdorApplication route toggles', () => {
       container: createToggleContainer({ checkAuth }),
       requireAuth: true,
       routes: [
-        { path: '/accept-invite', element: <Page text="Accept invite" />, layout: { use: false } },
+        {
+          path: '/accept-invite',
+          element: <Page text="Accept invite" />,
+          layout: { use: false },
+          auth: { use: false },
+        },
       ],
     });
 
     const result = await screen.findByText('Accept invite');
     expect(result).toBeDefined();
     expect(screen.queryByText('the layout')).toBeNull();
+  });
+
+  test('under requireAuth a route outside the layout that says nothing about auth redirects a signed-out user', async () => {
+    renderAt({
+      path: '/print/invoice',
+      container: createToggleContainer({
+        checkAuth: () => Promise.reject(new Error('signed out')),
+      }),
+      requireAuth: true,
+      routes: [
+        { path: '/print/invoice', element: <Page text="Invoice" />, layout: { use: false } },
+        loginRoute,
+      ],
+    });
+
+    const result = await screen.findByText('Login page');
+    expect(result).toBeDefined();
+    expect(screen.queryByText('Invoice')).toBeNull();
+  });
+
+  test('without requireAuth a route outside the layout that says nothing about auth is open, as before', async () => {
+    renderAt({
+      path: '/print/invoice',
+      container: createToggleContainer({
+        checkAuth: () => Promise.reject(new Error('signed out')),
+      }),
+      routes: [
+        { path: '/print/invoice', element: <Page text="Invoice" />, layout: { use: false } },
+      ],
+    });
+
+    const result = await screen.findByText('Invoice');
+    expect(result).toBeDefined();
   });
 
   test('a route inside the layout renders inside it', async () => {

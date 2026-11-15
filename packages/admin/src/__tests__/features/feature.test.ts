@@ -122,6 +122,39 @@ describe('Features.mount', () => {
     );
   });
 
+  test.each([
+    ['/stock-report', '/Stock-Report'],
+    ['/stock-report', '/stock-report/'],
+    ['stock-report', '//stock-report//'],
+  ])('throws on two paths react-router reads as one: %s and %s', (first, second) => {
+    const shadow = Features.define({ name: 'shadow', routes: [{ path: second, element: null }] });
+    const origin = Features.define({ name: 'origin', routes: [{ path: first, element: null }] });
+
+    expect(() => Features.mount({ features: [origin, shadow] })).toThrow(
+      "is mounted by both 'origin' and 'shadow'",
+    );
+  });
+
+  test('throws on a route of the application that differs only in case from a route of a feature', () => {
+    expect(() =>
+      Features.mount({
+        features: [inventory],
+        routes: [{ path: '/Stock-Report', element: null }],
+      }),
+    ).toThrow(
+      "is mounted by both 'inventory' and 'the application'".replace(
+        "'inventory' and 'the application'",
+        "'the application' and 'inventory'",
+      ),
+    );
+  });
+
+  test('throws on a route whose path differs only in case from a resource', () => {
+    expect(() =>
+      Features.mount({ features: [inventory], routes: [{ path: '/Stocks', element: null }] }),
+    ).toThrow('is mounted by both');
+  });
+
   test('throws on a route path two features both mount', () => {
     const shadow = Features.define({
       name: 'shadow',

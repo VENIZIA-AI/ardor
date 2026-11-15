@@ -10,7 +10,9 @@ import {
   CoreAdmin,
   CustomRoutes,
   type I18nProvider,
+  Navigate,
   Resource,
+  useBasename,
 } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Outlet, Route } from 'react-router-dom';
@@ -57,13 +59,25 @@ const Wrapper: React.FC<{
   );
 };
 
+/** Sends a user who may not open a route to the access-denied page, where a denied resource lands too. */
+const AccessDeniedRedirect = () => {
+  const basename = useBasename();
+
+  return <Navigate to={`${basename}/access-denied`} replace />;
+};
+
 /**
  * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
  * checks, with `auth: { use: true }` in a sign-in check: a custom route has neither in react-admin.
  * Each page has its own `Suspense`, so a lazy page leaves the layout mounted while it loads.
  */
-const renderRoute = (opts: { route: TArdorRoute; suspense: React.ReactNode }) => {
-  const { access, auth, layout: _layout, ...routeProps } = opts.route;
+const renderRoute = (opts: {
+  route: TArdorRoute;
+  suspense: React.ReactNode;
+  /** The app sets `requireAuth`: react-admin guards the pages of the layout, not the routes outside it. */
+  isRequireAuth: boolean;
+}) => {
+  const { access, auth, layout, ...routeProps } = opts.route;
   const { Component, element, ...rest } = routeProps;
   const key = routeProps.id ?? routeProps.path;
   const page = (
@@ -72,7 +86,10 @@ const renderRoute = (opts: { route: TArdorRoute; suspense: React.ReactNode }) =>
     </React.Suspense>
   );
 
-  if (!access && auth?.use !== true) {
+  // A route outside the layout is open under `requireAuth` too, unless it says `auth: { use: false }` on purpose.
+  const isGuardedByApp = layout?.use === false && opts.isRequireAuth && auth?.use !== false;
+
+  if (!access && auth?.use !== true && !isGuardedByApp) {
     return <Route key={key} {...rest} element={page} />;
   }
 
@@ -83,7 +100,11 @@ const renderRoute = (opts: { route: TArdorRoute; suspense: React.ReactNode }) =>
       element={
         <Authenticated>
           {access ? (
-            <CanAccess resource={access.resource} action={access.action}>
+            <CanAccess
+              resource={access.resource}
+              action={access.action}
+              accessDenied={<AccessDeniedRedirect />}
+            >
               {page}
             </CanAccess>
           ) : (
@@ -321,7 +342,11 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
             {mounted.routes
               .filter((route) => route.layout?.use !== false)
               .map((route) => {
-                return renderRoute({ route, suspense });
+                return renderRoute({
+                  route,
+                  suspense,
+                  isRequireAuth: adminProps.requireAuth === true,
+                });
               })}
           </CustomRoutes>
 
@@ -331,7 +356,11 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
               {mounted.routes
                 .filter((route) => route.layout?.use === false)
                 .map((route) => {
-                  return renderRoute({ route, suspense });
+                  return renderRoute({
+                    route,
+                    suspense,
+                    isRequireAuth: adminProps.requireAuth === true,
+                  });
                 })}
             </CustomRoutes>
           ) : null}
