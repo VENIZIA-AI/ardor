@@ -21,6 +21,7 @@ import {
   Features,
   MountedFeaturesContext,
 } from '@/features/feature';
+import { getError } from '@venizia/ignis-inversion';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -92,6 +93,37 @@ const renderRoute = (opts: { route: TArdorRoute; suspense: React.ReactNode }) =>
       }
     />
   );
+};
+
+/**
+ * A route with `access` is open when nothing can answer it: react-admin treats a missing auth provider as
+ * everyone signed in, and a provider with no `canAccess` allows every page. Failing at mount keeps the route closed.
+ */
+const assertAccessRoutesCanBeChecked = (opts: {
+  routes: Array<TArdorRoute>;
+  authProvider?: { canAccess?: unknown };
+}): void => {
+  const { routes, authProvider } = opts;
+
+  for (const route of routes) {
+    if (!route.access) {
+      continue;
+    }
+
+    const name = route.path ?? route.id;
+
+    if (!authProvider) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but sign-in is off, so nobody is asked who may open it | Turn sign-in on, or remove access from the route`,
+      });
+    }
+
+    if (!authProvider.canAccess) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but no permission provider is bound, so every signed-in user would pass | Bind CoreBindings.PERMISSION_PROVIDER (RolePermissionProvider, or your own), or remove access from the route`,
+      });
+    }
+  }
 };
 
 /**
@@ -197,6 +229,8 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return ApplicationProviders.resolve({ container });
   }, [container]);
 
+  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: providers.authProvider });
+
   // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
   // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not) and when
   // another user signs in over the first, which also ends the answers of `canAccess` of the first.
@@ -214,6 +248,16 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       return undefined;
     }
 
+    // `resetQueries`, not `clear`: a page that is open holds its query, and only a reset tells it to drop its data.
+    const resetCache = () => {
+      queryClient.resetQueries().catch((error: unknown) => {
+        LoggerFactory.getLogger(['ArdorApplication']).error(
+          '[resetCache] failed | error: %o',
+          error,
+        );
+      });
+    };
+
     // The user the cache belongs to: `undefined` when no session was announced since the last clear.
     let cachedUser = readSessionUser({ authService });
 
@@ -226,7 +270,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
           setTimeout(() => {
             // Not when the next user signed in meanwhile: that sign-in judged the cache itself.
             if (readSessionUser({ authService }) === undefined) {
-              queryClient.clear();
+              resetCache();
               cachedUser = undefined;
             }
           }, 0);
@@ -235,7 +279,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
         }
 
         if (cachedUser !== undefined && cachedUser !== user) {
-          queryClient.clear();
+          resetCache();
         }
 
         cachedUser = user;

@@ -320,7 +320,8 @@ export interface IPermissionProvider {
 export interface IRolePermissionProviderOptions {
   /**
    * Role name to grant patterns. A pattern is `'<resource>.<action>'`, `'<resource>.*'`, `'*.<action>'`
-   * or `'*'`; anything else throws when the provider is built.
+   * or `'*'`; anything else throws when the provider is built. A pattern has one `.`, so a resource whose
+   * name contains a `.` cannot be named exactly: grant it with `'*.<action>'` or `'*'`, or give it a name without one.
    */
   grants: Record<string, ReadonlyArray<string>>;
 }
