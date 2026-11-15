@@ -32,7 +32,7 @@ export class ExampleConfiguration {
 
 `@configuration()` registers the class, and the build finds it like any other stereotype. Each method decorated with `@provideOption({ key })` defines a binding:
 
-- **Lazy resolution**: The method is called on the first `application.get({ key })`, never at startup.
+- **Lazy resolution**: The method is called on the first `application.get({ key })`. The options of the REST data provider, sign-in and i18n are read earlier, in `start()`, by the check that every provider can be built (see [Failing at boot](../../references/application#failing-at-boot)); the other keys stay lazy.
 - **Singleton scope**: The binding is a `BindingScopes.SINGLETON`, so the return value is cached on first use. `@provide({ key, scope })` takes another scope.
 - **Options**: Return a plain JavaScript object. `restDataProviderOptions()` returns an `IRestDataProviderOptions` object, and `authProviderOptions()` returns a `TAuthProviderOptions` object: `{ use: true, paths? }` to sign in, `{ use: false }` for an app with no sign-in. The post-login redirect path is `paths.afterLogin` inside the auth provider options, not a top-level option.
 - **Providers**: There is nothing to write. `BaseArdorApplication` binds `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider` and `DefaultAuthService` before anything of the application, and each reads the options above. To replace one, add one line in `bindContext()` (see [Providers](./providers#replace-one)).

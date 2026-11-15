@@ -1,6 +1,6 @@
 ---
 title: Dependency Injection
-description: How IGNIS dependency injection works in the browser - stereotyped classes, build-time discovery, constructor injection, and React hooks that resolve a class by itself.
+description: How IGNIS dependency injection works in the browser - stereotyped classes, build-time discovery, constructor injection, and hooks that resolve a class.
 ---
 
 # Dependency Injection
