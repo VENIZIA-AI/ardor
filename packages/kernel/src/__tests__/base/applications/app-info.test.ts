@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
 import { CoreBindings, type IApplicationInfo, type ValueOrPromise } from '@/common';
+import { TestArdorApplication } from './test-application';
 
-class InfoApplication extends BaseArdorApplication {
+class InfoApplication extends TestArdorApplication {
   constructor(private readonly info: () => ValueOrPromise<IApplicationInfo>) {
     super();
   }

@@ -227,3 +227,49 @@ describe('an application overrides a default', () => {
     expect(sourceOf({ application })).toBe(Sources.CONTEXT);
   });
 });
+
+describe('BaseArdorApplication.start() validates the configuration', () => {
+  const rejection = async (task: Promise<void>): Promise<string> => {
+    try {
+      await task;
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+
+    return expect.unreachable('Expected start() to reject');
+  };
+
+  class BareApplication extends BaseArdorApplication {
+    getAppInfo(): IApplicationInfo {
+      return { name: 'bare', version: '0.0.0', description: 'Binds nothing' };
+    }
+
+    bindContext(): void {}
+  }
+
+  test('an application with the REST options starts', async () => {
+    const application = createApplication();
+
+    await application.start();
+
+    expect(application.isBound({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })).toBe(true);
+  });
+
+  test('an application with no REST options rejects at start, naming the key to bind', async () => {
+    const message = await rejection(new BareApplication().start());
+
+    expect(message).toContain(CoreBindings.REST_DATA_PROVIDER_OPTIONS);
+    expect(message).toContain('Bind it');
+  });
+
+  test('auth options without the use toggle reject at start', async () => {
+    const legacy = { paths: { signIn: '/auth/sign-in' } };
+    const application = createApplication({
+      context: (target) => target.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(legacy),
+    });
+
+    const message = await rejection(application.start());
+
+    expect(message).toContain('use: true');
+  });
+});

@@ -69,41 +69,29 @@ export class ApplicationProviders {
    * @param opts.isAuthRequired - `true` for an application that always binds a sign-in: an unbound auth provider fails too.
    */
   static assertConfigured(opts: { container: Container; isAuthRequired?: boolean }): void {
-    const { container, isAuthRequired } = opts;
-
-    const providers = [
-      { key: CoreBindings.DEFAULT_REST_DATA_PROVIDER, isOptional: false },
-      { key: CoreBindings.DEFAULT_AUTH_PROVIDER, isOptional: !isAuthRequired },
-      { key: CoreBindings.DEFAULT_I18N_PROVIDER, isOptional: false },
-    ];
-
-    for (const { key, isOptional } of providers) {
-      try {
-        container.get({ key, isOptional });
-      } catch (error) {
-        throw ApplicationProviders.explainFailure({ key, error });
-      }
+    try {
+      ApplicationProviders.resolve(opts);
+    } catch (error) {
+      throw ApplicationProviders.explainFailure({ error });
     }
   }
 
-  private static explainFailure(opts: { key: string; error: unknown }): Error {
-    const { key, error } = opts;
+  private static explainFailure(opts: { error: unknown }): Error {
+    const { error } = opts;
     const extra = typeof error === 'object' && error !== null ? Reflect.get(error, 'extra') : null;
     const unboundKey: unknown =
       typeof extra === 'object' && extra !== null ? Reflect.get(extra, 'unboundKey') : undefined;
 
     if (typeof unboundKey === 'string') {
-      const needed = unboundKey === key ? '' : `, needed by '${key}'`;
-
       return getError({
-        message: `[ApplicationProviders.assertConfigured] '${unboundKey}' is not bound${needed} | Bind it in a @configuration() class (@provideOption for an options key) or in bindContext()`,
+        message: `[ApplicationProviders.assertConfigured] '${unboundKey}' is not bound | Bind it in a @configuration() class (@provideOption for an options key) or in bindContext()`,
       });
     }
 
     const reason = error instanceof Error ? error.message : String(error);
 
     return getError({
-      message: `[ApplicationProviders.assertConfigured] '${key}' could not be built: ${reason} | Fix the provider bound under that key`,
+      message: `[ApplicationProviders.assertConfigured] The providers could not be built: ${reason} | Fix the binding the message names`,
     });
   }
 }

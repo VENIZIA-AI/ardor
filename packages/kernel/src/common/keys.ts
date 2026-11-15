@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import type { IAuthProviderOptions, IRestDataProviderOptions } from './types';
+import type { IRestDataProviderOptions, TAuthProviderOptions } from './types';
 
 /** The container keys the kernel binds and reads. */
 export class CoreBindings {
@@ -39,7 +39,7 @@ export class CoreBindings {
  * `@venizia/ardor-admin` adds `CoreBindings.I18N_PROVIDER_OPTIONS`.
  */
 export interface ICoreOptionTypes {
-  [CoreBindings.AUTH_PROVIDER_OPTIONS]: IAuthProviderOptions;
+  [CoreBindings.AUTH_PROVIDER_OPTIONS]: TAuthProviderOptions;
   [CoreBindings.REST_DATA_PROVIDER_OPTIONS]: IRestDataProviderOptions;
 }
 

@@ -121,20 +121,22 @@ export class ShopApplication extends BaseArdorApplication {
 
 #### Failing at boot
 
-`ApplicationProviders.assertConfigured({ container })` resolves the data, auth and i18n providers now, as `ArdorApplication` does when it mounts. A missing binding then fails in `postConfigure()`, with an error that names the binding key and says what to bind, and not in the middle of a render. Pass `isAuthRequired: true` when the application always binds a sign-in.
+`BaseArdorApplication.postConfigure()` calls `ApplicationProviders.assertConfigured({ container: this })`, which resolves the data, auth and i18n providers now, as `ArdorApplication` does when it mounts. A missing options binding, or `AUTH_PROVIDER_OPTIONS` without the `use` toggle, then rejects `start()` with an error that names the binding key and says what to bind, and not in the middle of a render. A subclass that overrides `postConfigure()` calls `super.postConfigure()` first. Pass `isAuthRequired: true` when you call it yourself for an application that always binds a sign-in.
 
 ```ts
-import { ApplicationProviders, BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
+import { BaseArdorApplication, CoreBindings, type IApplicationInfo } from '@venizia/ardor';
 
 export class ShopApplication extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
   }
 
-  bindContext(): void {}
+  bindContext(): void {
+    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api' });
+  }
 
   override postConfigure(): void {
-    ApplicationProviders.assertConfigured({ container: this });
+    super.postConfigure();
   }
 }
 ```

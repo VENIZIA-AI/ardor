@@ -2,17 +2,17 @@ import 'reflect-metadata';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
 import { MetadataRegistry } from '@venizia/ignis-kernel/metadata';
 import { configuration, provideOption } from '@/base/metadata';
 import {
   CoreBindings,
   type IApplicationInfo,
-  type IAuthProviderOptions,
   type IRestDataProviderOptions,
+  type TAuthProviderOptions,
 } from '@/common';
+import { TestArdorApplication } from '../applications/test-application';
 
-class TestApplication extends BaseArdorApplication {
+class TestApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'provide-option-test', version: '1.0.0', description: 'typed option keys' };
   }
@@ -28,8 +28,8 @@ class OptionsConfiguration {
   }
 
   @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions(): IAuthProviderOptions {
-    return { paths: { signIn: '/session' } };
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: true, paths: { signIn: '/session' } };
   }
 }
 
@@ -107,8 +107,8 @@ describe('provideOption', () => {
       }),
     ).toEqual({ url: 'https://api.example.com', noAuthPaths: ['/auth/sign-in'] });
     expect(
-      application.get<IAuthProviderOptions>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }),
-    ).toEqual({ paths: { signIn: '/session' } });
+      application.get<TAuthProviderOptions>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }),
+    ).toEqual({ use: true, paths: { signIn: '/session' } });
   });
 
   test('records the key and the method on the class', () => {

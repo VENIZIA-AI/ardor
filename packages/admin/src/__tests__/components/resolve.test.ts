@@ -156,7 +156,7 @@ describe('ApplicationProviders.assertConfigured', () => {
     expect(() => ApplicationProviders.assertConfigured({ container })).not.toThrow();
     expect(
       failureOf(() => ApplicationProviders.assertConfigured({ container, isAuthRequired: true })),
-    ).toContain(CoreBindings.DEFAULT_AUTH_PROVIDER);
+    ).toContain('use: true');
   });
 
   test.each([
@@ -190,11 +190,10 @@ describe('ApplicationProviders.assertConfigured', () => {
     const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
 
     expect(message).toContain(CoreBindings.REST_DATA_PROVIDER_OPTIONS);
-    expect(message).toContain(CoreBindings.DEFAULT_REST_DATA_PROVIDER);
     expect(message).toContain('Bind it');
   });
 
-  test('names the provider whose build failed for another reason', () => {
+  test('says the providers could not be built, with the reason, for another failure', () => {
     const container = createContainer({ withAuthProvider: false });
     container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(() => {
       throw getError({ message: 'no messages' });
@@ -202,7 +201,7 @@ describe('ApplicationProviders.assertConfigured', () => {
 
     const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
 
-    expect(message).toContain(CoreBindings.DEFAULT_I18N_PROVIDER);
+    expect(message).toContain('could not be built');
     expect(message).toContain('no messages');
   });
 });

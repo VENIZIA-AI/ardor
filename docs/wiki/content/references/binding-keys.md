@@ -58,7 +58,7 @@ export class ApiConfiguration {
 
 | Key | Options type |
 |---|---|
-| `AUTH_PROVIDER_OPTIONS` | `IAuthProviderOptions` |
+| `AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions` |
 | `REST_DATA_PROVIDER_OPTIONS` | `IRestDataProviderOptions` |
 | `I18N_PROVIDER_OPTIONS` | `II18nProviderOptions` (added by `@venizia/ardor-admin`) |
 
