@@ -5,28 +5,19 @@ description: Options, configuration, HTTP mapping, and error handling for Defaul
 
 # REST data provider
 
-`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON:
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. `BaseArdorApplication` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` itself, as a singleton, so react-admin, the auth provider and every hook share one instance. Your application binds only its options: a `@configuration()` class with a `@provideOption({ key })` method, which `start()` binds as a lazy singleton:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
-  type IDataProvider,
-  inject,
   type IRestDataProviderOptions,
-  provide,
+  provideOption,
 } from '@venizia/ardor';
 
 @configuration()
 export class RestDataConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
@@ -34,17 +25,14 @@ export class RestDataConfiguration {
       requestTracingChannel: 'admin',
     };
   }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider(): IDataProvider {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
 }
 ```
 
+To replace the provider with a subclass, bind the subclass class under the key in `bindContext()`: `.toProvider(MyRestDataProvider).setScope(BindingScopes.SINGLETON)` (see [CountRestDataProvider](../extensions/count-provider)).
+
 ## What it does
 
-`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) instantiates the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) builds the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
@@ -230,6 +218,8 @@ An aborted request rejects with the signal's reason (an `AbortError`). It is not
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   type IDataProvider,
   RequestBodyTypes,
@@ -258,7 +248,7 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 
   const dataSourceAuth = dataProvider.getDataSourceAuth();
   if (dataSourceAuth.errorRootKey !== 'error') {
-    throw new Error('Unexpected error root key');
+    throw getError({ message: '[configureNetwork] Unexpected error root key' });
   }
 }
 ```
@@ -266,8 +256,8 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 ## Error handling
 
 When the backend responds with an HTTP status outside the 200-299 range:
-1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` unwraps the response payload using the `'error'` root key (`HttpResponseReader.readError`).
-2. The service creates an application error via `getError` with:
+1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` hands the response to `ResponseReader.toError` (`packages/kernel/src/helpers/networks/response-reader.ts`), which unwraps the payload using the `'error'` root key (`HttpResponseReader.readError`).
+2. `ResponseReader.toError` creates an application error via `getError` with:
    - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
    - `message`: `server.normalized?.text ?? server.message ?? \`HTTP ${response.status}\``. This provides the user-facing error message displayed by react-admin notifications.
    - `messageCode`: Server error code from `server.normalized?.code` (for example, `ERR_NOT_FOUND`).
@@ -275,4 +265,4 @@ When the backend responds with an HTTP status outside the 200-299 range:
    - `extra`: Dictionary containing `extra.requestId` (assigned from `server.requestId`, preserving any upstream request ID in `extra.upstreamRequestIds`), or `undefined` if empty.
    - `cause`: Underlying server cause details from `server.details?.cause`.
 3. React-admin catches the thrown error and forwards it to `authProvider.checkError(error)`.
-4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it clears local session storage (`DefaultAuthService.cleanUp()`) and rejects with `{ redirectTo: this.loginPagePath }`, prompting react-admin to redirect the user to the login screen. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }` (`/access-denied` by default).
+4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: this.loginPagePath }`, which has react-admin send the user to the login screen) and clears the session (`DefaultAuthService.cleanUp()`) unless that rejection says `logoutUser: false`. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }` (`/access-denied` by default).

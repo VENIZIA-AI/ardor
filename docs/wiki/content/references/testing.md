@@ -21,7 +21,7 @@ In order, and it stops at the first failure with the error the app would raise:
 
 1. Calls `start()`: the artifact index, the stereotype bindings, the features, `bindContext()`.
 2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed.
-3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (optional) and the i18n provider, through the same function the component calls.
+3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (only when `AUTH_PROVIDER_OPTIONS` is `{ use: true }`) and the i18n provider, through the same function the component calls.
 4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched. `fetch` is blocked, so a loader that downloads its messages fails here: limit the check with `locale` to a language whose loader does not.
 
 `fetch` is replaced for the run by a function that rejects, so nothing leaves the process, and put back afterwards. The helper returns the application it started.
@@ -36,7 +36,7 @@ In order, and it stops at the first failure with the error the app would raise:
 
 `skipBindings` takes an exact class, a class name or a binding key, among the five namespaces of step 2. A skip that matches no binding rejects, so a typo does not skip silently. It does not reach step 3.
 
-`skipBindings` applies to step 2 only. Step 3 builds the data, auth and i18n providers the application bound, so a bound auth provider that cannot be built fails the check even when you name its key, and the key, outside the five namespaces, rejects as a skip that matched nothing. An application that never signs in, such as a guest app that builds its own react-admin tree, leaves `CoreBindings.DEFAULT_AUTH_PROVIDER` unbound (see [Authentication (No Sign-In)](../guides/core-concepts/providers#authentication-no-sign-in)).
+`skipBindings` applies to step 2 only. Step 3 builds the data and i18n providers, and the auth provider when sign-in is on, so a provider that cannot be built fails the check even when you name its key, and the key, outside the five namespaces, rejects as a skip that matched nothing. An application that never signs in, such as a guest app, binds `AUTH_PROVIDER_OPTIONS` as `{ use: false }` or leaves it unbound, and step 3 builds no auth provider (see [Authentication (No Sign-In)](../guides/core-concepts/providers#authentication-no-sign-in)).
 
 The first argument is an instance or a function that returns one. Pass a function: a failed start leaves a half-started instance, and the same instance cannot be passed twice.
 

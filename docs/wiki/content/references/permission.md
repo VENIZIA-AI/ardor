@@ -115,15 +115,16 @@ Rules the provider follows:
 Write a class that implements `IPermissionProvider` when the answer does not come from a role table: a permission list from your own endpoint, a check on the `record`, or a rule over several fields. Bind it under the same key:
 
 ```ts
+import { BindingScopes } from '@venizia/ignis-inversion';
+
 import {
-  type BaseArdorApplication as TArdorApplication,
-  configuration,
+  BaseArdorApplication,
   CoreBindings,
+  type IApplicationInfo,
   type IPermissionProvider,
-  inject,
-  provide,
 } from '@venizia/ardor';
 
+// No stereotype: ShopApplication binds it by hand, under the permission key.
 export class AppPermissionProvider implements IPermissionProvider {
   async canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean> {
     if (opts.resource === 'admin' && opts.action === 'delete') {
@@ -133,16 +134,15 @@ export class AppPermissionProvider implements IPermissionProvider {
   }
 }
 
-@configuration()
-export class PermissionConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
+export class ShopApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'A shop back office' };
+  }
 
-  @provide({ key: CoreBindings.PERMISSION_PROVIDER })
-  permissionProvider(): IPermissionProvider {
-    return this.application.instantiate(AppPermissionProvider);
+  bindContext(): void {
+    this.bind({ key: CoreBindings.PERMISSION_PROVIDER })
+      .toClass(AppPermissionProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 ```
