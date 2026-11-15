@@ -3,7 +3,7 @@ remove-use-sizer:
   upgrade:
     steps:
       - 'Give the element a ref with `React.useRef<HTMLDivElement>(null)` instead of an id.'
-      - 'Replace `useSizer({ containerId })` with `useElementSize({ ref, box: ''border-box'', round: true })`.'
+      - "Replace `useSizer({ containerId })` with `useElementSize({ ref, box: 'border-box', round: true })`."
     before: |-
       const { width, height } = useSizer({ containerId: 'chart' });
     after: |-
@@ -405,6 +405,8 @@ boot-validates-configuration:
   upgrade:
     steps:
       - 'Give `getAppInfo()` a `name` that is not empty or blank.'
+      - 'Bind `REST_DATA_PROVIDER_OPTIONS`: an app whose providers cannot be built now fails in `start()`, not at the first render.'
+      - 'Call `super.postConfigure()` in an override of `postConfigure()` on a `BaseArdorApplication` subclass.'
     before: |-
       getAppInfo(): IApplicationInfo {
         return { name: '', version: '1.0.0', description: 'The shop' };

@@ -4,7 +4,7 @@ version: 0.4.8
 packages: ['@venizia/ardor-kernel', '@venizia/ardor-react', '@venizia/ardor-admin', '@venizia/ardor']
 summary: 'ARDOR 0.4.8 adds browser hooks, a default token refresh, a role permission provider and shell routes, closes a late-401 session leak, and removes `lodash`, `useSizer` and `AnyType`.'
 highlights:
-  - 'New hooks for media query, page visibility, online status, intersection, resize and clipboard'
+  - 'New hooks for media query, visibility, online status, intersection and resize, and `BrowserClipboard`'
   - '`BaseArdorApplication` binds the default providers; sign-in needs `use: true` in the auth options'
   - 'A late 401 no longer reaches the next user, and sign-out clears stored data and the query cache'
   - 'The chosen language is remembered, and English fills the gaps of a partial language'
