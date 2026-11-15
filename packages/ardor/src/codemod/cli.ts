@@ -1,20 +1,12 @@
-import {
-  chmodSync,
-  existsSync,
-  lstatSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  type Stats,
-  writeFileSync,
-} from 'node:fs';
-import { relative, resolve } from 'node:path';
-
-import { CodemodFiles } from './files';
+import { CodemodCommand, CodemodFlags, type ICodemodSpec, USAGE_ERROR_CODE } from './command';
+import { AuthOptionsTransform } from './auth-options';
+import { BaseApplicationTransform } from './base-application';
+import { DefaultProvidersTransform } from './default-providers';
 import { Migration } from './migrate';
-import type { IFinding, TTypeScript } from './transform';
 
-const USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--write [--allow-dirty] | --check]
+export { CodemodFlags, USAGE_ERROR_CODE };
+
+const NAMESPACE_USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--write [--allow-dirty] | --check]
 
 Moves the names removed from @venizia/ardor to what replaces them:
 
@@ -62,305 +54,135 @@ again with --allow-dirty to write it anyway (it keeps the other codemod's edits)
 one after the other in a dirty tree, give this one --write --allow-dirty.
 Run your formatter afterwards: the new names are appended to the import they join.`;
 
-/** A usage error: nothing was read or written. */
-export const USAGE_ERROR_CODE = 2;
+const AUTH_OPTIONS_USAGE = `Usage: ardor codemod auth-options [paths...] [--write [--allow-dirty] | --check]
 
-export class CodemodFlags {
-  static readonly WRITE = '--write';
-  static readonly CHECK = '--check';
-  static readonly HOOKS = '--hooks';
-  static readonly ALLOW_DIRTY = '--allow-dirty';
-  static readonly HELP = '--help';
-  static readonly HELP_SHORT = '-h';
+Adds use: true to the auth provider options of an app with sign-in, which 0.4.8 needs to turn
+sign-in on. It rewrites the object literal of
 
-  static readonly SCHEME_SET = new Set([
-    this.WRITE,
-    this.CHECK,
-    this.HOOKS,
-    this.ALLOW_DIRTY,
-    this.HELP,
-    this.HELP_SHORT,
-  ]);
+  <x>.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ ... })
+  a method decorated @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) or @provideOption(...)
+  whose body returns { ... }
 
-  static isValid(value: string): boolean {
-    return this.SCHEME_SET.has(value);
+to start with use: true. The key may also be the string '@app/application/options/auth', and
+CoreBindings may be imported under another name. A literal that already has use (true or false) is
+left as it is. Options that are not a plain object literal (a variable, a call, only a spread) are
+listed with their line and left for you. An app with no sign-in binds no options and needs nothing.
+
+  --write    write the changed files (without it, nothing is written)
+  --allow-dirty  with --write, also write a file that has local changes, such as one another codemod
+             just changed
+  --check    dry run that exits 1 when anything would change or is left (for CI)
+  --help     print this text and exit
+
+Like every codemod it reads the files git knows (tracked, or untracked and not ignored) and --write
+refuses a file with local changes, so git can undo it. --write is all or nothing. Run your formatter
+afterwards.`;
+
+const BASE_APPLICATION_USAGE = `Usage: ardor codemod base-application-import [paths...] [--write [--allow-dirty] | --check]
+
+Moves BaseArdorApplication from @venizia/ardor-kernel to @venizia/ardor-admin: the import and the
+re-export (export { BaseArdorApplication } from ...), with type modifiers and aliases kept. An import
+that names other members is split, and the new line joins an import of @venizia/ardor-admin that
+the file already has. An import from @venizia/ardor is correct already and is left.
+
+Listed with their line and left for you: a namespace import of the kernel that reads
+BaseArdorApplication, and an export * from the kernel. A package that depends only on the kernel
+should extend AbstractArdorApplication instead of importing this class.
+
+  --write    write the changed files (without it, nothing is written)
+  --allow-dirty  with --write, also write a file that has local changes, such as one another codemod
+             just changed
+  --check    dry run that exits 1 when anything would change or is left (for CI)
+  --help     print this text and exit
+
+Like every codemod it reads the files git knows (tracked, or untracked and not ignored) and --write
+refuses a file with local changes, so git can undo it. --write is all or nothing. Run your formatter
+afterwards.`;
+
+const DEFAULT_PROVIDERS_USAGE = `Usage: ardor codemod default-providers [paths...] [--check]
+
+Lists, and never changes, every place that wires a default provider by hand: a @provide or
+@provideOption method that returns <expr>.instantiate(X).value(<expr>) for a default provider class
+(DefaultRestDataProvider, DefaultAuthProvider, DefaultI18nProvider, DefaultAuthService) or under one
+of the keys DEFAULT_REST_DATA_PROVIDER, DEFAULT_AUTH_PROVIDER and DEFAULT_I18N_PROVIDER. Each line is
+
+  path:line  the pattern  what to do
+
+Delete the method for a default provider: 0.4.8 binds it. Replace it by a bindContext() line,
+.toProvider(X), for any other class. This codemod is done by hand: --write is a usage error.
+
+  --check    exits 1 when it finds a place (for CI); without it the exit code is 0
+  --help     print this text and exit`;
+
+/** `ardor codemod namespace`: the removed bare names move to the class members that replace them. */
+export class NamespaceCommand {
+  static readonly NAME = 'namespace';
+  static readonly USAGE = NAMESPACE_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: NamespaceCommand.NAME,
+    usage: NAMESPACE_USAGE,
+    unit: 'use',
+    extraFlags: [CodemodFlags.HOOKS],
+    isDetectOnly: false,
+    transform: (opts) => Migration.run(opts),
+  };
+
+  /** Runs the command and returns the exit code; prints to the console. */
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: NamespaceCommand.SPEC });
   }
 }
 
-/** `ardor codemod namespace`: a dry run unless `--write`; `--check` is the dry run that fails on work left. */
-export class NamespaceCommand {
-  static readonly NAME = 'namespace';
-  static readonly USAGE = USAGE;
+/** `ardor codemod auth-options`: the auth provider options gain `use: true`. */
+export class AuthOptionsCommand {
+  static readonly NAME = 'auth-options';
+  static readonly USAGE = AUTH_OPTIONS_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: AuthOptionsCommand.NAME,
+    usage: AUTH_OPTIONS_USAGE,
+    unit: 'binding',
+    extraFlags: [],
+    isDetectOnly: false,
+    transform: (opts) => AuthOptionsTransform.run(opts),
+  };
 
-  /** Runs the command and returns the exit code; prints to the console. */
-  static async run(opts: { root: string; args: string[] }): Promise<number> {
-    const { root, args } = opts;
-
-    if (args.includes(CodemodFlags.HELP) || args.includes(CodemodFlags.HELP_SHORT)) {
-      console.log(USAGE);
-
-      return 0;
-    }
-
-    const unknown = args.filter(
-      (argument) => argument.startsWith('-') && !CodemodFlags.isValid(argument),
-    );
-
-    if (unknown.length > 0) {
-      console.error(
-        `ardor codemod: unknown option ${unknown.map((flag) => `"${flag}"`).join(', ')}\n${USAGE}`,
-      );
-
-      return USAGE_ERROR_CODE;
-    }
-
-    const isWrite = args.includes(CodemodFlags.WRITE);
-    const isCheck = args.includes(CodemodFlags.CHECK);
-
-    if (isWrite && isCheck) {
-      console.error(
-        `ardor codemod: ${CodemodFlags.WRITE} and ${CodemodFlags.CHECK} contradict each other\n${USAGE}`,
-      );
-
-      return USAGE_ERROR_CODE;
-    }
-
-    const isAllowDirty = args.includes(CodemodFlags.ALLOW_DIRTY);
-
-    if (isAllowDirty && !isWrite) {
-      console.error(
-        `ardor codemod: ${CodemodFlags.ALLOW_DIRTY} only goes with ${CodemodFlags.WRITE}: a dry run writes nothing\n${USAGE}`,
-      );
-
-      return USAGE_ERROR_CODE;
-    }
-
-    const ts = await NamespaceCommand.loadTypeScript();
-
-    if (!ts) {
-      console.error(
-        'ardor codemod: the "typescript" package is not installed here. Install it (it is a dev dependency of any TypeScript project) and run again.',
-      );
-
-      return USAGE_ERROR_CODE;
-    }
-
-    const paths = args.filter((argument) => !argument.startsWith('-'));
-    const targets = (paths.length > 0 ? paths : ['.']).map((path) => resolve(root, path));
-    const hooks = args.includes(CodemodFlags.HOOKS);
-    const missing = targets.filter((target) => !existsSync(target));
-
-    if (missing.length > 0) {
-      console.error(
-        `ardor codemod: no such file or folder: ${missing.map(NamespaceCommand.clean).join(', ')}`,
-      );
-
-      return USAGE_ERROR_CODE;
-    }
-
-    return NamespaceCommand.sweep({ root, ts, targets, hooks, isWrite, isCheck, isAllowDirty });
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: AuthOptionsCommand.SPEC });
   }
+}
 
-  private static async loadTypeScript(): Promise<TTypeScript | undefined> {
-    try {
-      const loaded = await import('typescript');
+/** `ardor codemod base-application-import`: `BaseArdorApplication` is imported from the admin package. */
+export class BaseApplicationImportCommand {
+  static readonly NAME = 'base-application-import';
+  static readonly USAGE = BASE_APPLICATION_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: BaseApplicationImportCommand.NAME,
+    usage: BASE_APPLICATION_USAGE,
+    unit: 'import',
+    extraFlags: [],
+    isDetectOnly: false,
+    transform: (opts) => BaseApplicationTransform.run(opts),
+  };
 
-      // TypeScript is CommonJS: Node puts the module on `default`, a bundler may not.
-      return loaded.default ?? loaded;
-      // eslint-disable-next-line venizia/no-silent-catch -- no `typescript` installed is an answer, not a failure: the caller prints how to install it
-    } catch {
-      return undefined;
-    }
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: BaseApplicationImportCommand.SPEC });
   }
+}
 
-  private static sweep(opts: {
-    root: string;
-    ts: TTypeScript;
-    targets: string[];
-    hooks: boolean;
-    isWrite: boolean;
-    isCheck: boolean;
-    isAllowDirty: boolean;
-  }): number {
-    const { root, ts, targets, hooks, isWrite, isCheck, isAllowDirty } = opts;
-    const files = [...new Set(targets.flatMap((target) => CodemodFiles.collect({ target })))];
-    const dirtyOf = targets.map((target) => CodemodFiles.dirty({ target }));
+/** `ardor codemod default-providers`: lists the hand-wired default providers; it never writes. */
+export class DefaultProvidersCommand {
+  static readonly NAME = 'default-providers';
+  static readonly USAGE = DEFAULT_PROVIDERS_USAGE;
+  static readonly SPEC: ICodemodSpec = {
+    name: DefaultProvidersCommand.NAME,
+    usage: DEFAULT_PROVIDERS_USAGE,
+    unit: 'place',
+    extraFlags: [],
+    isDetectOnly: true,
+    transform: (opts) => DefaultProvidersTransform.run(opts),
+  };
 
-    if (isWrite && !isAllowDirty && dirtyOf.some((dirty) => dirty === undefined)) {
-      console.error(
-        `ardor codemod: this is not a git repository, so nothing can undo ${CodemodFlags.WRITE}; run again with ${CodemodFlags.ALLOW_DIRTY} to write anyway`,
-      );
-
-      return 1;
-    }
-
-    const dirty = new Set(isAllowDirty ? [] : dirtyOf.flatMap((paths) => [...(paths ?? [])]));
-    const changes: Array<{ path: string; renamed: number }> = [];
-    const pending: Array<{ path: string; text: string; stat: Stats }> = [];
-    const refused: string[] = [];
-    const failed: Array<{ path: string; reason: string }> = [];
-    const left: Array<{ path: string; finding: IFinding }> = [];
-    const notes: Array<{ path: string; finding: IFinding }> = [];
-
-    for (const path of files) {
-      try {
-        const stat = lstatSync(path);
-        const bytes = readFileSync(path);
-        const text = bytes.toString('utf8');
-        const result = Migration.run({ ts, fileName: path, text, hooks });
-
-        for (const finding of result.findings) {
-          (finding.kind === 'note' ? notes : left).push({ path, finding });
-        }
-
-        if (result.text === text) {
-          continue;
-        }
-
-        if (!Buffer.from(text, 'utf8').equals(bytes)) {
-          failed.push({ path, reason: 'it is not valid UTF-8, so a rewrite would damage it' });
-          continue;
-        }
-
-        if (isWrite && dirty.has(path)) {
-          refused.push(path);
-          continue;
-        }
-
-        changes.push({ path, renamed: result.renamed });
-        pending.push({ path, text: result.text, stat });
-      } catch (error) {
-        failed.push({ path, reason: error instanceof Error ? error.message : String(error) });
-      }
-    }
-
-    if (isWrite && failed.length === 0) {
-      failed.push(...NamespaceCommand.writeAll({ pending }));
-    }
-
-    return NamespaceCommand.report({
-      root,
-      isWrite,
-      isCheck,
-      changes,
-      refused,
-      failed,
-      left,
-      notes,
-    });
-  }
-
-  /**
-   * Writes every file next to itself first, and renames them into place only when all were written,
-   * so a failure leaves no file changed. A file that is not the file that was read (a link swapped in,
-   * an edit made meanwhile) is refused: the rename replaces a link instead of following it, and a
-   * hard link is not written through.
-   */
-  private static writeAll(opts: {
-    pending: Array<{ path: string; text: string; stat: Stats }>;
-  }): Array<{ path: string; reason: string }> {
-    const staged: Array<{ path: string; temp: string }> = [];
-    const failures: Array<{ path: string; reason: string }> = [];
-
-    for (const { path, text, stat } of opts.pending) {
-      const temp = `${path}.${process.pid}.codemod`;
-
-      try {
-        const now = lstatSync(path);
-
-        if (!now.isFile() || now.mtimeMs !== stat.mtimeMs || now.size !== stat.size) {
-          failures.push({
-            path,
-            reason: 'it changed while the codemod ran, so it was not written',
-          });
-          continue;
-        }
-
-        writeFileSync(temp, text);
-        chmodSync(temp, now.mode & 0o7777);
-        staged.push({ path, temp });
-      } catch (error) {
-        rmSync(temp, { force: true });
-        failures.push({ path, reason: error instanceof Error ? error.message : String(error) });
-      }
-    }
-
-    if (failures.length > 0) {
-      for (const { temp } of staged) {
-        rmSync(temp, { force: true });
-      }
-
-      return failures;
-    }
-
-    for (const { path, temp } of staged) {
-      renameSync(temp, path);
-    }
-
-    return [];
-  }
-
-  /** Text for the terminal: control, format and line-separator characters, such as an escape sequence in a file name, become `?`. */
-  private static clean(text: string): string {
-    return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, '?');
-  }
-
-  private static report(opts: {
-    root: string;
-    isWrite: boolean;
-    isCheck: boolean;
-    changes: Array<{ path: string; renamed: number }>;
-    refused: string[];
-    failed: Array<{ path: string; reason: string }>;
-    left: Array<{ path: string; finding: IFinding }>;
-    notes: Array<{ path: string; finding: IFinding }>;
-  }): number {
-    const { root, isWrite, isCheck, changes, refused, failed, left, notes } = opts;
-    // Nothing is written when a file failed, so the files are not "changed".
-    const verb = isWrite && failed.length === 0 ? 'changed' : 'would change';
-    // A path comes from the file system: a control character in it is shown as `?`, never sent to the terminal.
-    const show = (path: string): string => NamespaceCommand.clean(relative(root, path) || path);
-
-    for (const change of changes) {
-      console.log(
-        `${verb} ${show(change.path)} (${change.renamed} use${change.renamed === 1 ? '' : 's'})`,
-      );
-    }
-
-    for (const path of refused) {
-      console.error(
-        `refused ${show(path)}: it has local changes, so git cannot undo the codemod there; commit or stash it and run again, or run again with ${CodemodFlags.ALLOW_DIRTY}`,
-      );
-    }
-
-    for (const { path, reason } of failed) {
-      console.error(NamespaceCommand.clean(`failed ${show(path)}: ${reason}`));
-    }
-
-    // A note is a change made on purpose that is worth knowing; it is not work left, so --check ignores it.
-    for (const { path, finding } of notes) {
-      console.log(`note ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
-    }
-
-    for (const { path, finding } of left) {
-      console.error(`left ${show(path)}:${finding.line} ${finding.name}: ${finding.reason}`);
-    }
-
-    const refusedNote = [
-      refused.length > 0 ? `, ${refused.length} refused (listed above)` : '',
-      failed.length > 0
-        ? `, ${failed.length} failed (listed above)${isWrite ? ', nothing was written' : ''}`
-        : '',
-    ].join('');
-
-    console.log(
-      `${changes.length} file${changes.length === 1 ? '' : 's'} ${verb}${refusedNote}, ${left.length} left for you${isWrite || changes.length === 0 ? '' : '. Run again with --write to apply.'}`,
-    );
-
-    if (refused.length > 0 || failed.length > 0) {
-      return 1;
-    }
-
-    return isCheck && (changes.length > 0 || left.length > 0) ? 1 : 0;
+  static run(opts: { root: string; args: string[] }): Promise<number> {
+    return CodemodCommand.run({ ...opts, spec: DefaultProvidersCommand.SPEC });
   }
 }

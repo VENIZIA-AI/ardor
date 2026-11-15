@@ -45,7 +45,12 @@ describe('ardor', () => {
     test('prints the name of each codemod, one per line, and exits 0', async () => {
       const code = await run(['codemod', '--list']);
       expect(code).toBe(0);
-      expect(output).toEqual([NamespaceCommand.NAME]);
+      expect(output).toEqual([
+        'namespace',
+        'auth-options',
+        'base-application-import',
+        'default-providers',
+      ]);
       expect(errors).toEqual([]);
     });
 
@@ -86,9 +91,21 @@ describe('ardor', () => {
     });
 
     test('exits 2 for --reverse, which no codemod takes', async () => {
-      const code = await run(['codemod', NamespaceCommand.NAME, '--reverse']);
-      expect(code).toBe(2);
-      expect(errors[0]).toContain('unknown option "--reverse"');
+      for (const name of ArdorCli.CODEMODS.keys()) {
+        errors = [];
+        const code = await run(['codemod', name, '--reverse']);
+        expect(code).toBe(2);
+        expect(errors[0]).toContain('unknown option "--reverse"');
+      }
+    });
+
+    test('exits 2 for --hooks on a codemod that has none', async () => {
+      for (const name of ['auth-options', 'base-application-import', 'default-providers']) {
+        errors = [];
+        const code = await run(['codemod', name, '--hooks']);
+        expect(code).toBe(2);
+        expect(errors[0]).toContain('unknown option "--hooks"');
+      }
     });
   });
 
@@ -100,6 +117,11 @@ describe('ardor', () => {
         expect(code).toBe(0);
         expect(output[0]).toContain('Usage: ardor <command>');
         expect(output[0]).toContain('codemod --list');
+
+        for (const name of ArdorCli.CODEMODS.keys()) {
+          expect(output[0]).toContain(`codemod ${name}`);
+        }
+
         expect(errors).toEqual([]);
       }
     });
