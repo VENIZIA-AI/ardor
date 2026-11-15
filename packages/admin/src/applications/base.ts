@@ -1,6 +1,7 @@
 import { BindingScopes } from '@venizia/ignis-inversion';
 
 import { AbstractArdorApplication, CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
+import { DefaultBindingTags } from '@/components/resolve';
 import { DefaultAuthProvider } from '@/providers/auth';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
@@ -49,6 +50,7 @@ export abstract class BaseArdorApplication extends AbstractArdorApplication {
       .setScope(BindingScopes.SINGLETON);
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
       .toProvider(DefaultAuthProvider)
-      .setScope(BindingScopes.SINGLETON);
+      .setScope(BindingScopes.SINGLETON)
+      .setTags(DefaultBindingTags.DEFAULT);
   }
 }

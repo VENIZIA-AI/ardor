@@ -202,13 +202,14 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (44)
+### `@venizia/ardor-admin` (45)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
 - `BaseArdorApplication` class
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultRestDataProvider` class
 - `englishMessages` const
@@ -251,7 +252,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (189)
+### `@venizia/ardor` (191)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -281,6 +282,7 @@ generated:
 - `datasource` const
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
