@@ -1,5 +1,6 @@
 import { getError, type Container } from '@venizia/ignis-inversion';
 import type { I18nProvider, ResourceProps } from 'ra-core';
+import { createContext } from 'react';
 import type { RouteProps } from 'react-router-dom';
 
 import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
@@ -46,6 +47,12 @@ export type TFeature<TExtension extends object = {}> = IFeatureBase &
     /** The application's own `i18nSources` override these. */
     messages?: TFeatureMessages;
   };
+
+/**
+ * A container that binds only `CoreBindings.FEATURES`, to the features `ArdorApplication` mounts, so
+ * `Features.read` reads them; `undefined` outside the shell.
+ */
+export const MountedFeaturesContext = createContext<Container | undefined>(undefined);
 
 /** Defines, reads, mounts and loads the messages of the features an application binds. */
 export class Features {

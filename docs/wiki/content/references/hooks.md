@@ -416,7 +416,7 @@ export function FeatureNavigation() {
 
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
-- **Gotcha**: Reads from the container using `useApplicationContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+- **Gotcha**: Inside `ArdorApplication` it returns the mounted features: the `features` prop when the shell passed one, else every bound feature. Outside, it reads `CoreBindings.FEATURES` from the container of `ApplicationContext` (`[]` when unbound) and throws without a container. Defined in `packages/admin/src/hooks/use-features.ts`.
 
 ### useRoles
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
-import type { Container } from '@venizia/ignis-inversion';
+import { Container } from '@venizia/ignis-inversion';
 import { QueryClient } from '@tanstack/react-query';
 import {
   Authenticated,
@@ -15,7 +15,12 @@ import {
 import { Provider as ReduxProvider } from 'react-redux';
 import { Outlet, Route } from 'react-router-dom';
 
-import { type TArdorRoute, type TFeature, Features } from '@/features/feature';
+import {
+  type TArdorRoute,
+  type TFeature,
+  Features,
+  MountedFeaturesContext,
+} from '@/features/feature';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -173,6 +178,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return selected ?? Features.read({ container });
   }, [container, selected]);
 
+  // What `useFeatures` reads inside the shell: the list mounted here, not every bound feature.
+  const mountedScope = React.useMemo(() => {
+    const scope = new Container();
+    scope.bind({ key: CoreBindings.FEATURES }).toValue(features);
+
+    return scope;
+  }, [features]);
+
   // The application's own resources and routes, then each feature's it bound in `features()`.
   const mounted = React.useMemo(() => {
     return Features.mount({ features, resources, routes });
@@ -248,30 +261,32 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   return (
     <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
-      <CoreAdmin {...adminProps}>
-        {mounted.resources.map((resource) => {
-          return <Resource key={resource.name} {...resource} />;
-        })}
+      <MountedFeaturesContext.Provider value={mountedScope}>
+        <CoreAdmin {...adminProps}>
+          {mounted.resources.map((resource) => {
+            return <Resource key={resource.name} {...resource} />;
+          })}
 
-        <CustomRoutes>
-          {mounted.routes
-            .filter((route) => route.layout?.use !== false)
-            .map((route) => {
-              return renderRoute({ route, suspense });
-            })}
-        </CustomRoutes>
-
-        {/* react-admin renders a route outside the layout whatever the sign-in status: a public page. */}
-        {mounted.routes.some((route) => route.layout?.use === false) ? (
-          <CustomRoutes noLayout>
+          <CustomRoutes>
             {mounted.routes
-              .filter((route) => route.layout?.use === false)
+              .filter((route) => route.layout?.use !== false)
               .map((route) => {
                 return renderRoute({ route, suspense });
               })}
           </CustomRoutes>
-        ) : null}
-      </CoreAdmin>
+
+          {/* react-admin renders a route outside the layout whatever the sign-in status: a public page. */}
+          {mounted.routes.some((route) => route.layout?.use === false) ? (
+            <CustomRoutes noLayout>
+              {mounted.routes
+                .filter((route) => route.layout?.use === false)
+                .map((route) => {
+                  return renderRoute({ route, suspense });
+                })}
+            </CustomRoutes>
+          ) : null}
+        </CoreAdmin>
+      </MountedFeaturesContext.Provider>
     </Wrapper>
   );
 };

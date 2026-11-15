@@ -10,6 +10,7 @@ import { ArdorApplication } from '@/components/application';
 import type { TI18nSource } from '@/common';
 import type { TArdorRoute, TFeature } from '@/features';
 import { Features } from '@/features';
+import { useFeatures } from '@/hooks/use-features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
@@ -266,6 +267,34 @@ describe('ArdorApplication features prop', () => {
 
     expect(screen.queryByText('Open invoices')).toBeNull();
     expect(container.textContent).toBe('');
+  });
+
+  test('useFeatures returns the mounted features, not every bound one', async () => {
+    const MountedNames = () => {
+      const features = useFeatures();
+
+      return <p>{`mounted: ${features.map((feature) => feature.name).join(',')}`}</p>;
+    };
+
+    const names = Features.define({
+      name: 'names',
+      routes: [{ path: '/names', element: <MountedNames /> }],
+    });
+    const container = createFeatureContainer();
+    container.bind({ key: CoreBindings.FEATURES }).toValue([invoices, reports, names]);
+
+    render(
+      <MemoryRouter initialEntries={['/names']}>
+        <ArdorApplication
+          container={container}
+          suspense={<span>loading</span>}
+          features={[invoices, names]}
+        />
+      </MemoryRouter>,
+    );
+
+    const result = await screen.findByText('mounted: invoices,names');
+    expect(result).toBeDefined();
   });
 });
 

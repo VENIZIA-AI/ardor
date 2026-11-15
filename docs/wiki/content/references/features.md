@@ -232,7 +232,7 @@ Feature messages are merged per locale by `FeatureMessages` in `packages/admin/s
 
 ## Reading features with useFeatures
 
-The `useFeatures()` hook retrieves the array of features mounted in the container. If `CoreBindings.FEATURES` is not bound, it returns an empty array.
+The `useFeatures()` hook returns the features `ArdorApplication` mounts: the `features` prop when the shell passed one, else every feature bound under `CoreBindings.FEATURES`. Outside `ArdorApplication` it reads the container, and returns an empty array when `CoreBindings.FEATURES` is not bound.
 
 ```tsx
 import React from 'react';
