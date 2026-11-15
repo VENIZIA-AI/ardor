@@ -184,16 +184,16 @@ export const IndustryShell: React.FC<{
 
 - **The rule is yours.** ARDOR reads no context and has no predicate. `industries` is the shell's own extension, declared with `Features.define<IIndustryExtension>`; ARDOR carries it and never reads it.
 - **The list is read as given.** Pass the same array until the rule's input changes. ARDOR does not re-read it for a new workspace: remount the application with a `key` when the industry, plan or merchant changes. That remount is the app's job.
-- **Left out is not unbound.** A feature missing from `features` mounts no resource and no route, but the container still holds its configurations, and the i18n provider still holds its messages. A message key two features define still throws, even if one of them is not mounted.
+- **Left out is not unbound.** A feature missing from `features` mounts no resource and no route, but the container still holds its configurations, and the i18n provider still holds its messages. A message key two features define still throws when the i18n provider is built, even if one of them is not mounted.
 
 ## Message loading and suspense
 
 Feature messages are merged per locale by `FeatureMessages` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.
 
-- **Duplicate message keys:** If two features define the same leaf key for a locale, ARDOR throws:
+- **Duplicate message keys:** If two features define the same leaf key for a locale, the i18n provider throws when it is built, checking every locale in `languages` and the fallback locale, never when a user switches language:
   `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`
 - **Application overrides:** Application dictionaries in `i18nSources` override feature messages. See [Internationalization](./i18n).
-- **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. A loader may resolve to the messages or to an ES module whose default export is the messages, so `vi: () => import('./vi')` works and the keys are read unprefixed. For the initial locale, `ArdorApplication` displays the configured `suspense` fallback until the loader resolves.
+- **Lazy loading and suspense:** A feature can provide messages synchronously as an object or asynchronously through a loader function returning `Promise<object>`. A loader may resolve to the messages or to an ES module whose default export is the messages, so `vi: () => import('./vi')` works and the keys are read unprefixed. For the initial locale, `ArdorApplication` displays the configured `suspense` fallback until the loader resolves. A loader that fails (or a key that two lazy bundles both define) is logged, the locale shows the fallback messages, and the next `changeLocale()` tries the loader again.
 
 ## Reading features with useFeatures
 

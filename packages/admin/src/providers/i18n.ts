@@ -146,6 +146,31 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
 
     const featureMessages = new FeatureMessages({ features: this.features });
 
+    // A key two features define is a mistake of the build, found here for every locale the messages
+    // can be read in, never when a user switches language.
+    for (const locale of new Set([...locales, fallbackLocale])) {
+      featureMessages.readNow({ locale });
+    }
+
+    const logFailure = (opts: { locale: string; error: unknown }) => {
+      this.logger.error(
+        '[load] Messages of the features for locale %s failed to load, the fallback messages are used | error: %o',
+        opts.locale,
+        opts.error,
+      );
+    };
+
+    // What is there now, for a locale that has no source of its own to fall back on: never throws.
+    const readFeaturesNow = (locale: string): object => {
+      try {
+        return featureMessages.readNow({ locale });
+      } catch (error) {
+        logFailure({ locale, error });
+
+        return {};
+      }
+    };
+
     // The locales a read of `locale` needs: the fallback's messages are layered under its own.
     const readSet = (locale: string) => [...new Set([fallbackLocale, locale])];
 
@@ -161,11 +186,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     const composeNow = (locale: string) => {
       return this.composeMessages({
         locale,
-        messages: featureMessages.readNow({ locale }),
-        fallback: {
-          locale: fallbackLocale,
-          messages: featureMessages.readNow({ locale: fallbackLocale }),
-        },
+        messages: readFeaturesNow(locale),
+        fallback: { locale: fallbackLocale, messages: readFeaturesNow(fallbackLocale) },
       });
     };
 
@@ -180,10 +202,13 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
           return composeNow(locale);
         }
 
-        // The sources never reject (a failed one is logged and left to English); a feature's load can.
+        // A failed load is logged and adds nothing, so the switch always goes ahead and the next one
+        // tries again.
         return Promise.all(
           readSet(locale).flatMap((item) => [
-            featureMessages.read({ locale: item }),
+            featureMessages.read({ locale: item }).catch((error: unknown) => {
+              logFailure({ locale: item, error });
+            }),
             this.localeSources.read({ locale: item }),
           ]),
         ).then(() => composeNow(locale));

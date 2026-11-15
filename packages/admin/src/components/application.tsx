@@ -83,7 +83,7 @@ const renderRoute = (opts: { route: TArdorRoute }) => {
 /**
  * The i18n provider is built with the initial locale's eager messages only; when a feature loads
  * that locale lazily, `changeLocale()` to the same locale loads it before react-admin renders. A
- * failed load, such as a key two features define, is thrown from render for an error boundary.
+ * failed load of a custom i18n provider is thrown from render for an error boundary.
  */
 const useFeatureMessagesReady = (opts: {
   features: Array<TFeature>;

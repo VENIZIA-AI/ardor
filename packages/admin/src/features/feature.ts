@@ -116,7 +116,7 @@ export class Features {
 
   /**
    * Loads the lazy messages of the locale: `changeLocale()` to the same locale loads them before
-   * react-admin renders. A failed load, such as a key two features define, rejects.
+   * react-admin renders. With `DefaultI18nProvider` a failed load is logged and never rejects; a custom provider's rejection is passed on.
    */
   static async loadMessages(opts: {
     features: Array<TFeature>;

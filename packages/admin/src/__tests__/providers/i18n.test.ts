@@ -5,7 +5,7 @@ import { CoreBindings, LocalStorageKeys } from '@venizia/ardor-kernel';
 
 import type { TI18nSource } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { Features } from '@/features';
+import { Features, type TFeature } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 
 beforeEach(() => {
@@ -564,5 +564,101 @@ describe('DefaultI18nProvider initial locale detection', () => {
         Object.defineProperty(globalThis, 'navigator', descriptor);
       }
     }
+  });
+});
+
+describe('DefaultI18nProvider failed feature messages', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const spies: Array<{ mockRestore: () => void }> = [];
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) {
+      spy.mockRestore();
+    }
+  });
+
+  const build = (opts: { features: Array<TFeature>; languages?: typeof languages }) => {
+    const provider = new DefaultI18nProvider(
+      { languages: opts.languages ?? languages },
+      opts.features,
+    );
+    const error = spyOn(provider.logger, 'error').mockImplementation(() => undefined);
+    spies.push(error);
+
+    return { error, i18n: provider.value(new Container()) };
+  };
+
+  test('a feature loader that fails is logged, the locale shows English, and the next switch tries again', async () => {
+    const load = mock<() => Promise<object>>()
+      .mockRejectedValueOnce(new Error('chunk is down'))
+      .mockResolvedValueOnce({ reports: { title: 'Bao cao' } });
+    const reports = Features.define({
+      name: 'reports',
+      messages: { en: { reports: { title: 'Reports' } }, vi: load },
+    });
+    const { i18n, error } = build({ features: [reports] });
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.getLocale()).toBe('vi');
+    expect(i18n.translate('reports.title')).toBe('Reports');
+    expect(error).toHaveBeenCalledTimes(1);
+
+    await i18n.changeLocale('vi');
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(i18n.translate('reports.title')).toBe('Bao cao');
+    expect(error).toHaveBeenCalledTimes(1);
+  });
+
+  test('a key two features define in a locale that is not the initial one throws when the provider is built', () => {
+    const first = Features.define({ name: 'first', messages: { vi: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { vi: { shared: 'B' } } });
+
+    expect(() => build({ features: [first, second] })).toThrow(
+      "[features] Message 'shared' (vi) is defined by both 'first' and 'second'",
+    );
+  });
+
+  test('a key two features define in the fallback locale throws when the provider is built, even if it is not offered', () => {
+    const first = Features.define({ name: 'first', messages: { en: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { en: { shared: 'B' } } });
+
+    expect(() =>
+      build({ features: [first, second], languages: [{ locale: 'vi', name: 'Tieng Viet' }] }),
+    ).toThrow("[features] Message 'shared' (en) is defined by both 'first' and 'second'");
+  });
+
+  test('a key two features define only once their lazy bundles load is logged and the switch goes ahead', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { en: { first: 'F' }, vi: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { vi: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const { i18n, error } = build({ features: [first, second] });
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.getLocale()).toBe('vi');
+    expect(i18n.translate('first')).toBe('F');
+    expect(String(error.mock.calls[0]?.[0])).toContain('failed to load');
+  });
+
+  test('a locale the provider does not offer never makes changeLocale throw or reject', async () => {
+    const first = Features.define({ name: 'first', messages: { fr: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { fr: { shared: 'B' } } });
+    const { i18n } = build({ features: [first, second] });
+
+    const task = i18n.changeLocale('fr');
+    const result = await task;
+
+    expect(result).toBeUndefined();
+    expect(i18n.translate('ra.action.save')).toBe('Save');
   });
 });

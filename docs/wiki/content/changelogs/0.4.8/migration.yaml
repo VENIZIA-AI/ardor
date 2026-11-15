@@ -378,3 +378,17 @@ runtime-config-get-required:
       - Pin the ARDOR packages to 0.4.7 or earlier, where RuntimeConfig.getRequired does not exist.
       - 'Write RuntimeConfig.get({ key, required: true }) again for each RuntimeConfig.getRequired({ key }), and remove any transform.'
   data: Nothing stored.
+
+feature-key-collision-at-startup:
+  symbols: [DefaultI18nProvider, TFeature.messages]
+  upgrade:
+    before: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { shared: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { shared: { title: 'Kho' } } } });
+    after: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { orders: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { stock: { title: 'Kho' } } } });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 and the IGNIS packages to the 0.4.7 line; the collision is found again only when a user switches to that language.
+  data: Nothing stored changes. `assertArdorApplicationBoots` and any test that builds the i18n provider now fail on a collision in any offered language, which is the point.
