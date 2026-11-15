@@ -34,7 +34,7 @@ import { join } from 'node:path';
 
 import { ReleaseMergeBack } from './merge-back';
 import { ReleaseNotes } from './release-notes';
-import { ReleaseKinds } from './release-plan';
+import { ReleaseKinds } from './release-version';
 import { isReleaseVersion } from './release-version';
 
 export class GithubReleaseConstants {

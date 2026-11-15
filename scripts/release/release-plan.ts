@@ -20,12 +20,17 @@
  *
  *   bun scripts/release/release-plan.ts plan --packages kernel,react,admin,ardor --mode patch --ref refs/heads/main
  *
- * It prints the resolved version, writes `version`, `kind`, `npm_tag`, `catalog_tag` and `develop_sha` to
- * GITHUB_OUTPUT and a summary to GITHUB_STEP_SUMMARY, and exits 1 with every reason when it refuses.
+ * It prints the resolved version, writes `version`, `kind`, `npm_tag`, `catalog_tag`, `develop_sha` and
+ * `changelog_base` to GITHUB_OUTPUT and a summary to GITHUB_STEP_SUMMARY, and exits 1 with every reason when it refuses.
+ *
+ * A stable also needs its version folder `changelogs/<version>/log.md`, not yet carrying `released:` (the stamp is
+ * dry-run), and `changelog_base` is the previous stable tag of `ardor`, which the history check of the test job
+ * measures from (`ReleasePlan.changelogOf`).
  *
  * With `--merge-trial`, a stable also tries the merge of main back into develop (merge-back.ts) and refuses
  * when it would stop, before anyone is asked to approve; `develop_sha` is the head of develop that trial read
- * (empty for a prerelease, which has no merge back).
+ * (empty for a prerelease, which has no merge back). The trial's release commit carries the `released:` stamp when
+ * this run makes the release commit of `ardor`.
  *
  * With `--label` (the run title the dispatcher sent), a label that is not `<version> <kind> · <packages> ·
  * #<issue> · <short sha>` as this job computes it is refused; an empty label is a dispatch by hand. The
@@ -33,14 +38,23 @@
  * the truth.
  */
 
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
+import { GithubRelease, GithubReleaseConstants } from './github-release';
 import { fetchDistTags } from './release-gates';
-import { MergeBackConstants, ReleaseMergeBack } from './merge-back';
+import {
+  MergeBackConstants,
+  ReleaseMergeBack,
+  ReleaseStampConstants,
+  ReleaseStampText,
+} from './merge-back';
 import {
   isReleaseMode,
   isReleaseVersion,
+  ReleaseKinds,
   readReleaseArgs,
+  type TReleaseKind,
   type TReleaseTarget,
 } from './release-version';
 
@@ -65,12 +79,7 @@ export interface IDispatch {
   inputs: { packages: string; version: string; issue?: string; label?: string };
 }
 
-export class ReleaseKinds {
-  static readonly PRERELEASE = 'prerelease';
-  static readonly STABLE = 'stable';
-}
-
-export type TReleaseKind = typeof ReleaseKinds.PRERELEASE | typeof ReleaseKinds.STABLE;
+export { ReleaseKinds, type TReleaseKind } from './release-version';
 
 /** What one dispatch releases and under which tags, decided before anything is built. */
 export interface IRunPlan {
@@ -543,6 +552,71 @@ export class ReleasePlan {
     return problems;
   }
 
+  /**
+   * What a stable needs of its changelog, decided before the approval. The version folder belongs to the four packages
+   * together: a stable needs `<changelogs>/<version>/log.md`, and the release commit of `ardor` (the last of a run)
+   * dates it, so the stamp is dry-run here and `stampDate` is what the merge trial writes. A run whose `ardor` is
+   * already at the version made that commit earlier: it stamps nothing, and accepts the date the folder carries.
+   * `base` is the previous stable tag of `ardor`, where the history check of the test job measures from. A prerelease
+   * needs nothing, and neither does a project that keeps dated entries (`knowledge.migrationFrom` is not a version).
+   */
+  static changelogOf(opts: { cwd: string; plan: IRunPlan; date: string }): {
+    problems: string[];
+    base: string;
+    stampDate?: string;
+  } {
+    const { cwd, plan, date } = opts;
+
+    if (
+      plan.kind !== ReleaseKinds.STABLE ||
+      !existsSync(join(cwd, GithubReleaseConstants.MANIFEST))
+    ) {
+      return { problems: [], base: '', stampDate: undefined };
+    }
+
+    const manifest = GithubRelease.manifestOf({ cwd });
+    const base =
+      GithubRelease.previousTag({
+        tags: GithubRelease.tagsOf({ cwd }),
+        pattern: manifest.tagPattern,
+        dir: MergeBackConstants.LEADING_DIR,
+        version: plan.version,
+        stableOnly: true,
+      }) ?? '';
+    const stamps = plan.packages.includes(MergeBackConstants.LEADING_DIR);
+
+    if (
+      manifest.migrationFrom === undefined ||
+      !ReleaseStampConstants.VERSION.test(manifest.migrationFrom)
+    ) {
+      return { problems: [], base, stampDate: undefined };
+    }
+
+    const path = `${manifest.changelogs}/${plan.version}/${ReleaseStampConstants.LOG_FILE}`;
+
+    if (!existsSync(join(cwd, path))) {
+      return {
+        problems: [
+          `the stable ${plan.version} has no version folder: write ${path} before releasing it`,
+        ],
+        base,
+        stampDate: undefined,
+      };
+    }
+
+    const problem = ReleaseStampText.problemOf({
+      text: readFileSync(join(cwd, path), 'utf8'),
+      healing: !stamps,
+      date,
+    });
+
+    return {
+      problems: problem === undefined ? [] : [`${path} ${problem}`],
+      base,
+      stampDate: stamps ? date : undefined,
+    };
+  }
+
   /** What the run page shows about the plan: the target, the tags and who has to approve it. */
   static summaryOf(opts: { plan: IRunPlan; target: TReleaseTarget; ref: string }): string {
     const { plan } = opts;
@@ -724,6 +798,18 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
     );
   }
 
+  // A stable needs its version folder, not yet released: refused here, before the approval.
+  const changelog =
+    plan === undefined
+      ? { problems: [], base: '', stampDate: undefined }
+      : ReleasePlan.changelogOf({
+          cwd: process.cwd(),
+          plan,
+          date: new Date().toISOString().slice(0, 10),
+        });
+
+  problems.push(...changelog.problems);
+
   if (plan?.kind === ReleaseKinds.STABLE && problems.length === 0) {
     const tag = ReleasePlan.prereleaseTagOf({
       packages: packages.filter((planned) => plan.packages.includes(planned.name)),
@@ -762,6 +848,8 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
       main: process.env.GITHUB_SHA ?? MergeBackConstants.DEFAULT_MAIN,
       develop: MergeBackConstants.DEFAULT_DEVELOP,
       scratchRoot: process.env.RUNNER_TEMP ?? MergeBackConstants.SCRATCH_ROOT,
+      // The release commit of ardor dates the folder: the trial makes the same commit, unless this run makes none.
+      stampDate: changelog.stampDate,
     });
 
     developSha = trial.developHead;
@@ -790,7 +878,7 @@ const runPlan = async (opts: { argv: string[] }): Promise<number> => {
   if (output !== undefined) {
     appendFileSync(
       output,
-      `version=${plan.version}\nkind=${plan.kind}\nnpm_tag=${plan.npmTag}\ncatalog_tag=${plan.catalogTag}\ndevelop_sha=${developSha}\n`,
+      `version=${plan.version}\nkind=${plan.kind}\nnpm_tag=${plan.npmTag}\ncatalog_tag=${plan.catalogTag}\ndevelop_sha=${developSha}\nchangelog_base=${changelog.base}\n`,
     );
   }
   if (summary !== undefined) {
