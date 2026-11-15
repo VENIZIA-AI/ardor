@@ -302,10 +302,10 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 `IAppUser` is yours to trust: `getUser()` reads browser storage, so the extra fields are whatever your sign-in saved. Check them where a wrong value would do harm.
 
-**8. Run `bun run typecheck`.** The errors name each use left. The `devz` codemod of step 1 rewrites the imports of the two names; the other replacements depend on the value, so there is no codemod for them.
+**8. Run `bun check`.** The errors name each use left. The `devz` codemod of step 1 rewrites the imports of the two names; the other replacements depend on the value, so there is no codemod for them.
 
 ## How to go back
 
-Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 7. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
+Pin the four ARDOR packages to `0.4.7`, with the IGNIS packages of the 0.4.7 line, where `AnyType` and `AnyObject` exist, and undo steps 1 to 7. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
 
 Nothing stored changes: the identity in `localStorage` has the same shape before and after.
