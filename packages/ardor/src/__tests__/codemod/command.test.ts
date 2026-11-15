@@ -226,7 +226,7 @@ describe('the codemod commands', () => {
       expect(result15).toBe(1);
     });
 
-    test('a rewrite prints a note that does not fail --check', async () => {
+    test('a rewrite prints a note and exits 0 with --write', async () => {
       seed({ 'src/a.ts': AUTH_NEW.replace('use: true, ', '') });
 
       const result16 = await AuthOptionsCommand.run({ root, args: ['--write'] });

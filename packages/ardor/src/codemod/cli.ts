@@ -89,7 +89,8 @@ that names other members is split, and the new line joins an import of @venizia/
 the file already has. An import from @venizia/ardor is correct already and is left.
 
 Listed with their line and left for you: a namespace import of the kernel that reads
-BaseArdorApplication, and an export * from the kernel. A package that depends only on the kernel
+BaseArdorApplication. An export * from the kernel is printed as a note and never fails --check.
+A package that depends only on the kernel
 should extend AbstractArdorApplication instead of importing this class.
 
   --write    write the changed files (without it, nothing is written)
