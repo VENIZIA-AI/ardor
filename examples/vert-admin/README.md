@@ -27,7 +27,7 @@ Create a user with `POST /v1/api/auth/sign-up`, as the README of `vert` shows, a
 | File | What it shows |
 | --- | --- |
 | `src/application.ts` | The application alone, with `AutoArtifacts` from the Vite plugin |
-| `src/constants/vert-paths.ts`, `src/services/`, `src/providers/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, the 401 refresh as a `refreshToken` hook of a network service subclass returned by `createNetworkService`, and the provider options - one decorated class per file |
+| `src/constants/vert-paths.ts`, `src/services/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, and the provider options, with the 401 refresh set by `authRecovery.refreshTokenPath` and run by the default network service - one decorated class per file |
 | `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useService`, `useNotifyError` with an `ApplicationError` |
 
 ---

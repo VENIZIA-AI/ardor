@@ -69,6 +69,6 @@ Before reading the source, skim [What is ARDOR](/overview/what-is-ardor.md) and
 [Onboarding](/overview/onboarding.md) for the shape of an application, then
 [Application lifecycle](/architecture/application-lifecycle.md) and
 [DI in the browser](/architecture/di-in-the-browser.md) to understand `@configuration` + `@provide` and
-the registration modes. The files worth opening in order are `src/application.ts` (the application and `AutoArtifacts`), `src/configurations/admin.configuration.ts` (the three providers, the translate augmentation), `src/datasources/` and `src/repositories/` (one decorated class per file), `src/pages/product-list.tsx` (the three hooks used
+the registration modes. The files worth opening in order are `src/application.ts` (the application and `AutoArtifacts`), `src/configurations/admin.configuration.ts` (the three provider options, the translate augmentation), `src/datasources/` and `src/repositories/` (one decorated class per file), `src/pages/product-list.tsx` (the three hooks used
 together), `src/main.tsx` (`ArdorApplication` receiving the container), and `api/server.ts` (the
 list contract, especially `content-range`).
