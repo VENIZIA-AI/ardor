@@ -5,7 +5,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
 CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 
-.PHONY: test test-all test-scripts gates gates-refreshed links-check copies-check purity purity-test clean-install layer-check cycles-check \
+.PHONY: test test-all test-examples test-scripts gates gates-refreshed links-check copies-check purity purity-test clean-install layer-check cycles-check \
         size-check $(TEST_TARGETS) $(PURITY_TARGETS) $(CLEAN_INSTALL_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -22,6 +22,11 @@ test-all: $(TEST_TARGETS)
 
 $(TEST_TARGETS): test-%:
 	@$(MAKE) --no-print-directory -C packages/$* test
+
+# The test script of every example (the shell example has real tests). Needs a build.
+test-examples:
+	@echo "🧪 Testing the examples..."
+	@$(foreach e,$(EXAMPLES),bun run --cwd examples/$(e) test &&) true
 
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:

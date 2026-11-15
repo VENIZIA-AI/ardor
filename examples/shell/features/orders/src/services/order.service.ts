@@ -1,7 +1,7 @@
 import { BaseService, inject, service } from '@venizia/ardor';
 
 import { OrderStatuses } from '../constants';
-import type { OrderRepository } from '../repositories/order.repository';
+import { OrderRepository } from '../repositories/order.repository';
 
 export interface IOrderSummary {
   open: number;
@@ -10,10 +10,8 @@ export interface IOrderSummary {
 
 @service()
 export class OrderService extends BaseService {
-  static readonly REPOSITORY_KEY = 'repositories.OrderRepository';
-
   constructor(
-    @inject({ key: OrderService.REPOSITORY_KEY })
+    @inject({ target: OrderRepository })
     private readonly orders: OrderRepository,
   ) {
     super({ scope: OrderService.name });

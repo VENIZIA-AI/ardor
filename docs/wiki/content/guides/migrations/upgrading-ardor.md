@@ -84,8 +84,10 @@ An app with sign-in must say so: the auth options need `use: true`. The codemod 
 
 ```text
 src/configurations/shop.ts:12  authProvider(): instantiate(DefaultAuthProvider).value()  delete this method and the APPLICATION_INSTANCE it injects if nothing else uses it: ARDOR binds DefaultAuthProvider itself
-src/configurations/shop.ts:20  restDataProvider(): instantiate(CountRestDataProvider).value()  replace this method by one line in bindContext(): .toProvider(CountRestDataProvider) on the key, and delete the APPLICATION_INSTANCE it injects if nothing else uses it
+src/configurations/shop.ts:20  restDataProvider(): instantiate(CountRestDataProvider).value()  replace this method by one line in bindContext(): .toProvider(CountRestDataProvider).setScope(BindingScopes.SINGLETON) on the key, and delete the APPLICATION_INSTANCE it injects if nothing else uses it
 ```
+
+It also lists a bare `<expr>.instantiate(DefaultAuthService)` that a method returns. It says "delete this method" only for a default class under its own `DEFAULT_*` key: under another key, deleting the method would unbind that key, so it says to bind the class there with `.toProvider(X).setScope(BindingScopes.SINGLETON)` in `bindContext()`. For an auth provider of your own under `DEFAULT_AUTH_PROVIDER` it adds the step the migration needs: bind `CoreBindings.AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`, because with no options sign-in is off and `start()` fails.
 
 The exit code is 0, or 1 with `--check` when it found a place. `--write` is a usage error (exit 2): you make the change by hand.
 

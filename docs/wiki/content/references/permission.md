@@ -102,7 +102,7 @@ Each grant is a string with a resource and an action, joined by one dot:
 Rules the provider follows:
 
 - A user may do what any of their roles grants: the grants of several roles add up.
-- Nothing else is allowed. A user with no roles, nobody signed in, and a role with no entry in the table are all denied. There is no deny grant.
+- Nothing else is allowed. A user with no roles, nobody signed in (a stored role with no stored token counts as nobody), and a role with no entry in the table are all denied. There is no deny grant.
 - The roles are read on every check, so a new sign-in changes the answers at once.
 - A pattern is checked when the provider is built. An empty string, a pattern with more than one dot, or an empty resource or action (`'orders.'`) throws an error that names the role and the pattern.
 - A resource name must not contain a dot.

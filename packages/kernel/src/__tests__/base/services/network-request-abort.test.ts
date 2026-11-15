@@ -146,6 +146,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
     expect(nameOf(error)).toBe('AbortError');
     expect(requested.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(0);
+    expect(requested.filter((entry) => entry.pathname === '/guarded')).toHaveLength(0);
   });
 
   test('a request that outlives the timeout rejects with a 504 that names the path and the milliseconds', async () => {
@@ -223,6 +224,23 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
     expect(nameOf(error)).toBe('AbortError');
     expect(codeOf(error)).toBeUndefined();
+  });
+
+  test('an abort that arrives while the refresh hangs rejects at once, with no timeout to end the wait', async () => {
+    refreshDelay = 1500;
+    const controller = new AbortController();
+    const startedAt = performance.now();
+
+    const aborted = RejectionHelper.rejectionOf({
+      task: get({ service: createService(), path: 'guarded', signal: controller.signal }),
+    });
+
+    await Bun.sleep(40);
+    controller.abort();
+    const error = await aborted;
+
+    expect(nameOf(error)).toBe('AbortError');
+    expect(performance.now() - startedAt).toBeLessThan(800);
   });
 
   test('aborting a call whose 401 started the refresh leaves the refresh running and the other caller unaffected', async () => {

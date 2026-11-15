@@ -1,6 +1,6 @@
 import * as inversion from '@venizia/ignis-inversion';
 
-import { ApplicationProviders, Features } from '@venizia/ardor-admin';
+import { ApplicationProviders, Features, type II18nProviderOptions } from '@venizia/ardor-admin';
 import { type AbstractArdorApplication, CoreBindings } from '@venizia/ardor-kernel';
 
 // The browser fakes live in the kernel, so the React and admin tests can use them without a cycle.
@@ -123,7 +123,16 @@ export const assertArdorApplicationBoots = async <Application extends AbstractAr
     const features = Features.read({ container: target });
     Features.mount({ features });
     const offered = i18nProvider.getLocales?.().map((language) => language.locale) ?? [];
-    const locales = locale ? [locale] : offered.length ? offered : [i18nProvider.getLocale()];
+    const i18nOptions = target.get<II18nProviderOptions>({
+      key: CoreBindings.I18N_PROVIDER_OPTIONS,
+      isOptional: true,
+    });
+    const fallbackLocale = i18nOptions?.fallback?.locale;
+    const checked = offered.length ? offered : [i18nProvider.getLocale()];
+    // The fallback locale fills the gaps of every language, so its messages are read as the others are.
+    const locales = locale
+      ? [locale]
+      : [...new Set([...checked, ...(fallbackLocale ? [fallbackLocale] : [])])];
     await Features.verifyMessages({ features, locales });
 
     // A skip that matched is a binding that exists: the core rejects one that matched nothing.
