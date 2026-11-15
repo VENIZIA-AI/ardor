@@ -1,6 +1,6 @@
 ---
 title: Auto boot
-description: How an ARDOR app finds every service, repository, datasource, component and configuration at build time with the Vite artifacts plugin, binds them at start, and what to do when it does not.
+description: How an ARDOR app finds its decorated classes at build time, binds them at start, and what to do when a class is not found.
 ---
 
 # Auto boot
@@ -118,7 +118,7 @@ Import `AutoArtifacts` only where the application class is defined (`src/applica
 
 ## Kits and features
 
-A shared package has its own classes. Two ways to bring them in.
+A shared package has its own classes. Two ways to bring them in. The scan reads workspace packages, those whose real path is outside `node_modules`: a package installed from a registry is not scanned, so its classes are registered by hand in `bindContext()`.
 
 **A feature lists its classes.** `Features.define({ ... })` takes `artifacts`, the classes of the feature by value, in the same shape as the index (`services`, `repositories`, `dataSources`, `components`, `configurations`). Importing the feature imports and so discovers them, and `start()` checks every class it lists was discovered. The application mounts the feature in `features()`. This is the way to ship a feature as its own package; [Features](../../references/features) has the other fields.
 
@@ -183,12 +183,11 @@ Several groups compose in the same array: `[AutoArtifacts, OrdersGroup, BillingG
 
 ## Registering by hand
 
-You can register a class without the plugin: `this.service(X)`, `this.repository(X)`, `this.dataSource(X)` and `this.component(X)` in `bindContext()`, or a literal key in `bindingList()`. The class is resolved by class exactly as a discovered one is.
+You can register a class without the plugin, and without a stereotype on it (a decorated class is bound by discovery whether or not you list it): `this.service(X)`, `this.repository(X)`, `this.dataSource(X)` and `this.component(X)` in `bindContext()`, or a literal key in `bindingList()`. The class is resolved by class exactly as a discovered one is.
 
 ```ts
-import { BaseArdorApplication, type IApplicationInfo, service } from '@venizia/ardor';
+import { BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
 
-@service()
 export class ClockService {
   now(): number {
     return Date.now();
@@ -206,7 +205,7 @@ export class Application extends BaseArdorApplication {
 }
 ```
 
-Prefer it for a very small app, for a test that should bind only what it needs, and for a class that must be bound under a condition the stereotype cannot say. The cost is a list you keep: a class you forget to register is an `is not bounded in context` error at the first render.
+Prefer it for a very small app, for a test that should bind only what it needs, and for a class that must be bound under a condition the stereotype cannot say. The cost is a list you keep: a class you forget to register is a `No binding key is recorded on ClockService` error where a hook resolves it.
 
 ## Resolve what the app bound
 
@@ -297,7 +296,7 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 
 ### `` [registerArtifacts] Two classes derive the binding key '<key>' from their class name, and the second would silently replace the first | A minified build renames classes - pin 'binding: { namespace, key }' or build with names kept (keepNames). A module evaluated twice by hot reload does the same - set 'bootChecks.allowDerivedKeyCollision' in that development setup ``
 
-- **Where:** `ArtifactBindingKeys.describeCollision`, `kernel/src/base/metadata/artifact-keys.ts:45` in the IGNIS repository (`@venizia/ignis-kernel` 0.4.8-14), called from `registerArtifacts()` in `abstract.ts`
+- **Where:** `ArtifactBindingKeys.describeCollision`, `kernel/src/base/metadata/artifact-keys.ts:83` in the IGNIS repository (`@venizia/ignis-kernel` 0.4.8-16), called from `registerArtifacts()` in `abstract.ts`
 - **Why:** Two classes of one name in two files.
 - **Fix:** Rename one, or pin the key: `@service({ binding: { namespace: 'services', key: 'billing' } })`.
 
