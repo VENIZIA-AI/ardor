@@ -305,6 +305,15 @@ export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
 
+/** The options of `RolePermissionProvider`, bound under `CoreBindings.PERMISSION_PROVIDER_OPTIONS`. */
+export interface IRolePermissionProviderOptions {
+  /**
+   * Role name to grant patterns. A pattern is `'<resource>.<action>'`, `'<resource>.*'`, `'*.<action>'`
+   * or `'*'`; anything else throws when the provider is built.
+   */
+  grants: Record<string, ReadonlyArray<string>>;
+}
+
 /**
  * The contract of an application: lifecycle hooks, registration of artifacts, and `start`. Picked
  * from `AbstractArdorApplication`, so its signatures are the class's own.

@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (99)
+### `@venizia/ardor-kernel` (101)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -65,6 +65,7 @@ generated:
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
@@ -84,6 +85,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -256,7 +258,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (195)
+### `@venizia/ardor` (197)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -332,6 +334,7 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IRouteAccess` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
@@ -377,6 +380,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const

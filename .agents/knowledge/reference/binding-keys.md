@@ -27,6 +27,7 @@ generated:
 | `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` |
 | `FEATURES` | `@app/application/features` |
 | `PERMISSION_PROVIDER` | `@app/application/permission/provider` |
+| `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` |
 
 ## LocalStorageKeys
 
