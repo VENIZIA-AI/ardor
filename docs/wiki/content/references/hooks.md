@@ -136,7 +136,7 @@ export function TenantHeaderButton() {
 - **Parameters**: `opts: IUseInjectableByTarget<TInstance> | IUseInjectableByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`. `TUseInjectableOptions` is the union of the two.
 - **Return value**: for `{ target }`, the instance type of the class. For `{ key }`, the type that [`IUseInjectableKeyTypes`](../best-practices/module-augmentation) lists for the key (`IDataProvider`, `IAuthProvider` and react-admin's `I18nProvider` for the three `CoreBindings` providers), else the type you pass as the generic, `unknown` without one.
 - **Gotcha**: the generic of a `{ key }` that is not in `IUseInjectableKeyTypes` is your claim: nothing checks it against what the binding holds. A key bound by `toValue` or `toProvider` holds the value, not a class: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` holds the `IDataProvider` the provider returns, not a `DefaultRestDataProvider`.
-- **Gotcha**: a hook resolves once per component instance and container, and again when the container, the `key` or the `target` changes. Every binding scope, `BindingScopes.TRANSIENT` included, gives one instance for the life of the component; a second component gets its own. A binding replaced in the container is not picked up until the component mounts again.
+- **Gotcha**: a hook resolves on every render, as the container does for every `get`. A `BindingScopes.TRANSIENT` binding gives a new instance each time, so keep an instance that holds state in a `SINGLETON` binding (the default).
 - **Gotcha**: when resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If the key is bound to another class (two classes of the same name share `<namespace>.<ClassName>`), the hook throws and names the key and the class. A subclass bound under the key of its parent is accepted. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useService
@@ -211,7 +211,7 @@ export function DataProviderWidget() {
 
 - **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
 - **Return value**: for `{ target }`, the instance type of the class. For `{ key }` of `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `DEFAULT_AUTH_PROVIDER` or `DEFAULT_I18N_PROVIDER`, `IDataProvider`, `IAuthProvider` or react-admin's `I18nProvider`; the same for any key in `IUseInjectableKeyTypes`. For another key, the type you pass as the generic (your claim), else `unknown`.
-- **Gotcha**: when passing `target`, throws if the class is bound under a namespace other than `providers`. Resolves once per component instance, like `useInjectable`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+- **Gotcha**: when passing `target`, throws if the class is bound under a namespace other than `providers`. Resolves on every render, like `useInjectable`. Defined in `packages/react/src/hooks/use-artifact.ts`.
 
 ### useComponent
 

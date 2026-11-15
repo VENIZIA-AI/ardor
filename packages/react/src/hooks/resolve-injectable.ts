@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
 interface IResolveInjectableOptions {
@@ -11,19 +9,18 @@ interface IResolveInjectableOptions {
   namespace?: string;
 }
 
-interface IResolved {
-  container: Container;
-  subject: string | TClass<unknown> | undefined;
-  value: unknown;
-}
-
 const isSameOrSubclass = (opts: { bound: TClass<unknown>; target: TClass<unknown> }): boolean => {
   const { bound, target } = opts;
 
   return bound === target || bound.prototype instanceof target;
 };
 
-const resolveInjectable = (opts: IResolveInjectableOptions): unknown => {
+/**
+ * The one resolution path of every injectable hook. It resolves on every render, as the container
+ * does for every `get`: a `TRANSIENT` binding gives a new instance each time, so keep an instance that
+ * holds state in a `SINGLETON` binding, or hold it yourself in `useState`.
+ */
+export const resolveInjectable = (opts: IResolveInjectableOptions): unknown => {
   const { container, key, target, hook, namespace } = opts;
 
   if (key) {
@@ -68,30 +65,4 @@ const resolveInjectable = (opts: IResolveInjectableOptions): unknown => {
   }
 
   return container.get<unknown>({ key: resolved });
-};
-
-/**
- * The one resolution path of every injectable hook. It resolves once per component instance and
- * container, and again when the container or the `key` or `target` changes, so a `TRANSIENT` binding
- * keeps one instance across the renders of a component. A binding replaced in the same container is
- * not picked up until the component mounts again.
- */
-export const useResolvedInjectable = (opts: IResolveInjectableOptions): unknown => {
-  const { container } = opts;
-  const subject = opts.key || opts.target;
-
-  const [resolved, setResolved] = React.useState<IResolved>(() => ({
-    container,
-    subject,
-    value: resolveInjectable(opts),
-  }));
-
-  if (resolved.container === container && resolved.subject === subject) {
-    return resolved.value;
-  }
-
-  const next: IResolved = { container, subject, value: resolveInjectable(opts) };
-  setResolved(next);
-
-  return next.value;
 };

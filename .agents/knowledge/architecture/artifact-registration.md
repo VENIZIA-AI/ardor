@@ -166,8 +166,8 @@ container comes from `useApplicationContainer`: the option, else `ApplicationCon
   [module augmentation](/architecture/module-augmentation.md). The return type comes from
   `IUseInjectableKeyTypes` for a key listed there, else from the caller's generic.
 
-Every hook resolves once per component instance and container, so a `TRANSIENT` binding keeps one
-instance across renders (`packages/react/src/hooks/resolve-injectable.ts`).
+Every hook resolves on every render (`packages/react/src/hooks/resolve-injectable.ts`), so a
+`TRANSIENT` binding gives a new instance each time.
 
 `useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
 two shapes as an options object, never a positional class. With `{ target }` the return type is

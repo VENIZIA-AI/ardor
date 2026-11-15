@@ -165,7 +165,7 @@ When `OrderProcessingService` is resolved, the container resolves `services.Audi
 
 In ARDOR, all registrations default to `BindingScopes.SINGLETON`, so every component and every class that injects the same dependency shares one instance (`packages/kernel/src/base/applications/abstract.ts`). To opt out, pass `{ scope: BindingScopes.TRANSIENT }` (from `@venizia/ignis-inversion`) when registering with `@service({ scope: BindingScopes.TRANSIENT })` or `this.service(Target, { scope: BindingScopes.TRANSIENT })` if an instance must hold mutable, caller-specific state.
 
-A hook resolves once per component instance and container, whatever the scope. A `TRANSIENT` binding gives each component its own instance, and that instance stays the same across the renders of that component, so state kept on it survives a render. A component that mounts again resolves a new one. A binding replaced in the container is not picked up by a component that is already mounted.
+A hook resolves on every render, as the container does for every `get`. A `TRANSIENT` binding therefore gives a new instance on each render, so state kept on it is lost: keep an instance that holds state in a `SINGLETON` binding (the default), or hold it yourself in `useState`.
 
 ## Common startup errors and how to fix them
 

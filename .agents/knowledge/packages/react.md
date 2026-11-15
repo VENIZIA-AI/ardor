@@ -30,7 +30,7 @@ Defined in `src/contexts/application.ts`, this is a plain `React.createContext<I
 - `{ container?, target }` - resolve by class, using the container's metadata registry to look up the binding key registered via decorators like `@service` or `@component`. The return type is the class's instance type. The bound class is compared with `target`, and a mismatch (two classes of one name) throws.
 - `{ container?, key }` - resolve by binding key, for a binding with no class. The type comes from `IUseInjectableKeyTypes` when the key is listed there, else from the caller's generic.
 
-The hooks resolve once per component instance and container (`src/hooks/resolve-injectable.ts`, one path for `useInjectable` and the per-stereotype hooks), so a `TRANSIENT` binding keeps one instance across renders.
+The hooks resolve on every render through one path (`src/hooks/resolve-injectable.ts`, shared by `useInjectable` and the per-stereotype hooks), so a `TRANSIENT` binding gives a new instance each time.
 
 If no `container` override is passed, it falls back to `applicationContext.container` read via `React.useContext`. If neither is available it throws. If a `target` is given but no binding key can be resolved for it, it throws with a message telling the caller to decorate the class or register it explicitly - see [binding key namespaces](/conventions/binding-key-namespaces.md) and "Registration by stereotype" in [DI in the browser](/architecture/di-in-the-browser.md).
 

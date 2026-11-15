@@ -1,6 +1,6 @@
 import { BindingNamespaces } from '@venizia/ardor-kernel';
 
-import { useResolvedInjectable } from './resolve-injectable';
+import { resolveInjectable } from './resolve-injectable';
 import {
   useApplicationContainer,
   type IUseInjectableByKey,
@@ -29,7 +29,7 @@ const useArtifactInNamespace = (opts: {
   const { options, namespace, hook } = opts;
   const container = useApplicationContainer({ container: options.container });
 
-  return useResolvedInjectable({
+  return resolveInjectable({
     container,
     key: options.key,
     target: options.target,

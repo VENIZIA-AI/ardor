@@ -68,8 +68,8 @@ this.service(AuditService, { binding: { namespace: 'services', key: 'audit' } })
 
 Every kind defaults to `BindingScopes.SINGLETON`, discovery included. IGNIS's server defaults
 services and repositories to transient; ARDOR does not, because every component then shares one
-repository or service. `scope` overrides it per registration; a hook resolves once per component
-instance, so a transient binding gives each component one instance for its life.
+repository or service. `scope` overrides it per registration; a hook resolves on every render, so a transient
+binding gives a new instance each time.
 
 The older `injectable(scope, X, tags?)` still binds `<scope>.<ClassName>` as a singleton and records
 the key; prefer the per-kind methods, whose namespace is a constant rather than a string you type.

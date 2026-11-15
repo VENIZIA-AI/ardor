@@ -4,7 +4,7 @@ import { type Container, getError, type TClass } from '@venizia/ignis-inversion'
 
 import type { CoreBindings, ValueOf } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '../contexts/application';
-import { useResolvedInjectable } from './resolve-injectable';
+import { resolveInjectable } from './resolve-injectable';
 
 /** Declaration-merge string keys into this interface to make them valid `key` values of the injectable hooks. */
 export interface IUseInjectableKeysOverrides {}
@@ -109,12 +109,13 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
 
 /**
  * Resolves an instance from the container by `target` class, or by `key` for a binding that has no
- * class. It resolves once per component instance and container, so every binding scope, `TRANSIENT`
- * included, gives one instance for the life of a component. A `target` bound to another class of the
- * same name, and a `target` with no recorded binding key, throw.
+ * class. It resolves on every render, as the container does for every `get`: a `TRANSIENT` binding
+ * gives a new instance each time, so keep an instance that holds state in a `SINGLETON` binding. A
+ * `target` bound to another class of the same name, and a `target` with no recorded binding key,
+ * throw.
  *
- * - `{ target }` returns the instance type of the class. A generic you pass with it must be a type
- *   the class satisfies; leave it out.
+ * - `{ target }` returns the instance type of the class. Leave the generic out: one you pass with it
+ *   is your claim, and nothing checks it.
  * - `{ key }` of a key in `IUseInjectableKeyTypes` (the providers of `CoreBindings`, and the keys an
  *   application adds) returns the type listed there.
  * - Any other `{ key }` returns the type you pass as the generic. That type is your claim: nothing
@@ -142,13 +143,18 @@ export function useInjectable<TKey extends keyof IUseInjectableKeyTypes>(
 export function useInjectable<TInstance = unknown>(
   opts: IUseInjectableByTarget<TInstance> | IUseInjectableByKey,
 ): TInstance;
+// A generic written with a target that the class does not satisfy still compiles, as it always did.
+export function useInjectable<TInstance = unknown>(
+  // oxlint-disable-next-line typescript/unified-signatures -- keeps a generic that the class does not satisfy compiling
+  opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey,
+): TInstance;
 
 export function useInjectable(
   opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey,
 ): unknown {
   const container = useApplicationContainer({ container: opts.container });
 
-  return useResolvedInjectable({
+  return resolveInjectable({
     container,
     key: opts.key,
     target: opts.target,

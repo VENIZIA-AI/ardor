@@ -157,24 +157,21 @@ describe('the per-stereotype hooks', () => {
   });
 });
 
-describe('the per-stereotype hooks resolve once per component', () => {
-  test('a transient service keeps one instance across renders and differs per component', () => {
+describe('the per-stereotype hooks and the scope of the binding', () => {
+  test('a singleton service is the same instance on every render', () => {
     const container = new Container();
     container
       .bind({ key: 'services.AuditService' })
       .toClass(AuditService)
-      .setScope(BindingScopes.TRANSIENT);
-    const wrapper = createWrapper({ container });
+      .setScope(BindingScopes.SINGLETON);
 
-    const one = renderHook(() => useService({ target: AuditService }), { wrapper });
+    const one = renderHook(() => useService({ target: AuditService }), {
+      wrapper: createWrapper({ container }),
+    });
     const first = one.result.current;
     one.rerender();
 
     expect(one.result.current).toBe(first);
-
-    const two = renderHook(() => useService({ target: AuditService }), { wrapper });
-
-    expect(two.result.current).not.toBe(first);
   });
 
   test('useService names its own hook when another class of the same name holds the key', () => {

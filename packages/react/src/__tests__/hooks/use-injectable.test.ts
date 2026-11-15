@@ -273,8 +273,8 @@ describe('useInjectable infers the instance type of a target', () => {
   });
 });
 
-describe('useInjectable checks the generic that goes with a target', () => {
-  test('a type the class satisfies compiles, and one it does not is a compile error', () => {
+describe('useInjectable keeps accepting a generic that goes with a target', () => {
+  test("a type the class satisfies and one it does not both compile: the generic is the caller's claim", () => {
     const container = new Container({ scope: 'test' });
     container.bind({ key: 'services.PricingService' }).toClass(PricingService);
 
@@ -283,15 +283,17 @@ describe('useInjectable checks the generic that goes with a target', () => {
         const asInterface: { label: string } = useInjectable<{ label: string }>({
           target: PricingService,
         });
-        // @ts-expect-error `PricingService` has no `unitPrice`
-        useInjectable<{ unitPrice: number }>({ target: PricingService });
+        const claimed: { unitPrice: number } = useInjectable<{ unitPrice: number }>({
+          target: PricingService,
+        });
 
-        return asInterface;
+        return { asInterface, claimed };
       },
       { wrapper: createWrapper({ container }) },
     );
 
-    expect(result.current.label).toBe('PricingService');
+    expect(result.current.asInterface.label).toBe('PricingService');
+    expect(result.current.claimed).toBeInstanceOf(PricingService);
   });
 });
 
@@ -374,17 +376,13 @@ describe('useInjectable checks the bound class', () => {
   });
 });
 
-describe('useInjectable resolves once per component and container', () => {
-  const bindTransient = ({ container }: { container: Container }) => {
+describe('useInjectable and the scope of the binding', () => {
+  test('a singleton binding gives the same instance on every render', () => {
+    const container = new Container({ scope: 'test' });
     container
       .bind({ key: 'services.PricingService' })
       .toClass(PricingService)
-      .setScope(BindingScopes.TRANSIENT);
-  };
-
-  test('a transient binding gives the same instance on every render of one component', () => {
-    const container = new Container({ scope: 'test' });
-    bindTransient({ container });
+      .setScope(BindingScopes.SINGLETON);
 
     const { result, rerender } = renderHook(() => useInjectable({ target: PricingService }), {
       wrapper: createWrapper({ container }),
@@ -392,40 +390,25 @@ describe('useInjectable resolves once per component and container', () => {
     const first = result.current;
 
     rerender();
-    rerender();
 
     expect(result.current).toBe(first);
   });
 
-  test('a transient binding gives another instance to another component', () => {
+  test('a transient binding gives a new instance on every render, as the container does for every get', () => {
     const container = new Container({ scope: 'test' });
-    bindTransient({ container });
-    const wrapper = createWrapper({ container });
+    container
+      .bind({ key: 'services.PricingService' })
+      .toClass(PricingService)
+      .setScope(BindingScopes.TRANSIENT);
 
-    const one = renderHook(() => useInjectable({ target: PricingService }), { wrapper });
-    const two = renderHook(() => useInjectable({ target: PricingService }), { wrapper });
+    const { result, rerender } = renderHook(() => useInjectable({ target: PricingService }), {
+      wrapper: createWrapper({ container }),
+    });
+    const first = result.current;
 
-    expect(two.result.current).not.toBe(one.result.current);
-  });
+    rerender();
 
-  test('resolves again when the container changes, and not when it stays', () => {
-    const first = new Container({ scope: 'first' });
-    const second = new Container({ scope: 'second' });
-    bindTransient({ container: first });
-    bindTransient({ container: second });
-
-    const { result, rerender } = renderHook(
-      (props: { container: Container }) =>
-        useInjectable({ target: PricingService, container: props.container }),
-      { initialProps: { container: first } },
-    );
-    const fromFirst = result.current;
-
-    rerender({ container: first });
-    expect(result.current).toBe(fromFirst);
-
-    rerender({ container: second });
-    expect(result.current).not.toBe(fromFirst);
+    expect(result.current).not.toBe(first);
   });
 
   test('resolves again when the key changes', () => {
