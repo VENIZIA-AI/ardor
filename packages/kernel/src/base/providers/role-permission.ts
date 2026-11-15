@@ -113,7 +113,7 @@ export class RolePermissionProvider extends BaseHelper implements IPermissionPro
     }
   }
 
-  async canAccess(opts: { resource: string; action: string }): Promise<boolean> {
+  async canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean> {
     const { resource, action } = opts;
 
     for (const role of this.authService.getRoles()) {

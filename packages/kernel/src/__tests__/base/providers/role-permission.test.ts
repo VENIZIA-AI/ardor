@@ -72,6 +72,18 @@ describe('RolePermissionProvider', () => {
     expect(result3).toBe(false);
   });
 
+  test('the class itself takes the record of a react-admin check, which the grants do not read', async () => {
+    const { service, provider } = create({ grants: { [Roles.EDITOR]: ['orders.edit'] } });
+    signIn({ service, userId: '1', roles: [Roles.EDITOR] });
+
+    const result = await provider.canAccess({
+      resource: Resources.ORDERS,
+      action: Actions.EDIT,
+      record: { id: 1 },
+    });
+    expect(result).toBe(true);
+  });
+
   test('a wildcard action allows every action of the resource', async () => {
     const { service, provider } = create({ grants: { [Roles.EDITOR]: ['orders.*'] } });
     signIn({ service, userId: '1', roles: [Roles.EDITOR] });
