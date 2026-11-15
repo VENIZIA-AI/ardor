@@ -80,8 +80,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
       return stored;
     }
 
-    const tags =
-      typeof navigator === 'undefined' ? [] : [navigator.language, ...navigator.languages];
+    // A runtime with a `navigator` may lack `language` or `languages` (Bun, a test DOM).
+    const tags = (
+      typeof navigator === 'undefined' ? [] : [navigator.language, ...(navigator.languages ?? [])]
+    ).filter((tag): tag is string => typeof tag === 'string');
 
     for (const tag of tags) {
       for (const candidate of [tag, tag.split('-')[0]]) {

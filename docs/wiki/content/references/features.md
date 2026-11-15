@@ -75,7 +75,7 @@ export class CommerceApplication extends BaseArdorApplication {
 | `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
 | `CoreBindings.FEATURES` | binding key | Key `'@app/application/features'`, where `preConfigure()` binds the mounted feature array |
 
-The `Features` helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, and `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources. `IFeatureBase` is declared in `packages/kernel/src/common/types.ts`.
+The `Features` helpers: `define()` types a feature, `read()` resolves bound features, `mount()` merges resources and routes, `hasPendingMessages()` and `loadMessages()` read and load the lazy i18n sources, and `verifyMessages({ features, locales })` loads and merges the features' messages of each locale, without changing a provider's locale, and rejects on the first failure (`assertArdorApplicationBoots` uses it). `IFeatureBase` is declared in `packages/kernel/src/common/types.ts`.
 
 ## Options
 

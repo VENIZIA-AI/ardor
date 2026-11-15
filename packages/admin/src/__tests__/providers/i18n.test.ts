@@ -546,6 +546,34 @@ describe('DefaultI18nProvider initial locale detection', () => {
     expect(initialOf({ browser: 'vi-VN', offered: ['en', 'vi'] })).toBe('en');
   });
 
+  test('a navigator that has no languages list still gives its language', () => {
+    setNavigator({ language: 'vi-VN' });
+    Object.defineProperty(navigator, 'languages', { value: undefined, configurable: true });
+
+    const i18n = new DefaultI18nProvider({
+      languages: [
+        { locale: 'en', name: 'English' },
+        { locale: 'vi', name: 'Tieng Viet' },
+      ],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test('a navigator that has no language at all falls to the first offered language', () => {
+    Object.defineProperty(navigator, 'language', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'languages', { value: undefined, configurable: true });
+
+    const i18n = new DefaultI18nProvider({
+      languages: [
+        { locale: 'vi', name: 'Tieng Viet' },
+        { locale: 'en', name: 'English' },
+      ],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
   test('without a navigator the first offered language is used', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
     Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true });

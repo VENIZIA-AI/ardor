@@ -22,7 +22,7 @@ In order, and it stops at the first failure with the error the app would raise:
 1. Calls `start()`: the artifact index, the stereotype bindings, the features, `bindContext()`.
 2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed.
 3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (optional) and the i18n provider, through the same function the component calls.
-4. Reads and mounts the features, and loads the messages of the first locale, so a key two features define fails here.
+4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched.
 
 `fetch` is replaced for the run by a function that rejects, so nothing leaves the process, and put back afterwards. The helper returns the application it started.
 
@@ -31,7 +31,7 @@ In order, and it stops at the first failure with the error the app would raise:
 | Option | Type | Default | Meaning |
 |---|---|---|---|
 | `skipBindings` | `Array<TClass \| string>` | none | Bindings left unresolved: a class, a class name or a binding key. |
-| `locale` | `string` | the i18n provider's | The locale whose messages must load. |
+| `locale` | `string` | every offered locale | Check this one locale only. |
 | `allowEmpty` | `boolean` | `false` | An application with nothing to check and no feature rejects: the artifact index is usually empty. |
 
 `skipBindings` takes an exact class, a class name or a binding key, among the five namespaces of step 2. A skip that matches no binding rejects, so a typo does not skip silently. It does not reach step 3.
