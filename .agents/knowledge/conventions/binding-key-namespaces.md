@@ -67,9 +67,9 @@ this.service(AuditService, { binding: { namespace: 'services', key: 'audit' } })
 `allowOverride: false` throws when the key is already bound instead of silently replacing it.
 
 Every kind defaults to `BindingScopes.SINGLETON`, discovery included. IGNIS's server defaults
-services and repositories to transient; ARDOR does not, because a React hook resolves on every
-render and a transient repository would hand each render a new instance (an effect keyed on it
-loops). `scope` overrides it per registration.
+services and repositories to transient; ARDOR does not, because every component then shares one
+repository or service. `scope` overrides it per registration; a hook resolves once per component
+instance, so a transient binding gives each component one instance for its life.
 
 The older `injectable(scope, X, tags?)` still binds `<scope>.<ClassName>` as a singleton and records
 the key; prefer the per-kind methods, whose namespace is a constant rather than a string you type.
@@ -139,7 +139,7 @@ literal keys in `bindingList()` are what types `useInjectable({ key })`:
 
 One limit remains: **a derived key is still `<namespace>.<Class.name>`**, and the container stores
 bindings by that string. Two classes with the same name in one namespace share one binding, the last
-registered wins, and resolving the first by `target` returns the second. Two same-named classes in
+registered wins, and resolving the first by `target` throws, naming the key and the class, because the hook compares the bound class with the target. Two same-named classes in
 different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
 explicit `binding` avoids it.
 

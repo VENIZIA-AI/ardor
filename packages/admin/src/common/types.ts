@@ -2,10 +2,18 @@ import type { Store } from '@reduxjs/toolkit';
 import type { ILogger } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
-import type { AuthProvider, CoreAdminProps, DataProvider, Locale, ResourceProps } from 'ra-core';
+import type {
+  AuthProvider,
+  CoreAdminProps,
+  DataProvider,
+  I18nProvider,
+  Locale,
+  ResourceProps,
+} from 'ra-core';
 import type { ReactNode } from 'react';
 
 import type {
+  CoreBindings,
   DefaultNetworkRequestService,
   IDataSourceAuth,
   INetworkResponse,
@@ -103,6 +111,21 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
   getRoles: (params?: unknown) => Promise<Set<string>>;
   /** `true` when the session was refreshed, `false` when there is no refresh to make. */
   refreshToken: () => Promise<boolean>;
+}
+
+/**
+ * Types the provider keys of `CoreBindings` for `useInjectable({ key })` and `useProvider({ key })`.
+ * The two hooks live in `@venizia/ardor-react`, which cannot import this package, so they read the
+ * types from `IUseInjectableKeyTypes` and this package fills it in. The block is part of the
+ * declaration files of `@venizia/ardor-admin`, which `@venizia/ardor` re-exports: an application
+ * that imports either gets the types with no augmentation of its own.
+ */
+declare module '@venizia/ardor-react' {
+  interface IUseInjectableKeyTypes {
+    [CoreBindings.DEFAULT_REST_DATA_PROVIDER]: IDataProvider;
+    [CoreBindings.DEFAULT_AUTH_PROVIDER]: IAuthProvider;
+    [CoreBindings.DEFAULT_I18N_PROVIDER]: I18nProvider;
+  }
 }
 
 /**

@@ -156,3 +156,45 @@ describe('the per-stereotype hooks', () => {
     );
   });
 });
+
+describe('the per-stereotype hooks resolve once per component', () => {
+  test('a transient service keeps one instance across renders and differs per component', () => {
+    const container = new Container();
+    container
+      .bind({ key: 'services.AuditService' })
+      .toClass(AuditService)
+      .setScope(BindingScopes.TRANSIENT);
+    const wrapper = createWrapper({ container });
+
+    const one = renderHook(() => useService({ target: AuditService }), { wrapper });
+    const first = one.result.current;
+    one.rerender();
+
+    expect(one.result.current).toBe(first);
+
+    const two = renderHook(() => useService({ target: AuditService }), { wrapper });
+
+    expect(two.result.current).not.toBe(first);
+  });
+
+  test('useService names its own hook when another class of the same name holds the key', () => {
+    const createPlain = () => {
+      @service()
+      class Plain {}
+
+      return Plain;
+    };
+
+    const bound = createPlain();
+    const other = createPlain();
+
+    const container = new Container();
+    container.bind({ key: 'services.Plain' }).toClass(bound);
+
+    expect(() =>
+      renderHook(() => useService({ target: other }), {
+        wrapper: createWrapper({ container }),
+      }),
+    ).toThrow(/\[useService\] The key "services\.Plain" is bound to the class Plain/);
+  });
+});
