@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (99)
+### `@venizia/ardor-kernel` (100)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -45,6 +45,7 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
@@ -207,13 +208,14 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (44)
+### `@venizia/ardor-admin` (45)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
 - `BaseArdorApplication` class
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultRestDataProvider` class
 - `englishMessages` const
@@ -256,7 +258,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (195)
+### `@venizia/ardor` (197)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -286,6 +288,7 @@ generated:
 - `datasource` const
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
@@ -303,6 +306,7 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface

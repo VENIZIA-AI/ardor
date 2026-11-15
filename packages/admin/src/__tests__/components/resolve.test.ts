@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { describe, expect, mock, test } from 'bun:test';
 
-import { ApplicationProviders } from '@/components/resolve';
+import { ApplicationProviders, DefaultBindingTags } from '@/components/resolve';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings, type TAuthProviderOptions } from '@venizia/ardor-kernel';
@@ -19,6 +19,8 @@ const authProvider = {
 
 const createContainer = (opts: {
   withAuthProvider: boolean;
+  /** The binding is ARDOR's default one, as `BaseArdorApplication.bindDefaults()` makes it. */
+  isDefaultAuthProvider?: boolean;
   withI18nProvider?: boolean;
   authOptions?: TAuthProviderOptions;
 }) => {
@@ -26,7 +28,13 @@ const createContainer = (opts: {
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({ id: 'data' });
 
   if (opts.withAuthProvider) {
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
+    const binding = container
+      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toValue(authProvider);
+
+    if (opts.isDefaultAuthProvider) {
+      binding.setTags(DefaultBindingTags.DEFAULT);
+    }
   }
 
   if (opts.authOptions) {
@@ -41,6 +49,10 @@ const createContainer = (opts: {
 };
 
 const signInOff: Array<TAuthProviderOptions | undefined> = [undefined, { use: false }];
+
+const bindDefault = (authOptions: TAuthProviderOptions | undefined) => {
+  return createContainer({ withAuthProvider: true, isDefaultAuthProvider: true, authOptions });
+};
 
 describe('ApplicationProviders.resolve', () => {
   test('returns the data, auth and i18n providers the application bound, with sign-in on', () => {
@@ -72,21 +84,36 @@ describe('ApplicationProviders.resolve', () => {
 
   test('leaves a bound auth provider out unless the options say { use: true }', () => {
     for (const authOptions of signInOff) {
-      const providers = ApplicationProviders.resolve({
-        container: createContainer({ withAuthProvider: true, authOptions }),
-      });
+      const providers = ApplicationProviders.resolve({ container: bindDefault(authOptions) });
 
       expect(providers.authProvider).toBeUndefined();
     }
   });
 
+  test('an auth provider of the application under DEFAULT_AUTH_PROVIDER with no options throws instead of going public', () => {
+    // An app of 0.4.7 binds its own provider and no options: sign-in would be off and the provider dropped.
+    const container = createContainer({ withAuthProvider: true });
+
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow(CoreBindings.AUTH_PROVIDER_OPTIONS);
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow('{ use: false }');
+  });
+
+  test('an auth provider of the application with { use: false } is left out, as the app said', () => {
+    const providers = ApplicationProviders.resolve({
+      container: createContainer({ withAuthProvider: true, authOptions: { use: false } }),
+    });
+
+    expect(providers.authProvider).toBeUndefined();
+  });
+
   test('isAuthRequired with sign-in off throws, saying to set { use: true }', () => {
     for (const authOptions of signInOff) {
       expect(() => {
-        ApplicationProviders.resolve({
-          container: createContainer({ withAuthProvider: true, authOptions }),
-          isAuthRequired: true,
-        });
+        ApplicationProviders.resolve({ container: bindDefault(authOptions), isAuthRequired: true });
       }).toThrow('{ use: true }');
     }
   });
@@ -125,7 +152,11 @@ describe('ApplicationProviders.resolve', () => {
   test('throws when the i18n provider is unbound', () => {
     expect(() =>
       ApplicationProviders.resolve({
-        container: createContainer({ withAuthProvider: true, withI18nProvider: false }),
+        container: createContainer({
+          withAuthProvider: true,
+          authOptions: { use: false },
+          withI18nProvider: false,
+        }),
       }),
     ).toThrow(CoreBindings.DEFAULT_I18N_PROVIDER);
   });
@@ -145,7 +176,7 @@ describe('ApplicationProviders.assertConfigured', () => {
   test('passes when every provider the application resolves is bound', () => {
     expect(() => {
       ApplicationProviders.assertConfigured({
-        container: createContainer({ withAuthProvider: true }),
+        container: createContainer({ withAuthProvider: true, authOptions: { use: true } }),
       });
     }).not.toThrow();
   });

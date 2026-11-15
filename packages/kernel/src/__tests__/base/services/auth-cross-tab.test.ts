@@ -64,6 +64,20 @@ describe('DefaultAuthService and the session of another tab', () => {
     stop();
   });
 
+  test('a listener learns whether the change came from another tab', () => {
+    const tab = serviceOf();
+    const otherTab = serviceOf();
+    const external: Array<boolean> = [];
+    const stop = tab.subscribe({ listener: (change) => external.push(change.isExternal) });
+
+    signIn(tab, 'alice');
+    signIn(otherTab, 'bob');
+    fromOtherTab({ keys: ['@app/auth/token', '@app/auth/identity', '@app/auth/permission'] });
+
+    expect(external).toEqual([false, true]);
+    stop();
+  });
+
   test('a sign-out in another tab reaches the subscribers of this one', () => {
     const tab = serviceOf();
     const otherTab = serviceOf();
