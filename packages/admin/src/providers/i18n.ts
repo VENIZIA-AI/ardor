@@ -62,9 +62,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   }
 
   /**
-   * The locale the admin starts in: the browser's language when it is one of `locales`, else `en`.
-   * Read when the provider is built, not when the module is imported. Without a `navigator` the
-   * language is `en-US`.
+   * The locale the admin starts in, read when the provider is built, not when the module is imported:
+   * the stored locale; else the first of the browser's languages (`navigator.languages`) that
+   * `locales` offers, each tried as the full tag (`pt-BR`) and then as its primary subtag
+   * (`pt`); else the first of `locales`; else `en`.
    */
   protected resolveInitialLocale(opts: { locales: Array<string> }): string {
     const stored = this.localeKey
@@ -79,10 +80,22 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
       return stored;
     }
 
-    const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
-    const [language] = (browserLanguage?.length ? browserLanguage : 'en-US').split('-');
+    const tags =
+      typeof navigator === 'undefined' ? [] : [navigator.language, ...navigator.languages];
 
-    return opts.locales.includes(language) ? language : 'en';
+    for (const tag of tags) {
+      for (const candidate of [tag, tag.split('-')[0]]) {
+        const match = opts.locales.find(
+          (locale) => locale.toLowerCase() === candidate.toLowerCase(),
+        );
+
+        if (match) {
+          return match;
+        }
+      }
+    }
+
+    return opts.locales[0] ?? DefaultI18nProvider.DEFAULT_LOCALE;
   }
 
   /**

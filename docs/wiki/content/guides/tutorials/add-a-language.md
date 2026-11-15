@@ -125,7 +125,7 @@ Always augment `@venizia/ardor` rather than internal packages directly. For deta
 
 ## 4. Language switcher and initial locale
 
-`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It inspects the browser language (`navigator.language`, taking the segment before `-`) and activates it if present in `languages`, falling back to `'en'`. If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
+`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It takes the stored locale, else the first of the browser's languages (`navigator.languages`) that `languages` offers, as the full tag (`pt-BR`) and then as its primary subtag (`pt`), else the first entry of `languages`. An app that offers only Vietnamese therefore starts in Vietnamese. See [Initial locale](/references/i18n.md#initial-locale). If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
 
 The locale the user picks is stored in `localStorage` (`@app/prefs/locale`) and read first on the next visit, so a reload keeps the language. A sign-out does not remove it. Set `locale: { persist: { use: false } }` in the options to turn it off (see [The chosen locale is kept](/references/i18n.md#the-chosen-locale-is-kept)).
 

@@ -478,3 +478,91 @@ describe('DefaultI18nProvider persisted locale', () => {
     expect(localStorage.getItem(key)).toBeNull();
   });
 });
+
+describe('DefaultI18nProvider initial locale detection', () => {
+  const setNavigator = (opts: { language: string; languages?: Array<string> }) => {
+    Object.defineProperty(navigator, 'language', { value: opts.language, configurable: true });
+    Object.defineProperty(navigator, 'languages', {
+      value: opts.languages ?? [opts.language],
+      configurable: true,
+    });
+  };
+
+  const original = { language: navigator.language, languages: [...navigator.languages] };
+
+  afterEach(() => {
+    setNavigator(original);
+  });
+
+  const initialOf = (opts: {
+    browser: string;
+    offered: Array<string>;
+    languages?: Array<string>;
+  }) => {
+    setNavigator({ language: opts.browser, languages: opts.languages });
+
+    return new DefaultI18nProvider({
+      languages: opts.offered.map((locale) => ({ locale, name: locale })),
+    })
+      .value(new Container())
+      .getLocale();
+  };
+
+  const cases: Array<{ browser: string; offered: Array<string>; expected: string }> = [
+    { browser: 'fr-FR', offered: ['vi'], expected: 'vi' },
+    { browser: 'fr-FR', offered: ['en', 'vi'], expected: 'en' },
+    { browser: 'fr-FR', offered: ['vi', 'en'], expected: 'vi' },
+    { browser: 'pt-BR', offered: ['pt-BR', 'en'], expected: 'pt-BR' },
+    { browser: 'pt-BR', offered: ['en', 'pt'], expected: 'pt' },
+    { browser: 'zh-TW', offered: ['zh-CN', 'zh-TW'], expected: 'zh-TW' },
+    { browser: 'vi-vn', offered: ['en', 'vi-VN'], expected: 'vi-VN' },
+    { browser: 'en-US', offered: ['vi'], expected: 'vi' },
+    { browser: 'vi-VN', offered: ['en', 'vi'], expected: 'vi' },
+    { browser: 'en-US', offered: [], expected: 'en' },
+  ];
+
+  test.each(cases)(
+    'the browser $browser with $offered starts in $expected',
+    ({ browser, offered, expected }) => {
+      expect(initialOf({ browser, offered })).toBe(expected);
+    },
+  );
+
+  test('a later browser preference is used when the first is not offered', () => {
+    expect(
+      initialOf({ browser: 'fr-FR', languages: ['fr-FR', 'vi-VN'], offered: ['en', 'vi'] }),
+    ).toBe('vi');
+  });
+
+  test('a language the browser lists first wins over one it lists later', () => {
+    expect(
+      initialOf({ browser: 'vi-VN', languages: ['vi-VN', 'en-US'], offered: ['en', 'vi'] }),
+    ).toBe('vi');
+  });
+
+  test('the stored locale comes before the browser', async () => {
+    localStorage.setItem(LocalStorageKeys.scoped().locale, 'en');
+
+    expect(initialOf({ browser: 'vi-VN', offered: ['en', 'vi'] })).toBe('en');
+  });
+
+  test('without a navigator the first offered language is used', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true });
+
+    try {
+      const i18n = new DefaultI18nProvider({
+        languages: [
+          { locale: 'vi', name: 'Tieng Viet' },
+          { locale: 'en', name: 'English' },
+        ],
+      }).value(new Container());
+
+      expect(i18n.getLocale()).toBe('vi');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'navigator', descriptor);
+      }
+    }
+  });
+});
