@@ -48,7 +48,7 @@ Create `src/application.ts`:
 `src/application.ts` creates the application container by extending `BaseArdorApplication`. Its `artifacts()` method returns `AutoArtifacts`, which supplies the list of decorated classes discovered at build time.
 
 > [!WARNING]
-> The module that imports `AutoArtifacts` must not define decorated classes or be imported by them. Violating this rule creates an import cycle that leads to `[artifacts] '<kind>' lists an entry that is not a class (position N)` during startup. Keep each decorated class in its own file and keep `application.ts` free of decorated classes.
+> The module that imports `AutoArtifacts` must not define decorated classes or be imported by them. Violating this rule creates an import cycle that leads to `[artifacts] 'services' lists an entry that is not a class (position N)` during startup. Keep each decorated class in its own file and keep `application.ts` free of decorated classes.
 
 ## 5. Pages
 
