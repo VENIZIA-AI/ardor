@@ -216,7 +216,8 @@ export class ReleaseChain {
    * The plan refused a stable without its folder before the approval, so a missing one here stamps nothing.
    */
   static stampOf(opts: {
-    changelogs: string;
+    /** The manifest's changelog folder, read only for a stable: a prerelease never reads the manifest. */
+    changelogsOf: () => string;
     version: string;
     exists: (path: string) => boolean;
     now: Date;
@@ -225,7 +226,7 @@ export class ReleaseChain {
       return undefined;
     }
 
-    const log = `${opts.changelogs}/${opts.version}/${ReleaseStampConstants.LOG_FILE}`;
+    const log = `${opts.changelogsOf()}/${opts.version}/${ReleaseStampConstants.LOG_FILE}`;
 
     return opts.exists(log) ? { log, date: opts.now.toISOString().slice(0, 10) } : undefined;
   }
@@ -1495,7 +1496,7 @@ const main = async (): Promise<void> => {
         : undefined,
     builtOn: ports.readBuiltOn?.(),
     stamp: ReleaseChain.stampOf({
-      changelogs: GithubRelease.manifestOf({ cwd: process.cwd() }).changelogs,
+      changelogsOf: () => GithubRelease.manifestOf({ cwd: process.cwd() }).changelogs,
       version: args.version,
       exists: (path) => existsSync(path),
       now: new Date(),

@@ -1511,13 +1511,20 @@ describe('ReleaseChain for a stable: the release commit of ardor dates the versi
 
   test('ReleaseChain.stampOf: a stable whose folder log.md is on disk is stamped today; anything else is not', () => {
     const exists = (path: string) => path === stamp.log;
+    const read: string[] = [];
     const base = {
-      changelogs: 'docs/wiki/content/changelogs',
+      changelogsOf: () => {
+        read.push('manifest');
+
+        return 'docs/wiki/content/changelogs';
+      },
       now: new Date('2026-11-20T23:59:00Z'),
     };
 
-    expect(ReleaseChain.stampOf({ ...base, version: '0.4.9', exists })).toEqual(stamp);
     expect(ReleaseChain.stampOf({ ...base, version: '0.4.9-3', exists })).toBeUndefined();
+    // A prerelease never reads the manifest: none of the stamp runs for it.
+    expect(read).toEqual([]);
+    expect(ReleaseChain.stampOf({ ...base, version: '0.4.9', exists })).toEqual(stamp);
     expect(
       ReleaseChain.stampOf({ ...base, version: '0.4.9', exists: () => false }),
     ).toBeUndefined();

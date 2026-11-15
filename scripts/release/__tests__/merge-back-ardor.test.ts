@@ -193,6 +193,14 @@ describe('ReleaseStampText: the released: line of a version folder', () => {
     expect(ReleaseStampText.problemOf({ text: 'Body.\n', healing: false, date })).toContain(
       'no frontmatter',
     );
+    // An empty released: line is refused, not read as no date: the stamp would not overwrite it.
+    expect(
+      ReleaseStampText.problemOf({
+        text: front('title: 0.4.9', 'released:'),
+        healing: false,
+        date,
+      }),
+    ).toContain('already says released');
     // A run that continues one which already made the stamped release commit accepts its date.
     expect(
       ReleaseStampText.problemOf({ text: dated, healing: true, date: '2026-11-21' }),
