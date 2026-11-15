@@ -1,7 +1,9 @@
 /**
- * Copied from VENIZIA-AI/vulcan, scripts/release/merge-back.ts, at fe4c6771 (VULCAN #557). ARDOR changes: the scratch
- * root is the runner's temp folder or this repository's .agents/local/tmp, never the system temp folder; the
- * imports carry no `.ts`; nothing else. Fix a defect in VULCAN first and copy the fix.
+ * Copied from VENIZIA-AI/vulcan, scripts/release/merge-back.ts, at fe4c6771 (VULCAN #557), with the stamp of a version
+ * folder from VULCAN #971 and IGNIS #1241. ARDOR changes: the scratch root is the runner's temp folder or this
+ * repository's .agents/local/tmp, never the system temp folder; the imports carry no `.ts`; the version folder the trial
+ * stamps is the one of `ardor`, the umbrella, whose release commit is the last of a run. Fix a defect in VULCAN first
+ * and copy the fix.
  *
  * The merge back of a stable release: `main`, which now holds the release commit, flows into `develop`.
  *
@@ -18,11 +20,13 @@
  *
  * A conflict is resolved only when it is the `version` field of a `package.json` (the greater version wins, so a
  * stable `0.4.9` beats `0.4.9-3` and `0.4.10-0` beats `0.4.9`) or `bun.lock` (regenerated, never merged by hand,
- * and checked to differ from `develop`'s only in workspace versions). Anything else stops the merge, with the
+ * and checked to differ from `develop`'s only in workspace versions) or a version folder's `log.md` (the `released:`
+ * line the release commit added; resolved when it is the only difference). Anything else stops the merge, with the
  * checkout back as it was, and the reason is printed.
  */
 import {
   appendFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -46,6 +50,11 @@ export class MergeBackConstants {
   static readonly LOCK_VERSION_LINE = /^\s*"version": "[^"]+",?$/;
 
   static readonly LOCK_FILE = 'bun.lock';
+  /** The `log.md` of a version folder, `<X.Y.Z>/log.md`, at the end of a repository-relative path. */
+  static readonly FOLDER_LOG = /(?:^|\/)\d+\.\d+\.\d+\/log\.md$/;
+  static readonly MANIFEST = '.agents/vulcan.manifest.json';
+  /** The package whose release commit dates the version folder: the umbrella, the last of a run. */
+  static readonly LEADING_DIR = 'ardor';
   static readonly PACKAGE_FILE = 'package.json';
   static readonly DEFAULT_MAIN = 'origin/main';
   static readonly DEFAULT_DEVELOP = 'origin/develop';
@@ -66,13 +75,103 @@ export interface IGitResult {
 }
 
 export interface IMergeBackResult {
-  /** `package.json` files whose conflict was only the version. */
+  /** `package.json` files whose conflict was only the version, and `log.md` files whose conflict was only `released:`. */
   resolved: string[];
   lockRegenerated: boolean;
   /** Why the merge stopped; empty when it went through. */
   problems: string[];
   /** The merge commit, when `commit` was asked for and the merge went through. */
   head?: string;
+}
+
+/**
+ * The stamp of a stable release lives in this file because the publish job copies `merge-back.ts` alone to the runner
+ * and runs it there: it has no relative import, and `stamp-release.ts`, the plan job and the trial all take these from it.
+ */
+export class ReleaseStampConstants {
+  static readonly VERSION = /^\d+\.\d+\.\d+$/;
+  static readonly DATE = /^\d{4}-\d{2}-\d{2}$/;
+  static readonly FRONT_MATTER = /^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n)/;
+  /** `[ \t]*`, not `\s*`: an empty `released:` must not read the next line as its value. */
+  static readonly RELEASED = /^released:[ \t]*(.*?)[ \t]*$/m;
+  static readonly LOG_FILE = 'log.md';
+  static readonly USAGE = 'stamp-release: --version <X.Y.Z> --date <YYYY-MM-DD>';
+}
+
+/** The text of a version folder's `log.md` as the stamp reads and writes it: pure functions. */
+export class ReleaseStampText {
+  /**
+   * `text` with `released: <date>` as the last line of its frontmatter. `undefined` when it already says that date
+   * (nothing to write); an error when it says another, or has no frontmatter to put the line in.
+   */
+  static stamped(opts: { text: string; date: string }): string | undefined {
+    const matched = ReleaseStampConstants.FRONT_MATTER.exec(opts.text);
+
+    if (matched === null) {
+      throw new Error('log.md has no frontmatter to write released: into');
+    }
+
+    const existing = ReleaseStampConstants.RELEASED.exec(matched[2])?.[1];
+
+    if (existing !== undefined) {
+      if (existing === opts.date) {
+        return undefined;
+      }
+
+      throw new Error(`log.md already says released: ${existing}; a released folder is frozen`);
+    }
+
+    const lineBreak = matched[1].endsWith('\r\n') ? '\r\n' : '\n';
+
+    return `${matched[1]}${matched[2]}${lineBreak}released: ${opts.date}${matched[3]}${opts.text.slice(matched[0].length)}`;
+  }
+
+  /** The date the frontmatter of `text` says it was released on; `undefined` when it says none (the body is not read). */
+  static releasedOf(opts: { text: string }): string | undefined {
+    const matched = ReleaseStampConstants.FRONT_MATTER.exec(opts.text);
+
+    return matched === null
+      ? undefined
+      : ReleaseStampConstants.RELEASED.exec(matched[2])?.[1] || undefined;
+  }
+
+  /** `text` without the `released:` line of its frontmatter; unchanged when it has none. */
+  static withoutReleased(opts: { text: string }): string {
+    const matched = ReleaseStampConstants.FRONT_MATTER.exec(opts.text);
+
+    if (matched === null) {
+      return opts.text;
+    }
+
+    const lineBreak = matched[1].endsWith('\r\n') ? '\r\n' : '\n';
+    const kept = matched[2]
+      .split(/\r?\n/)
+      .filter((line) => !/^released:/.test(line))
+      .join(lineBreak);
+
+    return `${matched[1]}${kept}${matched[3]}${opts.text.slice(matched[0].length)}`;
+  }
+
+  /**
+   * Why the stamp cannot be written into `text`, or `undefined` when it can: it runs the stamp itself, so the plan
+   * reports exactly what the release commit would. `healing` is a run that does not make the release commit of
+   * `ardor` (an earlier run made it and dated the folder): a date there is accepted.
+   */
+  static problemOf(opts: { text: string; healing: boolean; date: string }): string | undefined {
+    try {
+      const stamped = ReleaseStampText.stamped({ text: opts.text, date: opts.date });
+
+      return !opts.healing && stamped === undefined
+        ? `already says released: ${opts.date}; a released folder is frozen`
+        : undefined;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      return opts.healing && message.includes('already says released')
+        ? undefined
+        : message.replace(/^log\.md /, '');
+    }
+  }
 }
 
 export class ReleaseMergeBack {
@@ -165,6 +264,61 @@ export class ReleaseMergeBack {
     }
   }
 
+  /**
+   * The text a conflicted version folder `log.md` resolves to, or the reason it cannot: the release commit added
+   * `released: <date>` as the last line of the frontmatter, and `develop` edited the lines around it. The three sides
+   * lose that line and are merged by `git merge-file`: clean means the stamp was the only difference, and the line is
+   * written back. A folder `develop` already dated differently, or released before the stamp, is not resolved.
+   */
+  static resolveStampConflict(opts: {
+    base: string;
+    ours: string;
+    theirs: string;
+    scratchRoot: string;
+  }): { text?: string; problem?: string } {
+    const [base, ours, theirs] = [opts.base, opts.ours, opts.theirs].map((text) =>
+      ReleaseStampText.releasedOf({ text }),
+    );
+    const date = theirs ?? ours;
+
+    if (base !== undefined) {
+      return { problem: 'the base already says released:, a released folder is frozen' };
+    }
+
+    if (date === undefined) {
+      return { problem: 'neither side has a released: line, so it is not a stamp conflict' };
+    }
+
+    if (ours !== undefined && theirs !== undefined && ours !== theirs) {
+      return { problem: `the sides date the folder differently (${ours}, ${theirs})` };
+    }
+
+    const directory = mkdtempSync(join(opts.scratchRoot, 'merge-back-'));
+
+    try {
+      const sides = { ours: opts.ours, base: opts.base, theirs: opts.theirs };
+
+      for (const [name, text] of Object.entries(sides)) {
+        writeFileSync(join(directory, name), ReleaseStampText.withoutReleased({ text }));
+      }
+
+      const merged = ReleaseMergeBack.git({
+        cwd: directory,
+        args: ['merge-file', '-p', 'ours', 'base', 'theirs'],
+      });
+
+      if (merged.status !== 0) {
+        return { problem: 'its other lines conflict too, not only the released: line' };
+      }
+
+      return { text: ReleaseStampText.stamped({ text: merged.stdout, date }) ?? merged.stdout };
+    } catch (error) {
+      return { problem: error instanceof Error ? error.message : String(error) };
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }
+
   /** Why a regenerated lockfile may not replace `develop`'s: a line other than a workspace version moved. */
   static lockProblems(opts: { before: string; after: string }): string[] {
     const before = opts.before.split('\n');
@@ -232,8 +386,12 @@ export class ReleaseMergeBack {
           continue;
         }
 
-        if (file.split('/').pop() !== MergeBackConstants.PACKAGE_FILE) {
-          result.problems.push(`${file}: a conflict that is not the version of a package.json`);
+        const isFolderLog = MergeBackConstants.FOLDER_LOG.test(file);
+
+        if (file.split('/').pop() !== MergeBackConstants.PACKAGE_FILE && !isFolderLog) {
+          result.problems.push(
+            `${file}: a conflict that is not the version of a package.json or the released: line of a version folder's log.md`,
+          );
           continue;
         }
 
@@ -253,12 +411,11 @@ export class ReleaseMergeBack {
           continue;
         }
 
-        const resolution = ReleaseMergeBack.resolveVersionConflict({
-          base,
-          ours,
-          theirs,
-          scratchRoot: opts.scratchRoot,
-        });
+        const resolution = (
+          isFolderLog
+            ? ReleaseMergeBack.resolveStampConflict
+            : ReleaseMergeBack.resolveVersionConflict
+        )({ base, ours, theirs, scratchRoot: opts.scratchRoot });
 
         if (resolution.text === undefined) {
           result.problems.push(`${file}: ${resolution.problem}`);
@@ -361,6 +518,11 @@ export class ReleaseMergeBack {
     scratchRoot: string;
     /** `keep` leaves bun.lock out of the release commit, for a repository whose release never touches it. */
     lock?: 'keep' | 'regenerate';
+    /**
+     * The date the release commit of `ardor` writes into its version folder. Absent: the run makes no such commit
+     * (an earlier run made it), and the trial stamps nothing.
+     */
+    stampDate?: string;
   }): IMergeBackResult & { developHead: string } {
     if (opts.version === undefined && opts.versions === undefined) {
       throw new Error('trial needs version or versions');
@@ -430,6 +592,19 @@ export class ReleaseMergeBack {
         };
       }
 
+      const stampProblem =
+        opts.stampDate === undefined
+          ? undefined
+          : ReleaseMergeBack.stampTrial({
+              root: releaseTree,
+              version: opts.versions?.[MergeBackConstants.LEADING_DIR] ?? opts.version,
+              date: opts.stampDate,
+            });
+
+      if (stampProblem !== undefined) {
+        return { resolved: [], lockRegenerated: false, problems: [stampProblem], developHead };
+      }
+
       const install =
         (opts.lock ?? 'regenerate') === 'regenerate'
           ? Bun.spawnSync(['bun', 'install', '--lockfile-only'], {
@@ -489,6 +664,60 @@ export class ReleaseMergeBack {
     }
   }
 
+  /**
+   * What the release commit of `ardor` writes besides the versions: `released: <date>` in its version folder, so the
+   * merge the trial rehearses meets it. Returns the problem when the folder cannot be stamped; a project with no
+   * manifest, no changelog folder or no folder for the version has nothing to stamp.
+   */
+  private static stampTrial(opts: {
+    root: string;
+    version: string | undefined;
+    date: string;
+  }): string | undefined {
+    const manifest = join(opts.root, MergeBackConstants.MANIFEST);
+
+    if (
+      opts.version === undefined ||
+      !ReleaseStampConstants.VERSION.test(opts.version) ||
+      !existsSync(manifest)
+    ) {
+      return undefined;
+    }
+
+    const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'));
+    const knowledge =
+      typeof parsed === 'object' && parsed !== null && 'knowledge' in parsed
+        ? parsed.knowledge
+        : undefined;
+    const folder =
+      typeof knowledge === 'object' && knowledge !== null && 'changelogs' in knowledge
+        ? knowledge.changelogs
+        : undefined;
+
+    if (typeof folder !== 'string') {
+      return undefined;
+    }
+
+    const path = `${folder}/${opts.version}/${ReleaseStampConstants.LOG_FILE}`;
+    const file = join(opts.root, path);
+
+    if (!existsSync(file)) {
+      return undefined;
+    }
+
+    try {
+      const next = ReleaseStampText.stamped({ text: readFileSync(file, 'utf8'), date: opts.date });
+
+      if (next !== undefined) {
+        writeFileSync(file, next);
+      }
+
+      return undefined;
+    } catch (error) {
+      return `${path}: ${error instanceof Error ? error.message.replace(/^log\.md /, '') : String(error)}`;
+    }
+  }
+
   static summaryOf(opts: { result: IMergeBackResult; version: string }): string {
     const { result } = opts;
 
@@ -498,7 +727,7 @@ export class ReleaseMergeBack {
       result.problems.length > 0
         ? `- Stops, before any approval: ${result.problems.join('; ')}`
         : `- Goes through for **${opts.version}**`,
-      `- Version-only conflicts resolved: ${result.resolved.length === 0 ? 'none' : result.resolved.join(', ')}`,
+      `- Conflicts resolved (a version, a released: line): ${result.resolved.length === 0 ? 'none' : result.resolved.join(', ')}`,
       `- bun.lock regenerated: ${result.lockRegenerated ? 'yes' : 'no (it did not conflict)'}`,
       '',
     ].join('\n');
