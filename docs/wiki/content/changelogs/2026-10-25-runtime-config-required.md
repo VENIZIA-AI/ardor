@@ -21,7 +21,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 - **Nothing else changes.** Without `required`, or with `required: false`, the result is still `string | undefined`. An empty string or a value that is not a string still counts as absent. A `defaultValue` satisfies `required`, so the call never throws.
 - **The error has a code (0.4.3).** It is an `ApplicationError` from `@venizia/ignis-inversion`. Its `normalized.code` is `RUNTIME_CONFIG_REQUIRED_CODE` (value `ardor.runtime_config.required`), exported from `@venizia/ardor` and `@venizia/ardor-kernel`, and `extra.key` holds the name of the missing key. It never holds a value. The message is unchanged.
 
-```typescript
+```diff
 import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 

@@ -365,3 +365,16 @@ boot-validates-configuration:
     steps:
       - Pin the ARDOR packages to 0.4.7 or earlier, which accept any name at start(). A name you added to pass the check can stay.
   data: Nothing stored.
+
+runtime-config-get-required:
+  symbols: [RuntimeConfig.get]
+  upgrade:
+    before: |-
+      const apiUrl: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
+    after: |-
+      const apiUrl: string = RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where RuntimeConfig.getRequired does not exist.
+      - 'Write RuntimeConfig.get({ key, required: true }) again for each RuntimeConfig.getRequired({ key }), and remove any transform.'
+  data: Nothing stored.

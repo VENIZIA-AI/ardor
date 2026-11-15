@@ -6,8 +6,11 @@ import { getError } from '@venizia/ignis-inversion';
  */
 export const RUNTIME_CONFIG_GLOBAL = '__APP_CONFIG__';
 
-/** The `normalized.code` of the error `RuntimeConfig.get` throws for a required value that is not set; the key is in its `extra.key`. */
+/** The `normalized.code` of the error `RuntimeConfig.getRequired` throws for a value that is not set; the key is in its `extra.key`. */
 export const RUNTIME_CONFIG_REQUIRED_CODE = 'ardor.runtime_config.required';
+
+/** The `normalized.code` of the error a `transform` of `RuntimeConfig` causes by throwing, or by answering `undefined` or `null` to `getRequired`; the key is in its `extra.key`, the value is never in the error. */
+export const RUNTIME_CONFIG_INVALID_CODE = 'ardor.runtime_config.invalid';
 
 const readString = (opts: { source: unknown; key: string }): string | undefined => {
   const { source, key } = opts;
@@ -23,45 +26,131 @@ const readString = (opts: { source: unknown; key: string }): string | undefined 
 
   const value: unknown = Reflect.get(source, key);
 
-  return typeof value === 'string' && value !== '' ? value : undefined;
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
 };
 
-interface IRuntimeConfigOptions {
+interface IRuntimeConfigReadOptions {
   /** The name looked up in `window.__APP_CONFIG__` and in `buildTimeEnv`. */
   key: string;
   /** The build-time source, normally `import.meta.env`. */
   buildTimeEnv?: Record<string, unknown>;
-  /** Used when neither source has a non-empty string for `key`. */
-  defaultValue?: string;
 }
+
+const readValue = (opts: IRuntimeConfigReadOptions): string | undefined => {
+  const { key, buildTimeEnv } = opts;
+
+  return (
+    readString({ source: Reflect.get(globalThis, RUNTIME_CONFIG_GLOBAL), key }) ??
+    readString({ source: buildTimeEnv, key })
+  );
+};
+
+const applyTransform = <TInput, TValue>(opts: {
+  key: string;
+  raw: TInput;
+  transform: (raw: TInput) => TValue;
+}): TValue => {
+  const { key, raw, transform } = opts;
+
+  try {
+    return transform(raw);
+  } catch {
+    throw getError({
+      messageCode: RUNTIME_CONFIG_INVALID_CODE,
+      extra: { key },
+      message: `[RuntimeConfig] '${key}' is not valid | The transform threw on the value; fix the value in config.js or in the build-time env`,
+    });
+  }
+};
 
 /** Reads configuration a deployment can change without a rebuild. */
 export class RuntimeConfig {
   /**
    * One config value: the runtime one (`window.__APP_CONFIG__`), else the build-time one
-   * (`buildTimeEnv`, passed by the app as `import.meta.env`), else `defaultValue`. Only a non-empty
-   * string counts, and a missing global is not an error.
+   * (`buildTimeEnv`, passed by the app as `import.meta.env`), else `defaultValue`. A value that is
+   * empty or only spaces counts as unset, in both sources, and a missing global is not an error.
    *
-   * With `required: true` the result is a `string`: when all three are absent it throws, naming the
-   * key and never a value. The error is an `ApplicationError` with `normalized.code` equal to
-   * `RUNTIME_CONFIG_REQUIRED_CODE` and the key in `extra.key`, so a caller tells it from another error
-   * without reading the message. Without `required`, the result is `string | undefined`.
+   * With `transform` the result is what it makes of the value (a number, a boolean). It is handed
+   * `undefined` when the value is unset, and `defaultValue` applies when it answers `undefined` or
+   * `null`. A `transform` that throws raises an `ApplicationError` with `normalized.code` equal to
+   * `RUNTIME_CONFIG_INVALID_CODE` and the key in `extra.key`, never the value.
    */
-  static get(opts: IRuntimeConfigOptions & { required: true }): string;
-  static get(opts: IRuntimeConfigOptions & { required?: boolean }): string | undefined;
-  static get(opts: IRuntimeConfigOptions & { required?: boolean }): string | undefined {
-    const { key, buildTimeEnv, defaultValue, required } = opts;
+  static get(
+    opts: IRuntimeConfigReadOptions & { defaultValue: string; transform?: undefined },
+  ): string;
+  static get(
+    opts: IRuntimeConfigReadOptions & { defaultValue?: undefined; transform?: undefined },
+  ): string | undefined;
+  static get<TValue>(
+    opts: IRuntimeConfigReadOptions & {
+      transform: (raw: string | undefined) => TValue | null | undefined;
+      defaultValue: TValue;
+    },
+  ): TValue;
+  static get<TValue>(
+    // oxlint-disable-next-line typescript/unified-signatures -- a union would let a transform that may answer undefined pass without a defaultValue
+    opts: IRuntimeConfigReadOptions & {
+      transform: (raw: string | undefined) => TValue;
+      defaultValue?: TValue;
+    },
+  ): TValue;
+  static get(
+    opts: IRuntimeConfigReadOptions & {
+      defaultValue?: unknown;
+      transform?: (raw: string | undefined) => unknown;
+    },
+  ): unknown {
+    const { key, defaultValue, transform } = opts;
+    const raw = readValue(opts);
 
-    const value =
-      readString({ source: Reflect.get(globalThis, RUNTIME_CONFIG_GLOBAL), key }) ??
-      readString({ source: buildTimeEnv, key }) ??
-      defaultValue;
+    if (transform === undefined) {
+      return raw ?? defaultValue;
+    }
 
-    if (required && value === undefined) {
+    return applyTransform({ key, raw, transform }) ?? defaultValue;
+  }
+
+  /**
+   * One config value the app cannot run without, read as `get` reads it. When it is unset it throws,
+   * naming the key and never a value: an `ApplicationError` with `normalized.code` equal to
+   * `RUNTIME_CONFIG_REQUIRED_CODE` and the key in `extra.key`, so a caller tells it from another
+   * error without reading the message. It has no `defaultValue`.
+   *
+   * With `transform` the result is what it makes of the value, which it is handed as a `string`. A
+   * `transform` that throws, or answers `undefined` or `null`, raises the error of
+   * `RUNTIME_CONFIG_INVALID_CODE`, with the key in `extra.key` and never the value.
+   */
+  static getRequired(opts: IRuntimeConfigReadOptions & { transform?: undefined }): string;
+  static getRequired<TValue>(
+    opts: IRuntimeConfigReadOptions & {
+      transform: (raw: string) => TValue | null | undefined;
+    },
+  ): TValue;
+  static getRequired(
+    opts: IRuntimeConfigReadOptions & { transform?: (raw: string) => unknown },
+  ): unknown {
+    const { key, transform } = opts;
+    const raw = readValue(opts);
+
+    if (raw === undefined) {
       throw getError({
         messageCode: RUNTIME_CONFIG_REQUIRED_CODE,
         extra: { key },
-        message: `[RuntimeConfig.get] '${key}' is required and not set | Write it to config.js (a VITE_ variable of the container, listed in APP_REQUIRED_ENV), or pass it in buildTimeEnv or defaultValue`,
+        message: `[RuntimeConfig.getRequired] '${key}' is required and not set | Write it to config.js (a VITE_ variable of the container, listed in APP_REQUIRED_ENV), or pass it in buildTimeEnv`,
+      });
+    }
+
+    if (transform === undefined) {
+      return raw;
+    }
+
+    const value = applyTransform({ key, raw, transform });
+
+    if (value === undefined || value === null) {
+      throw getError({
+        messageCode: RUNTIME_CONFIG_INVALID_CODE,
+        extra: { key },
+        message: `[RuntimeConfig.getRequired] '${key}' is not valid | The transform answered nothing for the value; fix the value in config.js or in the build-time env`,
       });
     }
 
