@@ -37,7 +37,8 @@ import { BaseService } from './base';
 
 /** Who sent a request, and with which token: what a 401 is judged against. */
 interface ISentSession {
-  userId: string;
+  /** `undefined` when the service cannot tell who is signed in (no auth service, or no user id stored). */
+  userId?: string;
   token?: string;
 }
 
@@ -356,8 +357,10 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /** The session signed in now: who, and with which token. */
   private readSession(): ISentSession {
+    const userId = this.authService?.getUser().userId;
+
     return {
-      userId: `${this.authService?.getUser().userId}`,
+      userId: userId === undefined ? undefined : `${userId}`,
       token: this.resolveAuthToken()?.value,
     };
   }
@@ -373,7 +376,8 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * How the session changed since `sent`: `undefined` when it did not, `true` when the same user holds
-   * another token now (the request can be sent again with it), `false` when the user who sent is gone.
+   * another token now (the request can be sent again with it), `false` when the user who sent is gone. When
+   * nobody can tell who sent, another token is a switch: it is never read as the same user's.
    */
   private readSessionChange(opts: { sent: ISentSession }): boolean | undefined {
     const { sent } = opts;
@@ -383,7 +387,7 @@ export class DefaultNetworkRequestService extends BaseService {
       return undefined;
     }
 
-    return now.userId === sent.userId && !!now.token;
+    return sent.userId !== undefined && now.userId === sent.userId && !!now.token;
   }
 
   /**
@@ -392,6 +396,11 @@ export class DefaultNetworkRequestService extends BaseService {
    * failed and ended the session itself leaves nobody to protect, and its 401 stands.
    */
   private isSessionTaken(opts: { sent: ISentSession; isRetried: boolean }): boolean {
+    // With no user to compare, the token that follows a refresh this service ran is that refresh's.
+    if (opts.sent.userId === undefined && opts.isRetried) {
+      return false;
+    }
+
     return (
       this.readSessionChange({ sent: opts.sent }) === false &&
       (opts.isRetried || this.readSession().token !== undefined)
@@ -449,6 +458,11 @@ export class DefaultNetworkRequestService extends BaseService {
         }
 
         return this.refresh().then((isRefreshed) => {
+          // The retry sends again under the session of this refresh.
+          if (sent && sent.userId === undefined && isRefreshed) {
+            this.sentSessions.set(context, this.readSession());
+          }
+
           return sent && this.isSessionTaken({ sent, isRetried: isRefreshed })
             ? Promise.reject(this.sessionChangedError())
             : isRefreshed;
@@ -691,8 +705,8 @@ export class DefaultNetworkRequestService extends BaseService {
       let isRefreshed = change === true;
 
       if (change === undefined) {
-        const result3 = await this.refresh();
-        isRefreshed = result3;
+        const refreshed = await this.refresh();
+        isRefreshed = refreshed;
       }
 
       // The session may have moved on while the refresh was in flight, or inside a `refreshToken` override.

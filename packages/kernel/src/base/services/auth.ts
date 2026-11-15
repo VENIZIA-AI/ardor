@@ -217,11 +217,12 @@ export class DefaultAuthService extends BaseService {
     }
 
     const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
-    AuthTokenStore.write({ token, provider, key: this.keys.token });
+    // The identity first: another tab that reads between the two writes then sees another user's identity with the old token, never the old user's with the new token.
     localStorage.setItem(
       this.keys.identity,
       JSON.stringify({ userId, username, referenceId, provider }),
     );
+    AuthTokenStore.write({ token, provider, key: this.keys.token });
 
     if (roles) {
       localStorage.setItem(this.keys.permission, JSON.stringify(roles));

@@ -509,10 +509,22 @@ export class DefaultAuthProvider<
     }
 
     const checked = this.announcedSession;
-    const response = await this.restDataProvider.send({
-      resource: this.authProviderOptions.paths.checkAuth as TResource,
-      params: { method: RequestMethods.GET },
+    const { response, isStale } = await this.askCheckAuth({
+      resource: this.authProviderOptions.paths.checkAuth,
     });
+
+    // The user who asked is gone: the answer says nothing about the session signed in now, which decides.
+    if (isStale) {
+      if (this.authService.getAuth()?.value) {
+        return Promise.resolve();
+      }
+
+      await this.endSession({ reason: SessionClearReasons.REJECTED });
+
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
+    }
 
     if (!response?.data) {
       // The answer belongs to the session announced before the request.
@@ -528,6 +540,24 @@ export class DefaultAuthProvider<
     await this.startStoredSession();
 
     return Promise.resolve();
+  }
+
+  /** The `checkAuth` request. `isStale` is a 401 that answers a user who is gone (`SESSION_CHANGED_CODE`): it has no answer. */
+  private async askCheckAuth(opts: { resource: string }) {
+    try {
+      const response = await this.restDataProvider.send({
+        resource: opts.resource as TResource,
+        params: { method: RequestMethods.GET },
+      });
+
+      return { response, isStale: false };
+    } catch (error) {
+      if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+        return { response: undefined, isStale: true };
+      }
+
+      throw error;
+    }
   }
 
   /**
