@@ -2,7 +2,6 @@ import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
-  type AnyType,
   BaseProvider,
   BrowserStorage,
   CoreBindings,
@@ -10,6 +9,7 @@ import {
   type IAuthProviderOptions,
   type IApplicationInfo,
   type IAuthTokenRecord,
+  type IAuthUser,
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
@@ -316,7 +316,7 @@ export class DefaultAuthProvider<
    */
   protected onSessionStarted(_opts: {
     token: IAuthTokenRecord;
-    user: AnyType;
+    user: IAuthUser;
   }): void | Promise<void> {
     return undefined;
   }
@@ -360,7 +360,7 @@ export class DefaultAuthProvider<
   }
 
   /** Announces a session unless it is the one announced last. The claim is made before the hook is awaited. */
-  private startSession(opts: { token: IAuthTokenRecord; user: AnyType }): Promise<void> {
+  private startSession(opts: { token: IAuthTokenRecord; user: IAuthUser }): Promise<void> {
     const session = [opts.user?.userId, opts.token.value].join('|');
 
     if (session === this.announcedSession) {
@@ -555,15 +555,16 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
-  /** Resolves the stored user; rejects when there is no `userId`. */
+  /** Resolves the stored user, with `id` set to its `userId` as react-admin's `UserIdentity` needs; rejects when there is no `userId`. */
   getIdentity(_params?: unknown) {
     const user = this.authService.getUser();
+    const { userId } = user;
 
-    if (!user?.userId) {
+    if (!userId) {
       return Promise.reject({ message: '[getIdentity] No userId to get user identity!' });
     }
 
-    return Promise.resolve(user);
+    return Promise.resolve({ ...user, id: userId });
   }
 
   /** Resolves with nothing; the roles come from `getRoles`. */

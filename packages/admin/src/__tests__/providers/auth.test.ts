@@ -2,10 +2,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IDataProvider } from '@/common';
-import { DefaultAuthProvider } from '@/providers/auth';
+import { DefaultAuthProvider, type ILoginParams } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 import {
-  type AnyType,
   BaseArdorApplication,
   CoreBindings,
   DefaultAuthService,
@@ -845,10 +844,9 @@ describe('getIdentity', () => {
       };
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, JSON.stringify(identityPayload));
 
-      // `getIdentity` returns what `saveAuth` stored, which carries `userId` rather than react-admin's
-      // `id`; the type says UserIdentity, the wire object says userId - a seam this test records.
+      // react-admin's `UserIdentity` needs an `id`: it is the stored `userId`, next to the stored fields.
       const result = await authProvider.getIdentity({});
-      expect(result).toMatchObject(identityPayload);
+      expect(result).toMatchObject({ ...identityPayload, id: 42 });
     }
   });
 });
@@ -1263,7 +1261,7 @@ describe('readSignInSession as a hook', () => {
 // as `(params) => Promise<unknown>`, and a subclass that overrides it so must keep compiling.
 describe('login signature', () => {
   class LegacyLoginAuthProvider extends DefaultAuthProvider {
-    override async login(params: AnyType): Promise<unknown> {
+    override async login(params: ILoginParams): Promise<unknown> {
       return super.login(params);
     }
   }

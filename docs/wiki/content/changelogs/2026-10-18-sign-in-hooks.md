@@ -13,14 +13,14 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor-admin']
 **In one line.** `login` fills `getRoles()` from the sign-in response, and the four behaviour options of `IAuthProviderOptions` from 0.1.4-4 are four protected hooks of `DefaultAuthProvider` from 0.1.4-5: the options hold data, a subclass holds behaviour.
 
 ```typescript
-import { type AnyType, DefaultAuthProvider, type ISignInSession } from '@venizia/ardor';
+import { DefaultAuthProvider, type ILoginParams, type ISignInSession } from '@venizia/ardor';
 
 export class AdminAuthProvider extends DefaultAuthProvider {
-  protected override resolveUsername(opts: { params: AnyType }) {
+  protected override resolveUsername(opts: { params: { identifier: { value: string } } }) {
     return opts.params.identifier.value;
   }
 
-  protected override async beforeSaveSession(opts: { session: ISignInSession; params: AnyType }) {
+  protected override async beforeSaveSession(opts: { session: ISignInSession; params: ILoginParams }) {
     if (!opts.session.roles.includes('admin')) {
       throw new Error('[signIn] This console is for administrators');
     }

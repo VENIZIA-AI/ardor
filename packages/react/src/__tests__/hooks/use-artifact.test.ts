@@ -75,7 +75,7 @@ describe('the per-stereotype hooks', () => {
    * must return an `AuditService` with no generic written down - the target already carries the
    * type, and a hook that made the caller repeat it would be a second place to get it wrong.
    *
-   * The assertion is the `@ts-expect-error`, NOT an annotation. `AnyType` is `any`, so
+   * The assertion is the `@ts-expect-error`, NOT an annotation. The `any` type accepts everything, so
    * `const x: AuditService = result.current` compiles just as happily when inference has collapsed
    * to `any` - it would witness nothing. A deliberately wrong assignment only errors while the type
    * is real; the moment it degrades, the error disappears, the directive becomes unused, and

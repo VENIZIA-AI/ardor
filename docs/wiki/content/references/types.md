@@ -33,8 +33,6 @@ Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common
 | Type | Kind | Definition and usage |
 |---|---|---|
 | `IdType` | `type` | Entity identifier (`string \| number`), used by all CRUD and provider method signatures. |
-| `AnyType` | `type` | Named alias for `any`, used at untyped boundaries and generic defaults. |
-| `AnyObject` | `type` | Loose record (`Record<string \| symbol \| number, any>`), used for untyped property dictionaries. |
 | `ValueOrPromise<T>` | `type` | Sync or async value (`T \| Promise<T>`), used in application lifecycle methods (`preConfigure`, `start`). |
 | `ValueOf<T>` | `type` | Property value union (`T[keyof T]`), used to extract property value types from objects. |
 | `ValueOptional<T, K>` | `type` | Makes keys `K` optional in `T`, used to model partial creation payloads. |
@@ -82,6 +80,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `ISignInSession` | `interface` | Session data extracted on login, used in sign-in lifecycle hooks. | `userId`, `token`, `roles` |
 | `IAuthProviderOptions` | `interface` | Auth provider endpoint paths, bound under `CoreBindings.AUTH_PROVIDER_OPTIONS`. | `paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin` |
 | `IAuthTokenRecord` | `interface` | Auth token payload, returned by `resolveAuthToken()`. | `value`, `type`, `provider` |
+| `IAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
 | `IDataSourceRequestContext` | `interface` | Request context supplied to `HttpDataSource` auth hooks. | `paths` |
 | `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey` |
 | `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; no other key |

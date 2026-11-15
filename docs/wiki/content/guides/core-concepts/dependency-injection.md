@@ -97,7 +97,7 @@ React components resolve dependencies through typed hooks exported from `@venizi
 | A provider | `useProvider` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
 | A configuration | `useConfiguration` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
 | A component | `useComponent` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
-| Any binding or core key | `useInjectable` | `{ target: TClass<AnyType> }` or `{ key: TUseInjectableKeys }` | Resolves any binding across all namespaces or `CoreBindings`. |
+| Any binding or core key | `useInjectable` | `{ target: TClass<unknown> }` or `{ key: TUseInjectableKeys }` | Resolves any binding across all namespaces or `CoreBindings`. |
 | The active DI container | `useApplicationContainer` | `{ container?: Container }` (optional) | Returns `opts.container` else the context container and throws when neither exists. |
 | The application container | `useApplicationContext` | None | Returns the container and throws outside the application context. |
 | The application logger | `useApplicationLogger` | None | Returns the application logger and throws outside the application context. |

@@ -262,7 +262,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    */
   async getOne<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
-    params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
+    params: GetOneParams<RecordType> & QueryFunctionContext;
   }): Promise<GetOneResult<RecordType>> {
     const { resource, params } = opts;
 
@@ -284,7 +284,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    */
   async getMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
-    params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
+    params: GetManyParams<RecordType> & QueryFunctionContext;
   }): Promise<GetManyResult<RecordType>> {
     const { resource, params } = opts;
 
@@ -484,7 +484,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
 
     return {
       getList: (resource, params) => {
-        return this.getList({ resource, params });
+        return this.getList({ resource, params: { ...params } });
       },
       getOne: (resource, params) => {
         return this.getOne({ resource, params });
@@ -493,7 +493,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         return this.getMany({ resource, params });
       },
       getManyReference: (resource, params) => {
-        return this.getManyReference({ resource, params });
+        return this.getManyReference({ resource, params: { ...params } });
       },
       create: (resource, params) => {
         return this.create({ resource, params });

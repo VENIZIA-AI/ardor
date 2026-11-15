@@ -166,7 +166,7 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 ### `getIdentity(params)`
 
 - Calls: reads stored identity from `authService.getUser()`. Rejects if `userId` is absent.
-- Returns: `Promise<UserIdentity>` returning `{ userId, username, referenceId, provider }`
+- Returns: `Promise<UserIdentity>` returning `{ id, userId, username, referenceId, provider }`, where `id` is `userId`, the field react-admin's `UserIdentity` needs
 
 ### `getPermissions(params)`
 
@@ -231,7 +231,7 @@ For `sessionHookTimeout`, see [Session hooks](#session-hooks).
   - Signature: `opts: { reason: TSessionClearReason } => IAuthRejection`
   - Default: `{ redirectTo: this.loginPagePath }`
 - **`onSessionStarted(opts)`**: runs when a session starts or its token is replaced. See [Session hooks](#session-hooks).
-  - Signature: `opts: { token: IAuthTokenRecord; user: AnyType } => void \| Promise<void>`
+  - Signature: `opts: { token: IAuthTokenRecord; user: IAuthUser } => void \| Promise<void>`
   - Default: no-op
 - **`onSessionCleared(opts)`**: runs when the announced session ends. See [Session hooks](#session-hooks).
   - Signature: `opts: { reason: TSessionClearReason } => void \| Promise<void>`
@@ -283,6 +283,7 @@ To keep a socket or a per-user cache in step with the session, override `onSessi
 import {
   DefaultAuthProvider,
   type IAuthTokenRecord,
+  type IAuthUser,
   type TSessionClearReason,
 } from '@venizia/ardor';
 
@@ -294,7 +295,7 @@ declare const socket: {
 export class SocketAuthProvider extends DefaultAuthProvider {
   protected override async onSessionStarted(opts: {
     token: IAuthTokenRecord;
-    user: unknown;
+    user: IAuthUser;
   }): Promise<void> {
     await socket.connect({ token: opts.token.value });
   }

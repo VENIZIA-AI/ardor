@@ -145,9 +145,11 @@ package or bundling boundary - a CJS build and an ESM build of the same source y
 constructor functions. Use `isApplicationError()` instead, which recognizes the error by shape:
 
 ```typescript
-export const isApplicationError = (error: unknown): error is ApplicationError => {
-  return error instanceof Error && typeof (error as AnyType).statusCode === 'number';
-};
+import { isApplicationError } from '@venizia/ignis-inversion';
+
+if (isApplicationError(error)) {
+  console.log(error.statusCode, error.normalized.text);
+}
 ```
 
 Code that must distinguish "an error the framework already shaped" from "a raw failure to

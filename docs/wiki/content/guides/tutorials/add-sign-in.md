@@ -142,7 +142,7 @@ Pass `LoginPage` to the `loginPage` prop of `ArdorApplication` ([Quickstart](../
 
 - `checkAuth`: resolves if a token exists in `localStorage`, or issues `GET` to `paths.checkAuth` if configured.
 - `getRoles`: resolves with `Set<string>` of stored roles.
-- `getIdentity`: reads `@app/auth/identity` through `authService.getUser()` (`{ userId, username, referenceId, provider }`).
+- `getIdentity`: reads `@app/auth/identity` through `authService.getUser()` (`{ userId, username, referenceId, provider }`) and resolves it with `id` set to `userId`.
 - `getPermissions`: resolves with `Promise.resolve()`.
 
 To authorize UI components and resources through react-admin's `canAccess` contract, bind `IPermissionProvider` under `CoreBindings.PERMISSION_PROVIDER`. Unbound, `canAccess` remains undefined and react-admin permits access to all actions.

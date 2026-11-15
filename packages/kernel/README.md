@@ -26,7 +26,7 @@ which re-exports this package.
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App`, `Authentication`, `StorageAreas`, `RequestChannel` |
 | Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
 | Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get` (with `RUNTIME_CONFIG_GLOBAL` and `RUNTIME_CONFIG_REQUIRED_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
-| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
+| Types | `IdType`, `IAuthUser`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License
 

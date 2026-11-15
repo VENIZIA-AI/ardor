@@ -487,7 +487,7 @@ describe('getMany behavior', () => {
     expect(sent.method).toBe(RequestMethods.GET);
     expect(sent.paths).toEqual(['posts']);
     expect(sent.body).toBeUndefined();
-    expect(sent.query.filter.where).toEqual({ id: { inq: ids } });
+    expect(sent.query).toMatchObject({ filter: { where: { id: { inq: ids } } } });
   });
 });
 

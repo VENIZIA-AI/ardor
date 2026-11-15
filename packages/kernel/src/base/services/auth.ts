@@ -1,10 +1,10 @@
 import { getError, inject } from '@venizia/ignis-inversion';
 
 import {
-  type AnyType,
   CoreBindings,
   type IApplicationInfo,
   type IAuthTokenRecord,
+  type IAuthUser,
   type IdType,
   type IScopedKeys,
   LocalStorageKeys,
@@ -79,14 +79,30 @@ export class DefaultAuthService extends BaseService {
   }
 
   /** The stored identity; `{}` when nothing usable is stored, also outside a browser. */
-  getUser(): AnyType {
+  getUser(): IAuthUser {
     const identity = this.parseStored({
       key: this.keys.identity,
       method: 'getUser',
     });
-    const isRecord = typeof identity === 'object' && identity !== null && !Array.isArray(identity);
 
-    return isRecord ? identity : {};
+    return this.isAuthUser(identity) ? identity : {};
+  }
+
+  /** A stored identity is data from the browser: an object whose known fields, when present, have their type. */
+  private isAuthUser(value: unknown): value is IAuthUser {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return false;
+    }
+
+    const userId = 'userId' in value ? value.userId : undefined;
+    const username = 'username' in value ? value.username : undefined;
+    const referenceId = 'referenceId' in value ? value.referenceId : undefined;
+    const provider = 'provider' in value ? value.provider : undefined;
+    const isId = (field: unknown) =>
+      field === undefined || ['string', 'number'].includes(typeof field);
+    const isText = (field: unknown) => field === undefined || typeof field === 'string';
+
+    return isId(userId) && isText(username) && isId(referenceId) && isText(provider);
   }
 
   /**
