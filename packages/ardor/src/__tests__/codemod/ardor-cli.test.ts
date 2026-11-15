@@ -29,6 +29,17 @@ describe('ardor', () => {
     }
   });
 
+  describe('help', () => {
+    test('says how to run the bin without fetching another package of that name', async () => {
+      const code = await run([]);
+      const text = output.join('\n') + errors.join('\n');
+
+      expect(code).not.toBe(1);
+      expect(text).toContain('bun run ardor');
+      expect(text).toContain('bun x --no-install ardor');
+    });
+  });
+
   describe('codemod --list', () => {
     test('prints the name of each codemod, one per line, and exits 0', async () => {
       const code = await run(['codemod', '--list']);

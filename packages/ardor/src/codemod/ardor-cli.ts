@@ -6,7 +6,11 @@ Commands:
   codemod namespace   move the removed bare names to the class members that replace them
   codemod --list      print the name of each codemod, one per line
 
-Run "ardor codemod namespace --help" for the options.`;
+Run "ardor codemod namespace --help" for the options.
+
+Run it as "bun run ardor ..." from a package that depends on @venizia/ardor, or as
+"bun x --no-install ardor ...". Without --no-install, bunx fetches an unrelated package named
+"ardor" from npm when the bin is not installed, and runs it.`;
 
 class CliWords {
   static readonly CODEMOD = 'codemod';
