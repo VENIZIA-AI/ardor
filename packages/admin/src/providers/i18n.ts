@@ -12,7 +12,7 @@ import {
 } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { deepMerge } from '@/common/merge';
+import { deepMerge, isRecord } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { LazyLocales, LocaleSources } from './i18n-sources';
@@ -220,7 +220,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
       languages,
       {
         allowMissing: true,
-        onMissingKey: (key: string, _options: unknown, locale: string) => {
+        onMissingKey: (key: string, options: unknown, locale: string) => {
           const entry = `${locale}:${key}`;
 
           if (!reported.has(entry)) {
@@ -228,7 +228,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
             this.logger.warn('[translate] Missing message %s for locale %s', key, locale);
           }
 
-          return key;
+          // A default text makes polyglot fill the tokens and plural forms of the key itself.
+          return i18nProvider.translate(key, { ...(isRecord(options) ? options : {}), _: key });
         },
       },
     );

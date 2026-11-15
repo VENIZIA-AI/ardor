@@ -141,7 +141,7 @@ describe('a feature loader that resolves to an ES module', () => {
   test('a loader that resolves to something that is not messages is a failed load', async () => {
     const broken = Features.define({
       name: 'broken',
-      messages: { vi: () => Promise.resolve(JSON.parse('"not messages"')) },
+      messages: { vi: () => import('./fixtures/not-messages') },
     });
     const messages = new FeatureMessages({ features: [broken] });
 

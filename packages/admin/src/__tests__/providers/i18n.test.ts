@@ -728,6 +728,16 @@ describe('DefaultI18nProvider missing keys', () => {
     expect(warn).toHaveBeenCalledTimes(2);
   });
 
+  test('a missing key still takes its tokens and plural forms', () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('Hello %{name}', { name: 'Ada' })).toBe('Hello Ada');
+    expect(
+      i18n.translate('%{smart_count} item |||| %{smart_count} items', { ['smart_count']: 2 }),
+    ).toBe('2 items');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
   test('a different missing key is logged on its own', () => {
     const { i18n, warn } = build();
 

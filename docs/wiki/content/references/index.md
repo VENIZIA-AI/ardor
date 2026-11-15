@@ -133,7 +133,7 @@ const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: 'light', c
 
 Create the codec once, outside a component: `useStoredState` asks for a stable `codec`. The error of a refused value names no value, because a stored text can be a token.
 
-Keys are used as you give them. Two prefixes are yours: `@app/prefs/<name>` for what outlives a sign-out (a theme, a sidebar width) and `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE`) for the data of the signed-in user, which sign-out removes in `localStorage` and `sessionStorage` so the next user does not see it (override `DefaultAuthProvider.clearStoredData` to change that). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
+Keys are used as you give them. Two prefixes are yours (`@app/prefs/locale` and `@app/prefs/<id>/locale` hold the chosen language of the i18n provider, so do not use those keys): `@app/prefs/<name>` for what outlives a sign-out (a theme, a sidebar width) and `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE`) for the data of the signed-in user, which sign-out removes in `localStorage` and `sessionStorage` so the next user does not see it (override `DefaultAuthProvider.clearStoredData` to change that). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
 
 ## Browser clipboard
 

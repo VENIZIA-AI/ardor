@@ -152,13 +152,13 @@ export interface II18nProviderOptions {
      * locale that is not in `languages` is ignored. Outside a browser it does nothing.
      * @default { use: true }
      */
-    persist?: { use: boolean };
+    persist?: { use: false } | { use: true };
   };
-  /** The locale whose messages are layered under every other locale. */
-  fallback?: {
-    /** @default 'en' */
-    locale: string;
-  };
+  /**
+   * The locale whose messages are layered under every other locale.
+   * @default { locale: 'en' }
+   */
+  fallback?: { locale: string };
   /**
    * The locales the app offers.
    * @default [{ locale: 'en', name: 'English' }]

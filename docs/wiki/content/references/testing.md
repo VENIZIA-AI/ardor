@@ -22,7 +22,7 @@ In order, and it stops at the first failure with the error the app would raise:
 1. Calls `start()`: the artifact index, the stereotype bindings, the features, `bindContext()`.
 2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed.
 3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (optional) and the i18n provider, through the same function the component calls.
-4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched.
+4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched. `fetch` is blocked, so a loader that downloads its messages fails here: limit the check with `locale` to a language whose loader does not.
 
 `fetch` is replaced for the run by a function that rejects, so nothing leaves the process, and put back afterwards. The helper returns the application it started.
 
