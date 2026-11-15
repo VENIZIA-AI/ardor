@@ -82,7 +82,7 @@ resolve, `useService`, `useRepository`, `useProvider`, `useComponent` and `useCo
 `packages/react/src/hooks/use-artifact.ts` assert that a `{ target }` is bound under their
 namespace; a `{ key }` is the caller's to get right.
 
-`bindingList()` and `injectable()` check nothing. A typo there binds the class under a key nobody
+`bindingList()` checks nothing. A typo there binds the class under a key nobody
 asks for, and the failure surfaces later as an unresolved binding inside `useInjectable`.
 
 ## Discovery: declare with a stereotype
@@ -132,14 +132,13 @@ same object, so a mangled name still agrees with itself:
 const products = useRepository({ target: ProductRepository });
 ```
 
-Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. The
-literal keys in `bindingList()` are what types `useInjectable({ key })`:
-`keyof ReturnType<Application['bindingList']>` is the union an application feeds into
-`IUseInjectableKeysOverrides`.
+Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. A class
+is still resolved by `{ target }`, whichever way its key was made; only a value with no class has a
+key an application types, through `IUseInjectableKeyTypes`.
 
 One limit remains: **a derived key is still `<namespace>.<Class.name>`**, and the container stores
-bindings by that string. Two classes with the same name in one namespace share one binding, the last
-registered wins, and resolving the first by `target` throws, naming the key and the class, because the hook compares the bound class with the target. Two same-named classes in
+bindings by that string. Two stereotyped classes with the same name in one namespace make `start()` throw
+(`describeCollision`); registration by hand replaces silently, and resolving the first class by `target` then throws, naming the key and the class, because the hook compares the bound class with the target. Two same-named classes in
 different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
 explicit `binding` avoids it.
 
@@ -156,7 +155,7 @@ packages are needed: an older inversion reads the derived key first.
 (`packages/kernel/src/base/applications/abstract.ts`), so a second class with the same derived key no
 longer silently replaces the first. A pinned `binding` is never counted, and a subclass discovered
 after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
-that re-evaluates a module is not an error. A pinned key is checked too, by ARDOR: two different classes of different names that pin one key (or one pins what the other derives) throw `The key '<key>' is claimed by both <A> and <B>`; before, the later import won in silence. `service()`/`injectable()` derive through
+that re-evaluates a module is not an error. A pinned key is checked too, by ARDOR: two different classes of different names that pin one key (or one pins what the other derives) throw `The key '<key>' is claimed by both <A> and <B>`; before, the later import won in silence. `service()` and the other by-hand methods derive through
 `ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
 One project that uses Venizia pins `binding` on all 122 of its decorated classes, so it cannot collide.
 

@@ -28,7 +28,7 @@ Registering happy-dom swaps in its own `fetch`, `Request`, `Response`, `Headers`
 
 ## `any`-widening in augmentations
 
-When you derive the keys you merge into `IUseInjectableKeysOverrides` or `IUseTranslateKeysOverrides` from something real - for example `keyof ReturnType<Application['bindingList']>` - and that source type resolves to `any` (a broken import, a stale build, a class that failed to compile), `keyof` widens to `string | number | symbol`. The key union then accepts every string (and every number and symbol) and typo protection silently disappears; the code still compiles. Prove the augmentation works with a `// @ts-expect-error` above a call that uses an undeclared key - if the directive turns into an "unused" error, the augmentation has failed. See [module-augmentation](/architecture/module-augmentation.md).
+When you derive the keys you merge into `IUseInjectableKeysOverrides` or `IUseTranslateKeysOverrides` from something real - for example `TFullPaths<typeof messages>` - and that source type resolves to `any` (a broken import, a stale build, a class that failed to compile), `keyof` widens to `string | number | symbol`. The key union then accepts every string (and every number and symbol) and typo protection silently disappears; the code still compiles. Prove the augmentation works with a `// @ts-expect-error` above a call that uses an undeclared key - if the directive turns into an "unused" error, the augmentation has failed. See [module-augmentation](/architecture/module-augmentation.md).
 
 ## Augmenting the umbrella package merges too
 
