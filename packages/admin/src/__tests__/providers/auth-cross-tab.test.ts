@@ -72,6 +72,23 @@ describe('DefaultAuthProvider and the session of another tab', () => {
     sessionStorage.clear();
   });
 
+  test('another user signing in in another tab ends the session here, clearing only the data of this tab', async () => {
+    new DefaultAuthService().saveAuth({ userId: 7, token: { value: 'jwt-7', type: 'Bearer' } });
+    fromOtherTab({ keys: SESSION_KEYS });
+    await settle();
+    sessionStorage.setItem('@app/store/tab', 'alice tab');
+    // The other tab cleared alice's data and then stored its own before this tab heard the change.
+    localStorage.setItem('@app/store/bob', 'bob data');
+
+    otherTabSignsIn({ userId: 8, token: 'jwt-8' });
+    await settle();
+
+    expect(provider.cleared).toEqual(['external']);
+    expect(provider.started.at(-1)?.token.value).toBe('jwt-8');
+    expect(sessionStorage.getItem('@app/store/tab')).toBeNull();
+    expect(localStorage.getItem('@app/store/bob')).toBe('bob data');
+  });
+
   test('a sign-in in another tab starts the session here: the hook runs with the new user', async () => {
     otherTabSignsIn({ userId: 7, token: 'jwt-7' });
     await settle();

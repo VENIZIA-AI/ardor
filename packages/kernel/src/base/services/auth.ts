@@ -14,12 +14,17 @@ import { AuthTokenStore } from '@/helpers';
 import { BrowserStorage, StorageCodecs } from '@/utilities';
 import { BaseService } from './base';
 
+/** What a subscriber of `DefaultAuthService` is told: `isExternal` is a change another tab of the application made. */
+export interface IAuthChange {
+  isExternal: boolean;
+}
+
 /**
  * Keeps the signed-in session (token, identity, roles) in `localStorage`, everything under
  * `keys.authPrefix`: `LocalStorageKeys.PREFIX_AUTH`, or `@app/auth/<id>/` when the application has an `id`.
  */
 export class DefaultAuthService extends BaseService {
-  private readonly listeners = new Set<() => void>();
+  private readonly listeners = new Set<(change: IAuthChange) => void>();
   private stopExternalSync?: () => void;
   private snapshot = '';
   /** The keys of this application's session and store: the application's `id` scopes them. */
@@ -40,7 +45,7 @@ export class DefaultAuthService extends BaseService {
    * A change of another tab calls the listener once and writes nothing; a service never subscribed to
    * listens to nothing, and outside a browser nothing is listened to.
    */
-  subscribe(opts: { listener: () => void }): () => void {
+  subscribe(opts: { listener: (change: IAuthChange) => void }): () => void {
     this.listeners.add(opts.listener);
     this.startExternalSync();
 
@@ -81,7 +86,7 @@ export class DefaultAuthService extends BaseService {
         listener: ({ isExternal }) => {
           // A write of this tab announced itself; an event it caused must not announce it again.
           if (isExternal && this.readSnapshot() !== this.snapshot) {
-            this.notify();
+            this.notify({ isExternal: true });
           }
         },
       });
@@ -96,14 +101,14 @@ export class DefaultAuthService extends BaseService {
     };
   }
 
-  private notify(): void {
+  private notify(change: IAuthChange): void {
     if (this.stopExternalSync) {
       this.snapshot = this.readSnapshot();
     }
 
     for (const listener of this.listeners) {
       try {
-        listener();
+        listener(change);
       } catch (error) {
         this.logger.error('[notify] A listener failed | error: %o', error);
       }
@@ -228,7 +233,7 @@ export class DefaultAuthService extends BaseService {
       localStorage.setItem(this.keys.permission, JSON.stringify(roles));
     }
 
-    this.notify();
+    this.notify({ isExternal: false });
   }
 
   /**
@@ -267,6 +272,6 @@ export class DefaultAuthService extends BaseService {
       localStorage.removeItem(key);
     });
 
-    this.notify();
+    this.notify({ isExternal: false });
   }
 }
