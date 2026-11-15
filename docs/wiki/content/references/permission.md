@@ -69,6 +69,20 @@ ARDOR defines no options binding key for `IPermissionProvider`. Parameters are p
 
 ## How react-admin consumes canAccess
 
+react-admin asks `canAccess` for its own resource pages, and for a custom route only when the route declares `access`. A route without `access` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. The feature or application route below asks for `settings` and `edit` before it renders; see [A route that needs permission](./features#a-route-that-needs-permission).
+
+```tsx
+import React from 'react';
+import { Features, type TFeature } from '@venizia/ardor';
+
+const AuditPage: React.FC = () => <h1>Audit log</h1>;
+
+export const AuditFeature: TFeature = Features.define({
+  name: 'audit',
+  routes: [{ path: '/audit', element: <AuditPage />, access: { resource: 'audit', action: 'list' } }],
+});
+```
+
 ra-core's `useCanAccess` queries the auth provider with `queryKey: ['auth', 'canAccess', { ...restParams, recordId: record?.id, resource }]`.
 
 When switching tenant, account, or workspace, call `invalidateQueries({ queryKey: ['auth'] })` to clear cached authorization results:

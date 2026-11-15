@@ -156,7 +156,7 @@ packages are needed: an older inversion reads the derived key first.
 (`packages/kernel/src/base/applications/abstract.ts`), so a second class with the same derived key no
 longer silently replaces the first. A pinned `binding` is never counted, and a subclass discovered
 after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
-that re-evaluates a module is not an error. `service()`/`injectable()` derive through
+that re-evaluates a module is not an error. A pinned key is checked too, by ARDOR: two different classes of different names that pin one key (or one pins what the other derives) throw `The key '<key>' is claimed by both <A> and <B>`; before, the later import won in silence. `service()`/`injectable()` derive through
 `ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
 One project that uses Venizia pins `binding` on all 122 of its decorated classes, so it cannot collide.
 

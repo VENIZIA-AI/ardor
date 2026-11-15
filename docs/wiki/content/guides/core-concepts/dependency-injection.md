@@ -49,6 +49,23 @@ ARDOR exports class stereotypes from `@venizia/ardor` (re-exported from `package
 
 When code resolves a dependency by passing `{ target: ClassName }`, ARDOR reads the recorded key directly from metadata.
 
+### Leave a class out with `when`
+
+A stereotype takes `when`, a function that answers `true` or `false` when the application starts. A class whose `when` returns `false` is not bound, and neither are its `@provide` methods, so a development mock does not reach production:
+
+```ts
+import { service } from '@venizia/ardor';
+
+const useMocks = false;
+
+@service({ when: () => useMocks })
+export class MockMailService {
+  send(): void {}
+}
+```
+
+`when` receives `{ application }`, runs once, and must answer at once: a promise or a `when` that throws stops `start()` with an error that names the class. `order` and `after` are not read. To bind a class whatever its `when` says, call `this.service(MockMailService)` in `bindContext()`.
+
 ## Build discovery: AutoArtifacts and Vite
 
 In the browser, ARDOR discovers decorated classes at build time. In `vite.config.ts`, `IgnisArtifactsVitePlugin.create()` scans `src/`, bundles decorated classes into the virtual module `@venizia/ignis-boot/auto`, and pins class names against minification.

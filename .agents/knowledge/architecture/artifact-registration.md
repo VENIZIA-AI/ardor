@@ -100,12 +100,29 @@ registerArtifacts()  ->  bindingList()  ->  bindContext()
 
 A stereotype is what a class declares about itself; `bindingList()` is what this application decided
 by hand for this build; a `this.bind(...)` in `bindContext()` overrides both. An override that lost to
-a decorator would be ignored with nothing to show it. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
+a decorator would be ignored with nothing to show it. A class declared `allowOverride: false` (by
+stereotype or by a by-hand method) is the exception: `bindingList()` throws
+`[bindingList] '<key>' is held by <Class> with allowOverride false` instead of replacing it, and only
+`bindContext()` replaces it, on purpose. Two classes that end on one key, where at least one pinned it
+with `binding`, throw at `start()` too: `[registerArtifacts] The key '<key>' is claimed by both <A> and
+<B>`. Two pinned classes with one name are not counted: a hot reload evaluates the module again and
+declares a new class of the same name, and the registry holds nothing to tell it from a real duplicate
+(a same-named pair in two files that pins one key is therefore not caught). A subclass that pins its
+parent's key is a duplicate like any other. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
 
-`registerArtifacts()` reads each discovered class's key, skips a class with none, and binds the rest
-`toClass()` under the scope the stereotype declares, `BindingScopes.SINGLETON` by default. It is not
-IGNIS's boot sequence. From `IArtifactRegistrationOptions` it honours **the key and the scope**;
-`when`, `order`, `after` and `allowOverride` are ignored. Each `@provide({ key })` method of a
+`registerArtifacts()` first asks each discovered class's `when`, checks the classes left for keys they
+share, then reads the key of each,
+skips a class with none, and binds the rest `toClass()` under the scope the stereotype declares,
+`BindingScopes.SINGLETON` by default. It is not IGNIS's boot sequence. From
+`IArtifactRegistrationOptions` it honours **the key, the scope, `when` and `allowOverride`**; `order` and `after` are
+ignored, because every binding is lazy and registration order changes nothing. `allowOverride: false`
+is honoured against `bindingList()` and by the by-hand methods. `when` is called once per class, with `{ application }`, and must return a
+boolean synchronously: `false` leaves the class and its `@provide` methods unbound (and out of the
+key collision check), a promise or any other value throws `[registerArtifacts] The 'when' of <Class>
+must return a boolean synchronously`, and a `when` that throws fails `start()` naming the class. A
+class left out is still discovered, so an index may list it; the key it recorded at decoration stays
+on the class, so `{ target }` for it throws not bound, as for any key nobody bound. A by-hand
+`service(X)` binds the class whatever its `when` says. Each `@provide({ key })` method of a
 discovered class is also bound, under the key the decorator names, as a lazy provider with
 SINGLETON default and `scope` honoured - the same as IGNIS's `bindProvidedKeys`. That is how the
 framework keys in a `@configuration()` class get bound. For a transient, a conditional binding or

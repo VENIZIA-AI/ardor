@@ -29,7 +29,8 @@ different value (`'@app/instance'`). See [Binding key namespaces](/conventions/b
 (`service`, `component`, `configuration` and the rest). At import time it records the binding key
 on the class and appends the class to a process-global discovery list, which `registerArtifacts()`
 binds during `preConfigure()`. It binds first, so a `bindingList()` entry under the same key
-overrides it, and a `bindContext()` binding overrides both. See
+overrides it, and a `bindContext()` binding overrides both - except that a class declared
+`allowOverride: false` is replaced by `bindContext()` alone. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
 **Binding list** - `bindingList()`, the application override that returns literal

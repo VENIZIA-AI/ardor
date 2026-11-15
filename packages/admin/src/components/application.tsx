@@ -4,11 +4,18 @@ import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import { QueryClient } from '@tanstack/react-query';
-import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
+import {
+  Authenticated,
+  CanAccess,
+  CoreAdmin,
+  CustomRoutes,
+  type I18nProvider,
+  Resource,
+} from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
-import { Route } from 'react-router-dom';
+import { Outlet, Route } from 'react-router-dom';
 
-import { type TFeature, Features } from '@/features/feature';
+import { type TArdorRoute, type TFeature, Features } from '@/features/feature';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -40,6 +47,36 @@ const Wrapper: React.FC<{
     <ApplicationContext.Provider value={{ container, logger: applicationLogger }}>
       {reduxStore ? <ReduxProvider store={reduxStore}>{content}</ReduxProvider> : content}
     </ApplicationContext.Provider>
+  );
+};
+
+/**
+ * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
+ * checks: a custom route has neither in react-admin.
+ */
+const renderRoute = (opts: { route: TArdorRoute }) => {
+  const { access, ...routeProps } = opts.route;
+  const key = routeProps.id ?? routeProps.path;
+
+  if (!access) {
+    return <Route key={key} {...routeProps} />;
+  }
+
+  const { Component, element, ...rest } = routeProps;
+  const page = element ?? (Component ? <Component /> : <Outlet />);
+
+  return (
+    <Route
+      key={key}
+      {...rest}
+      element={
+        <Authenticated>
+          <CanAccess resource={access.resource} action={access.action}>
+            {page}
+          </CanAccess>
+        </Authenticated>
+      }
+    />
   );
 };
 
@@ -210,7 +247,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
         <CustomRoutes>
           {mounted.routes.map((route) => {
-            return <Route key={route.id ?? route.path} {...route} />;
+            return renderRoute({ route });
           })}
         </CustomRoutes>
       </CoreAdmin>

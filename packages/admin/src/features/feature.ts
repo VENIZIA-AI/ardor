@@ -7,6 +7,22 @@ import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
 import { LazyLocales } from '@/providers/i18n-sources';
 import { FeatureMessages } from './messages';
 
+/** What a user must be allowed to do, as the permission provider's `canAccess` is asked. */
+export interface IRouteAccess {
+  resource: string;
+  action: string;
+}
+
+/**
+ * A react-router route, plus the `access` a user needs to open it. react-admin checks neither
+ * sign-in nor permission on a custom route: a route without `access` is open to anyone who types
+ * its path.
+ */
+export type TArdorRoute = RouteProps & {
+  /** The route renders only for a signed-in user whom `canAccess` allows. */
+  access?: IRouteAccess;
+};
+
 /** Per locale: the messages, or a loader for them. */
 export type TFeatureMessages = Record<string, object | (() => Promise<object>)>;
 
@@ -18,7 +34,7 @@ export type TFeatureMessages = Record<string, object | (() => Promise<object>)>;
 export type TFeature<TExtension extends object = {}> = IFeatureBase &
   TExtension & {
     resources?: Array<ResourceProps>;
-    routes?: Array<RouteProps>;
+    routes?: Array<TArdorRoute>;
     /** The application's own `i18nSources` override these. */
     messages?: TFeatureMessages;
   };
@@ -52,8 +68,8 @@ export class Features {
     /** @default [] */
     resources?: Array<ResourceProps>;
     /** @default [] */
-    routes?: Array<RouteProps>;
-  }): { resources: Array<ResourceProps>; routes: Array<RouteProps> } {
+    routes?: Array<TArdorRoute>;
+  }): { resources: Array<ResourceProps>; routes: Array<TArdorRoute> } {
     const { features, resources = [], routes = [] } = opts;
 
     const owners = new Map<string, string>();

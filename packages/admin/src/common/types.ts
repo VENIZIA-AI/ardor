@@ -4,7 +4,6 @@ import type { Container } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { AuthProvider, CoreAdminProps, DataProvider, Locale, ResourceProps } from 'ra-core';
 import type { ReactNode } from 'react';
-import type { RouteProps } from 'react-router-dom';
 
 import type {
   DefaultNetworkRequestService,
@@ -16,7 +15,7 @@ import type {
   TRequestMethod,
   TRequestType,
 } from '@venizia/ardor-kernel';
-import type { TFeature } from '@/features/feature';
+import type { TArdorRoute, TFeature } from '@/features/feature';
 
 /** What `DefaultRestDataProvider.request` sends: every react-admin method goes through it. */
 export interface IRestRequestOptions<TResource extends string = string> {
@@ -145,7 +144,7 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   /** The application's own resources; each feature's are mounted after them. */
   resources?: Array<ResourceProps>;
   /** The application's own routes; each feature's are mounted after them. */
-  routes?: Array<RouteProps>;
+  routes?: Array<TArdorRoute>;
   /**
    * The features to mount, when the shell mounts fewer than the application bound - filter
    * `Features.read({ container })` and pass the result. Absent, every bound feature is mounted. The

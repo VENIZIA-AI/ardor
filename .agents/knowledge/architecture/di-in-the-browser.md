@@ -60,12 +60,13 @@ registers it.
 The list is global rather than per application. Two applications in one process bind the same
 classes - what a test suite wants, and what a page never encounters.
 
-`registerArtifacts()` is not IGNIS's boot sequence. From a stereotype's options it honours only the
-binding key - the default `<namespace>.<ClassName>`, or an explicit `binding: { namespace, key }`.
-`scope`, `when`, `order`, `after` and `allowOverride` are silently ignored. Each `@provide({ key })`
+`registerArtifacts()` is not IGNIS's boot sequence. From a stereotype's options it honours the
+binding key - the default `<namespace>.<ClassName>`, or an explicit `binding: { namespace, key }` -
+the `scope` and `when` (a class whose `when` returns `false` is not bound). `order` and `after` are
+ignored, because every binding is lazy. `allowOverride: false` keeps `bindingList()` from replacing the class (it throws; only `bindContext()` replaces it), and two classes that end on one pinned key throw at `start()`. Each `@provide({ key })`
 method of a discovered class is bound under its key, lazy and singleton, in the same way IGNIS's
 `bindProvidedKeys` does - that is how the framework keys in a `@configuration()` class get bound.
-For anything else - a conditional binding, a scope the decorator cannot express - bind it by hand in `bindContext()`.
+For anything else - a scope the decorator cannot express - bind it by hand in `bindContext()`.
 
 The list is read once, during `preConfigure()`. A class whose module is first imported after
 `start()` - in a lazy route chunk, for example - is never bound. Import it before `start()`, or bind

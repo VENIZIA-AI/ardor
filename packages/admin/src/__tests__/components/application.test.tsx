@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient } from '@tanstack/react-query';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
 import type { TI18nSource } from '@/common';
-import type { TFeature } from '@/features';
+import type { TArdorRoute, TFeature } from '@/features';
 import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
@@ -546,5 +546,169 @@ describe('ArdorApplication reduxStore', () => {
 
     const result2 = await screen.findByText('Hello from the store');
     expect(result2).toBeDefined();
+  });
+});
+
+// react-admin does not check a custom route: `checkAuth` and `canAccess` run only for a route that
+// declares `access`.
+describe('ArdorApplication route access', () => {
+  const AdminPage = () => <h1>Admin only</h1>;
+
+  const createGuardedContainer = (opts: {
+    checkAuth: () => Promise<void>;
+    canAccess: (params: { resource: string; action: string }) => Promise<boolean>;
+    features?: Array<TFeature>;
+  }) => {
+    const features = opts.features ?? [];
+    const container = new Container();
+    container.bind({ key: CoreBindings.FEATURES }).toValue(features);
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
+      checkAuth: opts.checkAuth,
+      checkError: () => Promise.resolve(),
+      login: () => Promise.resolve(),
+      logout: () => Promise.resolve(),
+      getPermissions: () => Promise.resolve(),
+      canAccess: opts.canAccess,
+    });
+    container
+      .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toValue(new DefaultI18nProvider({}, features).value(container));
+
+    return container;
+  };
+
+  const renderRoute = (opts: {
+    container: Container;
+    routes?: Array<TArdorRoute>;
+    path?: string;
+  }) => {
+    return render(
+      <MemoryRouter initialEntries={[opts.path ?? '/admin-only']}>
+        <ArdorApplication
+          container={opts.container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          {...(opts.routes ? { routes: opts.routes } : {})}
+        />
+      </MemoryRouter>,
+    );
+  };
+
+  const denied = () => Promise.resolve(false);
+  const allowed = () => Promise.resolve(true);
+
+  test('a route without access renders for a user who is signed out and denied everything', async () => {
+    const canAccess = mock(denied);
+    const checkAuth = mock(() => Promise.reject(new Error('signed out')));
+
+    renderRoute({
+      container: createGuardedContainer({ checkAuth, canAccess }),
+      routes: [{ path: '/admin-only', element: <AdminPage /> }],
+    });
+
+    const result = await screen.findByText('Admin only');
+    expect(result).toBeDefined();
+    expect(canAccess).toHaveBeenCalledTimes(0);
+  });
+
+  test('a route with access does not render when canAccess says no, and asks for its resource and action', async () => {
+    const canAccess = mock((_params: { resource: string; action: string }) => denied());
+
+    renderRoute({
+      container: createGuardedContainer({ checkAuth: () => Promise.resolve(), canAccess }),
+      routes: [
+        {
+          path: '/admin-only',
+          element: <AdminPage />,
+          access: { resource: 'settings', action: 'edit' },
+        },
+      ],
+    });
+
+    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    expect(canAccess.mock.calls[0]?.[0]).toMatchObject({ resource: 'settings', action: 'edit' });
+    expect(screen.queryByText('Admin only')).toBeNull();
+  });
+
+  test('a route with access renders when canAccess says yes', async () => {
+    renderRoute({
+      container: createGuardedContainer({
+        checkAuth: () => Promise.resolve(),
+        canAccess: allowed,
+      }),
+      routes: [
+        {
+          path: '/admin-only',
+          element: <AdminPage />,
+          access: { resource: 'settings', action: 'edit' },
+        },
+      ],
+    });
+
+    const result2 = await screen.findByText('Admin only');
+    expect(result2).toBeDefined();
+  });
+
+  test('a route with access does not render, and asks nothing, while checkAuth rejects', async () => {
+    const canAccess = mock(allowed);
+
+    renderRoute({
+      container: createGuardedContainer({
+        checkAuth: () => Promise.reject(new Error('signed out')),
+        canAccess,
+      }),
+      routes: [
+        {
+          path: '/admin-only',
+          element: <AdminPage />,
+          access: { resource: 'settings', action: 'edit' },
+        },
+      ],
+    });
+
+    await act(async () => {});
+
+    expect(screen.queryByText('Admin only')).toBeNull();
+    expect(canAccess).toHaveBeenCalledTimes(0);
+  });
+
+  test('guards a route that gives a Component, and a route of a feature', async () => {
+    const canAccess = mock((_params: { resource: string; action: string }) => denied());
+    const access = { resource: 'settings', action: 'edit' };
+    const feature = Features.define({
+      name: 'settings',
+      routes: [{ path: '/from-feature', element: <AdminPage />, access }],
+    });
+
+    renderRoute({
+      path: '/from-component',
+      container: createGuardedContainer({
+        checkAuth: () => Promise.resolve(),
+        canAccess,
+        features: [feature],
+      }),
+      routes: [{ path: '/from-component', Component: AdminPage, access }],
+    });
+
+    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.queryByText('Admin only')).toBeNull();
+    cleanup();
+
+    renderRoute({
+      path: '/from-feature',
+      container: createGuardedContainer({
+        checkAuth: () => Promise.resolve(),
+        canAccess,
+        features: [feature],
+      }),
+    });
+
+    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+    expect(screen.queryByText('Admin only')).toBeNull();
   });
 });
