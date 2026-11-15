@@ -543,7 +543,7 @@ export class DefaultNetworkRequestService extends BaseService {
     opts: IGetRequestPropsResult & {
       /** @default this.baseUrl */
       baseUrl?: string;
-      query?: any;
+      query?: Record<string, unknown>;
       type: TRequestType;
       method: TRequestMethod;
       paths: string[];

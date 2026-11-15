@@ -20,6 +20,17 @@ migration:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
     data: Nothing stored changes. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected.
+  - id: typed-do-request-query
+    symbols: [DefaultNetworkRequestService.doRequest]
+    upgrade:
+      before: |-
+        await networkService.doRequest({ type, method, paths, query: listOptions });
+      after: |-
+        await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the query of doRequest is any.
+    data: Nothing stored changes. The query is sent as it was.
   - id: typed-stored-user
     symbols: [DefaultAuthService.getUser, DefaultAuthProvider.onSessionStarted, DefaultAuthProvider.getIdentity, IAuthUser]
     upgrade:
@@ -41,7 +52,7 @@ migration:
 
 <Badge type="warning" text="Breaking Change" />
 
-**In one line.** `AnyType` and `AnyObject` are no longer exported by `@venizia/ardor-kernel` or `@venizia/ardor`, because IGNIS removed them. `getUser()` and the `user` of `onSessionStarted` are now `IAuthUser`, not `any`, and `getIdentity` resolves an `id`.
+**In one line.** `AnyType` and `AnyObject` are no longer exported by `@venizia/ardor-kernel` or `@venizia/ardor`, because IGNIS removed them. `getUser()` and the `user` of `onSessionStarted` are now `IAuthUser`, not `any`, `getIdentity` resolves an `id`, and the `query` of `doRequest` is `Record<string, unknown>`.
 
 ```diff
 -import type { AnyObject, AnyType } from '@venizia/ardor';
@@ -59,6 +70,7 @@ migration:
 ## What changed
 
 - **`AnyType` and `AnyObject` are gone.** ARDOR re-exported them from IGNIS and no longer can. Nothing replaces them under the same name. ARDOR's own code uses the type that says what the value is: `unknown` where a value is only passed on, `Record<string, unknown>` for a bag of keys, `ReadonlySet<unknown>` and `(...args: never[]) => unknown` in `TPaths`.
+- **The `query` of `doRequest` is `Record<string, unknown>`.** It was `any`. An object literal or a `type` alias fits; an `interface` value does not (see the fifth step below).
 - **`getUser()` returns `IAuthUser`.** The fields `saveAuth` stores (`userId`, `username`, `referenceId`, `provider`) have their types and are absent when nothing is stored; any other field of the stored object is `unknown` until you narrow it. `IAuthUser` is new in `@venizia/ardor-kernel` and `@venizia/ardor`.
 - **A stored identity with a wrong field type is read as `{}`.** `getUser()` used to return any stored object. Now a `userId` or `referenceId` that is not a string or a number, or a `username` or `provider` that is not a string, makes it read as empty, as a stored array already did. `saveAuth` never writes that.
 - **`onSessionStarted` takes `user: IAuthUser`.** A subclass that names a narrower user type still overrides it (see below).
@@ -68,6 +80,7 @@ migration:
 ## Who is affected
 
 - **An app that imports `AnyType` or `AnyObject` from `@venizia/ardor` or `@venizia/ardor-kernel`.** TypeScript reports `has no exported member`. Replace each use as shown below.
+- **An app that passes an `interface` value as the `query` of `doRequest`.** Spread it.
 - **An app that reads a field of `getUser()` other than the four above, or of the `user` of `onSessionStarted`, without a check.** It compiled because the type was `any`; now the field is `unknown`.
 - **An app that passes an `interface` value where it now writes `Record<string, unknown>`.** An interface has no index signature, so TypeScript rejects it. See the third case below.
 - **An app whose test compares `getIdentity()` with `toEqual`** and the stored fields only: the result now has `id` too.
@@ -140,7 +153,14 @@ export const bag: Record<string, unknown> = aliased;
 +const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
 ```
 
-**5. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
+**5. Pass the query of `doRequest` as a plain object.** Its type was `any`; an `interface` value no longer fits, so spread it. TypeScript says "Index signature for type 'string' is missing in type 'IListOptions'".
+
+```diff
+-await networkService.doRequest({ type, method, paths, query: listOptions });
++await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
+```
+
+**6. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
 
 ```ts
 import { DefaultAuthProvider, type IAuthTokenRecord, type IAuthUser } from '@venizia/ardor';
@@ -158,10 +178,10 @@ export class AppAuthProvider extends DefaultAuthProvider {
 
 `IAppUser` is yours to trust: `getUser()` reads browser storage, so the extra fields are whatever your sign-in saved. Check them where a wrong value would do harm.
 
-**6. Run `bun run typecheck`.** The errors name each use left; there is no codemod, because the right replacement depends on the value.
+**7. Run `bun run typecheck`.** The errors name each use left; there is no codemod, because the right replacement depends on the value.
 
 ## How to go back
 
-Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 5. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
+Pin the four ARDOR packages to `0.4.8-15` or earlier, with the IGNIS packages of that release, where `AnyType` and `AnyObject` exist, and undo steps 1 to 6. To stay on the new ARDOR and keep the old names, declare them in your own code: `AnyType` as the `any` type, and `AnyObject` as a `Record` of `string`, `symbol` and `number` keys whose values are `any`.
 
 Nothing stored changes: the identity in `localStorage` has the same shape before and after.
