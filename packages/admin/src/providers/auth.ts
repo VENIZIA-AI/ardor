@@ -66,7 +66,8 @@ const readStatus = (error: unknown): unknown => {
  *
  * @example
  * ```ts
- * import { type BaseArdorApplication, configuration, CoreBindings, DefaultAuthProvider, inject, provide } from '@venizia/ardor';
+ * import { BindingScopes } from '@venizia/ignis-inversion';
+ * import { BaseArdorApplication, CoreBindings, DefaultAuthProvider, type IApplicationInfo } from '@venizia/ardor';
  *
  * class AppAuthProvider extends DefaultAuthProvider {
  *   protected override get afterLoginPath() {
@@ -74,13 +75,16 @@ const readStatus = (error: unknown): unknown => {
  *   }
  * }
  *
- * @configuration()
- * export class AuthConfiguration {
- *   constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
+ * export class Application extends BaseArdorApplication {
+ *   getAppInfo(): IApplicationInfo {
+ *     return { name: 'shop', version: '1.0.0', description: 'The shop admin' };
+ *   }
  *
- *   @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
- *   authProvider() {
- *     return this.application.instantiate(AppAuthProvider).value(this.application);
+ *   bindContext(): void {
+ *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/sign-in'] });
+ *     // Sign-in is off unless the options say use: true.
+ *     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+ *     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(AppAuthProvider).setScope(BindingScopes.SINGLETON);
  *   }
  * }
  * ```
