@@ -49,7 +49,9 @@ export default {
     bundle: '.agents/knowledge',
     wiki: 'docs/wiki/content',
     changelogs: 'docs/wiki/content/changelogs',
-    migrationFrom: '2026-11-13',
+    // Version folders (changelogs/<X.Y.Z>/log.md and migration.yaml) are the changelog from 0.4.5 on; the dated files up to `datedUntil` are history.
+    migrationFrom: '0.4.5',
+    datedUntil: '2026-11-15',
     codemodCommand: ['ardor', 'codemod'],
   },
 
