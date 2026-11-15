@@ -267,7 +267,7 @@ export class CodemodCommand {
           continue;
         }
 
-        writeFileSync(temp, text);
+        writeFileSync(temp, text, { flag: 'wx' });
         chmodSync(temp, now.mode & 0o7777);
         staged.push({ path, temp });
       } catch (error) {

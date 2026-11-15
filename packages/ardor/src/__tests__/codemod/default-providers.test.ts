@@ -69,7 +69,7 @@ describe('DefaultProvidersTransform', () => {
         line: FIRST_MEMBER_LINE,
         name: 'restDataProvider(): instantiate(CountRestDataProvider).value()',
         reason:
-          'replace this method by one line in bindContext(): .toProvider(CountRestDataProvider) on the key, and delete the APPLICATION_INSTANCE it injects if nothing else uses it',
+          'replace this method by one line in bindContext(): .toProvider(CountRestDataProvider).setScope(BindingScopes.SINGLETON) on the key, and delete the APPLICATION_INSTANCE it injects if nothing else uses it',
       },
     ]);
   });
@@ -116,7 +116,7 @@ describe('DefaultProvidersTransform', () => {
     }
   });
 
-  test('lists a default class under another key as a default provider', () => {
+  test('lists a default class under another key, and says to bind it there: deleting the method would unbind the key', () => {
     const result = run(
       configuration(
         [
@@ -129,7 +129,8 @@ describe('DefaultProvidersTransform', () => {
     );
 
     expect(result.findings).toHaveLength(1);
-    expect(result.findings[0]?.reason).toContain('ARDOR binds DefaultAuthProvider itself');
+    expect(result.findings[0]?.reason).toContain('.toProvider(DefaultAuthProvider)');
+    expect(result.findings[0]?.reason).not.toContain('delete this method');
   });
 
   test('lists each method of a class, in order', () => {

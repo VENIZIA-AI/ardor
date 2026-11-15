@@ -295,6 +295,30 @@ describe('AuthOptionsTransform: the type of the options', () => {
     expect(aliased.findings.filter((finding) => finding.kind === undefined)).toHaveLength(1);
   });
 
+  test('lists the IAuthProviderOptions written as the type argument of bind', () => {
+    const text = [
+      "import { CoreBindings, type IAuthProviderOptions } from '@venizia/ardor';",
+      '',
+      'export class App {',
+      '  bindContext() {',
+      '    this.bind<IAuthProviderOptions>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ x: 1 });',
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = run(text);
+
+    expect(result.renamed).toBe(1);
+    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
+      {
+        line: 5,
+        name: 'IAuthProviderOptions',
+        reason: 'it has no use, so the options no longer fit it: type them as TAuthProviderOptions',
+      },
+    ]);
+  });
+
   test('lists nothing for a return type of TAuthProviderOptions', () => {
     const result = run(
       typed({
