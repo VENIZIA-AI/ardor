@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 import { HttpResponseReader } from '@venizia/ignis-kernel/repository';
 
@@ -105,9 +106,7 @@ export class ResponseReader {
 
           const dataFormatted = data as { data: TData; count?: number };
 
-          const normalizedData = !Array.isArray(dataFormatted.data)
-            ? [dataFormatted.data]
-            : dataFormatted.data;
+          const normalizedData = ResponseReader.toRows({ data: dataFormatted.data });
 
           const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
 
@@ -118,7 +117,7 @@ export class ResponseReader {
           };
         }
 
-        const normalizedData = !Array.isArray(data) ? [data] : data;
+        const normalizedData = ResponseReader.toRows({ data });
 
         const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
 
@@ -141,6 +140,17 @@ export class ResponseReader {
         };
       }
     }
+  }
+
+  /** The rows of a list answer: an array as it is, no body at all (an empty answer) as no row, any other value as the one row. */
+  private static toRows(opts: { data: unknown }): unknown[] {
+    const { data } = opts;
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    return data === null || data === undefined ? [] : [data];
   }
 
   /**
@@ -223,7 +233,7 @@ export class ResponseReader {
       return JSON.parse(text);
     } catch {
       throw getError({
-        statusCode: 502,
+        statusCode: HTTP.ResultCodes.RS_5.BadGateway,
         message: `[ResponseReader] ${response.status} | The response body is not JSON (${text.length} chars, content-type: ${contentType})`,
       });
     }
