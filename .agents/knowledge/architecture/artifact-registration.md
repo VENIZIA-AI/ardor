@@ -95,10 +95,11 @@ the stereotype wrote but has no discovery list, which is why the application bas
 explicit to most explicit - a later `bind` on the same key replaces the earlier one:
 
 ```
-registerArtifacts()  ->  bindingList()  ->  bindContext()
+bindDefaults()  ->  registerArtifacts()  ->  features  ->  bindingList()  ->  bindContext()
 ```
 
-A stereotype is what a class declares about itself; `bindingList()` is what this application decided
+`bindDefaults()` is empty in the kernel; the admin `BaseArdorApplication` binds the default data,
+i18n and auth providers and the auth service there, so any of the later steps replaces one. A stereotype is what a class declares about itself; `bindingList()` is what this application decided
 by hand for this build; a `this.bind(...)` in `bindContext()` overrides both. An override that lost to
 a decorator would be ignored with nothing to show it. A class declared `allowOverride: false` (by
 stereotype or by a by-hand method) is the exception: `bindingList()` throws
@@ -145,8 +146,6 @@ Registration by hand is the second mode, as in IGNIS. Every path records the key
 - `bindingList()` - a record of literal key to class, bound as singletons. Literal keys survive a
   minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
   `IUseInjectableKeysOverrides`.
-- `injectable(scope, Class, tags?)` - binds `` `${scope}.${Class.name}` `` as a singleton with optional
-  tags. Prefer the per-kind methods.
 
 Singleton is the default on every path, unlike IGNIS's server: a hook resolves on every render, and a
 transient repository would hand each render a new instance. A class registered twice under different

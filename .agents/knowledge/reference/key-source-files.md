@@ -16,7 +16,7 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 
 ## Dependency injection
 - `packages/kernel/src/base/metadata/index.ts` - the artifact stereotypes (`@service`, `@component`, `@injectable`, `inject`, `BindingNamespaces`, ...) re-exported export by export from `@venizia/ignis-kernel/metadata`; ARDOR defines none of its own. Core to [DI in the browser](/architecture/di-in-the-browser.md).
-- `packages/kernel/src/base/applications/abstract.ts` - `registerArtifacts()`, `bindingList()`, `injectable()` and `service()`, where the application binds classes, see [Binding key namespaces](/conventions/binding-key-namespaces.md).
+- `packages/kernel/src/base/applications/abstract.ts` - `bindDefaults()`, `registerArtifacts()`, `bindingList()` and `service()`, where the application binds classes; `packages/admin/src/applications/base.ts` binds the default providers, see [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - `packages/kernel/src/common/keys.ts` - the binding key constants, see [Binding keys](/reference/binding-keys.md) and [Binding key namespaces](/conventions/binding-key-namespaces.md).
 - `packages/react/src/hooks/use-injectable.ts` - the hook that resolves bindings inside React components.
 - `packages/react/src/hooks/use-artifact.ts` - the per-stereotype resolution hooks `useService`, `useProvider`, `useComponent`, `useConfiguration`.
