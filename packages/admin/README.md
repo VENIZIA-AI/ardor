@@ -14,6 +14,7 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
+| Application | `BaseArdorApplication` - the base to extend: it binds the default providers, so an app binds only their options |
 | Data | `DefaultRestDataProvider`, `CountRestDataProvider` |
 | Auth | `DefaultAuthProvider`, `SessionClearReasons`, `IAuthRejection` |
 | i18n | `DefaultI18nProvider`, `englishMessages`, `vietnameseMessages` |

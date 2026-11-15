@@ -57,6 +57,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@venizia/ardor": "workspace:*",
+        "@venizia/ignis-inversion": "catalog:",
         "react": "catalog:",
         "reflect-metadata": "catalog:",
       },

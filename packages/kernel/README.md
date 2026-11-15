@@ -18,7 +18,7 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
-| Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()`, `service()`, `repository()`, `dataSource()` and `component()` helpers |
+| Application | `AbstractArdorApplication` - an IGNIS inversion `Container` to extend with `getAppInfo()` and `bindContext()`. `BaseArdorApplication`, which also binds the default providers, lives in `@venizia/ardor-admin` and is exported from `@venizia/ardor` |
 | Services | `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
 | Providers | `BaseProvider` |
 | Decorators | `api()` - logs and rethrows a failing API method; the IGNIS stereotypes it re-exports (`component`, `configuration`, `datasource`, `inject`, `injectable`, `model`, `provide`, `repository`, `service`) |

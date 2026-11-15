@@ -43,68 +43,34 @@ export const Orders = () => {
 
 ## Quick start
 
+`BaseArdorApplication` binds the default providers. An application binds their options:
+
 ```typescript
 import 'reflect-metadata';
 
 import {
-  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
   configuration,
   CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultI18nProvider,
-  DefaultRestDataProvider,
   type IApplicationInfo,
-  inject,
-  provide,
+  type IRestDataProviderOptions,
+  provideOption,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
-// Every framework binding, declared: start() binds each @provide method under its key, SINGLETON.
 @configuration()
 export class SellerConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: import.meta.env.VITE_API_URL,
       noAuthPaths: ['/auth/sign-in'],
     };
   }
 
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
-    return {
-      paths: { afterLogin: '/dashboard' },
-    };
-  }
-
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {};
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService() {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: true, paths: { afterLogin: '/dashboard' } };
   }
 }
 
