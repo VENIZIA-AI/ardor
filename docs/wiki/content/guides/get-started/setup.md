@@ -49,7 +49,7 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 bun add -d @venizia/ignis-boot
 ```
 
-Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`. `@venizia/ignis-boot` is the build tool of [Auto boot](../core-concepts/auto-boot): it finds the decorated classes of your app so you keep no list of them.
 
 ARDOR needs the IGNIS versions its peers name: `bun pm view @venizia/ardor@<version> peerDependencies` prints them, and the [0.4.8 changelog](../../changelogs/0.4.8) lists them for the 0.4.8 prerelease.
 

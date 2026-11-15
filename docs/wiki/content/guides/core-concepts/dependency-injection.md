@@ -70,13 +70,7 @@ export class MockMailService {
 
 ## Build discovery: AutoArtifacts and Vite
 
-In the browser, ARDOR discovers decorated classes at build time. In `vite.config.ts`, `IgnisArtifactsVitePlugin.create()` scans `src/`, bundles decorated classes into the virtual module `@venizia/ignis-boot/auto`, and pins class names against minification. It takes one option, `root`, the folder it scans.
-
-In `src/application.ts`, return `AutoArtifacts` from `artifacts()`:
-
-<<< @/../../../examples/5-mins-qs/src/application.ts{ts}
-
-When `application.start()` runs, `registerArtifacts()` binds each discovered class, in the scope its stereotype declares (a singleton when it declares none).
+In the browser, ARDOR finds decorated classes at build time: a Vite plugin scans `src/`, builds the list of classes with a stereotype, and keeps their names from being renamed; `src/application.ts` returns `AutoArtifacts` from `artifacts()`, and `start()` binds every class it finds, in the scope its stereotype declares (a singleton when it declares none). The full guide, with the setup, what is discovered and skipped, kits and features, and every `[artifacts]` error, is [Auto boot](./auto-boot).
 
 > [!WARNING]
 > Keep `src/application.ts` free of decorated classes. The module that imports `AutoArtifacts` must never declare decorated classes or be imported by modules that declare decorated classes, which creates an import cycle at startup.
@@ -205,28 +199,11 @@ A hook resolves on every render, as the container does for every `get`. A `TRANS
 
 ## Common startup errors and how to fix them
 
-When configuring dependency injection and build discovery, you may encounter one of three startup errors from `packages/kernel/src/base/applications/abstract.ts`:
-
-**Missing artifact group content or resolver:**
-```
-[artifacts] A group has neither content nor resolve | Return AutoArtifacts from @venizia/ignis-boot/auto, or build with IgnisArtifactsPlugin so the group arrives with its content
-```
-Return `[AutoArtifacts]` from `artifacts()` in `src/application.ts` and add `IgnisArtifactsVitePlugin.create()` to `plugins` in `vite.config.ts`.
-
-**Import cycle in application artifacts:**
-```
-[artifacts] 'services' lists an entry that is not a class (position <position>) | Usually an import cycle: the module that imports the index (or @venizia/ignis-boot/auto) must not define decorated classes or be imported by them
-```
-The first word in quotes names the group that holds the entry (`services`, `repositories`, `dataSources`, `components`, `configurations`). Isolate each decorated class in its own file under `src/services/`, `src/repositories/`, or `src/datasources/`. Keep `src/application.ts` free of decorated classes, and do not import `application.ts` from any artifact module.
-
-**Class was never discovered:**
-```
-[artifacts] 'services' lists <ClassName>, which was never discovered | Decorate it with its stereotype and regenerate the index
-```
-Add the stereotype decorator (`@service()`, `@repository()`, `@datasource()`, or `@component()`) to the class. If running `vite dev`, restart the development server so `IgnisArtifactsVitePlugin` detects the decorator.
+The `[artifacts]` errors at startup (a group with no content, an import cycle in the index, a class that was never discovered) and the errors of the scan are listed with their cause and fix in [Auto boot](./auto-boot#when-it-does-not-work).
 
 ## Related
 
+- [Auto boot](./auto-boot) - How classes are found at build time and bound at start
 - [Application](./application) - Application container lifecycle and startup
 - [Configuration](./configuration) - Configuring options with `@configuration` and `@provideOption`
 - [Quickstart](../get-started/5-minute-quickstart) - End-to-end working example

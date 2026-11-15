@@ -78,7 +78,7 @@ Replace the template's `vite.config.ts` at the project root with this one. `bun 
 
 <<< @/../../../examples/5-mins-qs/.configs/builders/vite.config.ts{ts}
 
-This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias and forwards `/api` to the stub API on port 3100; point the proxy at your own backend when you have one. It also does what the preset does for the build (see [Vite setup](./vite-setup)): `strictExecutionOrder: true` runs each module after the modules it imports, which guards a production build against `Reflect.getMetadata is not a function`, and React gets a chunk of its own.
+This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias and forwards `/api` to the stub API on port 3100; point the proxy at your own backend when you have one. It also does what the preset does for the build (see [Vite setup](./vite-setup)): `strictExecutionOrder: true` runs each module after the modules it imports, which guards a production build against `Reflect.getMetadata is not a function`, and React gets a chunk of its own. How the plugin finds your classes, and what to do when it does not, is in [Auto boot](../core-concepts/auto-boot).
 
 ## 8. Run it
 
