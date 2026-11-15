@@ -50,6 +50,12 @@ export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
 export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
 
 /**
+ * Sends the requests of the data provider with its own sender. The repositories of
+ * `@venizia/ardor/repository` send through IGNIS's `HttpDataSource`, from the optional peer
+ * `@venizia/ignis-connectors`, which this service cannot import without making that peer required:
+ * until IGNIS's transport core is in a required peer, two clients exist, and `getDataSourceAuth`
+ * gives the second the session of the first.
+ *
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
  */

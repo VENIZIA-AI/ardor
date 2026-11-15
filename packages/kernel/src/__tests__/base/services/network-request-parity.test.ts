@@ -105,10 +105,6 @@ const lastRequest = (): IRecorded => {
   return request;
 };
 
-const nameOf = (error: unknown): string | undefined => {
-  return error instanceof Error ? error.name : undefined;
-};
-
 describe('the headers a request carries', () => {
   test('a call with no headers sends the constructor headers and the default JSON content type, even on a GET', async () => {
     const service = createService({ headers: { 'X-Static': 'static-1' }, isOpen: true });
@@ -527,29 +523,43 @@ describe('the 2xx bodies as they are read today', () => {
     });
   };
 
-  // A reader fix would replace the next three: today a textual 2xx body goes to `response.json()`.
-  test('today a 2xx text/plain body rejects with a raw SyntaxError and no status', async () => {
-    const error = await RejectionHelper.rejectionOf({
-      task: readWith({ body: 'plain words', headers: { 'content-type': 'text/plain' } }),
+  test('a 2xx text/plain body is the text, whatever it holds', async () => {
+    const response = await readWith({
+      body: 'plain words',
+      headers: { 'content-type': 'text/plain' },
     });
 
-    expect(nameOf(error)).toBe('SyntaxError');
-    expect(isApplicationError(error)).toBe(false);
+    expect(response.data).toBe('plain words');
   });
 
-  test('today a 2xx text/csv body that is no attachment rejects with a raw SyntaxError', async () => {
-    const error = await RejectionHelper.rejectionOf({
-      task: readWith({ body: 'a,b\n1,2', headers: { 'content-type': 'text/csv' } }),
+  test('a 2xx text/csv body that is no attachment is the text', async () => {
+    const response = await readWith({
+      body: 'a,b\n1,2',
+      headers: { 'content-type': 'text/csv' },
     });
 
-    expect(nameOf(error)).toBe('SyntaxError');
+    expect(response.data).toBe('a,b\n1,2');
   });
 
-  // Bun's `fetch` reads an empty body as JSON `null`; a browser's `response.json()` throws a SyntaxError there.
-  test('today an empty 2xx body under application/json answers data null on Bun', async () => {
-    const response = await readWith({ body: '', headers: { 'content-type': 'application/json' } });
+  test('a 2xx body that claims JSON and is not rejects with a 502 ApplicationError, without its content', async () => {
+    const error = await RejectionHelper.rejectionOf({
+      task: readWith({
+        body: 'secret <html>',
+        headers: { 'content-type': 'application/json' },
+      }),
+    });
 
-    expect(response).toEqual({ data: null, count: undefined });
+    expect(isApplicationError(error)).toBe(true);
+    expect(error).toMatchObject({ statusCode: 502 });
+    expect(error instanceof Error ? error.message : '').not.toContain('secret');
+  });
+
+  test('an empty 2xx body, JSON or text, answers data null in every runtime', async () => {
+    const json = await readWith({ body: '', headers: { 'content-type': 'application/json' } });
+    const text = await readWith({ body: '', headers: { 'content-type': 'text/plain' } });
+
+    expect(json).toEqual({ data: null, count: undefined });
+    expect(text).toEqual({ data: null, count: undefined });
   });
 
   test('a 204 answers { data: {} } whatever the request type, with no total', async () => {

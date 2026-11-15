@@ -19,6 +19,10 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 `doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. It passes a `signal` and never the fetcher's `timeout` (below).
 
+## Two clients
+
+`doRequest` sends with `NodeFetchNetworkRequest`; the repositories send through IGNIS's `HttpDataSource` (`@venizia/ignis-connectors`, an optional peer allowed only on the `./repository` sub-path by the clean-install claims in `scripts/checks/clean-install/manifest.ts`). Building `doRequest` on the data source would make that peer required for every app, so both clients stay until IGNIS's transport core (path guard, send with retry, `readJsonBody`) is in a required peer. `network-request-parity.test.ts` pins what `doRequest` sends and reads today, so a later swap can be checked against it. The differences a swap would have to work around: `x-request-count` is refused by the data source, the path-guard error text and status differ, null query values and a body on a GET are sent, the default content type differs, and the data source refuses an empty or relative base URL.
+
 ## Abort and timeout
 
 - **`signal`.** `doRequest({ signal })` hands it to `send`, for the first send and the retry. ra-core passes one to the four reads only because `value()` returns `supportAbortSignal: true` (`useGetList` and the others read the flag); the writes never get one. `send()` forwards `ISendParams.signal`. An aborted request rejects with the signal's reason (a `DOMException` `AbortError` for a bare `abort()`), which ra-core does not log and `checkError` resolves for (no status).
