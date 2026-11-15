@@ -32,8 +32,6 @@ export interface IBuildInfoFileOptions {
   onUnresolved?: TUnresolvedPolicy;
 }
 
-export type TGitReadResult = { ok: true; value: string } | { ok: false; reason: string };
-
 export interface IFrameworkVersions {
   versions: Record<string, string>;
   /** Declared dependencies of the scope with no installed package.json: the install has not run. */
@@ -45,7 +43,6 @@ export interface IFrameworkVersions {
 /** The effects of resolving the file; tests replace them, and the plugin passes the real ones. */
 export interface IBuildInfoSources {
   resolveRecord(opts: { root: string }): Promise<TBuildInfoRecord>;
-  readGit(opts: { root: string; args: string[] }): Promise<TGitReadResult>;
   readFrameworkVersions(opts: { root: string; scope: string }): Promise<IFrameworkVersions>;
 }
 

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { BuildInfoEnvironmentKeys } from '@venizia/ignis-boot/build-info';
 
-import { findInstalledVersion, readFrameworkVersions, readGit, readJsonFile } from '@/vite/sources';
+import { findInstalledVersion, readFrameworkVersions, readJsonFile } from '@/vite/sources';
 
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, runNode, writeFiles } from './fixture';
@@ -90,38 +90,8 @@ describe('reading from disk', () => {
   });
 });
 
-describe('readGit', () => {
-  test('answers with the short commit of this repository', async () => {
-    const result = await readGit({
-      root: REPOSITORY_ROOT,
-      args: ['rev-parse', '--short=12', 'HEAD'],
-    });
-
-    expect(result.ok && /^[0-9a-f]{12}$/.test(result.value)).toBe(true);
-  });
-
-  test('says why git failed, instead of failing silently', async () => {
-    const result = await readGit({
-      root: REPOSITORY_ROOT,
-      args: ['rev-parse', '--verify', 'refs/heads/no-such-branch'],
-    });
-
-    expect(result.ok).toBe(false);
-    expect(!result.ok && result.reason).toContain(
-      'git rev-parse --verify refs/heads/no-such-branch failed',
-    );
-  });
-
-  test('says so when git answers with nothing', async () => {
-    const result = await readGit({ root: REPOSITORY_ROOT, args: ['rev-parse', '--show-prefix'] });
-
-    expect(result.ok).toBe(false);
-    expect(!result.ok && result.reason).toContain('printed nothing');
-  });
-});
-
 describe('under Node, which is where Vite runs', () => {
-  test('the commit comes from git although the IGNIS resolver cannot reach it without Bun', async () => {
+  test('the commit comes from the IGNIS resolver, which reads git without Bun', async () => {
     const dist = join(REPOSITORY_ROOT, 'packages', 'ardor', 'dist', 'vite', 'index.js');
     const resolverDist = join(REPOSITORY_ROOT, 'packages', 'ardor', 'dist', 'vite', 'resolver.js');
     const sourcesDist = join(REPOSITORY_ROOT, 'packages', 'ardor', 'dist', 'vite', 'sources.js');

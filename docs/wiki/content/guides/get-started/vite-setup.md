@@ -154,7 +154,7 @@ A build with no commit fails with a message that says to build inside a git chec
 
 The dev server answers `GET` and `HEAD` on the file's path under its `base`, with `Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`. Any other method gets `405`.
 
-If the file cannot be resolved, the cause goes to the terminal and the response is a `500` with no path and no stack; the next request tries again. The server resolves the file once, so restart it after an install.
+If the file cannot be resolved, the cause goes to the terminal and the response is a `500` with no path and no stack; the next request tries again. The server resolves the file once, so restart it after an install. A build resolves it once per run, so under `vite build --watch` each rebuild writes its own commit and `builtAt`.
 
 ### Read it in the app
 
@@ -168,9 +168,6 @@ console.log(`${info.service} ${info.version} (${info.commit} on ${info.branch})`
 ```
 
 Serve it under the base of your app (`import.meta.env.BASE_URL`) when the app is not at the root. An About page shows `version`, `commit`, `builtAt` and the `frameworks` list; it reads the file at run time, so one image still serves every environment.
-
-> [!NOTE]
-> IGNIS's `BuildInfoResolver` reads git through Bun, so under Node, where Vite runs, it returns `unspecified` for the commit and the branch. The plugin asks git itself for those two when the pipeline gave none. That fallback goes when `@venizia/ignis-boot` reads git under Node ([VENIZIA-AI/ignis#537](https://github.com/VENIZIA-AI/ignis/issues/537)).
 
 ## Next steps
 
