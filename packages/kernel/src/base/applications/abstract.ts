@@ -146,6 +146,13 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       }
 
       const metadata = registry.getArtifactMetadata({ target });
+      const holder = this.lockedKeys.get(key);
+
+      if (holder !== undefined && holder !== target.name) {
+        throw getError({
+          message: `[registerArtifacts] '${String(key)}' is held by ${holder} with allowOverride false, and ${target.name} would replace it | Give one of them another key, or bind the intended one in bindContext()`,
+        });
+      }
 
       if (metadata?.allowOverride === false) {
         this.lockedKeys.set(key, target.name);

@@ -502,6 +502,26 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
     expect(result).toMatchObject({ message: expect.stringMatching(/'services\.ByHand'.*ByHand/) });
   });
 
+  test('throws when a discovered class would replace a by-hand registration declared allowOverride false', async () => {
+    @service({ binding: { namespace: 'services', key: 'auth' } })
+    class Discovered {}
+
+    class ByHand {}
+
+    const application = new TestApplication();
+    application.service(ByHand, {
+      binding: { namespace: 'services', key: 'auth' },
+      allowOverride: false,
+    });
+
+    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+
+    expect(result).toMatchObject({
+      message: expect.stringMatching(/'services\.auth'.*ByHand.*Discovered/),
+    });
+    expect(registry.getDiscoveredArtifacts()).toContain(Discovered);
+  });
+
   test('bindContext still replaces a binding declared allowOverride false', async () => {
     class Shared {}
 
