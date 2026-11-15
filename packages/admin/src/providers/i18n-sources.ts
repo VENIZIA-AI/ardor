@@ -33,6 +33,7 @@ export const unwrapMessages = (opts: { value: unknown; owner: string }): object 
  */
 export class LocaleSources {
   private readonly loaded = new Map<string, object>();
+  private readonly loading = new Map<string, Promise<object | undefined>>();
 
   constructor(private readonly opts: { sources: Record<string, TI18nSource>; logger: ILogger }) {}
 
@@ -62,7 +63,20 @@ export class LocaleSources {
 
     const loaded = this.loaded.get(locale);
 
-    return loaded ? Promise.resolve(loaded) : this.load({ locale, loader: source });
+    if (loaded) {
+      return Promise.resolve(loaded);
+    }
+
+    const waiting = this.loading.get(locale);
+
+    if (waiting) {
+      return waiting;
+    }
+
+    const task = this.load({ locale, loader: source }).finally(() => this.loading.delete(locale));
+    this.loading.set(locale, task);
+
+    return task;
   }
 
   /** A type predicate has to take its subject as the parameter, not inside an `opts` object. */
