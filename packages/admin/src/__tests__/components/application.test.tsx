@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore, type Store } from '@reduxjs/toolkit';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
@@ -350,6 +350,47 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 20)));
 
+  test('a page that is open shows the data of the user signed in now, not the one that left', async () => {
+    const authService = new DefaultAuthService();
+    const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    authService.saveAuth({
+      userId: 7,
+      username: 'alice',
+      token: { value: 'jwt-alice', type: 'Bearer' },
+    });
+
+    const Probe = () => {
+      const { data } = useQuery({
+        queryKey: ['probe'],
+        queryFn: () => Promise.resolve(authService.getAuth()?.value ?? 'nobody'),
+      });
+
+      return <p>{`data: ${data}`}</p>;
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/probe']}>
+        <ArdorApplication
+          container={container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          routes={[{ path: '/probe', element: <Probe /> }]}
+        />
+      </MemoryRouter>,
+    );
+    await screen.findByText('data: jwt-alice');
+
+    authService.saveAuth({
+      userId: 8,
+      username: 'bob',
+      token: { value: 'jwt-bob', type: 'Bearer' },
+    });
+
+    await screen.findByText('data: jwt-bob');
+    expect(screen.queryByText('data: jwt-alice')).toBeNull();
+  });
+
   test('is emptied when the session ends by any route', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
@@ -368,7 +409,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     await screen.findByText('R');
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     authService.cleanUp();
     expect(clear).not.toHaveBeenCalled();
@@ -416,7 +457,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
     queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     authService.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
     await settle();
@@ -431,7 +472,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
   test('is kept by the first sign-in of a visitor who had no session', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
@@ -491,7 +532,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     await screen.findByText('R');
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     cleanup();
     authService.cleanUp();
@@ -675,6 +716,36 @@ describe('ArdorApplication route access', () => {
 
     expect(screen.queryByText('Admin only')).toBeNull();
     expect(canAccess).toHaveBeenCalledTimes(0);
+  });
+
+  test('a route with access fails at mount when sign-in is off, naming the route', () => {
+    expect(() =>
+      renderRoute({
+        container: createContainer({ load: () => Promise.resolve({}), withAuthProvider: false }),
+        routes: [
+          {
+            path: '/admin-only',
+            element: <AdminPage />,
+            access: { resource: 'settings', action: 'edit' },
+          },
+        ],
+      }),
+    ).toThrow(/'\/admin-only'.*sign-in/);
+  });
+
+  test('a route with access fails at mount when no permission provider is bound, naming the route', () => {
+    expect(() =>
+      renderRoute({
+        container: createContainer({ load: () => Promise.resolve({}) }),
+        routes: [
+          {
+            path: '/admin-only',
+            element: <AdminPage />,
+            access: { resource: 'settings', action: 'edit' },
+          },
+        ],
+      }),
+    ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
   });
 
   test('guards a route that gives a Component, and a route of a feature', async () => {

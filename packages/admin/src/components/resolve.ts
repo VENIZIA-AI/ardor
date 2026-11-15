@@ -10,6 +10,11 @@ interface IResolvedProviders {
   i18nProvider: I18nProvider;
 }
 
+/** The tag `BaseArdorApplication.bindDefaults()` puts on the bindings it makes, so a binding of the application is told apart. */
+export class DefaultBindingTags {
+  static readonly DEFAULT = 'ardor.default';
+}
+
 /** Resolves the providers `ArdorApplication` hands to react-admin. */
 export class ApplicationProviders {
   /**
@@ -39,6 +44,20 @@ export class ApplicationProviders {
       throw getError({
         message: `[ApplicationProviders.resolve] ${CoreBindings.AUTH_PROVIDER_OPTIONS} has no use toggle | Bind { use: true, ...paths } to sign in, or { use: false } for an app with no sign-in`,
       });
+    }
+
+    // A 0.4.7 app binds its own auth provider and no options: sign-in would be off and the provider dropped, every page public.
+    if (
+      authOptions === undefined &&
+      container.isBound({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+    ) {
+      const binding = container.getBinding({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+
+      if (!binding?.hasTag(DefaultBindingTags.DEFAULT)) {
+        throw getError({
+          message: `[ApplicationProviders.resolve] ${CoreBindings.DEFAULT_AUTH_PROVIDER} holds an auth provider of the application, but ${CoreBindings.AUTH_PROVIDER_OPTIONS} is not bound, so sign-in would be off and the provider ignored | Bind { use: true, ...paths } to use it, or { use: false } for an app with no sign-in`,
+        });
+      }
     }
 
     const isSignInOn = authOptions?.use === true;
