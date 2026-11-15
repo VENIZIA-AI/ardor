@@ -70,7 +70,7 @@ export class CommerceApplication extends BaseArdorApplication {
 | `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
 | `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) |
 | `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |
-| `TArdorRoute` | type | A React Router route plus the optional `access` a user needs to open it |
+| `TArdorRoute` | type | A React Router route plus `access`, `auth` and `layout`: who may open it, and where it renders |
 | `IRouteAccess` | interface | The `resource` and `action` a route with `access` asks the permission provider |
 | `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
 | `CoreBindings.FEATURES` | binding key | Key `'@app/application/features'`, where `preConfigure()` binds the mounted feature array |
@@ -84,7 +84,7 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 | `name` | `string` | None (required) | Unique identifier for the feature within an application. |
 | `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes of the feature. |
 | `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the view tree. |
-| `routes` | `Array<TArdorRoute>` | `undefined` | Custom `<Route>` elements mounted under `<CustomRoutes>`; each may declare `access`. |
+| `routes` | `Array<TArdorRoute>` | `undefined` | Custom routes; each may declare `access`, `auth` and `layout`. |
 | `messages` | `TFeatureMessages` | `undefined` | Locale codes mapped to message objects or lazy loaders. |
 | `permissions` | `Array<string>` | `undefined` | Permission keys the feature checks, in the application's vocabulary. |
 | `[extension]` | `TExtension` | None | Custom shell metadata, such as menu entries, navigation paths or icons. |
@@ -92,7 +92,7 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 - **`name`:** Used in resource ownership checks and diagnostic errors.
 - **`configurations`:** Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`.
 - **`resources`:** Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`.
-- **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. A route without `access` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. See [A route that needs permission](#a-route-that-needs-permission).
+- **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. A route without `access` or `auth: { use: true }` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. See [A route that needs permission](#a-route-that-needs-permission) and [Public pages and pages outside the layout](#public-pages-and-pages-outside-the-layout).
 - **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`.
 - **`permissions`:** Preserved on the feature for consumers such as role editors; ARDOR enforces nothing with it. A route enforces a permission only through its own `access`. See [Permission](./permission).
 - **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it.
@@ -124,6 +124,37 @@ export const SettingsFeature: TFeature = Features.define({
 - `access` works the same in the `routes` prop of `ArdorApplication`, and with a route that gives `Component` instead of `element`.
 - Hiding a page is not protection: the backend must check every request.
 
+## Public pages and pages outside the layout
+
+Two more fields sit next to `access` on a route:
+
+| Field | Effect |
+| --- | --- |
+| None | Inside the layout. Signed in only when the application sets `requireAuth`. |
+| `auth: { use: true }` | Renders only for a signed-in user, with no permission check. A signed-out user goes to sign-in. |
+| `auth: { use: false }` | Marks the route public. With `access` as well, `Features.mount()` throws. |
+| `layout: { use: false }` | Renders outside the layout, in a second `<CustomRoutes noLayout>`, whatever the sign-in status. |
+
+```tsx
+import React from 'react';
+import { Features, type TFeature } from '@venizia/ardor';
+
+const AcceptInvitePage: React.FC = () => <h1>Accept the invite</h1>;
+const ProfilePage: React.FC = () => <h1>My profile</h1>;
+
+export const AccountFeature: TFeature = Features.define({
+  name: 'account',
+  routes: [
+    { path: '/accept-invite', element: <AcceptInvitePage />, layout: { use: false } },
+    { path: '/profile', element: <ProfilePage />, auth: { use: true } },
+  ],
+});
+```
+
+- **A public page under `requireAuth`** needs `layout: { use: false }`. react-admin renders a route outside the layout before it checks sign-in; a route inside the layout waits for that check, so `auth: { use: false }` alone does not open it.
+- **Outside the layout is still guarded** when the route has `access` or `auth: { use: true }`: a signed-out user goes to the sign-in page, as react-admin's `Authenticated` does.
+- **The fields work the same** in the `routes` prop of `ArdorApplication` and in the `routes` of a feature.
+
 ## Mount order and conflict checks
 
 `ArdorApplication` calls `Features.mount({ features, resources, routes })` to assemble the UI tree:
@@ -139,6 +170,10 @@ ARDOR enforces isolation during startup and mount:
   `[features] '${feature.name}' lists ${target.name}, which was never discovered | Decorate it with @configuration() and import its module before start()`
 - **Duplicate resource name (`mount`):** If a resource name is mounted more than once, `Features.mount()` in `packages/admin/src/features/feature.ts` throws:
   `[features] Resource '${resource.name}' is mounted by both '${owner}' and '${entry.owner}' | A resource name is unique within an application`
+- **Duplicate route path (`mount`):** Two routes with one path, or a route whose path is `/<resource name>`, throw and name both owners; `orders` and `/orders` are one path:
+  `[features] Route '/orders' is mounted by both 'commerce' (resource 'orders') and 'shadow' | A route path is unique within an application and is not the path of a resource`
+- **Route with no key (`mount`):** The React key of a route is `id ?? path`. A route with neither throws `[features] A route of '<owner>' has neither an id nor a path`.
+- **Public route with access (`mount`):** A route with `access` and `auth: { use: false }` throws and names its path.
 
 ## Mount a filtered list
 

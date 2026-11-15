@@ -718,3 +718,188 @@ describe('ArdorApplication route access', () => {
     expect(screen.queryByText('Admin only')).toBeNull();
   });
 });
+
+describe('ArdorApplication route toggles', () => {
+  const Page = (props: { text: string }) => <h1>{props.text}</h1>;
+
+  const TestLayout = (props: { children?: React.ReactNode }) => (
+    <div>
+      <nav>the layout</nav>
+      {props.children}
+    </div>
+  );
+
+  const createToggleContainer = (opts: {
+    checkAuth: () => Promise<void>;
+    canAccess?: (params: { resource: string; action: string }) => Promise<boolean>;
+  }) => {
+    const container = new Container();
+    container.bind({ key: CoreBindings.FEATURES }).toValue([]);
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
+      checkAuth: opts.checkAuth,
+      checkError: () => Promise.resolve(),
+      login: () => Promise.resolve(),
+      logout: () => Promise.resolve(),
+      getPermissions: () => Promise.resolve(),
+      ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
+    });
+    container
+      .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toValue(new DefaultI18nProvider({}, []).value(container));
+
+    return container;
+  };
+
+  const renderAt = (opts: {
+    path: string;
+    container: Container;
+    routes: Array<TArdorRoute>;
+    requireAuth?: boolean;
+  }) => {
+    return render(
+      <MemoryRouter initialEntries={[opts.path]}>
+        <ArdorApplication
+          container={opts.container}
+          suspense={<span>loading</span>}
+          layout={TestLayout}
+          routes={opts.routes}
+          requireAuth={opts.requireAuth ?? false}
+        />
+      </MemoryRouter>,
+    );
+  };
+
+  const loginRoute: TArdorRoute = {
+    path: '/login',
+    element: <Page text="Login page" />,
+    layout: { use: false },
+  };
+
+  test('a route outside the layout renders without the layout and without sign-in', async () => {
+    const checkAuth = mock(() => Promise.reject(new Error('signed out')));
+
+    renderAt({
+      path: '/accept-invite',
+      container: createToggleContainer({ checkAuth }),
+      requireAuth: true,
+      routes: [
+        { path: '/accept-invite', element: <Page text="Accept invite" />, layout: { use: false } },
+      ],
+    });
+
+    const result = await screen.findByText('Accept invite');
+    expect(result).toBeDefined();
+    expect(screen.queryByText('the layout')).toBeNull();
+  });
+
+  test('a route inside the layout renders inside it', async () => {
+    renderAt({
+      path: '/inside',
+      container: createToggleContainer({ checkAuth: () => Promise.resolve() }),
+      routes: [{ path: '/inside', element: <Page text="Inside" /> }],
+    });
+
+    const result = await screen.findByText('Inside');
+    expect(result).toBeDefined();
+    expect(screen.getByText('the layout')).toBeDefined();
+  });
+
+  test('auth: { use: true } redirects to the login page when checkAuth rejects, and asks no permission', async () => {
+    const canAccess = mock(() => Promise.resolve(true));
+
+    renderAt({
+      path: '/profile',
+      container: createToggleContainer({
+        checkAuth: () => Promise.reject(new Error('signed out')),
+        canAccess,
+      }),
+      routes: [
+        { path: '/profile', element: <Page text="My profile" />, auth: { use: true } },
+        loginRoute,
+      ],
+    });
+
+    const result = await screen.findByText('Login page');
+    expect(result).toBeDefined();
+    expect(screen.queryByText('My profile')).toBeNull();
+    expect(canAccess).toHaveBeenCalledTimes(0);
+  });
+
+  test('auth: { use: true } renders for a signed-in user, with no permission check', async () => {
+    const canAccess = mock(() => Promise.resolve(false));
+
+    renderAt({
+      path: '/profile',
+      container: createToggleContainer({ checkAuth: () => Promise.resolve(), canAccess }),
+      routes: [{ path: '/profile', element: <Page text="My profile" />, auth: { use: true } }],
+    });
+
+    const result = await screen.findByText('My profile');
+    expect(result).toBeDefined();
+    expect(canAccess).toHaveBeenCalledTimes(0);
+  });
+
+  test('a route outside the layout with auth: { use: true } still redirects a signed-out user', async () => {
+    renderAt({
+      path: '/kiosk',
+      container: createToggleContainer({
+        checkAuth: () => Promise.reject(new Error('signed out')),
+      }),
+      routes: [
+        {
+          path: '/kiosk',
+          element: <Page text="Kiosk" />,
+          layout: { use: false },
+          auth: { use: true },
+        },
+        loginRoute,
+      ],
+    });
+
+    const result = await screen.findByText('Login page');
+    expect(result).toBeDefined();
+    expect(screen.queryByText('Kiosk')).toBeNull();
+  });
+
+  test('auth: { use: false } renders for a signed-out user, and checkAuth is not called', async () => {
+    const checkAuth = mock(() => Promise.reject(new Error('signed out')));
+
+    renderAt({
+      path: '/status',
+      container: createToggleContainer({ checkAuth }),
+      routes: [{ path: '/status', element: <Page text="Status" />, auth: { use: false } }],
+    });
+
+    const result = await screen.findByText('Status');
+    expect(result).toBeDefined();
+    expect(checkAuth).toHaveBeenCalledTimes(0);
+  });
+
+  test('throws when a route of the application has the path of a feature route', () => {
+    const error = spyOn(console, 'error').mockImplementation(() => undefined);
+    const reminders = Features.define({
+      name: 'reminders',
+      routes: [{ path: '/reminders', element: null }],
+    });
+    const container = createToggleContainer({ checkAuth: () => Promise.resolve() });
+
+    try {
+      expect(() =>
+        render(
+          <MemoryRouter initialEntries={['/']}>
+            <ArdorApplication
+              container={container}
+              suspense={<span>loading</span>}
+              features={[reminders]}
+              routes={[{ path: '/reminders', element: null }]}
+            />
+          </MemoryRouter>,
+        ),
+      ).toThrow("Route '/reminders' is mounted by both 'the application' and 'reminders'");
+    } finally {
+      error.mockRestore();
+    }
+  });
+});

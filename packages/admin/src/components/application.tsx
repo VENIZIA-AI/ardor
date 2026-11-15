@@ -52,13 +52,13 @@ const Wrapper: React.FC<{
 
 /**
  * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
- * checks: a custom route has neither in react-admin.
+ * checks, with `auth: { use: true }` in a sign-in check: a custom route has neither in react-admin.
  */
 const renderRoute = (opts: { route: TArdorRoute }) => {
-  const { access, ...routeProps } = opts.route;
+  const { access, auth, layout: _layout, ...routeProps } = opts.route;
   const key = routeProps.id ?? routeProps.path;
 
-  if (!access) {
+  if (!access && auth?.use !== true) {
     return <Route key={key} {...routeProps} />;
   }
 
@@ -71,9 +71,13 @@ const renderRoute = (opts: { route: TArdorRoute }) => {
       {...rest}
       element={
         <Authenticated>
-          <CanAccess resource={access.resource} action={access.action}>
-            {page}
-          </CanAccess>
+          {access ? (
+            <CanAccess resource={access.resource} action={access.action}>
+              {page}
+            </CanAccess>
+          ) : (
+            page
+          )}
         </Authenticated>
       }
     />
@@ -246,10 +250,23 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
         })}
 
         <CustomRoutes>
-          {mounted.routes.map((route) => {
-            return renderRoute({ route });
-          })}
+          {mounted.routes
+            .filter((route) => route.layout?.use !== false)
+            .map((route) => {
+              return renderRoute({ route });
+            })}
         </CustomRoutes>
+
+        {/* react-admin renders a route outside the layout whatever the sign-in status: a public page. */}
+        {mounted.routes.some((route) => route.layout?.use === false) ? (
+          <CustomRoutes noLayout>
+            {mounted.routes
+              .filter((route) => route.layout?.use === false)
+              .map((route) => {
+                return renderRoute({ route });
+              })}
+          </CustomRoutes>
+        ) : null}
       </CoreAdmin>
     </Wrapper>
   );

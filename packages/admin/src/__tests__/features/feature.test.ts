@@ -92,6 +92,74 @@ describe('Features.mount', () => {
       Features.mount({ features: [inventory], resources: [{ name: 'stocks', list: List }] }),
     ).toThrow("[features] Resource 'stocks' is mounted by both 'the application' and 'inventory'");
   });
+
+  test('throws on a route that has access and is public, naming its path', () => {
+    const contradiction = Features.define({
+      name: 'contradiction',
+      routes: [
+        {
+          path: '/audit',
+          element: null,
+          access: { resource: 'audit', action: 'list' },
+          auth: { use: false },
+        },
+      ],
+    });
+
+    expect(() => Features.mount({ features: [contradiction] })).toThrow(
+      "[features] Route '/audit' of 'contradiction' has access and auth: { use: false }",
+    );
+  });
+
+  test('throws on a route path the application and a feature both mount, naming both', () => {
+    expect(() =>
+      Features.mount({
+        features: [inventory],
+        routes: [{ path: 'stock-report', element: null }],
+      }),
+    ).toThrow(
+      "[features] Route '/stock-report' is mounted by both 'the application' and 'inventory'",
+    );
+  });
+
+  test('throws on a route path two features both mount', () => {
+    const shadow = Features.define({
+      name: 'shadow',
+      routes: [{ path: '/stock-report', element: null }],
+    });
+
+    expect(() => Features.mount({ features: [inventory, shadow] })).toThrow(
+      "[features] Route '/stock-report' is mounted by both 'inventory' and 'shadow'",
+    );
+  });
+
+  test('throws on a route whose path is the path of a resource', () => {
+    const shadow = Features.define({
+      name: 'shadow',
+      routes: [{ path: '/orders', element: null }],
+    });
+
+    expect(() => Features.mount({ features: [commerce, shadow] })).toThrow(
+      "[features] Route '/orders' is mounted by both 'commerce' (resource 'orders') and 'shadow'",
+    );
+  });
+
+  test('throws on a route with neither an id nor a path', () => {
+    const pathless = Features.define({ name: 'pathless', routes: [{ element: null }] });
+
+    expect(() => Features.mount({ features: [pathless] })).toThrow(
+      "[features] A route of 'pathless' has neither an id nor a path",
+    );
+  });
+
+  test('accepts a pathless route that has an id', () => {
+    const shell = Features.define({
+      name: 'shell',
+      routes: [{ id: 'shell-layout', element: null }],
+    });
+
+    expect(Features.mount({ features: [shell] }).routes).toHaveLength(1);
+  });
 });
 
 describe('useFeatures', () => {

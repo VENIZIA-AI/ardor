@@ -35,18 +35,25 @@ the list under `CoreBindings.FEATURES` - always, empty included, so readers neve
 `ArdorApplication` reads the list (`Features.read({ container })`) and `Features.mount({ features,
 resources, routes })` puts the application's own `resources` / `routes` first, then each feature's.
 `IApplication.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
-naming both owners: react-admin keeps one and drops the other silently. Only `FeatureMessages` is
+naming both owners: react-admin keeps one and drops the other silently. A route path mounted twice, or
+equal to `/<resource name>` (the leading slash is ignored), throws the same way; a route with neither
+`id` nor `path` throws, since `id ?? path` is its React key. Only `FeatureMessages` is
 internal to admin (imported by path, not exported); the public surface is `TFeature`,
 `TFeatureMessages`, `TArdorRoute`, `IRouteAccess`, the `Features` class (`define`, `read`, `mount`),
 `useFeatures`, plus the kernel's two types and keys.
 
-A route entry is `RouteProps` plus an optional `access: { resource, action }` (`TArdorRoute`). react-admin
-runs neither `checkAuth` nor `canAccess` on a custom route, so a route without `access` is open to anyone
-who types its path (`requireAuth` of `CoreAdmin` still applies). `renderRoute` in `application.tsx` wraps
-a route with `access` in ra-core's `Authenticated` and `CanAccess`: `element`, else `Component`, else the
-router's default `Outlet`, is the page. A denied user gets `CanAccess`'s default, an empty page; with no
-bound permission provider `canAccess` is absent and only sign-in is required. A shell's denial page,
-`noLayout` and menu are not here.
+A route entry is `RouteProps` plus three optional toggles (`TArdorRoute`): `access: { resource, action }`,
+`auth: { use: boolean }` and `layout: { use: false }`. react-admin runs neither `checkAuth` nor
+`canAccess` on a custom route, so a route without `access` or `auth: { use: true }` is open to anyone who
+types its path (`requireAuth` of `CoreAdmin` still applies). `renderRoute` in `application.tsx` wraps a
+route with `access` in ra-core's `Authenticated` and `CanAccess`, and one with `auth: { use: true }` in
+`Authenticated` only: `element`, else `Component`, else the router's default `Outlet`, is the page.
+`access` with `auth: { use: false }` is a contradiction `Features.mount` refuses. A denied user gets
+`CanAccess`'s default, an empty page; with no bound permission provider `canAccess` is absent and only
+sign-in is required. Routes with `layout: { use: false }` go in a second `<CustomRoutes noLayout>`
+(rendered only when one exists): ra-core's `CoreAdminRoutes` renders those before any auth check, so it
+is the only way to a public page under `requireAuth`; a route inside the layout waits for `checkAuth`
+whatever its `auth` says.
 
 ## Permissions
 
