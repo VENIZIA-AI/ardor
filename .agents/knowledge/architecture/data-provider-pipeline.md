@@ -19,7 +19,7 @@ ARDOR has no controllers, repositories or datasources. Instead, all data access 
    - Otherwise every key of `filter` except `include`, `params`, `noLimit`, `fields` becomes `where`; those four are lifted to the top level.
    - `sort.field`/`sort.order` become `order: ["<field> <ASC|DESC>"]`.
    - `pagination` becomes `limit = perPage` and `skip = (page - 1) * perPage` (`skip` only: IGNIS reads `offset` as its alias), with the page defaulting to 1 and a page below 1 read as page 1. No `perPage`, a `perPage` of 0 or below, or a missing `pagination` (ra-core types it as required, but a JavaScript caller can omit it) sends no limit and no skip. `noLimit` clears limit, skip and offset.
-   - Every other top-level `params` key (beyond `pagination`, `sort`, `filter`, `meta`, and `target`/`id` for `getManyReference`) is then copied onto the top level of the filter object, after sort and pagination, so a same-named key wins. Only `undefined` and `null` are skipped.
+   - Every other top-level `params` key (beyond `pagination`, `sort`, `filter`, `meta`, react-admin's abort `signal`, and `target`/`id` for `getManyReference`) is then copied onto the top level of the filter object, after sort and pagination, so a same-named key wins. Only `undefined` and `null` are skipped.
    - `filter.params` is pulled out into top-level query keys (not part of the filter object), and every key of `meta` except `meta.extra` also becomes a query key. `meta.extra` (a `TExtraRequest`) asks for list extras: it goes to `getRequestProps({ extra })`, which sends it in `x-request-extra`.
    - `getManyReference` additionally sets `where[target] = id`.
 
@@ -33,7 +33,7 @@ ARDOR has no controllers, repositories or datasources. Instead, all data access 
 
 ## The positional `value()`
 
-`DefaultRestDataProvider` is itself an IGNIS provider: the container constructs it via `@inject`, and `value(container)` is the method that returns the object react-admin actually uses. `value()` is what converts the class's internal options-object methods into the positional shape react-admin requires (`getList(resource, params)` rather than `getList({ resource, params })`). `send` and `getNetworkService` are exempted from this repositioning and keep their own object-shaped signatures on the returned value. This split matters: if you call the class's methods directly (as in tests) you use the options-object form; if you call through the data provider react-admin holds, you use the positional form.
+`DefaultRestDataProvider` is itself an IGNIS provider: the container constructs it via `@inject`, and `value(container)` is the method that returns the object react-admin actually uses. `value()` is what converts the class's internal options-object methods into the positional shape react-admin requires (`getList(resource, params)` rather than `getList({ resource, params })`). `send` and `getNetworkService` are exempted from this repositioning and keep their own object-shaped signatures on the returned value. The returned object also carries `supportAbortSignal: true`, the flag ra-core reads before it passes a query `signal` to the reads (see [Network layer](/architecture/network-layer.md)). This split matters: if you call the class's methods directly (as in tests) you use the options-object form; if you call through the data provider react-admin holds, you use the positional form.
 
 ## CountRestDataProvider
 

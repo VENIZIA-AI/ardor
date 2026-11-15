@@ -17,7 +17,17 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 ## What doRequest sends
 
-`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. It passes no `timeout` and no `signal`.
+`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` exactly as passed, and `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. It passes a `signal` and never the fetcher's `timeout` (below).
+
+## Abort and timeout
+
+- **`signal`.** `doRequest({ signal })` hands it to `send`, for the first send and the retry. ra-core passes one to the four reads only because `value()` returns `supportAbortSignal: true` (`useGetList` and the others read the flag); the writes never get one. `send()` forwards `ISendParams.signal`. An aborted request rejects with the signal's reason (a `DOMException` `AbortError` for a bare `abort()`), which ra-core does not log and `checkError` resolves for (no status).
+- **`timeout`** (`IRestDataProviderOptions.timeout`, `{ use: false }` by default) goes to the service's constructor. Each `doRequest` call, the refresh's own included, makes `AbortSignal.timeout(milliseconds)` and combines it with the caller's signal (`AbortSignal.any`). One catch around the send, the refresh wait, the retry and the body read turns a rejection into a 504 `getError` coded `NETWORK_TIMEOUT_CODE` when the combined signal's reason is the timeout signal's reason; any other rejection, a user abort included, passes through unchanged.
+- **Why not the fetcher's `timeout`.** It calls `abort()` with no reason, so a timeout and a user abort both reject with a plain `AbortError` and cannot be told apart.
+- **Validation.** `DefaultNetworkRequestService.assertTimeout` throws unless `milliseconds` is a positive safe integer. Both the service's constructor and `DefaultRestDataProvider`'s constructor call it; the provider's call is what fails `start()`, because the service is built lazily on first use.
+- **The shared refresh is never aborted.** The signal never reaches `refresh()`. After the refresh settles, `signal.throwIfAborted()` runs before the retry, so an aborted caller sends no retry while the others do.
+- **`signal` is not a filter key.** `getList` and `getManyReference` take it out of the params before the `buildListFilter` hook, and `ListFilterBuilder.build` drops it too, for a subclass that calls the builder with the raw params; every other key is copied into the filter. `CountRestDataProvider` passes it to the count request too.
+- **Tests.** happy-dom replaces `AbortSignal`, and Bun's `fetch` refuses its signals (`signal is not of type AbortSignal`); the admin test setup restores the native one.
 
 **Query string.** The transport writes `params` into the url with IGNIS's `toQueryString`, configured by the service as `{ nullish: 'skip', nested: 'json' }`: `undefined` and `null` leave the pair out, a string or number is written as it is, and an object or an array is ONE JSON-encoded parameter (`filter={"where":{}}`, `ids=[1,2]`). That is the shape an IGNIS server reads; the IGNIS defaults would drop the filter object and repeat an array's key. A space is written `%20`. The `?` is used when the url has no query, and `&` when it already has one.
 
@@ -35,7 +45,7 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 
 ## Traps for a transport author
 
-- **Timeouts never fire from the data provider.** The fetcher honours a `timeout` and clears the timer as soon as `fetch` resolves, so reading the body is not timed, but `doRequest` never passes one. A caller that sends through `getNetworkService().send` can.
+- **The fetcher's own `timeout` does not time the body read** and aborts with no reason. ARDOR's `timeout` option does neither (above); a caller that sends through `getNetworkService().send` with `timeout` gets the fetcher's behaviour.
 - **A call's `headers` replace the defaults; a call with none keeps them.** The service's headers arrive because `getRequestHeader` merges its own copy into every call, so a `doRequest` called without `headers` sends the transport's defaults (`content-type: application/json; charset=utf-8`) and none of the service's. The `form-data` branch of the body encoder sets no `content-type`, and the fetcher does not add or strip one, so `fetch` writes the multipart boundary - unless a `content-type` header is passed in, which replaces it.
 - **`doRequest` passes the upper-case `RequestMethods` values** (`GET`, `PATCH`, ...). The Fetch standard upper-cases most methods but not `patch`, so a lowercase one would reach the server as written from a browser.
 

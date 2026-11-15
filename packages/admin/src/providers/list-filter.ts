@@ -30,15 +30,16 @@ export class ListFilterBuilder {
   /**
    * The filter, query and list extras a list request sends, from react-admin's list params:
    * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, the remaining params
-   * into the filter, `filter.params` and `meta` into the query, and `meta.extra` into the list
-   * extras (sent in a header).
+   * into the filter (except `signal`), `filter.params` and `meta` into the query, and `meta.extra`
+   * into the list extras (sent in a header).
    */
   static build(opts: { params: GetListParams & ICustomParams }): {
     filter: IListFilter;
     queryKey: Record<string, unknown>;
     extra: TExtraRequest | undefined;
   } {
-    const { pagination, sort, filter: filterInput, meta, ...rest } = opts.params;
+    // `signal` is react-admin's abort signal, never a filter key.
+    const { pagination, sort, filter: filterInput, meta, signal: _signal, ...rest } = opts.params;
 
     let filter = {} as IListFilter;
 

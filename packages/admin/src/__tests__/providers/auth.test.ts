@@ -13,6 +13,7 @@ import {
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
+  NETWORK_TIMEOUT_CODE,
   SESSION_CHANGED_CODE,
 } from '@venizia/ardor-kernel';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
@@ -658,6 +659,24 @@ describe('checkError', () => {
     });
     expect(result3).toEqual({ redirectTo: '/login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
+  });
+
+  test('an aborted or timed-out request resolves and leaves the session alone', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+    const controller = new AbortController();
+    controller.abort();
+
+    const aborted = await authProvider.checkError(controller.signal.reason);
+    const timedOut = await authProvider.checkError(
+      getError({ statusCode: 504, messageCode: NETWORK_TIMEOUT_CODE, message: 'timed out' }),
+    );
+
+    expect(aborted).toBeUndefined();
+    expect(timedOut).toBeUndefined();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
   });
 
   test('resolves when react-admin passes no error', async () => {

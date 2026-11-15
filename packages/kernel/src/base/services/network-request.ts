@@ -1,4 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
@@ -22,6 +23,7 @@ import {
   type TConstValue,
   type TNoAuthPathRegex,
   type TRequestMethod,
+  type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
 import {
@@ -44,6 +46,9 @@ interface ISentSession {
 /** The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight. */
 export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
 
+/** The `normalized.code` of the 504 a request rejects with when it outlives the configured `timeout`. */
+export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
+
 /**
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
@@ -60,6 +65,8 @@ export class DefaultNetworkRequestService extends BaseService {
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
   protected authService?: DefaultAuthService;
+  /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
+  protected timeout: TRequestTimeoutOptions;
 
   private readonly recovery: AuthRecovery;
 
@@ -84,6 +91,11 @@ export class DefaultNetworkRequestService extends BaseService {
       authRecovery?: IAuthRecoveryOptions;
       /** What the default `refreshToken` saves the new token through. */
       authService?: DefaultAuthService;
+      /**
+       * Aborts each request that has not answered in time. Throws here for an invalid `milliseconds`.
+       * @default { use: false }
+       */
+      timeout?: TRequestTimeoutOptions;
     },
   ) {
     super({ scope: DefaultNetworkRequestService.name });
@@ -95,8 +107,11 @@ export class DefaultNetworkRequestService extends BaseService {
       noAuthPathRegex,
       authRecovery,
       authService,
+      timeout = { use: false },
     } = opts;
 
+    DefaultNetworkRequestService.assertTimeout({ timeout });
+    this.timeout = timeout;
     this.headers = NetworkHeaders.toRecord({ headers });
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
@@ -140,6 +155,23 @@ export class DefaultNetworkRequestService extends BaseService {
     const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
 
     return () => AuthTokenStore.read({ key });
+  }
+
+  /** Throws unless a timeout that is on has a positive integer `milliseconds`. */
+  static assertTimeout(opts: { timeout?: TRequestTimeoutOptions }): void {
+    const { timeout } = opts;
+
+    if (!timeout?.use) {
+      return;
+    }
+
+    const { milliseconds } = timeout;
+
+    if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0) {
+      throw getError({
+        message: `[DefaultNetworkRequestService] timeout.milliseconds must be a positive integer, got ${milliseconds}`,
+      });
+    }
   }
 
   // --- Hooks -----------------------------------------------------------------------------------
@@ -627,7 +659,8 @@ export class DefaultNetworkRequestService extends BaseService {
    * Sends the request and reads the response by `type`. Throws when `baseUrl` (the option, else the
    * service's) is empty. A 401 on a path that can recover triggers `refresh` and, if it refreshed,
    * one retry with the new token. Any other non-2xx response, or a retry that still fails, throws
-   * the error read from the response.
+   * the error read from the response. An aborted `signal` rejects with its reason, and a request
+   * that outlives the service's `timeout` rejects with a 504 coded `NETWORK_TIMEOUT_CODE`.
    */
   async doRequest<TResult = unknown>(
     opts: IGetRequestPropsResult & {
@@ -638,18 +671,11 @@ export class DefaultNetworkRequestService extends BaseService {
       method: TRequestMethod;
       paths: string[];
       requestCountData?: TConstValue<typeof RequestCountData>;
+      /** Aborts this request only: a refresh its 401 started runs on for the other requests. */
+      signal?: AbortSignal;
     },
   ): Promise<INetworkResponse<TResult>> {
-    const {
-      baseUrl = this.baseUrl,
-      type,
-      method,
-      paths,
-      body,
-      headers,
-      query,
-      requestCountData,
-    } = opts;
+    const { baseUrl = this.baseUrl, paths, signal } = opts;
 
     if (!baseUrl) {
       throw getError({
@@ -663,6 +689,50 @@ export class DefaultNetworkRequestService extends BaseService {
       throw getError({ message: '[doRequest] Invalid path to send request!' });
     }
 
+    const timeoutSignal = this.timeout.use
+      ? AbortSignal.timeout(this.timeout.milliseconds)
+      : undefined;
+    const sendSignal =
+      timeoutSignal && signal
+        ? AbortSignal.any([signal, timeoutSignal])
+        : (timeoutSignal ?? signal);
+
+    try {
+      const response = await this.sendAndRead<TResult>({ ...opts, url, signal: sendSignal });
+
+      return response;
+    } catch (error) {
+      // The combined signal keeps the reason of whichever source aborted first.
+      if (
+        this.timeout.use &&
+        timeoutSignal?.aborted &&
+        sendSignal?.reason === timeoutSignal.reason
+      ) {
+        throw getError({
+          statusCode: HTTP.ResultCodes.RS_5.GatewayTimeout,
+          messageCode: NETWORK_TIMEOUT_CODE,
+          message: `[doRequest] The request to ${paths.join('/')} did not answer within ${this.timeout.milliseconds} ms`,
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  /** `doRequest` once the URL is checked: the send, the refresh and retry after a 401, then the read. */
+  private async sendAndRead<TResult>(
+    opts: IGetRequestPropsResult & {
+      url: string;
+      query?: Record<string, unknown>;
+      type: TRequestType;
+      method: TRequestMethod;
+      paths: string[];
+      requestCountData?: TConstValue<typeof RequestCountData>;
+      signal?: AbortSignal;
+    },
+  ): Promise<INetworkResponse<TResult>> {
+    const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
+
     const sendOnce = (sendHeaders?: HeadersInit) => {
       return this.networkRequest.getNetworkService().send(
         {
@@ -671,6 +741,7 @@ export class DefaultNetworkRequestService extends BaseService {
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
           headers: sendHeaders,
+          signal,
         },
         this.logger,
       );
@@ -701,6 +772,9 @@ export class DefaultNetworkRequestService extends BaseService {
       }
 
       if (isRefreshed) {
+        // The shared refresh is never aborted for one request; only this request's retry is.
+        signal?.throwIfAborted();
+
         const authHeader = this.getRequestAuthorizationHeader();
         const retryHeaders = NetworkHeaders.merge({
           sources: [
@@ -734,6 +808,12 @@ export class DefaultNetworkRequestService extends BaseService {
       throw result2;
     }
 
-    return ResponseReader.read<TResult>({ response: fetched, type, requestCountData });
+    const response = await ResponseReader.read<TResult>({
+      response: fetched,
+      type,
+      requestCountData,
+    });
+
+    return response;
   }
 }

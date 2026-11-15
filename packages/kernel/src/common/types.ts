@@ -63,7 +63,15 @@ export interface ISendParams {
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
+  /** Aborts the request; it then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
+
+/**
+ * How long a request may take before it is aborted and rejects with `NETWORK_TIMEOUT_CODE`.
+ * `milliseconds` is a positive integer.
+ */
+export type TRequestTimeoutOptions = { use: false } | { use: true; milliseconds: number };
 
 /** One of the `RequestBodyTypes` values. */
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
@@ -223,6 +231,13 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
 
   /** Enables the refresh-and-retry after a 401. */
   authRecovery?: IAuthRecoveryOptions;
+
+  /**
+   * Aborts a request that has not answered within `milliseconds`; it rejects with a 504 whose
+   * `normalized.code` is `NETWORK_TIMEOUT_CODE`. An invalid `milliseconds` throws when the provider is built.
+   * @default { use: false }
+   */
+  timeout?: TRequestTimeoutOptions;
 }
 
 /** The token an application is signed in with. */
