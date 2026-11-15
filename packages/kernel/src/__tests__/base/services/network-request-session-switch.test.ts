@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
 import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { HttpDataSource } from '@venizia/ignis-connectors/http';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultAuthService } from '@/base/services/auth';
@@ -18,6 +19,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl = '';
   let itemsHook: (() => void) | undefined;
+  let refreshHook: (() => void) | undefined;
   const requested: Array<{ pathname: string; authorization: string | null }> = [];
 
   beforeAll(() => {
@@ -28,6 +30,8 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         requested.push({ pathname: url.pathname, authorization: req.headers.get('authorization') });
 
         if (url.pathname === REFRESH_PATH) {
+          refreshHook?.();
+
           return Response.json({ token: { value: 'fresh', type: 'Bearer' } });
         }
 
@@ -59,6 +63,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
   beforeEach(() => {
     requested.length = 0;
     itemsHook = undefined;
+    refreshHook = undefined;
     Object.defineProperty(globalThis, 'localStorage', {
       value: new FakeStorage(),
       configurable: true,
@@ -94,6 +99,10 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
 
   const refreshes = () => requested.filter((entry) => entry.pathname === REFRESH_PATH);
 
+  const codeOf = (error: unknown): string | undefined => {
+    return isApplicationError(error) ? error.normalized.code : undefined;
+  };
+
   const contextOf = (): IDataSourceRequestContext => ({ paths: ['orders'] });
 
   describe('through doRequest', () => {
@@ -127,6 +136,45 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       expect(refreshes()).toHaveLength(1);
       expect(response.data).toEqual({ data: 'ok' });
     });
+
+    test('the user signed out meanwhile and nobody signed in: the session changed, no refresh', async () => {
+      itemsHook = () => authService.cleanUp();
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(refreshes()).toEqual([]);
+    });
+
+    test('another user signed in while the refresh was in flight: the session changed, the new session stays', async () => {
+      refreshHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(authService.getAuth()?.value).toBe('bob-token');
+    });
+
+    test('a refreshToken override that answers true after another user signed in replays nothing', async () => {
+      class CustomService extends DefaultNetworkRequestService {
+        protected override async refreshToken(): Promise<boolean> {
+          signIn({ userId: 8, username: 'bob', token: 'fresh' });
+
+          return true;
+        }
+      }
+      const service = new CustomService({
+        name: 'session-switch-custom',
+        baseUrl,
+        authRecovery: { refreshTokenPath: REFRESH_PATH },
+        authService,
+      });
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(requested.filter((entry) => entry.authorization === 'Bearer fresh')).toEqual([]);
+    });
   });
 
   describe('through the data source hooks', () => {
@@ -137,8 +185,9 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const result = await auth.onUnauthorized(context);
-      expect(result).toBe(false);
+      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(refreshes()).toEqual([]);
       expect(authService.getAuth()?.value).toBe('bob-token');
     });
@@ -162,9 +211,37 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       authService.cleanUp();
 
-      const result3 = await auth.onUnauthorized(context);
-      expect(result3).toBe(false);
+      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(refreshes()).toEqual([]);
+    });
+
+    test('the retry of a request whose user is gone carries no token', () => {
+      const auth = createService().getDataSourceAuth();
+      const context = contextOf();
+
+      expect(auth.authTokenResolver(context)?.value).toBe('stale');
+      signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      expect(auth.authTokenResolver(context)).toBeUndefined();
+    });
+
+    test('through a real HttpDataSource the call rejects with the session-changed code, not the raw 401', async () => {
+      const source = new HttpDataSource({
+        name: 'session-switch-source',
+        baseUrl,
+        ...createService().getDataSourceAuth(),
+      });
+      itemsHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      const error = await RejectionHelper.rejectionOf({
+        task: source.request({ paths: ['items'], method: 'GET' }),
+      });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(refreshes()).toEqual([]);
+      expect(authService.getAuth()?.value).toBe('bob-token');
     });
 
     test('the session that sent is still signed in: the 401 joins the shared refresh', async () => {

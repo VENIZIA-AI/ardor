@@ -349,7 +349,9 @@ export class DefaultNetworkRequestService extends BaseService {
    * Also what `DefaultAuthProvider.refreshToken` calls, so a refresh is made in one place.
    */
   refresh(): Promise<boolean> {
-    return this.recovery.refresh();
+    const { userId, token } = this.readSession();
+
+    return this.recovery.refresh({ key: `${userId}|${token}` });
   }
 
   /** The session signed in now: who, and with which token. */
@@ -358,6 +360,15 @@ export class DefaultNetworkRequestService extends BaseService {
       userId: `${this.authService?.getUser().userId}`,
       token: this.resolveAuthToken()?.value,
     };
+  }
+
+  /** The 401 that answers a request whose session is gone: `DefaultAuthProvider.checkError` leaves the signed-in session alone for it. */
+  private sessionChangedError(): Error {
+    return getError({
+      statusCode: 401,
+      messageCode: SESSION_CHANGED_CODE,
+      message: '[doRequest] The session that sent this request ended while it was in flight',
+    });
   }
 
   /**
@@ -388,6 +399,13 @@ export class DefaultNetworkRequestService extends BaseService {
     return {
       authTokenResolver: (context) => {
         const { paths } = context;
+        const sent = this.sentSessions.get(context);
+
+        // The retry of a request whose user has gone must not carry the token of whoever signed in since.
+        if (sent && this.readSessionChange({ sent }) === false) {
+          return undefined;
+        }
+
         const token = this.isNoAuthPath({ resource: paths[0], paths })
           ? undefined
           : this.resolveAuthToken();
@@ -410,7 +428,19 @@ export class DefaultNetworkRequestService extends BaseService {
         const sent = this.sentSessions.get(context);
         const change = sent ? this.readSessionChange({ sent }) : undefined;
 
-        return change === undefined ? this.refresh() : Promise.resolve(change);
+        if (change === false) {
+          return Promise.reject(this.sessionChangedError());
+        }
+
+        if (change === true) {
+          return Promise.resolve(true);
+        }
+
+        return this.refresh().then((isRefreshed) => {
+          return sent && this.readSessionChange({ sent }) === false
+            ? Promise.reject(this.sessionChangedError())
+            : isRefreshed;
+        });
       },
       errorRootKey: ResponseReader.ERROR_ROOT_KEY,
     };
@@ -642,11 +672,7 @@ export class DefaultNetworkRequestService extends BaseService {
       const change = this.readSessionChange({ sent });
 
       if (change === false) {
-        throw getError({
-          statusCode: 401,
-          messageCode: SESSION_CHANGED_CODE,
-          message: '[doRequest] The session that sent this request ended while it was in flight',
-        });
+        throw this.sessionChangedError();
       }
 
       let isRefreshed = change === true;
@@ -654,6 +680,11 @@ export class DefaultNetworkRequestService extends BaseService {
       if (change === undefined) {
         const result3 = await this.refresh();
         isRefreshed = result3;
+      }
+
+      // The session may have moved on while the refresh was in flight, or inside a `refreshToken` override.
+      if (this.readSessionChange({ sent }) === false) {
+        throw this.sessionChangedError();
       }
 
       if (isRefreshed) {
@@ -674,6 +705,11 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     const status = fetched.status;
+
+    // The retry may have been answered 401 after the user who sent it had gone too.
+    if (status === 401 && this.readSessionChange({ sent }) === false) {
+      throw this.sessionChangedError();
+    }
 
     if (status < 200 || status >= 300) {
       const result2 = await ResponseReader.toError({ response: fetched });
