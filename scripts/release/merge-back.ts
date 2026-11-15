@@ -379,7 +379,22 @@ export class ReleaseMergeBack {
       }
 
       let lockConflicted = false;
-      const changelogs = ReleaseMergeBack.changelogsOf({ root: cwd });
+      // develop's side of the manifest: the working copy holds conflict markers when the manifest itself conflicts.
+      const shownManifest = ReleaseMergeBack.git({
+        cwd,
+        args: ['show', `HEAD:${MergeBackConstants.MANIFEST}`],
+      });
+      let changelogs: string | undefined;
+
+      if (shownManifest.status === 0) {
+        try {
+          changelogs = ReleaseMergeBack.changelogsIn({ text: shownManifest.stdout });
+        } catch (error) {
+          result.problems.push(
+            `${MergeBackConstants.MANIFEST}: not JSON on develop's side, so the version folders cannot be told apart | ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
 
       for (const file of unmerged) {
         if (file === MergeBackConstants.LOCK_FILE) {
@@ -676,7 +691,12 @@ export class ReleaseMergeBack {
       return undefined;
     }
 
-    const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'));
+    return ReleaseMergeBack.changelogsIn({ text: readFileSync(manifest, 'utf8') });
+  }
+
+  /** The `knowledge.changelogs` of a manifest's text; `undefined` when it names none. Throws when the text is not JSON. */
+  static changelogsIn(opts: { text: string }): string | undefined {
+    const parsed: unknown = JSON.parse(opts.text);
     const knowledge =
       typeof parsed === 'object' && parsed !== null && 'knowledge' in parsed
         ? parsed.knowledge

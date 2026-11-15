@@ -32,10 +32,9 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
-import { ReleaseMergeBack } from './merge-back';
+import { ReleaseMergeBack, ReleaseStampConstants } from './merge-back';
 import { ReleaseNotes } from './release-notes';
-import { ReleaseKinds } from './release-version';
-import { isReleaseVersion } from './release-version';
+import { isReleaseVersion, ReleaseKinds } from './release-version';
 
 export class GithubReleaseConstants {
   /** The release the atlas index publishes its pairs to. */
@@ -44,12 +43,10 @@ export class GithubReleaseConstants {
   /** The notes of a stable longer than this are cut with a closing line: the body must stay under GitHub's 125000. */
   static readonly MAX_NOTES_LENGTH = 100000;
   static readonly DATED_ENTRY = /^\d{4}-\d{2}-\d{2}-.*\.md$/;
-  static readonly FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n/;
   static readonly DATE_HEADING = /^# Changelog - \d{4}-\d{2}-\d{2}\s*$/m;
   /** `## ARDOR X.Y.Z: title` or `## ARDOR 0.4.0: title`: the product and version prefix of an entry's heading. */
   static readonly VERSION_HEADING = /^(##\s+)ARDOR\s+(?:X\.Y\.Z|\d[^:\n]*):\s*(\S)/m;
   static readonly TITLE_PREFIX = 'ARDOR';
-  static readonly LOG_FILE = 'log.md';
   static readonly MIGRATION_FILE = 'migration.yaml';
   static readonly USAGE =
     'github-release: create --version <v> --kind stable|prerelease --packages <dir,dir,...> [--dry-run]';
@@ -270,7 +267,7 @@ export class GithubRelease {
    */
   static stripEntry(opts: { text: string }): string {
     return opts.text
-      .replace(GithubReleaseConstants.FRONT_MATTER, '')
+      .replace(ReleaseNotes.FRONT_MATTER, '')
       .replace(GithubReleaseConstants.DATE_HEADING, '')
       .replace(
         GithubReleaseConstants.VERSION_HEADING,
@@ -308,7 +305,7 @@ export class GithubRelease {
     version: string;
     packages: string[];
   }): { path: string; notes: string; migration?: string } | undefined {
-    const path = `${opts.folder}/${opts.version}/${GithubReleaseConstants.LOG_FILE}`;
+    const path = `${opts.folder}/${opts.version}/${ReleaseStampConstants.LOG_FILE}`;
     const log = ReleaseMergeBack.git({ cwd: opts.cwd, args: ['show', `${opts.tag}:${path}`] });
 
     if (log.status !== 0) {

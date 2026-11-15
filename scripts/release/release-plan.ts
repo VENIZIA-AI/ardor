@@ -79,8 +79,6 @@ export interface IDispatch {
   inputs: { packages: string; version: string; issue?: string; label?: string };
 }
 
-export { ReleaseKinds, type TReleaseKind } from './release-version';
-
 /** What one dispatch releases and under which tags, decided before anything is built. */
 export interface IRunPlan {
   version: string;
