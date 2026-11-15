@@ -168,14 +168,36 @@ export class DefaultAuthService extends BaseService {
     this.notify();
   }
 
-  /** Removes every key under `keys.authPrefix`, then notifies the subscribers; does nothing outside a browser. */
+  /**
+   * Whether `key` is a key of this service's session. Without an application `id` the prefix is
+   * `LocalStorageKeys.PREFIX_AUTH`, which is also the start of every scoped session, so a key with a
+   * `/` after the prefix belongs to an application that has an `id`.
+   */
+  private isSessionKey(opts: { key: string }): boolean {
+    const { key } = opts;
+
+    if (!key.startsWith(this.keys.authPrefix)) {
+      return false;
+    }
+
+    return (
+      this.keys.authPrefix !== LocalStorageKeys.PREFIX_AUTH ||
+      !key.slice(this.keys.authPrefix.length).includes('/')
+    );
+  }
+
+  /**
+   * Removes the session keys under `keys.authPrefix`, then notifies the subscribers; does nothing
+   * outside a browser. A service without an application `id` leaves the sessions of applications with
+   * an `id` alone.
+   */
   cleanUp() {
     if (typeof localStorage === 'undefined') {
       return;
     }
 
     Object.keys(localStorage).forEach((key) => {
-      if (!key.startsWith(this.keys.authPrefix)) {
+      if (!this.isSessionKey({ key })) {
         return;
       }
 

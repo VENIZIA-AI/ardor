@@ -33,9 +33,17 @@ export class CoreBindings {
 
 /** The session keys and the store prefix of one application, from `LocalStorageKeys.scoped`. */
 export interface IScopedKeys {
-  /** Everything under it is this application's session: `DefaultAuthService.cleanUp` removes it all. */
+  /**
+   * The prefix of this application's session keys: `DefaultAuthService.cleanUp` removes them. Without
+   * an application `id` it is also the start of every scoped session, and `cleanUp` skips those.
+   */
   authPrefix: string;
-  /** The data of this application's signed-in user; sign-out removes everything under it. */
+  /**
+   * The data of this application's signed-in user; sign-out removes every key that starts with it.
+   * Without an application `id` it is `@app/store/`, the start of every scoped store prefix, so an
+   * application without an `id` removes the data of the applications with one: every application on
+   * an origin sets an `id`.
+   */
   storePrefix: string;
   token: string;
   identity: string;
@@ -44,9 +52,17 @@ export interface IScopedKeys {
 
 /** The `localStorage` keys the kernel owns. */
 export class LocalStorageKeys {
-  /** Everything under this prefix is the session: `DefaultAuthService.cleanUp` removes it all. */
+  /**
+   * The session keys of an application with no `id`: `DefaultAuthService.cleanUp` removes them, and
+   * skips the keys of applications with an `id`, which are `@app/auth/<id>/...`.
+   */
   static readonly PREFIX_AUTH = '@app/auth/';
-  /** The data of the signed-in user: sign-out removes everything under it. Preferences that outlive a sign-out go under `@app/prefs/`. */
+  /**
+   * The data of the signed-in user: sign-out removes every key that starts with the store prefix of
+   * the application. This one is the start of every scoped store prefix (`@app/store/<id>/`), so
+   * applications that share an origin must all set an `id`. Preferences that outlive a sign-out go
+   * under `@app/prefs/`.
+   */
   static readonly PREFIX_STORE = '@app/store/';
 
   /** The stored `IAuthTokenRecord`, as JSON. */
@@ -68,7 +84,8 @@ export class LocalStorageKeys {
    * alone on its origin changes nothing. With an `id` (`IApplicationInfo.id`) the session sits under
    * `@app/auth/<id>/` and the store under `@app/store/<id>/`, so two applications on one origin share
    * no session and no sign-out sweeps the other's data. The `id` is letters, digits, `.`, `_` and `-`,
-   * and is not made of dots only.
+   * and is not made of dots only. Applications on one origin must ALL set an `id`: the store prefix
+   * without one is a prefix of every scoped store prefix, so its sign-out removes their data too.
    */
   static scoped(opts: { id?: string } = {}): IScopedKeys {
     const { id } = opts;

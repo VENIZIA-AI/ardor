@@ -49,7 +49,7 @@ For binding order in the application lifecycle, see [The bind order in Configura
 | `PREFIX_AUTH` | `@app/auth/` | Prefix of the session keys of an application with no `id` |
 | `PREFIX_STORE` | `@app/store/` | The namespace for the data of the signed-in user |
 
-`DefaultAuthService.cleanUp` removes everything under `keys.authPrefix` (`PREFIX_AUTH`, or `@app/auth/<id>/`). Sign-out removes everything under `PREFIX_STORE`. Keep what must outlive a sign-out (a theme) under `@app/prefs/<name>`, which no constant names.
+`DefaultAuthService.cleanUp` removes the session keys under `keys.authPrefix` (`PREFIX_AUTH`, or `@app/auth/<id>/`); without an `id` it skips the keys of applications that have one. Sign-out removes every key that starts with `keys.storePrefix`. Keep what must outlive a sign-out (a theme) under `@app/prefs/<name>`, which no constant names.
 
 The three `KEY_AUTH_*` keys belong to `LocalStorageKeys.SCHEME_SET` and can be verified with `LocalStorageKeys.isValid(value)`; the two `PREFIX_*` constants do not.
 
@@ -69,7 +69,7 @@ Browser storage is shared by every page of an origin. Two ARDOR applications ser
 const info = { name: 'Shop', version: '1.0.0', description: 'The shop', id: 'shop' };
 ```
 
-`LocalStorageKeys.scoped({ id })` answers the keys of one application: with the id `shop` the session is `@app/auth/shop/token`, `@app/auth/shop/identity` and `@app/auth/shop/permission`, and the store prefix is `@app/store/shop/`. `DefaultAuthService` takes the id from `CoreBindings.APPLICATION_INFO` and exposes the keys as `authService.keys`; its `cleanUp`, the auth provider's sign-out sweep and the request service's token all use them, so a sign-out in one application leaves the other's session and data alone. Name your own store keys with `authService.keys.storePrefix`. Without an `id` the keys are the ones in the table above, so an application that is alone on its origin changes nothing. An application without an `id` on a shared origin still sweeps all of `@app/auth/` and `@app/store/`, the others' keys included: give every application of an origin an `id`. The session keys all stay under `@app/auth/`, which `BrowserStorage` refuses to write.
+`LocalStorageKeys.scoped({ id })` answers the keys of one application: with the id `shop` the session is `@app/auth/shop/token`, `@app/auth/shop/identity` and `@app/auth/shop/permission`, and the store prefix is `@app/store/shop/`. `DefaultAuthService` takes the id from `CoreBindings.APPLICATION_INFO` and exposes the keys as `authService.keys`; its `cleanUp`, the auth provider's sign-out sweep and the request service's token all use them, so a sign-out in one application leaves the other's session and data alone. Name your own store keys with `authService.keys.storePrefix`. Without an `id` the keys are the ones in the table above, so an application that is alone on its origin changes nothing. An application without an `id` leaves the sessions of the others alone at sign-out, but its store prefix `@app/store/` starts every other application's `@app/store/<id>/`, so its sign-out still removes their store data: give every application of an origin an `id`. The session keys all stay under `@app/auth/`, which `BrowserStorage` refuses to write.
 
 ## Key resolution in useInjectable
 

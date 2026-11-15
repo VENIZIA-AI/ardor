@@ -150,7 +150,7 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 
 ### `logout(params)`
 
-- Calls: `authService.cleanUp()`, clearing every `localStorage` key under `keys.authPrefix` (`@app/auth/`, or `@app/auth/<id>/` when the application info has an `id`), and `clearStoredData()`, which sweeps `keys.storePrefix` (`@app/store/`) in `localStorage` and `sessionStorage`.
+- Calls: `authService.cleanUp()`, clearing the `localStorage` session keys under `keys.authPrefix` (`@app/auth/`, or `@app/auth/<id>/` when the application info has an `id`; without an `id` the keys of applications that have one are kept), and `clearStoredData()`, which sweeps `keys.storePrefix` (`@app/store/`) in `localStorage` and `sessionStorage`.
 - Returns: `Promise<void>`
 
 ### `checkAuth(params)`
