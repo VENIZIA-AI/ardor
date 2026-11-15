@@ -135,8 +135,8 @@ export const SettingsFeature: TFeature = Features.define({
 });
 ```
 
-- Without a bound permission provider, `canAccess` is absent and react-admin allows every check, so `access` then only requires a signed-in user.
-- A user who is not allowed sees an empty page: `CanAccess` renders nothing by default.
+- An app with an `access` route fails at mount, naming the route, when sign-in is off or no permission provider is bound: nothing could answer, and the route would be open.
+- A user who is not allowed is sent to the default access-denied page, as for a denied resource.
 - `access` works the same in the `routes` prop of `ArdorApplication`, and with a route that gives `Component` instead of `element`.
 - Hiding a page is not protection: the backend must check every request.
 

@@ -10,7 +10,16 @@ const DEFAULT_KEYS = [
   { member: 'DEFAULT_REST_DATA_PROVIDER', value: '@app/application/data/rest/default' },
   { member: 'DEFAULT_AUTH_PROVIDER', value: '@app/application/auth/default' },
   { member: 'DEFAULT_I18N_PROVIDER', value: '@app/application/i18n/default' },
+  { member: 'DEFAULT_AUTH_SERVICE', value: '@app/application/service/auth/default' },
 ];
+
+/** The default class each key holds in 0.4.8: a method that builds that class under that key is the one to delete. */
+const KEY_OF_CLASS: Record<string, string> = {
+  DefaultRestDataProvider: 'DEFAULT_REST_DATA_PROVIDER',
+  DefaultAuthProvider: 'DEFAULT_AUTH_PROVIDER',
+  DefaultI18nProvider: 'DEFAULT_I18N_PROVIDER',
+  DefaultAuthService: 'DEFAULT_AUTH_SERVICE',
+};
 
 /** What 0.4.8 binds itself. */
 const DEFAULT_CLASSES = new Set([
@@ -24,8 +33,8 @@ const DROP_INJECTION = 'the APPLICATION_INSTANCE it injects if nothing else uses
 
 /**
  * Lists the `@provide` methods that build a default provider by hand,
- * `<expr>.instantiate(X).value(<expr>)`, and never changes the text: what to do about each one
- * depends on the code around it.
+ * `<expr>.instantiate(X).value(<expr>)` or a bare `<expr>.instantiate(X)`, and never changes the text: what to do
+ * about each one depends on the code around it.
  */
 export class DefaultProvidersTransform {
   static run(opts: {
@@ -46,10 +55,10 @@ export class DefaultProvidersTransform {
       sourceFile,
       exportName: ProvideScan.CORE_BINDINGS,
     });
-    const isDefaultKey = (node: TS.Expression): boolean =>
-      DEFAULT_KEYS.some(({ member, value }) =>
+    const keyMember = (node: TS.Expression): string | undefined =>
+      DEFAULT_KEYS.find(({ member, value }) =>
         ProvideScan.isKey({ ts, node, coreBindings, member, value }),
-      );
+      )?.member;
     const findings: IFinding[] = [];
 
     for (const { method, keyNode } of ProvideScan.providedMethods({ ts, sourceFile })) {
@@ -59,16 +68,16 @@ export class DefaultProvidersTransform {
           node: statement.expression,
         });
 
-        if (className === undefined || !(DEFAULT_CLASSES.has(className) || isDefaultKey(keyNode))) {
+        const member = keyMember(keyNode);
+
+        if (className === undefined || !(DEFAULT_CLASSES.has(className) || member !== undefined)) {
           continue;
         }
 
         findings.push({
           line: CodemodSource.lineOf({ sourceFile, node: method }),
-          name: `${DefaultProvidersTransform.nameOf({ ts, method })}(): instantiate(${className}).value()`,
-          reason: DEFAULT_CLASSES.has(className)
-            ? `delete this method and ${DROP_INJECTION}: ARDOR binds ${className} itself`
-            : `replace this method by one line in bindContext(): .toProvider(${className}) on the key, and delete ${DROP_INJECTION}`,
+          name: `${DefaultProvidersTransform.nameOf({ ts, method })}(): instantiate(${className})${DefaultProvidersTransform.hasValue({ ts, node: statement.expression }) ? '.value()' : ''}`,
+          reason: DefaultProvidersTransform.reasonOf({ className, member }),
         });
       }
     }
@@ -76,7 +85,40 @@ export class DefaultProvidersTransform {
     return { text, renamed: 0, findings: findings.sort((a, b) => a.line - b.line) };
   }
 
-  /** The class of `<expr>.instantiate(Class).value(<expr>)`, if that is what the node is. */
+  /** What to do about a method that builds `className` under the key `member` (`undefined`: a key of the application). */
+  private static reasonOf(opts: { className: string; member: string | undefined }): string {
+    const { className, member } = opts;
+
+    // Only the default class under its own key is bound by ARDOR: deleting any other method would unbind its key.
+    if (DEFAULT_CLASSES.has(className) && KEY_OF_CLASS[className] === member) {
+      return `delete this method and ${DROP_INJECTION}: ARDOR binds ${className} itself`;
+    }
+
+    const bind = `replace this method by one line in bindContext(): .toProvider(${className}).setScope(BindingScopes.SINGLETON) on the key, and delete ${DROP_INJECTION}`;
+
+    return member === 'DEFAULT_AUTH_PROVIDER' && !DEFAULT_CLASSES.has(className)
+      ? `${bind}. Also bind CoreBindings.AUTH_PROVIDER_OPTIONS as { use: true, ...paths }: without options sign-in is off and start() fails`
+      : bind;
+  }
+
+  /** Whether the node is `<expr>.instantiate(Class).value(<expr>)`, not a bare `<expr>.instantiate(Class)`. */
+  private static hasValue(opts: { ts: TTypeScript; node: TS.Expression | undefined }): boolean {
+    const { ts, node } = opts;
+
+    if (node === undefined) {
+      return false;
+    }
+
+    const value = CodemodSource.unwrap({ ts, node });
+
+    return (
+      ts.isCallExpression(value) &&
+      ts.isPropertyAccessExpression(value.expression) &&
+      value.expression.name.text === 'value'
+    );
+  }
+
+  /** The class of `<expr>.instantiate(Class).value(<expr>)` or `<expr>.instantiate(Class)`, if that is what the node is. */
   private static instantiated(opts: {
     ts: TTypeScript;
     node: TS.Expression | undefined;
@@ -89,15 +131,16 @@ export class DefaultProvidersTransform {
 
     const value = CodemodSource.unwrap({ ts, node: opts.node });
 
-    if (
-      !ts.isCallExpression(value) ||
-      !ts.isPropertyAccessExpression(value.expression) ||
-      value.expression.name.text !== 'value'
-    ) {
-      return undefined;
-    }
+    let instantiate: TS.Expression = value;
 
-    const instantiate = value.expression.expression;
+    // `.value(<expr>)` is optional: a bare `<expr>.instantiate(Class)` is built the same way.
+    if (
+      ts.isCallExpression(value) &&
+      ts.isPropertyAccessExpression(value.expression) &&
+      value.expression.name.text === 'value'
+    ) {
+      instantiate = value.expression.expression;
+    }
 
     if (
       !ts.isCallExpression(instantiate) ||
