@@ -10,14 +10,16 @@ migration:
         import type { AnyObject, AnyType } from '@venizia/ardor';
         const read = (value: AnyType) => value.name.toUpperCase();
         const bag: AnyObject = { page: 1 };
+        const repository: HttpRepository<IProduct, AnyType> = products;
       after: |-
         const read = (value: { name: string }) => value.name.toUpperCase();
         const bag: Record<string, unknown> = { page: 1 };
+        const repository: HttpRepository<IProduct> = products;
     downgrade:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
-    data: Nothing stored changes.
+    data: Nothing stored changes. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected.
   - id: typed-stored-user
     symbols: [DefaultAuthService.getUser, DefaultAuthProvider.onSessionStarted, DefaultAuthProvider.getIdentity, IAuthUser]
     upgrade:
@@ -79,6 +81,13 @@ migration:
 -import type { AnyType } from '@venizia/ardor';
 -const read = (value: AnyType) => value.name.toUpperCase();
 +const read = (value: { name: string }) => value.name.toUpperCase();
+```
+
+A type argument is the same: `HttpRepository<IProduct, AnyType>` becomes `HttpRepository<IProduct>`. The second argument is the payload type, which must extend `object` and defaults to `Partial<IProduct>`; `unknown` is rejected ("Type 'unknown' does not satisfy the constraint 'object'").
+
+```diff
+-const repository: HttpRepository<IProduct, AnyType> = products;
++const repository: HttpRepository<IProduct> = products;
 ```
 
 **2. Replace `AnyObject` with `Record<string, unknown>`.** Reading a key now gives `unknown`; narrow it before you use it.
