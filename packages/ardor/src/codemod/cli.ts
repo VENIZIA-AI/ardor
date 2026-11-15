@@ -66,7 +66,10 @@ sign-in on. It rewrites the object literal of
 to start with use: true. The key may also be the string '@app/application/options/auth', and
 CoreBindings may be imported under another name. A literal that already has use (true or false) is
 left as it is. Options that are not a plain object literal (a variable, a call, only a spread) are
-listed with their line and left for you. An app with no sign-in binds no options and needs nothing.
+listed with their line and left for you, and so is a type that no longer fits the options: a return
+type, as or satisfies naming IAuthProviderOptions (it has no use), and a @provideOption method with
+no return type (use: true would be read as boolean). An app with no sign-in binds no options and
+needs nothing.
 
   --write    write the changed files (without it, nothing is written)
   --allow-dirty  with --write, also write a file that has local changes, such as one another codemod

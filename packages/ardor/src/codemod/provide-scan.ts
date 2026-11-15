@@ -7,12 +7,15 @@ export interface IProvidedMethod {
   method: TS.MethodDeclaration;
   /** The expression written as `key` in `@provide({ key })`. */
   keyNode: TS.Expression;
+  /** The decorator is `provideOption`, which the compiler checks against the type of the key. */
+  isOption: boolean;
 }
 
 /** Finds the binding keys and the `@provide` methods of a file, the way an app spells them. */
 export class ProvideScan {
   static readonly CORE_BINDINGS = 'CoreBindings';
-  static readonly DECORATORS = ['provide', 'provideOption'];
+  static readonly DECORATOR = 'provide';
+  static readonly OPTION_DECORATOR = 'provideOption';
 
   /** True when `node` is `<CoreBindings>.<member>`, `<CoreBindings>['<member>']` or the string `value`. */
   static isKey(opts: {
@@ -49,11 +52,15 @@ export class ProvideScan {
   /** Every method decorated `@provide({ key })` or `@provideOption({ key })`, whatever the decorators are called here. */
   static providedMethods(opts: { ts: TTypeScript; sourceFile: TS.SourceFile }): IProvidedMethod[] {
     const { ts, sourceFile } = opts;
-    const names = new Set(
-      ProvideScan.DECORATORS.flatMap((exportName) => [
-        ...CodemodSource.localNames({ ts, sourceFile, exportName }),
-      ]),
-    );
+    const optionNames = CodemodSource.localNames({
+      ts,
+      sourceFile,
+      exportName: ProvideScan.OPTION_DECORATOR,
+    });
+    const names = new Set([
+      ...optionNames,
+      ...CodemodSource.localNames({ ts, sourceFile, exportName: ProvideScan.DECORATOR }),
+    ]);
     const found: IProvidedMethod[] = [];
 
     const visit = (node: TS.Node): void => {
@@ -77,7 +84,7 @@ export class ProvideScan {
             : undefined;
 
           if (keyNode !== undefined) {
-            found.push({ method: node, keyNode });
+            found.push({ method: node, keyNode, isOption: optionNames.has(call.expression.text) });
           }
         }
       }

@@ -13,6 +13,10 @@ const USE = 'use';
 const NOT_LITERAL = 'the options are not a plain object literal: add use: true to them by hand';
 const NO_RETURN = 'the method does not return the options: add use: true to them by hand';
 const SPREAD_ONLY = 'the options are only a spread: add use: true to them by hand';
+const NO_USE_TYPE =
+  'it has no use, so the options no longer fit it: type them as TAuthProviderOptions';
+const UNTYPED_OPTION =
+  'a method without a return type reads use: true as boolean, which the key does not accept: declare the return type TAuthProviderOptions';
 const SIGN_IN_ON =
   'use: true was added, so sign-in is on. An app with no sign-in binds { use: false } or no options';
 
@@ -21,6 +25,10 @@ interface IOptionsValue {
   value: TS.Expression | undefined;
   /** The node a finding points at. */
   anchor: TS.Node;
+  /** The return type the method declares. */
+  declaredType?: TS.TypeNode;
+  /** The name of the method, when it is `@provideOption` and declares no return type. */
+  untypedOption?: TS.Node;
 }
 
 /** Adds `use: true` to the auth provider options an app binds, which 0.4.8 reads to turn sign-in on. */
@@ -51,6 +59,11 @@ export class AuthOptionsTransform {
         member: AUTH_OPTIONS_MEMBER,
         value: AUTH_OPTIONS_VALUE,
       });
+    const noUseNames = CodemodSource.localNames({
+      ts,
+      sourceFile,
+      exportName: 'IAuthProviderOptions',
+    });
     const values = [
       ...AuthOptionsTransform.boundValues({ ts, sourceFile, isKey }),
       ...AuthOptionsTransform.providedValues({ ts, sourceFile, isKey }),
@@ -58,7 +71,7 @@ export class AuthOptionsTransform {
     const edits: ISourceEdit[] = [];
     const findings: IFinding[] = [];
 
-    for (const { value, anchor } of values) {
+    for (const { value, anchor, declaredType, untypedOption } of values) {
       const line = CodemodSource.lineOf({ sourceFile, node: anchor });
 
       if (value === undefined) {
@@ -79,6 +92,29 @@ export class AuthOptionsTransform {
         findings.push({ line, name: `CoreBindings.${AUTH_OPTIONS_MEMBER}`, reason: SPREAD_ONLY });
       } else if (edit !== undefined) {
         edits.push(edit);
+
+        if (untypedOption !== undefined) {
+          findings.push({
+            line: CodemodSource.lineOf({ sourceFile, node: untypedOption }),
+            name: ProvideScan.OPTION_DECORATOR,
+            reason: UNTYPED_OPTION,
+          });
+        }
+
+        for (const type of AuthOptionsTransform.typesOf({ ts, value, declaredType })) {
+          if (
+            ts.isTypeReferenceNode(type) &&
+            ts.isIdentifier(type.typeName) &&
+            noUseNames.has(type.typeName.text)
+          ) {
+            findings.push({
+              line: CodemodSource.lineOf({ sourceFile, node: type }),
+              name: 'IAuthProviderOptions',
+              reason: NO_USE_TYPE,
+            });
+          }
+        }
+
         findings.push({
           line,
           name: `CoreBindings.${AUTH_OPTIONS_MEMBER}`,
@@ -91,8 +127,25 @@ export class AuthOptionsTransform {
     return {
       text: CodemodSource.apply({ text, edits }),
       renamed: edits.length,
-      findings: findings.sort((a, b) => a.line - b.line),
+      findings: AuthOptionsTransform.unique({ findings }).sort((a, b) => a.line - b.line),
     };
+  }
+
+  /** A method with two returns reports its type once. */
+  private static unique(opts: { findings: IFinding[] }): IFinding[] {
+    const seen = new Set<string>();
+
+    return opts.findings.filter((finding) => {
+      const id = `${finding.line}:${finding.name}:${finding.reason}`;
+
+      if (seen.has(id)) {
+        return false;
+      }
+
+      seen.add(id);
+
+      return true;
+    });
   }
 
   /** `<x>.bind({ key }).toValue(value)`: the value argument. */
@@ -143,7 +196,7 @@ export class AuthOptionsTransform {
     const { ts, sourceFile, isKey } = opts;
     const found: IOptionsValue[] = [];
 
-    for (const { method, keyNode } of ProvideScan.providedMethods({ ts, sourceFile })) {
+    for (const { method, keyNode, isOption } of ProvideScan.providedMethods({ ts, sourceFile })) {
       if (!isKey(keyNode)) {
         continue;
       }
@@ -155,11 +208,42 @@ export class AuthOptionsTransform {
       }
 
       for (const statement of returns) {
-        found.push({ value: statement.expression, anchor: statement });
+        found.push({
+          value: statement.expression,
+          anchor: statement,
+          declaredType: method.type,
+          untypedOption: isOption && method.type === undefined ? method.name : undefined,
+        });
       }
     }
 
     return found;
+  }
+
+  /** The types written for the options: the return type of the method, and each `as` or `satisfies` around the literal. */
+  private static typesOf(opts: {
+    ts: TTypeScript;
+    value: TS.Expression;
+    declaredType: TS.TypeNode | undefined;
+  }): TS.TypeNode[] {
+    const { ts } = opts;
+    const types = opts.declaredType === undefined ? [] : [opts.declaredType];
+    let node = opts.value;
+
+    while (
+      ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isSatisfiesExpression(node) ||
+      ts.isNonNullExpression(node)
+    ) {
+      if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node)) {
+        types.push(node.type);
+      }
+
+      node = node.expression;
+    }
+
+    return types;
   }
 
   /** The edit that starts the literal with `use: true`; `undefined` when it has `use` already. */

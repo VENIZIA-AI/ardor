@@ -243,6 +243,111 @@ describe('AuthOptionsTransform: a @provide method', () => {
   });
 });
 
+describe('AuthOptionsTransform: the type of the options', () => {
+  const typed = (opts: { returnType: string; value: string; importName?: string }): string =>
+    [
+      `import { configuration, CoreBindings, ${opts.importName ?? 'IAuthProviderOptions'}, provide } from '@venizia/ardor';`,
+      '',
+      '@configuration()',
+      'export class AuthConfiguration {',
+      '  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })',
+      `  authProviderOptions()${opts.returnType} {`,
+      `    return ${opts.value};`,
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+
+  test('adds use: true and lists a return type of IAuthProviderOptions, which has no use', () => {
+    const result = run(typed({ returnType: ': IAuthProviderOptions', value: '{ paths: {} }' }));
+
+    expect(result.text).toBe(
+      typed({ returnType: ': IAuthProviderOptions', value: '{ use: true, paths: {} }' }),
+    );
+    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
+      {
+        line: 6,
+        name: 'IAuthProviderOptions',
+        reason: 'it has no use, so the options no longer fit it: type them as TAuthProviderOptions',
+      },
+    ]);
+  });
+
+  test('lists a satisfies or as of IAuthProviderOptions, and an alias of it', () => {
+    for (const value of [
+      '{ paths: {} } satisfies IAuthProviderOptions',
+      '({ paths: {} } as IAuthProviderOptions)',
+    ]) {
+      const result = run(typed({ returnType: '', value }));
+
+      expect(result.renamed).toBe(1);
+      expect(result.findings.filter((finding) => finding.kind === undefined)).toHaveLength(1);
+    }
+
+    const aliased = run(
+      typed({
+        returnType: ': Options',
+        value: '{ paths: {} }',
+        importName: 'IAuthProviderOptions as Options',
+      }),
+    );
+
+    expect(aliased.findings.filter((finding) => finding.kind === undefined)).toHaveLength(1);
+  });
+
+  test('lists nothing for a return type of TAuthProviderOptions', () => {
+    const result = run(
+      typed({
+        returnType: ': TAuthProviderOptions',
+        value: '{ paths: {} }',
+        importName: 'TAuthProviderOptions',
+      }),
+    );
+
+    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([]);
+    expect(result.renamed).toBe(1);
+  });
+});
+
+describe('AuthOptionsTransform: a @provideOption method without a return type', () => {
+  const option = (opts: { returnType: string; decorator?: string }): string =>
+    configuration(
+      [
+        `  @${opts.decorator ?? 'provideOption'}({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })`,
+        `  authProviderOptions()${opts.returnType} {`,
+        '    return { use: true, paths: {} };',
+        '  }',
+      ].join('\n'),
+    );
+
+  test('adds use: true and lists the method, because the literal would be typed use: boolean', () => {
+    const before = option({ returnType: '' }).replace('use: true, ', '');
+    const result = run(before);
+
+    expect(result.text).toBe(option({ returnType: '' }));
+    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
+      {
+        line: 6,
+        name: 'provideOption',
+        reason:
+          'a method without a return type reads use: true as boolean, which the key does not accept: declare the return type TAuthProviderOptions',
+      },
+    ]);
+  });
+
+  test('lists nothing for a declared return type, or for @provide, which the compiler does not check', () => {
+    for (const text of [
+      option({ returnType: ': TAuthProviderOptions' }).replace('use: true, ', ''),
+      option({ returnType: '', decorator: 'provide' }).replace('use: true, ', ''),
+    ]) {
+      const result = run(text);
+
+      expect(result.renamed).toBe(1);
+      expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([]);
+    }
+  });
+});
+
 describe('AuthOptionsTransform: bind().toValue()', () => {
   const bind = (value: string) =>
     [

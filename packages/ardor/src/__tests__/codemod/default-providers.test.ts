@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import * as ts from 'typescript';
 
+import { CoreBindings } from '@venizia/ardor-kernel';
+
 import { DefaultProvidersTransform } from '@/codemod/default-providers';
 
 const run = (text: string) =>
@@ -87,6 +89,31 @@ describe('DefaultProvidersTransform', () => {
     expect(result.findings.map((finding) => finding.name)).toEqual([
       'i18n(): instantiate(Translations).value()',
     ]);
+  });
+
+  test('reads each default key by its string value, as CoreBindings spells it', () => {
+    const keys = [
+      CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+      CoreBindings.DEFAULT_AUTH_PROVIDER,
+      CoreBindings.DEFAULT_I18N_PROVIDER,
+    ];
+
+    for (const key of keys) {
+      const result = run(
+        configuration(
+          [
+            `  @provide({ key: '${key}' })`,
+            '  provider() {',
+            '    return this.application.instantiate(Mine).value(this.application);',
+            '  }',
+          ].join('\n'),
+        ),
+      );
+
+      expect(result.findings.map((finding) => finding.name)).toEqual([
+        'provider(): instantiate(Mine).value()',
+      ]);
+    }
   });
 
   test('lists a default class under another key as a default provider', () => {

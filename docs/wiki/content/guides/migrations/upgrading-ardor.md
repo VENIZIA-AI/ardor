@@ -56,6 +56,7 @@ An app with sign-in must say so: the auth options need `use: true`. The codemod 
 
 - A literal that already has `use`, `true` or `false`, is left as it is.
 - Options that are not a plain object literal (a variable, a call, only a spread) are listed as `left` with their line and not changed. Add `use: true` there by hand.
+- A type that no longer fits is listed as `left` too, and the `use: true` is still added: a return type, `as` or `satisfies` of `IAuthProviderOptions`, which has no `use` (type it as `TAuthProviderOptions`), and a `@provideOption` method with no return type, where `use: true` would be read as `boolean` (declare `TAuthProviderOptions`).
 - Each change prints a `note` that sign-in is now on. An app with no sign-in binds `{ use: false }` or no options and needs nothing.
 
 ### base-application-import
