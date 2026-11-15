@@ -236,25 +236,25 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 
 ### `` [artifacts] A group has neither content nor resolve | Return AutoArtifacts from @venizia/ignis-boot/auto, or build with IgnisArtifactsPlugin so the group arrives with its content ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:286`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** `artifacts()` returned a group that carries no class lists, which happens when the plugin did not run on the file that defines it.
 - **Fix:** Add `IgnisArtifactsVitePlugin.create()` to `plugins` in `vite.config.ts` (the Bun plugin named in the message is for a Bun build), return `AutoArtifacts` from `artifacts()`, and define the group in a file the build reaches with `ArtifactGroup.define({ folder: '<name>' })` or `ArtifactGroup.application()`.
 
 ### `` [artifacts] '<kind>' lists an entry that is not a class (position <n>) | Usually an import cycle: the module that imports the index (or @venizia/ignis-boot/auto) must not define decorated classes or be imported by them ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:319`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** A class list holds `undefined`: the module of a class was still being evaluated when the index was built.
 - **Fix:** Move every decorated class out of `src/application.ts`, one class per file, and make sure no class module imports `application.ts`.
 
 ### `` [artifacts] '<kind>' lists <Class>, which was never discovered | Decorate it with its stereotype and regenerate the index ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:325`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** The index lists a class that has no stereotype, or whose decorator was lost.
 - **Fix:** Add the decorator (`@service()`, `@repository(...)`, `@datasource()`, `@component()` or `@configuration()`). In `vite dev`, restart the server so the scan runs again.
 
 ### `` [ArtifactScanner] <file> | class <Class> carries <n> stereotypes (<list>) - one class is one artifact ``
 
-- **Where:** `boot/src/generator/scanner.ts:162` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
+- **Where:** `boot/src/generator/scanner.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** A class wears two stereotypes.
 - **Fix:** Keep one. A class that is both a service and a repository is two classes.
 
@@ -272,84 +272,84 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 
 ### `` [IgnisArtifactsPlugin] <dir> has no src directory (<path>) | Auto artifacts scan the src beside the package.json of the entry module; pass IgnisArtifactsPlugin.create({ root }), or use ArtifactGroup.application() in the application's own source ``
 
-- **Where:** `boot/src/bun/plugin.ts:48` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
+- **Where:** `boot/src/bun/plugin.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** The scan root does not exist: there is no `src` beside the `package.json`, or `root` points at a folder that is not there.
 - **Fix:** Pass the folder: `IgnisArtifactsVitePlugin.create({ root: 'src' })`.
 
 ### `` [IgnisArtifactsPlugin] An ArtifactGroup call at <file>:<line> cannot be rewritten | <reason> - write ArtifactGroup.define({ folder: '<name>' }) or ArtifactGroup.application() with the class imported under its own name ``
 
-- **Where:** `boot/src/bun/plugin.ts:94` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
+- **Where:** `boot/src/bun/plugin.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** The plugin could not read the call: `ArtifactGroup` is imported under another name, the argument is not an object literal, or `folder` is not a string literal.
 - **Fix:** Write the call as the message says.
 
 ### `` [IgnisArtifactsPlugin] ArtifactGroup '<folder>' resolved to no class | <file> - check the folder name and that its classes carry a stereotype decorator ``
 
-- **Where:** `boot/src/bun/plugin.ts:105` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
+- **Where:** `boot/src/bun/plugin.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** No decorated class sits under a folder of that name in the package of the file.
 - **Fix:** Fix the folder name, or add a stereotype to the classes.
 
 ### `` [@venizia/ignis-boot/auto] The application artifacts are resolved when artifacts are registered | A function that walks configs.artifacts must pass a group through untouched (check `isArtifactGroup`) instead of reading its kinds ``
 
-- **Where:** `boot/src/bun/auto-group.ts:36` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
+- **Where:** `boot/src/bun/auto-group.ts` in the IGNIS repository (`@venizia/ignis-boot` 0.4.8-14)
 - **Why:** Code read `.services` (or another kind) off a group such as `AutoArtifacts`.
 - **Fix:** Do not read the kinds of what `artifacts()` returns; the application resolves them at start.
 
 ### `` [registerArtifacts] Two classes derive the binding key '<key>' from their class name, and the second would silently replace the first | A minified build renames classes - pin 'binding: { namespace, key }' or build with names kept (keepNames). A module evaluated twice by hot reload does the same - set 'bootChecks.allowDerivedKeyCollision' in that development setup ``
 
-- **Where:** `ArtifactBindingKeys.describeCollision`, `kernel/src/base/metadata/artifact-keys.ts:83` in the IGNIS repository (`@venizia/ignis-kernel` 0.4.8-16), called from `registerArtifacts()` in `abstract.ts`
+- **Where:** `ArtifactBindingKeys.describeCollision`, `kernel/src/base/metadata/artifact-keys.ts` in the IGNIS repository (`@venizia/ignis-kernel` 0.4.8-16), called from `registerArtifacts()` in `abstract.ts`
 - **Why:** Two classes of one name in two files.
 - **Fix:** Rename one, or pin the key: `@service({ binding: { namespace: 'services', key: 'billing' } })`.
 
 ### `` [registerArtifacts] The key '<key>' is claimed by both <A> and <B>, and the one imported last would silently replace the other | Give one of them another key, select one with 'when', or bind the intended one in bindContext() ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:204`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** Two different classes pin the same `binding: { namespace, key }`.
 - **Fix:** Give one of them another key, or leave one out with `when`.
 
 ### `` [registerArtifacts] The 'when' of <Class> threw: <reason> | A 'when' must not throw: return false to leave the class out ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:227`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** A `when` threw.
 - **Fix:** Return `false` to leave the class out; do not throw.
 
 ### `` [registerArtifacts] The 'when' of <Class> must return a boolean synchronously, it returned <a Promise|type> | Resolve the answer before decoration, or bind the class by hand in bindContext() ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:233`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** A `when` returned a promise or a value that is not a boolean.
 - **Fix:** Return a boolean at once, or bind the class by hand in `bindContext()`.
 
 ### `` [bindingList] '<key>' is held by <Class> with allowOverride false, and bindingList() would replace it with <Other> | Bind it in bindContext() to override on purpose, or drop allowOverride: false ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:98`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** `bindingList()` names a key held by a class declared `allowOverride: false`.
 - **Fix:** Override it in `bindContext()`, or drop `allowOverride: false`.
 
 ### `` [features] '<feature>' lists <Class>, which was never discovered | Decorate it with @configuration() and import its module before start() ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:355`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** A feature lists a configuration class that no decorator registered, usually because its module was never imported.
 - **Fix:** Decorate it with `@configuration()` and import its module before `start()`.
 
 ### `` [features] '<feature>' lists <Class> in artifacts.<kind>, which was never discovered | Decorate it with its stereotype and import its module before start() ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:370`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** A feature lists a class in `artifacts` that carries no stereotype, or whose module was never imported.
 - **Fix:** Decorate the class and import its module where the feature is defined.
 
 ### `` [features] '<feature>' lists an entry in artifacts.<kind> that is not a class (position <n>) | Usually an import cycle: the feature module must not be imported by the classes it lists ``
 
-- **Where:** `packages/kernel/src/base/applications/abstract.ts:364`
+- **Where:** `packages/kernel/src/base/applications/abstract.ts`
 - **Why:** The classes of the feature import the module that defines the feature, so the list holds `undefined` while it is built.
 - **Fix:** Keep the feature definition in a file that no listed class imports.
 
 ### `` Binding key: <key> is not bounded in context! | A key derived from a class name (<namespace>.<ClassName>) changes when a minifier renames the class: resolve it by { target }, or pin it with binding: { namespace, key } on the class ``
 
-- **Where:** `packages/react/src/hooks/resolve-injectable.ts:29`
+- **Where:** `packages/react/src/hooks/resolve-injectable.ts`
 - **Why:** A hook asked for a key that nothing bound: a typo, a class first imported after `start()`, or a class the scan did not reach.
 - **Fix:** Resolve the class by `{ target }`, check the class has a stereotype and a named export, and import it before `start()`.
 
 ### `` [<hook>] No binding key is recorded on <Class> | Register it by stereotype (@service() and the rest) or by hand (service(), repository(), dataSource(), component(), bindingList()), or resolve it by { key } ``
 
-- **Where:** `packages/react/src/hooks/resolve-injectable.ts:46`
+- **Where:** `packages/react/src/hooks/resolve-injectable.ts`
 - **Why:** The class has no stereotype and was not registered by hand.
 - **Fix:** Add the stereotype or register it in `bindContext()`.
