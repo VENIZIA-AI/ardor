@@ -229,7 +229,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
           }
 
           // A default text makes polyglot fill the tokens and plural forms of the key itself.
-          return i18nProvider.translate(key, { ...(isRecord(options) ? options : {}), _: key });
+          // A number is polyglot's shorthand for the plural count.
+          const extra = typeof options === 'number' ? { ['smart_count']: options } : options;
+
+          return i18nProvider.translate(key, { ...(isRecord(extra) ? extra : {}), _: key });
         },
       },
     );

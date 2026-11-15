@@ -738,6 +738,13 @@ describe('DefaultI18nProvider missing keys', () => {
     expect(warn).toHaveBeenCalledTimes(2);
   });
 
+  test('a missing key takes a number as the plural count, as polyglot does', () => {
+    const { i18n } = build();
+
+    expect(i18n.translate('%{smart_count} item |||| %{smart_count} items', 2)).toBe('2 items');
+    expect(i18n.translate('%{smart_count} item |||| %{smart_count} items', 1)).toBe('1 item');
+  });
+
   test('a different missing key is logged on its own', () => {
     const { i18n, warn } = build();
 
