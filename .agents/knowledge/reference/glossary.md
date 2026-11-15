@@ -99,7 +99,7 @@ verified by `make surface-check`) from the built `.d.ts` of the packages `.confi
 lists - the same tool IGNIS uses for its own packages. The snapshot is
 [Public surface](/reference/public-surface.md).
 
-**Changelog entry** - a file describing a change a user of the published packages sees or can use: what
+**Changelog entry** - an item in the `changelogs/<X.Y.Z>/log.md` of its version, describing a change a user of the published packages sees or can use: what
 changed, who is affected, and any breaking changes with their upgrade step. Internal work gets none. See
 [Writing a changelog entry](/process/writing-a-changelog-entry.md).
 

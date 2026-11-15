@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Writing a changelog entry
-description: The shape of a wiki changelog entry, the parts every entry needs, and the template to copy.
+description: The version folder of the changelog, what an item and its migration block need, and the checks that read them.
 tags: [process, changelog, docs]
 ---
 
@@ -10,8 +10,8 @@ tags: [process, changelog, docs]
 The changelog is one folder per version, `docs/wiki/content/changelogs/<X.Y.Z>/`, from 0.4.5 on
 (`knowledge.migrationFrom`). The folder of the next stable is the changelog of the work in progress: every
 change a user sees is a line in it, each prerelease edits it, and it states the net change from the previous
-stable. The files named `YYYY-MM-DD-<slug>.md` up to `knowledge.datedUntil` (2026-11-15) are history: never
-add or edit one (`vulcan changelog check --history --base <ref>` fails it). The index (`/changelogs/`) and the
+stable. The files named `YYYY-MM-DD-<slug>.md` up to `knowledge.datedUntil` (2026-11-15) are history: do not
+add or edit one (`vulcan changelog check` fails a dated file later than `datedUntil`). The index (`/changelogs/`) and the
 page of a version (`/changelogs/<X.Y.Z>`) are built from the folders by the shared theme, so there is no table
 row and no sidebar link to add.
 
@@ -37,7 +37,7 @@ to do about it, in a few lines; the implementation stays in the code and the kno
 | File | Holds |
 |---|---|
 | `log.md` | Frontmatter `title`, `version`, `packages` (npm names whose code changed, from `packages[].name`) and, for a stable only, `released: YYYY-MM-DD`; then one plain sentence for the version; then Keep a Changelog sections in the order Breaking, Deprecated, Added, Changed, Fixed, Security. |
-| `migration.yaml` | The `migration:` block of each Breaking or Deprecated item, keyed by the item id. |
+| `migration.yaml` | One block per Breaking or Deprecated item, keyed by the item id at the top level of the file. |
 
 An item is one line: `- **Title** \`item-id\` (\`@venizia/ardor-kernel\`, \`@venizia/ardor\`): what changed and what to do, in plain words.` The id is lower-case words joined by `-` and unique in the folder; the package list is optional and every name in it must be a package of the project. A change to an item that shipped in a prerelease edits that line: the folder says what the stable changes, not the history of the prereleases. A released folder (one with `released:`) is never edited.
 
@@ -66,6 +66,5 @@ List the symbols as the app spells them before the change (a removed or renamed 
 
 | Command | What it fails |
 |---|---|
-| `make changelog-check` (part of `make lint-all`) | an item with no block, a block with no item, a package the project does not declare, an invalid block, a dated file later than `datedUntil` |
-| `bun x vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable with no folder, a dated file added or edited |
-
+| `make changelog-check` (part of `make lint-all`) | a Breaking or Deprecated item with no block, a block with no item, a package the project does not declare, an invalid `log.md` or block, a codemod name `ardor codemod --list` does not print, a dated file later than `datedUntil`, more than one folder without `released:`, a folder in progress that is not above every released one |
+| `bun x vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |
