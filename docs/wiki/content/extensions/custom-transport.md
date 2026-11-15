@@ -71,6 +71,8 @@ export interface ITransportRequest {
   query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
   body?: unknown;
+  /** The abort signal of the call: react-admin aborts a read that a newer filter replaced. */
+  signal?: AbortSignal;
 }
 
 export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
@@ -128,6 +130,8 @@ export interface ITransportRequest {
   query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
   body?: unknown;
+  /** The abort signal of the call: react-admin aborts a read that a newer filter replaced. */
+  signal?: AbortSignal;
 }
 
 export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
@@ -166,6 +170,7 @@ export class TransportDataProvider<
       extra,
       headers,
       requestCountData,
+      signal,
     } = opts;
 
     // Still from the base: headers built from the options and application info.
@@ -187,6 +192,7 @@ export class TransportDataProvider<
       // A header the caller named wins over the computed ones, as in the base.
       headers: headers ? NetworkHeaders.merge({ sources: [props.headers, headers] }) : props.headers,
       body: props.body,
+      signal,
     });
   }
 }
@@ -199,8 +205,9 @@ export class TransportDataProvider<
 What still comes from the base:
 
 - The `BaseProvider<IDataProvider<TResource>>` contract. The container resolves your subclass exactly as it resolves `DefaultRestDataProvider`; you override nothing on the provider side.
-- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers`, `authRecovery` and `timeout` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
+- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers`, and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
 - `getRequestProps`, reached through `this.networkService`, which produces the `headers` and `body` for a request.
+- Not the abort and the timeout: the `signal` of a call reaches your transport in `ITransportRequest.signal`, and the `timeout` option applies to `doRequest`, which a transport replaces. Pass the signal on to what sends the request, and put your own time limit in the transport.
 - The filter mapping: the protected `buildListFilter({ params })` (a delegate of `ListFilterBuilder.build`) is shared by `getList` and `getManyReference`, and `getMany` builds its own with `ListFilterBuilder.extractQueryParams`. Keep it when you override a method, or re-use the same mapping.
 - `updateMany` and `deleteMany` read the affected ids from `result.data` (`toAffectedIds`), so a transport answers the affected rows, as the server does.
 

@@ -133,7 +133,14 @@ export class ShopApplication extends BaseArdorApplication {
       throw getError({ message: '[postConfigure] SettingsService is not registered' });
     }
 
-    await this.get<SettingsService>({ key }).load();
+    // Checked, not asserted: what the key holds must be the class.
+    const settings: unknown = this.get({ key });
+
+    if (!(settings instanceof SettingsService)) {
+      throw getError({ message: '[postConfigure] The key of SettingsService holds another class' });
+    }
+
+    await settings.load();
   }
 }
 ```
