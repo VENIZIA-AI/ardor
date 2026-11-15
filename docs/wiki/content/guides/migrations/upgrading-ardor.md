@@ -31,7 +31,7 @@ bun run ardor codemod namespace src
 bun run ardor codemod namespace src --write
 ```
 
-`bun run ardor` works in a package whose `package.json` depends on `@venizia/ardor`.
+`bun run ardor` works in a package whose `package.json` depends on `@venizia/ardor`. `ardor codemod --list` prints the name of each codemod, one per line, and exits 0.
 
 | Flag | What it does |
 |------|--------------|
