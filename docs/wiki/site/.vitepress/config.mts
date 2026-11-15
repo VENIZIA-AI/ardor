@@ -125,6 +125,8 @@ const config = defineConfig({
     theme: venziaCodeTheme({ accent: THEME.dark.accent ?? '' }),
   },
   srcDir: '../content',
+  // A version folder keeps its page as changelogs/<X.Y.Z>/log.md; the site serves it at /changelogs/<X.Y.Z>.
+  rewrites: { 'changelogs/:version/log.md': 'changelogs/:version.md' },
   outDir: './.vitepress/dist',
   title: 'ARDOR',
   description:
