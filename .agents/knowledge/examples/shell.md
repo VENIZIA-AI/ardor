@@ -34,8 +34,8 @@ classes and messages. It shows, end to end:
   `access` renders nothing when denied, it does not redirect.
 - **The default access-denied page** - `orders` also has a `show` page. A viewer, who holds no
   `orders.show`, lands on `AccessDeniedPage` at `/access-denied`, the redirect react-admin makes for a
-  resource page. react-admin starts the `getOne` before the check answers, so the stub API refuses it
-  too (403): the backend checks every request.
+  resource page. react-admin can start the `getOne` before the check answers; the stub API refuses
+  it then (403), because the backend checks every request.
 - **A public page outside the layout** - `/catalog/share` declares `layout: { use: false }` and
   `auth: { use: false }`, and renders for a visitor who never signed in.
 - **A lazy locale** - `orders` gives `en` as an object and `vi` as `() => import('./messages/vi')`.

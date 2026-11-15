@@ -1,6 +1,12 @@
 import { Features } from '@venizia/ardor';
 
-import { CatalogAccess, CatalogPaths, CatalogPermissions } from './constants';
+import {
+  CatalogAccess,
+  CatalogFeature,
+  CatalogMenu,
+  CatalogPaths,
+  CatalogPermissions,
+} from './constants';
 import { CatalogDataSource } from './datasources/catalog.datasource';
 import { catalogEnglish } from './messages/en';
 import { catalogVietnamese } from './messages/vi';
@@ -11,7 +17,7 @@ import { ProductRepository } from './repositories/product.repository';
 export { CatalogAccess, CatalogPaths, CatalogPermissions } from './constants';
 
 export const catalogFeature = Features.define({
-  name: 'catalog',
+  name: CatalogFeature.NAME,
   resources: [{ name: CatalogAccess.RESOURCE, list: ProductListPage }],
   routes: [
     {
@@ -23,7 +29,7 @@ export const catalogFeature = Features.define({
   ],
   menu: [
     {
-      label: 'catalog.menu.products',
+      label: CatalogMenu.PRODUCTS,
       to: CatalogPaths.LIST,
       access: { resource: CatalogAccess.RESOURCE, action: CatalogAccess.LIST },
     },

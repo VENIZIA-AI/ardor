@@ -2,7 +2,7 @@ import { Ardor } from '@venizia/ardor';
 import { LinkBase, useLocaleState, useLogout } from 'ra-core';
 import type { ReactNode } from 'react';
 
-import { Locales } from '@/constants/shell';
+import { Locales, ShellTestIds } from '@/constants/shell';
 
 export const ShellLayout = (props: { children?: ReactNode }) => {
   const entries = Ardor.useMenuEntries();
@@ -16,7 +16,7 @@ export const ShellLayout = (props: { children?: ReactNode }) => {
   return (
     <div>
       <header>
-        <span data-testid="roles">
+        <span data-testid={ShellTestIds.ROLES}>
           {translate('shell.roles')}: {[...roles].join(', ')}
         </span>{' '}
         <button type="button" onClick={() => setLocale(nextLocale)}>
@@ -27,7 +27,7 @@ export const ShellLayout = (props: { children?: ReactNode }) => {
         </button>
       </header>
       <nav>
-        <ul data-testid="menu">
+        <ul data-testid={ShellTestIds.MENU}>
           {entries.map((entry) => (
             <li key={entry.to}>
               <LinkBase to={entry.to}>{translateLabel(entry.label)}</LinkBase>

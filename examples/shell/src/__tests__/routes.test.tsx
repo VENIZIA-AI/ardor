@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 
-import { Roles } from '@/constants/shell';
+import { Roles, ShellTestIds } from '@/constants/shell';
 import { blockNetwork, renderShell, startShell } from './shell';
 
 describe('the routes of the features', () => {
@@ -25,14 +25,16 @@ describe('the routes of the features', () => {
 
     const heading = await screen.findByRole('heading', { name: 'Our catalog' });
     expect(heading).toBeDefined();
-    expect(screen.queryByTestId('menu')).toBeNull();
+    expect(screen.queryByTestId(ShellTestIds.MENU)).toBeNull();
   });
 
   test('a viewer who opens the order summary sees the layout and no page', async () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/summary' });
 
-    await waitFor(() => expect(screen.getByTestId('menu').textContent).toBe('OrdersProducts'));
+    await waitFor(() =>
+      expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts'),
+    );
     expect(screen.queryByRole('heading', { name: 'Order summary' })).toBeNull();
   });
 

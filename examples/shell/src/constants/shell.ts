@@ -8,6 +8,11 @@ export class ApiPaths {
   static readonly SIGN_IN = '/auth/sign-in';
 }
 
+export class ShellTestIds {
+  static readonly MENU = 'menu';
+  static readonly ROLES = 'roles';
+}
+
 export class Locales {
   static readonly ENGLISH = 'en';
   static readonly VIETNAMESE = 'vi';

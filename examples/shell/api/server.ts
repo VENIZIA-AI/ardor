@@ -1,5 +1,8 @@
 // A stand-in for the IGNIS API the shell talks to: sign-in for two users, and the two resources with the
 // list contract ARDOR's data provider reads (JSON rows + `content-range: records a-b/total`).
+import { CatalogAccess } from '@shell-example/catalog/constants';
+import { OrdersAccess, OrderStatuses } from '@shell-example/orders/constants';
+
 import { Roles } from '../src/constants/shell';
 
 type TRow = Record<string, string | number>;
@@ -7,7 +10,7 @@ type TRow = Record<string, string | number>;
 class StubApi {
   static readonly PORT = 3100;
   static readonly SIGN_IN = '/api/auth/sign-in';
-  static readonly RESOURCE = /^\/api\/(orders|products)(?:\/(\d+))?$/;
+  static readonly ROW = /^\/api\/(\w+)(?:\/(\d+))?$/;
 }
 
 const USERS = [
@@ -15,19 +18,25 @@ const USERS = [
   { userId: 2, username: 'viewer', password: 'viewer', roles: [Roles.VIEWER] },
 ];
 
-const ROWS: Record<string, Array<TRow>> = {
-  orders: Array.from({ length: 12 }, (_, index) => ({
-    id: index + 1,
-    reference: `SO-${String(index + 1).padStart(4, '0')}`,
-    status: index % 3 === 0 ? 'shipped' : 'open',
-    total: 120 + index * 35,
-  })),
-  products: Array.from({ length: 8 }, (_, index) => ({
-    id: index + 1,
-    name: `Product ${index + 1}`,
-    price: 1000 + index * 250,
-  })),
-};
+const ROWS = new Map<string, Array<TRow>>([
+  [
+    OrdersAccess.RESOURCE,
+    Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      reference: `SO-${String(index + 1).padStart(4, '0')}`,
+      status: index % 3 === 0 ? OrderStatuses.SHIPPED : OrderStatuses.OPEN,
+      total: 120 + index * 35,
+    })),
+  ],
+  [
+    CatalogAccess.RESOURCE,
+    Array.from({ length: 8 }, (_, index) => ({
+      id: index + 1,
+      name: `Product ${index + 1}`,
+      price: 1000 + index * 250,
+    })),
+  ],
+]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -95,8 +104,8 @@ Bun.serve({
       return failure({ status: 401, message: 'Unauthorized' });
     }
 
-    const match = url.pathname.match(StubApi.RESOURCE);
-    const rows = match?.[1] ? ROWS[match[1]] : undefined;
+    const match = url.pathname.match(StubApi.ROW);
+    const rows = match?.[1] ? ROWS.get(match[1]) : undefined;
 
     if (!rows || request.method !== 'GET') {
       return failure({ status: 404, message: 'Not found' });

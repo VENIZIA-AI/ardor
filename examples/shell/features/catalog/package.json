@@ -5,7 +5,8 @@
   "description": "The catalog feature of the shell example: a products resource with its own artifacts and a public page outside the layout",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts"
   },
   "dependencies": {
     "@venizia/ardor": "workspace:*",

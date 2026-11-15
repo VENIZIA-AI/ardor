@@ -17,7 +17,11 @@ const OrderRows = () => {
         {(data ?? []).map((order) => (
           <li key={order.id}>
             <LinkBase
-              to={createPath({ resource: OrdersAccess.RESOURCE, id: order.id, type: 'show' })}
+              to={createPath({
+                resource: OrdersAccess.RESOURCE,
+                id: order.id,
+                type: OrdersAccess.SHOW,
+              })}
             >
               {order.reference}
             </LinkBase>{' '}

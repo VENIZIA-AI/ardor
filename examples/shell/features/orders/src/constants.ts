@@ -1,3 +1,13 @@
+export class OrdersFeature {
+  static readonly NAME = 'orders';
+  static readonly API_URL = '/api';
+}
+
+export class OrdersMenu {
+  static readonly LIST = 'orders.menu.list';
+  static readonly SUMMARY = 'orders.menu.summary';
+}
+
 export class OrdersAccess {
   static readonly RESOURCE = 'orders';
   static readonly LIST = 'list';

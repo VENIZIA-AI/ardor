@@ -3,11 +3,11 @@ import 'reflect-metadata';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, cleanup, screen, waitFor } from '@testing-library/react';
 
-import { Roles } from '@/constants/shell';
+import { Roles, ShellTestIds } from '@/constants/shell';
 import { blockNetwork, renderShell, startShell } from './shell';
 
 const expectMenu = async (opts: { text: string }) => {
-  await waitFor(() => expect(screen.getByTestId('menu').textContent).toBe(opts.text));
+  await waitFor(() => expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe(opts.text));
 };
 
 describe('the menu of ShellLayout', () => {
@@ -28,7 +28,7 @@ describe('the menu of ShellLayout', () => {
     renderShell({ application, path: '/' });
 
     await expectMenu({ text: 'OrdersProducts' });
-    expect(screen.getByTestId('roles').textContent).toBe('Roles: viewer');
+    expect(screen.getByTestId(ShellTestIds.ROLES).textContent).toBe('Roles: viewer');
   });
 
   test('an admin sees every entry, in feature order', async () => {
@@ -36,7 +36,7 @@ describe('the menu of ShellLayout', () => {
     renderShell({ application, path: '/' });
 
     await expectMenu({ text: 'OrdersOrder summaryProducts' });
-    expect(screen.getByTestId('roles').textContent).toBe('Roles: admin');
+    expect(screen.getByTestId(ShellTestIds.ROLES).textContent).toBe('Roles: admin');
   });
 
   test('switching to Vietnamese loads the lazy bundle of orders', async () => {

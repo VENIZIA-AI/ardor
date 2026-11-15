@@ -1,7 +1,13 @@
 import { Features } from '@venizia/ardor';
 import { lazy } from 'react';
 
-import { OrdersAccess, OrdersPaths, OrdersPermissions } from './constants';
+import {
+  OrdersAccess,
+  OrdersFeature,
+  OrdersMenu,
+  OrdersPaths,
+  OrdersPermissions,
+} from './constants';
 import { OrdersDataSource } from './datasources/orders.datasource';
 import { ordersEnglish } from './messages/en';
 import { OrderListPage } from './pages/order-list';
@@ -12,7 +18,7 @@ import { OrderService } from './services/order.service';
 export { OrdersAccess, OrdersPaths, OrdersPermissions } from './constants';
 
 export const ordersFeature = Features.define({
-  name: 'orders',
+  name: OrdersFeature.NAME,
   resources: [{ name: OrdersAccess.RESOURCE, list: OrderListPage, show: OrderShowPage }],
   routes: [
     {
@@ -23,12 +29,12 @@ export const ordersFeature = Features.define({
   ],
   menu: [
     {
-      label: 'orders.menu.list',
+      label: OrdersMenu.LIST,
       to: OrdersPaths.LIST,
       access: { resource: OrdersAccess.RESOURCE, action: OrdersAccess.LIST },
     },
     {
-      label: 'orders.menu.summary',
+      label: OrdersMenu.SUMMARY,
       to: OrdersPaths.SUMMARY,
       access: { resource: OrdersAccess.RESOURCE, action: OrdersAccess.SUMMARY },
     },
