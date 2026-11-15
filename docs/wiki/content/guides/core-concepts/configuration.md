@@ -5,7 +5,7 @@ description: Configure ARDOR with @configuration and @provide, understand option
 
 # Configuration
 
-The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON.
+The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provideOption({ key })` methods return the options and whose `@provide({ key })` methods return the provider instances; `start()` binds each as a lazy SINGLETON.
 
 ```ts
 import {
@@ -14,7 +14,9 @@ import {
   CoreBindings,
   DefaultRestDataProvider,
   inject,
+  type IRestDataProviderOptions,
   provide,
+  provideOption,
 } from '@venizia/ardor';
 
 @configuration()
@@ -24,8 +26,8 @@ export class ExampleConfiguration {
     private readonly application: BaseArdorApplication,
   ) {}
 
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
@@ -40,11 +42,17 @@ Each method decorated with `@provide({ key })` defines a binding:
 
 - **Lazy resolution**: The method is called on the first `application.get({ key })`, never at startup.
 - **Singleton scope**: The binding defaults to `BindingScopes.SINGLETON` unless an explicit `scope` is passed in `@provide({ key, scope })`. The return value is cached on first use.
-- **Options methods**: Return plain JavaScript objects. For example, `restDataProviderOptions()` returns an `IRestDataProviderOptions` object, and `authProviderOptions()` returns an `IAuthProviderOptions` object. The post-login redirect path is configured at `paths.afterLogin` inside the auth provider options (`AUTH_PROVIDER_OPTIONS`), not as a top-level option.
+- **Options methods**: Use `@provideOption({ key })` and return plain JavaScript objects. For example, `restDataProviderOptions()` returns an `IRestDataProviderOptions` object, and `authProviderOptions()` returns an `IAuthProviderOptions` object. The post-login redirect path is configured at `paths.afterLogin` inside the auth provider options (`AUTH_PROVIDER_OPTIONS`), not as a top-level option.
 - **Provider methods**: Call `this.application.instantiate(ProviderClass).value(this.application)` to create the helper instance with injected options and return the provider object for react-admin. For services such as `DefaultAuthService`, calling `this.application.instantiate(DefaultAuthService)` returns the service instance directly.
 
 > [!NOTE]
 > An application with no sign-in leaves `DEFAULT_AUTH_PROVIDER` unbound; `ArdorApplication` then runs without an auth provider.
+
+### Typed option keys
+
+`@provideOption({ key })` is `@provide({ key })` for the options keys of `CoreBindings`: the compiler checks that the method returns the options type of that key, so `return 42` or a missing `url` fails where you write it, not in the middle of a render. The method must return the options itself, not a promise, because the container does not wait for a provider. `@provide` with the same keys still works, but nothing checks what it returns.
+
+`ICoreOptionTypes` maps each options key to its type: `REST_DATA_PROVIDER_OPTIONS` to `IRestDataProviderOptions`, `AUTH_PROVIDER_OPTIONS` to `IAuthProviderOptions` and `I18N_PROVIDER_OPTIONS` to `II18nProviderOptions`. It is an interface, so a package that adds an options key adds its type with `declare module '@venizia/ardor-kernel'`.
 
 To customize or replace a default provider, see [Providers](./providers).
 
@@ -54,12 +62,12 @@ The kernel defines eleven keys in `CoreBindings` (`packages/kernel/src/common/ke
 
 | Key | Value / Contract | Configured via | Reference |
 | --- | --- | --- | --- |
-| `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Plain object (`IRestDataProviderOptions`) | `@provide` | [REST data provider](../../references/data-provider) |
+| `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Plain object (`IRestDataProviderOptions`) | `@provideOption` | [REST data provider](../../references/data-provider) |
 | `CoreBindings.DEFAULT_REST_DATA_PROVIDER` | `IDataProvider` instance | `@provide` | [REST data provider](../../references/data-provider) |
-| `CoreBindings.AUTH_PROVIDER_OPTIONS` | Plain object (`IAuthProviderOptions`) | `@provide` | [Auth provider](../../references/auth-provider) |
+| `CoreBindings.AUTH_PROVIDER_OPTIONS` | Plain object (`IAuthProviderOptions`) | `@provideOption` | [Auth provider](../../references/auth-provider) |
 | `CoreBindings.DEFAULT_AUTH_SERVICE` | `DefaultAuthService` instance | `@provide` | [Auth provider](../../references/auth-provider) |
 | `CoreBindings.DEFAULT_AUTH_PROVIDER` | `IAuthProvider` instance (unbound for public applications) | `@provide` | [Auth provider](../../references/auth-provider) |
-| `CoreBindings.I18N_PROVIDER_OPTIONS` | Plain object (`II18nProviderOptions`) | `@provide` | [Internationalization](../../references/i18n) |
+| `CoreBindings.I18N_PROVIDER_OPTIONS` | Plain object (`II18nProviderOptions`) | `@provideOption` | [Internationalization](../../references/i18n) |
 | `CoreBindings.DEFAULT_I18N_PROVIDER` | `I18nProvider` instance | `@provide` | [Internationalization](../../references/i18n) |
 | `CoreBindings.APPLICATION_INSTANCE` | `AbstractArdorApplication` container instance | `preConfigure()` | [Application](../../references/application) |
 | `CoreBindings.APPLICATION_INFO` | Plain object (`IApplicationInfo`) from `getAppInfo()` | `preConfigure()` | [Application](../../references/application) |
@@ -165,25 +173,27 @@ An application can define multiple `@configuration()` classes to separate concer
 import {
   configuration,
   CoreBindings,
-  provide,
+  type IAuthProviderOptions,
+  type IRestDataProviderOptions,
+  provideOption,
 } from '@venizia/ardor';
 
 @configuration()
 export class ApiConfiguration {
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'https://api.example.com', noAuthPaths: ['/auth/sign-in'] };
   }
 }
 
 @configuration()
 export class AuthConfiguration {
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): IAuthProviderOptions {
     return { paths: { afterLogin: '/dashboard' } };
   }
 }
 ```
 
 - **Configuration class collisions**: Each configuration class is registered under a derived key in the `configurations` namespace (such as `configurations.ApiConfiguration`). `ArtifactBindingKeys.assertNoDerivedCollision()` checks that no two classes derive the exact same binding key. These only collide when two classes share a name, which a minifier can cause. If two classes derive the same key, `registerArtifacts()` throws an error at startup.
-- **Provided key collisions**: If two configuration classes provide the same binding key, classes are registered in the order the registry discovered them, which is the order their modules were evaluated, and the last bind of a key wins. Binding a key again replaces the earlier binding. Do not rely on this order; no collision error is thrown for `@provide()` keys. Use `bindContext()` for deterministic overrides.
+- **Provided key collisions**: If two configuration classes provide the same binding key, classes are registered in the order the registry discovered them, which is the order their modules were evaluated, and the last bind of a key wins. Binding a key again replaces the earlier binding. Do not rely on this order; no collision error is thrown for `@provide()` and `@provideOption()` keys. Use `bindContext()` for deterministic overrides.
