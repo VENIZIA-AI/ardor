@@ -8,9 +8,10 @@ Commands:
 
 Run "ardor codemod namespace --help" for the options.
 
-Run it as "bun run ardor ..." from a package that depends on @venizia/ardor, or as
-"bun x --no-install ardor ...". Without --no-install, bunx fetches an unrelated package named
-"ardor" from npm when the bin is not installed, and runs it.`;
+Run it as "bun run ardor ..." inside a package that depends on @venizia/ardor: that runs the
+bin the package installed. A fetching runner (bunx, npx) may fetch and run an unrelated package
+named "ardor" from npm when no bin is installed, and "--no-install" only stops the fetch: it can
+still run a copy that an earlier fetch left in the runner cache.`;
 
 class CliWords {
   static readonly CODEMOD = 'codemod';

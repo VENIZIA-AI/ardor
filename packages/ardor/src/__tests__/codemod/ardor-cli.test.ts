@@ -36,7 +36,8 @@ describe('ardor', () => {
 
       expect(code).not.toBe(1);
       expect(text).toContain('bun run ardor');
-      expect(text).toContain('bun x --no-install ardor');
+      expect(text).toContain('--no-install');
+      expect(text).toContain('cache');
     });
   });
 

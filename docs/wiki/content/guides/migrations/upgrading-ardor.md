@@ -31,7 +31,7 @@ bun run ardor codemod namespace src
 bun run ardor codemod namespace src --write
 ```
 
-`bun run ardor` works in a package whose `package.json` depends on `@venizia/ardor`: the dependency links the `ardor` bin into that package. From the root of a monorepo the bin is not linked, so run it inside the package. `bun x --no-install ardor ...` works only where the bin is installed, and refuses elsewhere. Never leave out `--no-install` when you run `bunx` with the bare name `ardor`: when the bin is not installed, `bunx` fetches an unrelated package of that name from npm and runs its code. `ardor codemod --list` prints the name of each codemod, one per line, and exits 0.
+`bun run ardor` is the way to run it: inside a package whose `package.json` depends on `@venizia/ardor`, the dependency links the `ardor` bin into that package, and `bun run` runs that bin. From the root of a monorepo the bin is not linked, so run the command inside the package. Do not run it with `bunx`, `bun x` or `npx`: with the bare name `ardor` they fetch an unrelated package of that name from npm when the bin is not installed, and run its code. `--no-install` only stops the fetch; it still runs a copy that an earlier fetch left in the runner cache (`~/.bun/install/cache/.bunx-*/`), so it is not a safe replacement. `ardor codemod --list` prints the name of each codemod, one per line, and exits 0.
 
 | Flag | What it does |
 |------|--------------|
