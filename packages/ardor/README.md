@@ -33,7 +33,7 @@ export const Orders = () => {
 
 ## Moving to the new names
 
-`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it (it refuses a file with local changes unless you add `--allow-dirty`), `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package. `ardor codemod --list` prints the name of each codemod.
+`bun run ardor codemod namespace src` (inside a package that depends on `@venizia/ardor`; never through `bunx`, `bun x` or `npx`, which fetch an unrelated package named `ardor` when the bin is not installed) lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it (it refuses a file with local changes unless you add `--allow-dirty`), `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package. `ardor codemod --list` prints the name of each codemod.
 
 ## Subpaths
 
