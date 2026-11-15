@@ -253,7 +253,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (189)
+### `@venizia/ardor` (192)
 
 - `AbstractArdorApplication` class
 - `api` const

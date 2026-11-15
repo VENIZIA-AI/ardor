@@ -349,16 +349,3 @@ injectable-removed:
     steps:
       - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where injectable() exists. The per-namespace methods also exist there, so leaving them is safe.'
   data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'
-
-use-injectable-target-generic:
-  symbols: [useInjectable, Ardor.useInjectable]
-  upgrade:
-    before: |-
-      const pricing = useInjectable<IPricing>({ target: PricingService });
-    after: |-
-      const pricing = useInjectable({ target: PricingService });
-  downgrade:
-    steps:
-      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where useInjectable({ target }) returns the type you pass as the generic, unchecked.
-      - Put the generic back where you removed it, since 0.4.7 returns unknown without one.
-  data: Nothing stored changes. TypeScript reports TS2769 on a call whose generic is not a type the class satisfies, and the fix is to drop the generic or to write a type the class satisfies, such as an interface it implements.
