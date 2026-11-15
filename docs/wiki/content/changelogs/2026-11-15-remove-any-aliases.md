@@ -21,7 +21,7 @@ migration:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
-    data: Nothing stored changes. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
+    data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod `bun x devz codemod any-aliases --all` rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
   - id: typed-do-request-query
     symbols: [DefaultNetworkRequestService.doRequest]
     upgrade:
@@ -39,13 +39,44 @@ migration:
       before: |-
         const tenant = authService.getUser().tenant.toUpperCase();
       after: |-
-        const { tenant } = authService.getUser();
-        const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
+        const user = authService.getUser();
+        const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
     downgrade:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and onSessionStarted takes user as any.
         - Remove the id that getIdentity now adds from any test that compares its result with toEqual.
     data: The identity in localStorage has the same shape before and after. A stored identity whose userId or referenceId is not a string or a number, or whose username or provider is not a string, now reads as an empty object; saveAuth never writes one.
+  - id: typed-user-override
+    symbols: [DefaultAuthService.getUser]
+    upgrade:
+      before: |-
+        override getUser(): { userId: string | null; role: string } {
+          return { userId: null, role: 'admin' };
+        }
+      after: |-
+        override getUser(): { userId: string; role: string } {
+          return { userId: 'u-1', role: 'admin' };
+        }
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, where getUser returns any and an override may return any shape.
+    data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService.
+  - id: typed-user-id
+    symbols: [DefaultAuthService.getUser, DefaultAuthProvider.getIdentity, IAuthUser]
+    upgrade:
+      before: |-
+        setViewer(authService.getUser().userId);
+        setViewer(identity.id);
+      after: |-
+        const { userId } = authService.getUser();
+        if (userId !== undefined) {
+          setViewer(String(userId));
+        }
+        setViewer(String(identity.id));
+    downgrade:
+      steps:
+        - Pin the four ARDOR packages to 0.4.8-15 or earlier, where the user id is any.
+    data: The user id is a string or a number (IdType), and absent when nothing is stored. A function that takes a string needs the value converted. In a test, expect(getUser()).toEqual with a key that is not on IAuthUser fails with TS2769; use toMatchObject, or expect with unknown as the type argument.
 ---
 
 # Changelog - 2026-11-15
@@ -73,7 +104,7 @@ migration:
 
 - **`AnyType` and `AnyObject` are gone.** ARDOR re-exported them from IGNIS and no longer can. Nothing replaces them under the same name. ARDOR's own code uses the type that says what the value is: `unknown` where a value is only passed on, `Record<string, unknown>` for a bag of keys, `ReadonlySet<unknown>` and `(...args: never[]) => unknown` in `TPaths`.
 - **The `query` of `doRequest` is `Record<string, unknown>`.** It was `any`. An object literal or a `type` alias fits; an `interface` value does not (see the fifth step below).
-- **`getUser()` returns `IAuthUser`.** The fields `saveAuth` stores (`userId`, `username`, `referenceId`, `provider`) have their types and are absent when nothing is stored; any other field of the stored object is `unknown` until you narrow it. `IAuthUser` is new in `@venizia/ardor-kernel` and `@venizia/ardor`.
+- **`getUser()` returns `IAuthUser`.** The fields `saveAuth` stores (`userId`, `username`, `referenceId`, `provider`) have their types and are absent when nothing is stored; `IAuthUser` has no index signature, so a field you added yourself is not on the type until you check it with `in`, and an interface of your own with these fields fits it. `IAuthUser` is new in `@venizia/ardor-kernel` and `@venizia/ardor`.
 - **A stored identity with a wrong field type is read as `{}`.** `getUser()` used to return any stored object. Now a `userId` or `referenceId` that is not a string or a number, or a `username` or `provider` that is not a string, makes it read as empty, as a stored array already did. `saveAuth` never writes that.
 - **`onSessionStarted` takes `user: IAuthUser`.** A subclass that names a narrower user type still overrides it (see below).
 - **`getIdentity` resolves an `id`.** It resolves the stored user with `id` set to its `userId`, the field react-admin's `UserIdentity` requires; before, it resolved the stored fields only, and `useGetIdentity` returned no `id`.
@@ -83,14 +114,16 @@ migration:
 
 - **An app that imports `AnyType` or `AnyObject` from `@venizia/ardor` or `@venizia/ardor-kernel`.** TypeScript reports `has no exported member`. Replace each use as shown below.
 - **An app that passes an `interface` value as the `query` of `doRequest`.** Spread it.
-- **An app that reads a field of `getUser()` other than the four above, or of the `user` of `onSessionStarted`, without a check.** It compiled because the type was `any`; now the field is `unknown`.
+- **An app that reads a field of `getUser()` other than the four above, or of the `user` of `onSessionStarted`, without a check.** It compiled because the type was `any`; now the field is not on the type.
+- **An app that passes the user id, or the `id` of `getIdentity`, where a `string` is wanted.** The id is a string or a number.
+- **An app with its own auth service, or a stub of it,** whose `getUser` returns a shape that does not fit `IAuthUser`.
 - **An app that passes an `interface` value where it now writes `Record<string, unknown>`.** An interface has no index signature, so TypeScript rejects it. See the third case below.
 - **An app whose test compares `getIdentity()` with `toEqual`** and the stored fields only: the result now has `id` too.
 - **All other apps.** No action needed.
 
 ## Breaking changes
 
-**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
+**1. Replace `AnyType` with the type the value has.** `unknown` when you only pass the value on, a named type when you read it, and `any` only where you mean it (you write it yourself). If the project uses `@venizia/dev-configs`, `bun x devz codemod any-aliases --all` rewrites the imports of both names, the ones from `@venizia/ardor` and `@venizia/ardor-kernel` too, and lists what it cannot; replace those by hand. With `value: unknown`, reading `value.name` fails with "'value' is of type 'unknown'".
 
 ```diff
 -import type { AnyType } from '@venizia/ardor';
@@ -166,13 +199,37 @@ declare const aliased: TProduct;
 export const bag: Record<string, unknown> = aliased;
 ```
 
-**4. Read the fields of the stored user through `IAuthUser`.** A field you added yourself is `unknown`: check it before you use it. TypeScript reports that the old line reads a value of type `unknown`.
+**4. Read the fields of the stored user through `IAuthUser`.** A field you added yourself is not on the type: check it with `in` before you use it. TypeScript reports "Property 'tenant' does not exist on type 'IAuthUser'" for the old line.
 
 ```diff
 -const tenant = authService.getUser().tenant.toUpperCase();
-+const { tenant } = authService.getUser();
-+const label = typeof tenant === 'string' ? tenant.toUpperCase() : '';
++const user = authService.getUser();
++const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
 ```
+
+The user id and the `id` of `getIdentity` are a string or a number, and the user id is absent when nothing is stored. Convert them where a `string` is wanted.
+
+```diff
+-setViewer(authService.getUser().userId);
+-setViewer(identity.id);
++const { userId } = authService.getUser();
++if (userId !== undefined) {
++  setViewer(String(userId));
++}
++setViewer(String(identity.id));
+```
+
+An override of `getUser`, or a stub of the auth service, must return fields that fit `IAuthUser`: `userId` and `referenceId` a string or a number, `username` and `provider` a string. Extra fields, and an interface of your own, are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as `DefaultAuthService`.
+
+```diff
+-override getUser(): { userId: string | null; role: string } {
+-  return { userId: null, role: 'admin' };
++override getUser(): { userId: string; role: string } {
++  return { userId: 'u-1', role: 'admin' };
+ }
+```
+
+In a test, `expect(getUser()).toEqual({ userId: 3, tenant: 'acme' })` fails with TS2769, because `toEqual` takes the type of the value and `tenant` is not on it. Use `toMatchObject`, or `expect<unknown>(getUser())`.
 
 **5. Pass the query of `doRequest` as a plain object.** Its type was `any`; an `interface` value no longer fits, so spread it. TypeScript says "Index signature for type 'string' is missing in type 'IListOptions'".
 

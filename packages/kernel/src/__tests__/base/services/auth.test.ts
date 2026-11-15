@@ -110,14 +110,31 @@ describe('saveAuth and credential retrieval', () => {
     }
   });
 
-  test('getUser keeps a field it does not know as unknown data', () => {
+  test('getUser keeps a field it does not know', () => {
     const service = new DefaultAuthService();
     localStorage.setItem(
       LocalStorageKeys.KEY_AUTH_IDENTITY,
       JSON.stringify({ userId: 3, tenant: 'acme' }),
     );
 
-    expect(service.getUser()).toEqual({ userId: 3, tenant: 'acme' });
+    expect(service.getUser()).toMatchObject({ userId: 3, tenant: 'acme' });
+  });
+
+  test('an override of getUser may return an interface of its own that has the fields of IAuthUser', () => {
+    interface IStubUser {
+      userId: number;
+      role: string;
+    }
+
+    class StubAuthService extends DefaultAuthService {
+      override getUser(): IStubUser {
+        return { userId: 7, role: 'admin' };
+      }
+    }
+
+    const service: DefaultAuthService = new StubAuthService();
+
+    expect(service.getUser()).toMatchObject({ userId: 7, role: 'admin' });
   });
 
   test('saveAuth applies default empty strings when optional identity parameters are omitted', () => {

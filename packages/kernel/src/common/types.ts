@@ -114,14 +114,13 @@ export interface ICustomParams {
 
 /**
  * The identity `saveAuth` stores and `getUser` reads back: every field is absent when nothing is
- * stored. Any other field of a stored identity is `unknown` until the code that reads it narrows it.
+ * stored. It has no index signature, so an interface of your own that has these fields fits it.
  */
 export interface IAuthUser {
   userId?: IdType;
   username?: string;
   referenceId?: IdType;
   provider?: string;
-  [field: string]: unknown;
 }
 
 /** What `login` read from the sign-in response. `roles` are names. */
