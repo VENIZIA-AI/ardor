@@ -8,7 +8,7 @@ tags: [architecture, network, transport, fetch, kernel, ignis]
 
 # Network layer
 
-Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks `DefaultNetworkRequestService` for request props (`getRequestProps`), then calls `doRequest`, which joins the URL through a `NodeFetchNetworkRequest` and hands the request to its fetcher, which calls the platform `fetch`. The transport is the IGNIS one (`@venizia/ignis-helpers/core`); ARDOR keeps no fork of it. There is no second transport. This concept covers the layer from `doRequest` down. What sits on top has its own home: the headers in [Header protocol](/architecture/header-protocol.md), the filter mapping in [Data provider pipeline](/architecture/data-provider-pipeline.md), the one 401 retry in [Auth recovery](/architecture/auth-recovery.md) and a non-2xx or failed request in [Error flow](/architecture/error-flow.md).
+Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks `DefaultNetworkRequestService` for request props (`getRequestProps`), then calls `doRequest`, which joins the URL through a `NodeFetchNetworkRequest` and hands the request to its fetcher, which calls the platform `fetch`. The transport is the IGNIS one (`@venizia/ignis-helpers/core`); ARDOR keeps no fork of it. `doRequest` has one transport, the IGNIS one; the repositories send through IGNIS's `HttpDataSource` (see [Two clients](#two-clients)). This concept covers the layer from `doRequest` down. What sits on top has its own home: the headers in [Header protocol](/architecture/header-protocol.md), the filter mapping in [Data provider pipeline](/architecture/data-provider-pipeline.md), the one 401 retry in [Auth recovery](/architecture/auth-recovery.md) and a non-2xx or failed request in [Error flow](/architecture/error-flow.md).
 
 ## The pieces
 
@@ -21,7 +21,7 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 ## Two clients
 
-`doRequest` sends with `NodeFetchNetworkRequest`; the repositories send through IGNIS's `HttpDataSource` (`@venizia/ignis-connectors`, an optional peer allowed only on the `./repository` sub-path by the clean-install claims in `scripts/checks/clean-install/manifest.ts`). Building `doRequest` on the data source would make that peer required for every app, so both clients stay until IGNIS's transport core (path guard, send with retry, `readJsonBody`) is in a required peer. `network-request-parity.test.ts` pins what `doRequest` sends and reads today, so a later swap can be checked against it. The differences a swap would have to work around: `x-request-count` is refused by the data source, the path-guard error text and status differ, null query values and a body on a GET are sent, the default content type differs, and the data source refuses an empty or relative base URL.
+`doRequest` sends with `NodeFetchNetworkRequest`; the repositories send through IGNIS's `HttpDataSource` (`@venizia/ignis-connectors`, an optional peer allowed only on the `./repository` sub-path by the clean-install claims in `scripts/checks/clean-install/manifest.ts`). Building `doRequest` on the data source would make that peer required for every app, so both clients stay until IGNIS's transport core (path guard, send with retry, `readJsonBody`) is in a required peer. `network-request-parity.test.ts` pins what `doRequest` sends and reads today, so a later swap can be checked against it. The differences a swap would have to work around: `x-request-count` is refused by the data source, the path-guard error text and status differ, null query values and a body on a GET are sent, the default content type differs, and a relative base URL works with the data source only where `location.origin` exists.
 
 ## Abort and timeout
 
@@ -59,13 +59,13 @@ After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/
 
 - A 204 returns `{ data: {} }`.
 - A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`; the public `ResponseReader.readFilename({ headers })` returns the same name and is the one parser) and `contentDisposition` when present.
-- Anything else goes through `rs.json()` and then `convertResponse`, which reads the totals described in [Header protocol](/architecture/header-protocol.md).
+- Anything else is read as text by `ResponseReader.readBody`: an empty body is `null`; a JSON content type is parsed, and a body that claims JSON and is not is a `502` `ApplicationError` that names the type and the length, never the content; any other textual type (`text/plain`, `text/csv`, XML) is returned as its text. `convertResponse` then reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
-The textual pattern admits `text/*` and XML, but those bodies are still parsed with `rs.json()`, so a 2xx `text/plain` or XML response rejects with a `SyntaxError`. A 2xx response with no `content-type` comes back as a `Blob`.
+A 2xx response with no `content-type` comes back as a `Blob`.
 
 ## Replacing the transport
 
-Three seams, widest first. A provider subclass overrides `request()` - one override moves every method and `send()`; [ipc-data-provider](/examples/ipc-data-provider.md) walks the older, per-method form. A `DefaultRestDataProvider` subclass can assign its own `DefaultNetworkRequestService` subclass to the protected `networkService` and override `doRequest`. Narrowest, a service subclass can assign the protected `networkRequest` an IGNIS `NodeFetchNetworkRequest` (or a `BaseNetworkRequest<'node-fetch'>` with its own fetcher). That fetcher must resolve a Fetch `Response`: `doRequest` reads `status`, `headers.get`, `json()` and `blob()` from it.
+Three seams, widest first. A provider subclass overrides `request()` - one override moves every method and `send()`; [ipc-data-provider](/examples/ipc-data-provider.md) walks the older, per-method form. A `DefaultRestDataProvider` subclass can assign its own `DefaultNetworkRequestService` subclass to the protected `networkService` and override `doRequest`. Narrowest, a service subclass can assign the protected `networkRequest` an IGNIS `NodeFetchNetworkRequest` (or a `BaseNetworkRequest<'node-fetch'>` with its own fetcher). That fetcher must resolve a Fetch `Response`: `doRequest` reads `status`, `headers.get`, `text()` and `blob()` from it.
 
 ## The socket client
 
