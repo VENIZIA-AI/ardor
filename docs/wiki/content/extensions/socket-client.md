@@ -79,17 +79,20 @@ Notice three things:
 
 ## Connect at sign-in, disconnect at sign-out
 
-The auth provider's session hooks fire when a session starts (sign-in, a refreshed token, a user switch) and when it ends. Override them to drive the socket, and bind the provider in place of the default one:
+The auth provider's session hooks fire when a session starts (sign-in, a refreshed token, a user switch) and when it ends. Override them to drive the socket, and bind your provider under `CoreBindings.DEFAULT_AUTH_PROVIDER` in place of the default one; the application still binds only the options:
 
 ```ts
 import {
   BaseArdorApplication,
+  configuration,
   CoreBindings,
   DefaultAuthProvider,
   DefaultAuthService,
   type IApplicationInfo,
   type IDataProvider,
   inject,
+  type IRestDataProviderOptions,
+  provideOption,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 import { BindingScopes } from '@venizia/ignis-inversion';
@@ -123,14 +126,25 @@ export class SocketAuthProvider extends DefaultAuthProvider {
   }
 }
 
+@configuration()
+export class ShopConfiguration {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+  }
+
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: true };
+  }
+}
+
 export class Application extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'shop', version: '1.0.0', description: 'The shop admin' };
   }
 
   bindContext(): void {
-    this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/sign-in'] });
-    this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
       .toProvider(SocketAuthProvider)
       .setScope(BindingScopes.SINGLETON);
@@ -142,10 +156,10 @@ export class Application extends BaseArdorApplication {
 
 ## Listen in a component
 
-Resolve the service with `useService({ target })`, subscribe in `useEffect` and unsubscribe in its clean-up, with the same handler. A payload comes from the network, so the handler takes `unknown` and checks its shape before it uses it:
+Resolve the service with `Ardor.useService({ target })`, subscribe in `useEffect` and unsubscribe in its clean-up, with the same handler. A payload comes from the network, so the handler takes `unknown` and checks its shape before it uses it:
 
 ```tsx
-import { useService } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 import type { TSocketIOEventHandler } from '@venizia/ignis-helpers/socket-io/client';
 import { useEffect, useState } from 'react';
 
@@ -172,7 +186,7 @@ const isOrderCreated = (data: unknown): data is IOrderCreated => {
 };
 
 export const OrderFeed = () => {
-  const socket = useService({ target: NotificationSocketService });
+  const socket = Ardor.useService({ target: NotificationSocketService });
   const [orders, setOrders] = useState<Array<IOrderCreated>>([]);
 
   useEffect(() => {
