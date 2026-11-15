@@ -13,6 +13,7 @@ import {
   RequestCountData,
   RequestMethods,
   RequestTypes,
+  type TRequestType,
 } from '@/common';
 
 /**
@@ -561,6 +562,22 @@ describe('the 2xx bodies as they are read today', () => {
     expect(json).toEqual({ data: null, count: undefined });
     expect(text).toEqual({ data: null, count: undefined });
   });
+
+  test.each<TRequestType>([RequestTypes.GET_LIST, RequestTypes.GET_MANY_REFERENCE])(
+    'an empty 2xx body of a %s is no row: data [] and a total of 0, never [null]',
+    async (type) => {
+      handler = () =>
+        new Response('', { status: 200, headers: { 'content-type': 'application/json' } });
+
+      const response = await createService({ isOpen: true }).doRequest({
+        paths: ['items'],
+        method: RequestMethods.GET,
+        type,
+      });
+
+      expect(response).toMatchObject({ data: [], total: 0 });
+    },
+  );
 
   test('a 204 answers { data: {} } whatever the request type, with no total', async () => {
     handler = () => new Response(null, { status: 204 });

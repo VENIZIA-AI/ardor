@@ -151,7 +151,7 @@ export const AnalyticsFeature: TFeature = Features.define({
 });
 ```
 
-A route is open to anyone who types its path, signed in or not, unless `requireAuth` is set. To restrict one, give it `access`: the route then renders only for a signed-in user whom the `canAccess` of the [permission provider](../../references/permission) allows for that resource and action.
+A route is open to anyone who types its path, signed in or not, unless `requireAuth` is set. To restrict one, give it `access`: the route then renders only for a signed-in user whom the `canAccess` of the [permission provider](../../references/permission) allows for that resource and action. The application fails at mount, naming the route, when it has an `access` route and sign-in is off or no permission provider is bound: nothing could answer, and the route would be open.
 
 ```tsx
 import { Features, type TFeature } from '@venizia/ardor';

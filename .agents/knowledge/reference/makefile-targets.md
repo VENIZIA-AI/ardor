@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**79 targets.**
+**80 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -83,6 +83,7 @@ generated:
 | `make test-admin` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-all` | `test-kernel test-react test-admin test-ardor` | test-<pkg> for every package; one with no suite says so and passes. |
 | `make test-ardor` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-examples` | - | Run the test script of every example. Needs a build. |
 | `make test-kernel` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-react` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-scripts` | - | Run the repository gate scripts' own regression tests. |

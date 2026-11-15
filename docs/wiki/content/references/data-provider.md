@@ -199,7 +199,7 @@ Each react-admin method maps to one HTTP call:
 
 ## Abort a request
 
-The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none.
+The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none. One caveat of react-admin: its batched `getMany` (the references that several fields ask for in one tick) passes the signal of one caller for the whole batch, so unmounting one `ReferenceField` can abort the query of a sibling.
 
 To abort a request you send yourself, pass a `signal` in `ISendParams`:
 
