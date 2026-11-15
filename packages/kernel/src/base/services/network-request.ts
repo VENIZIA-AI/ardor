@@ -422,6 +422,41 @@ export class DefaultNetworkRequestService extends BaseService {
     return sent.userId !== undefined && now.userId === sent.userId && !!now.token;
   }
 
+  /** `task` settles as it does, or the wait rejects with the reason of `signal` once it aborts; the task itself is not cancelled. */
+  private static async untilAborted<TResult>(opts: {
+    task: Promise<TResult>;
+    signal?: AbortSignal;
+  }): Promise<TResult> {
+    const { task, signal } = opts;
+
+    if (!signal) {
+      return task;
+    }
+
+    let onAbort: (() => void) | undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      onAbort = () => reject(signal.reason);
+
+      if (signal.aborted) {
+        onAbort();
+
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+
+    try {
+      const settled = await Promise.race([task, aborted]);
+
+      return settled;
+    } finally {
+      if (onAbort) {
+        signal.removeEventListener('abort', onAbort);
+      }
+    }
+  }
+
   /**
    * Whether the 401 of a request that `sent` is a session change for the caller: the user who sent is gone and
    * either the request was sent again since (`isRetried`) or another session is signed in now. A refresh that
@@ -776,7 +811,11 @@ export class DefaultNetworkRequestService extends BaseService {
       let isRefreshed = change === true;
 
       if (change === undefined) {
-        const refreshed = await this.refresh();
+        // The wait ends with this request's abort; the refresh itself keeps running for the others.
+        const refreshed = await DefaultNetworkRequestService.untilAborted({
+          task: this.refresh(),
+          signal,
+        });
         isRefreshed = refreshed;
       }
 
