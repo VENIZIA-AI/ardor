@@ -429,6 +429,35 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     expect(registry.getDiscoveredArtifacts()).toContain(MockAuth);
   });
 
+  test('throws for two different classes that carry one name and pin one key', async () => {
+    const declareFirst = () => {
+      @service({ binding: authKey })
+      class SameName {
+        readonly first = 1;
+      }
+
+      return SameName;
+    };
+
+    const declareSecond = () => {
+      @service({ binding: authKey })
+      class SameName {
+        readonly second = 2;
+      }
+
+      return SameName;
+    };
+
+    declareFirst();
+    declareSecond();
+
+    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+
+    expect(result).toMatchObject({
+      message: expect.stringMatching(/'services\.auth'.*SameName.*SameName/),
+    });
+  });
+
   // A hot reload evaluates the module again: a new class, the same name and the same key.
   test('accepts a class declared again under its own name, and binds the later one', async () => {
     const declare = () => {
@@ -500,6 +529,35 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
     const result = await RejectionHelper.rejectionOf({ task: application.start() });
 
     expect(result).toMatchObject({ message: expect.stringMatching(/'services\.ByHand'.*ByHand/) });
+  });
+
+  test('throws when a discovered class of the same name as a locked by-hand one would replace it', async () => {
+    const declare = () => {
+      @service({ binding: { namespace: 'services', key: 'auth' } })
+      class Same {
+        readonly discovered = true;
+      }
+
+      return Same;
+    };
+
+    declare();
+
+    class Same {
+      readonly byHand = true;
+    }
+
+    const application = new TestApplication();
+    application.service(Same, {
+      binding: { namespace: 'services', key: 'auth' },
+      allowOverride: false,
+    });
+
+    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+
+    expect(result).toMatchObject({
+      message: expect.stringMatching(/'services\.auth' is held by Same/),
+    });
   });
 
   test('throws when a discovered class would replace a by-hand registration declared allowOverride false', async () => {

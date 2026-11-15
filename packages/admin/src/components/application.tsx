@@ -16,6 +16,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { Outlet, Route } from 'react-router-dom';
 
 import { type TArdorRoute, type TFeature, Features } from '@/features/feature';
+import { getError } from '@venizia/ignis-inversion';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -78,6 +79,37 @@ const renderRoute = (opts: { route: TArdorRoute }) => {
       }
     />
   );
+};
+
+/**
+ * A route with `access` is open when nothing can answer it: react-admin treats a missing auth provider as
+ * everyone signed in, and a provider with no `canAccess` allows every page. Failing at mount keeps the route closed.
+ */
+const assertAccessRoutesCanBeChecked = (opts: {
+  routes: Array<TArdorRoute>;
+  authProvider?: { canAccess?: unknown };
+}): void => {
+  const { routes, authProvider } = opts;
+
+  for (const route of routes) {
+    if (!route.access) {
+      continue;
+    }
+
+    const name = route.path ?? route.id;
+
+    if (!authProvider) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but sign-in is off, so nobody is asked who may open it | Turn sign-in on, or remove access from the route`,
+      });
+    }
+
+    if (!authProvider.canAccess) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but no permission provider is bound, so every signed-in user would pass | Bind CoreBindings.PERMISSION_PROVIDER (RolePermissionProvider, or your own), or remove access from the route`,
+      });
+    }
+  }
 };
 
 /**
@@ -174,6 +206,8 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
   const providers = React.useMemo(() => {
     return ApplicationProviders.resolve({ container });
   }, [container]);
+
+  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: providers.authProvider });
 
   // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
   // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not) and when

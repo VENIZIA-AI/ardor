@@ -716,6 +716,36 @@ describe('ArdorApplication route access', () => {
     expect(canAccess).toHaveBeenCalledTimes(0);
   });
 
+  test('a route with access fails at mount when sign-in is off, naming the route', () => {
+    expect(() =>
+      renderRoute({
+        container: createContainer({ load: () => Promise.resolve({}), withAuthProvider: false }),
+        routes: [
+          {
+            path: '/admin-only',
+            element: <AdminPage />,
+            access: { resource: 'settings', action: 'edit' },
+          },
+        ],
+      }),
+    ).toThrow(/'\/admin-only'.*sign-in/);
+  });
+
+  test('a route with access fails at mount when no permission provider is bound, naming the route', () => {
+    expect(() =>
+      renderRoute({
+        container: createContainer({ load: () => Promise.resolve({}) }),
+        routes: [
+          {
+            path: '/admin-only',
+            element: <AdminPage />,
+            access: { resource: 'settings', action: 'edit' },
+          },
+        ],
+      }),
+    ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
+  });
+
   test('guards a route that gives a Component, and a route of a feature', async () => {
     const canAccess = mock((_params: { resource: string; action: string }) => denied());
     const access = { resource: 'settings', action: 'edit' };
