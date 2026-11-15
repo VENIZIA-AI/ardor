@@ -4,7 +4,7 @@ import { LocalStorageKeys } from '@/common';
 
 /** Checks the `IApplicationInfo` that `getAppInfo()` returned, so `start()` rejects a bad one at boot. */
 export class ApplicationInfoGuard {
-  /** Throws a coded error when `name` is not a non-blank string, `version` is not a string, or `id` is not a valid scope id. */
+  /** Throws an `ApplicationError` when `name` is not a non-blank string, `version` is not a string, or `id` is not a valid scope id. */
   static assert(opts: { info: unknown }): void {
     const { info } = opts;
 

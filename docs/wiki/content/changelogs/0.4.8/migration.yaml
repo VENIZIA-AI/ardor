@@ -351,7 +351,7 @@ injectable-removed:
   data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'
 
 boot-validates-configuration:
-  symbols: [IApplicationInfo.name]
+  symbols: [IApplicationInfo.name, BaseArdorApplication.postConfigure]
   upgrade:
     before: |-
       getAppInfo(): IApplicationInfo {
@@ -363,8 +363,8 @@ boot-validates-configuration:
       }
   downgrade:
     steps:
-      - Pin the ARDOR packages to 0.4.7 or earlier, which accept any name at start(). A name you added to pass the check can stay.
-  data: Nothing stored.
+      - Pin the ARDOR packages to 0.4.7 or earlier, which accept any name at start() and build the providers at the first render. A name you added to pass the check can stay.
+  data: 'Nothing stored. An app whose providers cannot be built, for example one with no REST_DATA_PROVIDER_OPTIONS, now fails at start() with the key to bind, no longer at the first render. A BaseArdorApplication subclass that overrides postConfigure() must call super.postConfigure(), which runs that check.'
 
 runtime-config-get-required:
   symbols: [RuntimeConfig.get]
