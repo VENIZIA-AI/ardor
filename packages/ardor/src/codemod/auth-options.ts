@@ -166,7 +166,8 @@ export class AuthOptionsTransform {
         ts.isPropertyAccessExpression(node.expression.expression.expression) &&
         node.expression.expression.expression.name.text === 'bind'
       ) {
-        const [binding] = node.expression.expression.arguments;
+        const bindCall = node.expression.expression;
+        const [binding] = bindCall.arguments;
         const literal =
           binding === undefined ? undefined : CodemodSource.unwrap({ ts, node: binding });
         const key =
@@ -175,7 +176,11 @@ export class AuthOptionsTransform {
             : undefined;
 
         if (key !== undefined && isKey(key)) {
-          found.push({ value: node.arguments[0], anchor: node });
+          found.push({
+            value: node.arguments[0],
+            anchor: node,
+            declaredType: bindCall.typeArguments?.[0],
+          });
         }
       }
 

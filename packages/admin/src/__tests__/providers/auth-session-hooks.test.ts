@@ -310,6 +310,37 @@ describe('onSessionStarted', () => {
   });
 });
 
+describe('another user who signs in over the one signed in', () => {
+  test('the first session ends before the second starts, and what the first stored is removed', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+    localStorage.setItem('@app/store/draft', 'alice draft');
+    sessionStorage.setItem('@app/store/tab', 'alice tab');
+    hooks.events = [];
+    api.signIn = { userId: 8, token: { value: 'jwt-bob', type: 'Bearer' }, roles: [] };
+
+    await signIn(provider);
+
+    expect(
+      hooks.events.filter((event) => event.endsWith(':begin') || event.startsWith('cleared')),
+    ).toEqual(['cleared:external', 'started:begin']);
+    expect(localStorage.getItem('@app/store/draft')).toBeNull();
+    expect(sessionStorage.getItem('@app/store/tab')).toBeNull();
+  });
+
+  test('the same user who signs in again keeps what was stored', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+    localStorage.setItem('@app/store/draft', 'alice draft');
+    api.signIn = { userId: 7, token: { value: 'jwt-2', type: 'Bearer' }, roles: [] };
+
+    await signIn(provider);
+
+    expect(hooks.cleared).toEqual([]);
+    expect(localStorage.getItem('@app/store/draft')).toBe('alice draft');
+  });
+});
+
 describe('onSessionCleared', () => {
   test('logout clears the store first, then calls the hook with the reason logout, once', async () => {
     const provider = buildProvider();
