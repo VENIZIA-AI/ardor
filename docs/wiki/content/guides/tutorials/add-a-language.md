@@ -75,13 +75,13 @@ A catalogue lists only what it adds or changes. ARDOR's `englishMessages` (`pack
 
 ## 2. Translate messages in UI components
 
-Call the `useTranslate` hook from `@venizia/ardor` to read messages inside React components:
+Call the `useTranslate` hook from the `Ardor` namespace of `@venizia/ardor` to read messages inside React components:
 
 ```tsx
-import { useTranslate } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export const DashboardHeader = () => {
-  const translate = useTranslate();
+  const translate = Ardor.useTranslate();
 
   return (
     <div>
@@ -93,7 +93,7 @@ export const DashboardHeader = () => {
 };
 ```
 
-`useTranslate()` already returns `TUseTranslateFn`, so a key is checked at compile time without an annotation. With no i18n provider mounted, ra-core's default provider answers.
+`Ardor.useTranslate()` already returns `TUseTranslateFn`, so a key is checked at compile time without an annotation. With no i18n provider mounted, ra-core's default provider answers.
 
 ## 3. Type custom keys with module augmentation
 
@@ -169,24 +169,19 @@ Three hooks synchronize locale changes across the application:
 Place `useHtmlLang` and `useRequestHeaderLocale` in a root layout component, and use `useDocumentTitle` in screen components. Pass the layout component to the `layout` prop of `ArdorApplication` (see [Application](../core-concepts/application)):
 
 ```tsx
-import {
-  useDocumentTitle,
-  useHtmlLang,
-  useRequestHeaderLocale,
-  useTranslate,
-} from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 import type { CoreLayoutProps } from 'ra-core';
 
 export const AdminLayout = ({ children }: CoreLayoutProps) => {
-  useHtmlLang();
-  useRequestHeaderLocale();
+  Ardor.useHtmlLang();
+  Ardor.useRequestHeaderLocale();
   return <div className="admin-container">{children}</div>;
 };
 
 export const ProductsPage = () => {
-  const translate = useTranslate();
+  const translate = Ardor.useTranslate();
 
-  useDocumentTitle({
+  Ardor.useDocumentTitle({
     title: translate('app.products.title'),
     appTitle: translate('app.title'),
     separator: ' - ',
