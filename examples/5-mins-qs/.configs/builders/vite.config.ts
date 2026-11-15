@@ -11,13 +11,13 @@ export default defineConfig({
   build: {
     rolldownOptions: {
       output: {
-        // React, react-admin and the router weigh about 500 KB before any application code. Two
-        // vendor chunks keep the application's own chunk small and cacheable across a deploy.
+        // Runs each module after the modules it imports: a split chunk can otherwise run a DI package
+        // before reflect-metadata, and the built app fails with `Reflect.getMetadata is not a function`.
+        strictExecutionOrder: true,
+        // React gets a chunk of its own. A catch-all `vendor` group would put the libraries of lazy
+        // routes into a chunk the first screen loads.
         codeSplitting: {
-          groups: [
-            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
-            { name: 'vendor', test: /node_modules/ },
-          ],
+          groups: [{ name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ }],
         },
       },
     },

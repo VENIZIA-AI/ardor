@@ -86,7 +86,6 @@ export class AdminConfiguration {
       kind: 'code',
       body: `import 'reflect-metadata';
 
-import { configureStore } from '@reduxjs/toolkit';
 import { ArdorApplication } from '@venizia/ardor';
 import { createRoot } from 'react-dom/client';
 
@@ -94,19 +93,11 @@ import { Application } from '#src/application';
 import { Home } from '#src/pages/home';
 
 const application = new Application();
-const store = configureStore({
-  reducer: { app: (state: { ready: boolean } = { ready: true }) => state },
-});
 
 await application.start();
 
 createRoot(document.getElementById('root')!).render(
-  <ArdorApplication
-    container={application}
-    reduxStore={store}
-    suspense={<p>Loading</p>}
-    dashboard={Home}
-  />,
+  <ArdorApplication container={application} suspense={<p>Loading</p>} dashboard={Home} />,
 );`,
       note: 'The mount point of the same preset, without its stylesheet import. <a href="/guides/core-concepts/application">Application</a>',
     },
@@ -137,7 +128,7 @@ createRoot(document.getElementById('root')!).render(
     {
       name: 'di',
       title: 'Dependency injection in the browser',
-      text: 'The application extends the IGNIS container. Bindings, @inject and useInjectable by key or class.',
+      text: 'The application extends the IGNIS container. Stereotyped classes, @inject, and Ardor.useService({ target }) per namespace.',
       href: '/guides/core-concepts/dependency-injection',
     },
     {
@@ -186,7 +177,7 @@ createRoot(document.getElementById('root')!).render(
   fitUse: [
     'An enterprise admin panel that needs a clean IoC architecture',
     'An application that pairs react-admin with an IGNIS backend',
-    'A team that wants DI in React through useInjectable',
+    'A team that wants DI in React, resolved by class (Ardor.useService)',
     'A typed REST data provider, token refresh and i18n',
   ],
   fitNot: [

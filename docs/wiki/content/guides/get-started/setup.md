@@ -84,10 +84,21 @@ ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires l
 
 ## Step 5: Verify Your Setup
 
-Check that TypeScript compiles without errors and that Vite produces a production build:
+The `react-ts` template builds with `tsc -b && vite build`. ARDOR type-checks with `bun check`, so change the `build` script in `package.json` to `vite build` and add a `typecheck` script:
+
+```json
+{
+  "scripts": {
+    "typecheck": "bun check --no-pretty -p tsconfig.app.json",
+    "build": "vite build"
+  }
+}
+```
+
+Then check that the types are sound and that Vite produces a production build:
 
 ```bash
-bun check --no-pretty -p tsconfig.app.json
+bun run typecheck
 bun run build
 ```
 

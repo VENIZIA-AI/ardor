@@ -30,7 +30,7 @@ export default defineConfig({
 
 | Measure | Without the flag | With the flag |
 |---|---|---|
-| JavaScript chunks (`examples/5-mins-qs`, the preset's two groups) | 4 | 4 |
+| JavaScript chunks (the quickstart app, with a `react` and a `vendor` group) | 4 | 4 |
 | JavaScript, raw | 593,726 B | 609,757 B (+2.7%) |
 | JavaScript, gzip | 185,386 B | 191,757 B (+3.4%) |
 
@@ -103,7 +103,7 @@ export const output = {
 };
 ```
 
-**What you give up without it.** The modules of the third-party packages that the entry imports sit in the entry chunk, with your application code, so a deploy that changes your code makes the browser fetch them again. In `examples/5-mins-qs`, which sets its own `vendor` group (test `/node_modules/`, no `minShareCount`), the build is an 11 KB `index` chunk and a 362 KB `vendor` chunk; without it, one 373 KB `index` chunk, under Vite's 500 KB warning. The cost of the lost deploy cache was not measured on the real apps. The opt-in costs the requests in the table.
+**What you give up without it.** The modules of the third-party packages that the entry imports sit in the entry chunk, with your application code, so a deploy that changes your code makes the browser fetch them again. The quickstart app, measured with a `vendor` group (test `/node_modules/`, no `minShareCount`), builds an 11 KB `index` chunk and a 362 KB `vendor` chunk; without the group, one 373 KB `index` chunk, under Vite's 500 KB warning. The cost of the lost deploy cache was not measured on the real apps. The opt-in costs the requests in the table.
 
 **What was measured, and what was not.** One run for each cell, and only on apps 5 and 6 for the `react`-only and `entriesAware` rows; the other four apps have the `minShareCount: 2` row only (first screen +7% to +18% gzip against their own configs). The boot harness was not run again for the last two shapes: only the login page was rendered. A test in the ARDOR repository pins the direction on a fixture of one eager entry and six lazy routes: with a catch-all `vendor` group the first screen holds every lazy library; without it, and with the opt-in above, it holds none of them and every library is still built. That fixture did not reproduce the size of the real apps, so the numbers above are the ones to rely on. Measure what the first screen loads in a real browser (`vite preview`, not `vite dev`). The flag and the groups are separate choices: the flag orders modules, and the groups decide the chunk shapes.
 
@@ -158,16 +158,55 @@ If the file cannot be resolved, the cause goes to the terminal and the response 
 
 ### Read it in the app
 
+Check `response.ok`, and narrow the JSON before you use it: `response.json()` answers `any`, which is a claim and not a check. `readBuildInfo` takes the base of the app (`import.meta.env.BASE_URL`), so the file is found when the app is not at the root:
+
 ```ts
-import type { IBuildInfoFile } from '@venizia/ardor';
+import { getError } from '@venizia/ignis-inversion';
 
-const response = await fetch('/build-info.json');
-const info: IBuildInfoFile = await response.json();
+const BUILD_INFO_PATH = 'build-info.json';
 
-console.log(`${info.service} ${info.version} (${info.commit} on ${info.branch})`);
+export interface IBuildInfoView {
+  version: string;
+  commit: string;
+  builtAt: string;
+}
+
+const readText = (opts: { source: object; key: string }): string => {
+  const value: unknown = Reflect.get(opts.source, opts.key);
+
+  if (typeof value !== 'string') {
+    throw getError({
+      message: `[buildInfo] The field '${opts.key}' of ${BUILD_INFO_PATH} is not a string`,
+    });
+  }
+
+  return value;
+};
+
+export const readBuildInfo = async (opts: { baseUrl: string }): Promise<IBuildInfoView> => {
+  const response = await fetch(`${opts.baseUrl}${BUILD_INFO_PATH}`);
+
+  if (!response.ok) {
+    throw getError({
+      message: `[buildInfo] ${BUILD_INFO_PATH} answered ${response.status}`,
+    });
+  }
+
+  const body: unknown = await response.json();
+
+  if (typeof body !== 'object' || body === null) {
+    throw getError({ message: `[buildInfo] ${BUILD_INFO_PATH} is not a JSON object` });
+  }
+
+  return {
+    version: readText({ source: body, key: 'version' }),
+    commit: readText({ source: body, key: 'commit' }),
+    builtAt: readText({ source: body, key: 'builtAt' }),
+  };
+};
 ```
 
-Serve it under the base of your app (`import.meta.env.BASE_URL`) when the app is not at the root. An About page shows `version`, `commit`, `builtAt` and the `frameworks` list; it reads the file at run time, so one image still serves every environment.
+Call it as `readBuildInfo({ baseUrl: import.meta.env.BASE_URL })`. An About page shows `version`, `commit` and `builtAt`, and the `frameworks` list when you read that field the same way; it reads the file at run time, so one image still serves every environment.
 
 ## Next steps
 

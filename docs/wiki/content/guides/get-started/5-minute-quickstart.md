@@ -29,7 +29,7 @@ Create `src/repositories/product.repository.ts`:
 
 <<< @/../../../examples/5-mins-qs/src/repositories/product.repository.ts{ts}
 
-`src/repositories/product.repository.ts` provides typed data access for the `products` resource. `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })` injects `ApiDataSource` into the constructor, and `RepositoryTypes.REMOTE` specifies that the repository operates without an in-memory model. `countExpensive` queries the API with a filter and reads the total count from the `Content-Range` response header.
+`src/repositories/product.repository.ts` provides typed data access for the `products` resource. `@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })` injects `ApiDataSource` into the constructor, and `RepositoryTypes.REMOTE` marks an `HttpRepository`, which has no model of its own: the server owns the data. `countExpensive` queries the API with a filter and reads the total count from the `Content-Range` response header.
 
 ## 3. The configuration
 
@@ -37,7 +37,7 @@ Create `src/configurations/admin.configuration.ts`:
 
 <<< @/../../../examples/5-mins-qs/src/configurations/admin.configuration.ts{ts}
 
-`src/configurations/admin.configuration.ts` declares the framework providers and options. Each `@provide()` method binds a service or provider as a singleton on first access, sharing a single data provider across react-admin, the authentication provider, and hooks. See [Configuration](../core-concepts/configuration) for how configuration classes and `@provide` work.
+`src/configurations/admin.configuration.ts` binds the options of the framework providers. `BaseArdorApplication` binds the providers themselves, each a singleton built on first use, so react-admin, the authentication provider and the hooks share one data provider. Each `@provideOption({ key })` method returns the options type of its key, and the auth options carry `use: true` because this app signs in. See [Configuration](../core-concepts/configuration).
 
 ## 4. The application
 
@@ -56,7 +56,7 @@ Create `src/pages/product-list.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/pages/product-list.tsx{tsx}
 
-`src/pages/product-list.tsx` renders the product listing from the page of products that `useListContext` holds (`data`, `total`, `isPending`), and logs out with `useLogout`. It resolves `ProductRepository` by class with `useRepository()` to fetch the expensive products count independently. `useTranslate()` localizes labels using keys registered in the configuration.
+`src/pages/product-list.tsx` renders the product listing from the page of products that `useListContext` holds (`data`, `total`, `isPending`), and logs out with `useLogout`. It resolves `ProductRepository` by class with `Ardor.useRepository({ target: ProductRepository })` to fetch the expensive products count independently, and `Ardor.useTranslate()` localizes labels using keys registered in the configuration. A failed count goes to the application logger (`Ardor.useApplicationLogger()`), never to `console`. `Ardor.useRepository` is the same function as `useRepository`; the `Ardor` namespace gathers every hook under one name, so a page imports one thing.
 
 Create `src/pages/login.tsx`:
 
@@ -70,7 +70,7 @@ Create `src/main.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/main.tsx{tsx}
 
-`src/main.tsx` starts the application container and mounts the React root. `reduxStore` is optional in `IApplication`; passed, it goes to the Redux provider. `await application.start()` binds the application, its info, the discovered classes and their `@provide` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
+`src/main.tsx` starts the application container and mounts the React root. It passes no store: `reduxStore` is optional, so pass one only when the app has Redux state. `await application.start()` binds the application, its info, the default providers, the discovered classes and their `@provideOption` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
 
 ## 7. Configure Vite
 
@@ -78,7 +78,7 @@ Replace the template's `vite.config.ts` at the project root with this one. `bun 
 
 <<< @/../../../examples/5-mins-qs/.configs/builders/vite.config.ts{ts}
 
-This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias, sets up proxy forwarding for `/api` to the stub API on port 3100, and configures vendor code splitting. Point the proxy at your own backend when you have one.
+This file configures Vite with `IgnisArtifactsVitePlugin` to discover decorated classes under `src/` at build time. It establishes the `@` path alias and forwards `/api` to the stub API on port 3100; point the proxy at your own backend when you have one. It also does what the preset does for the build (see [Vite setup](./vite-setup)): `strictExecutionOrder: true` runs each module after the modules it imports, which guards a production build against `Reflect.getMetadata is not a function`, and React gets a chunk of its own.
 
 ## 8. Run it
 
@@ -102,14 +102,14 @@ If you have your own IGNIS API, skip the stub and point the proxy in `vite.confi
 
 ## Your API is not this one
 
-- **No sign-in.** If your API requires no authentication, leave `DEFAULT_AUTH_PROVIDER` unbound, omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`. The admin runs with all pages public.
-- **A different sign-in path.** If your API signs in at a custom path or expects different credentials, set `paths.signIn` in `AUTH_PROVIDER_OPTIONS` and add the route to `noAuthPaths` in `REST_DATA_PROVIDER_OPTIONS`. Subclass `DefaultAuthProvider` and override `buildSignInBody` if you need custom request formatting.
+- **No sign-in.** If your API requires no authentication, bind `{ use: false }` for `AUTH_PROVIDER_OPTIONS` (or bind nothing: unbound means the same), omit `loginPage` on `ArdorApplication`, and configure `noAuthPathRegex: /./` on `REST_DATA_PROVIDER_OPTIONS`. The admin runs with all pages public.
+- **A different sign-in path.** If your API signs in at a custom path or expects different credentials, set `paths.signIn` in the auth options (`{ use: true, paths: { signIn } }`) and add the route to `noAuthPaths` in `REST_DATA_PROVIDER_OPTIONS`. Subclass `DefaultAuthProvider` and override `buildSignInBody` if you need custom request formatting (see [Add sign-in](../tutorials/add-sign-in#7-custom-sign-in-route-and-body)).
 
 For complete authentication options and contracts, see [Auth provider](../../references/auth-provider).
 
 ## What you built
 
-An ARDOR admin with a datasource, a repository, an application configuration that wires data and authentication providers, and a localized resource page. The application discovered its decorated classes through `AutoArtifacts`, and `ArdorApplication` mounted the UI with dependency injection intact. The project that [Create a project](create-a-project) generates is built the same way, plus Tailwind, an nginx image and runtime configuration.
+An ARDOR admin with a datasource, a repository, an application configuration that sets the options of the data, authentication and i18n providers, and a localized resource page. The application discovered its decorated classes through `AutoArtifacts`, and `ArdorApplication` mounted the UI with dependency injection intact. The project that [Create a project](create-a-project) generates is built the same way, plus Tailwind, an nginx image and runtime configuration.
 
 ## Next steps
 
