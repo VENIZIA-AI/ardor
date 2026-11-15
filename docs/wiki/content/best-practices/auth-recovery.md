@@ -230,6 +230,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery, // { refreshTokenPath: '/auth/token/refresh' }
       authService: this.authService, // the session of this application, with its keys
+      timeout: this.restDataProviderOptions.timeout, // without it the option has no effect
     });
   }
 }

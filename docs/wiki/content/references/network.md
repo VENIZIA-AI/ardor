@@ -156,7 +156,8 @@ export class ApiConfiguration {
 }
 ```
 
-- Each request, the refresh request included, gets its own `milliseconds`.
+- Each request of the data provider and of `doRequest`, the refresh request included, gets its own `milliseconds`. A repository request through an `HttpDataSource` does not.
+- A provider subclass that overrides `createNetworkService()` passes `timeout: this.restDataProviderOptions.timeout` to the service it builds, or the option has no effect.
 - A request that outlives it rejects with an `ApplicationError`: `statusCode` 504, `normalized.code` `NETWORK_TIMEOUT_CODE`, and a message naming the path and the milliseconds.
 - `milliseconds` must be a positive integer; any other value throws when the data provider is built, so `start()` fails.
 - The default is `{ use: false }`: no timeout.

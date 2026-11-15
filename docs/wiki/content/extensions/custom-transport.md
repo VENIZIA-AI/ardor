@@ -176,7 +176,7 @@ export class TransportDataProvider<
 What still comes from the base:
 
 - The `BaseProvider<IDataProvider<TResource>>` contract. The container resolves your subclass exactly as it resolves `DefaultRestDataProvider`; you override nothing on the provider side.
-- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
+- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers`, `authRecovery` and `timeout` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
 - `getRequestProps`, reached through `this.networkService`, which produces the `headers` and `body` for a request.
 - The filter mapping: the protected `buildListFilter({ params })` (a delegate of `ListFilterBuilder.build`) is shared by `getList` and `getManyReference`, and `getMany` builds its own with `ListFilterBuilder.extractQueryParams`. Keep it when you override a method, or re-use the same mapping.
 - `updateMany` and `deleteMany` read the affected ids from `result.data` (`toAffectedIds`), so a transport answers the affected rows, as the server does.
