@@ -76,6 +76,7 @@ export class HookRenames {
     'useRepository',
     'useRequestHeaderLocale',
     'useResizeEffect',
+    'useRoles',
     'useService',
     'useStoredState',
     'useTranslate',

@@ -209,7 +209,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (44)
+### `@venizia/ardor-admin` (45)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -252,13 +252,14 @@ generated:
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
+- `useRoles` const
 - `useTranslate` const
 - `useUntypedTranslate` const
 - `vietnameseMessages` const
 
 ## ardor
 
-### `@venizia/ardor` (197)
+### `@venizia/ardor` (198)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -446,6 +447,7 @@ generated:
 - `useRepository` function
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
+- `useRoles` const
 - `useService` function
 - `useStoredState` const
 - `useTranslate` const
