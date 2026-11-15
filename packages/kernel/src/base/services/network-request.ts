@@ -386,6 +386,18 @@ export class DefaultNetworkRequestService extends BaseService {
     return now.userId === sent.userId && !!now.token;
   }
 
+  /**
+   * Whether the 401 of a request that `sent` is a session change for the caller: the user who sent is gone and
+   * either the request was sent again since (`isRetried`) or another session is signed in now. A refresh that
+   * failed and ended the session itself leaves nobody to protect, and its 401 stands.
+   */
+  private isSessionTaken(opts: { sent: ISentSession; isRetried: boolean }): boolean {
+    return (
+      this.readSessionChange({ sent: opts.sent }) === false &&
+      (opts.isRetried || this.readSession().token !== undefined)
+    );
+  }
+
   // --- Requests --------------------------------------------------------------------------------
 
   /**
@@ -437,7 +449,7 @@ export class DefaultNetworkRequestService extends BaseService {
         }
 
         return this.refresh().then((isRefreshed) => {
-          return sent && this.readSessionChange({ sent }) === false
+          return sent && this.isSessionTaken({ sent, isRetried: isRefreshed })
             ? Promise.reject(this.sessionChangedError())
             : isRefreshed;
         });
@@ -665,6 +677,7 @@ export class DefaultNetworkRequestService extends BaseService {
     };
 
     const sent = this.readSession();
+    let isRetried = false;
     let fetched = await sendOnce(headers);
 
     if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
@@ -683,7 +696,7 @@ export class DefaultNetworkRequestService extends BaseService {
       }
 
       // The session may have moved on while the refresh was in flight, or inside a `refreshToken` override.
-      if (this.readSessionChange({ sent }) === false) {
+      if (this.isSessionTaken({ sent, isRetried: isRefreshed })) {
         throw this.sessionChangedError();
       }
 
@@ -701,13 +714,18 @@ export class DefaultNetworkRequestService extends BaseService {
 
         const result = await sendOnce(retryHeaders);
         fetched = result;
+        isRetried = true;
       }
     }
 
     const status = fetched.status;
 
     // The retry may have been answered 401 after the user who sent it had gone too.
-    if (status === 401 && this.readSessionChange({ sent }) === false) {
+    if (
+      status === 401 &&
+      this.recovery.canRecover({ paths }) &&
+      this.isSessionTaken({ sent, isRetried })
+    ) {
       throw this.sessionChangedError();
     }
 

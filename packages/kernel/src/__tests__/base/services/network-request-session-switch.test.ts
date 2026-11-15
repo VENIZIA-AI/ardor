@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { HttpDataSource } from '@venizia/ignis-connectors/http';
-import { isApplicationError } from '@venizia/ignis-inversion';
+import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultAuthService } from '@/base/services/auth';
 import {
@@ -174,6 +174,61 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(requested.filter((entry) => entry.authorization === 'Bearer fresh')).toEqual([]);
+    });
+
+    describe('a refresh that fails and ends the session itself', () => {
+      class EndingService extends DefaultNetworkRequestService {
+        protected override refreshToken(): Promise<boolean> {
+          return Promise.reject(getError({ message: 'refresh refused' }));
+        }
+
+        protected override onAuthFailure(): Promise<void> {
+          authService.cleanUp();
+
+          return Promise.resolve();
+        }
+      }
+      const createEnding = () =>
+        new EndingService({
+          name: 'session-switch-ending',
+          baseUrl,
+          authRecovery: { refreshTokenPath: REFRESH_PATH },
+          authService,
+        });
+
+      test('through doRequest the 401 stands, so the provider sends the user to sign-in', async () => {
+        const error = await RejectionHelper.rejectionOf({ task: getItems(createEnding()) });
+
+        expect(isApplicationError(error)).toBe(true);
+        expect(codeOf(error)).not.toBe(SESSION_CHANGED_CODE);
+        expect(authService.getAuth()).toBeNull();
+      });
+
+      test('through the data source hooks the refresh answers false, not a session change', async () => {
+        const auth = createEnding().getDataSourceAuth();
+        const context = contextOf();
+
+        expect(auth.authTokenResolver(context)?.value).toBe('stale');
+        const isRefreshed = await auth.onUnauthorized(context);
+
+        expect(isRefreshed).toBe(false);
+      });
+    });
+
+    test('a 401 of a no-auth path is not a session change, whoever signed out meanwhile', async () => {
+      itemsHook = () => authService.cleanUp();
+      const service = new DefaultNetworkRequestService({
+        name: 'session-switch-no-auth',
+        baseUrl,
+        noAuthPaths: ['items'],
+        authRecovery: { refreshTokenPath: REFRESH_PATH },
+        authService,
+      });
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+
+      expect(isApplicationError(error)).toBe(true);
+      expect(codeOf(error)).not.toBe(SESSION_CHANGED_CODE);
     });
   });
 
