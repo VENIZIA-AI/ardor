@@ -35,6 +35,7 @@ interface IFixtureOptions {
   withBrokenAuthProvider?: boolean;
   features?: ReturnType<typeof Features.define>[];
   i18n?: object;
+  i18nOptions?: object;
 }
 
 const createApplication = (opts: IFixtureOptions = {}) => {
@@ -45,6 +46,7 @@ const createApplication = (opts: IFixtureOptions = {}) => {
     withBrokenAuthProvider = false,
     features,
     i18n = i18nProvider,
+    i18nOptions,
   } = opts;
 
   class FixtureApplication extends AbstractArdorApplication {
@@ -58,6 +60,10 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       }
 
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+
+      if (i18nOptions) {
+        this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue(i18nOptions);
+      }
 
       if (withAuthProvider || withBrokenAuthProvider) {
         this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
@@ -337,6 +343,28 @@ describe('assertArdorApplicationBoots messages', () => {
     const message = await messageOf(assertArdorApplicationBoots(application));
 
     expect(message).toContain("Message 'shared' (vi) is defined by both 'first' and 'second'");
+  });
+
+  test('checks the fallback locale too when it is not one of the offered locales', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { fr: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { fr: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages, fallback: { locale: 'fr' } };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain("Message 'shared' (fr) is defined by both 'first' and 'second'");
   });
 
   test('leaves the locale of the provider where it was', async () => {

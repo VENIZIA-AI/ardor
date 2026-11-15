@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { ArdorCli } from '@/codemod/ardor-cli';
@@ -181,6 +181,25 @@ describe('the codemod commands', () => {
         expect(errors.join('\n')).toContain('no such file or folder');
       });
 
+      test('a link planted at the temporary name is not written through: nothing is changed', async () => {
+        const elsewhere = makeScratch({ prefix: 'ardor-codemod-wave2-victim-' });
+
+        try {
+          writeFiles({ root: elsewhere, files: { 'victim.ts': 'export const victim = 1;\n' } });
+          symlinkSync(join(elsewhere, 'victim.ts'), join(root, `src/a.ts.${process.pid}.codemod`));
+
+          const result = await run(['--write']);
+
+          expect(result).toBe(1);
+          expect(readFileSync(join(elsewhere, 'victim.ts'), 'utf8')).toBe(
+            'export const victim = 1;\n',
+          );
+          expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(writer.old);
+        } finally {
+          rmSync(elsewhere, { recursive: true, force: true });
+        }
+      });
+
       test('a symlink is never written through, and --help prints the usage', async () => {
         const elsewhere = makeScratch({ prefix: 'ardor-codemod-wave2-target-' });
 
@@ -251,6 +270,73 @@ describe('the codemod commands', () => {
         '1 place found. Nothing was changed: default-providers only lists them.',
       ]);
       expect(errors).toEqual([]);
+    });
+
+    const seedOnly = (text: string) => {
+      writeFileSync(join(root, 'src/a.ts'), text);
+    };
+
+    test('lists a bare instantiate(DefaultAuthService) that a method returns', async () => {
+      seedOnly(
+        [
+          "import { CoreBindings, DefaultAuthService, provide } from '@venizia/ardor';",
+          'export class AuthConfiguration {',
+          '  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })',
+          '  authService() {',
+          '    return this.application.instantiate(DefaultAuthService);',
+          '  }',
+          '}',
+          '',
+        ].join('\n'),
+      );
+
+      const result = await run([]);
+
+      expect(result).toBe(0);
+      expect(output.join('\n')).toContain(
+        'src/a.ts:3  authService(): instantiate(DefaultAuthService)  delete this method',
+      );
+    });
+
+    test('does not say delete under a key of the application: deleting it would unbind that key', async () => {
+      seedOnly(
+        [
+          "import { DefaultAuthProvider, provide } from '@venizia/ardor';",
+          'export class AuthConfiguration {',
+          "  @provide({ key: 'my.auth' })",
+          '  authProvider() {',
+          '    return this.application.instantiate(DefaultAuthProvider).value(this.application);',
+          '  }',
+          '}',
+          '',
+        ].join('\n'),
+      );
+
+      await run([]);
+
+      expect(output.join('\n')).toContain('.toProvider(DefaultAuthProvider)');
+      expect(output.join('\n')).not.toContain('delete this method');
+    });
+
+    test("says to bind the auth options when the provider under the default key is the application's own", async () => {
+      seedOnly(
+        [
+          "import { CoreBindings, provide } from '@venizia/ardor';",
+          "import { CustomAuthProvider } from './custom';",
+          'export class AuthConfiguration {',
+          '  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })',
+          '  authProvider() {',
+          '    return this.application.instantiate(CustomAuthProvider).value(this.application);',
+          '  }',
+          '}',
+          '',
+        ].join('\n'),
+      );
+
+      await run([]);
+
+      expect(output.join('\n')).toContain('AUTH_PROVIDER_OPTIONS');
+      expect(output.join('\n')).toContain('{ use: true');
     });
 
     test('--check exits 1 when it finds a place, and 0 when it finds none', async () => {

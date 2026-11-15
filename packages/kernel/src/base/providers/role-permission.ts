@@ -116,6 +116,11 @@ export class RolePermissionProvider extends BaseHelper implements IPermissionPro
   async canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean> {
     const { resource, action } = opts;
 
+    // Roles can outlive the token (another tab, a corrupt key): without a token no one is signed in.
+    if (!this.authService.getAuth()?.value) {
+      return false;
+    }
+
     for (const role of this.authService.getRoles()) {
       const grants = this.grants.get(role) ?? [];
 
