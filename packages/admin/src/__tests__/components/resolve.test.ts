@@ -1,9 +1,12 @@
+import 'reflect-metadata';
+
 import { describe, expect, mock, test } from 'bun:test';
 
 import { ApplicationProviders } from '@/components/resolve';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings, type TAuthProviderOptions } from '@venizia/ardor-kernel';
+import { DefaultRestDataProvider } from '@/providers/rest-data';
 import { Container, getError } from '@venizia/ignis-inversion';
 
 const authProvider = {
@@ -125,6 +128,82 @@ describe('ApplicationProviders.resolve', () => {
         container: createContainer({ withAuthProvider: true, withI18nProvider: false }),
       }),
     ).toThrow(CoreBindings.DEFAULT_I18N_PROVIDER);
+  });
+});
+
+describe('ApplicationProviders.assertConfigured', () => {
+  const failureOf = (task: () => void): string => {
+    try {
+      task();
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+
+    return expect.unreachable('Expected assertConfigured to throw');
+  };
+
+  test('passes when every provider the application resolves is bound', () => {
+    expect(() => {
+      ApplicationProviders.assertConfigured({
+        container: createContainer({ withAuthProvider: true }),
+      });
+    }).not.toThrow();
+  });
+
+  test('passes without an auth provider unless one is required', () => {
+    const container = createContainer({ withAuthProvider: false });
+
+    expect(() => ApplicationProviders.assertConfigured({ container })).not.toThrow();
+    expect(
+      failureOf(() => ApplicationProviders.assertConfigured({ container, isAuthRequired: true })),
+    ).toContain(CoreBindings.DEFAULT_AUTH_PROVIDER);
+  });
+
+  test.each([
+    { name: 'data', key: CoreBindings.DEFAULT_REST_DATA_PROVIDER },
+    { name: 'i18n', key: CoreBindings.DEFAULT_I18N_PROVIDER },
+  ])('names the unbound $name provider key and says to bind it', ({ key }) => {
+    const container = new Container();
+
+    if (key !== CoreBindings.DEFAULT_REST_DATA_PROVIDER) {
+      container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    }
+
+    if (key !== CoreBindings.DEFAULT_I18N_PROVIDER) {
+      container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({});
+    }
+
+    const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
+
+    expect(message).toContain('[ApplicationProviders.assertConfigured]');
+    expect(message).toContain(key);
+    expect(message).toContain('Bind it');
+  });
+
+  test('names the unbound options key behind a provider, not only the provider', () => {
+    const container = createContainer({ withAuthProvider: false });
+    container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ name: 'a', version: '1' });
+    container
+      .bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(() => container.instantiate(DefaultRestDataProvider).value(container));
+
+    const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
+
+    expect(message).toContain(CoreBindings.REST_DATA_PROVIDER_OPTIONS);
+    expect(message).toContain(CoreBindings.DEFAULT_REST_DATA_PROVIDER);
+    expect(message).toContain('Bind it');
+  });
+
+  test('names the provider whose build failed for another reason', () => {
+    const container = createContainer({ withAuthProvider: false });
+    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(() => {
+      throw getError({ message: 'no messages' });
+    });
+
+    const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
+
+    expect(message).toContain(CoreBindings.DEFAULT_I18N_PROVIDER);
+    expect(message).toContain('no messages');
   });
 });
 

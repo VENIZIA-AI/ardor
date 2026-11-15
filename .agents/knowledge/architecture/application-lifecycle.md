@@ -29,7 +29,7 @@ async start() {
 The default `preConfigure()` in `AbstractArdorApplication` does seven things, in order:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE` to `this` - the container can hand itself out as a value.
-2. Binds `CoreBindings.APPLICATION_INFO` to whatever `this.getAppInfo()` returns. `getAppInfo()` is a `ValueOrPromise<IApplicationInfo>`: a promise is awaited, and the resolved value is what gets bound. Steps 3 to 7 run after that bind.
+2. Checks what `this.getAppInfo()` returns (`ApplicationInfoGuard`, `packages/kernel/src/base/applications/app-info.ts`: a non-blank string `name`, a string `version`, and an `id` that `LocalStorageKeys.scoped` accepts; a failure throws, so `start()` rejects) and binds it to `CoreBindings.APPLICATION_INFO`. `getAppInfo()` is a `ValueOrPromise<IApplicationInfo>`: a promise is awaited, and the resolved value is what gets bound. Steps 3 to 7 run after that bind.
 3. Calls `this.bindDefaults()`, a protected hook that is empty in the kernel. `BaseArdorApplication` overrides it to bind four SINGLETON defaults: `DEFAULT_AUTH_SERVICE` to `DefaultAuthService` (`toClass`), and `DEFAULT_REST_DATA_PROVIDER`, `DEFAULT_I18N_PROVIDER`, `DEFAULT_AUTH_PROVIDER` to `DefaultRestDataProvider`, `DefaultI18nProvider`, `DefaultAuthProvider` (`toProvider`, which instantiates the class and returns `value(container)`). The kernel cannot import those classes, so the override lives in admin.
 4. Calls `this.registerArtifacts()`, which binds every class a stereotype (`@service()`, `@component()` and the rest) discovered, under the key the stereotype recorded on the class, in the scope it declares (singleton by default). A discovered class with no recorded key is skipped. For a `@configuration()` class it also binds each `@provide({ key })` method under its key, as a lazy provider, SINGLETON unless the decorator passes a `scope` - the same as IGNIS's `bindProvidedKeys`.
 5. Calls `this.registerFeatures({ features: this.features() })`, which registers each feature (see [feature modules](/architecture/feature-modules.md)).
@@ -42,7 +42,7 @@ Because `bindContext()` can be async and its return value is what `preConfigure(
 
 ## postConfigure()
 
-A no-op by default. It exists as a hook for work that depends on bindings made in `bindContext()` - for example resolving a service and calling an async initializer on it. Because it runs after `preConfigure()` fully resolves, everything bound in `bindContext()` is safe to `get()` here.
+A no-op by default. It exists as a hook for work that depends on bindings made in `bindContext()` - for example resolving a service and calling an async initializer on it. Because it runs after `preConfigure()` fully resolves, everything bound in `bindContext()` is safe to `get()` here. `ApplicationProviders.assertConfigured({ container })` (`packages/admin/src/components/resolve.ts`) is meant to be called here: it resolves the providers `ArdorApplication` resolves and throws an error naming the unbound key, so a missing binding fails at boot.
 
 ## Registration by hand
 

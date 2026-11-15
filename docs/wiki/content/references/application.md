@@ -81,7 +81,7 @@ Signature: `preConfigure(): ValueOrPromise<void>`
 The exact execution order in `packages/kernel/src/base/applications/abstract.ts` is:
 
 1. Binds `CoreBindings.APPLICATION_INSTANCE`: `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this);`.
-2. Binds `CoreBindings.APPLICATION_INFO` with the value of `this.getAppInfo()`. When `getAppInfo()` returns a promise, `preConfigure()` waits for it, binds the resolved value, then runs steps 3 to 6.
+2. Checks the value of `this.getAppInfo()` (a non-blank string `name`, a string `version`, and an `id` that `LocalStorageKeys.scoped` accepts, when there is one; a failure throws, so `start()` rejects) and binds it under `CoreBindings.APPLICATION_INFO`. When `getAppInfo()` returns a promise, `preConfigure()` waits for it, checks and binds the resolved value, then runs steps 3 to 6.
 3. Invokes `this.registerArtifacts()`: discovers and binds stereotyped classes and `@provide` methods on `@configuration()` classes.
 4. Invokes `this.registerFeatures({ features: this.features() })`: validates features and binds `CoreBindings.FEATURES`.
 5. Iterates entries of `this.bindingList()`: binds each target under its literal key as `BindingScopes.SINGLETON`. A key held by a class declared `allowOverride: false` throws.
@@ -115,6 +115,26 @@ export class ShopApplication extends BaseArdorApplication {
   override async postConfigure(): Promise<void> {
     const settings = this.get<SettingsService>({ key: 'services.SettingsService' });
     await settings.load();
+  }
+}
+```
+
+#### Failing at boot
+
+`ApplicationProviders.assertConfigured({ container })` resolves the data, auth and i18n providers now, as `ArdorApplication` does when it mounts. A missing binding then fails in `postConfigure()`, with an error that names the binding key and says what to bind, and not in the middle of a render. Pass `isAuthRequired: true` when the application always binds a sign-in.
+
+```ts
+import { ApplicationProviders, BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
+
+export class ShopApplication extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'Shop admin' };
+  }
+
+  bindContext(): void {}
+
+  override postConfigure(): void {
+    ApplicationProviders.assertConfigured({ container: this });
   }
 }
 ```
@@ -182,7 +202,7 @@ Abstract method implemented by subclasses to register manual bindings or overrid
 
 Signature: `abstract getAppInfo(): ValueOrPromise<IApplicationInfo>`
 
-Abstract method returning application metadata, bound under `CoreBindings.APPLICATION_INFO`. When it returns a promise, `preConfigure()` binds the resolved value. `IApplicationInfo` in `packages/kernel/src/common/types.ts` specifies application metadata:
+Abstract method returning application metadata, bound under `CoreBindings.APPLICATION_INFO`. When it returns a promise, `preConfigure()` binds the resolved value. `start()` rejects when `name` is empty or only spaces, when `version` is not a string, or when `id` has anything but letters, digits, `.`, `_` and `-` (or is made of dots only). `IApplicationInfo` in `packages/kernel/src/common/types.ts` specifies application metadata:
 
 | Field | Type | Description |
 |---|---|---|

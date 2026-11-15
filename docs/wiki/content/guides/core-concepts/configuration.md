@@ -81,13 +81,15 @@ The kernel defines eleven keys in `CoreBindings` (`packages/kernel/src/common/ke
 During `application.start()`, `preConfigure()` in `packages/kernel/src/base/applications/abstract.ts` executes in exact order:
 
 1. `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this)` - Binds the application container instance itself. Bound directly by `preConfigure()`.
-2. `this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo())` - Binds the metadata object returned by `getAppInfo()`. Bound directly by `preConfigure()`.
+2. `this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(this.getAppInfo())` - Binds the metadata object returned by `getAppInfo()`, after checking it: `start()` rejects an empty `name`, a `version` that is not a string and an invalid `id`. Bound directly by `preConfigure()`.
 3. `this.registerArtifacts()` - Discovers all stereotyped classes (`@configuration()`, `@service()`, `@repository()`, `@datasource()`, `@component()`). Leaves out a class whose `when` returns `false`. Asserts that no two of the rest derive colliding binding keys. Binds each class under its derived key in the scope its stereotype declares (`SINGLETON` when none). Binds each method decorated with `@provide({ key })` as a lazy provider (singleton by default).
 4. `this.registerFeatures({ features: this.features() })` - Validates that feature names are unique and that all configuration classes listed by features were discovered. Binds `this.bind({ key: CoreBindings.FEATURES }).toValue(features)`. Bound directly by `preConfigure()`.
 5. `this.bindingList()` - Binds each class from the dictionary returned by `this.bindingList()` under its literal key as a singleton.
 6. `this.bindContext()` - Calls the application subclass's `bindContext()` method and returns its result.
 
 Because `preConfigure()` runs least explicit first and `bindContext()` runs last, any binding declared inside `bindContext()` overrides a binding declared in a `@configuration()` class. The order is stereotype, then features, then `bindingList()`, then `bindContext()`. A lower step never replaces a class declared `allowOverride: false`: `bindingList()` throws for it, and only `bindContext()` replaces it.
+
+A missing options binding does not show up in `start()`: it throws when `ArdorApplication` first builds the provider. To fail at boot instead, call `ApplicationProviders.assertConfigured({ container: this })` in `postConfigure()`. It resolves the data, auth and i18n providers and throws an error that names the missing binding key and says what to bind; see [Application](../../references/application#failing-at-boot).
 
 ## Other ways to bind
 
