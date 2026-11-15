@@ -209,8 +209,9 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (45)
+### `@venizia/ardor-admin` (49)
 
+- `AccessDeniedPage` const
 - `ApplicationProviders` class
 - `ArdorApplication` const
 - `BaseArdorApplication` class
@@ -227,6 +228,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
@@ -238,6 +240,7 @@ generated:
 - `SessionClearReasons` class
 - `TArdorRoute` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TI18nSource` type
 - `TSessionClearReason` type
@@ -249,6 +252,7 @@ generated:
 - `useDocumentTitle` const
 - `useFeatures` const
 - `useHtmlLang` const
+- `useMenuEntries` const
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
@@ -259,9 +263,10 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (198)
+### `@venizia/ardor` (202)
 
 - `AbstractArdorApplication` class
+- `AccessDeniedPage` const
 - `api` const
 - `App` class
 - `ApplicationContext` const
@@ -326,6 +331,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `INetworkResponse` interface
 - `inject` const
 - `injectable` const
@@ -400,6 +406,7 @@ generated:
 - `TElementTarget` type
 - `TEnvironment` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TFullPaths` type
 - `TI18nSource` type
@@ -440,6 +447,7 @@ generated:
 - `useInjectable` function
 - `useIntersection` function
 - `useMediaQuery` const
+- `useMenuEntries` const
 - `useNotifyError` const
 - `useOnlineStatus` const
 - `useProvider` function

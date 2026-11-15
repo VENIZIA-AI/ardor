@@ -405,3 +405,17 @@ access-denied-page:
       - 'Mount a route at /unauthorized if you want a page for a 403, since 0.4.7 redirects there and mounts no page; an accessDenied prop you pass still renders at /access-denied.'
       - Remove any translation override of the ardor.access_denied keys, which 0.4.7 does not read.
   data: Nothing stored changes.
+
+route-conflicts-throw:
+  symbols:
+    - TArdorRoute
+    - TFeature.menu
+  upgrade:
+    steps:
+      - Give every route of the application and of its features a path no other route has, and no route the path of a resource.
+      - Add an id to a route that has no path, such as a layout route with children.
+      - If a Features.define extension of your own has a menu field, rename it, because menu is now a field of TFeature that ARDOR reads.
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where a duplicate route path is dropped without an error and menu is yours.
+  data: Nothing stored.
