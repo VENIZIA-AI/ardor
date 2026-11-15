@@ -120,7 +120,35 @@ Import `AutoArtifacts` only where the application class is defined (`src/applica
 
 A shared package has its own classes. Two ways to bring them in.
 
-**A feature lists its classes.** A `Features.define({ ... })` can list the classes it carries, by value; importing the feature imports them, and `start()` checks each was discovered. See [Resources and pages](./resources-and-pages) for features and [Features](../../references/features) for the fields.
+**A feature lists its classes.** `Features.define({ ... })` takes `artifacts`, the classes of the feature by value, in the same shape as the index (`services`, `repositories`, `dataSources`, `components`, `configurations`). Importing the feature imports and so discovers them, and `start()` checks every class it lists was discovered. The application mounts the feature in `features()`. This is the way to ship a feature as its own package; [Features](../../references/features) has the other fields.
+
+```ts
+import { BaseArdorApplication, Features, type IApplicationInfo, service } from '@venizia/ardor';
+
+@service()
+export class OrdersService {
+  count(): number {
+    return 0;
+  }
+}
+
+export const OrdersFeature = Features.define({
+  name: 'orders',
+  artifacts: { services: [OrdersService] },
+});
+
+export class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'shop', version: '1.0.0', description: 'The shop' };
+  }
+
+  override features() {
+    return [OrdersFeature];
+  }
+
+  bindContext(): void {}
+}
+```
 
 **An artifact group.** `ArtifactGroup` is exported from `@venizia/ignis-kernel/metadata`. `ArtifactGroup.application()` is every decorated class of the package that calls it, and `ArtifactGroup.define({ folder: 'orders' })` is the decorated classes under a folder of that name in the package that defines it. The plugin writes the class lists into the call at build time (it needs the folder as a string literal and `ArtifactGroup` imported under its own name), and `artifacts()` takes the group beside `AutoArtifacts`:
 
@@ -302,6 +330,18 @@ Every message below comes from the code; `<...>` stands for a value filled in at
 - **Where:** `packages/kernel/src/base/applications/abstract.ts:355`
 - **Why:** A feature lists a configuration class that no decorator registered, usually because its module was never imported.
 - **Fix:** Decorate it with `@configuration()` and import its module before `start()`.
+
+### `` [features] '<feature>' lists <Class> in artifacts.<kind>, which was never discovered | Decorate it with its stereotype and import its module before start() ``
+
+- **Where:** `packages/kernel/src/base/applications/abstract.ts:370`
+- **Why:** A feature lists a class in `artifacts` that carries no stereotype, or whose module was never imported.
+- **Fix:** Decorate the class and import its module where the feature is defined.
+
+### `` [features] '<feature>' lists an entry in artifacts.<kind> that is not a class (position <n>) | Usually an import cycle: the feature module must not be imported by the classes it lists ``
+
+- **Where:** `packages/kernel/src/base/applications/abstract.ts:364`
+- **Why:** The classes of the feature import the module that defines the feature, so the list holds `undefined` while it is built.
+- **Fix:** Keep the feature definition in a file that no listed class imports.
 
 ### `` Binding key: <key> is not bounded in context! | A key derived from a class name (<namespace>.<ClassName>) changes when a minifier renames the class: resolve it by { target }, or pin it with binding: { namespace, key } on the class ``
 
