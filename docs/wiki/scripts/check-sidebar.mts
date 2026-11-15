@@ -13,7 +13,7 @@ const CONTENT = `${WIKI}content`;
 const CONFIG = `${WIKI}site/.vitepress/config.mts`;
 
 /** Pages deliberately never linked from a reader-facing menu. */
-const UNLISTED = [/^index$/, /^changelogs\/\d{4}-\d{2}-\d{2}-/];
+const UNLISTED = [/^index$/, /^changelogs\/\d{4}-\d{2}-\d{2}-/, /^changelogs\/\d+\.\d+\.\d+\/log$/];
 
 const config = await Bun.file(CONFIG).text();
 const linked = new Set(
