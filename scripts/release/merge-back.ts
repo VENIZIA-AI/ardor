@@ -50,8 +50,8 @@ export class MergeBackConstants {
   static readonly LOCK_VERSION_LINE = /^\s*"version": "[^"]+",?$/;
 
   static readonly LOCK_FILE = 'bun.lock';
-  /** The `log.md` of a version folder, `<X.Y.Z>/log.md`, at the end of a repository-relative path. */
-  static readonly FOLDER_LOG = /(?:^|\/)\d+\.\d+\.\d+\/log\.md$/;
+  /** The `log.md` of a version folder, `<X.Y.Z>/log.md`, as a path relative to the changelog folder of the manifest. */
+  static readonly FOLDER_LOG = /^\d+\.\d+\.\d+\/log\.md$/;
   static readonly MANIFEST = '.agents/vulcan.manifest.json';
   /** The package whose release commit dates the version folder: the umbrella, the last of a run. */
   static readonly LEADING_DIR = 'ardor';
@@ -379,6 +379,7 @@ export class ReleaseMergeBack {
       }
 
       let lockConflicted = false;
+      const changelogs = ReleaseMergeBack.changelogsOf({ root: cwd });
 
       for (const file of unmerged) {
         if (file === MergeBackConstants.LOCK_FILE) {
@@ -386,7 +387,10 @@ export class ReleaseMergeBack {
           continue;
         }
 
-        const isFolderLog = MergeBackConstants.FOLDER_LOG.test(file);
+        const isFolderLog =
+          changelogs !== undefined &&
+          file.startsWith(`${changelogs}/`) &&
+          MergeBackConstants.FOLDER_LOG.test(file.slice(changelogs.length + 1));
 
         if (file.split('/').pop() !== MergeBackConstants.PACKAGE_FILE && !isFolderLog) {
           result.problems.push(
@@ -664,23 +668,11 @@ export class ReleaseMergeBack {
     }
   }
 
-  /**
-   * What the release commit of `ardor` writes besides the versions: `released: <date>` in its version folder, so the
-   * merge the trial rehearses meets it. Returns the problem when the folder cannot be stamped; a project with no
-   * manifest, no changelog folder or no folder for the version has nothing to stamp.
-   */
-  private static stampTrial(opts: {
-    root: string;
-    version: string | undefined;
-    date: string;
-  }): string | undefined {
+  /** The changelog folder `knowledge.changelogs` of the manifest in `root`; `undefined` when there is none. */
+  static changelogsOf(opts: { root: string }): string | undefined {
     const manifest = join(opts.root, MergeBackConstants.MANIFEST);
 
-    if (
-      opts.version === undefined ||
-      !ReleaseStampConstants.VERSION.test(opts.version) ||
-      !existsSync(manifest)
-    ) {
+    if (!existsSync(manifest)) {
       return undefined;
     }
 
@@ -694,7 +686,26 @@ export class ReleaseMergeBack {
         ? knowledge.changelogs
         : undefined;
 
-    if (typeof folder !== 'string') {
+    return typeof folder === 'string' ? folder : undefined;
+  }
+
+  /**
+   * What the release commit of `ardor` writes besides the versions: `released: <date>` in its version folder, so the
+   * merge the trial rehearses meets it. Returns the problem when the folder cannot be stamped; a project with no
+   * manifest, no changelog folder or no folder for the version has nothing to stamp.
+   */
+  private static stampTrial(opts: {
+    root: string;
+    version: string | undefined;
+    date: string;
+  }): string | undefined {
+    if (opts.version === undefined || !ReleaseStampConstants.VERSION.test(opts.version)) {
+      return undefined;
+    }
+
+    const folder = ReleaseMergeBack.changelogsOf({ root: opts.root });
+
+    if (folder === undefined) {
       return undefined;
     }
 

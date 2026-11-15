@@ -266,6 +266,11 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
     const path = opts.path ?? LOG_PATH;
     const root = fixture({ developVersion: '0.4.10-0' });
 
+    write({
+      root,
+      path: '.agents/vulcan.manifest.json',
+      text: '{"knowledge":{"changelogs":"docs/changelogs"}}\n',
+    });
     write({ root, path, text: front('title: 0.4.9', "version: '0.4.9'") });
     run({ cwd: root, args: ['add', '-A'] });
     run({ cwd: root, args: ['commit', '-q', '-m', 'the folder'] });
@@ -308,6 +313,18 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
 
     expect(result.problems.join('\n')).toContain('docs/changelogs/0.4.9/notes.md');
     expect(result.resolved).not.toContain('docs/changelogs/0.4.9/notes.md');
+  });
+
+  test('a log.md of that shape outside the changelog folder of the manifest stops the merge', () => {
+    const root = prepared({ path: 'docs/other/0.4.9/log.md' });
+    const result = ReleaseMergeBack.mergeInto({
+      cwd: root,
+      from: 'release',
+      scratchRoot: scratch(),
+    });
+
+    expect(result.problems.join('\n')).toContain('docs/other/0.4.9/log.md');
+    expect(result.resolved).not.toContain('docs/other/0.4.9/log.md');
   });
 });
 
@@ -353,6 +370,14 @@ describe('ReleaseMergeBack.trial: the stamp the release commit of ardor writes',
 
     onDevelop({ root, text: front('title: 0.4.9', 'released: 2026-11-19') });
     expect(trial({ root, stampDate: '2026-11-20' }).problems.join('\n')).toContain('differently');
+  });
+
+  test('the trial does not depend on the day it is dated: a plan and a stamp a day apart both merge cleanly', () => {
+    const root = prepared();
+
+    onDevelop({ root, text: front('title: 0.4.9', "version: '0.4.9'") });
+    expect(trial({ root, stampDate: '2026-11-20' }).problems).toEqual([]);
+    expect(trial({ root, stampDate: '2026-11-21' }).problems).toEqual([]);
   });
 
   test('without a date (a run that does not make the release commit of ardor) the trial stamps nothing', () => {
@@ -410,6 +435,11 @@ describe('merge-back.ts is copied alone to the runner', () => {
     const root = fixture({ developVersion: '0.4.10-0' });
 
     roots.push(directory);
+    write({
+      root,
+      path: '.agents/vulcan.manifest.json',
+      text: '{"knowledge":{"changelogs":"docs/changelogs"}}\n',
+    });
     write({ root, path: LOG_PATH, text: front('title: 0.4.9', "version: '0.4.9'") });
     run({ cwd: root, args: ['add', '-A'] });
     run({ cwd: root, args: ['commit', '-q', '-m', 'the folder'] });
