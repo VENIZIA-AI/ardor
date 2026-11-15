@@ -32,7 +32,8 @@
     "packages": [
       "packages/*",
       "docs/*",
-      "examples/*"
+      "examples/*",
+      "examples/*/features/*"
     ],
     "catalog": {
       "@happy-dom/global-registrator": "^21.0.4",
