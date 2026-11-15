@@ -23,7 +23,6 @@ generated:
 - `Authentication` class
 - `AuthRecovery` class
 - `AuthTokenStore` class
-- `BaseArdorApplication` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
@@ -90,6 +89,7 @@ generated:
 - `SESSION_CHANGED_CODE` const
 - `StorageAreas` class
 - `StorageCodecs` class
+- `TAuthProviderOptions` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -201,10 +201,11 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (43)
+### `@venizia/ardor-admin` (44)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
+- `BaseArdorApplication` class
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
 - `DefaultI18nProvider` class
@@ -249,7 +250,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (188)
+### `@venizia/ardor` (189)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -375,6 +376,7 @@ generated:
 - `StorageAreas` class
 - `StorageCodecs` class
 - `TArdorRoute` type
+- `TAuthProviderOptions` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type

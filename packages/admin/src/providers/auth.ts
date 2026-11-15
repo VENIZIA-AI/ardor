@@ -95,8 +95,8 @@ export class DefaultAuthProvider<
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
     protected restDataProvider: IDataProvider<TResource>,
-    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-    protected authProviderOptions: TAuthProviderOptions,
+    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS, isOptional: true })
+    protected authProviderOptions: TAuthProviderOptions = { use: false },
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
     protected authService: DefaultAuthService,
     @inject({ key: CoreBindings.PERMISSION_PROVIDER, isOptional: true })

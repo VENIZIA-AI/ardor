@@ -33,6 +33,14 @@ export class ApplicationProviders {
       key: CoreBindings.AUTH_PROVIDER_OPTIONS,
       isOptional: true,
     });
+
+    // Options without the toggle come from an app written before it: failing here beats every page going public.
+    if (authOptions !== undefined && typeof authOptions.use !== 'boolean') {
+      throw getError({
+        message: `[ApplicationProviders.resolve] ${CoreBindings.AUTH_PROVIDER_OPTIONS} has no use toggle | Bind { use: true, ...paths } to sign in, or { use: false } for an app with no sign-in`,
+      });
+    }
+
     const isSignInOn = authOptions?.use === true;
 
     if (isAuthRequired && !isSignInOn) {

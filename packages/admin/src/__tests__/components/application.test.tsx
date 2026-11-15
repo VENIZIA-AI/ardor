@@ -564,6 +564,7 @@ describe('ArdorApplication route access', () => {
     const container = new Container();
     container.bind({ key: CoreBindings.FEATURES }).toValue(features);
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
       checkAuth: opts.checkAuth,
       checkError: () => Promise.resolve(),

@@ -88,6 +88,20 @@ describe('ApplicationProviders.resolve', () => {
     }
   });
 
+  test('options bound without the use toggle throw, naming the key and saying to add use: true', () => {
+    // An app written before the toggle binds `{ paths }`: it must not silently run with every page public.
+    const legacy = { paths: { signIn: '/auth/sign-in' } };
+    const container = createContainer({ withAuthProvider: true });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(legacy);
+
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow(CoreBindings.AUTH_PROVIDER_OPTIONS);
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow('use: true');
+  });
+
   test('leaves the auth provider out when the application has no sign-in', () => {
     const providers = ApplicationProviders.resolve({
       container: createContainer({ withAuthProvider: false }),
