@@ -927,6 +927,16 @@ describe('ReleasePlan.changelogOf: what a stable needs of its version folder (#7
     expect(result).toEqual({ problems: [], base: 'ardor-v0.4.8', stampDate: undefined });
   });
 
+  test('a plan that neither releases nor skips ardor does not accept a folder that is already dated', () => {
+    const result = ReleasePlan.changelogOf({
+      cwd: repository({ log: FRESH.replace('---\nBody', 'released: 2026-11-03\n---\nBody') }),
+      plan: { ...stable(['kernel']), skipped: [] },
+      date: DATE,
+    });
+
+    expect(result.problems.join('\n')).toContain('already says released: 2026-11-03');
+  });
+
   test('a prerelease needs no folder, has no base and stamps nothing', () => {
     expect(
       ReleasePlan.changelogOf({

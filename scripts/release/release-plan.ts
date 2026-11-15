@@ -606,7 +606,7 @@ export class ReleasePlan {
 
     const problem = ReleaseStampText.problemOf({
       text: readFileSync(join(cwd, path), 'utf8'),
-      healing: !stamps,
+      healing: plan.skipped.includes(MergeBackConstants.LEADING_DIR),
       date,
     });
 
