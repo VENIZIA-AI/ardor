@@ -11,15 +11,17 @@ migration:
         const read = (value: AnyType) => value.name.toUpperCase();
         const bag: AnyObject = { page: 1 };
         const repository: HttpRepository<IProduct, AnyType> = products;
+        const slot: TClass<HttpRepository<TNamedEntity, AnyType>> = OrganizerRepository;
       after: |-
         const read = (value: { name: string }) => value.name.toUpperCase();
         const bag: Record<string, unknown> = { page: 1 };
         const repository: HttpRepository<IProduct> = products;
+        const slot: TClass<Pick<HttpRepository<TNamedEntity>, 'find' | 'count'>> = OrganizerRepository;
     downgrade:
       steps:
         - Pin the four ARDOR packages to 0.4.8-15 or earlier, with the IGNIS packages of that release, where AnyType and AnyObject exist, and undo the replacements.
         - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
-    data: Nothing stored changes. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected.
+    data: Nothing stored changes. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity.
   - id: typed-do-request-query
     symbols: [DefaultNetworkRequestService.doRequest]
     upgrade:
@@ -101,6 +103,25 @@ A type argument is the same: `HttpRepository<IProduct, AnyType>` becomes `HttpRe
 ```diff
 -const repository: HttpRepository<IProduct, AnyType> = products;
 +const repository: HttpRepository<IProduct> = products;
+```
+
+A class slot typed for one entity does not accept the repository class of another, which matters when one slot holds several repositories (`OrganizerRepository` extends `HttpRepository<TOrganizer>`, the slot is typed with `TNamedEntity`). The `AnyType` argument is not what made it compile: IGNIS's new `TClass` is `new (...args: never[]) => T`, where it was that type joined with an index signature of `any`, and with the new one even `HttpRepository<TNamedEntity, any>` is refused. TypeScript reports "Types of construct signatures are incompatible", through `resolveFindFilter`. Type the slot on the members the code calls, or take the entity as a type parameter.
+
+```ts
+import type { TClass } from '@venizia/ignis-inversion';
+import { HttpRepository } from '@venizia/ardor/repository';
+
+type TNamedEntity = { id: string } & { name?: Record<string, string> };
+type TOrganizer = { id: string; name: Record<string, string>; code: string };
+
+export class OrganizerRepository extends HttpRepository<TOrganizer> {}
+
+// The slot names the members the code calls.
+export const slot: TClass<Pick<HttpRepository<TNamedEntity>, 'find' | 'count'>> = OrganizerRepository;
+
+// Or the code that takes the slot is generic over the entity.
+export const take = <E extends object>(repository: TClass<HttpRepository<E>>) => repository;
+export const taken = take(OrganizerRepository);
 ```
 
 **2. Replace `AnyObject` with `Record<string, unknown>`.** Reading a key now gives `unknown`; narrow it before you use it.
