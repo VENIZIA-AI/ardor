@@ -50,7 +50,8 @@ on:
         default: false
 
 # The workflow can write nothing by default; the jobs that write say so: `publish` pushes the release commits and
-# the tags, and `atlas-index` uploads the signed atlas pair of each tag, with no npm identity.
+# the tags, `atlas-index` uploads the signed atlas pair of each tag, with no npm identity, and `deploy-docs` holds
+# actions: write only, to start the docs deploy.
 # Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
 # name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
 # publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
@@ -460,6 +461,27 @@ jobs:
           ref: ${{ steps.tags.outputs.ardor }}
         env:
           ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+  # The docs deploy again after a release. The release pushes with the Actions token, and GitHub starts no workflow
+  # from such a push, so the push of a release commit never starts deploy-docs.yml; the version box of the
+  # changelog names the newest prerelease from the release tags, so this job starts the deploy by hand once the tags
+  # are pushed. It holds actions: write and nothing else, and never fails or undoes a release that has published.
+  deploy-docs:
+    name: Deploy the docs
+    needs: [plan, publish]
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}
+    continue-on-error: true
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Start the docs deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run deploy-docs.yml --ref develop
 
   # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
   # ARDOR package without publishing anything (the same check a release runs after each publish).

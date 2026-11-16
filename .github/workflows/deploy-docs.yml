@@ -81,9 +81,6 @@ jobs:
               docs=true
             elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- docs/wiki; then
               docs=true
-            elif git log -1 --format=%s "$GITHUB_SHA" | grep -qE '^chore\([a-z-]+\): release v'; then
-              # A release commit changes no page, but the version box of the changelog names the newest prerelease (from the release tags): deploy again so the box follows the release.
-              docs=true
             fi
           fi
 
