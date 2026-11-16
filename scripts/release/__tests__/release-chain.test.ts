@@ -1429,3 +1429,104 @@ describe('ReleaseChain.builtOnOf', () => {
     );
   });
 });
+
+describe('ReleaseChain for a stable: the release commit of ardor dates the version folder (#726)', () => {
+  const names = ['kernel', 'react', 'admin', 'ardor'];
+  const stamp = { log: 'docs/wiki/content/changelogs/0.4.9/log.md', date: '2026-11-20' };
+  const labels = (steps: ReturnType<typeof ReleaseChain.plan>['phaseR'], name: string): string[] =>
+    steps
+      .filter((step) => step.label.startsWith(`${name}: `))
+      .map((step) => step.label.slice(name.length + 2));
+  const commandOf = (
+    steps: ReturnType<typeof ReleaseChain.plan>['phaseR'],
+    label: string,
+  ): string[] => {
+    const step = steps.find((candidate) => candidate.label === label);
+
+    return step !== undefined && 'command' in step ? step.command : [];
+  };
+
+  test('ardor stamps the folder after its relock and before its commit, and the commit adds the file', () => {
+    const { phaseR } = ReleaseChain.plan({ options: stableOptions(names, { stamp }) });
+    const ardor = labels(phaseR, 'ardor');
+
+    expect(ardor.indexOf('date the version folder')).toBeGreaterThan(
+      ardor.indexOf('copy the lockfile back'),
+    );
+    expect(ardor.indexOf('date the version folder')).toBe(ardor.indexOf('stage the release') - 1);
+    expect(commandOf(phaseR, 'ardor: date the version folder')).toEqual([
+      'bun',
+      'scripts/release/stamp-release.ts',
+      '--version',
+      '0.4.9',
+      '--date',
+      '2026-11-20',
+    ]);
+    expect(commandOf(phaseR, 'ardor: stage the release')).toEqual([
+      'git',
+      'add',
+      'packages/ardor/package.json',
+      'bun.lock',
+      stamp.log,
+    ]);
+  });
+
+  test('no other package stamps, and a stable without the stamp option or a prerelease stamps nothing', () => {
+    const { phaseR } = ReleaseChain.plan({ options: stableOptions(names, { stamp }) });
+
+    expect(phaseR.filter((step) => step.label.endsWith('date the version folder'))).toHaveLength(1);
+    expect(commandOf(phaseR, 'kernel: stage the release')).toEqual([
+      'git',
+      'add',
+      'packages/kernel/package.json',
+      'bun.lock',
+    ]);
+
+    for (const options of [stableOptions(names), optionsOf(names, { stamp })]) {
+      const steps = ReleaseChain.plan({ options }).phaseR;
+
+      expect(steps.some((step) => step.label.endsWith('date the version folder'))).toBe(false);
+      expect(commandOf(steps, 'ardor: stage the release')).toEqual([
+        'git',
+        'add',
+        'packages/ardor/package.json',
+        'bun.lock',
+      ]);
+    }
+  });
+
+  test('an ardor that only lacks its tag makes no commit and stamps nothing; one only recorded stamps', () => {
+    const packages = (mode: 'tag' | 'record') =>
+      packagesOf(names).map((pkg) => (pkg.name === 'ardor' ? { ...pkg, mode } : pkg));
+    const tagOnly = ReleaseChain.plan({
+      options: stableOptions(names, { stamp, packages: packages('tag') }),
+    }).phaseR;
+    const recordOnly = ReleaseChain.plan({
+      options: stableOptions(names, { stamp, packages: packages('record') }),
+    }).phaseR;
+
+    expect(tagOnly.some((step) => step.label.endsWith('date the version folder'))).toBe(false);
+    expect(labels(recordOnly, 'ardor')).toContain('date the version folder');
+  });
+
+  test('ReleaseChain.stampOf: a stable whose folder log.md is on disk is stamped today; anything else is not', () => {
+    const exists = (path: string) => path === stamp.log;
+    const read: string[] = [];
+    const base = {
+      changelogsOf: () => {
+        read.push('manifest');
+
+        return 'docs/wiki/content/changelogs';
+      },
+      now: new Date('2026-11-20T23:59:00Z'),
+    };
+
+    expect(ReleaseChain.stampOf({ ...base, version: '0.4.9-3', exists })).toBeUndefined();
+    // A prerelease never reads the manifest: none of the stamp runs for it.
+    expect(read).toEqual([]);
+    expect(ReleaseChain.stampOf({ ...base, version: '0.4.9', exists })).toEqual(stamp);
+    expect(
+      ReleaseChain.stampOf({ ...base, version: '0.4.9', exists: () => false }),
+    ).toBeUndefined();
+  });
+});

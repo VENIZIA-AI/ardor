@@ -30,8 +30,13 @@
  */
 
 import { isTrustedPublishWorkflow } from './release-gates';
-import { type IPlannedPackage, ReleaseKinds, ReleasePlan, type TReleaseKind } from './release-plan';
-import { isReleaseVersion, readReleaseArgs } from './release-version';
+import { type IPlannedPackage, ReleasePlan } from './release-plan';
+import {
+  isReleaseVersion,
+  ReleaseKinds,
+  readReleaseArgs,
+  type TReleaseKind,
+} from './release-version';
 import { ReleaseVerify } from './release-verify';
 import { waitForCompletion } from './release-wait';
 
