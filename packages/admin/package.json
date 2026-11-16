@@ -96,7 +96,7 @@
     "@venizia/ignis-filter": "^0.4.7-6",
     "@venizia/ignis-helpers": "^0.4.8-14",
     "@venizia/ignis-inversion": "^0.4.7-5",
-    "@venizia/ignis-kernel": "^0.4.8-16",
+    "@venizia/ignis-kernel": "^0.4.8-18",
     "ra-core": ">=5.15.5",
     "ra-i18n-polyglot": ">=5.15.5",
     "react": ">=19.3.1",
