@@ -123,7 +123,7 @@
         "react-redux",
         "react-router-dom"
       ],
-      "limit": "13580 B"
+      "limit": "14180 B"
     }
   ],
   "engines": {

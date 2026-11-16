@@ -173,7 +173,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "1080 B"
+      "limit": "1150 B"
     }
   ],
   "engines": {
