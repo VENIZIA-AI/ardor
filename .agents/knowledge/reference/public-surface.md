@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (100)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -66,6 +66,7 @@ generated:
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
@@ -85,6 +86,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -208,7 +210,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (45)
+### `@venizia/ardor-admin` (46)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -252,13 +254,14 @@ generated:
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
+- `useRoles` const
 - `useTranslate` const
 - `useUntypedTranslate` const
 - `vietnameseMessages` const
 
 ## ardor
 
-### `@venizia/ardor` (197)
+### `@venizia/ardor` (200)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -336,6 +339,7 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IRouteAccess` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
@@ -381,6 +385,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -446,6 +451,7 @@ generated:
 - `useRepository` function
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
+- `useRoles` const
 - `useService` function
 - `useStoredState` const
 - `useTranslate` const

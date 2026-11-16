@@ -108,7 +108,7 @@
         "@venizia/ignis-inversion",
         "reflect-metadata"
       ],
-      "limit": "10230 B"
+      "limit": "10630 B"
     },
     {
       "path": "dist/testing.js",

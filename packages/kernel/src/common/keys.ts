@@ -1,6 +1,10 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import type { IRestDataProviderOptions, TAuthProviderOptions } from './types';
+import type {
+  IRestDataProviderOptions,
+  IRolePermissionProviderOptions,
+  TAuthProviderOptions,
+} from './types';
 
 /** The container keys the kernel binds and reads. */
 export class CoreBindings {
@@ -31,6 +35,8 @@ export class CoreBindings {
   static readonly FEATURES = '@app/application/features';
   /** An `IPermissionProvider`, bound by the application; unbound means every check passes. */
   static readonly PERMISSION_PROVIDER = '@app/application/permission/provider';
+  /** The `IRolePermissionProviderOptions` that `RolePermissionProvider` reads. */
+  static readonly PERMISSION_PROVIDER_OPTIONS = '@app/application/options/permission';
 }
 
 /**
@@ -41,6 +47,7 @@ export class CoreBindings {
 export interface ICoreOptionTypes {
   [CoreBindings.AUTH_PROVIDER_OPTIONS]: TAuthProviderOptions;
   [CoreBindings.REST_DATA_PROVIDER_OPTIONS]: IRestDataProviderOptions;
+  [CoreBindings.PERMISSION_PROVIDER_OPTIONS]: IRolePermissionProviderOptions;
 }
 
 /** The session keys and the store prefix of one application, from `LocalStorageKeys.scoped`. */

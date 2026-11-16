@@ -29,6 +29,7 @@ Hooks (`src/hooks/index.ts`):
 - `useNotifyError` - surfaces failures through react-admin's notification system, tying into [error flow](/architecture/error-flow.md).
 - `useRefreshToken` - drives token refresh as part of [auth recovery](/architecture/auth-recovery.md).
 - `useFeatures` - reads the features bound in the container; `[]` when none is bound. See [feature modules](/architecture/feature-modules.md).
+- `useRoles` - the signed-in user's roles as a `ReadonlySet<string>`, from the `DefaultAuthService` bound under `DEFAULT_AUTH_SERVICE` (optional; empty when none is bound). It follows `subscribe`, so it re-renders on a session change in this tab or another, and keeps one set while the roles are equal.
 - `useRequestHeaderLocale` - reads locale for outgoing request headers, connecting to the [header protocol](/architecture/header-protocol.md).
 - `useDocumentTitle` - sets the tab title to the screen title plus `appTitle` and restores the title it replaced on change or unmount, unless a newer title was written since; `fallback: true` makes a layout's call a base title that screens override.
 - `useHtmlLang` - keeps `document.documentElement.lang` on the ra-core locale, for screen readers.

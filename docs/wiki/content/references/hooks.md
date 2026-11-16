@@ -52,6 +52,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
 | List mounted application features | `useFeatures` | `ApplicationContext` with a container | `Array<TItem>` |
+| Read the roles of the signed-in user, and follow the session | `useRoles` | `ApplicationContext` with a container | `ReadonlySet<string>` |
 | Set document title with automatic restoration on unmount | `useDocumentTitle` | Browser DOM | `void` |
 | Synchronize `<html lang>` with the active locale | `useHtmlLang` | ra-core locale state, browser DOM | `void` |
 | Debounce a rapidly changing value | `useDebounce` | Browser DOM | `{ debouncedValue }` |
@@ -416,6 +417,21 @@ export function FeatureNavigation() {
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
 - **Gotcha**: Reads from the container using `useApplicationContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+
+### useRoles
+
+```tsx
+import { useRoles } from '@venizia/ardor';
+
+export function AdminBadge() {
+  const roles = useRoles();
+  return roles.has('admin') ? <span>Administrator</span> : null;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `ReadonlySet<string>`, the role names `DefaultAuthService.getRoles()` holds. It is the same set while the roles stay the same, so it is safe in a dependency array.
+- **Gotcha**: Re-renders when the session changes, in this tab or in another one. It is empty when nobody is signed in, and when no `CoreBindings.DEFAULT_AUTH_SERVICE` is bound, without an error. Roles are read at sign-in: a token refresh keeps them. They only show or hide interface; the backend must check every request, see [Permission provider](./permission). Throws outside `ApplicationContext`. Defined in `packages/admin/src/hooks/use-roles.ts`.
 
 ### useDocumentTitle
 
