@@ -12,7 +12,7 @@ import {
   configuration,
   CoreBindings,
   type II18nProviderOptions,
-  provideOption,
+  provide,
   vietnameseMessages,
 } from '@venizia/ardor';
 
@@ -35,7 +35,7 @@ export const messagesVietnamese = {
 
 @configuration()
 export class I18nConfiguration {
-  @provideOption({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
   i18nProviderOptions(): II18nProviderOptions {
     return {
       i18nSources: { en: messagesEnglish, vi: messagesVietnamese },

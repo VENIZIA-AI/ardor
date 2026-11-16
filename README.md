@@ -44,14 +44,14 @@ import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   RuntimeConfig,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     // The API is `/api` unless VITE_API_URL says otherwise, in .env or in the container's config.js.
     const url = RuntimeConfig.get({
@@ -63,7 +63,7 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }

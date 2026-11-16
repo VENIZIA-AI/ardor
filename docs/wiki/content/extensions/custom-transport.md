@@ -227,7 +227,6 @@ import {
   type INetworkResponse,
   type IRestDataProviderOptions,
   provide,
-  provideOption,
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
@@ -252,7 +251,7 @@ export class TransportConfiguration {
     return memoryTransport;
   }
 
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     // The url is required but never used by this transport; no sign-in, so no request needs a token.
     return { url: '/api', noAuthPathRegex: /./ };

@@ -29,7 +29,7 @@ editor to list. They enforce nothing: `access` on a route or a menu entry is wha
 | File | What it shows |
 | --- | --- |
 | `src/application.ts` | `AutoArtifacts`, the two features in `features()`, `RolePermissionProvider` bound in `bindContext()` |
-| `src/configurations/permission.configuration.ts` | The role table, as `@provideOption` options: `admin` holds `*`, `viewer` two list grants |
+| `src/configurations/permission.configuration.ts` | The role table, as `@provide` options: `admin` holds `*`, `viewer` two list grants |
 | `src/configurations/shell.configuration.ts` | The REST data, auth (`{ use: true, paths }`) and i18n options, with English and Vietnamese offered |
 | `src/components/shell-layout.tsx` | The menu from `Ardor.useMenuEntries()`, the role badge from `Ardor.useRoles()`, the language button |
 | `features/orders/src/index.ts` | One feature in one `Features.define` value: resource, gated route, menu, messages, artifacts, permissions |

@@ -15,7 +15,7 @@ The application class inherits directly from the IGNIS `Container` rather than w
 
 ## Configuration is a class of option methods
 
-Instead of passing static configuration dictionaries to initialization functions, ARDOR defines application configuration as a class decorated with `@configuration()`. Each set of options is declared on a method decorated with `@provideOption({ key })`, whose return type the compiler checks against the key. When the application boots, `packages/kernel/src/base/applications/abstract.ts` iterates over the discovered provide metadata and registers each method as a lazy singleton provider. Options are therefore built on demand and shared across components. The application binds only options: the providers themselves come from `BaseArdorApplication`. See [Configuration](../core-concepts/configuration).
+Instead of passing static configuration dictionaries to initialization functions, ARDOR defines application configuration as a class decorated with `@configuration()`. Each set of options is declared on a method decorated with `@provide({ key })`, whose return type the compiler checks against the key. When the application boots, `packages/kernel/src/base/applications/abstract.ts` iterates over the discovered provide metadata and registers each method as a lazy singleton provider. Options are therefore built on demand and shared across components. The application binds only options: the providers themselves come from `BaseArdorApplication`. See [Configuration](../core-concepts/configuration).
 
 ## Framework providers sit under keys, your classes are resolved by class
 

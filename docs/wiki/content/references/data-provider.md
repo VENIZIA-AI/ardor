@@ -5,19 +5,19 @@ description: Options, configuration, HTTP mapping, and error handling for Defaul
 
 # REST data provider
 
-`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. `BaseArdorApplication` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` itself, as a singleton, so react-admin, the auth provider and every hook share one instance. Your application binds only its options: a `@configuration()` class with a `@provideOption({ key })` method, which `start()` binds as a lazy singleton:
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. `BaseArdorApplication` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` itself, as a singleton, so react-admin, the auth provider and every hook share one instance. Your application binds only its options: a `@configuration()` class with a `@provide({ key })` method, which `start()` binds as a lazy singleton:
 
 ```ts
 import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
 } from '@venizia/ardor';
 
 @configuration()
 export class RestDataConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',

@@ -27,7 +27,7 @@ import {
   BaseArdorApplication,
   configuration,
   CoreBindings,
-  provideOption,
+  provide,
   RolePermissionProvider,
   type IApplicationInfo,
   type IRolePermissionProviderOptions,
@@ -42,12 +42,12 @@ export class Roles {
 
 @configuration()
 export class PermissionConfiguration {
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authOptions(): TAuthProviderOptions {
     return { use: true };
   }
 
-  @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
   permissionOptions(): IRolePermissionProviderOptions {
     return {
       grants: {

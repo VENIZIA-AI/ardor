@@ -92,7 +92,7 @@ import {
   type IDataProvider,
   inject,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 import { BindingScopes } from '@venizia/ignis-inversion';
@@ -128,12 +128,12 @@ export class SocketAuthProvider extends DefaultAuthProvider {
 
 @configuration()
 export class ShopConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true };
   }

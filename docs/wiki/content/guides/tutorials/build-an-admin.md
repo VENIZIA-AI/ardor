@@ -50,18 +50,18 @@ import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPathRegex: /./ };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }

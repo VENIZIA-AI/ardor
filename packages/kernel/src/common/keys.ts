@@ -1,11 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
 
-import type {
-  IRestDataProviderOptions,
-  IRolePermissionProviderOptions,
-  TAuthProviderOptions,
-} from './types';
-
 /** The container keys the kernel binds and reads. */
 export class CoreBindings {
   /** The application itself, bound by `preConfigure`. */
@@ -37,17 +31,6 @@ export class CoreBindings {
   static readonly PERMISSION_PROVIDER = '@app/application/permission/provider';
   /** The `IRolePermissionProviderOptions` that `RolePermissionProvider` reads. */
   static readonly PERMISSION_PROVIDER_OPTIONS = '@app/application/options/permission';
-}
-
-/**
- * The options type of each options key of `CoreBindings`, which `provideOption` checks a method
- * against. A package that owns an options type declares it with `declare module '@venizia/ardor-kernel'`:
- * `@venizia/ardor-admin` adds `CoreBindings.I18N_PROVIDER_OPTIONS`.
- */
-export interface ICoreOptionTypes {
-  [CoreBindings.AUTH_PROVIDER_OPTIONS]: TAuthProviderOptions;
-  [CoreBindings.REST_DATA_PROVIDER_OPTIONS]: IRestDataProviderOptions;
-  [CoreBindings.PERMISSION_PROVIDER_OPTIONS]: IRolePermissionProviderOptions;
 }
 
 /** The session keys and the store prefix of one application, from `LocalStorageKeys.scoped`. */

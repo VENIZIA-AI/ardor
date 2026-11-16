@@ -5,7 +5,7 @@ import {
   englishMessages,
   type II18nProviderOptions,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
   vietnameseMessages,
 } from '@venizia/ardor';
@@ -24,17 +24,17 @@ declare module '@venizia/ardor' {
 
 @configuration()
 export class ShellConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: ApiPaths.BASE, noAuthPaths: [ApiPaths.SIGN_IN] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true, paths: { signIn: ApiPaths.SIGN_IN, afterLogin: OrdersPaths.LIST } };
   }
 
-  @provideOption({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
   i18nProviderOptions(): II18nProviderOptions {
     return {
       i18nSources: {

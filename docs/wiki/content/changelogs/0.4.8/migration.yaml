@@ -354,7 +354,7 @@ auth-provider-toggle:
     steps:
       - 'Run `bun run ardor codemod auth-options --write` to add `use: true` to each options object literal.'
       - 'Fix by hand the options the codemod lists: add `use: true`, or `{ use: false }` for a guest app.'
-      - 'Type options and `@provideOption` returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
+      - 'Type options returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
       - 'If you bind your own auth provider under `DEFAULT_AUTH_PROVIDER`, also bind `AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`.'
     before: |-
       @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
@@ -371,7 +371,7 @@ auth-provider-toggle:
       - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line.'
       - 'Drop use from the auth options and bind { paths } again. A guest app with no sign-in leaves DEFAULT_AUTH_PROVIDER unbound, because 0.4.7 uses any auth provider that is bound.'
       - 'Type a DefaultAuthProvider subclass constructor parameter as IAuthProviderOptions again.'
-  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. An app that binds an auth provider of its own under DEFAULT_AUTH_PROVIDER (not a DefaultAuthProvider subclass) must also bind AUTH_PROVIDER_OPTIONS as { use: true, ...paths }, or { use: false }: without options start() fails and names both keys. The auth-options codemod puts use: true first in an options object literal returned by a @provide or @provideOption method, or given to bind({ key }).toValue(...); it leaves a literal that has use, and lists options that are not a plain object literal (a variable, a call, only a spread) for you to change, and lists a return type, as or satisfies of IAuthProviderOptions (type it as TAuthProviderOptions) and a @provideOption method with no return type (declare TAuthProviderOptions). A guest app with no sign-in returns { use: false } or binds no options, and needs no change. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
+  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. An app that binds an auth provider of its own under DEFAULT_AUTH_PROVIDER (not a DefaultAuthProvider subclass) must also bind AUTH_PROVIDER_OPTIONS as { use: true, ...paths }, or { use: false }: without options start() fails and names both keys. The auth-options codemod puts use: true first in an options object literal returned by a @provide method, or given to bind({ key }).toValue(...); it leaves a literal that has use, and lists options that are not a plain object literal (a variable, a call, only a spread) for you to change, and lists a return type, as or satisfies of IAuthProviderOptions (type it as TAuthProviderOptions). A guest app with no sign-in returns { use: false } or binds no options, and needs no change. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
   codemod: auth-options
 
 base-application-moved:

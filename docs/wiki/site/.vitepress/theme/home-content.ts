@@ -9,7 +9,7 @@
 import pkg from '../../../../../packages/ardor/package.json';
 import type { THomeContent, TSiteInfo } from './shared/home-types';
 
-export const COUNTS = { packages: 4, examples: 4, testFiles: 98, nodeBuiltins: 0 };
+export const COUNTS = { packages: 4, examples: 4, testFiles: 96, nodeBuiltins: 0 };
 
 export const VERSION: string = pkg.version;
 
@@ -56,14 +56,14 @@ export const HOME: THomeContent = {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   RuntimeConfig,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
@@ -74,7 +74,7 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }

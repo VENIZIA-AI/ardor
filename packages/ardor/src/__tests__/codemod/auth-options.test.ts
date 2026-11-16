@@ -64,18 +64,18 @@ describe('AuthOptionsTransform: a @provide method', () => {
     expect(run(before).text).toBe(before.replace('return {};', 'return { use: true };'));
   });
 
-  test('reads @provideOption, the string value of the key and an aliased CoreBindings', () => {
+  test('reads the string value of the key and an aliased CoreBindings', () => {
     const before = [
-      "import { configuration, CoreBindings as Keys, provideOption } from '@venizia/ardor-kernel';",
+      "import { configuration, CoreBindings as Keys, provide } from '@venizia/ardor-kernel';",
       '',
       '@configuration()',
       'export class AuthConfiguration {',
-      '  @provideOption({ key: Keys.AUTH_PROVIDER_OPTIONS })',
+      '  @provide({ key: Keys.AUTH_PROVIDER_OPTIONS })',
       '  one() {',
       "    return { paths: { afterLogin: '/a' } };",
       '  }',
       '',
-      "  @provideOption({ key: '@app/application/options/auth' })",
+      "  @provide({ key: '@app/application/options/auth' })",
       '  two() {',
       "    return { paths: { afterLogin: '/b' } };",
       '  }',
@@ -330,45 +330,6 @@ describe('AuthOptionsTransform: the type of the options', () => {
 
     expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([]);
     expect(result.renamed).toBe(1);
-  });
-});
-
-describe('AuthOptionsTransform: a @provideOption method without a return type', () => {
-  const option = (opts: { returnType: string; decorator?: string }): string =>
-    configuration(
-      [
-        `  @${opts.decorator ?? 'provideOption'}({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })`,
-        `  authProviderOptions()${opts.returnType} {`,
-        '    return { use: true, paths: {} };',
-        '  }',
-      ].join('\n'),
-    );
-
-  test('adds use: true and lists the method, because the literal would be typed use: boolean', () => {
-    const before = option({ returnType: '' }).replace('use: true, ', '');
-    const result = run(before);
-
-    expect(result.text).toBe(option({ returnType: '' }));
-    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
-      {
-        line: 6,
-        name: 'provideOption',
-        reason:
-          'a method without a return type reads use: true as boolean, which the key does not accept: declare the return type TAuthProviderOptions',
-      },
-    ]);
-  });
-
-  test('lists nothing for a declared return type, or for @provide, which the compiler does not check', () => {
-    for (const text of [
-      option({ returnType: ': TAuthProviderOptions' }).replace('use: true, ', ''),
-      option({ returnType: '', decorator: 'provide' }).replace('use: true, ', ''),
-    ]) {
-      const result = run(text);
-
-      expect(result.renamed).toBe(1);
-      expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([]);
-    }
   });
 });
 

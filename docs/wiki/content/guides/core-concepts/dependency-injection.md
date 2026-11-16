@@ -205,6 +205,6 @@ The `[artifacts]` errors at startup (a group with no content, an import cycle in
 
 - [Auto boot](./auto-boot) - How classes are found at build time and bound at start
 - [Application](./application) - Application container lifecycle and startup
-- [Configuration](./configuration) - Configuring options with `@configuration` and `@provideOption`
+- [Configuration](./configuration) - Configuring options with `@configuration` and `@provide`
 - [Quickstart](../get-started/5-minute-quickstart) - End-to-end working example
 - [Hooks](../../references/hooks) - Complete reference for React hooks

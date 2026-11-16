@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { BindingScopes } from '@venizia/ignis-inversion';
 import { MetadataRegistry } from '@venizia/ignis-kernel/metadata';
 
-import { configuration, provideOption } from '@/base/metadata';
+import { configuration, provide } from '@/base/metadata';
 import { RolePermissionProvider } from '@/base/providers';
 import { DefaultAuthService } from '@/base/services/auth';
 import {
@@ -314,7 +314,7 @@ describe('RolePermissionProvider refuses an invalid grant pattern when it is bui
 
 @configuration()
 class PermissionConfiguration {
-  @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
   permissionOptions(): IRolePermissionProviderOptions {
     return { grants: { [Roles.EDITOR]: ['orders.*'] } };
   }

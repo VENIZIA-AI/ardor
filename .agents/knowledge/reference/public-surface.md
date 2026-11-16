@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (104)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -51,7 +51,6 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
-- `ICoreOptionTypes` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
@@ -77,7 +76,6 @@ generated:
 - `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
-- `provideOption` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyEncoder` class
@@ -267,7 +265,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (206)
+### `@venizia/ardor` (204)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -324,7 +322,6 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
-- `ICoreOptionTypes` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
 - `IDataSourceAuth` interface
@@ -384,7 +381,6 @@ generated:
 - `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
-- `provideOption` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyEncoder` class

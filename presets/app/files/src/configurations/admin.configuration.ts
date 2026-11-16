@@ -2,7 +2,7 @@ import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   RuntimeConfig,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
@@ -10,7 +10,7 @@ import {
 // An application without sign-in binds two options. BaseArdorApplication binds the providers.
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     // No sign-in: no request carries an Authorization header. The API is `/api` (the image's nginx
     // forwards it to API_UPSTREAM) unless VITE_API_URL says otherwise: set in .env in dev, or written to
@@ -24,7 +24,7 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }

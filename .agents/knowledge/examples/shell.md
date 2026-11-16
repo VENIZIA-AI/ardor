@@ -24,7 +24,7 @@ classes and messages. It shows, end to end:
   `bun run compile` keeps the names of the feature classes (`Object.defineProperty(this, 'name', ...)`),
   so their derived binding keys hold in production.
 - **A role table** - `RolePermissionProvider` bound with one line in `bindContext()`, its grants in
-  `PermissionConfiguration` through `@provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })`:
+  `PermissionConfiguration` through `@provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })`:
   `admin` holds `*`, `viewer` holds `orders.list` and `products.list`. The grant strings are the
   constants the features export. See [Feature modules: permissions](/architecture/feature-modules.md#permissions).
 - **A menu filtered by access** - `ShellLayout` renders `Ardor.useMenuEntries()` and the role badge

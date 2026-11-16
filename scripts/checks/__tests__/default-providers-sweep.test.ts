@@ -22,10 +22,6 @@ class Sweep {
       name: 'a @provide method for a DEFAULT_* provider key',
       pattern: /@provide\(\{\s*key:\s*CoreBindings\.DEFAULT_\w+\s*\}\)/,
     },
-    {
-      name: 'a plain @provide for an options key (provideOption checks the return type)',
-      pattern: /@provide\(\{\s*key:\s*CoreBindings\.\w+_OPTIONS\s*\}\)/,
-    },
   ];
 
   static files(): string[] {

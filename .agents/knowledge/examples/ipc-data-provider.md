@@ -77,12 +77,12 @@ provider options, even though the URL is never dereferenced by `send()`:
 ```ts
 @configuration()
 export class IpcConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }
@@ -99,7 +99,7 @@ class Application extends BaseArdorApplication {
 }
 ```
 
-`registerArtifacts()` binds each `@provideOption` method under its key, lazy and singleton, following
+`registerArtifacts()` binds each `@provide` method under its key, lazy and singleton, following
 [Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for `CoreBindings`.
 `BaseArdorApplication` binds the default providers itself; the one line in `bindContext()` replaces the data provider with the IPC one.
 `noAuthPathRegex: /./` opts out of the auth pipeline entirely (every path is no-auth) -

@@ -19,7 +19,7 @@ An application class that extends `BaseArdorApplication` (see [Application](../r
 | --- | --- | --- |
 | `service`, `repository`, `dataSource`, `component` | application methods | Register one class by hand under `<namespace>.<ClassName>` |
 | `@service()`, `@component()`, `@datasource()`, `@repository()` | decorators | Stereotypes the application discovers and binds at `start()` |
-| `@configuration()`, `@provideOption()`, `@provide()` | decorators | A class that binds the keys of values with no class |
+| `@configuration()`, `@provide()`, `@provide()` | decorators | A class that binds the keys of values with no class |
 | `RepositoryTypes` | class | `REMOTE` declares a repository with no model, such as an `HttpRepository` |
 | `bindingList()` | application method | Classes under literal keys, before `bindContext()` |
 | `Container.bind({ key })` | method (inherited from IGNIS) | Manual registration, any key, any scope |
@@ -69,7 +69,7 @@ An `HttpRepository` has no model, so it is declared `@repository({ type: Reposit
 
 ## Framework slots: bind the options, keep the defaults
 
-`BaseArdorApplication` binds the four default providers itself, each a singleton, so react-admin, the auth provider and every hook share one instance: `DefaultRestDataProvider`, `DefaultAuthService`, `DefaultAuthProvider` and `DefaultI18nProvider`. Your application binds their options, in a `@configuration()` class with one `@provideOption({ key })` method per key. The compiler checks each method against the options type of its key.
+`BaseArdorApplication` binds the four default providers itself, each a singleton, so react-admin, the auth provider and every hook share one instance: `DefaultRestDataProvider`, `DefaultAuthService`, `DefaultAuthProvider` and `DefaultI18nProvider`. Your application binds their options, in a `@configuration()` class with one `@provide({ key })` method per key. The compiler checks each method against the options type of its key.
 
 ```ts
 import {
@@ -78,18 +78,18 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class ApiConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true };
   }

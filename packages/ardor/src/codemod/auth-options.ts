@@ -15,8 +15,6 @@ const NO_RETURN = 'the method does not return the options: add use: true to them
 const SPREAD_ONLY = 'the options are only a spread: add use: true to them by hand';
 const NO_USE_TYPE =
   'it has no use, so the options no longer fit it: type them as TAuthProviderOptions';
-const UNTYPED_OPTION =
-  'a method without a return type reads use: true as boolean, which the key does not accept: declare the return type TAuthProviderOptions';
 const SIGN_IN_ON =
   'use: true was added, so sign-in is on. An app with no sign-in binds { use: false } or no options';
 
@@ -27,8 +25,6 @@ interface IOptionsValue {
   anchor: TS.Node;
   /** The return type the method declares. */
   declaredType?: TS.TypeNode;
-  /** The name of the method, when it is `@provideOption` and declares no return type. */
-  untypedOption?: TS.Node;
 }
 
 /** Adds `use: true` to the auth provider options an app binds, which 0.4.8 reads to turn sign-in on. */
@@ -71,7 +67,7 @@ export class AuthOptionsTransform {
     const edits: ISourceEdit[] = [];
     const findings: IFinding[] = [];
 
-    for (const { value, anchor, declaredType, untypedOption } of values) {
+    for (const { value, anchor, declaredType } of values) {
       const line = CodemodSource.lineOf({ sourceFile, node: anchor });
 
       if (value === undefined) {
@@ -92,14 +88,6 @@ export class AuthOptionsTransform {
         findings.push({ line, name: `CoreBindings.${AUTH_OPTIONS_MEMBER}`, reason: SPREAD_ONLY });
       } else if (edit !== undefined) {
         edits.push(edit);
-
-        if (untypedOption !== undefined) {
-          findings.push({
-            line: CodemodSource.lineOf({ sourceFile, node: untypedOption }),
-            name: ProvideScan.OPTION_DECORATOR,
-            reason: UNTYPED_OPTION,
-          });
-        }
 
         for (const type of AuthOptionsTransform.typesOf({ ts, value, declaredType })) {
           if (
@@ -201,7 +189,7 @@ export class AuthOptionsTransform {
     const { ts, sourceFile, isKey } = opts;
     const found: IOptionsValue[] = [];
 
-    for (const { method, keyNode, isOption } of ProvideScan.providedMethods({ ts, sourceFile })) {
+    for (const { method, keyNode } of ProvideScan.providedMethods({ ts, sourceFile })) {
       if (!isKey(keyNode)) {
         continue;
       }
@@ -217,7 +205,6 @@ export class AuthOptionsTransform {
           value: statement.expression,
           anchor: statement,
           declaredType: method.type,
-          untypedOption: isOption && method.type === undefined ? method.name : undefined,
         });
       }
     }
