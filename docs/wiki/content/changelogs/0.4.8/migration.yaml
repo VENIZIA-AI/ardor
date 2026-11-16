@@ -36,6 +36,7 @@ remove-send-response:
   downgrade:
     steps:
       - Pin the ARDOR packages to 0.4.7 or earlier and rename INetworkResponse back to ISendResponse where you changed it (INetworkResponse also exists in 0.4.7, so leaving it is safe).
+  data: Nothing stored changes.
   codemod: namespace
 
 remove-list-filter-offset:
@@ -125,7 +126,7 @@ sign-out-clears-store:
   downgrade:
     steps:
       - Pin the packages to 0.4.7 or earlier, where sign-out removes only keys under @app/auth/ and empties the query cache only on react-admin's own logout. Keys you moved to @app/prefs/ stay valid there.
-  data: Keys under @app/store/ (or @app/store/<id>/ when the application has an id), in localStorage and sessionStorage, are removed at the end of every session, and the old key of a moved preference is not migrated. Another open tab clears when it next ends its own session. Override clearStoredData to keep some keys.
+  data: Keys under @app/store/ (or @app/store/<id>/ when the application has an id), in localStorage and sessionStorage, are removed at the end of every session, and the old key of a moved preference is not migrated. Another open tab clears as soon as it sees the session end. Override clearStoredData to keep some keys.
 
 remove-any-aliases:
   symbols: [AnyType, AnyObject]

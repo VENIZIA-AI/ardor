@@ -384,10 +384,11 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   test('a burst of 401s makes one refresh, and a subscriber of the auth service hears it once', async () => {
     const heard: Array<number> = [];
-    authService.subscribe({ listener: () => heard.push(1) });
+    const stop = authService.subscribe({ listener: () => heard.push(1) });
     const service = createService();
 
     await Promise.all([getItems(service), getItems(service), getItems(service)]);
+    stop();
 
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
     expect(heard).toHaveLength(1);
@@ -411,7 +412,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   test('a failed refresh ends the session when the application clears it in onAuthFailure', async () => {
     const heard: Array<boolean> = [];
-    authService.subscribe({ listener: () => heard.push(!!authService.getAuth()) });
+    const stop = authService.subscribe({ listener: () => heard.push(!!authService.getAuth()) });
 
     class EndingService extends DefaultNetworkRequestService {
       protected override onAuthFailure(): Promise<void> {
@@ -428,6 +429,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     });
     refreshAnswer = () => new Response('nope', { status: 500 });
     const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    stop();
 
     expect(error).toMatchObject({ statusCode: 401 });
 

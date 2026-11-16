@@ -34,6 +34,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'tok-secret-value',
       type: 'Bearer',
       provider: 'oidc',
+      userId: 'user-001',
     });
 
     expect(JSON.parse(storedIdentity ?? '{}')).toEqual({
@@ -109,6 +110,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'github-access-token',
       type: 'Bearer',
       provider: 'github',
+      userId: 42,
     });
   });
 
@@ -194,6 +196,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'token-only',
       type: 'Bearer',
       provider: '',
+      userId: 'usr-defaults',
     });
   });
 
@@ -475,10 +478,11 @@ describe('subscribe', () => {
   test('saveAuth notifies after the token and the identity are stored', () => {
     const service = new DefaultAuthService();
     const seen: Array<string | undefined> = [];
-    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+    const stop = service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
 
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     service.saveAuth({ userId: 7, token: { value: 'tok-2', type: 'Bearer' } });
+    stop();
 
     expect(seen).toEqual(['tok-1', 'tok-2']);
   });
@@ -487,9 +491,10 @@ describe('subscribe', () => {
     const service = new DefaultAuthService();
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     const seen: Array<string | undefined> = [];
-    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+    const stop = service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
 
     service.cleanUp();
+    stop();
 
     expect(seen).toEqual([undefined]);
   });
@@ -508,15 +513,21 @@ describe('subscribe', () => {
   test('a listener that throws does not break saveAuth, cleanUp or the other listeners', () => {
     const service = new DefaultAuthService();
     const calls: Array<string> = [];
-    service.subscribe({
-      listener: () => {
-        throw new Error('listener failed');
-      },
-    });
-    service.subscribe({ listener: () => calls.push('second') });
+    const stops = [
+      service.subscribe({
+        listener: () => {
+          throw new Error('listener failed');
+        },
+      }),
+      service.subscribe({ listener: () => calls.push('second') }),
+    ];
 
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     service.cleanUp();
+
+    for (const stop of stops) {
+      stop();
+    }
 
     expect(calls).toEqual(['second', 'second']);
     expect(service.getAuth()).toBeNull();

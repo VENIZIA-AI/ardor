@@ -139,6 +139,21 @@ describe('DefaultAuthService with an application id', () => {
     expect(new Forgetting().keys.token).toBe(LocalStorageKeys.KEY_AUTH_TOKEN);
   });
 
+  test('cleanUp of an application without an id leaves the session of an application with one', () => {
+    const shop = serviceOf('shop');
+    const anonymous = serviceOf();
+    signIn(shop, 'alice');
+    signIn(anonymous, 'bob');
+
+    anonymous.cleanUp();
+
+    expect(anonymous.getAuth()).toBeNull();
+    expect(anonymous.getUser()).toEqual({});
+    expect(shop.getAuth()?.value).toBe('alice-token');
+    expect(shop.getUser()).toMatchObject({ userId: 'alice' });
+    expect([...shop.getRoles()]).toEqual(['alice-role']);
+  });
+
   test('an id that is a prefix of another id does not reach it', () => {
     const short = serviceOf('app');
     const long = serviceOf('app-2');

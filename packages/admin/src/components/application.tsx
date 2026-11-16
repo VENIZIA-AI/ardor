@@ -92,6 +92,17 @@ const useFeatureMessagesReady = (opts: {
   return state.isReady;
 };
 
+/** Who the stored session belongs to: the user id as text, `''` when the session names none, `undefined` without a session. */
+const readSessionUser = (opts: { authService: DefaultAuthService }): string | undefined => {
+  const { authService } = opts;
+
+  if (!authService.getAuth()?.value) {
+    return undefined;
+  }
+
+  return String(authService.getUser().userId ?? '');
+};
+
 /**
  * The application shell. It resolves the data, auth and i18n providers from `container`, mounts the
  * `resources` and `routes` of the application and of each feature inside react-admin, and wraps it
@@ -128,7 +139,8 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
   }, [container]);
 
   // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
-  // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not).
+  // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not) and when
+  // another user signs in over the first, which also ends the answers of `canAccess` of the first.
   const queryClient = React.useMemo(() => {
     return reactAdminProps.queryClient ?? new QueryClient();
   }, [reactAdminProps.queryClient]);
@@ -139,19 +151,49 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       isOptional: true,
     });
 
-    return authService?.subscribe({
+    if (!authService) {
+      return undefined;
+    }
+
+    // `resetQueries`, not `clear`: a page that is open holds its query, and only a reset tells it to drop its data.
+    const resetCache = () => {
+      queryClient.resetQueries().catch((error: unknown) => {
+        LoggerFactory.getLogger(['ArdorApplication']).error(
+          '[resetCache] failed | error: %o',
+          error,
+        );
+      });
+    };
+
+    // The user the cache belongs to: `undefined` when no session was announced since the last clear.
+    let cachedUser = readSessionUser({ authService });
+
+    const stop = authService.subscribe({
       listener: () => {
-        if (!authService.getAuth()?.value) {
+        const user = readSessionUser({ authService });
+
+        if (user === undefined) {
           // After the redirect to the sign-in page, as react-admin's own sign-out does.
           setTimeout(() => {
-            // Not when the next user signed in meanwhile.
-            if (!authService.getAuth()?.value) {
-              queryClient.clear();
+            // Not when the next user signed in meanwhile: that sign-in judged the cache itself.
+            if (readSessionUser({ authService }) === undefined) {
+              resetCache();
+              cachedUser = undefined;
             }
           }, 0);
+
+          return;
         }
+
+        if (cachedUser !== undefined && cachedUser !== user) {
+          resetCache();
+        }
+
+        cachedUser = user;
       },
     });
+
+    return stop;
   }, [container, queryClient]);
 
   const adminProps = { ...providers, ...reactAdminProps, queryClient };

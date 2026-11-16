@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { configureStore, type Store } from '@reduxjs/toolkit';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
+import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -322,6 +323,10 @@ describe('ArdorApplication logger', () => {
 });
 
 describe('ArdorApplication and the data cache of a signed-out user', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   const renderWithSession = () => {
     const authService = new DefaultAuthService();
     const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
@@ -345,6 +350,47 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
 
   const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 20)));
 
+  test('a page that is open shows the data of the user signed in now, not the one that left', async () => {
+    const authService = new DefaultAuthService();
+    const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    authService.saveAuth({
+      userId: 7,
+      username: 'alice',
+      token: { value: 'jwt-alice', type: 'Bearer' },
+    });
+
+    const Probe = () => {
+      const { data } = useQuery({
+        queryKey: ['probe'],
+        queryFn: () => Promise.resolve(authService.getAuth()?.value ?? 'nobody'),
+      });
+
+      return <p>{`data: ${data}`}</p>;
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/probe']}>
+        <ArdorApplication
+          container={container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          routes={[{ path: '/probe', element: <Probe /> }]}
+        />
+      </MemoryRouter>,
+    );
+    await screen.findByText('data: jwt-alice');
+
+    authService.saveAuth({
+      userId: 8,
+      username: 'bob',
+      token: { value: 'jwt-bob', type: 'Bearer' },
+    });
+
+    await screen.findByText('data: jwt-bob');
+    expect(screen.queryByText('data: jwt-alice')).toBeNull();
+  });
+
   test('is emptied when the session ends by any route', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
@@ -358,20 +404,189 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
   });
 
-  test('is emptied after the redirect, not at once, and not when the next user signed in meanwhile', async () => {
+  test('is emptied after the redirect, not at once, when the session ends', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     authService.cleanUp();
     expect(clear).not.toHaveBeenCalled();
+    await settle();
+
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+  });
+
+  test('is emptied at once when another user signs in over the first, canAccess answers included', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
     authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
+  test('is emptied when the next user signs in within the same tick as the sign-out', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
+    authService.cleanUp();
+    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+    await settle();
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
+  test('is kept when the token of the same user is refreshed', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+    const clear = spyOn(queryClient, 'resetQueries');
+
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-2', type: 'Bearer' } });
     await settle();
 
     expect(clear).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBe(true);
+  });
+
+  test('is kept by the first sign-in of a visitor who had no session', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    const clear = spyOn(queryClient, 'resetQueries');
+
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+
+    expect(clear).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeDefined();
+  });
+
+  test('is emptied when another user signs in over a session that was stored before the page loaded', async () => {
+    const authService = new DefaultAuthService();
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['reports', 'getList'], [{ id: 1, title: 'private' }]);
+    render(
+      <MemoryRouter>
+        <ArdorApplication
+          container={container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          queryClient={queryClient}
+        />
+      </MemoryRouter>,
+    );
+    await screen.findByText('R');
+
+    authService.saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+  });
+
+  test('is emptied when another tab signs in another user', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
+    await settle();
+    queryClient.setQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }], true);
+
+    // What another tab does: it writes the keys, and this tab hears the `storage` events.
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'bob', type: 'Bearer' } });
+
+    for (const key of ['@app/auth/token', '@app/auth/identity']) {
+      globalThis.dispatchEvent(
+        Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+      );
+    }
+
+    expect(queryClient.getQueryData(['reports', 'getList'])).toBeUndefined();
+    expect(
+      queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
+    ).toBeUndefined();
+  });
+
+  test('is emptied once, with the token of the new user, when another tab writes its session key by key', async () => {
+    class EventPerWriteStorage extends FakeStorage {
+      override setItem(key: string, value: string): void {
+        super.setItem(key, value);
+        globalThis.dispatchEvent(
+          Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+        );
+      }
+    }
+
+    const restoreStorage = new EventPerWriteStorage().install();
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-alice', type: 'Bearer' } });
+    await settle();
+    const seen: Array<string | undefined> = [];
+    const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
+      seen.push(authService.getAuth()?.value);
+
+      return Promise.resolve();
+    });
+
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-bob', type: 'Bearer' } });
+    await settle();
+    restoreStorage();
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(['jwt-bob']);
+  });
+
+  test('is emptied once, for the last of two switches close together, and ends with the token of the last user', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-carol', type: 'Bearer' } });
+    await settle();
+    const seen: Array<string | undefined> = [];
+    const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
+      seen.push(`${authService.getUser().userId}|${authService.getAuth()?.value}`);
+
+      return Promise.resolve();
+    });
+    const otherTab = new DefaultAuthService();
+
+    const tokenEvent = () => {
+      globalThis.dispatchEvent(
+        Object.assign(new Event('storage'), { key: '@app/auth/token', storageArea: localStorage }),
+      );
+    };
+
+    otherTab.saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
+    // The second switch has stored its identity when this tab handles the event of the first token.
+    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
+    tokenEvent();
+    await settle();
+    otherTab.saveAuth({ userId: 9, token: { value: 'jwt-bob', type: 'Bearer' } });
+    tokenEvent();
+    await settle();
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(['9|jwt-bob']);
   });
 
   test('stops listening when the application unmounts', async () => {
@@ -379,7 +594,7 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     await screen.findByText('R');
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     await settle();
-    const clear = spyOn(queryClient, 'clear');
+    const clear = spyOn(queryClient, 'resetQueries');
 
     cleanup();
     authService.cleanUp();

@@ -6,6 +6,7 @@ import React, { type ReactNode } from 'react';
 
 import type { IAuthProvider } from '@/common';
 import { useRefreshToken } from '@/hooks/use-refresh-token';
+import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface ICreateMockAuthProviderOptions {
   readonly refreshToken?: () => Promise<boolean>;
@@ -106,7 +107,7 @@ describe('useRefreshToken', () => {
     expect(resolvedResult).toBe(true);
   });
 
-  test('invalidates query cache for auth getPermissions after a refresh', async () => {
+  test('invalidates the cached canAccess answers after a refresh, and nothing else', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -114,7 +115,9 @@ describe('useRefreshToken', () => {
         },
       },
     });
-    const invalidateQueriesSpy = spyOn(queryClient, 'invalidateQueries');
+    const canAccessKey = ['auth', 'canAccess', { resource: 'orders', action: 'list' }];
+    queryClient.setQueryData(canAccessKey, true);
+    queryClient.setQueryData(['orders', 'getList'], [{ id: 1 }]);
     const authProvider = createMockAuthProvider({
       refreshToken: mock((): Promise<boolean> => {
         return Promise.resolve(true);
@@ -136,10 +139,38 @@ describe('useRefreshToken', () => {
       await result.current();
     });
 
-    expect(invalidateQueriesSpy).toHaveBeenCalledTimes(1);
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: ['auth', 'getPermissions'],
+    expect(queryClient.getQueryState(canAccessKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['orders', 'getList'])?.isInvalidated).toBe(false);
+  });
+
+  test('does not invalidate anything when the refresh rejects', async () => {
+    const queryClient = new QueryClient();
+    const invalidateQueriesSpy = spyOn(queryClient, 'invalidateQueries');
+    const authProvider = createMockAuthProvider({
+      refreshToken: mock((): Promise<boolean> => {
+        return Promise.reject(new Error('refresh failed'));
+      }),
     });
+    const wrapper = createWrapper({
+      authProvider,
+      queryClient,
+    });
+
+    const { result } = renderHook(
+      () => {
+        return useRefreshToken();
+      },
+      { wrapper },
+    );
+
+    let rejection: unknown;
+    await act(async (): Promise<void> => {
+      const result3 = await RejectionHelper.rejectionOf({ task: result.current() });
+      rejection = result3;
+    });
+
+    expect(rejection).toMatchObject({ message: 'refresh failed' });
+    expect(invalidateQueriesSpy).not.toHaveBeenCalled();
   });
 
   test('resolves false and touches nothing when auth provider is missing', async () => {

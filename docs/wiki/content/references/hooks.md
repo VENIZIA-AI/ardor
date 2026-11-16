@@ -48,7 +48,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
 | Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
 | Translate message keys without key type checking | `useUntypedTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
-| Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
+| Refresh session token and invalidate canAccess queries | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
 | List mounted application features | `useFeatures` | `ApplicationContext` with a container | `Array<TItem>` |
@@ -329,7 +329,7 @@ export function RefreshTokenButton() {
 
 - **Parameters**: None.
 - **Return value**: A callback function `() => Promise<boolean>`: `true` when the token was refreshed, `false` when there is no auth provider or no refresh to make; it rejects when the auth provider's `refreshToken` rejects.
-- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
+- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. After a refresh it invalidates the cached `canAccess` answers (queries under `['auth', 'canAccess']`), not `getPermissions`, which the default auth provider always resolves with `undefined`. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
 
 ### useNotifyError
 
