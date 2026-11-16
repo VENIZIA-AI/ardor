@@ -558,6 +558,38 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(seen).toEqual(['jwt-bob']);
   });
 
+  test('is emptied once, for the last of two switches close together, and ends with the token of the last user', async () => {
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-carol', type: 'Bearer' } });
+    await settle();
+    const seen: Array<string | undefined> = [];
+    const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
+      seen.push(`${authService.getUser().userId}|${authService.getAuth()?.value}`);
+
+      return Promise.resolve();
+    });
+    const otherTab = new DefaultAuthService();
+
+    const tokenEvent = () => {
+      globalThis.dispatchEvent(
+        Object.assign(new Event('storage'), { key: '@app/auth/token', storageArea: localStorage }),
+      );
+    };
+
+    otherTab.saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
+    // The second switch has stored its identity when this tab handles the event of the first token.
+    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
+    tokenEvent();
+    await settle();
+    otherTab.saveAuth({ userId: 9, token: { value: 'jwt-bob', type: 'Bearer' } });
+    tokenEvent();
+    await settle();
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(['9|jwt-bob']);
+  });
+
   test('stops listening when the application unmounts', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
