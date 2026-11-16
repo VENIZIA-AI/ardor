@@ -155,6 +155,22 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       expect(authService.getAuth()?.value).toBe('bob-token');
     });
 
+    test('a switch to another user that has stored its identity only is a session change, not a sign-out', async () => {
+      refreshHook = () =>
+        localStorage.setItem(authService.keys.identity, JSON.stringify({ userId: 9 }));
+
+      itemsHook = () => {
+        authService.saveAuth({ userId: 8, token: { value: 'alice-token', type: 'Bearer' } });
+        localStorage.setItem(authService.keys.identity, JSON.stringify({ userId: 9 }));
+      };
+
+      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+
+      expect(authService.isSwitching()).toBe(true);
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(refreshes()).toEqual([]);
+    });
+
     test('a refreshToken override that answers true after another user signed in replays nothing', async () => {
       class CustomService extends DefaultNetworkRequestService {
         protected override async refreshToken(): Promise<boolean> {
