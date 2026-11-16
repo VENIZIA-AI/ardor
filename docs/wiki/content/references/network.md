@@ -122,6 +122,7 @@ The configuration relies on the following defaults and container keys:
 - **`noAuthPathRegex`:** A regular expression pattern or patterns. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints.
 - **`authRecovery.refreshTokenPath`:** Excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to.
 - **`authService`:** `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request.
+- **Your own `refreshToken`:** with no `authService`, an override that saves a new token itself must keep the identity of the session it refreshed, or return the new token, so the transport can tell a refresh from another user's sign-in in another tab during it; the default path does.
 - **`requestTracingChannel`:** Sent when `getRequestProps` prepares request options from `IRestDataProviderOptions`.
 
 ## Fetch transport and timeout
