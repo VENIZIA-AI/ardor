@@ -67,6 +67,8 @@ The kernel defines twelve keys in `CoreBindings` (`packages/kernel/src/common/ke
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`.
 
+A route with `access` needs both sign-in (`CoreBindings.AUTH_PROVIDER_OPTIONS` with `use: true`) and a bound `CoreBindings.PERMISSION_PROVIDER`; without either, `ArdorApplication` throws at mount and names the route.
+
 ## Values that change per environment
 
 Build one image and run it in every environment: a value such as the API address is read when the app starts, not baked into the build. `RuntimeConfig` (from `@venizia/ardor`) reads it:

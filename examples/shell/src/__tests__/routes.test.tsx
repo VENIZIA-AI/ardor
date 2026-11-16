@@ -28,13 +28,13 @@ describe('the routes of the features', () => {
     expect(screen.queryByTestId(ShellTestIds.MENU)).toBeNull();
   });
 
-  test('a viewer who opens the order summary sees the layout and no page', async () => {
+  test('a viewer who opens the order summary lands on the access-denied page, not the summary', async () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/summary' });
 
-    await waitFor(() =>
-      expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts'),
-    );
+    const denied = await screen.findByRole('heading', { name: 'Access denied' });
+    expect(denied).toBeDefined();
+    expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts');
     expect(screen.queryByRole('heading', { name: 'Order summary' })).toBeNull();
   });
 

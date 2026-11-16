@@ -30,8 +30,8 @@ classes and messages. It shows, end to end:
 - **A menu filtered by access** - `ShellLayout` renders `Ardor.useMenuEntries()` and the role badge
   from `Ardor.useRoles()`. A viewer sees two entries, an admin three.
 - **A gated route** - `/orders/summary` declares `access: { resource: 'orders', action: 'summary' }`
-  and loads its page with `React.lazy`. A denied user sees the layout and no page: a custom route with
-  `access` renders nothing when denied, it does not redirect.
+  and loads its page with `React.lazy`. A denied user is sent to the default access-denied page at
+  `/access-denied`, the redirect a custom route with `access` makes when denied.
 - **The default access-denied page** - `orders` also has a `show` page. A viewer, who holds no
   `orders.show`, lands on `AccessDeniedPage` at `/access-denied`, the redirect react-admin makes for a
   resource page. react-admin can start the `getOne` before the check answers; the stub API refuses
