@@ -6,6 +6,7 @@ import { makeScratch } from '../../scratch';
 import type { TGh } from '../github-release';
 import { GithubRelease, GithubReleaseConstants } from '../github-release';
 import { MergeBackConstants, ReleaseMergeBack } from '../merge-back';
+import { ReleaseNotes } from '../release-notes';
 
 const roots: string[] = [];
 
@@ -116,6 +117,8 @@ interface IStubGh {
   /** The notes file of the last create, read while it still existed. */
   notes: () => string;
   created: () => string[];
+  /** The files the last create attached, by name, read while they still existed. */
+  assets: () => Record<string, string>;
 }
 
 /** A stand-in for `gh`: records every call, and reads the notes file while it still exists. */
@@ -127,10 +130,12 @@ const stubGh = (opts: {
 }): IStubGh => {
   const calls: string[][] = [];
   let notes = '';
+  let assets: Record<string, string> = {};
 
   return {
     calls,
     notes: () => notes,
+    assets: () => assets,
     created: () => calls.find((call) => call[1] === 'create') ?? [],
     gh: ({ args }) => {
       calls.push(args);
@@ -154,6 +159,11 @@ const stubGh = (opts: {
       }
 
       notes = readFileSync(args[args.indexOf('--notes-file') + 1] ?? '', 'utf8');
+      assets = Object.fromEntries(
+        args
+          .slice(3, args.indexOf('--title'))
+          .map((file) => [file.split('/').pop() ?? '', readFileSync(file, 'utf8')]),
+      );
 
       return opts.createFails === true
         ? { status: 1, stdout: '', stderr: 'HTTP 422: tag does not exist' }
@@ -292,7 +302,7 @@ describe('GithubRelease.create: a stable', () => {
     const outcome = make({ root, kind: 'stable', version: '0.4.7', stub });
 
     expect(outcome.state).toBe('created');
-    expect(stub.notes()).toContain(GithubReleaseConstants.NO_USER_CHANGES);
+    expect(stub.notes()).toContain(ReleaseNotes.NO_USER_CHANGES);
   });
 
   test('an older stable is not Latest when a higher stable tag exists', () => {
@@ -314,81 +324,151 @@ describe('GithubRelease.create: a stable', () => {
   });
 });
 
-describe('GithubRelease.create: a prerelease', () => {
-  test('is a Pre-release, never Latest, with the @next install line and the [#N] subjects', () => {
+describe('GithubRelease.create: a prerelease makes no Release', () => {
+  test('a prerelease is skipped: exit 0, and gh is never asked', () => {
     const root = fixture();
     const stub = stubGh({});
     const outcome = make({ root, kind: 'prerelease', version: '0.4.6-1', stub });
 
+    expect(outcome.state).toBe('skipped');
+    expect(outcome.message).toContain('only a stable has a GitHub Release');
+    expect(stub.calls).toEqual([]);
+    expect(
+      GithubRelease.main({
+        args: [
+          'create',
+          '--version',
+          '0.4.6-1',
+          '--kind',
+          'prerelease',
+          '--packages',
+          ALL.join(','),
+        ],
+        env: { RUNNER_TEMP: scratch() },
+        cwd: root,
+        gh: stub.gh,
+      }),
+    ).toBe(0);
+    expect(stub.calls).toEqual([]);
+  });
+});
+
+/** The four live packages of the fixture manifest, in release order: the set a version folder belongs to. */
+const SET = ['@x/kernel', '@x/react', '@x/admin', '@x/ardor'];
+const REAL_LOG = readFileSync(
+  join(import.meta.dir, '..', '..', '..', 'docs/wiki/content/changelogs/0.4.7/log.md'),
+  'utf8',
+);
+
+/** The fixture with a stable 0.4.7 whose release commit holds the version folder `docs/changelogs/0.4.7/`. */
+const folderFixture = (opts: { log?: string; migration?: string; dirs?: string[] }): string => {
+  const root = fixture();
+
+  commit({
+    root,
+    message: '[#20] chore(ardor): release v0.4.7 [0.4.7]',
+    files: {
+      'docs/changelogs/0.4.7/log.md': opts.log ?? REAL_LOG,
+      ...(opts.migration === undefined
+        ? {}
+        : { 'docs/changelogs/0.4.7/migration.yaml': opts.migration }),
+    },
+  });
+  tagRun({ root, version: '0.4.7', dirs: opts.dirs });
+
+  return root;
+};
+
+describe('GithubRelease.create: a stable with a version folder', () => {
+  test('the notes are the body of the real 0.4.7 log.md, then the packages of the set', () => {
+    const root = folderFixture({});
+    const stub = stubGh({});
+    const outcome = make({ root, kind: 'stable', version: '0.4.7', stub });
+
     expect(outcome.state).toBe('created');
-    expect(stub.created()).toContain('--prerelease');
-    expect(stub.created()).not.toContain('--latest');
-    expect(stub.created()).not.toContain('--latest=false');
-    expect(stub.created()).toContain('ardor-v0.4.6-1');
-    expect(stub.created()).toContain('ARDOR 0.4.6-1');
-    expect(stub.notes()).toContain('Install: `npm install @x/ardor@next`');
-    // Since ardor-v0.4.6-0: the third change; a commit with no issue and the release commit are left out.
-    expect(stub.notes()).toContain('[#11] fix(c): third change');
-    expect(stub.notes()).not.toContain('housekeeping');
-    expect(stub.notes()).not.toContain('release v0.4.6-1');
-    expect(stub.notes()).not.toContain('[#10] feat(b)');
-    expect(stub.notes()).toContain('```text');
+    expect(stub.notes()).toBe(
+      ReleaseNotes.notesOf({ log: REAL_LOG, names: SET, version: '0.4.7' }),
+    );
+    expect(stub.notes().startsWith('ARDOR 0.4.7 moves utility functions')).toBe(true);
+    expect(stub.notes()).not.toContain('released: 2026-11-03');
+    // The dated entries of the fixture are not read for a version that has a folder.
+    expect(stub.notes()).not.toContain('B body line.');
+    expect(stub.created()).toEqual([
+      'release',
+      'create',
+      'ardor-v0.4.7',
+      '--title',
+      'ARDOR 0.4.7',
+      '--notes-file',
+      expect.any(String),
+      '--verify-tag',
+      '--latest',
+    ]);
   });
 
-  test('lists the packages of the run, in order, and the install line names the last of them', () => {
-    const root = fixture();
+  test('a log.md with nothing but its frontmatter says there is no change for users', () => {
     const stub = stubGh({});
 
-    make({ root, kind: 'prerelease', version: '0.4.6-1', stub, dirs: ['kernel', 'react'] });
-    // The Release goes on the tag of the last package of the run.
-    expect(stub.created()).toContain('react-v0.4.6-1');
-    expect(stub.notes()).toContain('Install: `npm install @x/react@next`');
-    expect(stub.notes()).toContain('@x/kernel@0.4.6-1');
-    expect(stub.notes()).toContain('@x/react@0.4.6-1');
-    expect(stub.notes()).not.toContain('@x/admin@');
-    expect(stub.notes()).not.toContain('@x/ardor@');
+    make({
+      root: folderFixture({ log: '---\ntitle: 0.4.7\nversion: 0.4.7\n---\n' }),
+      kind: 'stable',
+      version: '0.4.7',
+      stub,
+    });
+    expect(stub.notes()).toBe(ReleaseNotes.notesOf({ log: '', names: SET, version: '0.4.7' }));
+    expect(stub.notes().startsWith(ReleaseNotes.NO_USER_CHANGES)).toBe(true);
   });
 
-  test('caps the subjects at 30 and says how many were left out', () => {
-    const root = fixture();
+  test('migration.yaml with a block is attached as migration-<version>.yaml', () => {
+    const migration = 'an-item:\n  symbols: [A]\n';
+    const stub = stubGh({});
 
-    for (let index = 0; index < 33; index += 1) {
-      commit({ root, message: `[#${100 + index}] chore(x): change ${index}` });
+    make({ root: folderFixture({ migration }), kind: 'stable', version: '0.4.7', stub });
+
+    expect((stub.created()[3] ?? '').endsWith('/migration-0.4.7.yaml')).toBe(true);
+    expect(stub.created()[4]).toBe('--title');
+    expect(stub.assets()).toEqual({ 'migration-0.4.7.yaml': migration });
+  });
+
+  test('no asset when migration.yaml is absent, empty or {}', () => {
+    for (const migration of [undefined, '', '{}\n']) {
+      const stub = stubGh({});
+
+      make({ root: folderFixture({ migration }), kind: 'stable', version: '0.4.7', stub });
+      expect(stub.created()[3]).toBe('--title');
+      expect(stub.assets()).toEqual({});
     }
-
-    commit({ root, message: '[#200] chore(ardor): release v0.4.7-0 [0.4.7-0]' });
-    tagRun({ root, version: '0.4.7-0' });
-
-    const stub = stubGh({});
-
-    make({ root, kind: 'prerelease', version: '0.4.7-0', stub });
-    // The previous tag is the highest below it, 0.4.6 (any kind): 33 changes, the release commit left out.
-    expect(stub.notes()).toContain('... and 3 more');
-    expect(
-      stub
-        .notes()
-        .split('\n')
-        .filter((line) => line.startsWith('[#')).length,
-    ).toBe(30);
   });
 
-  test('a subject cannot break out of the fenced list', () => {
-    const root = fixture();
+  test('a dry run names the folder and the asset, and creates nothing', () => {
+    const stub = stubGh({});
+    const outcome = make({
+      root: folderFixture({ migration: 'an-item:\n  symbols: [A]\n' }),
+      kind: 'stable',
+      version: '0.4.7',
+      stub,
+      dryRun: true,
+    });
 
-    commit({ root, message: '[#300] fix(x): sneaky ``` @octocat closes #1' });
-    commit({ root, message: '[#301] chore(ardor): release v0.4.7-0 [0.4.7-0]' });
-    tagRun({ root, version: '0.4.7-0' });
+    expect(outcome.state).toBe('planned');
+    expect(outcome.message).toContain('notes from docs/changelogs/0.4.7/log.md');
+    expect(outcome.message).toContain('migration-0.4.7.yaml attached');
+    expect(stub.created()).toEqual([]);
+  });
 
+  test('a Release made on another package than the umbrella does not read the folder', () => {
     const stub = stubGh({});
 
-    make({ root, kind: 'prerelease', version: '0.4.7-0', stub });
-    expect(stub.notes()).toContain("sneaky ''' @octocat closes #1");
-    expect(
-      stub
-        .notes()
-        .split('\n')
-        .filter((line) => line === '```text'),
-    ).toHaveLength(1);
+    make({
+      root: folderFixture({ dirs: ['kernel', 'react'] }),
+      kind: 'stable',
+      version: '0.4.7',
+      stub,
+      dirs: ['kernel', 'react'],
+    });
+    expect(stub.created()).toContain('react-v0.4.7');
+    expect(stub.notes()).not.toContain('ARDOR 0.4.7 moves utility functions');
+    expect(stub.assets()).toEqual({});
   });
 });
 
@@ -573,13 +653,6 @@ describe('GithubRelease.create: the findings of the security review', () => {
     expect(GithubRelease.tagOf({ pattern: PATTERN, dir: 'ardor', version: "1$&$'x" })).toBe(
       "ardor-v1$&$'x",
     );
-  });
-
-  test('a subject longer than 300 characters is cut', () => {
-    const [capped] = GithubRelease.cappedSubjects({ subjects: ['[#1] ' + 'x'.repeat(1000)] });
-
-    expect(capped?.length).toBe(GithubReleaseConstants.MAX_SUBJECT_LENGTH);
-    expect(capped?.endsWith('...')).toBe(true);
   });
 
   test('the notes of a stable that would not fit GitHub are cut with a closing line', () => {
