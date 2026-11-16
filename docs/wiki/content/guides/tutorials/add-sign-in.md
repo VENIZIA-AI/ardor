@@ -12,18 +12,18 @@ import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AuthConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true, paths: { afterLogin: '/dashboard' } };
   }
@@ -134,7 +134,7 @@ import {
   BaseArdorApplication,
   configuration,
   CoreBindings,
-  provideOption,
+  provide,
   RolePermissionProvider,
   type IApplicationInfo,
   type IRolePermissionProviderOptions,
@@ -147,7 +147,7 @@ export class Roles {
 
 @configuration()
 export class PermissionConfiguration {
-  @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
   permissionOptions(): IRolePermissionProviderOptions {
     return {
       grants: {

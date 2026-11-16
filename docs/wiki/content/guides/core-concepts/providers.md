@@ -5,7 +5,7 @@ description: Understand ARDOR framework providers, how an application binds thei
 
 # Providers
 
-ARDOR coordinates data, authentication, and internationalization through providers. `BaseArdorApplication` binds the default providers itself, so an application binds only their options, in a `@configuration()` class with `@provideOption` methods. `ArdorApplication` resolves the providers from the container and supplies them to react-admin:
+ARDOR coordinates data, authentication, and internationalization through providers. `BaseArdorApplication` binds the default providers itself, so an application binds only their options, in a `@configuration()` class with `@provide` methods. `ArdorApplication` resolves the providers from the container and supplies them to react-admin:
 
 <<< @/../../../examples/5-mins-qs/src/configurations/admin.configuration.ts{ts}
 
@@ -32,7 +32,7 @@ ARDOR coordinates data, authentication, and internationalization through provide
 <rect x="574" y="6" width="106" height="260" rx="10"/>
 </g>
 <g fill="currentColor" font-weight="600">
-<text x="109" y="30" text-anchor="middle">Options (@provideOption)</text>
+<text x="109" y="30" text-anchor="middle">Options (@provide)</text>
 <text x="379" y="30" text-anchor="middle">IoC Container (Singletons)</text>
 <text x="627" y="30" text-anchor="middle">ArdorApplication</text>
 </g>
@@ -151,7 +151,7 @@ Some administrative applications do not require authentication, authorization, o
 
 An application with no sign-in binds `{ use: false }` for `AUTH_PROVIDER_OPTIONS`, or binds no auth options at all (the two mean the same). `ArdorApplication` resolves the auth provider only when the options say `{ use: true }`:
 
-1. **Bind `{ use: false }`**: a `@provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })` method returns `{ use: false }`, typed `TAuthProviderOptions`. The base application still binds `DefaultAuthProvider`; it is never resolved.
+1. **Bind `{ use: false }`**: a `@provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })` method returns `{ use: false }`, typed `TAuthProviderOptions`. The base application still binds `DefaultAuthProvider`; it is never resolved.
 2. **`ArdorApplication` handles omission**: With `use: false` or no options, `authProvider` is omitted from the props passed to `CoreAdmin`.
 3. **React-admin runs without auth**: No sign-in screen is rendered, and all resource routes and custom routes are immediately accessible.
 4. **Configure network options**: In `REST_DATA_PROVIDER_OPTIONS`, set `noAuthPathRegex: /./` so that `DefaultNetworkRequestService` sends every HTTP request without attempting to attach an `Authorization` header.

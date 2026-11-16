@@ -117,12 +117,12 @@ import {
   CountRestDataProvider,
   type IApplicationInfo,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
 } from '@venizia/ardor';
 
 @configuration()
 export class ShopConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api' };
   }

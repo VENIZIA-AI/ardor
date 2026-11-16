@@ -49,7 +49,7 @@ bun run ardor codemod default-providers src
 
 ### auth-options
 
-An app with sign-in must say so: the auth options need `use: true`. The codemod puts it first in the object literal that a `@provide` or `@provideOption` method returns for `CoreBindings.AUTH_PROVIDER_OPTIONS`, or that `bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(...)` receives. The key may be written as its string value, and `CoreBindings` or the decorator may be imported under another name.
+An app with sign-in must say so: the auth options need `use: true`. The codemod puts it first in the object literal that a `@provide` method returns for `CoreBindings.AUTH_PROVIDER_OPTIONS`, or that `bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(...)` receives. The key may be written as its string value, and `CoreBindings` or the decorator may be imported under another name.
 
 ```diff
    @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
@@ -61,7 +61,7 @@ An app with sign-in must say so: the auth options need `use: true`. The codemod 
 
 - A literal that already has `use`, `true` or `false`, is left as it is.
 - Options that are not a plain object literal (a variable, a call, only a spread) are listed as `left` with their line and not changed. Add `use: true` there by hand.
-- A type that no longer fits is listed as `left` too, and the `use: true` is still added: a return type, `as` or `satisfies` of `IAuthProviderOptions`, which has no `use` (type it as `TAuthProviderOptions`), and a `@provideOption` method with no return type, where `use: true` would be read as `boolean` (declare `TAuthProviderOptions`).
+- A type that no longer fits is listed as `left` too, and the `use: true` is still added: a return type, `as` or `satisfies` of `IAuthProviderOptions`, which has no `use` (type it as `TAuthProviderOptions`).
 - Each change prints a `note` that sign-in is now on. An app with no sign-in binds `{ use: false }` or no options and needs nothing.
 
 ### base-application-import
@@ -80,7 +80,7 @@ An app with sign-in must say so: the auth options need `use: true`. The codemod 
 
 ### default-providers
 
-0.4.8 binds `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider` and `DefaultAuthService` itself, so a method that builds one by hand can go. This codemod never writes: it prints one line, `path:line  the pattern  what to do`, for each `@provide` or `@provideOption` method that returns `<expr>.instantiate(X).value(<expr>)` for a default provider class, or under one of the three default provider keys.
+0.4.8 binds `DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider` and `DefaultAuthService` itself, so a method that builds one by hand can go. This codemod never writes: it prints one line, `path:line  the pattern  what to do`, for each `@provide` or `@provide` method that returns `<expr>.instantiate(X).value(<expr>)` for a default provider class, or under one of the three default provider keys.
 
 ```text
 src/configurations/shop.ts:12  authProvider(): instantiate(DefaultAuthProvider).value()  delete this method and the APPLICATION_INSTANCE it injects if nothing else uses it: ARDOR binds DefaultAuthProvider itself

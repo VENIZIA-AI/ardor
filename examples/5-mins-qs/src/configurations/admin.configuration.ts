@@ -4,7 +4,7 @@ import {
   englishMessages,
   type II18nProviderOptions,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
@@ -21,18 +21,18 @@ declare module '@venizia/ardor' {
 // token, headers and single 401 refresh.
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     // The sign-in path and body default to IGNIS's auth controller: POST /auth/sign-in.
     return { use: true, paths: { afterLogin: '/products' } };
   }
 
-  @provideOption({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
   i18nProviderOptions(): II18nProviderOptions {
     return {
       i18nSources: {

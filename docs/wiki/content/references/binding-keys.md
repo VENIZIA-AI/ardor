@@ -27,45 +27,15 @@ export const useRestDataProvider = () => {
 | `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | `BaseArdorApplication` (`DefaultAuthProvider`) | `ArdorApplication`, when sign-in is on | Bound by default |
 | `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | `BaseArdorApplication` (`DefaultI18nProvider`) | `ArdorApplication` | Bound by default |
 | `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | `BaseArdorApplication` (`DefaultRestDataProvider`) | `ArdorApplication`, `DefaultAuthProvider`, `useRequestHeaderLocale` | Bound by default |
-| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provideOption`) | `DefaultAuthProvider`, `ArdorApplication` | `{ use: true }` signs in; unbound is `{ use: false }` |
+| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provide`) | `DefaultAuthProvider`, `ArdorApplication` | `{ use: true }` signs in; unbound is `{ use: false }` |
 | `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | `BaseArdorApplication` (`DefaultAuthService`) | `DefaultAuthProvider`, `RolePermissionProvider`, `useRoles`; optional: `ArdorApplication`, `DefaultRestDataProvider` | Bound by default |
-| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provideOption`) | `DefaultRestDataProvider` | Required |
-| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provideOption`) | `DefaultI18nProvider` | Optional: unbound is English only |
+| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provide`) | `DefaultRestDataProvider` | Required |
+| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provide`) | `DefaultI18nProvider` | Optional: unbound is English only |
 | `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
 | `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`bindContext()`, or `@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
-| `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` | Application (`@provideOption`) | `RolePermissionProvider` | Required by `RolePermissionProvider` |
+| `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` | Application (`@provide`) | `RolePermissionProvider` | Required by `RolePermissionProvider` |
 
 `BaseArdorApplication` binds the defaults itself, before anything of the application. To replace one, bind your provider class under its key in `bindContext()`: `.toProvider(MyProvider).setScope(BindingScopes.SINGLETON)`.
-
-### Typed option keys
-
-`ICoreOptionTypes` maps each `*_OPTIONS` key to its options type, and `provideOption` checks a method against it. The method must return the options type of its key, synchronously:
-
-```ts
-import {
-  configuration,
-  CoreBindings,
-  type IRestDataProviderOptions,
-  provideOption,
-} from '@venizia/ardor';
-
-@configuration()
-export class ApiConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions(): IRestDataProviderOptions {
-    return { url: 'https://api.example.com' };
-  }
-}
-```
-
-| Key | Options type |
-|---|---|
-| `AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions` |
-| `REST_DATA_PROVIDER_OPTIONS` | `IRestDataProviderOptions` |
-| `I18N_PROVIDER_OPTIONS` | `II18nProviderOptions` (added by `@venizia/ardor-admin`) |
-| `PERMISSION_PROVIDER_OPTIONS` | `IRolePermissionProviderOptions` |
-
-`@provide` with the same keys still works, but the compiler does not check what it returns.
 
 For binding order in the application lifecycle, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
 

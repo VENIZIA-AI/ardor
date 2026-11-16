@@ -96,11 +96,11 @@ describe('DefaultProvidersTransform', () => {
     ]);
   });
 
-  test('reads the string value of a default key and @provideOption', () => {
+  test('reads the string value of a default key', () => {
     const result = run(
       configuration(
         [
-          "  @provideOption({ key: '@app/application/i18n/default' })",
+          "  @provide({ key: '@app/application/i18n/default' })",
           '  i18n() {',
           '    return app.instantiate(Translations).value(app);',
           '  }',

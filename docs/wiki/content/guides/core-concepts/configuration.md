@@ -1,36 +1,36 @@
 ---
 title: Configuration
-description: Configure ARDOR with @configuration and @provideOption, read per-environment values with RuntimeConfig, and follow the preConfigure() bind order.
+description: Configure ARDOR with @configuration and @provide, read per-environment values with RuntimeConfig, and follow the preConfigure() bind order.
 ---
 
 # Configuration
 
-The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provideOption({ key })` methods return the options of the framework providers. `BaseArdorApplication` binds the providers themselves, so an application binds only options. `start()` binds each method as a lazy SINGLETON.
+The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options of the framework providers. `BaseArdorApplication` binds the providers themselves, so an application binds only options. `start()` binds each method as a lazy SINGLETON.
 
 ```ts
 import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class ExampleConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true, paths: { afterLogin: '/dashboard' } };
   }
 }
 ```
 
-`@configuration()` registers the class, and the build finds it like any other stereotype. Each method decorated with `@provideOption({ key })` defines a binding:
+`@configuration()` registers the class, and the build finds it like any other stereotype. Each method decorated with `@provide({ key })` defines a binding:
 
 - **Lazy resolution**: The method is called on the first `application.get({ key })`. The options of the REST data provider, sign-in and i18n are read earlier, in `start()`, by the check that every provider can be built (see [Failing at boot](../../references/application#failing-at-boot)); the other keys stay lazy.
 - **Singleton scope**: The binding is a `BindingScopes.SINGLETON`, so the return value is cached on first use. `@provide({ key, scope })` takes another scope.
@@ -40,11 +40,6 @@ export class ExampleConfiguration {
 > [!NOTE]
 > An application with no sign-in binds `{ use: false }` (or no auth options at all); `ArdorApplication` then runs without an auth provider.
 
-### Typed option keys
-
-`@provideOption({ key })` is `@provide({ key })` for the options keys of `CoreBindings`: the compiler checks that the method returns the options type of that key, so `return 42` or a missing `url` fails where you write it, not in the middle of a render. The method must return the options itself, not a promise, because the container does not wait for a provider. `@provide` with the same keys still works, but nothing checks what it returns. Use `@provide({ key })` for a binding that is not an options key.
-
-`ICoreOptionTypes` maps each options key to its type: `REST_DATA_PROVIDER_OPTIONS` to `IRestDataProviderOptions`, `AUTH_PROVIDER_OPTIONS` to `TAuthProviderOptions`, `PERMISSION_PROVIDER_OPTIONS` to `IRolePermissionProviderOptions` and `I18N_PROVIDER_OPTIONS` to `II18nProviderOptions`. It is an interface, so a package that adds an options key adds its type with `declare module '@venizia/ardor-kernel'`.
 
 ## Options and provider bindings
 
@@ -52,18 +47,18 @@ The kernel defines twelve keys in `CoreBindings` (`packages/kernel/src/common/ke
 
 | Key | Value / Contract | Bound by | Reference |
 | --- | --- | --- | --- |
-| `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Plain object (`IRestDataProviderOptions`) | Your `@provideOption` | [REST data provider](../../references/data-provider) |
+| `CoreBindings.REST_DATA_PROVIDER_OPTIONS` | Plain object (`IRestDataProviderOptions`) | Your `@provide` | [REST data provider](../../references/data-provider) |
 | `CoreBindings.DEFAULT_REST_DATA_PROVIDER` | `IDataProvider` instance | `BaseArdorApplication` | [REST data provider](../../references/data-provider) |
-| `CoreBindings.AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions`; unbound means `{ use: false }` | Your `@provideOption` | [Auth provider](../../references/auth-provider) |
+| `CoreBindings.AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions`; unbound means `{ use: false }` | Your `@provide` | [Auth provider](../../references/auth-provider) |
 | `CoreBindings.DEFAULT_AUTH_SERVICE` | `DefaultAuthService` instance | `BaseArdorApplication` | [Auth provider](../../references/auth-provider) |
 | `CoreBindings.DEFAULT_AUTH_PROVIDER` | `IAuthProvider` instance, resolved only when `use` is `true` | `BaseArdorApplication` | [Auth provider](../../references/auth-provider) |
-| `CoreBindings.I18N_PROVIDER_OPTIONS` | Plain object (`II18nProviderOptions`); unbound means English only | Your `@provideOption` | [Internationalization](../../references/i18n) |
+| `CoreBindings.I18N_PROVIDER_OPTIONS` | Plain object (`II18nProviderOptions`); unbound means English only | Your `@provide` | [Internationalization](../../references/i18n) |
 | `CoreBindings.DEFAULT_I18N_PROVIDER` | `I18nProvider` instance | `BaseArdorApplication` | [Internationalization](../../references/i18n) |
 | `CoreBindings.APPLICATION_INSTANCE` | `AbstractArdorApplication` container instance | `preConfigure()` | [Application](../../references/application) |
 | `CoreBindings.APPLICATION_INFO` | Plain object (`IApplicationInfo`) from `getAppInfo()` | `preConfigure()` | [Application](../../references/application) |
 | `CoreBindings.FEATURES` | Mounted feature array (`Array<IFeatureBase>`) | `preConfigure()` | [Features](../../references/features) |
 | `CoreBindings.PERMISSION_PROVIDER` | `IPermissionProvider` instance; unbound means every check passes | `bindContext()` | [Permission provider](../../references/permission) |
-| `CoreBindings.PERMISSION_PROVIDER_OPTIONS` | `IRolePermissionProviderOptions` for `RolePermissionProvider` | Your `@provideOption` | [Permission provider](../../references/permission) |
+| `CoreBindings.PERMISSION_PROVIDER_OPTIONS` | `IRolePermissionProviderOptions` for `RolePermissionProvider` | Your `@provide` | [Permission provider](../../references/permission) |
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`.
 
@@ -113,7 +108,7 @@ During `application.start()`, `preConfigure()` in `packages/kernel/src/base/appl
 1. `this.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue(this)` - Binds the application container instance itself. Bound directly by `preConfigure()`.
 2. `CoreBindings.APPLICATION_INFO` - Calls `getAppInfo()`, waits for it when it returns a promise, checks the result, and binds it: `start()` rejects an empty `name`, a `version` that is not a string and an invalid `id`. Bound directly by `preConfigure()`.
 3. `this.bindDefaults()` - Empty in the kernel. `BaseArdorApplication` binds the default providers and `DefaultAuthService` here, each a singleton.
-4. `this.registerArtifacts()` - Discovers all stereotyped classes (`@configuration()`, `@service()`, `@repository()`, `@datasource()`, `@component()`). Leaves out a class whose `when` returns `false`. Asserts that no two of the rest derive colliding binding keys. Binds each class under its derived key in the scope its stereotype declares (`SINGLETON` when none). Binds each method decorated with `@provide({ key })` or `@provideOption({ key })` as a lazy provider (singleton by default).
+4. `this.registerArtifacts()` - Discovers all stereotyped classes (`@configuration()`, `@service()`, `@repository()`, `@datasource()`, `@component()`). Leaves out a class whose `when` returns `false`. Asserts that no two of the rest derive colliding binding keys. Binds each class under its derived key in the scope its stereotype declares (`SINGLETON` when none). Binds each method decorated with `@provide({ key })` or `@provide({ key })` as a lazy provider (singleton by default).
 5. `this.registerFeatures({ features: this.features() })` - Validates that feature names are unique and that all configuration classes listed by features were discovered. Binds `this.bind({ key: CoreBindings.FEATURES }).toValue(features)`. Bound directly by `preConfigure()`.
 6. `this.bindingList()` - Binds each class from the dictionary returned by `this.bindingList()` under its literal key as a singleton.
 7. `this.bindContext()` - Calls the application subclass's `bindContext()` method and returns its result.
@@ -217,13 +212,13 @@ import {
   configuration,
   CoreBindings,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class ApiConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'https://api.example.com', noAuthPaths: ['/auth/sign-in'] };
   }
@@ -231,7 +226,7 @@ export class ApiConfiguration {
 
 @configuration()
 export class AuthConfiguration {
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: true, paths: { afterLogin: '/dashboard' } };
   }
@@ -239,4 +234,4 @@ export class AuthConfiguration {
 ```
 
 - **Configuration class collisions**: Each configuration class is registered under a derived key in the `configurations` namespace (such as `configurations.ApiConfiguration`). `ArtifactBindingKeys.assertNoDerivedCollision()` checks that no two classes derive the exact same binding key. These only collide when two classes share a name, which a minifier can cause. If two classes derive the same key, `registerArtifacts()` throws an error at startup.
-- **Provided key collisions**: If two configuration classes provide the same binding key, classes are registered in the order the registry discovered them, which is the order their modules were evaluated, and the last bind of a key wins. Binding a key again replaces the earlier binding. Do not rely on this order; no collision error is thrown for `@provide()` and `@provideOption()` keys. Use `bindContext()` for deterministic overrides.
+- **Provided key collisions**: If two configuration classes provide the same binding key, classes are registered in the order the registry discovered them, which is the order their modules were evaluated, and the last bind of a key wins. Binding a key again replaces the earlier binding. Do not rely on this order; no collision error is thrown for `@provide()` and `@provide()` keys. Use `bindContext()` for deterministic overrides.

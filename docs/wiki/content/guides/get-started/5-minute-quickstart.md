@@ -37,7 +37,7 @@ Create `src/configurations/admin.configuration.ts`:
 
 <<< @/../../../examples/5-mins-qs/src/configurations/admin.configuration.ts{ts}
 
-`src/configurations/admin.configuration.ts` binds the options of the framework providers. `BaseArdorApplication` binds the providers themselves, each a singleton built on first use, so react-admin, the authentication provider and the hooks share one data provider. Each `@provideOption({ key })` method returns the options type of its key, and the auth options carry `use: true` because this app signs in. See [Configuration](../core-concepts/configuration).
+`src/configurations/admin.configuration.ts` binds the options of the framework providers. `BaseArdorApplication` binds the providers themselves, each a singleton built on first use, so react-admin, the authentication provider and the hooks share one data provider. Each `@provide({ key })` method returns the options type of its key, and the auth options carry `use: true` because this app signs in. See [Configuration](../core-concepts/configuration).
 
 ## 4. The application
 
@@ -70,7 +70,7 @@ Create `src/main.tsx`:
 
 <<< @/../../../examples/5-mins-qs/src/main.tsx{tsx}
 
-`src/main.tsx` starts the application container and mounts the React root. It passes no store: `reduxStore` is optional, so pass one only when the app has Redux state. `await application.start()` binds the application, its info, the default providers, the discovered classes and their `@provideOption` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
+`src/main.tsx` starts the application container and mounts the React root. It passes no store: `reduxStore` is optional, so pass one only when the app has Redux state. `await application.start()` binds the application, its info, the default providers, the discovered classes and their `@provide` methods, then your `bindContext()` (the full order is in [Application](../core-concepts/application)). `ArdorApplication` receives the started container, wraps the tree in providers, and renders the `products` resource.
 
 ## 7. Configure Vite
 

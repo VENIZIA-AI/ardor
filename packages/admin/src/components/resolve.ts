@@ -103,7 +103,7 @@ export class ApplicationProviders {
 
     if (typeof unboundKey === 'string') {
       return getError({
-        message: `[ApplicationProviders.assertConfigured] '${unboundKey}' is not bound | Bind it in a @configuration() class (@provideOption for an options key) or in bindContext()`,
+        message: `[ApplicationProviders.assertConfigured] '${unboundKey}' is not bound | Bind it in a @configuration() class (a @provide method for an options key) or in bindContext()`,
       });
     }
 

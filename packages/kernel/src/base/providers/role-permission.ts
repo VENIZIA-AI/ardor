@@ -67,7 +67,7 @@ class GrantPattern {
  *   BaseArdorApplication,
  *   configuration,
  *   CoreBindings,
- *   provideOption,
+ *   provide,
  *   RolePermissionProvider,
  *   type IApplicationInfo,
  *   type IRolePermissionProviderOptions,
@@ -75,7 +75,7 @@ class GrantPattern {
  *
  * @configuration()
  * export class PermissionConfiguration {
- *   @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+ *   @provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
  *   permissionOptions(): IRolePermissionProviderOptions {
  *     return { grants: { admin: ['*'], editor: ['orders.*', 'stocks.list'] } };
  *   }

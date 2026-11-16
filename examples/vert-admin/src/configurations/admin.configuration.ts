@@ -4,7 +4,7 @@ import {
   englishMessages,
   type II18nProviderOptions,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
 
@@ -22,7 +22,7 @@ declare module '@venizia/ardor' {
 // token, headers and single 401 refresh.
 @configuration()
 export class AdminConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: '/v1/api',
@@ -31,7 +31,7 @@ export class AdminConfiguration {
     };
   }
 
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return {
       use: true,
@@ -43,7 +43,7 @@ export class AdminConfiguration {
     };
   }
 
-  @provideOption({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
   i18nProviderOptions(): II18nProviderOptions {
     return {
       i18nSources: {

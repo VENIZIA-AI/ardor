@@ -14,7 +14,7 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
 } from '@venizia/ardor';
 
 // No stereotype: ShopApplication registers it by hand in bindContext().
@@ -23,7 +23,7 @@ class CatalogService {}
 // Discovered by its stereotype: the application binds only the options of the default providers.
 @configuration()
 export class ShopConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'https://api.example.com' };
   }
@@ -67,7 +67,7 @@ export async function boot(): Promise<ShopApplication> {
 
 `BaseArdorApplication` (in `packages/admin/src/applications/base.ts`) extends `AbstractArdorApplication` (in `packages/kernel/src/base/applications/abstract.ts`), which extends the IGNIS `Container`. The application instance is the container itself: call `this.bind(...)` and `this.get(...)` directly on the application instance.
 
-`BaseArdorApplication` binds the four default providers itself, each a singleton, before anything of the application: `DefaultAuthService`, `DefaultRestDataProvider`, `DefaultI18nProvider` and `DefaultAuthProvider`. The application binds only their options (`REST_DATA_PROVIDER_OPTIONS`, `AUTH_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS`) with `@provideOption`. A binding under the same key, in a stereotyped class, a feature, `bindingList()` or `bindContext()`, replaces a default.
+`BaseArdorApplication` binds the four default providers itself, each a singleton, before anything of the application: `DefaultAuthService`, `DefaultRestDataProvider`, `DefaultI18nProvider` and `DefaultAuthProvider`. The application binds only their options (`REST_DATA_PROVIDER_OPTIONS`, `AUTH_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS`) with `@provide`. A binding under the same key, in a stereotyped class, a feature, `bindingList()` or `bindContext()`, replaces a default.
 
 ### start()
 
@@ -156,12 +156,12 @@ import {
   CoreBindings,
   type IApplicationInfo,
   type IRestDataProviderOptions,
-  provideOption,
+  provide,
 } from '@venizia/ardor';
 
 @configuration()
 export class ShopConfiguration {
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api' };
   }

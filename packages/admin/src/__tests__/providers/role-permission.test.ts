@@ -12,7 +12,7 @@ import {
   type DefaultAuthService,
   type IApplicationInfo,
   type IRolePermissionProviderOptions,
-  provideOption,
+  provide,
   RolePermissionProvider,
 } from '@venizia/ardor-kernel';
 
@@ -33,7 +33,7 @@ class Actions {
 
 @configuration()
 class PermissionConfiguration {
-  @provideOption({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.PERMISSION_PROVIDER_OPTIONS })
   permissionOptions(): IRolePermissionProviderOptions {
     return {
       grants: {

@@ -12,7 +12,7 @@ import {
   type INetworkResponse,
   type IRestDataProviderOptions,
   type ISendParams,
-  provideOption,
+  provide,
   RequestMethods,
   type TAuthProviderOptions,
 } from '@venizia/ardor';
@@ -63,17 +63,17 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   }
 }
 
-// Discovered, never referenced by name: start() binds its @provideOption methods.
+// Discovered, never referenced by name: start() binds its @provide methods.
 @configuration()
 export class IpcConfiguration {
   // The base class still needs its options; the URL is never used by the IPC send.
-  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
   // No react-admin shell here: nothing signs in through an auth provider.
-  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
   authProviderOptions(): TAuthProviderOptions {
     return { use: false };
   }
