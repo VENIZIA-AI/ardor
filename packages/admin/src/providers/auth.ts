@@ -551,6 +551,11 @@ export class DefaultAuthProvider<
   async checkAuth(_params?: unknown) {
     const token = this.authService.getAuth();
 
+    // Another tab is switching users and has not finished writing: nobody is signed out, and its last write starts the session.
+    if (!token?.value && this.authService.isSwitching()) {
+      return Promise.resolve();
+    }
+
     if (!token?.value) {
       await this.endSession({ reason: SessionClearReasons.REJECTED });
 
@@ -574,7 +579,7 @@ export class DefaultAuthProvider<
 
     // The user who asked is gone: the answer says nothing about the session signed in now, which decides.
     if (isStale) {
-      if (this.authService.getAuth()?.value) {
+      if (this.authService.getAuth()?.value || this.authService.isSwitching()) {
         return Promise.resolve();
       }
 

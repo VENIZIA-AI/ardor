@@ -41,7 +41,7 @@ export class DefaultAuthService extends BaseService {
   /**
    * `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes,
    * and after a sign-in, sign-out or user switch in another tab of the browser: the first
-   * subscriber starts listening to the `storage` event of the token key, the last one to leave stops. The
+   * subscriber starts listening to the `storage` event of the token and identity keys, the last one to leave stops. The
    * listener also runs when a page comes back from the back-forward cache or a tab becomes visible and the
    * session changed meanwhile. A change of another tab calls the listener once, when the stored token and
    * identity belong to one user, and writes nothing; a service never subscribed to listens to nothing, and
@@ -93,19 +93,22 @@ export class DefaultAuthService extends BaseService {
       }
     };
 
-    // `saveAuth` writes the token last and `cleanUp` removes it first, so the token key is the one to hear.
-    const stops = [
-      BrowserStorage.subscribe({
-        key: this.keys.token,
-        storage: StorageAreas.LOCAL,
-        listener: ({ isExternal }) => {
-          if (isExternal) {
-            announce();
-          }
-        },
-      }),
-      this.onPageReturn({ listener: announce }),
-    ];
+    // `saveAuth` writes the token last and `cleanUp` removes it first, so the token key completes a session. The
+    // identity key is heard too: a tab on older code writes the token first, and its identity comes after. Half a
+    // pair is never announced, so hearing both is safe.
+    const stops = [this.keys.token, this.keys.identity]
+      .map((key) => {
+        return BrowserStorage.subscribe({
+          key,
+          storage: StorageAreas.LOCAL,
+          listener: ({ isExternal }) => {
+            if (isExternal) {
+              announce();
+            }
+          },
+        });
+      })
+      .concat(this.onPageReturn({ listener: announce }));
 
     this.stopExternalSync = () => {
       for (const stop of stops) {
@@ -247,6 +250,16 @@ export class DefaultAuthService extends BaseService {
     const roles = Array.isArray(stored) ? stored.filter((role) => typeof role === 'string') : [];
 
     return new Set<string>(roles);
+  }
+
+  /**
+   * Whether another tab is in the middle of a user switch: a token is stored, but it belongs to another user
+   * than the stored identity. `getAuth` answers `null` meanwhile, which is not a sign-out: someone is signing in.
+   */
+  isSwitching(): boolean {
+    const token = AuthTokenStore.read({ key: this.keys.token });
+
+    return token !== undefined && !this.isSessionWhole({ token });
   }
 
   /**
