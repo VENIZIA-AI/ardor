@@ -156,9 +156,11 @@ An application with no sign-in binds `{ use: false }` for `AUTH_PROVIDER_OPTIONS
 3. **React-admin runs without auth**: No sign-in screen is rendered, and all resource routes and custom routes are immediately accessible.
 4. **Configure network options**: In `REST_DATA_PROVIDER_OPTIONS`, set `noAuthPathRegex: /./` so that `DefaultNetworkRequestService` sends every HTTP request without attempting to attach an `Authorization` header.
 
+Two mistakes stop the application instead of leaving it open. An application that binds its own provider under `CoreBindings.DEFAULT_AUTH_PROVIDER` but binds no `AUTH_PROVIDER_OPTIONS` fails at start, because sign-in would be off and the provider ignored: bind `{ use: true, ...paths }` to use it, or `{ use: false }`. A route with `access` while sign-in is off fails at mount and names the route.
+
 ### Permission Provider
 
-`DefaultAuthProvider` injects `CoreBindings.PERMISSION_PROVIDER` with `isOptional: true`. In `DefaultAuthProvider.value()`, if `permissionProvider` is unbound, `authProvider.canAccess` is omitted, and react-admin allows every authorization check (`useCanAccess` resolves `canAccess: true`).
+`DefaultAuthProvider` injects `CoreBindings.PERMISSION_PROVIDER` with `isOptional: true`. In `DefaultAuthProvider.value()`, if `permissionProvider` is unbound, `authProvider.canAccess` is omitted, and react-admin allows every authorization check (`useCanAccess` resolves `canAccess: true`). A route with `access` is the exception: with no permission provider bound, `ArdorApplication` throws at mount and names the route, so no page that asks for a permission opens to everyone.
 
 ### Features
 

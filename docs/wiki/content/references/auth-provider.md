@@ -346,7 +346,7 @@ A 401 whose rejection has `logoutUser: false` keeps the stored session: the prov
 
 ## An application with no sign-in
 
-`ArdorApplication` resolves `CoreBindings.DEFAULT_AUTH_PROVIDER` only when `CoreBindings.AUTH_PROVIDER_OPTIONS` is `{ use: true }`. An application with no sign-in binds `{ use: false }`, or nothing; `ArdorApplication` then runs without an auth provider. In this configuration, react-admin mounts no login page, runs no `checkAuth` guards, and treats all routes as public. `ArdorApplication` does not resolve the default auth provider.
+`ArdorApplication` resolves `CoreBindings.DEFAULT_AUTH_PROVIDER` only when `CoreBindings.AUTH_PROVIDER_OPTIONS` is `{ use: true }`. An application with no sign-in binds `{ use: false }`, or nothing; `ArdorApplication` then runs without an auth provider. In this configuration, react-admin mounts no login page, runs no `checkAuth` guards, and treats all routes as public, except that a route with `access` fails at mount and names the route. A provider of your own under `DEFAULT_AUTH_PROVIDER` with no `AUTH_PROVIDER_OPTIONS` fails at start, because sign-in would be off and the provider ignored. `ArdorApplication` does not resolve the default auth provider.
 
 To ensure the REST data provider does not attach `Authorization` headers to outgoing requests, configure `noAuthPathRegex: /./` in `IRestDataProviderOptions`:
 

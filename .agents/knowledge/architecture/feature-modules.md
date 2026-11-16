@@ -63,12 +63,14 @@ A route entry is `RouteProps` plus three optional toggles (`TArdorRoute`): `acce
 types its path (`requireAuth` of `CoreAdmin` still applies). `renderRoute` in `application.tsx` wraps a
 route with `access` in ra-core's `Authenticated` and `CanAccess`, and one with `auth: { use: true }` in
 `Authenticated` only: `element`, else `Component`, else the router's default `Outlet`, is the page.
-`access` with `auth: { use: false }` is a contradiction `Features.mount` refuses. A denied user gets
-`CanAccess`'s default, an empty page; with no bound permission provider `canAccess` is absent and only
-sign-in is required. Routes with `layout: { use: false }` go in a second `<CustomRoutes noLayout>`
-(rendered only when one exists): ra-core's `CoreAdminRoutes` renders those before any auth check, so it
-is the only way to a public page under `requireAuth`; a route inside the layout waits for `checkAuth`
-whatever its `auth` says.
+`access` with `auth: { use: false }` is a contradiction `Features.mount` refuses. A user denied a route with
+`access` is sent to `/access-denied`. A route with `access` and sign-in off, or with no bound permission
+provider (nothing could answer it), stops `ArdorApplication` at mount with an error naming the route.
+Routes with `layout: { use: false }` go in a second `<CustomRoutes noLayout>` (rendered only when one
+exists): ra-core's `CoreAdminRoutes` renders those before any auth check, so under `requireAuth` `renderRoute`
+wraps them in `Authenticated` itself, unless the route says `auth: { use: false }`. A public page under
+`requireAuth` needs both toggles, `layout: { use: false }` and `auth: { use: false }`; a route inside the
+layout waits for `checkAuth` whatever its `auth` says.
 
 ## Menu
 
