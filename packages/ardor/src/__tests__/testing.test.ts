@@ -2,9 +2,9 @@ import 'reflect-metadata';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { Features } from '@venizia/ardor-admin';
+import { BaseArdorApplication, Features } from '@venizia/ardor-admin';
 import {
-  BaseArdorApplication,
+  AbstractArdorApplication,
   CoreBindings,
   inject,
   type IApplicationInfo,
@@ -47,7 +47,7 @@ const createApplication = (opts: IFixtureOptions = {}) => {
     i18n = i18nProvider,
   } = opts;
 
-  class FixtureApplication extends BaseArdorApplication {
+  class FixtureApplication extends AbstractArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'fixture', version: '0.0.0', description: 'A fixture' };
     }
@@ -58,6 +58,10 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       }
 
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+
+      if (withAuthProvider || withBrokenAuthProvider) {
+        this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+      }
 
       if (withAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
@@ -186,6 +190,24 @@ describe('assertArdorApplicationBoots', () => {
     const message = await messageOf(assertArdorApplicationBoots(createApplication()));
 
     expect(message).toContain('allowEmpty');
+  });
+
+  test('boots a BaseArdorApplication that binds only the REST options', async () => {
+    class MinimalApplication extends BaseArdorApplication {
+      getAppInfo(): IApplicationInfo {
+        return { name: 'minimal', version: '0.0.0', description: 'Only the REST options' };
+      }
+
+      bindContext(): void {
+        this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api' });
+      }
+    }
+
+    const application = await assertArdorApplicationBoots(() => new MinimalApplication(), {
+      allowEmpty: true,
+    });
+
+    expect(application).toBeInstanceOf(MinimalApplication);
   });
 
   test('resolves an empty application when allowEmpty is true', async () => {

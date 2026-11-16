@@ -1,9 +1,9 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { ApplicationProviders } from '@/components/resolve';
+import { ApplicationProviders, DefaultBindingTags } from '@/components/resolve';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
-import { CoreBindings } from '@venizia/ardor-kernel';
+import { CoreBindings, type TAuthProviderOptions } from '@venizia/ardor-kernel';
 import { Container, getError } from '@venizia/ignis-inversion';
 
 const authProvider = {
@@ -14,12 +14,28 @@ const authProvider = {
   getPermissions: () => Promise.resolve(),
 };
 
-const createContainer = (opts: { withAuthProvider: boolean; withI18nProvider?: boolean }) => {
+const createContainer = (opts: {
+  withAuthProvider: boolean;
+  /** The binding is ARDOR's default one, as `BaseArdorApplication.bindDefaults()` makes it. */
+  isDefaultAuthProvider?: boolean;
+  withI18nProvider?: boolean;
+  authOptions?: TAuthProviderOptions;
+}) => {
   const container = new Container();
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({ id: 'data' });
 
   if (opts.withAuthProvider) {
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
+    const binding = container
+      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .toValue(authProvider);
+
+    if (opts.isDefaultAuthProvider) {
+      binding.setTags(DefaultBindingTags.DEFAULT);
+    }
+  }
+
+  if (opts.authOptions) {
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.authOptions);
   }
 
   if (opts.withI18nProvider ?? true) {
@@ -29,10 +45,16 @@ const createContainer = (opts: { withAuthProvider: boolean; withI18nProvider?: b
   return container;
 };
 
+const signInOff: Array<TAuthProviderOptions | undefined> = [undefined, { use: false }];
+
+const bindDefault = (authOptions: TAuthProviderOptions | undefined) => {
+  return createContainer({ withAuthProvider: true, isDefaultAuthProvider: true, authOptions });
+};
+
 describe('ApplicationProviders.resolve', () => {
-  test('returns the data, auth and i18n providers the application bound', () => {
+  test('returns the data, auth and i18n providers the application bound, with sign-in on', () => {
     const providers = ApplicationProviders.resolve({
-      container: createContainer({ withAuthProvider: true }),
+      container: createContainer({ withAuthProvider: true, authOptions: { use: true } }),
     });
 
     expect(providers.dataProvider as unknown).toEqual({ id: 'data' });
@@ -42,7 +64,7 @@ describe('ApplicationProviders.resolve', () => {
 
   test('with isAuthRequired the auth provider is typed as present, and an unbound one throws', () => {
     const providers = ApplicationProviders.resolve({
-      container: createContainer({ withAuthProvider: true }),
+      container: createContainer({ withAuthProvider: true, authOptions: { use: true } }),
       isAuthRequired: true,
     });
     // No optional chaining or assertion: the type says the provider is there.
@@ -51,10 +73,60 @@ describe('ApplicationProviders.resolve', () => {
     expect(login).toBe(authProvider.login);
     expect(() => {
       ApplicationProviders.resolve({
-        container: createContainer({ withAuthProvider: false }),
+        container: createContainer({ withAuthProvider: false, authOptions: { use: true } }),
         isAuthRequired: true,
       });
-    }).toThrow();
+    }).toThrow(CoreBindings.DEFAULT_AUTH_PROVIDER);
+  });
+
+  test('leaves a bound auth provider out unless the options say { use: true }', () => {
+    for (const authOptions of signInOff) {
+      const providers = ApplicationProviders.resolve({ container: bindDefault(authOptions) });
+
+      expect(providers.authProvider).toBeUndefined();
+    }
+  });
+
+  test('an auth provider of the application under DEFAULT_AUTH_PROVIDER with no options throws instead of going public', () => {
+    // An app of 0.4.7 binds its own provider and no options: sign-in would be off and the provider dropped.
+    const container = createContainer({ withAuthProvider: true });
+
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow(CoreBindings.AUTH_PROVIDER_OPTIONS);
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow('{ use: false }');
+  });
+
+  test('an auth provider of the application with { use: false } is left out, as the app said', () => {
+    const providers = ApplicationProviders.resolve({
+      container: createContainer({ withAuthProvider: true, authOptions: { use: false } }),
+    });
+
+    expect(providers.authProvider).toBeUndefined();
+  });
+
+  test('isAuthRequired with sign-in off throws, saying to set { use: true }', () => {
+    for (const authOptions of signInOff) {
+      expect(() => {
+        ApplicationProviders.resolve({ container: bindDefault(authOptions), isAuthRequired: true });
+      }).toThrow('{ use: true }');
+    }
+  });
+
+  test('options bound without the use toggle throw, naming the key and saying to add use: true', () => {
+    // An app written before the toggle binds `{ paths }`: it must not silently run with every page public.
+    const legacy = { paths: { signIn: '/auth/sign-in' } };
+    const container = createContainer({ withAuthProvider: true });
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(legacy);
+
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow(CoreBindings.AUTH_PROVIDER_OPTIONS);
+    expect(() => {
+      ApplicationProviders.resolve({ container });
+    }).toThrow('use: true');
   });
 
   test('leaves the auth provider out when the application has no sign-in', () => {
@@ -77,7 +149,11 @@ describe('ApplicationProviders.resolve', () => {
   test('throws when the i18n provider is unbound', () => {
     expect(() =>
       ApplicationProviders.resolve({
-        container: createContainer({ withAuthProvider: true, withI18nProvider: false }),
+        container: createContainer({
+          withAuthProvider: true,
+          authOptions: { use: false },
+          withI18nProvider: false,
+        }),
       }),
     ).toThrow(CoreBindings.DEFAULT_I18N_PROVIDER);
   });

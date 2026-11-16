@@ -7,6 +7,7 @@ import {
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
+  type TAuthProviderOptions,
   type IApplicationInfo,
   type IAuthTokenRecord,
   type IAuthUser,
@@ -65,7 +66,8 @@ const readStatus = (error: unknown): unknown => {
  *
  * @example
  * ```ts
- * import { type BaseArdorApplication, configuration, CoreBindings, DefaultAuthProvider, inject, provide } from '@venizia/ardor';
+ * import { BindingScopes } from '@venizia/ignis-inversion';
+ * import { BaseArdorApplication, CoreBindings, DefaultAuthProvider, type IApplicationInfo } from '@venizia/ardor';
  *
  * class AppAuthProvider extends DefaultAuthProvider {
  *   protected override get afterLoginPath() {
@@ -73,13 +75,16 @@ const readStatus = (error: unknown): unknown => {
  *   }
  * }
  *
- * @configuration()
- * export class AuthConfiguration {
- *   constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
+ * export class Application extends BaseArdorApplication {
+ *   getAppInfo(): IApplicationInfo {
+ *     return { name: 'shop', version: '1.0.0', description: 'The shop admin' };
+ *   }
  *
- *   @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
- *   authProvider() {
- *     return this.application.instantiate(AppAuthProvider).value(this.application);
+ *   bindContext(): void {
+ *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/sign-in'] });
+ *     // Sign-in is off unless the options say use: true.
+ *     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+ *     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(AppAuthProvider).setScope(BindingScopes.SINGLETON);
  *   }
  * }
  * ```
@@ -90,8 +95,8 @@ export class DefaultAuthProvider<
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
     protected restDataProvider: IDataProvider<TResource>,
-    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-    protected authProviderOptions: IAuthProviderOptions,
+    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS, isOptional: true })
+    protected authProviderOptions: TAuthProviderOptions = { use: false },
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
     protected authService: DefaultAuthService,
     @inject({ key: CoreBindings.PERMISSION_PROVIDER, isOptional: true })
@@ -125,14 +130,19 @@ export class DefaultAuthProvider<
 
   // --- Paths -----------------------------------------------------------------------------------
 
+  /** The `paths` of the options; none when sign-in is off (`{ use: false }`). */
+  protected get paths(): IAuthProviderOptions['paths'] {
+    return this.authProviderOptions.use ? this.authProviderOptions.paths : undefined;
+  }
+
   /** Where `login` posts: `paths.signIn`, else the IGNIS auth controller's route. */
   protected get signInPath(): string {
-    return this.authProviderOptions.paths?.signIn ?? '/auth/sign-in';
+    return this.paths?.signIn ?? '/auth/sign-in';
   }
 
   /** Where the admin goes once `login` resolves: `paths.afterLogin`, else `/`; `false` stays on the page. */
   protected get afterLoginPath(): string | false {
-    return this.authProviderOptions.paths?.afterLogin ?? '/';
+    return this.paths?.afterLogin ?? '/';
   }
 
   /** The route of the login page, which `checkAuth` and a `401` redirect to. */
@@ -554,7 +564,9 @@ export class DefaultAuthProvider<
       );
     }
 
-    if (!this.authProviderOptions.paths?.checkAuth) {
+    const checkAuthPath = this.paths?.checkAuth;
+
+    if (!checkAuthPath) {
       await this.startStoredSession();
 
       return Promise.resolve();
@@ -562,7 +574,7 @@ export class DefaultAuthProvider<
 
     const checked = this.announcedSession;
     const { response, isStale } = await this.askCheckAuth({
-      resource: this.authProviderOptions.paths.checkAuth,
+      resource: checkAuthPath,
     });
 
     // The user who asked is gone: the answer says nothing about the session signed in now, which decides.

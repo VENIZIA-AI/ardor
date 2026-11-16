@@ -1,8 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
 
+import * as admin from '@venizia/ardor-admin';
+import * as kernel from '@venizia/ardor-kernel';
+
 import * as umbrella from '@/index';
-import { Ardor } from '@/index';
+import { AbstractArdorApplication, Ardor, BaseArdorApplication } from '@/index';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, writeFiles } from './vite/fixture';
 
 const HOOK_NAME = /^use[A-Z]/;
@@ -44,6 +47,15 @@ describe('Ardor', () => {
  * component and in a custom hook passes, and the same call under a condition is reported, so the
  * rule does treat it as a hook.
  */
+describe('the application classes', () => {
+  test('BaseArdorApplication is the admin class, which extends the kernel AbstractArdorApplication', () => {
+    expect(BaseArdorApplication).toBe(admin.BaseArdorApplication);
+    expect(Object.getPrototypeOf(BaseArdorApplication)).toBe(kernel.AbstractArdorApplication);
+    expect(AbstractArdorApplication).toBe(kernel.AbstractArdorApplication);
+    expect(Reflect.get(kernel, 'BaseArdorApplication')).toBeUndefined();
+  });
+});
+
 describe('Ardor and the Rules of Hooks', () => {
   const REACT_PACKAGE = join(REPOSITORY_ROOT, 'packages', 'react');
   let scratch = '';

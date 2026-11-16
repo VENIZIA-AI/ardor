@@ -1,7 +1,7 @@
 import * as inversion from '@venizia/ignis-inversion';
 
 import { ApplicationProviders, Features } from '@venizia/ardor-admin';
-import { CoreBindings, type BaseArdorApplication } from '@venizia/ardor-kernel';
+import { type AbstractArdorApplication, CoreBindings } from '@venizia/ardor-kernel';
 
 // The browser fakes live in the kernel, so the React and admin tests can use them without a cycle.
 export * from '@venizia/ardor-kernel/testing';
@@ -16,9 +16,10 @@ export interface IAssertArdorApplicationBootsOptions {
    * they are built. A name that matches no binding rejects: a typo must not skip silently.
    *
    * It applies to the binding check only: the bindings of the five namespaces below. The provider
-   * step (data, auth, i18n) always builds what the application bound, and a provider key such as
+   * step always builds the data and i18n providers, and the auth provider when
+   * `CoreBindings.AUTH_PROVIDER_OPTIONS` is `{ use: true }`. A provider key such as
    * `CoreBindings.DEFAULT_AUTH_PROVIDER` is outside those namespaces, so naming it rejects as a
-   * skip that matched nothing. To leave a provider out, leave it unbound.
+   * skip that matched nothing.
    */
   skipBindings?: Array<TBootSkip>;
 
@@ -54,7 +55,8 @@ const fail = (message: string): never => {
  * Proves an ARDOR application boots, without a browser and without a network: it runs `start()`,
  * resolves every service, repository, datasource, component and configuration the application
  * bound, then resolves what opening the app resolves (the data, auth and i18n providers, the
- * features, the messages of the first locale). It stops at the first failure, with the error the
+ * features, the messages of the first locale). It takes any application: a `BaseArdorApplication`
+ * or another subclass of `AbstractArdorApplication`. It stops at the first failure, with the error the
  * app would raise; the check over the bindings reports every failure at once and names who needs
  * each missing key.
  *
@@ -62,7 +64,7 @@ const fail = (message: string): never => {
  * application stays started and is returned. A failed boot leaves a half-started instance, so
  * build a new one (pass a factory) for each call.
  */
-export const assertArdorApplicationBoots = async <Application extends BaseArdorApplication>(
+export const assertArdorApplicationBoots = async <Application extends AbstractArdorApplication>(
   application: Application | (() => Application | Promise<Application>),
   options: IAssertArdorApplicationBootsOptions = {},
 ): Promise<Application> => {

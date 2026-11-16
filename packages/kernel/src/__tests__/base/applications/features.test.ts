@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
+import { TestArdorApplication } from './test-application';
 import { configuration, provide } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
@@ -25,7 +25,7 @@ const inventory: IFeatureBase = {
 };
 
 const createApplication = (opts: { features: Array<IFeatureBase> }) => {
-  class FeatureApplication extends BaseArdorApplication {
+  class FeatureApplication extends TestArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'features', version: '1.0.0', description: 'feature modules' };
     }
@@ -91,7 +91,7 @@ describe('AbstractArdorApplication.features', () => {
   });
 
   test('bindContext still overrides what a feature provides', async () => {
-    class OverridingApplication extends BaseArdorApplication {
+    class OverridingApplication extends TestArdorApplication {
       getAppInfo(): IApplicationInfo {
         return { name: 'features', version: '1.0.0', description: 'feature modules' };
       }

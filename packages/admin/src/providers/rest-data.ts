@@ -76,20 +76,14 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
  *
  * @example
  * ```ts
- * import { type BaseArdorApplication, configuration, CoreBindings, DefaultRestDataProvider, inject, provide } from '@venizia/ardor';
+ * import { configuration, CoreBindings, provide } from '@venizia/ardor';
  *
+ * // BaseArdorApplication binds DefaultRestDataProvider: the application binds its options.
  * @configuration()
  * export class DataConfiguration {
- *   constructor(@inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: BaseArdorApplication) {}
- *
  *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
  *   options() {
  *     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
- *   }
- *
- *   @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
- *   dataProvider() {
- *     return this.application.instantiate(DefaultRestDataProvider).value(this.application);
  *   }
  * }
  * ```

@@ -38,8 +38,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   protected localeSources: LocaleSources;
 
   constructor(
-    @inject({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-    protected i18nProviderOptions: II18nProviderOptions,
+    @inject({ key: CoreBindings.I18N_PROVIDER_OPTIONS, isOptional: true })
+    protected i18nProviderOptions: II18nProviderOptions = {},
     @inject({ key: CoreBindings.FEATURES, isOptional: true })
     protected features: Array<TFeature> = [],
   ) {

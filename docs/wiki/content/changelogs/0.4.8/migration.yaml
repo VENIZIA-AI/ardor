@@ -297,3 +297,56 @@ duplicate-explicit-key-throws:
     steps:
       - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 lets the class imported last win a shared key and lets bindingList() replace a class declared allowOverride: false.'
   data: Nothing stored.
+
+auth-provider-toggle:
+  symbols:
+    [
+      CoreBindings.AUTH_PROVIDER_OPTIONS,
+      IAuthProviderOptions,
+      DefaultAuthProvider.authProviderOptions,
+    ]
+  upgrade:
+    before: |-
+      @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+      authProviderOptions() {
+        return { paths: { afterLogin: '/products' } };
+      }
+    after: |-
+      @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+      authProviderOptions(): TAuthProviderOptions {
+        // A guest app with no sign-in returns { use: false }, or binds nothing.
+        return { use: true, paths: { afterLogin: '/products' } };
+      }
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line.'
+      - 'Drop use from the auth options and bind { paths } again. A guest app with no sign-in leaves DEFAULT_AUTH_PROVIDER unbound, because 0.4.7 uses any auth provider that is bound.'
+      - 'Type a DefaultAuthProvider subclass constructor parameter as IAuthProviderOptions again.'
+  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. An app that binds an auth provider of its own under DEFAULT_AUTH_PROVIDER (not a DefaultAuthProvider subclass) must also bind AUTH_PROVIDER_OPTIONS as { use: true, ...paths }, or { use: false }: without options start() fails and names both keys. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
+  codemod: auth-options
+
+base-application-moved:
+  symbols: [BaseArdorApplication]
+  upgrade:
+    before: |-
+      import { BaseArdorApplication } from '@venizia/ardor-kernel';
+    after: |-
+      import { BaseArdorApplication } from '@venizia/ardor-admin';
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, and import BaseArdorApplication from @venizia/ardor-kernel again. An import from @venizia/ardor works in both versions.'
+      - 'Bind the default providers yourself again: 0.4.7 binds none of them.'
+  data: 'Nothing stored changes. An import from @venizia/ardor does not change. A package that needs only the kernel extends AbstractArdorApplication, which binds no default provider.'
+  codemod: base-application-import
+
+injectable-removed:
+  symbols: [AbstractArdorApplication.injectable, IArdorApplication.injectable]
+  upgrade:
+    steps:
+      - 'Replace this.injectable(scope, X, tags) with the method of its namespace: this.service(X), this.repository(X), this.dataSource(X) or this.component(X).'
+      - 'To keep a key the old call built, pass { binding: { namespace, key } }; to keep the tags, call setTags on the binding the method returns.'
+      - 'Or list the class under its key in bindingList().'
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where injectable() exists. The per-namespace methods also exist there, so leaving them is safe.'
+  data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'

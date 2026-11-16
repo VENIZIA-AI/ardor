@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
+import { TestArdorApplication } from './test-application';
 import {
   component,
   configuration,
@@ -14,7 +14,7 @@ import { BindingScopes } from '@venizia/ignis-inversion';
 import type { IApplicationInfo } from '@/common';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
-class TestApplication extends BaseArdorApplication {
+class TestApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'artifact-test', version: '1.0.0', description: 'stereotype registration' };
   }

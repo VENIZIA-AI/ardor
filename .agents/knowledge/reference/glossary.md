@@ -9,7 +9,7 @@ tags: [reference, glossary, terminology]
 This page defines terms as they are used across the bundle. Where a term has a fuller treatment,
 the definition links to it.
 
-**Application** - the IoC container at the root of an ARDOR app. It extends `BaseArdorApplication`,
+**Application** - the IoC container at the root of an ARDOR app. It extends `BaseArdorApplication` (admin package; it binds the default providers),
 implements `getAppInfo()` and `bindContext()`, and is started once (`await application.start()`)
 before being handed to `ArdorApplication` as the `container` prop. See
 [Application lifecycle](/architecture/application-lifecycle.md).
@@ -40,9 +40,10 @@ overrides it, and a `bindContext()` binding overrides both - except that a class
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
 **Provider** - something bound as a lazy resolver, typically producing a
-value used by react-admin (the REST data provider, the auth provider, the i18n provider). The
-framework keys are declared with `@provide({ key })` in a `@configuration()` class and bound by
-`registerArtifacts()`; a raw `.toProvider(...)` on a bare `bind()` is the transient, by-hand form.
+value used by react-admin (the REST data provider, the auth provider, the i18n provider).
+`BaseArdorApplication` binds the three defaults in `bindDefaults()` with `toProvider(Class)`, a
+singleton; an app replaces one with `toProvider(...)` in `bindContext()` or a `@provide({ key })`
+method. A raw `.toProvider(...)` on a bare `bind()` is transient unless `setScope` says otherwise.
 Contrast with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 

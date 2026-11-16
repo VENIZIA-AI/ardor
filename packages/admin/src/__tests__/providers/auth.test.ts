@@ -4,12 +4,12 @@ import { Container, getError, inject, type TClass } from '@venizia/ignis-inversi
 import type { IAuthProvider, IDataProvider } from '@/common';
 import { DefaultAuthProvider, type ILoginParams } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
+import { BaseArdorApplication } from '@/applications';
 import {
-  BaseArdorApplication,
   CoreBindings,
   DefaultAuthService,
   type IApplicationInfo,
-  type IAuthProviderOptions,
+  type TAuthProviderOptions,
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
@@ -62,6 +62,7 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
       });
 
       this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
+        use: true,
         paths: { checkAuth: '/auth/whoami', afterLogin: '/dashboard' },
       });
 
@@ -268,7 +269,7 @@ const defaultSession = { userId: 7, roles: ['admin'], token: { value: 'jwt', typ
 /** A provider built on a data provider stub: what it posts lands in `sent`, and it answers `data`. */
 const signInWith = (opts: {
   providerClass?: TClass<DefaultAuthProvider>;
-  options?: IAuthProviderOptions;
+  options?: TAuthProviderOptions;
   data?: unknown;
   sent?: Array<SentRequest>;
 }) => {
@@ -280,7 +281,9 @@ const signInWith = (opts: {
       return Promise.resolve({ data: opts.data ?? defaultSession });
     },
   });
-  container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.options ?? {});
+  container
+    .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+    .toValue(opts.options ?? { use: true });
   container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
   container
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
@@ -297,7 +300,7 @@ const jwtOf = (payload: object): string => {
 };
 
 describe('login and the page after it', () => {
-  const redirectOf = async (options: IAuthProviderOptions) => {
+  const redirectOf = async (options: TAuthProviderOptions) => {
     const outcome: unknown = await signInWith({ options }).login({
       username: 'alice',
       password: 'secret-password',
@@ -307,15 +310,26 @@ describe('login and the page after it', () => {
   };
 
   test('afterLogin false stays on the page: redirectTo is false', async () => {
-    const result2 = await redirectOf({ paths: { afterLogin: false } });
+    const result2 = await redirectOf({ use: true, paths: { afterLogin: false } });
     expect(result2).toBe(false);
   });
 
   test('afterLogin names the page, and the default is the root', async () => {
-    const result3 = await redirectOf({ paths: { afterLogin: 'dashboard' } });
+    const result3 = await redirectOf({ use: true, paths: { afterLogin: 'dashboard' } });
     expect(result3).toBe('/dashboard');
-    const result4 = await redirectOf({});
+    const result4 = await redirectOf({ use: true });
     expect(result4).toBe('/');
+  });
+
+  test('with sign-in off the provider reads no paths: the default route and page', async () => {
+    const sent: Array<SentRequest> = [];
+    const outcome: unknown = await signInWith({ sent, options: { use: false } }).login({
+      username: 'alice',
+      password: 'secret-password',
+    });
+
+    expect(sent.map((request) => request.resource)).toEqual(['/auth/sign-in']);
+    expect(Reflect.get(Object(outcome), 'redirectTo')).toBe('/');
   });
 
   test('a subclass that overrides afterLoginPath with a path or false is obeyed', async () => {
@@ -431,7 +445,7 @@ describe('login against the sign-in response shapes', () => {
     const sent: Array<SentRequest> = [];
     await signInWith({
       providerClass: FormAuthProvider,
-      options: { paths: { signIn: '/auth/login' } },
+      options: { use: true, paths: { signIn: '/auth/login' } },
       sent,
     }).login({ username: 'alice', password: 'secret-password' });
 
@@ -721,7 +735,7 @@ describe('data stored by the signed-in user', () => {
     const authService = new DefaultAuthService();
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(providerClass);
 
@@ -818,7 +832,7 @@ describe('data stored by the signed-in user', () => {
         .bind({ key: CoreBindings.APPLICATION_INFO })
         .toValue({ name: id, version: '1', description: '', id });
       container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-      container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+      container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
       container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
       container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
 
@@ -862,7 +876,7 @@ describe('data stored by the signed-in user', () => {
       .bind({ key: CoreBindings.APPLICATION_INFO })
       .toValue({ name: 'shop', version: '1', description: '', id: 'shop' });
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(Forgetting);
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
 
@@ -956,7 +970,7 @@ describe('getPermissions and refreshToken', () => {
         },
       }),
     });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
 
@@ -977,7 +991,7 @@ describe('canAccess', () => {
   }) => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: 'services.Extra' }).toValue({});
 
@@ -999,7 +1013,7 @@ describe('canAccess', () => {
       @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
       restDataProvider: IDataProvider,
       @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-      authProviderOptions: IAuthProviderOptions,
+      authProviderOptions: TAuthProviderOptions,
       @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
       authService: DefaultAuthService,
       @inject({ key: 'services.Extra' })
@@ -1031,7 +1045,7 @@ describe('canAccess', () => {
         @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
         restDataProvider: IDataProvider,
         @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-        authProviderOptions: IAuthProviderOptions,
+        authProviderOptions: TAuthProviderOptions,
         @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
         authService: DefaultAuthService,
       ) {
@@ -1186,7 +1200,7 @@ describe('login hooks', () => {
 
     const result = await signInWith({
       providerClass: ElsewhereAuthProvider,
-      options: { paths: { afterLogin: '/dashboard' } },
+      options: { use: true, paths: { afterLogin: '/dashboard' } },
     }).login({ username: 'alice' });
 
     expect(seen).toEqual(['jwt']);
@@ -1254,7 +1268,7 @@ describe('paths as protected getters', () => {
     const sent: Array<SentRequest> = [];
 
     await signInWith({ sent }).login({ username: 'alice' });
-    await signInWith({ sent, options: { paths: { signIn: '/api/login' } } }).login({
+    await signInWith({ sent, options: { use: true, paths: { signIn: '/api/login' } } }).login({
       username: 'a',
     });
     await signInWith({ sent, providerClass: RenamedAuthProvider }).login({ username: 'a' });
@@ -1269,7 +1283,9 @@ describe('paths as protected getters', () => {
   test('afterLogin defaults to / and follows paths.afterLogin', async () => {
     const result = await signInWith({}).login({ username: 'a' });
     expect(result).toMatchObject({ redirectTo: '/' });
-    const result2 = await signInWith({ options: { paths: { afterLogin: '/home' } } }).login({
+    const result2 = await signInWith({
+      options: { use: true, paths: { afterLogin: '/home' } },
+    }).login({
       username: 'a',
     });
     expect(result2).toMatchObject({ redirectTo: '/home' });

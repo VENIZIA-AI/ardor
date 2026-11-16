@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { describe, expect, test } from 'bun:test';
 import { BindingScopes, inject } from '@venizia/ignis-inversion';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
+import { TestArdorApplication } from './test-application';
 import type { IApplicationInfo } from '@/common';
 
 class ApiClient {
@@ -16,7 +16,7 @@ class OrderRepository {
 
 class AuditService {}
 
-class ManualApplication extends BaseArdorApplication {
+class ManualApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'manual', version: '1.0.0', description: 'registration by hand' };
   }
