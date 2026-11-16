@@ -12,6 +12,7 @@ import { Features } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
+import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -529,6 +530,36 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     expect(
       queryClient.getQueryData(['auth', 'canAccess', { resource: 'orders', action: 'list' }]),
     ).toBeUndefined();
+  });
+
+  test('is emptied once, with the token of the new user, when another tab writes its session key by key', async () => {
+    class EventPerWriteStorage extends FakeStorage {
+      override setItem(key: string, value: string): void {
+        super.setItem(key, value);
+        globalThis.dispatchEvent(
+          Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+        );
+      }
+    }
+
+    const restoreStorage = new EventPerWriteStorage().install();
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-alice', type: 'Bearer' } });
+    await settle();
+    const seen: Array<string | undefined> = [];
+    const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
+      seen.push(authService.getAuth()?.value);
+
+      return Promise.resolve();
+    });
+
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-bob', type: 'Bearer' } });
+    await settle();
+    restoreStorage();
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(['jwt-bob']);
   });
 
   test('stops listening when the application unmounts', async () => {
