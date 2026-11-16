@@ -2,9 +2,8 @@ import React from 'react';
 
 import { useLocaleState } from 'ra-core';
 
-import type { DefaultRestDataProvider } from '@/providers/rest-data';
 import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
-import { useInjectable } from '@venizia/ardor-react';
+import { useProvider } from '@venizia/ardor-react';
 
 /** The header `useRequestHeaderLocale` sends the locale in. */
 export interface IUseRequestHeaderLocaleOptions {
@@ -24,13 +23,9 @@ export const useRequestHeaderLocale = (opts?: IUseRequestHeaderLocaleOptions) =>
 
   const [locale] = useLocaleState();
 
-  const defaultRestDataProvider = useInjectable<DefaultRestDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
+  const dataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
 
   React.useEffect(() => {
-    defaultRestDataProvider.getNetworkService().setHeaders({ headers: { [key]: locale } });
-
-    return () => {};
-  }, [defaultRestDataProvider, key, locale]);
+    dataProvider.getNetworkService().setHeaders({ headers: { [key]: locale } });
+  }, [dataProvider, key, locale]);
 };

@@ -5,7 +5,16 @@ import * as admin from '@venizia/ardor-admin';
 import * as kernel from '@venizia/ardor-kernel';
 
 import * as umbrella from '@/index';
-import { AbstractArdorApplication, Ardor, BaseArdorApplication } from '@/index';
+import {
+  AbstractArdorApplication,
+  Ardor,
+  BaseArdorApplication,
+  CoreBindings,
+  useInjectable,
+  useProvider,
+  type IAuthProvider,
+  type IDataProvider,
+} from '@/index';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, writeFiles } from './vite/fixture';
 
 const HOOK_NAME = /^use[A-Z]/;
@@ -133,5 +142,34 @@ describe('Ardor and the Rules of Hooks', () => {
     expect(result.stdout).toContain('rules-of-hooks');
     expect(result.stdout).toContain('"useRepository" is called conditionally');
     expect(result.exitCode).toBe(1);
+  });
+});
+
+describe('the umbrella types the provider keys', () => {
+  // Compiled, never called: the claim is that an application importing only `@venizia/ardor` gets
+  // the types with no augmentation of its own.
+  test('useProvider and useInjectable return the provider a CoreBindings key holds', () => {
+    const typed = () => {
+      const data: IDataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+      const auth: IAuthProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+      const injected: IDataProvider = useInjectable({
+        key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+      });
+      // @ts-expect-error - the data provider is not a number
+      const collapsed: number = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+
+      return [data, auth, injected, collapsed];
+    };
+
+    expect(typeof typed).toBe('function');
+  });
+
+  test('a key that is not listed does not compile', () => {
+    const typed = () => {
+      // @ts-expect-error - 'providers.Unlisted' is not a key of the kernel or an augmentation
+      useProvider({ key: 'providers.Unlisted' });
+    };
+
+    expect(typeof typed).toBe('function');
   });
 });

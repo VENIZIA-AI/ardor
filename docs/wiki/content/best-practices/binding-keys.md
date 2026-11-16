@@ -113,7 +113,7 @@ this.service(PricingService); // services.PricingService
 
 ## Singleton by default, and when to opt out
 
-Every way of registering defaults to `BindingScopes.SINGLETON`, one instance per application. IGNIS's server defaults services and repositories to transient; a browser cannot, because a React hook resolves on every render and a transient repository would hand each render a new instance.
+Every way of registering defaults to `BindingScopes.SINGLETON`, one instance per application. IGNIS's server defaults services and repositories to transient; a browser does not, because every component would then get its own repository or service. A hook resolves on every render, so a transient binding gives a new instance each time: keep an instance that holds state in a singleton binding.
 
 A singleton is the right choice for a service that wraps a REST resource. It holds no per-request state and it is cheap to share.
 

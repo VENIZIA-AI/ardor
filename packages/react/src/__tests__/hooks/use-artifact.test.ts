@@ -156,3 +156,42 @@ describe('the per-stereotype hooks', () => {
     );
   });
 });
+
+describe('the per-stereotype hooks and the scope of the binding', () => {
+  test('a singleton service is the same instance on every render', () => {
+    const container = new Container();
+    container
+      .bind({ key: 'services.AuditService' })
+      .toClass(AuditService)
+      .setScope(BindingScopes.SINGLETON);
+
+    const one = renderHook(() => useService({ target: AuditService }), {
+      wrapper: createWrapper({ container }),
+    });
+    const first = one.result.current;
+    one.rerender();
+
+    expect(one.result.current).toBe(first);
+  });
+
+  test('useService names its own hook when another class of the same name holds the key', () => {
+    const createPlain = () => {
+      @service()
+      class Plain {}
+
+      return Plain;
+    };
+
+    const bound = createPlain();
+    const other = createPlain();
+
+    const container = new Container();
+    container.bind({ key: 'services.Plain' }).toClass(bound);
+
+    expect(() =>
+      renderHook(() => useService({ target: other }), {
+        wrapper: createWrapper({ container }),
+      }),
+    ).toThrow(/\[useService\] The key "services\.Plain" is bound to the class Plain/);
+  });
+});

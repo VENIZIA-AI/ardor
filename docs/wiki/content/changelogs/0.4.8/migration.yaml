@@ -291,8 +291,8 @@ duplicate-explicit-key-throws:
     ]
   upgrade:
     steps:
-      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext(), or select one of them with when.'
-      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
+      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext() (it must extend the class it replaces, because the hooks check the bound class, or be a value binding), or select one of them with when.'
+      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement), where Replacement extends X, or this.bind({ key }).toValue(instance)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
   downgrade:
     steps:
       - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 lets the class imported last win a shared key and lets bindingList() replace a class declared allowOverride: false.'
@@ -350,3 +350,20 @@ injectable-removed:
     steps:
       - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where injectable() exists. The per-namespace methods also exist there, so leaving them is safe.'
   data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'
+
+hooks-check-the-bound-class:
+  symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
+  upgrade:
+    before: |-
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+    after: |-
+      class FakeMailer extends Mailer {
+        override send() {}
+      }
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where a hook returns whatever the key holds. A fake that extends the class it replaces keeps working.
+  data: 'Nothing stored changes. A hook that resolves a class bound under the key of another class that does not extend it now throws with the key and both class names, at render. A value binding (toValue) has no class to compare and is not checked.'

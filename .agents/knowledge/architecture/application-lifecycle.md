@@ -48,7 +48,7 @@ A no-op by default. It exists as a hook for work that depends on bindings made i
 
 Registration helpers on the application, not lifecycle steps, called from inside `bindContext()`.
 
-`service(X)`, `repository(X)`, `dataSource(X)` and `component(X)` bind one class under `opts.binding`, else the class's stereotype `binding`, else `<namespace>.<ClassName>`. Each records that key on the class, so `{ target }` resolves it, and returns the `Binding`. The scope is `opts.scope`, else the stereotype's, else `BindingScopes.SINGLETON`: a hook resolves on every render, and a new instance per render would loop an effect keyed on it. `allowOverride: false` throws instead of replacing an existing binding.
+`service(X)`, `repository(X)`, `dataSource(X)` and `component(X)` bind one class under `opts.binding`, else the class's stereotype `binding`, else `<namespace>.<ClassName>`. Each records that key on the class, so `{ target }` resolves it, and returns the `Binding`. The scope is `opts.scope`, else the stereotype's, else `BindingScopes.SINGLETON`, so every component shares one instance. `allowOverride: false` throws instead of replacing an existing binding.
 
 The older `injectable(scope, value, tags?)` was removed in 0.4.8; `IArdorApplication` is picked from the class, so the interface cannot drift from it. See [binding key namespaces](/conventions/binding-key-namespaces.md).
 

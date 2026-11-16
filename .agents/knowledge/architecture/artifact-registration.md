@@ -147,8 +147,7 @@ Registration by hand is the second mode, as in IGNIS. Every path records the key
   minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
   `IUseInjectableKeysOverrides`.
 
-Singleton is the default on every path, unlike IGNIS's server: a hook resolves on every render, and a
-transient repository would hand each render a new instance. A class registered twice under different
+Singleton is the default on every path, unlike IGNIS's server: one repository or service is shared by every component. A class registered twice under different
 keys is bound twice, as two singletons, and `{ target }` reaches the key recorded last. How keys are named, and the minifier and same-name traps of a derived key, are in
 [binding key namespaces](/conventions/binding-key-namespaces.md).
 
@@ -157,11 +156,18 @@ keys is bound twice, as two singletons, and `{ target }` reaches the key recorde
 `useInjectable` takes `{ key }` or `{ target }`, never both, plus an optional `container`. The
 container comes from `useApplicationContainer`: the option, else `ApplicationContext.container`.
 
-- **`{ key }`** calls `container.get({ key })`. The key is typed as `TUseInjectableKeys` - every
-  `CoreBindings` value plus the keys an application adds, see [module augmentation](/architecture/module-augmentation.md).
 - **`{ target }`** looks up the key recorded on the class with
   `container.getMetadataRegistry().getBindingKey({ target })`, then resolves that key. It never
-  guesses a key from the class name.
+  guesses a key from the class name. The return type is the instance type of the class. When the
+  binding holds a class, it is compared with `target` (a subclass is accepted): two classes of one
+  name share one key, and a mismatch throws naming the key and the class.
+- **`{ key }`** is for a binding with no class and calls `container.get({ key })`. The key is typed as
+  `TUseInjectableKeys` - every `CoreBindings` value plus the keys an application adds, see
+  [module augmentation](/architecture/module-augmentation.md). The return type comes from
+  `IUseInjectableKeyTypes` for a key listed there, else from the caller's generic.
+
+Every hook resolves on every render (`packages/react/src/hooks/resolve-injectable.ts`), so a
+`TRANSIENT` binding gives a new instance each time.
 
 `useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
 two shapes as an options object, never a positional class. With `{ target }` the return type is
@@ -174,14 +180,16 @@ inputs as the resolve, so the two can never disagree.
 
 Since no stereotype maps to `providers`, `useProvider({ target })` passes only for a class declaring
 `binding: { namespace: BindingNamespaces.PROVIDER, key }`. ARDOR's default providers sit under
-`CoreBindings` keys: `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`.
+`CoreBindings` keys: `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`, which returns
+`IDataProvider` with no generic.
 
 ## Reading a failed resolve
 
 | Error says | Cause | Fix |
 |---|---|---|
-| `Failed to resolve binding key for target` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
+| `No binding key is recorded on` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
 | `is not bounded in context` | A key nobody bound: a typo, a module imported after `start()`, a `bindContext()` binding never made | Fix the key, import before `start()`, or bind it |
+| `is bound to the class ..., which is not the ... you passed` | Two different classes share one name, so one key | Rename one, or pin a key with `binding: { namespace, key }` |
 | `is bound as "...", not under "..."` | The hook does not match the class's namespace | Use the hook for that namespace |
 | `Failed to determine the application container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
 

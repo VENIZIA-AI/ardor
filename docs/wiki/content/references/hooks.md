@@ -37,10 +37,10 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | --- | --- | --- | --- |
 | Access the IoC container from context | `useApplicationContext` | `ApplicationContext` with a container | `Container` |
 | Access the container with an optional override | `useApplicationContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
-| Resolve a bound dependency by key or class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
+| Resolve a bound dependency by class, or by key for a binding with no class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
 | Resolve a service from the `services` namespace | `useService` | `ApplicationContext` with a container, or explicit option | Bound service instance |
 | Resolve a repository from the `repositories` namespace | `useRepository` | `ApplicationContext` with a container, or explicit option | Bound repository instance |
-| Resolve a provider from the `providers` namespace | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
+| Resolve a provider from the `providers` namespace, or a `CoreBindings` provider by key | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
 | Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
 | Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
 | Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `ILogger` |
@@ -102,13 +102,29 @@ export function ContainerChecker() {
 
 ### useInjectable
 
+Resolve a class with `{ target }`: the key is the one recorded on the class, and the return type is the class.
+
 ```tsx
-import { CoreBindings, type DefaultRestDataProvider, useInjectable } from '@venizia/ardor';
+import { service, useInjectable } from '@venizia/ardor';
+
+@service()
+class PricingService {
+  total(opts: { quantity: number }) { return opts.quantity * 3; }
+}
+
+export function Total() {
+  const pricingService = useInjectable({ target: PricingService });
+  return <span>{pricingService.total({ quantity: 2 })}</span>;
+}
+```
+
+For a binding with no class, pass `{ key }`. The providers of `CoreBindings` are typed with no generic and no augmentation:
+
+```tsx
+import { CoreBindings, useInjectable } from '@venizia/ardor';
 
 export function TenantHeaderButton() {
-  const dataProvider = useInjectable<DefaultRestDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
+  const dataProvider = useInjectable({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
   return (
     <button onClick={() => dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } })}>
       Tenant
@@ -117,9 +133,11 @@ export function TenantHeaderButton() {
 }
 ```
 
-- **Parameters**: `opts: TUseInjectableOptions` - `{ key: TUseInjectableKeys; container?: Container }` or `{ target: TClass<unknown>; container?: Container }`.
-- **Return value**: The resolved instance `TInstance`.
-- **Gotcha**: When resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
+- **Parameters**: `opts: IUseInjectableByTarget<TInstance> | IUseInjectableByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`. `TUseInjectableOptions` is the union of the two.
+- **Return value**: for `{ target }`, the instance type of the class. For `{ key }`, the type that [`IUseInjectableKeyTypes`](../best-practices/module-augmentation) lists for the key (`IDataProvider`, `IAuthProvider` and react-admin's `I18nProvider` for the three `CoreBindings` providers), else the type you pass as the generic, `unknown` without one.
+- **Gotcha**: the generic of a `{ key }` that is not in `IUseInjectableKeyTypes` is your claim: nothing checks it against what the binding holds. A key bound by `toValue` or `toProvider` holds the value, not a class: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` holds the `IDataProvider` the provider returns, not a `DefaultRestDataProvider`.
+- **Gotcha**: a hook resolves on every render, as the container does for every `get`. A `BindingScopes.TRANSIENT` binding gives a new instance each time, so keep an instance that holds state in a `SINGLETON` binding (the default).
+- **Gotcha**: when resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If the key is bound to another class (two classes of the same name share `<namespace>.<ClassName>`), the hook throws and names the key and the class. A subclass bound under the key of its parent is accepted. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useService
 
@@ -163,20 +181,37 @@ export function StockDisplay() {
 
 ### useProvider
 
+A provider class that declares the `providers` namespace is resolved by `{ target }`:
+
 ```tsx
-import { CoreBindings, type IDataProvider, useProvider } from '@venizia/ardor';
+import { BindingNamespaces, service, useProvider } from '@venizia/ardor';
+
+@service({ binding: { namespace: BindingNamespaces.PROVIDER, key: 'ThemeProvider' } })
+class ThemeProvider {
+  getColor() { return 'teal'; }
+}
+
+export function ThemeSwatch() {
+  const themeProvider = useProvider({ target: ThemeProvider });
+  return <span>{themeProvider.getColor()}</span>;
+}
+```
+
+The framework providers sit under `CoreBindings` keys and are typed through the key, with no generic and no augmentation:
+
+```tsx
+import { CoreBindings, useProvider } from '@venizia/ardor';
 
 export function DataProviderWidget() {
-  const dataProvider = useProvider<IDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
-  return <span>Data provider mounted: {dataProvider ? 'yes' : 'no'}</span>;
+  const dataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+  const authProvider = useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  return <span>{typeof dataProvider.getList} {typeof authProvider.getRoles}</span>;
 }
 ```
 
 - **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
-- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
-- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `providers`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+- **Return value**: for `{ target }`, the instance type of the class. For `{ key }` of `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `DEFAULT_AUTH_PROVIDER` or `DEFAULT_I18N_PROVIDER`, `IDataProvider`, `IAuthProvider` or react-admin's `I18nProvider`; the same for any key in `IUseInjectableKeyTypes`. For another key, the type you pass as the generic (your claim), else `unknown`.
+- **Gotcha**: when passing `target`, throws if the class is bound under a namespace other than `providers`. Resolves on every render, like `useInjectable`. Defined in `packages/react/src/hooks/use-artifact.ts`.
 
 ### useComponent
 

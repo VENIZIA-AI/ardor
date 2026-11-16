@@ -135,10 +135,13 @@ Source file: `packages/react/src/hooks/use-injectable.ts`.
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `IUseInjectableKeysOverrides` | `interface` | Augmentation interface for registering custom string keys with `useInjectable`. | - |
+| `IUseInjectableKeysOverrides` | `interface` | Augment it to add custom string keys; the caller supplies the generic. | - |
+| `IUseInjectableKeyTypes` | `interface` | Maps a key to its instance type. Admin adds the `CoreBindings` providers; you add yours. | - |
 | `TUseInjectableKeysDefault` | `type` | Union of default string keys extracted from `CoreBindings`. | - |
-| `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable`. | `TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides` |
+| `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable`. | `TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides \| keyof IUseInjectableKeyTypes` |
 | `TUseInjectableOptions` | `type` | Options discriminated union (`key` or `target`) accepted by `useInjectable`. | - |
+| `IUseInjectableByTarget<TInstance>` | `interface` | Options by class; the return type is the instance type of `target`. | - |
+| `IUseInjectableByKey<TKey>` | `interface` | Options by key: `{ key, container? }`. | - |
 
 ## @venizia/ardor-admin
 

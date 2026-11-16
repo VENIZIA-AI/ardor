@@ -149,7 +149,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (48)
+### `@venizia/ardor-react` (51)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -166,7 +166,10 @@ generated:
 - `IUseElementSizeOptions` interface
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
+- `IUseInjectableByKey` interface
+- `IUseInjectableByTarget` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseInjectableKeyTypes` interface
 - `IUseIntersectionOptions` interface
 - `IUseResizeEffectOptions` interface
 - `IUseStoredState` interface
@@ -182,21 +185,21 @@ generated:
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
-- `useComponent` const
-- `useConfiguration` const
+- `useComponent` function
+- `useConfiguration` function
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useDocumentVisibility` const
 - `useElementSize` function
-- `useInjectable` const
+- `useInjectable` function
 - `useIntersection` function
 - `useMediaQuery` const
 - `useOnlineStatus` const
-- `useProvider` const
-- `useRepository` const
+- `useProvider` function
+- `useRepository` function
 - `useResizeEffect` const
-- `useService` const
+- `useService` function
 - `useStoredState` const
 - `useWindowDimensions` const
 
@@ -252,7 +255,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (191)
+### `@venizia/ardor` (194)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -348,7 +351,10 @@ generated:
 - `IUseElementSizeOptions` interface
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
+- `IUseInjectableByKey` interface
+- `IUseInjectableByTarget` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseInjectableKeyTypes` interface
 - `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseResizeEffectOptions` interface
@@ -414,8 +420,8 @@ generated:
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
-- `useComponent` const
-- `useConfiguration` const
+- `useComponent` function
+- `useConfiguration` function
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
@@ -424,17 +430,17 @@ generated:
 - `useElementSize` function
 - `useFeatures` const
 - `useHtmlLang` const
-- `useInjectable` const
+- `useInjectable` function
 - `useIntersection` function
 - `useMediaQuery` const
 - `useNotifyError` const
 - `useOnlineStatus` const
-- `useProvider` const
+- `useProvider` function
 - `useRefreshToken` const
-- `useRepository` const
+- `useRepository` function
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
-- `useService` const
+- `useService` function
 - `useStoredState` const
 - `useTranslate` const
 - `useUntypedTranslate` const

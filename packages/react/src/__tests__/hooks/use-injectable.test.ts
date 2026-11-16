@@ -1,8 +1,10 @@
+import 'reflect-metadata';
+
 import { describe, expect, spyOn, test } from 'bun:test';
 import React from 'react';
 import { renderHook } from '@testing-library/react';
-import { Container } from '@venizia/ignis-inversion';
-import { CoreBindings } from '@venizia/ardor-kernel';
+import { BindingScopes, Container } from '@venizia/ignis-inversion';
+import { CoreBindings, service } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@/contexts/application';
 import { useApplicationContainer, useInjectable } from '@/hooks/use-injectable';
 
@@ -241,5 +243,193 @@ describe('useInjectable container resolution failures', () => {
         },
       );
     }).toThrow('[useApplicationContainer] Failed to determine the application container!');
+  });
+});
+
+@service()
+class PricingService {
+  readonly label = 'PricingService';
+}
+
+describe('useInjectable infers the instance type of a target', () => {
+  /**
+   * The positive assignment fails to compile while the result is `unknown`; the `number` guard keeps it
+   * failing if inference ever collapses to `any`.
+   */
+  test('returns the class instance with no generic written down', () => {
+    const container = new Container({ scope: 'test' });
+    container.bind({ key: 'services.PricingService' }).toClass(PricingService);
+
+    const { result } = renderHook(() => useInjectable({ target: PricingService }), {
+      wrapper: createWrapper({ container }),
+    });
+
+    const pricing: PricingService = result.current;
+    // @ts-expect-error `PricingService` is not assignable to `number`
+    const collapsed: number = result.current;
+
+    expect(pricing.label).toBe('PricingService');
+    expect(collapsed).toBeInstanceOf(PricingService);
+  });
+});
+
+describe('useInjectable keeps accepting a generic that goes with a target', () => {
+  test("a type the class satisfies and one it does not both compile: the generic is the caller's claim", () => {
+    const container = new Container({ scope: 'test' });
+    container.bind({ key: 'services.PricingService' }).toClass(PricingService);
+
+    const { result } = renderHook(
+      () => {
+        const asInterface: { label: string } = useInjectable<{ label: string }>({
+          target: PricingService,
+        });
+        const claimed: { unitPrice: number } = useInjectable<{ unitPrice: number }>({
+          target: PricingService,
+        });
+
+        return { asInterface, claimed };
+      },
+      { wrapper: createWrapper({ container }) },
+    );
+
+    expect(result.current.asInterface.label).toBe('PricingService');
+    expect(result.current.claimed).toBeInstanceOf(PricingService);
+  });
+});
+
+describe('useInjectable checks the bound class', () => {
+  const bindPlain = ({ container }: { container: Container }) => {
+    @service()
+    class Plain {
+      readonly label = 'bound';
+    }
+
+    container.bind({ key: 'services.Plain' }).toClass(Plain);
+
+    return Plain;
+  };
+
+  const createPlain = () => {
+    @service()
+    class Plain {
+      readonly label = 'other';
+    }
+
+    return Plain;
+  };
+
+  test('throws, naming both classes, when another class of the same name holds the key', () => {
+    const container = new Container({ scope: 'test' });
+    bindPlain({ container });
+    const other = createPlain();
+
+    expect(() => {
+      renderHook(() => useInjectable({ target: other }), {
+        wrapper: createWrapper({ container }),
+      });
+    }).toThrow(
+      /The key "services\.Plain" is bound to the class Plain, which is not the Plain you passed/,
+    );
+  });
+
+  test('resolves the class that is bound', () => {
+    const container = new Container({ scope: 'test' });
+    const bound = bindPlain({ container });
+
+    const { result } = renderHook(() => useInjectable({ target: bound }), {
+      wrapper: createWrapper({ container }),
+    });
+
+    expect(result.current).toBeInstanceOf(bound);
+  });
+
+  test('accepts a subclass bound under the key of its parent', () => {
+    @service()
+    class Parent {
+      readonly label = 'parent';
+    }
+
+    class Child extends Parent {}
+
+    const container = new Container({ scope: 'test' });
+    container.bind({ key: 'services.Parent' }).toClass(Child);
+
+    const { result } = renderHook(() => useInjectable({ target: Parent }), {
+      wrapper: createWrapper({ container }),
+    });
+
+    expect(result.current).toBeInstanceOf(Child);
+  });
+
+  test('a value binding has no class to compare and resolves', () => {
+    const container = new Container({ scope: 'test' });
+    const value = { label: 'value' };
+    container.bind({ key: 'services.PricingService' }).toValue(value);
+
+    const { result } = renderHook(() => useInjectable({ target: PricingService }), {
+      wrapper: createWrapper({ container }),
+    });
+
+    const resolved: unknown = result.current;
+
+    expect(resolved).toBe(value);
+  });
+});
+
+describe('useInjectable and the scope of the binding', () => {
+  test('a singleton binding gives the same instance on every render', () => {
+    const container = new Container({ scope: 'test' });
+    container
+      .bind({ key: 'services.PricingService' })
+      .toClass(PricingService)
+      .setScope(BindingScopes.SINGLETON);
+
+    const { result, rerender } = renderHook(() => useInjectable({ target: PricingService }), {
+      wrapper: createWrapper({ container }),
+    });
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(first);
+  });
+
+  test('a transient binding gives a new instance on every render, as the container does for every get', () => {
+    const container = new Container({ scope: 'test' });
+    container
+      .bind({ key: 'services.PricingService' })
+      .toClass(PricingService)
+      .setScope(BindingScopes.TRANSIENT);
+
+    const { result, rerender } = renderHook(() => useInjectable({ target: PricingService }), {
+      wrapper: createWrapper({ container }),
+    });
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current).not.toBe(first);
+  });
+
+  test('resolves again when the key changes', () => {
+    const container = new Container({ scope: 'test' });
+    container.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue({ id: 'application' });
+    container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ id: 'info' });
+
+    const { result, rerender } = renderHook(
+      (props: {
+        key: typeof CoreBindings.APPLICATION_INSTANCE | typeof CoreBindings.APPLICATION_INFO;
+      }) => useInjectable<ITestApp>({ key: props.key }),
+      {
+        initialProps: { key: CoreBindings.APPLICATION_INSTANCE },
+        wrapper: createWrapper({ container }),
+      },
+    );
+
+    expect(result.current.id).toBe('application');
+
+    rerender({ key: CoreBindings.APPLICATION_INFO });
+
+    expect(result.current.id).toBe('info');
   });
 });

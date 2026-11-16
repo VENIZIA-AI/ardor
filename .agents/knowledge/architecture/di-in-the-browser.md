@@ -40,8 +40,10 @@ A class the container constructs declares its dependencies as constructor parame
 
 Inside components, `useInjectable` (`packages/react/src/hooks/use-injectable.ts`) is the bridge from the IGNIS container to React. It reads the container off `ApplicationContext` (or accepts an explicit `container` override) and resolves in one of two ways:
 
-- **By key**: `useInjectable({ key: CoreBindings.SOME_KEY })` calls `container.get({ key })` directly. The `key` type is a union built from every string value of `CoreBindings`, extendable by augmenting `IUseInjectableKeysOverrides`.
-- **By class**: `useInjectable({ target: SomeClass })` does not guess a key from the class name. It asks `container.getMetadataRegistry().getBindingKey({ target })` to look up the key a stereotype (`@service()`, `@component()` and the rest) recorded on that class, then resolves that key. Both registration modes record that key: a stereotype at decoration time, and `application.service(X)` / `repository(X)` / `dataSource(X)` / `component(X)` (and `bindingList()`, `injectable()`) at registration. A class that went through neither throws - register it, or resolve by `{ key }`.
+- **By key**, for a binding with no class: `useInjectable({ key: CoreBindings.SOME_KEY })` calls `container.get({ key })` directly. The `key` type is a union built from every string value of `CoreBindings`, extendable by augmenting `IUseInjectableKeysOverrides` or `IUseInjectableKeyTypes`; the second also types the result.
+- **By class**: `useInjectable({ target: SomeClass })` does not guess a key from the class name. It asks `container.getMetadataRegistry().getBindingKey({ target })` to look up the key a stereotype (`@service()`, `@component()` and the rest) recorded on that class, then resolves that key. Both registration modes record that key: a stereotype at decoration time, and `application.service(X)` / `repository(X)` / `dataSource(X)` / `component(X)` (and `bindingList()`, `injectable()`) at registration. A class that went through neither throws - register it, or resolve by `{ key }`. A binding that holds another class of the same name throws naming the key and the class.
+
+The hook resolves on every render, so a `TRANSIENT` binding gives a new instance each time.
 
 The options type is a discriminated union - you pass either `key` or `target`, never both, and `useInjectable` throws if it can determine neither a container nor a resolvable key/target.
 

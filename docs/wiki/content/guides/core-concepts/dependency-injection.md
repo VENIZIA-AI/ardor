@@ -111,15 +111,15 @@ React components resolve dependencies through typed hooks exported from `@venizi
 | --- | --- | --- | --- |
 | A repository | `useRepository` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
 | A service | `useService` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
-| A provider | `useProvider` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
+| A provider | `useProvider` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. A `CoreBindings` provider key is typed. |
 | A configuration | `useConfiguration` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
 | A component | `useComponent` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Throws when the class is bound under another namespace. |
-| Any binding or core key | `useInjectable` | `{ target: TClass<unknown> }` or `{ key: TUseInjectableKeys }` | Resolves any binding across all namespaces or `CoreBindings`. |
+| Any class, or a key with no class | `useInjectable` | `{ target: TClass<T> }` or `{ key: TUseInjectableKeys }` | Resolves any binding across all namespaces or `CoreBindings`. |
 | The active DI container | `useApplicationContainer` | `{ container?: Container }` (optional) | Returns `opts.container` else the context container and throws when neither exists. |
 | The application container | `useApplicationContext` | None | Returns the container and throws outside the application context. |
 | The application logger | `useApplicationLogger` | None | Returns the application logger and throws outside the application context. |
 
-When resolving with `{ target }`, TypeScript infers the return type from the class constructor without manual type casting.
+When resolving with `{ target }`, TypeScript infers the return type from the class constructor without manual type casting. Every hook, `useInjectable` included, throws when another class of the same name holds the key, and names the key and the class. A hook resolves once per component instance (see [Scopes](#scopes-singleton-by-default-in-the-browser)).
 
 ## Injecting dependencies into a class
 
@@ -163,7 +163,9 @@ When `OrderProcessingService` is resolved, the container resolves `services.Audi
 
 ## Scopes: singleton by default in the browser
 
-In ARDOR, all registrations default to `BindingScopes.SINGLETON` because hooks resolve on every render (`packages/kernel/src/base/applications/abstract.ts`). To opt out, pass `{ scope: BindingScopes.TRANSIENT }` (from `@venizia/ignis-inversion`) when registering with `@service({ scope: BindingScopes.TRANSIENT })` or `this.service(Target, { scope: BindingScopes.TRANSIENT })` if an instance must hold mutable, caller-specific state.
+In ARDOR, all registrations default to `BindingScopes.SINGLETON`, so every component and every class that injects the same dependency shares one instance (`packages/kernel/src/base/applications/abstract.ts`). To opt out, pass `{ scope: BindingScopes.TRANSIENT }` (from `@venizia/ignis-inversion`) when registering with `@service({ scope: BindingScopes.TRANSIENT })` or `this.service(Target, { scope: BindingScopes.TRANSIENT })` if an instance must hold mutable, caller-specific state.
+
+A hook resolves on every render, as the container does for every `get`. A `TRANSIENT` binding therefore gives a new instance on each render, so state kept on it is lost: keep an instance that holds state in a `SINGLETON` binding (the default), or hold it yourself in `useState`.
 
 ## Common startup errors and how to fix them
 
