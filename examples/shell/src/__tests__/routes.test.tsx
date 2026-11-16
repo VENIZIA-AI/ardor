@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 
 import { Roles, ShellTestIds } from '@/constants/shell';
 import { blockNetwork, renderShell, startShell } from './shell';
@@ -28,13 +28,13 @@ describe('the routes of the features', () => {
     expect(screen.queryByTestId(ShellTestIds.MENU)).toBeNull();
   });
 
-  test('a viewer who opens the order summary sees the layout and no page', async () => {
+  test('a viewer who opens the order summary lands on the access-denied page, not the summary', async () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/summary' });
 
-    await waitFor(() =>
-      expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts'),
-    );
+    const denied = await screen.findByRole('heading', { name: 'Access denied' }, { timeout: 5000 });
+    expect(denied).toBeDefined();
+    expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts');
     expect(screen.queryByRole('heading', { name: 'Order summary' })).toBeNull();
   });
 
@@ -42,7 +42,11 @@ describe('the routes of the features', () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/1/show' });
 
-    const heading = await screen.findByRole('heading', { name: 'Access denied' });
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Access denied' },
+      { timeout: 5000 },
+    );
     expect(heading).toBeDefined();
   });
 
