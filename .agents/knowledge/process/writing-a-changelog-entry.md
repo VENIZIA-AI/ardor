@@ -67,4 +67,4 @@ List the symbols as the app spells them before the change (a removed or renamed 
 | Command | What it fails |
 |---|---|
 | `make changelog-check` (part of `make lint-all`) | a Breaking or Deprecated item with no block, a block with no item, a package the project does not declare, an invalid `log.md` or block, a codemod name that `ardor codemod --list` does not print (skipped, with a notice, when the runner is not installed: the repository root has no `ardor` bin, so names are not checked here), a dated file later than `datedUntil`, more than one folder without `released:`, a folder in progress that is not above every released one |
-| `bun x --no-install vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |
+| `bun node_modules/.bin/vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |
