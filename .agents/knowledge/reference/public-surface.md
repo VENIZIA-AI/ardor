@@ -202,7 +202,7 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (41)
+### `@venizia/ardor-admin` (43)
 
 - `ApplicationProviders` class
 - `ArdorApplication` const
@@ -222,11 +222,13 @@ generated:
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
+- `IRouteAccess` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
 - `SessionClearReasons` class
+- `TArdorRoute` type
 - `TFeature` type
 - `TFeatureMessages` type
 - `TI18nSource` type
@@ -248,7 +250,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (187)
+### `@venizia/ardor` (189)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -324,6 +326,7 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
+- `IRouteAccess` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
@@ -373,6 +376,7 @@ generated:
 - `SessionClearReasons` class
 - `StorageAreas` class
 - `StorageCodecs` class
+- `TArdorRoute` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type

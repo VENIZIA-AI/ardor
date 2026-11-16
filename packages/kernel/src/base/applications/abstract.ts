@@ -9,6 +9,7 @@ import {
   BindingScopes,
   Container,
   getError,
+  type TBindingKey,
   type TBindingScope,
   type TClass,
 } from '@venizia/ignis-inversion';
@@ -42,7 +43,8 @@ export interface IArtifactRegistration {
    */
   scope?: TBindingScope;
   /**
-   * `false` refuses to replace a binding already under the key.
+   * `false` refuses to replace a binding already under the key, and keeps `bindingList()` from
+   * replacing this one; only `bindContext()` does.
    * @default true
    */
   allowOverride?: boolean;
@@ -61,6 +63,9 @@ export abstract class AbstractArdorApplication extends Container implements IArd
 
   /** What `start()` resolved from `artifacts()`; unset when `preConfigure()` runs without it. */
   private resolvedIndexes: Array<IArtifactIndex> | undefined;
+
+  /** The keys bound with `allowOverride: false`, each with the class that holds it; only `bindContext()` may replace them. */
+  private readonly lockedKeys = new Map<TBindingKey, Function>();
 
   /** Stays synchronous unless `getAppInfo()` returns a promise: a subclass may still return either. */
   preConfigure(): ValueOrPromise<void> {
@@ -83,6 +88,14 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     this.registerFeatures({ features: this.features() });
 
     for (const [key, target] of Object.entries(this.bindingList())) {
+      const holder = this.lockedKeys.get(key);
+
+      if (holder !== undefined) {
+        throw getError({
+          message: `[bindingList] '${key}' is held by ${holder.name} with allowOverride false, and bindingList() would replace it with ${target.name} | Bind it in bindContext() to override on purpose, or drop allowOverride: false`,
+        });
+      }
+
       this.getMetadataRegistry().setBindingKey({ target, key });
       this.bind({ key }).toClass(target).setScope(BindingScopes.SINGLETON);
     }
@@ -91,34 +104,39 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   }
 
   /**
-   * Binds every stereotyped class under its key and scope, then each `@provide` method under its
-   * own key, as IGNIS's `bindProvidedKeys` does: a lazy provider, SINGLETON unless `scope` says
-   * otherwise.
+   * Binds every stereotyped class whose `when` allows it, under its key and scope, then each
+   * `@provide` method under its own key, as IGNIS's `bindProvidedKeys` does: a lazy provider,
+   * SINGLETON unless `scope` says otherwise. `order` and `after` are not read: every binding is
+   * lazy, so registration order changes nothing.
    */
   registerArtifacts(): void {
     const registry = MetadataRegistry.getInstance();
-    const targets = registry.getDiscoveredArtifacts();
+    const discovered = registry.getDiscoveredArtifacts();
     this.assertIndexed({
       indexes: this.resolvedIndexes ?? this.artifacts(),
-      discovered: new Set(targets),
+      discovered: new Set(discovered),
     });
+
+    const targets = discovered
+      .filter((target): target is Function => typeof target === 'function')
+      .filter((target) => this.isSelected({ target }));
 
     // Two classes a minifier named alike derive one key, and the second would silently replace the
     // first. Checked here, never at decoration, so a hot reload that re-decorates a class is no error.
-    ArtifactBindingKeys.assertNoDerivedCollision({
-      caller: 'registerArtifacts',
-      entries: targets.flatMap((target) => {
-        const metadata = registry.getArtifactMetadata({ target });
+    const entries = targets.flatMap((target) => {
+      const metadata = registry.getArtifactMetadata({ target });
 
-        if (!metadata) {
-          return [];
-        }
+      if (!metadata) {
+        return [];
+      }
 
-        const namespace = ArtifactNamespaces.resolve({ type: metadata.type });
+      const namespace = ArtifactNamespaces.resolve({ type: metadata.type });
 
-        return [{ target: target as TClass<unknown>, namespace, binding: metadata.binding }];
-      }),
+      return [{ target, namespace, binding: metadata.binding }];
     });
+
+    ArtifactBindingKeys.assertNoDerivedCollision({ caller: 'registerArtifacts', entries });
+    this.assertNoPinnedCollision({ entries });
 
     for (const target of targets) {
       const key = this.getMetadataRegistry().getBindingKey({ target });
@@ -127,9 +145,25 @@ export abstract class AbstractArdorApplication extends Container implements IArd
         continue;
       }
 
+      const metadata = registry.getArtifactMetadata({ target });
+      const holder = this.lockedKeys.get(key);
+
+      if (
+        holder !== undefined &&
+        !AbstractArdorApplication.isSameDeclaration({ left: holder, right: target })
+      ) {
+        throw getError({
+          message: `[registerArtifacts] '${String(key)}' is held by ${holder.name} with allowOverride false, and ${target.name} would replace it | Give one of them another key, or bind the intended one in bindContext()`,
+        });
+      }
+
+      if (metadata?.allowOverride === false) {
+        this.lockedKeys.set(key, target);
+      }
+
       this.bind({ key })
         .toClass(target as TClass<unknown>)
-        .setScope(registry.getArtifactMetadata({ target })?.scope ?? BindingScopes.SINGLETON);
+        .setScope(metadata?.scope ?? BindingScopes.SINGLETON);
 
       for (const entry of registry.getProvideMetadata({ target })) {
         this.bind({ key: entry.key })
@@ -143,7 +177,95 @@ export abstract class AbstractArdorApplication extends Container implements IArd
     }
   }
 
-  /** Classes bound under literal keys before `bindContext()` runs. */
+  /**
+   * Two different classes that end up on one key where at least one pinned it: the later import would
+   * silently win. Two derived keys are `ArtifactBindingKeys`'s to judge. Two pinned classes with one
+   * name are a hot reload that declared the class again, which leaves nothing to tell apart.
+   */
+  private assertNoPinnedCollision(opts: {
+    entries: Array<{
+      target: Function;
+      namespace: string;
+      binding?: { namespace: string; key: string };
+    }>;
+  }): void {
+    const owners = new Map<string, { target: Function; isDerived: boolean }>();
+
+    for (const entry of opts.entries) {
+      const { key, isDerived } = ArtifactBindingKeys.resolve(entry);
+      const owner = owners.get(key);
+      owners.set(key, { target: entry.target, isDerived });
+
+      if (!owner || owner.target === entry.target) {
+        continue;
+      }
+
+      const isSameDeclaration =
+        !owner.isDerived &&
+        !isDerived &&
+        AbstractArdorApplication.isSameDeclaration({ left: owner.target, right: entry.target });
+
+      if ((owner.isDerived && isDerived) || isSameDeclaration) {
+        continue;
+      }
+
+      throw getError({
+        message: `[registerArtifacts] The key '${key}' is claimed by both ${owner.target.name} and ${entry.target.name}, and the one imported last would silently replace the other | Give one of them another key, select one with 'when', or bind the intended one in bindContext()`,
+      });
+    }
+  }
+
+  /**
+   * Whether two classes are one declaration evaluated twice, as a hot reload does: the same name and the same
+   * source text. Two different classes that share a name (a minifier does it) are not, and the later one would
+   * silently replace the earlier; two different classes with the same name and identical source text are taken as
+   * one, the price of allowing a hot reload.
+   */
+  private static isSameDeclaration(opts: { left: Function; right: Function }): boolean {
+    const { left, right } = opts;
+
+    return (
+      left === right ||
+      (left.name === right.name &&
+        Function.prototype.toString.call(left) === Function.prototype.toString.call(right))
+    );
+  }
+
+  /**
+   * Evaluates the `when` a stereotype declares, once, with the application. It must answer
+   * synchronously: a promise is refused rather than read as true.
+   */
+  private isSelected(opts: { target: Function }): boolean {
+    const { target } = opts;
+    const when = MetadataRegistry.getInstance().getArtifactMetadata({ target })?.when;
+
+    if (when === undefined) {
+      return true;
+    }
+
+    let selected: unknown;
+
+    try {
+      selected = when({ application: this });
+    } catch (error) {
+      throw getError({
+        message: `[registerArtifacts] The 'when' of ${target.name} threw: ${error instanceof Error ? error.message : String(error)} | A 'when' must not throw: return false to leave the class out`,
+      });
+    }
+
+    if (typeof selected !== 'boolean') {
+      throw getError({
+        message: `[registerArtifacts] The 'when' of ${target.name} must return a boolean synchronously, it returned ${selected instanceof Promise ? 'a Promise' : typeof selected} | Resolve the answer before decoration, or bind the class by hand in bindContext()`,
+      });
+    }
+
+    return selected;
+  }
+
+  /**
+   * Classes bound under literal keys before `bindContext()` runs. A key that holds a class declared
+   * `allowOverride: false` throws; only `bindContext()` replaces it.
+   */
   bindingList(): Record<string, TClass<unknown>> {
     return {};
   }
@@ -346,6 +468,10 @@ export abstract class AbstractArdorApplication extends Container implements IArd
       throw getError({
         message: `[${caller}] '${key}' is already bound and allowOverride is false | Pass a distinct binding key`,
       });
+    }
+
+    if (!allowOverride) {
+      this.lockedKeys.set(key, target);
     }
 
     this.getMetadataRegistry().setBindingKey({ target, key });

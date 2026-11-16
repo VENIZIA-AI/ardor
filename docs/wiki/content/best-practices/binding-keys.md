@@ -60,7 +60,7 @@ export class App extends BaseArdorApplication {
 }
 ```
 
-Registration runs least explicit first, so the most explicit wins a shared key: stereotypes, then `bindingList()`, then `bindContext()`. `allowOverride: false` on a by-hand call refuses to replace an existing binding instead.
+Registration runs least explicit first, so the most explicit wins a shared key: stereotypes, then features, then `bindingList()`, then `bindContext()`. A lower step never replaces a class declared `allowOverride: false` (by a stereotype or by a by-hand call); `bindingList()` throws for it, and only `bindContext()` replaces it. Two classes that pin one key with `binding` throw at `start()` instead of letting the later import win.
 
 An `HttpRepository` has no model, so it is declared `@repository({ type: RepositoryTypes.REMOTE, dataSource })`, and `@repository` injects the datasource into the first constructor parameter. The two ways mix: `@inject({ target })` on a datasource registered by hand works there too. See [Repositories](../references/repository).
 
@@ -216,7 +216,8 @@ Keys that `CoreBindings` does not define - your own classes - come from a stereo
 - **Registering a framework slot with `service()`.** `this.service(MyRestDataProvider)` binds `services.MyRestDataProvider`. Nothing reads that key. Bind a framework slot with a `@provide({ key: CoreBindings.X })` method of a `@configuration()` class.
 - **Resolving before `start()`.** `preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, then calls `bindContext()`. Until `start()` has run, none of these keys exist.
 - **Assuming `bind().toClass()` is a singleton.** Stereotypes, the by-hand methods and `bindingList()` default to singleton; `bind()` is transient unless you call `setScope`.
-- **Two classes with the same name.** Both derive `<namespace>.<ClassName>`, and the later registration replaces the earlier. Pass `binding` to one, or `allowOverride: false` to make the collision throw.
+- **Two classes with the same name.** Both derive `<namespace>.<ClassName>`, and `start()` throws. Pass `binding` to one.
+- **Two classes pinned to one key.** `start()` throws and names both. Give one of them another key, select one with `when`, or bind the intended one in `bindContext()`.
 - **Using `@api()` outside a `BaseService`.** The decorator needs `this.logger`. It will not type-check on another class.
 - **Expecting `@api()` to swallow errors.** It logs and rethrows. Callers still need their own handling.
 - **Copying a `CoreBindings` string.** Use the constant. The string is not part of the public contract.

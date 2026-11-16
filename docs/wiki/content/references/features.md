@@ -70,6 +70,8 @@ export class CommerceApplication extends BaseArdorApplication {
 | `TFeature<TExtension>` | type | Full feature specification including resources, routes, messages, and optional shell extensions |
 | `IFeatureBase` | interface | Container-level feature contract (`name`, `configurations`, `permissions`) |
 | `TFeatureMessages` | type | Map of locale codes to message dictionary objects or asynchronous loader functions |
+| `TArdorRoute` | type | A React Router route plus the optional `access` a user needs to open it |
+| `IRouteAccess` | interface | The `resource` and `action` a route with `access` asks the permission provider |
 | `useFeatures` | hook | Reads the list of mounted features from the application container within React components |
 | `CoreBindings.FEATURES` | binding key | Key `'@app/application/features'`, where `preConfigure()` binds the mounted feature array |
 
@@ -82,7 +84,7 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 | `name` | `string` | None (required) | Unique identifier for the feature within an application. |
 | `configurations` | `Array<TClass<unknown>>` | `undefined` | Stereotyped `@configuration()` classes of the feature. |
 | `resources` | `Array<ResourceProps>` | `undefined` | React-admin `<Resource>` definitions mounted into the view tree. |
-| `routes` | `Array<RouteProps>` | `undefined` | Custom `<Route>` elements mounted under `<CustomRoutes>`. |
+| `routes` | `Array<TArdorRoute>` | `undefined` | Custom `<Route>` elements mounted under `<CustomRoutes>`; each may declare `access`. |
 | `messages` | `TFeatureMessages` | `undefined` | Locale codes mapped to message objects or lazy loaders. |
 | `permissions` | `Array<string>` | `undefined` | Permission keys the feature checks, in the application's vocabulary. |
 | `[extension]` | `TExtension` | None | Custom shell metadata, such as menu entries, navigation paths or icons. |
@@ -90,10 +92,37 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 - **`name`:** Used in resource ownership checks and diagnostic errors.
 - **`configurations`:** Listing them by value prevents bundlers from dropping unreferenced modules under `sideEffects: false` and enables discovery checks during startup. Handled as `feature.configurations ?? []` in `packages/kernel/src/base/applications/abstract.ts`.
 - **`resources`:** Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`.
-- **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`.
+- **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. A route without `access` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. See [A route that needs permission](#a-route-that-needs-permission).
 - **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`.
-- **`permissions`:** Preserved on the feature for consumers such as role editors; ARDOR enforces nothing. See [Permission](./permission).
+- **`permissions`:** Preserved on the feature for consumers such as role editors; ARDOR enforces nothing with it. A route enforces a permission only through its own `access`. See [Permission](./permission).
 - **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it.
+
+## A route that needs permission
+
+react-admin checks neither sign-in nor `canAccess` on a custom route. A route with `access: { resource, action }` is rendered inside react-admin's `Authenticated` and `CanAccess`: a signed-out user is sent to the sign-in page, and a signed-in user is asked of the `canAccess` of the [permission provider](./permission) for that `resource` and `action`.
+
+```tsx
+import React from 'react';
+import { Features, type TFeature } from '@venizia/ardor';
+
+const SettingsPage: React.FC = () => <h1>Settings</h1>;
+
+export const SettingsFeature: TFeature = Features.define({
+  name: 'settings',
+  routes: [
+    {
+      path: '/settings',
+      element: <SettingsPage />,
+      access: { resource: 'settings', action: 'edit' },
+    },
+  ],
+});
+```
+
+- Without a bound permission provider, `canAccess` is absent and react-admin allows every check, so `access` then only requires a signed-in user.
+- A user who is not allowed sees an empty page: `CanAccess` renders nothing by default.
+- `access` works the same in the `routes` prop of `ArdorApplication`, and with a route that gives `Component` instead of `element`.
+- Hiding a page is not protection: the backend must check every request.
 
 ## Mount order and conflict checks
 

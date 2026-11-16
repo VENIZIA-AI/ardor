@@ -84,7 +84,7 @@ The exact execution order in `packages/kernel/src/base/applications/abstract.ts`
 2. Binds `CoreBindings.APPLICATION_INFO` with the value of `this.getAppInfo()`. When `getAppInfo()` returns a promise, `preConfigure()` waits for it, binds the resolved value, then runs steps 3 to 6.
 3. Invokes `this.registerArtifacts()`: discovers and binds stereotyped classes and `@provide` methods on `@configuration()` classes.
 4. Invokes `this.registerFeatures({ features: this.features() })`: validates features and binds `CoreBindings.FEATURES`.
-5. Iterates entries of `this.bindingList()`: binds each target under its literal key as `BindingScopes.SINGLETON`.
+5. Iterates entries of `this.bindingList()`: binds each target under its literal key as `BindingScopes.SINGLETON`. A key held by a class declared `allowOverride: false` throws.
 6. Returns `this.bindContext()`: executes custom manual bindings and awaits if asynchronous.
 
 > [!IMPORTANT]
@@ -126,10 +126,14 @@ Signature: `registerArtifacts(): void`
 Discovers and binds stereotyped classes and their `@provide` methods:
 
 1. Retrieves discovered classes from `MetadataRegistry.getInstance().getDiscoveredArtifacts()`.
-2. Asserts indexed classes via `this.assertIndexed()`: verifies every class in `this.resolvedIndexes ?? this.artifacts()` was discovered.
-3. Checks derived keys via `ArtifactBindingKeys.assertNoDerivedCollision()`: ensures no key collisions under minification.
-4. Binds each discovered class under its resolved key using its declared scope (`BindingScopes.SINGLETON` by default).
-5. Binds every `@provide` method on `@configuration()` classes to a lazy singleton provider (`toProvider`), resolving on first `get()`.
+2. Asserts indexed classes via `this.assertIndexed()`: verifies every class in `this.resolvedIndexes ?? this.artifacts()` was discovered. A class whose `when` returns `false` is still discovered, so an index may list it.
+3. Calls the `when` of each class that declares one, once, with `{ application }`. A class whose `when` returns `false` is left out of the steps below.
+4. Checks derived keys via `ArtifactBindingKeys.assertNoDerivedCollision()`: ensures no key collisions under minification.
+5. Checks pinned keys: two different classes that end on one key, where at least one declared it with `binding`, throw. A class declared again under its own name by a hot reload is not counted.
+6. Binds each remaining class under its resolved key using its declared scope (`BindingScopes.SINGLETON` by default).
+7. Binds every `@provide` method of those classes to a lazy singleton provider (`toProvider`), resolving on first `get()`.
+
+A stereotype's `order` and `after` are not read: every binding is lazy, so the order of registration changes nothing. A `when` must return a boolean at once; it cannot return a promise. A by-hand `service(X)` binds the class whatever its `when` says.
 
 ### artifacts()
 
@@ -166,13 +170,13 @@ For details on feature mounting, routes, resources, and translations, see [Featu
 
 Signature: `bindingList(): Record<string, TClass<unknown>>`
 
-Returns a mapping of literal binding keys to class constructors. Default returns `{}`. `preConfigure()` registers each class under its literal key as `BindingScopes.SINGLETON`.
+Returns a mapping of literal binding keys to class constructors. Default returns `{}`. `preConfigure()` registers each class under its literal key as `BindingScopes.SINGLETON`. An entry replaces a stereotype or a feature binding on the same key, but not a class declared `allowOverride: false`: that throws, and only `bindContext()` replaces it.
 
 ### bindContext()
 
 Signature: `abstract bindContext(): ValueOrPromise<void>`
 
-Abstract method implemented by subclasses to register manual bindings or overrides directly on the container. Because `bindContext()` runs last in `preConfigure()`, any binding created here takes precedence over stereotype decorators, configuration `@provide` methods, features, and `bindingList()`. Do not call `super.bindContext()`.
+Abstract method implemented by subclasses to register manual bindings or overrides directly on the container. Because `bindContext()` runs last in `preConfigure()`, any binding created here takes precedence over stereotype decorators, configuration `@provide` methods, features, and `bindingList()`, including a class declared `allowOverride: false`. Do not call `super.bindContext()`.
 
 ### getAppInfo()
 
@@ -204,7 +208,7 @@ Signatures:
 |---|---|---|---|
 | `binding` | `{ namespace: string; key: string }` | Derived from stereotype | Custom namespace and key to bind under instead of `<namespace>.<ClassName>` |
 | `scope` | `TBindingScope` | The scope declared on the class, else `BindingScopes.SINGLETON` | Inversion-of-control lifecycle scope for the class |
-| `allowOverride` | `boolean` | `true` | When `false`, refuses to replace a binding if the key is already bound |
+| `allowOverride` | `boolean` | `true` | When `false`, refuses to replace a binding if the key is already bound; `bindingList()` cannot replace it either |
 
 Each method binds the class into its stereotype namespace in the scope declared on the class, else as a `BindingScopes.SINGLETON`, and associates the key with the constructor in the metadata registry. For non-standard artifacts, `injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void` binds the class under `${scope}.${value.name}`.
 
@@ -292,6 +296,24 @@ export function renderAdmin(application: BaseArdorApplication, reduxStore: Store
 - Thrown by: `registerArtifacts()` via `ArtifactBindingKeys.assertNoDerivedCollision`
 - Cause: two discovered classes share the same name or were renamed to the same name by a minifier, causing colliding derived binding keys (`${namespace}.${name}`).
 - Fix: set an explicit binding key via `@service({ binding: { namespace, key } })` or the `binding` registration option, or configure the bundler to preserve class names.
+
+### `[registerArtifacts] The 'when' of <Name> threw` and `must return a boolean synchronously`
+
+- Thrown by: `registerArtifacts()`
+- Cause: the `when` option of a stereotype threw, returned a promise, or returned something that is not a boolean.
+- Fix: return `true` or `false` without waiting for anything. Read the flag before the class is declared, or bind the class by hand in `bindContext()`.
+
+### `[registerArtifacts] The key '<key>' is claimed by both <A> and <B>`
+
+- Thrown by: `registerArtifacts()`
+- Cause: two different classes end on one binding key and at least one pinned it with `binding`, so the one imported last would silently replace the other.
+- Fix: give one of the two classes another key, select one with `when`, or bind the intended one in `bindContext()`.
+
+### `[bindingList] '<key>' is held by <Class> with allowOverride false`
+
+- Thrown by: `preConfigure()`, in the `bindingList()` step
+- Cause: `bindingList()` has an entry under a key that a class declared `allowOverride: false` holds.
+- Fix: bind the replacement in `bindContext()`, which overrides on purpose, or remove `allowOverride: false` from the class.
 
 ### `[artifacts] A group has neither content nor resolve`
 

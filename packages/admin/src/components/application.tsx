@@ -4,11 +4,19 @@ import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
 import type { Container } from '@venizia/ignis-inversion';
 import { QueryClient } from '@tanstack/react-query';
-import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
+import {
+  Authenticated,
+  CanAccess,
+  CoreAdmin,
+  CustomRoutes,
+  type I18nProvider,
+  Resource,
+} from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
-import { Route } from 'react-router-dom';
+import { Outlet, Route } from 'react-router-dom';
 
-import { type TFeature, Features } from '@/features/feature';
+import { type TArdorRoute, type TFeature, Features } from '@/features/feature';
+import { getError } from '@venizia/ignis-inversion';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
@@ -41,6 +49,67 @@ const Wrapper: React.FC<{
       {reduxStore ? <ReduxProvider store={reduxStore}>{content}</ReduxProvider> : content}
     </ApplicationContext.Provider>
   );
+};
+
+/**
+ * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
+ * checks: a custom route has neither in react-admin.
+ */
+const renderRoute = (opts: { route: TArdorRoute }) => {
+  const { access, ...routeProps } = opts.route;
+  const key = routeProps.id ?? routeProps.path;
+
+  if (!access) {
+    return <Route key={key} {...routeProps} />;
+  }
+
+  const { Component, element, ...rest } = routeProps;
+  const page = element ?? (Component ? <Component /> : <Outlet />);
+
+  return (
+    <Route
+      key={key}
+      {...rest}
+      element={
+        <Authenticated>
+          <CanAccess resource={access.resource} action={access.action}>
+            {page}
+          </CanAccess>
+        </Authenticated>
+      }
+    />
+  );
+};
+
+/**
+ * A route with `access` is open when nothing can answer it: react-admin treats a missing auth provider as
+ * everyone signed in, and a provider with no `canAccess` allows every page. Failing at mount keeps the route closed.
+ */
+const assertAccessRoutesCanBeChecked = (opts: {
+  routes: Array<TArdorRoute>;
+  authProvider?: object;
+}): void => {
+  const { routes, authProvider } = opts;
+
+  for (const route of routes) {
+    if (!route.access) {
+      continue;
+    }
+
+    const name = route.path ?? route.id;
+
+    if (!authProvider) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but sign-in is off, so nobody is asked who may open it | Turn sign-in on, or remove access from the route`,
+      });
+    }
+
+    if (!('canAccess' in authProvider) || !authProvider.canAccess) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but no permission provider is bound, so every signed-in user would pass | Bind CoreBindings.PERMISSION_PROVIDER (RolePermissionProvider, or your own), or remove access from the route`,
+      });
+    }
+  }
 };
 
 /**
@@ -198,6 +267,9 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   const adminProps = { ...providers, ...reactAdminProps, queryClient };
 
+  // The provider react-admin gets: a prop of the shell wins over the one the container resolved.
+  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: adminProps.authProvider });
+
   const isMessagesReady = useFeatureMessagesReady({
     features,
     i18nProvider: providers.i18nProvider,
@@ -220,7 +292,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
         <CustomRoutes>
           {mounted.routes.map((route) => {
-            return <Route key={route.id ?? route.path} {...route} />;
+            return renderRoute({ route });
           })}
         </CustomRoutes>
       </CoreAdmin>

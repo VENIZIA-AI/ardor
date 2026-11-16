@@ -264,3 +264,36 @@ ignis-peers:
     steps:
       - 'Move the four ARDOR packages back to 0.4.7 and the IGNIS packages to the 0.4.7 line together. ARDOR 0.4.7 imports AnyType and AnyObject, which the IGNIS 0.4.8 packages no longer export.'
   data: Nothing stored.
+
+stereotype-when-honoured:
+  symbols: [service, component, repository, configuration, datasource, injectable]
+  upgrade:
+    steps:
+      - 'Find every stereotype that sets when, for example @service({ when: () => isDevelopment }). A class whose when returned false was bound before and is not now, and neither are its @provide methods.'
+      - 'If the class should stay bound, remove the when option. If you want it bound only where you decide, keep when and bind the class by hand in bindContext(), for example this.service(MockMailService).'
+      - 'A when must return true or false at once: change an async function, and one that can throw, to read its value synchronously.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 binds every stereotyped class and does not call when.'
+  data: Nothing stored.
+
+duplicate-explicit-key-throws:
+  symbols:
+    [
+      service,
+      component,
+      repository,
+      configuration,
+      datasource,
+      injectable,
+      bindingList,
+      IArtifactRegistration.allowOverride,
+    ]
+  upgrade:
+    steps:
+      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext(), or select one of them with when.'
+      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 lets the class imported last win a shared key and lets bindingList() replace a class declared allowOverride: false.'
+  data: Nothing stored.

@@ -37,8 +37,16 @@ resources, routes })` puts the application's own `resources` / `routes` first, t
 `IApplication.routes` carries the same name as `TFeature.routes`. A resource name mounted twice throws,
 naming both owners: react-admin keeps one and drops the other silently. Only `FeatureMessages` is
 internal to admin (imported by path, not exported); the public surface is `TFeature`,
-`TFeatureMessages`, the `Features` class (`define`, `read`, `mount`), `useFeatures`, plus the kernel's
-two types and keys.
+`TFeatureMessages`, `TArdorRoute`, `IRouteAccess`, the `Features` class (`define`, `read`, `mount`),
+`useFeatures`, plus the kernel's two types and keys.
+
+A route entry is `RouteProps` plus an optional `access: { resource, action }` (`TArdorRoute`). react-admin
+runs neither `checkAuth` nor `canAccess` on a custom route, so a route without `access` is open to anyone
+who types its path (`requireAuth` of `CoreAdmin` still applies). `renderRoute` in `application.tsx` wraps
+a route with `access` in ra-core's `Authenticated` and `CanAccess`: `element`, else `Component`, else the
+router's default `Outlet`, is the page. A denied user gets `CanAccess`'s default, an empty page; with no
+bound permission provider `canAccess` is absent and only sign-in is required. A shell's denial page,
+`noLayout` and menu are not here.
 
 ## Permissions
 

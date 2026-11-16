@@ -140,7 +140,7 @@ For full options and request configuration, see the [REST data provider referenc
 
 ## Custom routes and feature routes
 
-Pass custom route objects matching React Router's `RouteProps` to the `routes` prop of `ArdorApplication`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` renders custom routes inside `<CustomRoutes>`.
+Pass custom route objects matching React Router's `RouteProps`, plus the optional `access` described below, to the `routes` prop of `ArdorApplication`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` renders custom routes inside `<CustomRoutes>`.
 
 Feature packages can also bundle their own resources and routes using `Features.define`:
 
@@ -156,6 +156,25 @@ const AnalyticsDashboard = () => (
 export const AnalyticsFeature: TFeature = Features.define({
   name: 'analytics',
   routes: [{ path: '/analytics', element: <AnalyticsDashboard /> }],
+});
+```
+
+A route is open to anyone who types its path, signed in or not, unless `requireAuth` is set. To restrict one, give it `access`: the route then renders only for a signed-in user whom the `canAccess` of the [permission provider](../../references/permission) allows for that resource and action. The application fails at mount, naming the route, when it has an `access` route and sign-in is off or no permission provider is bound: nothing could answer, and the route would be open.
+
+```tsx
+import { Features, type TFeature } from '@venizia/ardor';
+
+const AdminSettings = () => <h1>Settings</h1>;
+
+export const SettingsFeature: TFeature = Features.define({
+  name: 'settings',
+  routes: [
+    {
+      path: '/settings',
+      element: <AdminSettings />,
+      access: { resource: 'settings', action: 'edit' },
+    },
+  ],
 });
 ```
 
