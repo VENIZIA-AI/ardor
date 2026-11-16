@@ -64,6 +64,11 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make vulcan-sync vulcan-doctor
 
+      # No tracked file runs an unscoped package by name (V-S-08); guard.runners.allow names shadcn.
+      - name: Runners
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make runners-check
+
       - name: Browser purity probe
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make purity-test
