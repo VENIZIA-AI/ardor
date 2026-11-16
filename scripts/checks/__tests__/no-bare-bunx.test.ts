@@ -23,6 +23,15 @@ const FLAGS_WITH_VALUE = new Set([
   '--tsconfig-override',
 ]);
 
+/** Where the maintainers' own commands live: the VULCAN and dev-configs bins run by their path there, never by name (`bun run <name>` falls back to PATH). `ardor` is the consumers' bin and is run by name. */
+const MAINTAINER_FILE = /^(?:\.agents\/knowledge\/|make\/|scripts\/|\.githooks\/|\.github\/|Makefile$)/;
+const RUN_BIN = /(?:^|[^\w.-])bun\s+run\s+(vulcan|devz)(?=\s|$)/g;
+
+/** A quote of what another tool writes, kept as it is. */
+const QUOTED = [
+  { file: '.agents/knowledge/reference/atlas-mcp.md', text: 'bun x --no-install vulcan x atlas mcp --root .' },
+];
+
 /** Scoped to us, or fetched on purpose: not installed in the app, and running it is how a component is added. */
 const ALLOWED_NAME = /^(?:@venizia(?:\\?\/|$)|shadcn(?:@[\w.-]+)?$)/;
 
@@ -33,10 +42,10 @@ const stripWord = (opts: { word: string }): string => {
 /**
  * `bun x <name>`, `bunx <name>`, `npx <name>` and `pnpm dlx <name>` run what `node_modules/.bin`
  * holds, and fetch the package of that name from npm when it holds nothing: an unscoped name can be
- * somebody else's code. A `@venizia/...` name is ours; anything else needs `--no-install` (which only
- * stops the fetch: it still runs a copy an earlier fetch left in the bunx cache, so the documented
- * way to run a project's own bin is `bun run <name>` inside the package that depends on it).
- * A line that ends in `\` continues on the next.
+ * somebody else's code. A `@venizia/...` name is ours. `--no-install` does not make an unscoped name
+ * safe: it only stops the fetch and still runs a copy an earlier fetch left in the bunx cache. A project's
+ * own bin runs by its path (`bun node_modules/.bin/<name>`) or through a make target; for a consumer,
+ * `bun run <name>` inside the package that depends on it. A line that ends in `\` continues on the next.
  */
 const offendersIn = (opts: { text: string }): string[] => {
   const joined = opts.text.replace(/\\\r?\n\s*/g, ' ');
@@ -61,7 +70,7 @@ const offendersIn = (opts: { text: string }): string[] => {
       break;
     }
 
-    if (name === '' || ALLOWED_NAME.test(name) || flags.includes('--no-install')) {
+    if (name === '' || ALLOWED_NAME.test(name)) {
       return [];
     }
 
@@ -109,6 +118,9 @@ describe('documented bunx commands', () => {
       'run npx ardor',
       'run pnpm dlx ardor',
       'run bun x \\\n   ardor codemod',
+      'run bun x --no-install ardor codemod',
+      'run bunx --bun --no-install ardor',
+      'run npx --no-install ardor',
     ];
 
     for (const text of bad) {
@@ -116,15 +128,11 @@ describe('documented bunx commands', () => {
     }
   });
 
-  test('the check lets --no-install, our own scope and shadcn through', () => {
+  test('the check lets our own scope and shadcn through', () => {
     const good = [
-      'run bun x --no-install ardor codemod',
-      'run bunx --bun --no-install ardor',
-      'run npx --no-install ardor',
       'bun x @venizia/vulcan@0.4.10-16 init',
       'bunx shadcn init',
       'bunx shadcn@latest add button',
-      'bun x --cwd ./apps/web --no-install ardor',
     ];
 
     for (const text of good) {
@@ -140,12 +148,27 @@ describe('documented bunx commands', () => {
     ).toHaveLength(1);
   });
 
-  test('every tracked text file runs an unscoped name with --no-install', () => {
+  test('the maintainers run a bin by its path, never by `bun run <name>`', () => {
+    const bad = ['run bun run vulcan x okf check', 'bun run devz check purity'];
+
+    for (const text of bad) {
+      expect({ text, found: [...text.matchAll(RUN_BIN)].length }).toEqual({ text, found: 1 });
+    }
+    expect([...'run bun node_modules/.bin/vulcan x okf check'.matchAll(RUN_BIN)]).toHaveLength(0);
+  });
+
+  test('no tracked text file runs an unscoped name through a fetching runner, or a maintainer file through bun run <name>', () => {
     const offenders = trackedFiles().flatMap((file) => {
       const text = readFileSync(join(ROOT, file), 'utf8');
       const scanned = file.endsWith('.md') ? codeOf({ text }) : text;
+      const quoted = QUOTED.filter((quote) => quote.file === file).map((quote) => quote.text);
+      const kept = quoted.reduce((rest, quote) => rest.replaceAll(quote, ''), scanned);
+      const runners = offendersIn({ text: kept }).map((command) => `${file}: ${command}`);
+      const bins = MAINTAINER_FILE.test(file)
+        ? [...kept.matchAll(RUN_BIN)].map((match) => `${file}: bun run ${match[1] ?? ''}`)
+        : [];
 
-      return offendersIn({ text: scanned }).map((command) => `${file}: ${command}`);
+      return [...runners, ...bins];
     });
 
     expect(offenders).toEqual([]);

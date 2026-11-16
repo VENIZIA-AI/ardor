@@ -121,7 +121,7 @@ The async-style rules are part of the house configs of `@venizia/dev-configs` (`
 - A function returns the promise: `return f()`, not `return await f()`; inside a `try` that must catch it, `const result = await f(); return result;`. `venizia/no-return-await`.
 - A hook never gets an async function (`venizia/no-async-hook-callback`), and an effect callback returns a cleanup on every path or on none (`venizia/effect-cleanup-consistency`; `() => {}` for an early exit).
 
-`bun run devz codemod async-style [paths] [--write | --check]` applies the safe fixes of the first two; it is a dry run unless `--write`.
+`bun node_modules/.bin/devz codemod async-style [paths] [--write | --check]` applies the safe fixes of the first two; it is a dry run unless `--write`.
 
 ## Comments state constraints, not history or narration
 
