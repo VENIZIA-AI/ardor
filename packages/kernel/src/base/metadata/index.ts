@@ -32,3 +32,5 @@ export type {
 // The `type` of `@repository`: `REMOTE` for an `HttpRepository`, which has no model.
 export { RepositoryTypes } from '@venizia/ignis-kernel/repository';
 export type { TRepositoryType } from '@venizia/ignis-kernel/repository';
+
+export { provideOption } from './provide-option';

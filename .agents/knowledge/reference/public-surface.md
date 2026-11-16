@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (97)
+### `@venizia/ardor-kernel` (100)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -51,6 +51,7 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
+- `ICoreOptionTypes` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
@@ -74,6 +75,7 @@ generated:
 - `model` const
 - `NetworkHeaders` class
 - `provide` const
+- `provideOption` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyEncoder` class
@@ -84,6 +86,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `service` const
@@ -255,7 +258,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (194)
+### `@venizia/ardor` (197)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -311,6 +314,7 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
+- `ICoreOptionTypes` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
 - `IDataSourceAuth` interface
@@ -367,6 +371,7 @@ generated:
 - `model` const
 - `NetworkHeaders` class
 - `provide` const
+- `provideOption` const
 - `repository` const
 - `RepositoryTypes` class
 - `RequestBodyEncoder` class
@@ -377,6 +382,7 @@ generated:
 - `RequestTypes` class
 - `ResponseReader` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `SelectorHooks` class

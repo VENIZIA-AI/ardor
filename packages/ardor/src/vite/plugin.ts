@@ -67,8 +67,9 @@ export const createBuildInfoFilePlugin = (opts: {
 
   let body: Promise<string> | undefined;
 
-  // One resolution per process, so the dev server and the build both serve the same builtAt; a failed
-  // one is not kept, because the cause (a half-saved package.json) may be gone on the next request.
+  // One resolution per run, so every request of the dev server and every output of a build carry the
+  // same builtAt; `buildStart` ends the run, so a rebuild in watch mode resolves again. A failed one
+  // is not kept, because the cause (a half-saved package.json) may be gone on the next request.
   const loadBody = (load: {
     warn: (message: string) => void;
     policy: TUnresolvedPolicy;
@@ -97,6 +98,10 @@ export const createBuildInfoFilePlugin = (opts: {
 
   return {
     name: 'ardor:build-info-file',
+
+    buildStart() {
+      body = undefined;
+    },
 
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {

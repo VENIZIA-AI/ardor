@@ -5,7 +5,7 @@ description: Technical API reference for ARDOR container classes, providers, bin
 
 # ARDOR API References
 
-ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get`), browser storage and the browser clipboard have their own sections below.
+ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get` and `getRequired`), browser storage and the browser clipboard have their own sections below.
 
 <div class="guide-cards">
 <a href="./application" class="guide-card"><h3>Application</h3><p>Container lifecycle, configuration, and ArdorApplication component</p></a>
@@ -44,23 +44,23 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 
 ## Runtime config
 
-`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
+`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a string with text in it counts (an empty or blank one is unset), and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
 | `key` | `string` | - | The variable name, for example `VITE_API_URL`. |
 | `buildTimeEnv` | `Record<string, unknown>` | none | The build-time source, normally `import.meta.env`. |
-| `defaultValue` | `string` | none | Used when neither source has a value. |
-| `required` | `boolean` | `false` | With `true` the result is a `string`, and a missing value throws. |
+| `defaultValue` | `string` | none | Used when neither source has a value. `get` only. |
+| `transform` | `(raw) => value` | none | Turns the value into a number, a boolean or another type. |
 
-Without `required` the result is `string | undefined`. With `required: true` and no value anywhere, it throws an `ApplicationError` from `@venizia/ignis-inversion`. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
+`get` returns `string | undefined`, or a `string` when you give a `defaultValue`. `getRequired` is for a value the app cannot run without: it returns a `string`, takes no `defaultValue`, and throws an `ApplicationError` from `@venizia/ignis-inversion` when the value is unset. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
 
 ```typescript
 import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 try {
-  RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
+  RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
 } catch (error) {
   if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
     console.error('missing config key', error.extra?.key);
@@ -68,7 +68,25 @@ try {
 }
 ```
 
-`RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
+With `transform`, the result has the type the function returns. `get` hands it `undefined` for an unset value and uses `defaultValue` when it answers `undefined` or `null`; `getRequired` hands it the string and throws when it answers `undefined` or `null`. A `transform` that throws, in either method, raises an error with the code `RUNTIME_CONFIG_INVALID_CODE`; the key is in `extra.key`, and the value is never in the error.
+
+```typescript
+import { RuntimeConfig } from '@venizia/ardor';
+
+const toPort = (raw: string): number | undefined => {
+  const port = Number(raw);
+
+  return Number.isInteger(port) ? port : undefined;
+};
+
+export const apiPort: number = RuntimeConfig.getRequired({ key: 'VITE_API_PORT', transform: toPort });
+export const isDebug: boolean = RuntimeConfig.get({
+  key: 'VITE_DEBUG',
+  transform: (raw) => raw === 'true',
+});
+```
+
+`RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, `RUNTIME_CONFIG_INVALID_CODE` is `'ardor.runtime_config.invalid'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
 
 ## Browser storage
 

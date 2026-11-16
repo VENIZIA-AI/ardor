@@ -78,6 +78,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IAuthRecoveryOptions` | `interface` | Configuration for session refresh endpoint, used in network auth recovery. | `refreshTokenPath`, e.g. `'/auth/refresh'` |
 | `IRestDataProviderOptions` | `interface` | Configuration options for REST data provider (URL, headers, channel, auth recovery, no-auth). | - |
 | `ISignInSession` | `interface` | Session data extracted on login, used in sign-in lifecycle hooks. | `userId`, `token`, `roles` |
+| `ICoreOptionTypes` | `interface` | Maps each `*_OPTIONS` key of `CoreBindings` to its options type; `provideOption` checks against it. | `AUTH_PROVIDER_OPTIONS`, `REST_DATA_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS` |
 | `IAuthProviderOptions` | `interface` | Auth provider endpoint paths, bound under `CoreBindings.AUTH_PROVIDER_OPTIONS`. | `paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin` |
 | `IAuthTokenRecord` | `interface` | Auth token payload, returned by `resolveAuthToken()`. | `value`, `type`, `provider` |
 | `IAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |

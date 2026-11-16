@@ -1,7 +1,7 @@
 import { BindingScopes } from '@venizia/ignis-inversion';
 
 import { AbstractArdorApplication, CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
-import { DefaultBindingTags } from '@/components/resolve';
+import { ApplicationProviders, DefaultBindingTags } from '@/components/resolve';
 import { DefaultAuthProvider } from '@/providers/auth';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
@@ -52,5 +52,14 @@ export abstract class BaseArdorApplication extends AbstractArdorApplication {
       .toProvider(DefaultAuthProvider)
       .setScope(BindingScopes.SINGLETON)
       .setTags(DefaultBindingTags.DEFAULT);
+  }
+
+  /**
+   * Resolves the providers the application needs, so a missing options binding, or options without
+   * the `use` toggle, rejects `start()` and not the first render. A subclass that overrides
+   * `postConfigure` calls `super.postConfigure()` first.
+   */
+  override postConfigure(): void {
+    ApplicationProviders.assertConfigured({ container: this });
   }
 }

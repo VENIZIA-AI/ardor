@@ -351,6 +351,35 @@ injectable-removed:
       - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where injectable() exists. The per-namespace methods also exist there, so leaving them is safe.'
   data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'
 
+boot-validates-configuration:
+  symbols: [IApplicationInfo.name, BaseArdorApplication.postConfigure]
+  upgrade:
+    before: |-
+      getAppInfo(): IApplicationInfo {
+        return { name: '', version: '1.0.0', description: 'The shop' };
+      }
+    after: |-
+      getAppInfo(): IApplicationInfo {
+        return { name: 'shop', version: '1.0.0', description: 'The shop' };
+      }
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, which accept any name at start() and build the providers at the first render. A name you added to pass the check can stay.
+  data: 'Nothing stored. An app whose providers cannot be built, for example one with no REST_DATA_PROVIDER_OPTIONS, now fails at start() with the key to bind, no longer at the first render. A BaseArdorApplication subclass that overrides postConfigure() must call super.postConfigure(), which runs that check.'
+
+runtime-config-get-required:
+  symbols: [RuntimeConfig.get]
+  upgrade:
+    before: |-
+      const apiUrl: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
+    after: |-
+      const apiUrl: string = RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where RuntimeConfig.getRequired does not exist.
+      - 'Write RuntimeConfig.get({ key, required: true }) again for each RuntimeConfig.getRequired({ key }), and remove any transform.'
+  data: 'Nothing stored. A call that has both required: true and a defaultValue never threw, because the default answered: write it as get({ key, defaultValue }), not getRequired.'
+
 hooks-check-the-bound-class:
   symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
   upgrade:

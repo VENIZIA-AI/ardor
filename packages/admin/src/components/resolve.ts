@@ -79,4 +79,38 @@ export class ApplicationProviders {
 
     return { dataProvider, ...(authProvider ? { authProvider } : {}), i18nProvider };
   }
+
+  /**
+   * Resolves the providers `resolve` resolves, now, and throws one error that names the binding key
+   * and says what to bind, so a missing binding fails at boot and not in the middle of a render. Call
+   * it in `postConfigure()`. A transient provider is built once more than the render builds it.
+   *
+   * @param opts.isAuthRequired - `true` for an application that always binds a sign-in: an unbound auth provider fails too.
+   */
+  static assertConfigured(opts: { container: Container; isAuthRequired?: boolean }): void {
+    try {
+      ApplicationProviders.resolve(opts);
+    } catch (error) {
+      throw ApplicationProviders.explainFailure({ error });
+    }
+  }
+
+  private static explainFailure(opts: { error: unknown }): Error {
+    const { error } = opts;
+    const extra = typeof error === 'object' && error !== null ? Reflect.get(error, 'extra') : null;
+    const unboundKey: unknown =
+      typeof extra === 'object' && extra !== null ? Reflect.get(extra, 'unboundKey') : undefined;
+
+    if (typeof unboundKey === 'string') {
+      return getError({
+        message: `[ApplicationProviders.assertConfigured] '${unboundKey}' is not bound | Bind it in a @configuration() class (@provideOption for an options key) or in bindContext()`,
+      });
+    }
+
+    const reason = error instanceof Error ? error.message : String(error);
+
+    return getError({
+      message: `[ApplicationProviders.assertConfigured] The providers could not be built: ${reason} | Fix the binding the message names`,
+    });
+  }
 }

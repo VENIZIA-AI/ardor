@@ -28,12 +28,41 @@ export const useRestDataProvider = () => {
 | `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` | Application (`@provide`) | `ArdorApplication` | Optional |
 | `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` | Application (`@provide`) | `ArdorApplication` | Required |
 | `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` | Application (`@provide`) | `ArdorApplication`, `DefaultAuthProvider`, `useRequestHeaderLocale` | Required |
-| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provide`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
+| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` | Application (`@provideOption`) | `DefaultAuthProvider` | Required when `DEFAULT_AUTH_PROVIDER` is bound |
 | `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` | Application (`@provide`) | `DefaultAuthProvider`; `DefaultRestDataProvider` (optional) | Required when `DEFAULT_AUTH_PROVIDER` is bound |
-| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provide`) | `DefaultRestDataProvider` | Required by `DefaultRestDataProvider` |
-| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provide`) | `DefaultI18nProvider` | Required by `DefaultI18nProvider` |
+| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` | Application (`@provideOption`) | `DefaultRestDataProvider` | Required by `DefaultRestDataProvider` |
+| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` | Application (`@provideOption`) | `DefaultI18nProvider` | Required by `DefaultI18nProvider` |
 | `FEATURES` | `@app/application/features` | Framework (`preConfigure()`) | `ArdorApplication`, `DefaultI18nProvider` | Always bound |
 | `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
+
+### Typed option keys
+
+`ICoreOptionTypes` maps each `*_OPTIONS` key to its options type, and `provideOption` checks a method against it. The method must return the options type of its key, synchronously:
+
+```ts
+import {
+  configuration,
+  CoreBindings,
+  type IRestDataProviderOptions,
+  provideOption,
+} from '@venizia/ardor';
+
+@configuration()
+export class ApiConfiguration {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return { url: 'https://api.example.com' };
+  }
+}
+```
+
+| Key | Options type |
+|---|---|
+| `AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions` |
+| `REST_DATA_PROVIDER_OPTIONS` | `IRestDataProviderOptions` |
+| `I18N_PROVIDER_OPTIONS` | `II18nProviderOptions` (added by `@venizia/ardor-admin`) |
+
+`@provide` with the same keys still works, but the compiler does not check what it returns.
 
 For binding order in the application lifecycle, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
 

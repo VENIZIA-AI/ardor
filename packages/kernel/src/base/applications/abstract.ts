@@ -21,6 +21,7 @@ import {
   type IFeatureBase,
   type ValueOrPromise,
 } from '@/common';
+import { ApplicationInfoGuard } from './app-info';
 
 /** The six kinds of an artifact index, as `ignis-artifacts generate` emits them. */
 const ArtifactIndexKinds = [
@@ -80,6 +81,7 @@ export abstract class AbstractArdorApplication extends Container {
   }
 
   private bindInfoAndArtifacts(opts: { info: IApplicationInfo }): ValueOrPromise<void> {
+    ApplicationInfoGuard.assert({ info: opts.info });
     this.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(opts.info);
 
     // Least explicit first, so the most explicit wins: defaults, stereotypes and @provide, features,
