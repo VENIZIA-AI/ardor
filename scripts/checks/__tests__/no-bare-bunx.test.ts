@@ -24,12 +24,16 @@ const FLAGS_WITH_VALUE = new Set([
 ]);
 
 /** Where the maintainers' own commands live: the VULCAN and dev-configs bins run by their path there, never by name (`bun run <name>` falls back to PATH). `ardor` is the consumers' bin and is run by name. */
-const MAINTAINER_FILE = /^(?:\.agents\/knowledge\/|make\/|scripts\/|\.githooks\/|\.github\/|Makefile$)/;
+const MAINTAINER_FILE =
+  /^(?:\.agents\/knowledge\/|make\/|scripts\/|\.githooks\/|\.github\/|Makefile$)/;
 const RUN_BIN = /(?:^|[^\w.-])bun\s+run\s+(vulcan|devz)(?=\s|$)/g;
 
 /** A quote of what another tool writes, kept as it is. */
 const QUOTED = [
-  { file: '.agents/knowledge/reference/atlas-mcp.md', text: 'bun x --no-install vulcan x atlas mcp --root .' },
+  {
+    file: '.agents/knowledge/reference/atlas-mcp.md',
+    text: 'bun x --no-install vulcan x atlas mcp --root .',
+  },
 ];
 
 /** Scoped to us, or fetched on purpose: not installed in the app, and running it is how a component is added. */
