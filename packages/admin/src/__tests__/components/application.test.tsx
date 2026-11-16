@@ -3,7 +3,7 @@ import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
-import { useTranslate } from 'ra-core';
+import { type AuthProvider, useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
@@ -659,6 +659,7 @@ describe('ArdorApplication route access', () => {
     container: Container;
     routes?: Array<TArdorRoute>;
     path?: string;
+    authProvider?: AuthProvider;
   }) => {
     return render(
       <MemoryRouter initialEntries={[opts.path ?? '/admin-only']}>
@@ -667,6 +668,7 @@ describe('ArdorApplication route access', () => {
           reduxStore={configureStore({ reducer: () => ({}) })}
           suspense={<span>loading</span>}
           {...(opts.routes ? { routes: opts.routes } : {})}
+          {...(opts.authProvider ? { authProvider: opts.authProvider } : {})}
         />
       </MemoryRouter>,
     );
@@ -783,6 +785,52 @@ describe('ArdorApplication route access', () => {
         ],
       }),
     ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
+  });
+
+  const guardedRoutes: Array<TArdorRoute> = [
+    {
+      path: '/admin-only',
+      element: <AdminPage />,
+      access: { resource: 'settings', action: 'edit' },
+    },
+  ];
+
+  const propProvider = (opts: { canAccess?: AuthProvider['canAccess'] }): AuthProvider => {
+    return {
+      checkAuth: () => Promise.resolve(),
+      checkError: () => Promise.resolve(),
+      login: () => Promise.resolve(),
+      logout: () => Promise.resolve(),
+      getPermissions: () => Promise.resolve(),
+      ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
+    };
+  };
+
+  test('the check reads the authProvider prop of the shell: a prop without canAccess fails at mount although the container provider has one', () => {
+    expect(() =>
+      renderRoute({
+        container: createGuardedContainer({
+          checkAuth: () => Promise.resolve(),
+          canAccess: denied,
+        }),
+        authProvider: propProvider({}),
+        routes: guardedRoutes,
+      }),
+    ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
+  });
+
+  test('the check reads the authProvider prop of the shell: a prop with canAccess mounts although sign-in is off in the container, and is asked', async () => {
+    const canAccess = mock((_params: { resource: string; action: string }) => denied());
+
+    renderRoute({
+      container: createContainer({ load: () => Promise.resolve({}), withAuthProvider: false }),
+      authProvider: propProvider({ canAccess }),
+      routes: guardedRoutes,
+    });
+
+    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.queryByText('Admin only')).toBeNull();
   });
 
   test('guards a route that gives a Component, and a route of a feature', async () => {

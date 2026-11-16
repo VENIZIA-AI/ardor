@@ -122,7 +122,7 @@ const renderRoute = (opts: {
  */
 const assertAccessRoutesCanBeChecked = (opts: {
   routes: Array<TArdorRoute>;
-  authProvider?: { canAccess?: unknown };
+  authProvider?: object;
 }): void => {
   const { routes, authProvider } = opts;
 
@@ -139,7 +139,7 @@ const assertAccessRoutesCanBeChecked = (opts: {
       });
     }
 
-    if (!authProvider.canAccess) {
+    if (!('canAccess' in authProvider) || !authProvider.canAccess) {
       throw getError({
         message: `[ArdorApplication] The route '${name}' has access, but no permission provider is bound, so every signed-in user would pass | Bind CoreBindings.PERMISSION_PROVIDER (RolePermissionProvider, or your own), or remove access from the route`,
       });
@@ -250,8 +250,6 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return ApplicationProviders.resolve({ container });
   }, [container]);
 
-  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: providers.authProvider });
-
   // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
   // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not) and when
   // another user signs in over the first, which also ends the answers of `canAccess` of the first.
@@ -316,6 +314,9 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     accessDenied: reactAdminProps.accessDenied ?? AccessDeniedPage,
     queryClient,
   };
+
+  // The provider react-admin gets: a prop of the shell wins over the one the container resolved.
+  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: adminProps.authProvider });
 
   const isMessagesReady = useFeatureMessagesReady({
     features,
