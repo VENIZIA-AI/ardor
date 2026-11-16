@@ -306,7 +306,8 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
   test('a conflict in the manifest itself is a listed problem and the merge is put back', () => {
     const root = fixture({ developVersion: '0.4.10-0' });
     const manifest = '.agents/vulcan.manifest.json';
-    const text = (opts: { n: number }) => `{\n  "knowledge": { "changelogs": "docs/changelogs" },\n  "n": ${opts.n}\n}\n`;
+    const text = (opts: { n: number }) =>
+      `{\n  "knowledge": { "changelogs": "docs/changelogs" },\n  "n": ${opts.n}\n}\n`;
 
     write({ root, path: manifest, text: text({ n: 1 }) });
     run({ cwd: root, args: ['add', '-A'] });
@@ -321,7 +322,11 @@ describe('ReleaseMergeBack.mergeInto: the stamped log.md of a version folder', (
     write({ root, path: manifest, text: text({ n: 3 }) });
     run({ cwd: root, args: ['commit', '-q', '-am', 'develop edits the manifest'] });
 
-    const result = ReleaseMergeBack.mergeInto({ cwd: root, from: 'release', scratchRoot: scratch() });
+    const result = ReleaseMergeBack.mergeInto({
+      cwd: root,
+      from: 'release',
+      scratchRoot: scratch(),
+    });
 
     expect(result.problems.join('\n')).toContain(manifest);
     expect(run({ cwd: root, args: ['status', '--porcelain'] })).toBe('');
