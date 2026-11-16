@@ -45,6 +45,7 @@ remove-send-response:
   downgrade:
     steps:
       - Pin the ARDOR packages to 0.4.7 or earlier and rename INetworkResponse back to ISendResponse where you changed it (INetworkResponse also exists in 0.4.7, so leaving it is safe).
+  data: Nothing stored changes.
   codemod: namespace
 
 remove-list-filter-offset:

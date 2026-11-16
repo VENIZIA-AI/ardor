@@ -74,14 +74,12 @@ export class DefaultProvidersTransform {
           continue;
         }
 
+        const isProvider = DefaultProvidersTransform.hasValue({ ts, node: statement.expression });
+
         findings.push({
           line: CodemodSource.lineOf({ sourceFile, node: method }),
-          name: `${DefaultProvidersTransform.nameOf({ ts, method })}(): instantiate(${className})${DefaultProvidersTransform.hasValue({ ts, node: statement.expression }) ? '.value()' : ''}`,
-          reason: DefaultProvidersTransform.reasonOf({
-            className,
-            member,
-            isProvider: DefaultProvidersTransform.hasValue({ ts, node: statement.expression }),
-          }),
+          name: `${DefaultProvidersTransform.nameOf({ ts, method })}(): instantiate(${className})${isProvider ? '.value()' : ''}`,
+          reason: DefaultProvidersTransform.reasonOf({ className, member, isProvider }),
         });
       }
     }
