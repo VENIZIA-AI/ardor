@@ -133,7 +133,7 @@ describe('the sentences of the home page', () => {
       }),
       'src/main.tsx': preset({ path: 'src/main.tsx' }),
     };
-    const code = HOME.tabs.filter((tab) => tab.kind === 'code');
+    const code = HOME.tabs.filter((tab) => tab.type === 'code');
 
     expect(code.map((tab) => tab.file).sort()).toEqual(Object.keys(files).sort());
 
