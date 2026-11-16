@@ -41,9 +41,11 @@ export class DefaultAuthService extends BaseService {
   /**
    * `listener` runs after every `saveAuth` and `cleanUp`, so after any change of the session this service makes,
    * and after a sign-in, sign-out or user switch in another tab of the browser: the first
-   * subscriber starts listening to the `storage` event for the three session keys, the last one to leave stops.
-   * A change of another tab calls the listener once and writes nothing; a service never subscribed to
-   * listens to nothing, and outside a browser nothing is listened to.
+   * subscriber starts listening to the `storage` event of the token key, the last one to leave stops. The
+   * listener also runs when a page comes back from the back-forward cache or a tab becomes visible and the
+   * session changed meanwhile. A change of another tab calls the listener once, when the stored token and
+   * identity belong to one user, and writes nothing; a service never subscribed to listens to nothing, and
+   * outside a browser nothing is listened to.
    */
   subscribe(opts: { listener: (change: IAuthChange) => void }): () => void {
     this.listeners.add(opts.listener);
@@ -79,18 +81,30 @@ export class DefaultAuthService extends BaseService {
 
     this.snapshot = this.readSnapshot();
 
-    // The token key alone: `saveAuth` writes it last and `cleanUp` removes it first, so the session is whole when its event arrives, never the identity of one user with the token of another.
+    // A write of this tab announced itself; an event it caused must not announce it again. A token that belongs
+    // to another user than the stored identity is a pair still being written by another tab, or a view of
+    // storage that is ahead of the event: the event of the token that completes the pair announces it.
+    const announce = () => {
+      if (
+        this.isSessionWhole({ token: AuthTokenStore.read({ key: this.keys.token }) }) &&
+        this.readSnapshot() !== this.snapshot
+      ) {
+        this.notify({ isExternal: true });
+      }
+    };
+
+    // `saveAuth` writes the token last and `cleanUp` removes it first, so the token key is the one to hear.
     const stops = [
       BrowserStorage.subscribe({
         key: this.keys.token,
         storage: StorageAreas.LOCAL,
         listener: ({ isExternal }) => {
-          // A write of this tab announced itself; an event it caused must not announce it again.
-          if (isExternal && this.readSnapshot() !== this.snapshot) {
-            this.notify({ isExternal: true });
+          if (isExternal) {
+            announce();
           }
         },
       }),
+      this.onPageReturn({ listener: announce }),
     ];
 
     this.stopExternalSync = () => {
@@ -100,6 +114,53 @@ export class DefaultAuthService extends BaseService {
 
       this.stopExternalSync = undefined;
     };
+  }
+
+  /**
+   * Runs `listener` when the page comes back from the back-forward cache (`pageshow`, persisted) or its tab
+   * becomes visible: no `storage` event reaches a page in either state. Returns how to stop; does nothing
+   * without a window.
+   */
+  private onPageReturn(opts: { listener: () => void }): () => void {
+    if (typeof globalThis.addEventListener !== 'function') {
+      return () => {};
+    }
+
+    const onShow = (event: Event) => {
+      if (Reflect.get(event, 'persisted') === true) {
+        opts.listener();
+      }
+    };
+
+    const onVisible = () => {
+      if (globalThis.document?.visibilityState === 'visible') {
+        opts.listener();
+      }
+    };
+
+    globalThis.addEventListener('pageshow', onShow);
+    globalThis.document?.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      globalThis.removeEventListener('pageshow', onShow);
+      globalThis.document?.removeEventListener('visibilitychange', onVisible);
+    };
+  }
+
+  /**
+   * Whether the stored `token` and the stored identity belong to one user. A token stored without a `userId`
+   * (before `saveAuth` wrote it) counts as whole; so does a session with no token.
+   */
+  private isSessionWhole(opts: { token: IAuthTokenRecord | undefined }): boolean {
+    const { token } = opts;
+
+    if (token?.userId === undefined) {
+      return true;
+    }
+
+    const { userId } = this.getUser();
+
+    return userId !== undefined && String(userId) === String(token.userId);
   }
 
   private notify(change: IAuthChange): void {
@@ -188,9 +249,14 @@ export class DefaultAuthService extends BaseService {
     return new Set<string>(roles);
   }
 
-  /** The stored token, `null` for every visitor who has not signed in. */
+  /**
+   * The stored token, `null` for every visitor who has not signed in, and while the stored token belongs to
+   * another user than the stored identity (another tab is switching users and has not finished writing).
+   */
   getAuth(): IAuthTokenRecord | null {
-    return AuthTokenStore.read({ key: this.keys.token }) ?? null;
+    const token = AuthTokenStore.read({ key: this.keys.token });
+
+    return token && this.isSessionWhole({ token }) ? token : null;
   }
 
   /**
@@ -233,7 +299,7 @@ export class DefaultAuthService extends BaseService {
       localStorage.setItem(this.keys.permission, JSON.stringify(roles));
     }
 
-    AuthTokenStore.write({ token, provider, key: this.keys.token });
+    AuthTokenStore.write({ token, provider, userId, key: this.keys.token });
 
     this.notify({ isExternal: false });
   }
