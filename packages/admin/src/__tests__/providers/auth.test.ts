@@ -13,6 +13,7 @@ import {
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
+  SESSION_CHANGED_CODE,
 } from '@venizia/ardor-kernel';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -37,6 +38,7 @@ type TServer = ReturnType<typeof Bun.serve>;
 
 let server: TServer;
 let whoamiReturnsData = true;
+let whoamiUnauthorizedHook: (() => void) | undefined;
 const defaultLoginBody = { userId: 7, token: { value: 'jwt', type: 'Bearer' } };
 let loginBody: unknown = defaultLoginBody;
 const recordedRequests: Array<IRecordedRequest> = [];
@@ -147,6 +149,12 @@ beforeAll(async () => {
       }
 
       if (url.pathname === '/auth/whoami') {
+        if (whoamiUnauthorizedHook) {
+          whoamiUnauthorizedHook();
+
+          return Response.json({ error: 'expired' }, { status: 401 });
+        }
+
         if (whoamiReturnsData) {
           return Response.json({ id: 7 });
         }
@@ -173,6 +181,7 @@ beforeEach(() => {
   localStorage.clear();
   recordedRequests.length = 0;
   whoamiReturnsData = true;
+  whoamiUnauthorizedHook = undefined;
   loginBody = defaultLoginBody;
 });
 
@@ -499,6 +508,37 @@ describe('login against the sign-in response shapes', () => {
   });
 });
 
+describe('checkAuth, when the user who asked is gone before the answer', () => {
+  test('another user signed in meanwhile: the late 401 resolves and the new session stays', async () => {
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    whoamiUnauthorizedHook = () => {
+      new DefaultAuthService().saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'bob-token', type: 'Bearer' },
+      });
+    };
+
+    const result = await authProvider.checkAuth({});
+
+    expect(result).toBeUndefined();
+    expect(new DefaultAuthService().getAuth()?.value).toBe('bob-token');
+  });
+
+  test('nobody signed in meanwhile: the late 401 rejects to login', async () => {
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    whoamiUnauthorizedHook = () => {
+      new DefaultAuthService().cleanUp();
+    };
+
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
+
+    expect(result).toEqual({ redirectTo: '/login' });
+  });
+});
+
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
     const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
@@ -565,6 +605,29 @@ describe('checkError', () => {
 
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
+  });
+
+  test('a 401 that answers a request of a session that is gone resolves and leaves the signed-in session alone', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      JSON.stringify({ userId: 8, username: 'bob' }),
+    );
+
+    const result = await authProvider.checkError(
+      getError({
+        statusCode: 401,
+        messageCode: SESSION_CHANGED_CODE,
+        message: 'the session that sent this request ended',
+      }),
+    );
+
+    expect(result).toBeUndefined();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).not.toBeNull();
   });
 
   test('rejects with redirect to unauthorized and preserves session on 403 status', async () => {
