@@ -246,6 +246,8 @@ export interface IAuthTokenRecord {
   type?: string;
   value: string;
   provider?: string;
+  /** The user the token was issued to, stored by `saveAuth`; absent on a token stored without it. */
+  userId?: IdType;
 }
 
 /** What an `HttpDataSource` hook reads from the request it is asked about. */
