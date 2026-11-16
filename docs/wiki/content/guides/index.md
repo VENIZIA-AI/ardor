@@ -9,13 +9,13 @@ ARDOR is the browser framework of [VENIZIA](https://venizia.ai). It structures r
 
 ARDOR gives you:
 
-- **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
+- **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks that resolve what you bind by class (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
 - **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
 - **An HTTP repository** from IGNIS on `@venizia/ardor/repository`, which can share the data provider's token and 401 refresh through `getDataSourceAuth()`.
 - **Runtime configuration.** `RuntimeConfig.get` reads `window.__APP_CONFIG__`, so one built image serves every environment; `RuntimeConfig.getRequired` throws an error that carries a code when a value is missing. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
 - **A VULCAN preset** that generates an admin with Tailwind, an nginx image (gzip, `/health`, security headers) and that runtime configuration.
 
-ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
+ARDOR is before 1.0, and any release, a patch included, can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
 
 <WhereToStart :items="[
   { title: 'Create a Project', text: 'Start a monorepo with an admin, or add one to a monorepo you have, with one VULCAN command.', href: '/guides/get-started/create-a-project' },

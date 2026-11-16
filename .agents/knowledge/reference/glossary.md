@@ -42,8 +42,8 @@ overrides it, and a `bindContext()` binding overrides both - except that a class
 **Provider** - something bound as a lazy resolver, typically producing a
 value used by react-admin (the REST data provider, the auth provider, the i18n provider).
 `BaseArdorApplication` binds the three defaults in `bindDefaults()` with `toProvider(Class)`, a
-singleton; an app replaces one with `toProvider(...)` in `bindContext()` or a `@provide({ key })`
-method. A raw `.toProvider(...)` on a bare `bind()` is transient unless `setScope` says otherwise.
+singleton; an app replaces one with `toProvider(...).setScope(BindingScopes.SINGLETON)` in `bindContext()` or a
+`@provide({ key })` method. A raw `.toProvider(...)` on a bare `bind()` is transient unless `setScope` says otherwise.
 Contrast with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 

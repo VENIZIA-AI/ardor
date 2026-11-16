@@ -8,7 +8,6 @@ description: Add resource screens (list, create, edit, show) and custom routes i
 ARDOR applications register resource CRUD screens with the `resources` prop and custom URL routes with the `routes` prop on `<ArdorApplication />`.
 
 ```tsx
-import { configureStore } from '@reduxjs/toolkit';
 import { ArdorApplication } from '@venizia/ardor';
 import type { Container } from '@venizia/ignis-inversion';
 import { ListBase } from 'ra-core';
@@ -21,21 +20,14 @@ const ProductList = () => (
 
 const SettingsPage = () => <p>Settings</p>;
 
-export const App = (props: { container: Container }) => {
-  const reduxStore = configureStore({
-    reducer: { app: (state = {}) => state },
-  });
-
-  return (
-    <ArdorApplication
-      container={props.container}
-      reduxStore={reduxStore}
-      suspense={<p>Loading...</p>}
-      resources={[{ name: 'products', list: ProductList }]}
-      routes={[{ path: '/settings', element: <SettingsPage /> }]}
-    />
-  );
-};
+export const App = (props: { container: Container }) => (
+  <ArdorApplication
+    container={props.container}
+    suspense={<p>Loading...</p>}
+    resources={[{ name: 'products', list: ProductList }]}
+    routes={[{ path: '/settings', element: <SettingsPage /> }]}
+  />
+);
 ```
 
 ## Resource definitions
@@ -178,7 +170,7 @@ export const SettingsFeature: TFeature = Features.define({
 });
 ```
 
-`auth: { use: true }` requires only a signed-in user, with no permission check. `layout: { use: false }` renders the page outside the layout, whatever the sign-in status: the way to a public page such as accept-invite or reset-password. See [Public pages and pages outside the layout](../../references/features#public-pages-and-pages-outside-the-layout).
+`auth: { use: true }` requires only a signed-in user, with no permission check. `layout: { use: false }` renders the page outside the layout. Under `requireAuth` that page still waits for sign-in, so a public page such as accept-invite or reset-password needs both `layout: { use: false }` and `auth: { use: false }`. See [Public pages and pages outside the layout](../../references/features#public-pages-and-pages-outside-the-layout).
 
 ```tsx
 import { Features, type TFeature } from '@venizia/ardor';
@@ -187,7 +179,14 @@ const ResetPasswordPage = () => <h1>Reset your password</h1>;
 
 export const PasswordFeature: TFeature = Features.define({
   name: 'password',
-  routes: [{ path: '/reset-password', element: <ResetPasswordPage />, layout: { use: false } }],
+  routes: [
+    {
+      path: '/reset-password',
+      element: <ResetPasswordPage />,
+      layout: { use: false },
+      auth: { use: false },
+    },
+  ],
 });
 ```
 
@@ -197,31 +196,33 @@ In `packages/admin/src/features/feature.ts`, `Features.mount()` mounts the appli
 
 ## Reaching ARDOR from a page
 
-When a page requires data or actions outside the data provider's CRUD contract, use ARDOR hooks:
+When a page requires data or actions outside the data provider's CRUD contract, use ARDOR hooks. The page below imports `Ardor`, the namespace that gathers every hook (`Ardor.useRepository` is the same function as `useRepository`):
 
-- **`useRepository`**: Resolves an injected repository instance from the container (under `repositories.`) to run specialized domain queries.
-- **`useTranslate`**: Translates message keys against the internationalization bundles provided to `CoreBindings.I18N_PROVIDER_OPTIONS`.
-- **`useRefreshToken`**: Manually calls `authProvider.refreshToken()` and invalidates the cached `canAccess` answers (the queries under `['auth', 'canAccess']`) in TanStack Query, so every permission check runs again with the new token.
-- **`useNotifyError`**: Accepts an `ApplicationError` (from `@venizia/ignis-inversion`) and optional `NotificationOptions`, dispatching the code and arguments to react-admin's notification system.
+- **`Ardor.useRepository({ target })`**: Resolves a repository instance from the container by its class, to run specialized domain queries.
+- **`Ardor.useTranslate()`**: Translates message keys against the internationalization bundles provided to `CoreBindings.I18N_PROVIDER_OPTIONS`.
+- **`Ardor.useRefreshToken()`**: Manually calls `authProvider.refreshToken()` and invalidates the cached `canAccess` answers (the queries under `['auth', 'canAccess']`) in TanStack Query, so every permission check runs again with the new token.
+- **`Ardor.useNotifyError()`**: Accepts an `ApplicationError` (from `@venizia/ignis-inversion`) and optional `NotificationOptions`, and shows `error.normalized.code` as the message of react-admin's notification, with `normalized.args` as its arguments. A message with no code gets the code `core.system_error`, so give the error a code of your own (`namespace.reason`, in lower snake case) and add a message for it to your catalogue.
+- **`Ardor.useApplicationLogger()`**: The application logger. Log through it, never through `console`.
 
-Decorated repository and datasource classes must be bound into the container before `useRepository` resolves them. The datasource below spreads `dataProvider.getDataSourceAuth()`, so its repository sends the same token and session headers as the data provider and joins its 401 refresh:
+Decorated repository and datasource classes must be bound into the container before `useRepository` resolves them: the stereotype and the build do that (see [Dependency Injection](./dependency-injection)). The datasource below spreads `dataProvider.getDataSourceAuth()`, so its repository sends the same token and session headers as the data provider and joins its 401 refresh:
 
 ```tsx
 import {
+  Ardor,
   CoreBindings,
   datasource,
   type IDataProvider,
   inject,
   repository,
   RepositoryTypes,
-  useNotifyError,
-  useRefreshToken,
-  useRepository,
-  useTranslate,
 } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 import { getError } from '@venizia/ignis-inversion';
 import { useEffect, useState } from 'react';
+
+export class ProductErrors {
+  static readonly COUNT_FAILED = 'app.products.count_failed';
+}
 
 @datasource()
 export class ApiDataSource extends HttpDataSource {
@@ -244,10 +245,11 @@ export class ProductRepository extends HttpRepository<{ id: number; name: string
 }
 
 export const ProductList = () => {
-  const translate = useTranslate();
-  const notifyError = useNotifyError();
-  const refreshToken = useRefreshToken();
-  const products = useRepository({ target: ProductRepository });
+  const translate = Ardor.useTranslate();
+  const notifyError = Ardor.useNotifyError();
+  const refreshToken = Ardor.useRefreshToken();
+  const logger = Ardor.useApplicationLogger();
+  const products = Ardor.useRepository({ target: ProductRepository });
   const [expensiveCount, setExpensiveCount] = useState<number>(0);
 
   useEffect(() => {
@@ -255,10 +257,12 @@ export const ProductList = () => {
       .countExpensive({ minimumPrice: 100 })
       .then(({ count }) => setExpensiveCount(count))
       .catch((error: unknown) => {
-        console.error(error);
-        notifyError(getError({ message: 'Count failed' }));
+        logger.error('[ProductList] countExpensive failed | error: %o', error);
+        notifyError(
+          getError({ message: { text: 'Count failed', code: ProductErrors.COUNT_FAILED } }),
+        );
       });
-  }, [products, notifyError]);
+  }, [products, notifyError, logger]);
 
   return (
     <section>
