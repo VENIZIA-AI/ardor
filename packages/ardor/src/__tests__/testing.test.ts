@@ -367,6 +367,28 @@ describe('assertArdorApplicationBoots messages', () => {
     expect(message).toContain("Message 'shared' (fr) is defined by both 'first' and 'second'");
   });
 
+  test('checks the default fallback locale when the options name none and it is not offered', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { en: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { en: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages: [{ locale: 'vi', name: 'Vietnamese' }] };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain("Message 'shared' (en) is defined by both 'first' and 'second'");
+  });
+
   test('leaves the locale of the provider where it was', async () => {
     const i18n = realI18n({ features: [reports] });
     const changes: Array<string> = [];
