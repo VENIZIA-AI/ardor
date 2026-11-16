@@ -209,7 +209,7 @@ jobs:
         if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}
         env:
           CHANGELOG_BASE: ${{ needs.plan.outputs.changelog_base }}
-        run: bun x --no-install vulcan changelog check --history --base "$CHANGELOG_BASE"
+        run: bun node_modules/.bin/vulcan changelog check --history --base "$CHANGELOG_BASE"
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
   # the gates, so the owner never approves a release that fails them, and its name carries the target version. The
