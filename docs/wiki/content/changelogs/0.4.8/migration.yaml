@@ -139,7 +139,8 @@ sign-out-clears-store:
     ]
   upgrade:
     steps:
-      - 'Move each preference that must survive sign-out from `@app/store/<name>` to `@app/prefs/<name>`; old keys are not migrated.'
+      - 'Move each preference that must survive sign-out from `@app/store/<name>` to `@app/prefs/<name>` (`@app/prefs/<id>/<name>` when the app has an `id`; `keys.prefsPrefix` holds it).'
+      - "Do not name a preference `locale`: that key is ARDOR's own, for the chosen language. Old keys are not migrated."
       - 'Or override `clearStoredData` to keep the keys you choose.'
     before: |-
       BrowserStorage.set({ key: '@app/store/sidebar', value: 'open' });
@@ -353,6 +354,7 @@ auth-provider-toggle:
       - 'Run `bun run ardor codemod auth-options --write` to add `use: true` to each options object literal.'
       - 'Fix by hand the options the codemod lists: add `use: true`, or `{ use: false }` for a guest app.'
       - 'Type options and `@provideOption` returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
+      - 'If you bind your own auth provider under `DEFAULT_AUTH_PROVIDER`, also bind `AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`.'
     before: |-
       @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
       authProviderOptions() {
@@ -438,6 +440,9 @@ runtime-config-get-required:
 hooks-check-the-bound-class:
   symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
   upgrade:
+    steps:
+      - 'Make a fake or an override that you bind under the key of a class extend the class it replaces, or bind it with `toValue`.'
+      - 'Give two classes that share a name their own `binding: { namespace, key }`.'
     before: |-
       container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
       const mailer = Ardor.useService({ target: Mailer });
@@ -499,6 +504,8 @@ route-conflicts-throw:
 initial-locale-detection:
   symbols: [DefaultI18nProvider.resolveInitialLocale, II18nProviderOptions.languages]
   upgrade:
+    steps:
+      - 'Put `en` first in `languages` if a visitor whose language is not offered, or a run with no navigator, should start in English.'
     before: |-
       languages: [{ locale: 'vi', name: 'Tieng Viet' }, { locale: 'en', name: 'English' }],
     after: |-
@@ -512,6 +519,9 @@ initial-locale-detection:
 boot-test-every-locale:
   symbols: [assertArdorApplicationBoots, Features.verifyMessages]
   upgrade:
+    steps:
+      - 'Pass `{ locale }` to `assertArdorApplicationBoots` for a loader that downloads its catalogue: the test blocks `fetch`.'
+      - 'Fix the loader, or the key two features define, that now fails the test in a language it did not load before.'
     before: |-
       await assertArdorApplicationBoots(application);
     after: |-
