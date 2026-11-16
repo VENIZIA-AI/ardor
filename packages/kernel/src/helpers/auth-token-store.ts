@@ -1,7 +1,7 @@
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
-import { type IAuthTokenRecord, LocalStorageKeys } from '@/common';
+import { type IAuthTokenRecord, type IdType, LocalStorageKeys } from '@/common';
 
 /** The one place that reads and writes the stored auth token, with the browser guard. */
 export class AuthTokenStore {
@@ -34,10 +34,14 @@ export class AuthTokenStore {
     }
   }
 
-  /** Stores the token with its `provider` under `key` (`LocalStorageKeys.KEY_AUTH_TOKEN` by default). Throws when `localStorage` is not available. */
+  /**
+   * Stores the token with its `provider`, and the `userId` it was issued to when given, under `key`
+   * (`LocalStorageKeys.KEY_AUTH_TOKEN` by default). Throws when `localStorage` is not available.
+   */
   static write(opts: {
     token: { value: string; type: string };
     provider: string;
+    userId?: IdType;
     key?: string;
   }): void {
     // Not a silent skip: a sign-in that is not kept would look like it worked.
@@ -45,10 +49,12 @@ export class AuthTokenStore {
       throw getError({ message: '[write] localStorage is not available' });
     }
 
-    const { token, provider } = opts;
+    const { token, provider, userId } = opts;
     localStorage.setItem(
       opts.key ?? LocalStorageKeys.KEY_AUTH_TOKEN,
-      JSON.stringify(Object.assign({}, token, { provider })),
+      JSON.stringify(
+        Object.assign({}, token, { provider }, userId === undefined ? {} : { userId }),
+      ),
     );
   }
 }
