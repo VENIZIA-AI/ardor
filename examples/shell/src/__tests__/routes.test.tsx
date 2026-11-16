@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 
 import { Roles, ShellTestIds } from '@/constants/shell';
 import { blockNetwork, renderShell, startShell } from './shell';
