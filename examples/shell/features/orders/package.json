@@ -1,0 +1,20 @@
+{
+  "name": "@shell-example/orders",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The orders feature of the shell example: a resource, a service, a repository, a gated summary route, menu entries and an English and a lazy Vietnamese bundle",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "dependencies": {
+    "@venizia/ardor": "workspace:*",
+    "ra-core": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@venizia/dev-configs": "catalog:"
+  }
+}
