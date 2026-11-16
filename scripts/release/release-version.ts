@@ -43,6 +43,14 @@ export class ReleaseModes {
 
 type TReleaseMode = TConstValue<typeof ReleaseModes>;
 
+/** What a version is: a prerelease (a version with a prerelease part) or a stable. */
+export class ReleaseKinds {
+  static readonly PRERELEASE = 'prerelease';
+  static readonly STABLE = 'stable';
+}
+
+export type TReleaseKind = typeof ReleaseKinds.PRERELEASE | typeof ReleaseKinds.STABLE;
+
 /** The npm dist-tag a release goes to. */
 export class NpmTags {
   static readonly LATEST = 'latest';
