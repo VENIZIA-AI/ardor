@@ -81,7 +81,7 @@ const vulcanRuns = vulcan(['changelog', 'notes', '--version', '0.4.7']) !== unde
 if (!vulcanRuns) {
   // The parity checks below need the VULCAN this repository pins; without it they are skipped, not passed.
   process.stderr.write(
-    'release-notes.test.ts: `bun x --no-install vulcan changelog notes` does not run here - the parity tests are skipped\n',
+    'release-notes.test.ts: `vulcan changelog notes` does not run here - the parity tests are skipped\n',
   );
 }
 
