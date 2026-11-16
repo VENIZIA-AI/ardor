@@ -77,7 +77,11 @@ export class DefaultProvidersTransform {
         findings.push({
           line: CodemodSource.lineOf({ sourceFile, node: method }),
           name: `${DefaultProvidersTransform.nameOf({ ts, method })}(): instantiate(${className})${DefaultProvidersTransform.hasValue({ ts, node: statement.expression }) ? '.value()' : ''}`,
-          reason: DefaultProvidersTransform.reasonOf({ className, member }),
+          reason: DefaultProvidersTransform.reasonOf({
+            className,
+            member,
+            isProvider: DefaultProvidersTransform.hasValue({ ts, node: statement.expression }),
+          }),
         });
       }
     }
@@ -85,16 +89,24 @@ export class DefaultProvidersTransform {
     return { text, renamed: 0, findings: findings.sort((a, b) => a.line - b.line) };
   }
 
-  /** What to do about a method that builds `className` under the key `member` (`undefined`: a key of the application). */
-  private static reasonOf(opts: { className: string; member: string | undefined }): string {
-    const { className, member } = opts;
+  /**
+   * What to do about a method that builds `className` under the key `member` (`undefined`: a key of the application).
+   * `isProvider`: the method returns `.value(...)` of a provider, else the class instance itself.
+   */
+  private static reasonOf(opts: {
+    className: string;
+    member: string | undefined;
+    isProvider: boolean;
+  }): string {
+    const { className, member, isProvider } = opts;
 
     // Only the default class under its own key is bound by ARDOR: deleting any other method would unbind its key.
     if (DEFAULT_CLASSES.has(className) && KEY_OF_CLASS[className] === member) {
       return `delete this method and ${DROP_INJECTION}: ARDOR binds ${className} itself`;
     }
 
-    const bind = `replace this method by one line in bindContext(): .toProvider(${className}).setScope(BindingScopes.SINGLETON) on the key, and delete ${DROP_INJECTION}`;
+    const binder = isProvider ? 'toProvider' : 'toClass';
+    const bind = `replace this method by one line in bindContext(): .${binder}(${className}).setScope(BindingScopes.SINGLETON) on the key, and delete ${DROP_INJECTION}`;
 
     return member === 'DEFAULT_AUTH_PROVIDER' && !DEFAULT_CLASSES.has(className)
       ? `${bind}. Also bind CoreBindings.AUTH_PROVIDER_OPTIONS as { use: true, ...paths }: without options sign-in is off and start() fails`

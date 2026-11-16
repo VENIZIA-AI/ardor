@@ -170,7 +170,7 @@ export const SettingsFeature: TFeature = Features.define({
 });
 ```
 
-`auth: { use: true }` requires only a signed-in user, with no permission check. `layout: { use: false }` renders the page outside the layout, whatever the sign-in status: the way to a public page such as accept-invite or reset-password. See [Public pages and pages outside the layout](../../references/features#public-pages-and-pages-outside-the-layout).
+`auth: { use: true }` requires only a signed-in user, with no permission check. `layout: { use: false }` renders the page outside the layout. Under `requireAuth` that page still waits for sign-in, so a public page such as accept-invite or reset-password needs both `layout: { use: false }` and `auth: { use: false }`. See [Public pages and pages outside the layout](../../references/features#public-pages-and-pages-outside-the-layout).
 
 ```tsx
 import { Features, type TFeature } from '@venizia/ardor';
@@ -179,7 +179,14 @@ const ResetPasswordPage = () => <h1>Reset your password</h1>;
 
 export const PasswordFeature: TFeature = Features.define({
   name: 'password',
-  routes: [{ path: '/reset-password', element: <ResetPasswordPage />, layout: { use: false } }],
+  routes: [
+    {
+      path: '/reset-password',
+      element: <ResetPasswordPage />,
+      layout: { use: false },
+      auth: { use: false },
+    },
+  ],
 });
 ```
 
