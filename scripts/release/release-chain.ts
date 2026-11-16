@@ -32,7 +32,9 @@
  * skipped when `develop` already holds the last release commit, and it runs alone when every package is
  * already released (a re-dispatch of a run that stopped after its last tag). A prerelease runs from
  * `develop` and has no merge back. The version, the kind and the branch must agree with each other and
- * with the plan the workflow made (`--plan-version`, `--plan-kind`), or the run stops before it builds.
+ * with the plan the workflow made (`--plan-version`, `--plan-kind`), or the run stops before it builds. The release
+ * commit of `ardor` in a stable also writes `released: <date>` into the version folder `changelogs/<version>/log.md`
+ * (`stamp-release.ts`) and adds that file: the folder is frozen once its stable is out.
  *
  * The publish is the one step that cannot be undone, so it runs before every git write of its package,
  * and the "a publish was attempted" state is recorded BEFORE the call (a lost response still leaves npm
@@ -40,9 +42,11 @@
  * pull commits the tests never saw into the tree that later packages are built and published from.
  */
 
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import { GithubRelease } from './github-release';
+import { MergeBackConstants, ReleaseStampConstants } from './merge-back';
 import { npmTagFor } from './release-version';
 import { waitForTarball } from './release-wait';
 
@@ -110,6 +114,11 @@ export interface IChainOptions {
   plan?: { version: string; kind: TChainKind };
   /** The `name=version` pairs the tag message records as `built on:` (read from the refreshed catalog). */
   builtOn?: string;
+  /**
+   * A stable's version folder: the release commit of `ardor` writes `released: <date>` into `log` (repository-relative)
+   * with `stamp-release.ts` and adds it. Absent: nothing is stamped.
+   */
+  stamp?: { log: string; date: string };
 }
 
 export interface IChainPorts {
@@ -200,6 +209,26 @@ export class ReleaseChain {
       opts.options.targetBranch ??
       (ReleaseChain.kindOf({ options: opts.options }) === 'stable' ? 'main' : ReleaseChain.DEVELOP)
     );
+  }
+
+  /**
+   * The stamp of a run: for a stable whose version folder `log.md` is in the checkout, that file and today's date (UTC).
+   * The plan refused a stable without its folder before the approval, so a missing one here stamps nothing.
+   */
+  static stampOf(opts: {
+    /** The manifest's changelog folder, read only for a stable: a prerelease never reads the manifest. */
+    changelogsOf: () => string;
+    version: string;
+    exists: (path: string) => boolean;
+    now: Date;
+  }): IChainOptions['stamp'] {
+    if (!ReleaseStampConstants.VERSION.test(opts.version)) {
+      return undefined;
+    }
+
+    const log = `${opts.changelogsOf()}/${opts.version}/${ReleaseStampConstants.LOG_FILE}`;
+
+    return opts.exists(log) ? { log, date: opts.now.toISOString().slice(0, 10) } : undefined;
   }
 
   /** Why the run may not start: the version, the kind and the branch must agree, and with the plan. */
@@ -431,6 +460,29 @@ export class ReleaseChain {
     const scratch = join(tmp, `relock-${pkg.name}`);
     const subject = `${options.issue === undefined ? '' : `[#${options.issue}] `}chore(${pkg.name}): release v${version} [${version}]`;
     const wait: TStep = { kind: 'wait', label: `${pkg.name}: wait for the tarball to answer 200` };
+    // The version folder belongs to the four packages: the release commit of ardor, the last of a run, dates it.
+    const stamp =
+      pkg.name === MergeBackConstants.LEADING_DIR && ReleaseChain.kindOf({ options }) === 'stable'
+        ? options.stamp
+        : undefined;
+    const stampSteps: TStep[] =
+      stamp === undefined
+        ? []
+        : [
+            {
+              kind: 'run',
+              label: `${pkg.name}: date the version folder`,
+              command: [
+                'bun',
+                'scripts/release/stamp-release.ts',
+                '--version',
+                version,
+                '--date',
+                stamp.date,
+              ],
+              fatal: true,
+            },
+          ];
 
     if (pkg.mode === 'tag') {
       return [
@@ -511,10 +563,17 @@ export class ReleaseChain {
         command: ['cp', join(scratch, 'bun.lock'), 'bun.lock'],
         fatal: true,
       },
+      ...stampSteps,
       {
         kind: 'run',
         label: `${pkg.name}: stage the release`,
-        command: ['git', 'add', `${dir}/package.json`, 'bun.lock'],
+        command: [
+          'git',
+          'add',
+          `${dir}/package.json`,
+          'bun.lock',
+          ...(stamp === undefined ? [] : [stamp.log]),
+        ],
         fatal: true,
       },
       {
@@ -1436,6 +1495,12 @@ const main = async (): Promise<void> => {
         ? { version: args.planVersion, kind: args.planKind }
         : undefined,
     builtOn: ports.readBuiltOn?.(),
+    stamp: ReleaseChain.stampOf({
+      changelogsOf: () => GithubRelease.manifestOf({ cwd: process.cwd() }).changelogs,
+      version: args.version,
+      exists: (path) => existsSync(path),
+      now: new Date(),
+    }),
   };
 
   if (args.dryRun) {
