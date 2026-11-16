@@ -8,4 +8,4 @@ description: What changed in ARDOR, who is affected and what to do about it.
 import ChangelogIndex from '../../site/.vitepress/theme/shared/ChangelogIndex.vue';
 </script>
 
-<ChangelogIndex lede="What changed in ARDOR, who is affected and what to do about it." />
+<ChangelogIndex lede="What changed in ARDOR, who is affected and what to do about it." package-name="@venizia/ardor" />
