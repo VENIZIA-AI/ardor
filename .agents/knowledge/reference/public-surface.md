@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (95)
+### `@venizia/ardor-kernel` (96)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -87,6 +87,7 @@ generated:
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `service` const
+- `SESSION_CHANGED_CODE` const
 - `StorageAreas` class
 - `StorageCodecs` class
 - `TBindingNamespace` type
@@ -246,7 +247,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (185)
+### `@venizia/ardor` (186)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -366,6 +367,7 @@ generated:
 - `RuntimeConfig` class
 - `SelectorHooks` class
 - `service` const
+- `SESSION_CHANGED_CODE` const
 - `SessionClearReasons` class
 - `StorageAreas` class
 - `StorageCodecs` class

@@ -1,4 +1,4 @@
-import { type Container, getError, inject } from '@venizia/ignis-inversion';
+import { type Container, getError, inject, isApplicationError } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
@@ -14,6 +14,7 @@ import {
   type IPermissionProvider,
   LocalStorageKeys,
   RequestMethods,
+  SESSION_CHANGED_CODE,
   StorageAreas,
   type TStringConstValue,
 } from '@venizia/ardor-kernel';
@@ -506,10 +507,22 @@ export class DefaultAuthProvider<
     }
 
     const checked = this.announcedSession;
-    const response = await this.restDataProvider.send({
-      resource: this.authProviderOptions.paths.checkAuth as TResource,
-      params: { method: RequestMethods.GET },
+    const { response, isStale } = await this.askCheckAuth({
+      resource: this.authProviderOptions.paths.checkAuth,
     });
+
+    // The user who asked is gone: the answer says nothing about the session signed in now, which decides.
+    if (isStale) {
+      if (this.authService.getAuth()?.value) {
+        return Promise.resolve();
+      }
+
+      await this.endSession({ reason: SessionClearReasons.REJECTED });
+
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
+    }
 
     if (!response?.data) {
       // The answer belongs to the session announced before the request.
@@ -527,13 +540,37 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
+  /** The `checkAuth` request. `isStale` is a 401 that answers a user who is gone (`SESSION_CHANGED_CODE`): it has no answer. */
+  private async askCheckAuth(opts: { resource: string }) {
+    try {
+      const response = await this.restDataProvider.send({
+        resource: opts.resource as TResource,
+        params: { method: RequestMethods.GET },
+      });
+
+      return { response, isStale: false };
+    } catch (error) {
+      if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+        return { response: undefined, isStale: true };
+      }
+
+      throw error;
+    }
+  }
+
   /**
    * Resolves for every error but 401 and 403. A 401 clears the session (unless
    * `unauthenticatedRejection` says `logoutUser: false`) and rejects with that rejection; a 403
-   * rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
+   * rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`. A 401 that answers a
+   * request sent by a session that has ended since (the network service marks it with
+   * `SESSION_CHANGED_CODE`) resolves and leaves the signed-in session alone.
    */
   async checkError(error: unknown) {
     const status = readStatus(error);
+
+    if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+      return Promise.resolve();
+    }
 
     if (status === 401) {
       const rejection = this.unauthenticatedRejection({ reason: SessionClearReasons.UNAUTHORIZED });

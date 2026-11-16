@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
 import { AuthTokenStore } from '@/helpers';
+import { FakeStorage } from '@/testing';
 
 // The store's own logger (private), so a test can see the one warning it writes.
 const storeLogger = () => AuthTokenStore['logger'];
@@ -41,6 +42,36 @@ describe('saveAuth and credential retrieval', () => {
       referenceId: 'ref-987',
       provider: 'oidc',
     });
+  });
+
+  test('saveAuth writes the identity before the token, so a reader in between sees another user, never a mixed one', () => {
+    const written: string[] = [];
+
+    class RecordingStorage extends FakeStorage {
+      override setItem(key: string, value: string): void {
+        written.push(key);
+        super.setItem(key, value);
+      }
+    }
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: new RecordingStorage(),
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      new DefaultAuthService().saveAuth({ userId: 'u-1', token: { value: 'tok', type: 'Bearer' } });
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, 'localStorage', original);
+      }
+    }
+
+    expect(written.indexOf(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeLessThan(
+      written.indexOf(LocalStorageKeys.KEY_AUTH_TOKEN),
+    );
   });
 
   test('saveAuth stores roles where getRoles reads them, and leaves them alone when none are given', () => {
