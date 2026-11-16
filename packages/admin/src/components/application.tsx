@@ -2,7 +2,7 @@ import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
-import type { Container } from '@venizia/ignis-inversion';
+import { Container } from '@venizia/ignis-inversion';
 import { QueryClient } from '@tanstack/react-query';
 import {
   Authenticated,
@@ -10,16 +10,24 @@ import {
   CoreAdmin,
   CustomRoutes,
   type I18nProvider,
+  Navigate,
   Resource,
+  useBasename,
 } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Outlet, Route } from 'react-router-dom';
 
-import { type TArdorRoute, type TFeature, Features } from '@/features/feature';
+import {
+  type TArdorRoute,
+  type TFeature,
+  Features,
+  MountedFeaturesContext,
+} from '@/features/feature';
 import { getError } from '@venizia/ignis-inversion';
 import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
+import { AccessDeniedPage } from './access-denied';
 import { ApplicationProviders } from './resolve';
 
 const Wrapper: React.FC<{
@@ -51,20 +59,39 @@ const Wrapper: React.FC<{
   );
 };
 
+/** Sends a user who may not open a route to the access-denied page, where a denied resource lands too. */
+const AccessDeniedRedirect = () => {
+  const basename = useBasename();
+
+  return <Navigate to={`${basename}/access-denied`} replace />;
+};
+
 /**
  * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
- * checks: a custom route has neither in react-admin.
+ * checks, with `auth: { use: true }` in a sign-in check: a custom route has neither in react-admin.
+ * Each page has its own `Suspense`, so a lazy page leaves the layout mounted while it loads.
  */
-const renderRoute = (opts: { route: TArdorRoute }) => {
-  const { access, ...routeProps } = opts.route;
-  const key = routeProps.id ?? routeProps.path;
-
-  if (!access) {
-    return <Route key={key} {...routeProps} />;
-  }
-
+const renderRoute = (opts: {
+  route: TArdorRoute;
+  suspense: React.ReactNode;
+  /** The app sets `requireAuth`: react-admin guards the pages of the layout, not the routes outside it. */
+  isRequireAuth: boolean;
+}) => {
+  const { access, auth, layout, ...routeProps } = opts.route;
   const { Component, element, ...rest } = routeProps;
-  const page = element ?? (Component ? <Component /> : <Outlet />);
+  const key = routeProps.id ?? routeProps.path;
+  const page = (
+    <React.Suspense fallback={opts.suspense}>
+      {element ?? (Component ? <Component /> : <Outlet />)}
+    </React.Suspense>
+  );
+
+  // A route outside the layout is open under `requireAuth` too, unless it says `auth: { use: false }` on purpose.
+  const isGuardedByApp = layout?.use === false && opts.isRequireAuth && auth?.use !== false;
+
+  if (!access && auth?.use !== true && !isGuardedByApp) {
+    return <Route key={key} {...rest} element={page} />;
+  }
 
   return (
     <Route
@@ -72,9 +99,17 @@ const renderRoute = (opts: { route: TArdorRoute }) => {
       {...rest}
       element={
         <Authenticated>
-          <CanAccess resource={access.resource} action={access.action}>
-            {page}
-          </CanAccess>
+          {access ? (
+            <CanAccess
+              resource={access.resource}
+              action={access.action}
+              accessDenied={<AccessDeniedRedirect />}
+            >
+              {page}
+            </CanAccess>
+          ) : (
+            page
+          )}
         </Authenticated>
       }
     />
@@ -197,6 +232,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return selected ?? Features.read({ container });
   }, [container, selected]);
 
+  // What `useFeatures` reads inside the shell: the list mounted here, not every bound feature.
+  const mountedScope = React.useMemo(() => {
+    const scope = new Container();
+    scope.bind({ key: CoreBindings.FEATURES }).toValue(features);
+
+    return scope;
+  }, [features]);
+
   // The application's own resources and routes, then each feature's it bound in `features()`.
   const mounted = React.useMemo(() => {
     return Features.mount({ features, resources, routes });
@@ -265,7 +308,12 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return stop;
   }, [container, queryClient]);
 
-  const adminProps = { ...providers, ...reactAdminProps, queryClient };
+  const adminProps = {
+    ...providers,
+    ...reactAdminProps,
+    accessDenied: reactAdminProps.accessDenied ?? AccessDeniedPage,
+    queryClient,
+  };
 
   // The provider react-admin gets: a prop of the shell wins over the one the container resolved.
   assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: adminProps.authProvider });
@@ -285,17 +333,40 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   return (
     <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
-      <CoreAdmin {...adminProps}>
-        {mounted.resources.map((resource) => {
-          return <Resource key={resource.name} {...resource} />;
-        })}
-
-        <CustomRoutes>
-          {mounted.routes.map((route) => {
-            return renderRoute({ route });
+      <MountedFeaturesContext.Provider value={mountedScope}>
+        <CoreAdmin {...adminProps}>
+          {mounted.resources.map((resource) => {
+            return <Resource key={resource.name} {...resource} />;
           })}
-        </CustomRoutes>
-      </CoreAdmin>
+
+          <CustomRoutes>
+            {mounted.routes
+              .filter((route) => route.layout?.use !== false)
+              .map((route) => {
+                return renderRoute({
+                  route,
+                  suspense,
+                  isRequireAuth: adminProps.requireAuth === true,
+                });
+              })}
+          </CustomRoutes>
+
+          {/* react-admin renders a route outside the layout whatever the sign-in status: a public page. */}
+          {mounted.routes.some((route) => route.layout?.use === false) ? (
+            <CustomRoutes noLayout>
+              {mounted.routes
+                .filter((route) => route.layout?.use === false)
+                .map((route) => {
+                  return renderRoute({
+                    route,
+                    suspense,
+                    isRequireAuth: adminProps.requireAuth === true,
+                  });
+                })}
+            </CustomRoutes>
+          ) : null}
+        </CoreAdmin>
+      </MountedFeaturesContext.Provider>
     </Wrapper>
   );
 };

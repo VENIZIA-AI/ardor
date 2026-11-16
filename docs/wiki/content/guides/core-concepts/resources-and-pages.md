@@ -140,7 +140,7 @@ For full options and request configuration, see the [REST data provider referenc
 
 ## Custom routes and feature routes
 
-Pass custom route objects matching React Router's `RouteProps`, plus the optional `access` described below, to the `routes` prop of `ArdorApplication`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` renders custom routes inside `<CustomRoutes>`.
+Pass custom route objects matching React Router's `RouteProps`, plus the optional `access`, `auth` and `layout` described below, to the `routes` prop of `ArdorApplication`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` renders custom routes inside `<CustomRoutes>`, and the routes with `layout: { use: false }` inside a second `<CustomRoutes noLayout>`.
 
 Feature packages can also bundle their own resources and routes using `Features.define`:
 
@@ -178,7 +178,22 @@ export const SettingsFeature: TFeature = Features.define({
 });
 ```
 
-In `packages/admin/src/features/feature.ts`, `Features.mount()` mounts the application's own `resources` and `routes` first, then each feature's in array order. A duplicated resource name throws an error. For details on feature packaging, see the [Features reference](../../references/features).
+`auth: { use: true }` requires only a signed-in user, with no permission check. `layout: { use: false }` renders the page outside the layout, whatever the sign-in status: the way to a public page such as accept-invite or reset-password. See [Public pages and pages outside the layout](../../references/features#public-pages-and-pages-outside-the-layout).
+
+```tsx
+import { Features, type TFeature } from '@venizia/ardor';
+
+const ResetPasswordPage = () => <h1>Reset your password</h1>;
+
+export const PasswordFeature: TFeature = Features.define({
+  name: 'password',
+  routes: [{ path: '/reset-password', element: <ResetPasswordPage />, layout: { use: false } }],
+});
+```
+
+A feature can also list `menu` entries (`{ label, to, access?, icon? }`); `useMenuEntries()` returns those the user may open, for the menu your layout renders. See [Menu entries](../../references/features#menu-entries).
+
+In `packages/admin/src/features/feature.ts`, `Features.mount()` mounts the application's own `resources` and `routes` first, then each feature's in array order. A duplicated resource name, a duplicated route path or a route whose path is `/<resource name>` throws an error. For details on feature packaging, see the [Features reference](../../references/features).
 
 ## Reaching ARDOR from a page
 

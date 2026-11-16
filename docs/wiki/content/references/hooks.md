@@ -53,6 +53,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
 | List mounted application features | `useFeatures` | `ApplicationContext` with a container | `Array<TItem>` |
 | Read the roles of the signed-in user, and follow the session | `useRoles` | `ApplicationContext` with a container | `ReadonlySet<string>` |
+| List the menu entries of the mounted features the user may open | `useMenuEntries` | Inside `ArdorApplication` (ra-core auth provider, TanStack `QueryClientProvider`) | `Array<TFeatureMenuEntry>` |
 | Set document title with automatic restoration on unmount | `useDocumentTitle` | Browser DOM | `void` |
 | Synchronize `<html lang>` with the active locale | `useHtmlLang` | ra-core locale state, browser DOM | `void` |
 | Debounce a rapidly changing value | `useDebounce` | Browser DOM | `{ debouncedValue }` |
@@ -416,7 +417,7 @@ export function FeatureNavigation() {
 
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
-- **Gotcha**: Reads from the container using `useApplicationContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+- **Gotcha**: Inside `ArdorApplication` it returns the mounted features: the `features` prop when the shell passed one, else every bound feature. Outside, it reads `CoreBindings.FEATURES` from the container of `ApplicationContext` (`[]` when unbound) and throws without a container. Defined in `packages/admin/src/hooks/use-features.ts`.
 
 ### useRoles
 
@@ -432,6 +433,31 @@ export function AdminBadge() {
 - **Parameters**: None.
 - **Return value**: `ReadonlySet<string>`, the role names `DefaultAuthService.getRoles()` holds. It is the same set while the roles stay the same, so it is safe in a dependency array.
 - **Gotcha**: Re-renders when the session changes, in this tab or in another one. It is empty when nobody is signed in, and when no `CoreBindings.DEFAULT_AUTH_SERVICE` is bound, without an error. Roles are read at sign-in: a token refresh keeps them. They only show or hide interface; the backend must check every request, see [Permission provider](./permission). Throws outside `ApplicationContext`. Defined in `packages/admin/src/hooks/use-roles.ts`.
+
+
+### useMenuEntries
+
+```tsx
+import { useMenuEntries, useUntypedTranslate } from '@venizia/ardor';
+
+export function ShellNavigation() {
+  const entries = useMenuEntries();
+  const translate = useUntypedTranslate();
+  return (
+    <nav>
+      {entries.map((entry) => (
+        <a key={`${entry.feature}:${entry.to}`} href={entry.to}>
+          {translate(entry.label)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `Array<TFeatureMenuEntry>`, each `IMenuEntry` of a mounted feature plus `feature`, its name, in feature order.
+- **Gotcha**: An entry with `access` is listed only once `canAccess` allows it; while the check runs, or when it fails, it is left out. With no `canAccess` (no sign-in, or no permission provider) every entry is listed. Call it inside `ArdorApplication`. Defined in `packages/admin/src/hooks/use-menu-entries.ts`. See [Menu entries](./features#menu-entries).
 
 ### useDocumentTitle
 

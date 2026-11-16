@@ -11,22 +11,22 @@ import { Container } from '@venizia/ignis-inversion';
 
 const List = () => null;
 
-// What a shell adds on top: a project's menu entries, typed through the extension parameter.
-interface IMenuExtension {
-  menu: Array<{ id: string; label: string }>;
+// What a shell adds on top: the industries a feature serves, typed through the extension parameter.
+interface IIndustryExtension {
+  industries: Array<string>;
 }
 
-const inventory = Features.define<IMenuExtension>({
+const inventory = Features.define<IIndustryExtension>({
   name: 'inventory',
   resources: [{ name: 'stocks', list: List }],
   routes: [{ path: '/stock-report', element: null }],
-  menu: [{ id: 'stocks', label: 'inventory.menu.stocks' }],
+  industries: ['retail'],
 });
 
-const commerce = Features.define<IMenuExtension>({
+const commerce = Features.define<IIndustryExtension>({
   name: 'commerce',
   resources: [{ name: 'orders', list: List }],
-  menu: [{ id: 'orders', label: 'commerce.menu.orders' }],
+  industries: ['retail', 'food'],
 });
 
 const containerWith = (opts: { features?: Array<TFeature> }) => {
@@ -92,6 +92,107 @@ describe('Features.mount', () => {
       Features.mount({ features: [inventory], resources: [{ name: 'stocks', list: List }] }),
     ).toThrow("[features] Resource 'stocks' is mounted by both 'the application' and 'inventory'");
   });
+
+  test('throws on a route that has access and is public, naming its path', () => {
+    const contradiction = Features.define({
+      name: 'contradiction',
+      routes: [
+        {
+          path: '/audit',
+          element: null,
+          access: { resource: 'audit', action: 'list' },
+          auth: { use: false },
+        },
+      ],
+    });
+
+    expect(() => Features.mount({ features: [contradiction] })).toThrow(
+      "[features] Route '/audit' of 'contradiction' has access and auth: { use: false }",
+    );
+  });
+
+  test('throws on a route path the application and a feature both mount, naming both', () => {
+    expect(() =>
+      Features.mount({
+        features: [inventory],
+        routes: [{ path: 'stock-report', element: null }],
+      }),
+    ).toThrow(
+      "[features] Route '/stock-report' is mounted by both 'the application' and 'inventory'",
+    );
+  });
+
+  test.each([
+    ['/stock-report', '/Stock-Report'],
+    ['/stock-report', '/stock-report/'],
+    ['stock-report', '//stock-report//'],
+  ])('throws on two paths react-router reads as one: %s and %s', (first, second) => {
+    const shadow = Features.define({ name: 'shadow', routes: [{ path: second, element: null }] });
+    const origin = Features.define({ name: 'origin', routes: [{ path: first, element: null }] });
+
+    expect(() => Features.mount({ features: [origin, shadow] })).toThrow(
+      "is mounted by both 'origin' and 'shadow'",
+    );
+  });
+
+  test('throws on a route of the application that differs only in case from a route of a feature', () => {
+    expect(() =>
+      Features.mount({
+        features: [inventory],
+        routes: [{ path: '/Stock-Report', element: null }],
+      }),
+    ).toThrow(
+      "is mounted by both 'inventory' and 'the application'".replace(
+        "'inventory' and 'the application'",
+        "'the application' and 'inventory'",
+      ),
+    );
+  });
+
+  test('throws on a route whose path differs only in case from a resource', () => {
+    expect(() =>
+      Features.mount({ features: [inventory], routes: [{ path: '/Stocks', element: null }] }),
+    ).toThrow('is mounted by both');
+  });
+
+  test('throws on a route path two features both mount', () => {
+    const shadow = Features.define({
+      name: 'shadow',
+      routes: [{ path: '/stock-report', element: null }],
+    });
+
+    expect(() => Features.mount({ features: [inventory, shadow] })).toThrow(
+      "[features] Route '/stock-report' is mounted by both 'inventory' and 'shadow'",
+    );
+  });
+
+  test('throws on a route whose path is the path of a resource', () => {
+    const shadow = Features.define({
+      name: 'shadow',
+      routes: [{ path: '/orders', element: null }],
+    });
+
+    expect(() => Features.mount({ features: [commerce, shadow] })).toThrow(
+      "[features] Route '/orders' is mounted by both 'commerce' (resource 'orders') and 'shadow'",
+    );
+  });
+
+  test('throws on a route with neither an id nor a path', () => {
+    const pathless = Features.define({ name: 'pathless', routes: [{ element: null }] });
+
+    expect(() => Features.mount({ features: [pathless] })).toThrow(
+      "[features] A route of 'pathless' has neither an id nor a path",
+    );
+  });
+
+  test('accepts a pathless route that has an id', () => {
+    const shell = Features.define({
+      name: 'shell',
+      routes: [{ id: 'shell-layout', element: null }],
+    });
+
+    expect(Features.mount({ features: [shell] }).routes).toHaveLength(1);
+  });
 });
 
 describe('useFeatures', () => {
@@ -106,11 +207,11 @@ describe('useFeatures', () => {
         children,
       );
 
-    const { result } = renderHook(() => useFeatures<TFeature<IMenuExtension>>(), { wrapper });
+    const { result } = renderHook(() => useFeatures<TFeature<IIndustryExtension>>(), { wrapper });
 
-    expect(result.current.flatMap((feature) => feature.menu.map((entry) => entry.id))).toEqual([
-      'stocks',
-      'orders',
+    expect(result.current.map((feature) => feature.industries)).toEqual([
+      ['retail'],
+      ['retail', 'food'],
     ]);
   });
 });
