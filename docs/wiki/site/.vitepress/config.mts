@@ -1,4 +1,5 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
+import { changelogPageData } from './theme/shared/changelog-entries.ts';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
 import { venziaCodeTheme } from './theme/shared/code-theme.ts';
 import { WikiTheme } from './theme/shared/wiki-theme.ts';
@@ -127,7 +128,11 @@ const config = defineConfig({
   },
   srcDir: '../content',
   // A version folder keeps its page as changelogs/<X.Y.Z>/log.md; the site serves it at /changelogs/<X.Y.Z>.
-  rewrites: { 'changelogs/:version/log.md': 'changelogs/:version.md' },
+  rewrites: {
+    'changelogs/:version/log.md': 'changelogs/:version.md',
+    'changelogs/upgrade/:version.md': 'changelogs/:version/upgrade.md',
+  },
+  transformPageData: (pageData) => changelogPageData({ pageData }),
   outDir: './.vitepress/dist',
   title: 'ARDOR',
   description:
