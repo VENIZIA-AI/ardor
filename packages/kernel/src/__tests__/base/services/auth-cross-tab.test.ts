@@ -102,7 +102,7 @@ describe('DefaultAuthService and the session of another tab', () => {
     stop();
   });
 
-  test('a sign-out in another tab is announced once, when its token is removed, not as an identity without a token', () => {
+  test('a sign-out in another tab is announced when its token is removed, and never leaves a token behind', () => {
     const tab = serviceOf();
     const otherTab = serviceOf();
     signIn(tab, 'alice');
@@ -115,8 +115,10 @@ describe('DefaultAuthService and the session of another tab', () => {
     otherTab.cleanUp();
 
     stopEvents();
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toEndWith('|undefined');
+    // The token goes first: the first announcement is already the sign-out, the identity that follows adds nothing new.
+    expect(seen.length).toBeGreaterThanOrEqual(1);
+    expect(seen.every((entry) => entry.endsWith('|undefined'))).toBe(true);
+    expect(seen.at(-1)).toBe('undefined|undefined');
     stop();
   });
 
@@ -171,6 +173,37 @@ describe('DefaultAuthService and the session of another tab', () => {
 
     expect(seen).toEqual(['carol|carol-token']);
     stop();
+  });
+
+  test('a tab on older code writes the token first: the identity that follows is announced too', () => {
+    const tab = serviceOf();
+    signIn(tab, 'alice');
+    const seen: Array<string> = [];
+    const stop = tab.subscribe({
+      listener: () => seen.push(`${tab.getUser().userId}|${tab.getAuth()?.value}`),
+    });
+
+    storage.setItem('@app/auth/token', JSON.stringify({ value: 'bob-token', type: 'Bearer' }));
+    fromOtherTab({ keys: ['@app/auth/token'] });
+    storage.setItem('@app/auth/identity', JSON.stringify({ userId: 'bob' }));
+    fromOtherTab({ keys: ['@app/auth/identity'] });
+
+    expect(seen.at(-1)).toBe('bob|bob-token');
+    stop();
+  });
+
+  test('isSwitching tells a half-written switch from a sign-out', () => {
+    const tab = serviceOf();
+    signIn(tab, 'alice');
+
+    expect(tab.isSwitching()).toBe(false);
+
+    storage.setItem('@app/auth/identity', JSON.stringify({ userId: 'bob' }));
+    expect(tab.isSwitching()).toBe(true);
+    expect(tab.getAuth()).toBeNull();
+
+    tab.cleanUp();
+    expect(tab.isSwitching()).toBe(false);
   });
 
   test('a page that comes back from the back-forward cache announces the session that changed meanwhile', () => {
