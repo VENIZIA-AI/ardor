@@ -75,7 +75,7 @@ export class AuditReportService {
 | `RequestCountData` | class | Flag constants for count responses (`DATA_ONLY`, `DATA_WITH_COUNT`) |
 | `RequestChannel` | class | Default channel constant (`WEB`) |
 | `LocalStorageKeys` | class | Local storage key constants including `KEY_AUTH_TOKEN` |
-| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`) |
+| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`, and the `userId` `saveAuth` stores with it) |
 | `IDataSourceAuth` | interface | Authentication configuration shared with an `HttpDataSource` |
 | `IDataSourceRequestContext` | interface | Request path context passed to data source auth resolvers |
 | `INoAuthOptions` | interface | Options defining path strings and regex patterns that bypass authentication |

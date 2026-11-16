@@ -123,6 +123,26 @@ describe('DefaultAuthProvider and the session of another tab', () => {
     ]);
   });
 
+  test("two switches close together start the session as the last user with the last token, never as one with the other's token", async () => {
+    otherTabSignsIn({ userId: 7, token: 'jwt-7' });
+    await settle();
+
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
+    // The second switch has stored its identity when this tab handles the event of the first token.
+    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
+    fromOtherTab({ keys: ['@app/auth/token'] });
+    await settle();
+
+    new DefaultAuthService().saveAuth({ userId: 9, token: { value: 'jwt-bob', type: 'Bearer' } });
+    fromOtherTab({ keys: ['@app/auth/token'] });
+    await settle();
+
+    expect(provider.started.map((call) => `${call.user.userId}|${call.token.value}`)).toEqual([
+      '7|jwt-7',
+      '9|jwt-bob',
+    ]);
+  });
+
   test('a sign-out written key by key ends the session once and starts none', async () => {
     const restoreStorage = new EventPerWriteStorage().install();
     otherTabSignsIn({ userId: 7, token: 'jwt-7' });
