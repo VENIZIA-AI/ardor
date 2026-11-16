@@ -1,6 +1,9 @@
 remove-use-sizer:
   symbols: [useSizer, IUseSizerOptions, IUseSizerReturn, Ardor.useSizer]
   upgrade:
+    steps:
+      - 'Give the element a ref with `React.useRef<HTMLDivElement>(null)` instead of an id.'
+      - "Replace `useSizer({ containerId })` with `useElementSize({ ref, box: 'border-box', round: true })`."
     before: |-
       const { width, height } = useSizer({ containerId: 'chart' });
     after: |-
@@ -15,6 +18,9 @@ remove-use-sizer:
 rename-use-injectable-container:
   symbols: [useInjectableContainer, Ardor.useInjectableContainer]
   upgrade:
+    steps:
+      - 'Rename `useInjectableContainer` and `Ardor.useInjectableContainer` to `useApplicationContainer`.'
+      - 'Update a test that matches the old error text to `[useApplicationContainer] Failed to determine the application container!`.'
     before: |-
       const container = useInjectableContainer();
     after: |-
@@ -27,6 +33,9 @@ rename-use-injectable-container:
 remove-send-response:
   symbols: [ISendResponse]
   upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames `ISendResponse` to `INetworkResponse`.'
+      - 'Rename any `ISendResponse` it left to `INetworkResponse`.'
     before: |-
       import type { ISendResponse } from '@venizia/ardor';
       const reply: ISendResponse<Product[]> = await dataProvider.send({ resource, params });
@@ -42,6 +51,9 @@ remove-send-response:
 remove-list-filter-offset:
   symbols: [IListFilter.offset]
   upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --check` to list each `.offset` in a file that imports `IListFilter` or `ListFilterBuilder`.'
+      - 'Rename each `offset` of an `IListFilter` to `skip`.'
     before: |-
       const filter: IListFilter = { where: {}, offset: 20 };
     after: |-
@@ -54,6 +66,10 @@ remove-list-filter-offset:
 remove-http-repository-update-all-delete-all:
   symbols: [HttpRepository.updateAll, HttpRepository.deleteAll, HttpRepository.deleteBy]
   upgrade:
+    steps:
+      - 'Replace `updateAll({ where, data })` with `updateBy({ where, data })`.'
+      - 'Replace `deleteAll({ where })` with `deleteBy({ where })`.'
+      - 'Pass `where` to every `deleteBy` call: it is required now.'
     before: |-
       await repository.updateAll({ where, data });
       await repository.deleteAll({ where });
@@ -91,6 +107,10 @@ default-token-refresh:
       DefaultRestDataProvider.createNetworkService,
     ]
   upgrade:
+    steps:
+      - 'Delete a `DefaultNetworkRequestService` subclass whose only job is to post to `refreshTokenPath` and save the token.'
+      - 'If your refresh endpoint answers in another shape, override `readRefreshedToken({ data })`.'
+      - 'In a `createNetworkService` override of `DefaultRestDataProvider`, pass `authService` on.'
     before: |-
       // authRecovery.refreshTokenPath only stopped the refresh endpoint from starting a refresh;
       // a subclass overrode refreshToken to post to it and save the token.
@@ -119,6 +139,10 @@ sign-out-clears-store:
       ArdorApplication,
     ]
   upgrade:
+    steps:
+      - 'Move each preference that must survive sign-out from `@app/store/<name>` to `@app/prefs/<name>` (`@app/prefs/<id>/<name>` when the app has an `id`; `keys.prefsPrefix` holds it).'
+      - "Do not name a preference `locale`: that key is ARDOR's own, for the chosen language. Old keys are not migrated."
+      - 'Or override `clearStoredData` to keep the keys you choose.'
     before: |-
       BrowserStorage.set({ key: '@app/store/sidebar', value: 'open' });
     after: |-
@@ -131,6 +155,12 @@ sign-out-clears-store:
 remove-any-aliases:
   symbols: [AnyType, AnyObject]
   upgrade:
+    steps:
+      - 'Run `bun run devz codemod any-aliases --all` to list the uses, then `--write --all` to rewrite the imports (needs `@venizia/dev-configs`).'
+      - 'Replace `AnyType` and `AnyObject` with `unknown`, a named type or `Record<string, unknown>`.'
+      - 'Leave out the second type argument of `HttpRepository`; `unknown` is rejected there.'
+      - 'Spread an `interface` value, or type it as `object` or a `type` alias, where `Record<string, unknown>` is expected.'
+      - 'Type a `TClass<HttpRepository<...>>` slot on the members the code calls, or make the code that takes it generic over the entity.'
     before: |-
       import type { AnyObject, AnyType } from '@venizia/ardor';
       const read = (value: AnyType) => value.name.toUpperCase();
@@ -151,6 +181,8 @@ remove-any-aliases:
 typed-do-request-query:
   symbols: [DefaultNetworkRequestService.doRequest]
   upgrade:
+    steps:
+      - 'Pass `query` as `Record<string, unknown>`; spread an `interface` value: `query: { ...listOptions }`.'
     before: |-
       await networkService.doRequest({ type, method, paths, query: listOptions });
     after: |-
@@ -169,6 +201,9 @@ typed-stored-user:
       IAuthUser,
     ]
   upgrade:
+    steps:
+      - 'Check a custom field with `in` and `typeof` before you read it from `getUser()` or the `user` of `onSessionStarted`.'
+      - 'Add the `id` that `getIdentity()` now returns to a test that compares its result with `toEqual`.'
     before: |-
       const tenant = authService.getUser().tenant.toUpperCase();
     after: |-
@@ -183,6 +218,9 @@ typed-stored-user:
 typed-user-override:
   symbols: [DefaultAuthService.getUser]
   upgrade:
+    steps:
+      - 'Make an override of `DefaultAuthService.getUser`, or a stub of it, return fields that fit `IAuthUser`.'
+      - 'Return an `interface` that extends `IAuthUser` and adds your own fields; `userId` is never `null`.'
     before: |-
       override getUser(): { userId: string | null; role: string } {
         return { userId: null, role: 'admin' };
@@ -199,6 +237,10 @@ typed-user-override:
 typed-user-id:
   symbols: [DefaultAuthService.getUser, DefaultAuthProvider.getIdentity, IAuthUser]
   upgrade:
+    steps:
+      - 'Check `userId !== undefined` before you use `getUser().userId`: it is absent when nothing is stored.'
+      - 'Convert `userId` and `getIdentity().id` with `String()` where a string is needed.'
+      - 'In a test, replace `expect(getUser()).toEqual(...)` on keys outside `IAuthUser` with `toMatchObject`.'
     before: |-
       setViewer(authService.getUser().userId);
       setViewer(identity.id);
@@ -217,6 +259,9 @@ typed-list-params:
   symbols:
     [DefaultRestDataProvider.getList, DefaultRestDataProvider.getManyReference, ICustomParams]
   upgrade:
+    steps:
+      - 'In an override of `getList` or `getManyReference`, pass the params on spread: `params: { ...opts.params }`.'
+      - 'Leave an override of `getOne` or `getMany` as it is.'
     before: |-
       override async getList<RecordType extends RaRecord = RaRecord>(opts: {
         resource: string;
@@ -306,6 +351,11 @@ auth-provider-toggle:
       DefaultAuthProvider.authProviderOptions,
     ]
   upgrade:
+    steps:
+      - 'Run `bun run ardor codemod auth-options --write` to add `use: true` to each options object literal.'
+      - 'Fix by hand the options the codemod lists: add `use: true`, or `{ use: false }` for a guest app.'
+      - 'Type options and `@provideOption` returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
+      - 'If you bind your own auth provider under `DEFAULT_AUTH_PROVIDER`, also bind `AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`.'
     before: |-
       @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
       authProviderOptions() {
@@ -327,6 +377,9 @@ auth-provider-toggle:
 base-application-moved:
   symbols: [BaseArdorApplication]
   upgrade:
+    steps:
+      - 'Run `bun run ardor codemod base-application-import --write`, or import it from `@venizia/ardor-admin` or `@venizia/ardor`.'
+      - 'In a package that needs only the kernel, extend `AbstractArdorApplication`; it binds no default provider.'
     before: |-
       import { BaseArdorApplication } from '@venizia/ardor-kernel';
     after: |-
@@ -353,6 +406,10 @@ injectable-removed:
 boot-validates-configuration:
   symbols: [IApplicationInfo.name, BaseArdorApplication.postConfigure]
   upgrade:
+    steps:
+      - 'Give `getAppInfo()` a `name` that is not empty or blank.'
+      - 'Bind `REST_DATA_PROVIDER_OPTIONS`: an app whose providers cannot be built now fails in `start()`, not at the first render.'
+      - 'Call `super.postConfigure()` in an override of `postConfigure()` on a `BaseArdorApplication` subclass.'
     before: |-
       getAppInfo(): IApplicationInfo {
         return { name: '', version: '1.0.0', description: 'The shop' };
@@ -369,6 +426,8 @@ boot-validates-configuration:
 runtime-config-get-required:
   symbols: [RuntimeConfig.get]
   upgrade:
+    steps:
+      - 'Replace `RuntimeConfig.get({ key, required: true })` with `RuntimeConfig.getRequired({ key })`.'
     before: |-
       const apiUrl: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
     after: |-
@@ -382,6 +441,9 @@ runtime-config-get-required:
 hooks-check-the-bound-class:
   symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
   upgrade:
+    steps:
+      - 'Make a fake or an override that you bind under the key of a class extend the class it replaces, or bind it with `toValue`.'
+      - 'Give two classes that share a name their own `binding: { namespace, key }`.'
     before: |-
       container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
       const mailer = Ardor.useService({ target: Mailer });
@@ -399,6 +461,9 @@ hooks-check-the-bound-class:
 feature-key-collision-at-startup:
   symbols: [DefaultI18nProvider, TFeature.messages]
   upgrade:
+    steps:
+      - 'Give each feature its own top-level key in `messages` for each language, so two features never share one.'
+      - 'Run your boot test (`assertArdorApplicationBoots`): a collision in any offered language now fails it.'
     before: |-
       const orders = Features.define({ name: 'orders', messages: { vi: { shared: { title: 'Don hang' } } } });
       const stock = Features.define({ name: 'stock', messages: { vi: { shared: { title: 'Kho' } } } });
@@ -440,6 +505,8 @@ route-conflicts-throw:
 initial-locale-detection:
   symbols: [DefaultI18nProvider.resolveInitialLocale, II18nProviderOptions.languages]
   upgrade:
+    steps:
+      - 'Put `en` first in `languages` if a visitor whose language is not offered, or a run with no navigator, should start in English.'
     before: |-
       languages: [{ locale: 'vi', name: 'Tieng Viet' }, { locale: 'en', name: 'English' }],
     after: |-
@@ -453,6 +520,9 @@ initial-locale-detection:
 boot-test-every-locale:
   symbols: [assertArdorApplicationBoots, Features.verifyMessages]
   upgrade:
+    steps:
+      - 'Pass `{ locale }` to `assertArdorApplicationBoots` for a loader that downloads its catalogue: the test blocks `fetch`.'
+      - 'Fix the loader, or the key two features define, that now fails the test in a language it did not load before.'
     before: |-
       await assertArdorApplicationBoots(application);
     after: |-

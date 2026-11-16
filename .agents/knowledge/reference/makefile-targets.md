@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**80 targets.**
+**81 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -74,6 +74,7 @@ generated:
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
 | `make release` | - | Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
+| `make runners-check` | - | Fail when a tracked file runs an unscoped package by name (bunx, bun x, npx, pnpm dlx) |
 | `make setup-hooks` | - | Configure git to use .githooks directory. |
 | `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |
 | `make split-report` | - | Report hub files, stray types, missing barrels, long files, cycles (informational). |
