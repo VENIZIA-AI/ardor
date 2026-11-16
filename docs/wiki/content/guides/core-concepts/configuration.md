@@ -76,6 +76,8 @@ The kernel defines eleven keys in `CoreBindings` (`packages/kernel/src/common/ke
 
 `IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`.
 
+A route with `access` needs both sign-in (`CoreBindings.AUTH_PROVIDER_OPTIONS` with `use: true`) and a bound `CoreBindings.PERMISSION_PROVIDER`; without either, `ArdorApplication` throws at mount and names the route.
+
 ## The bind order
 
 During `application.start()`, `preConfigure()` in `packages/kernel/src/base/applications/abstract.ts` executes in exact order:
