@@ -59,13 +59,19 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
-try {
-  RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
-} catch (error) {
-  if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
-    console.error('missing config key', error.extra?.key);
+export const readMissingKey = (): unknown => {
+  try {
+    RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
+  } catch (error) {
+    if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
+      return error.extra?.key;
+    }
+
+    throw error;
   }
-}
+
+  return undefined;
+};
 ```
 
 With `transform`, the result has the type the function returns. `get` hands it `undefined` for an unset value and uses `defaultValue` when it answers `undefined` or `null`; `getRequired` hands it the string and throws when it answers `undefined` or `null`. A `transform` that throws, in either method, raises an error with the code `RUNTIME_CONFIG_INVALID_CODE`; the key is in `extra.key`, and the value is never in the error.

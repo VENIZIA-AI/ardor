@@ -8,11 +8,19 @@ description: Reference for every React hook exported by ARDOR, covering containe
 ARDOR provides hooks to interact with the dependency injection container, Redux state, react-admin contexts, and browser APIs. All hooks are exported from `@venizia/ardor`.
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
 
-export function StatusWidget() {
-  useDocumentTitle({ title: 'Status', appTitle: 'Back Office' });
-  return <span>Ready</span>;
+@service()
+export class PricingService {
+  total(opts: { quantity: number }): number {
+    return opts.quantity * 3;
+  }
+}
+
+export function Total() {
+  const pricing = Ardor.useService({ target: PricingService });
+
+  return <span>{pricing.total({ quantity: 2 })}</span>;
 }
 ```
 
@@ -29,7 +37,7 @@ export function StatusTitle() {
 }
 ```
 
-It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Read a hook through `Ardor.useX` in code; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
+It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Every example on this page reads a hook through `Ardor.useX`; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports (`import { useX }`) are the same functions and keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
 
 ## Which hook do I need?
 
@@ -75,10 +83,10 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 ### useApplicationContext
 
 ```tsx
-import { useApplicationContext } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ContainerStatus() {
-  const container = useApplicationContext();
+  const container = Ardor.useApplicationContext();
   return <span>{container.constructor.name}</span>;
 }
 ```
@@ -90,10 +98,10 @@ export function ContainerStatus() {
 ### useApplicationContainer
 
 ```tsx
-import { useApplicationContainer } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ContainerChecker() {
-  const container = useApplicationContainer();
+  const container = Ardor.useApplicationContainer();
   return <span>{container ? 'container ready' : 'no container'}</span>;
 }
 ```
@@ -107,7 +115,7 @@ export function ContainerChecker() {
 Resolve a class with `{ target }`: the key is the one recorded on the class, and the return type is the class.
 
 ```tsx
-import { service, useInjectable } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
 
 @service()
 class PricingService {
@@ -115,7 +123,7 @@ class PricingService {
 }
 
 export function Total() {
-  const pricingService = useInjectable({ target: PricingService });
+  const pricingService = Ardor.useInjectable({ target: PricingService });
   return <span>{pricingService.total({ quantity: 2 })}</span>;
 }
 ```
@@ -123,10 +131,10 @@ export function Total() {
 For a binding with no class, pass `{ key }`. The providers of `CoreBindings` are typed with no generic and no augmentation:
 
 ```tsx
-import { CoreBindings, useInjectable } from '@venizia/ardor';
+import { Ardor, CoreBindings } from '@venizia/ardor';
 
 export function TenantHeaderButton() {
-  const dataProvider = useInjectable({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+  const dataProvider = Ardor.useInjectable({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
   return (
     <button onClick={() => dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } })}>
       Tenant
@@ -144,16 +152,16 @@ export function TenantHeaderButton() {
 ### useService
 
 ```tsx
-import { service, useService } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
 
 @service()
 class OrderService {
-  calculateTotal(subtotal: number, tax: number) { return subtotal + tax; }
+  calculateTotal(opts: { subtotal: number; tax: number }) { return opts.subtotal + opts.tax; }
 }
 
 export function OrderTotal() {
-  const orderService = useService({ target: OrderService });
-  return <span>Total: {orderService.calculateTotal(100, 10)}</span>;
+  const orderService = Ardor.useService({ target: OrderService });
+  return <span>Total: {orderService.calculateTotal({ subtotal: 100, tax: 10 })}</span>;
 }
 ```
 
@@ -164,16 +172,16 @@ export function OrderTotal() {
 ### useRepository
 
 ```tsx
-import { repository, useRepository } from '@venizia/ardor';
+import { Ardor, repository } from '@venizia/ardor';
 
 @repository()
 class ProductRepository {
-  findStock(productId: string) { return productId ? 42 : 0; }
+  findStock(opts: { productId: string }) { return opts.productId ? 42 : 0; }
 }
 
 export function StockDisplay() {
-  const productRepository = useRepository({ target: ProductRepository });
-  return <span>Stock: {productRepository.findStock('p1')}</span>;
+  const productRepository = Ardor.useRepository({ target: ProductRepository });
+  return <span>Stock: {productRepository.findStock({ productId: 'p1' })}</span>;
 }
 ```
 
@@ -186,7 +194,7 @@ export function StockDisplay() {
 A provider class that declares the `providers` namespace is resolved by `{ target }`:
 
 ```tsx
-import { BindingNamespaces, service, useProvider } from '@venizia/ardor';
+import { Ardor, BindingNamespaces, service } from '@venizia/ardor';
 
 @service({ binding: { namespace: BindingNamespaces.PROVIDER, key: 'ThemeProvider' } })
 class ThemeProvider {
@@ -194,7 +202,7 @@ class ThemeProvider {
 }
 
 export function ThemeSwatch() {
-  const themeProvider = useProvider({ target: ThemeProvider });
+  const themeProvider = Ardor.useProvider({ target: ThemeProvider });
   return <span>{themeProvider.getColor()}</span>;
 }
 ```
@@ -202,11 +210,11 @@ export function ThemeSwatch() {
 The framework providers sit under `CoreBindings` keys and are typed through the key, with no generic and no augmentation:
 
 ```tsx
-import { CoreBindings, useProvider } from '@venizia/ardor';
+import { Ardor, CoreBindings } from '@venizia/ardor';
 
 export function DataProviderWidget() {
-  const dataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
-  const authProvider = useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  const dataProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+  const authProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
   return <span>{typeof dataProvider.getList} {typeof authProvider.getRoles}</span>;
 }
 ```
@@ -218,7 +226,7 @@ export function DataProviderWidget() {
 ### useComponent
 
 ```tsx
-import { component, useComponent } from '@venizia/ardor';
+import { Ardor, component } from '@venizia/ardor';
 
 @component()
 class BannerComponent {
@@ -226,7 +234,7 @@ class BannerComponent {
 }
 
 export function BannerView() {
-  const banner = useComponent({ target: BannerComponent });
+  const banner = Ardor.useComponent({ target: BannerComponent });
   return <span>{banner.getLabel()}</span>;
 }
 ```
@@ -238,7 +246,7 @@ export function BannerView() {
 ### useConfiguration
 
 ```tsx
-import { configuration, useConfiguration } from '@venizia/ardor';
+import { Ardor, configuration } from '@venizia/ardor';
 
 @configuration()
 class AppSettings {
@@ -246,7 +254,7 @@ class AppSettings {
 }
 
 export function EnvironmentLabel() {
-  const settings = useConfiguration({ target: AppSettings });
+  const settings = Ardor.useConfiguration({ target: AppSettings });
   return <span>{settings.environment}</span>;
 }
 ```
@@ -258,10 +266,10 @@ export function EnvironmentLabel() {
 ### useApplicationLogger
 
 ```tsx
-import { useApplicationLogger } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function LoggerButton() {
-  const logger = useApplicationLogger();
+  const logger = Ardor.useApplicationLogger();
   return <button onClick={() => logger.info('Action executed')}>Log action</button>;
 }
 ```
@@ -326,10 +334,10 @@ export function useUserState() {
 ### useTranslate
 
 ```tsx
-import { useTranslate } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function SaveButton() {
-  const translate = useTranslate();
+  const translate = Ardor.useTranslate();
   return <button type="submit">{translate('ra.action.save')}</button>;
 }
 ```
@@ -341,10 +349,10 @@ export function SaveButton() {
 ### useUntypedTranslate
 
 ```tsx
-import { useUntypedTranslate } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ErrorLine(props: { code: string }) {
-  const translate = useUntypedTranslate();
+  const translate = Ardor.useUntypedTranslate();
   return <p>{translate(`errors.${props.code}`, { _: 'Something went wrong' })}</p>;
 }
 ```
@@ -356,10 +364,10 @@ export function ErrorLine(props: { code: string }) {
 ### useRefreshToken
 
 ```tsx
-import { useRefreshToken } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function RefreshTokenButton() {
-  const refreshToken = useRefreshToken();
+  const refreshToken = Ardor.useRefreshToken();
   return <button onClick={() => void refreshToken()}>Refresh token</button>;
 }
 ```
@@ -371,16 +379,24 @@ export function RefreshTokenButton() {
 ### useNotifyError
 
 ```tsx
-import { useNotifyError } from '@venizia/ardor';
-
-type TNotifyError = ReturnType<typeof useNotifyError>;
-type TAppError = Parameters<TNotifyError>[0];
+import { Ardor } from '@venizia/ardor';
+import { isApplicationError } from '@venizia/ignis-inversion';
 
 export function DeleteAction(props: { onDelete: () => Promise<void> }) {
-  const notifyError = useNotifyError();
+  const notifyError = Ardor.useNotifyError();
+  const logger = Ardor.useApplicationLogger();
+
   const handleClick = () => {
-    props.onDelete().catch((error: TAppError) => notifyError(error));
+    props.onDelete().catch((error: unknown) => {
+      if (isApplicationError(error)) {
+        notifyError(error);
+        return;
+      }
+
+      logger.error('[DeleteAction] delete failed | error: %o', error);
+    });
   };
+
   return <button onClick={handleClick}>Delete</button>;
 }
 ```
@@ -392,10 +408,10 @@ export function DeleteAction(props: { onDelete: () => Promise<void> }) {
 ### useRequestHeaderLocale
 
 ```tsx
-import { useRequestHeaderLocale } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function LocaleHeaderSync() {
-  useRequestHeaderLocale({ key: 'accept-language' });
+  Ardor.useRequestHeaderLocale({ key: 'accept-language' });
   return null;
 }
 ```
@@ -407,10 +423,10 @@ export function LocaleHeaderSync() {
 ### useFeatures
 
 ```tsx
-import { useFeatures } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function FeatureNavigation() {
-  const features = useFeatures();
+  const features = Ardor.useFeatures();
   return <nav>{features.map((feature) => <span key={feature.name}>{feature.name}</span>)}</nav>;
 }
 ```
@@ -422,10 +438,10 @@ export function FeatureNavigation() {
 ### useRoles
 
 ```tsx
-import { useRoles } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function AdminBadge() {
-  const roles = useRoles();
+  const roles = Ardor.useRoles();
   return roles.has('admin') ? <span>Administrator</span> : null;
 }
 ```
@@ -438,17 +454,18 @@ export function AdminBadge() {
 ### useMenuEntries
 
 ```tsx
-import { useMenuEntries, useUntypedTranslate } from '@venizia/ardor';
+import { Link } from 'react-router-dom';
+import { Ardor } from '@venizia/ardor';
 
 export function ShellNavigation() {
-  const entries = useMenuEntries();
-  const translate = useUntypedTranslate();
+  const entries = Ardor.useMenuEntries();
+  const translate = Ardor.useUntypedTranslate();
   return (
     <nav>
       {entries.map((entry) => (
-        <a key={`${entry.feature}:${entry.to}`} href={entry.to}>
+        <Link key={`${entry.feature}:${entry.to}`} to={entry.to}>
           {translate(entry.label)}
-        </a>
+        </Link>
       ))}
     </nav>
   );
@@ -462,10 +479,10 @@ export function ShellNavigation() {
 ### useDocumentTitle
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function OrderPage(props: { orderNumber?: string }) {
-  useDocumentTitle({
+  Ardor.useDocumentTitle({
     title: [props.orderNumber && `Order #${props.orderNumber}`, 'Orders'],
     appTitle: 'Back Office',
   });
@@ -476,10 +493,10 @@ export function OrderPage(props: { orderNumber?: string }) {
 A layout with a base title; a screen such as `OrderPage` above overrides it:
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function AppLayout(props: { appName: string; children: React.ReactNode }) {
-  useDocumentTitle({ title: undefined, appTitle: props.appName, fallback: true });
+  Ardor.useDocumentTitle({ title: undefined, appTitle: props.appName, fallback: true });
   return props.children;
 }
 ```
@@ -491,10 +508,10 @@ export function AppLayout(props: { appName: string; children: React.ReactNode })
 ### useHtmlLang
 
 ```tsx
-import { useHtmlLang } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function HtmlLangSync() {
-  useHtmlLang();
+  Ardor.useHtmlLang();
   return null;
 }
 ```
@@ -509,11 +526,11 @@ export function HtmlLangSync() {
 
 ```tsx
 import React from 'react';
-import { useDebounce } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ProductSearch() {
   const [term, setTerm] = React.useState('');
-  const { debouncedValue } = useDebounce({ value: term, delay: 400 });
+  const { debouncedValue } = Ardor.useDebounce({ value: term, delay: 400 });
   return <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={debouncedValue} />;
 }
 ```
@@ -526,11 +543,11 @@ export function ProductSearch() {
 
 ```tsx
 import React from 'react';
-import { useAutosave } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
   const [text, setText] = React.useState('');
-  useAutosave({ data: text, onSave: props.onSave, interval: 2000, enableSaveOnUnmount: true });
+  Ardor.useAutosave({ data: text, onSave: props.onSave, interval: 2000, enableSaveOnUnmount: true });
   return <textarea value={text} onChange={(e) => setText(e.target.value)} />;
 }
 ```
@@ -542,10 +559,10 @@ export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
 ### useConfirm
 
 ```tsx
-import { useConfirm } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
-  const { message, confirm, handleConfirm, handleAbort } = useConfirm();
+  const { message, confirm, handleConfirm, handleAbort } = Ardor.useConfirm();
   const handleClick = async () => {
     if (await confirm({ message: 'Delete this item?' })) {
       await props.onDelete();
@@ -569,10 +586,10 @@ export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
 
 ```tsx
 import React from 'react';
-import { useCopyToClipboard } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function CopyShareLink(props: { url: string }) {
-  const { copy, isCopied } = useCopyToClipboard({ resetMs: 2000 });
+  const { copy, isCopied } = Ardor.useCopyToClipboard({ resetMs: 2000 });
   return <button onClick={() => copy({ value: props.url })}>{isCopied ? 'Copied' : 'Share'}</button>;
 }
 ```
@@ -585,11 +602,11 @@ export function CopyShareLink(props: { url: string }) {
 
 ```tsx
 import React from 'react';
-import { useBeforeUnload } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function EditFormGuard() {
   const [dirty, setDirty] = React.useState(false);
-  useBeforeUnload({ enabled: dirty, message: 'You have unsaved changes.' });
+  Ardor.useBeforeUnload({ enabled: dirty, message: 'You have unsaved changes.' });
   return <input onChange={() => setDirty(true)} />;
 }
 ```
@@ -602,11 +619,11 @@ export function EditFormGuard() {
 
 ```tsx
 import React from 'react';
-import { useElementSize } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Chart() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { width, height } = useElementSize({ ref });
+  const { width, height } = Ardor.useElementSize({ ref });
 
   return <div ref={ref}>Width: {width}, Height: {height}</div>;
 }
@@ -615,10 +632,10 @@ export function Chart() {
 Leave `ref` out when the element mounts later or is replaced, and give the returned `ref` to it:
 
 ```tsx
-import { useElementSize } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Panel({ open }: { open: boolean }) {
-  const { ref, width, measured } = useElementSize({ round: true });
+  const { ref, width, measured } = Ardor.useElementSize({ round: true });
 
   return open ? <div ref={ref}>{measured ? `${width}px` : '...'}</div> : null;
 }
@@ -632,13 +649,13 @@ export function Panel({ open }: { open: boolean }) {
 
 ```tsx
 import React from 'react';
-import { useResizeEffect } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Toolbar() {
   const ref = React.useRef<HTMLDivElement>(null);
   const [isOverflowing, setOverflowing] = React.useState(false);
 
-  useResizeEffect({
+  Ardor.useResizeEffect({
     targets: [ref],
     onResize: () => {
       const element = ref.current;
@@ -654,20 +671,21 @@ Use it for a check that runs when something resizes and keeps no size in state, 
 
 ```tsx
 import React from 'react';
-import { useResizeEffect } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Tabs() {
   const ref = React.useRef<HTMLUListElement>(null);
+  const [resized, setResized] = React.useState<Array<string>>([]);
 
-  useResizeEffect({
+  Ardor.useResizeEffect({
     targets: [ref],
     children: true,
     onResize: (entries) => {
-      console.log(entries.map((entry) => entry.target.tagName));
+      setResized(entries.map((entry) => entry.target.tagName));
     },
   });
 
-  return <ul ref={ref} />;
+  return <ul ref={ref} title={resized.join(', ')} />;
 }
 ```
 
@@ -675,14 +693,16 @@ An element that mounts conditionally goes in as state, with the setter as its `r
 
 ```tsx
 import React from 'react';
-import { useResizeEffect } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Popover({ open }: { open: boolean }) {
   const [element, setElement] = React.useState<HTMLDivElement | null>(null);
 
-  useResizeEffect({ targets: [element], onResize: () => console.log('resized') });
+  const [resizeCount, setResizeCount] = React.useState(0);
 
-  return open ? <div ref={setElement} /> : null;
+  Ardor.useResizeEffect({ targets: [element], onResize: () => setResizeCount((count) => count + 1) });
+
+  return open ? <div ref={setElement} title={`resized ${resizeCount} times`} /> : null;
 }
 ```
 
@@ -694,11 +714,11 @@ export function Popover({ open }: { open: boolean }) {
 
 ```tsx
 import React from 'react';
-import { useIntersection } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function LoadMore({ onLoad }: { onLoad: () => void }) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const entry = useIntersection({ target: ref, rootMargin: '200px' });
+  const entry = Ardor.useIntersection({ target: ref, rootMargin: '200px' });
   const latest = React.useRef(onLoad);
 
   React.useEffect(() => {
@@ -724,10 +744,10 @@ Use it to know whether an element is in view: lazy content, a "load more" sentin
 ### useStoredState
 
 ```tsx
-import { useStoredState } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ThemeToggle() {
-  const { value, setValue } = useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
+  const { value, setValue } = Ardor.useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
 
   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
 }
@@ -736,10 +756,10 @@ export function ThemeToggle() {
 A value that changes many times a second, such as the width of a panel while the user drags its edge, writes the storage once with `writeDelayMs`:
 
 ```tsx
-import { useStoredState } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function SidebarWidth() {
-  const { value, setValue } = useStoredState({
+  const { value, setValue } = Ardor.useStoredState({
     key: '@app/prefs/sidebar-width',
     defaultValue: 240,
     writeDelayMs: 200,
@@ -764,10 +784,10 @@ export function SidebarWidth() {
 ### useWindowDimensions
 
 ```tsx
-import { useWindowDimensions } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ViewportInfo() {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = Ardor.useWindowDimensions();
   return <span>Viewport: {width}x{height}</span>;
 }
 ```
@@ -779,10 +799,10 @@ export function ViewportInfo() {
 ### useMediaQuery
 
 ```tsx
-import { useMediaQuery } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Layout() {
-  const isWide = useMediaQuery({ query: '(min-width: 768px)' });
+  const isWide = Ardor.useMediaQuery({ query: '(min-width: 768px)' });
   return <span>{isWide ? 'Wide' : 'Narrow'}</span>;
 }
 ```
@@ -794,10 +814,10 @@ export function Layout() {
 ### useDocumentVisibility
 
 ```tsx
-import { useDocumentVisibility } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function PauseWhenHidden() {
-  const visibility = useDocumentVisibility();
+  const visibility = Ardor.useDocumentVisibility();
   return <span>{visibility === 'visible' ? 'Live' : 'Paused'}</span>;
 }
 ```
@@ -809,10 +829,10 @@ export function PauseWhenHidden() {
 ### useOnlineStatus
 
 ```tsx
-import { useOnlineStatus } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function OfflineBanner() {
-  const isOnline = useOnlineStatus();
+  const isOnline = Ardor.useOnlineStatus();
   return isOnline ? null : <p>You are offline.</p>;
 }
 ```

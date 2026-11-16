@@ -15,8 +15,8 @@ export interface UserItem {
   title: string;
 }
 
-export const loadUser = (id: IdType): ValueOrPromise<UserItem> => {
-  return { id, title: 'Sample' };
+export const loadUser = (opts: { id: IdType }): ValueOrPromise<UserItem> => {
+  return { id: opts.id, title: 'Sample' };
 };
 
 export const exportParams: ISendParams = {
@@ -33,7 +33,7 @@ Source files: `packages/kernel/src/common/types.ts`, `packages/kernel/src/common
 | Type | Kind | Definition and usage |
 |---|---|---|
 | `IdType` | `type` | Entity identifier (`string \| number`), used by all CRUD and provider method signatures. |
-| `ValueOrPromise<T>` | `type` | Sync or async value (`T \| Promise<T>`), used in application lifecycle methods (`preConfigure`, `start`). |
+| `ValueOrPromise<T>` | `type` | Sync or async value (`T \| Promise<T>`), used in `preConfigure`, `postConfigure`, `bindContext` and `getAppInfo`. |
 | `ValueOf<T>` | `type` | Property value union (`T[keyof T]`), used to extract property value types from objects. |
 | `ValueOptional<T, K>` | `type` | Makes keys `K` optional in `T`, used to model partial creation payloads. |
 | `ValueOptionalExcept<T, K>` | `type` | Makes all keys optional in `T` except `K`, used to model patch payloads. |
@@ -68,7 +68,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `TRequestType` | `type` | Operation types union (`RequestTypes`), used by data provider operations. | - |
 | `TRequestBodyType` | `type` | Payload format union, used in requests. | `'none' \| 'form-data' \| 'x-www-form-urlencoded' \| 'json' \| 'binary'` |
 | `TEnvironment` | `type` | Environment names union, used for runtime environment checks. | `'development' \| 'production'` |
-| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. | `method`, `requestType`, `bodyType`, `body`, `query`, `headers`, `requestCountData`, `extra` |
+| `ISendParams` | `interface` | Parameters object for `dataProvider.send`, used for arbitrary endpoint calls. | `method`, `requestType`, `bodyType`, `body`, `query`, `headers`, `requestCountData`, `extra`, `signal` |
 | `INetworkResponse<T>` | `interface` | Envelope returned by `dataProvider.send` and the network service. | `data`, and `total`, `count`, `filename`, `contentDisposition`, `extra` where the response has them |
 | `IGetRequestPropsParams` | `interface` | Inputs to `getRequestProps`, used by `DefaultNetworkRequestService`. | - |
 | `IGetRequestPropsResult` | `interface` | Output headers and body from `getRequestProps`, used by network request callers. | - |
@@ -78,14 +78,15 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `IAuthRecoveryOptions` | `interface` | Configuration for session refresh endpoint, used in network auth recovery. | `refreshTokenPath`, e.g. `'/auth/refresh'` |
 | `IRestDataProviderOptions` | `interface` | Configuration options for REST data provider (URL, headers, channel, auth recovery, no-auth). | - |
 | `ISignInSession` | `interface` | Session data extracted on login, used in sign-in lifecycle hooks. | `userId`, `token`, `roles` |
-| `ICoreOptionTypes` | `interface` | Maps each `*_OPTIONS` key of `CoreBindings` to its options type; `provideOption` checks against it. | `AUTH_PROVIDER_OPTIONS`, `REST_DATA_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS` |
-| `IAuthProviderOptions` | `interface` | Auth provider endpoint paths, bound under `CoreBindings.AUTH_PROVIDER_OPTIONS`. | `paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin` |
+| `ICoreOptionTypes` | `interface` | Maps each `*_OPTIONS` key of `CoreBindings` to its options type; `provideOption` checks against it. | `AUTH_PROVIDER_OPTIONS`, `REST_DATA_PROVIDER_OPTIONS`, `PERMISSION_PROVIDER_OPTIONS`, `I18N_PROVIDER_OPTIONS` |
+| `TAuthProviderOptions` | `type` | The value of `CoreBindings.AUTH_PROVIDER_OPTIONS`: `{ use: false }`, or `{ use: true }` with the paths below. | `use`, `paths` |
+| `IAuthProviderOptions` | `interface` | Auth provider endpoint paths, the `use: true` half of `TAuthProviderOptions`. | `paths.signIn`, e.g. `'/auth/sign-in'`; `paths.checkAuth`; `paths.afterLogin` |
 | `IAuthTokenRecord` | `interface` | Auth token payload, returned by `resolveAuthToken()`. | `value`, `type`, `provider` |
 | `IAuthUser` | `interface` | The stored identity `getUser()` returns; every field is absent when nothing is stored; it has no index signature. | `userId`, `username`, `referenceId`, `provider` |
 | `IDataSourceRequestContext` | `interface` | Request context supplied to `HttpDataSource` auth hooks. | `paths` |
 | `IDataSourceAuth` | `interface` | Bridge settings returned by `getDataSourceAuth()`. | `authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey` |
 | `IApplicationInfo` | `interface` | Application metadata, bound under `CoreBindings.APPLICATION_INFO`. | `name`, `version`, `description`, `id`, `author`; no other key |
-| `IFeatureBase` | `interface` | Base feature configuration, bound under `CoreBindings.FEATURES`. | `name`, `configurations`, `permissions` |
+| `IFeatureBase` | `interface` | Base feature configuration, bound under `CoreBindings.FEATURES`. | `name`, `configurations`, `artifacts`, `permissions` |
 | `IArtifactIndex` | `interface` | Artifact registry index emitted by code generation and verified at application `start()`. | - |
 | `IPermissionProvider` | `interface` | Authorization checker contract, bound under `CoreBindings.PERMISSION_PROVIDER`. | `canAccess` |
 | `IArdorApplication` | `interface` | Application lifecycle contract implemented by `AbstractArdorApplication`. | - |
@@ -96,7 +97,7 @@ export type UserLeaf = TFullPaths<UserRecord>;
 
 | Class | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `CoreBindings` | `class` | The eleven container keys for instances, options, providers, and features. | - |
+| `CoreBindings` | `class` | The twelve container keys for instances, options, providers, and features. | - |
 | `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the three prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE`, `PREFIX_PREFS` |
 | `RequestMethods` | `class` | HTTP method constants, with `SCHEME_SET` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
 | `RequestTypes` | `class` | Data operation constants with `SCHEME_SET` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
@@ -104,9 +105,9 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `Environments` | `class` | Environment constants with `SCHEME_SET` and `isValid`. | `DEVELOPMENT`, `PRODUCTION` |
 | `RequestCountData` | `class` | Count mode constants with `SCHEME_SET` and `isValid`. | `DATA_ONLY: '0'`, `DATA_WITH_COUNT: '1'` |
 | `RequestChannel` | `class` | Client channel constant with `SCHEME_SET` and `isValid`. | `WEB: '100_WEB'` |
-| `Authentication` | `class` | Auth types and strategies with `SCHEME_SET` and `isValid`. | `TYPE_BEARER`, `STRATEGY_JWT` |
+| `Authentication` | `class` | Auth types and strategies with `SCHEME_SET` and `isValid`. | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` |
 | `HeaderConstants` | `class` | HTTP header string constants read and written by network services. | - |
-| `App` | `class` | Runtime defaults. The i18n provider defaults to `en`. | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_DEBOUNCE_TIME` |
+| `App` | `class` | Runtime defaults: the timezone, its offset and the debounce time. | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_DEBOUNCE_TIME` |
 
 ### Repositories (@venizia/ardor/repository)
 
@@ -136,8 +137,8 @@ Source file: `packages/react/src/hooks/use-injectable.ts`.
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `IUseInjectableKeysOverrides` | `interface` | Augment it to add custom string keys; the caller supplies the generic. | - |
-| `IUseInjectableKeyTypes` | `interface` | Maps a key to its instance type. Admin adds the `CoreBindings` providers; you add yours. | - |
+| `IUseInjectableKeysOverrides` | `interface` | Augment it with a key of your own for a binding with no class; a class resolves by `{ target }`. | - |
+| `IUseInjectableKeyTypes` | `interface` | Maps a key with no class to the type it holds. Admin adds the `CoreBindings` providers; you add yours. | - |
 | `TUseInjectableKeysDefault` | `type` | Union of default string keys extracted from `CoreBindings`. | - |
 | `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable`. | `TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides \| keyof IUseInjectableKeyTypes` |
 | `TUseInjectableOptions` | `type` | Options discriminated union (`key` or `target`) accepted by `useInjectable`. | - |
@@ -156,7 +157,7 @@ Source files: `packages/admin/src/common/types.ts` and `packages/admin/src/featu
 | `IAuthProvider` | `interface` | ARDOR auth provider extending react-admin with `getRoles` and `refreshToken`. | - |
 | `II18nProviderOptions` | `interface` | i18n configuration options, bound under `CoreBindings.I18N_PROVIDER_OPTIONS`. | `i18nSources`, `languages` |
 | `TI18nSource` | `type` | The messages of one locale, loaded the first time the locale is used. | an object, or a loader `() => Promise<object>` |
-| `IApplication` | `interface` | Props accepted by `<ArdorApplication>`, plus the `CoreAdmin` props. | `container`, `logger`, `reduxStore`, `suspense`, `resources`, `routes`, `features` |
+| `IApplication` | `interface` | Props accepted by `<ArdorApplication>`, plus the `CoreAdmin` props. | `container`, `logger`, `reduxStore`, `suspense`, `accessDenied`, `resources`, `routes`, `features` |
 | `TFeature` | `type` | Full admin feature specification extending `IFeatureBase` with resources, custom routes, and messages. | - |
 | `TFeatureMessages` | `type` | Feature message dictionary or lazy message bundle loaders keyed by locale. | - |
 

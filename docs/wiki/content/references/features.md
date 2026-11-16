@@ -27,9 +27,14 @@ export class OrderService extends BaseService {
   }
 }
 
+// A value with no class has a key: keep it in a constants class.
+export class OrdersBindings {
+  static readonly PAGE_SIZE = 'orders.pageSize';
+}
+
 @configuration()
 export class OrdersConfiguration {
-  @provide({ key: 'orders.pageSize' })
+  @provide({ key: OrdersBindings.PAGE_SIZE })
   pageSize(): number {
     return 25;
   }
@@ -149,7 +154,7 @@ Two more fields sit next to `access` on a route:
 | None | Inside the layout. Signed in only when the application sets `requireAuth`. |
 | `auth: { use: true }` | Renders only for a signed-in user, with no permission check. A signed-out user goes to sign-in. |
 | `auth: { use: false }` | Marks the route public. With `access` as well, `Features.mount()` throws. |
-| `layout: { use: false }` | Renders outside the layout, in a second `<CustomRoutes noLayout>`, whatever the sign-in status. |
+| `layout: { use: false }` | Renders outside the layout, in a second `<CustomRoutes noLayout>`. Under `requireAuth` it still waits for sign-in, unless the route says `auth: { use: false }` too. |
 
 ```tsx
 import React from 'react';
@@ -161,14 +166,19 @@ const ProfilePage: React.FC = () => <h1>My profile</h1>;
 export const AccountFeature: TFeature = Features.define({
   name: 'account',
   routes: [
-    { path: '/accept-invite', element: <AcceptInvitePage />, layout: { use: false } },
+    {
+      path: '/accept-invite',
+      element: <AcceptInvitePage />,
+      layout: { use: false },
+      auth: { use: false },
+    },
     { path: '/profile', element: <ProfilePage />, auth: { use: true } },
   ],
 });
 ```
 
-- **A public page under `requireAuth`** needs `layout: { use: false }`. react-admin renders a route outside the layout before it checks sign-in; a route inside the layout waits for that check, so `auth: { use: false }` alone does not open it.
-- **Outside the layout is still guarded** when the route has `access` or `auth: { use: true }`: a signed-out user goes to the sign-in page, as react-admin's `Authenticated` does.
+- **A public page under `requireAuth`** needs both `layout: { use: false }` and `auth: { use: false }`. react-admin renders a route outside the layout before it checks sign-in, so ARDOR wraps such a route in `Authenticated` itself under `requireAuth`; `auth: { use: false }` lifts that. A route inside the layout waits for the sign-in check, so `auth: { use: false }` alone does not open it.
+- **Outside the layout is still guarded** when the route has `access` or `auth: { use: true }`, and under `requireAuth` when it does not say `auth: { use: false }`: a signed-out user goes to the sign-in page, as react-admin's `Authenticated` does.
 - **The fields work the same** in the `routes` prop of `ArdorApplication` and in the `routes` of a feature.
 
 ## Mount order and conflict checks
@@ -208,7 +218,7 @@ import {
 } from '@venizia/ardor';
 
 interface IIndustryExtension {
-  industries: Array<string>;
+  industries?: Array<string>;
 }
 
 export const IndustryShell: React.FC<{
@@ -218,7 +228,7 @@ export const IndustryShell: React.FC<{
 }> = ({ application, reduxStore, industry }) => {
   const features = React.useMemo(() => {
     return Features.read<TFeature<IIndustryExtension>>({ container: application }).filter(
-      (feature) => feature.industries.includes(industry),
+      (feature) => feature.industries?.includes(industry) ?? false,
     );
   }, [application, industry]);
 
@@ -252,20 +262,23 @@ Feature messages are merged per locale by `FeatureMessages` in `packages/admin/s
 
 `useMenuEntries()` returns the `menu` entries of the mounted features, in feature order, each with the name of its `feature`. An entry without `access` is always listed. An entry with `access` is listed once the `canAccess` of the [permission provider](./permission) allows it, so a menu never flashes a link the user may not open: while the check runs, or when it fails, the entry is left out. Without a permission provider, or without sign-in, every entry is listed.
 
+The hooks here are read through `Ardor`, the same functions as the bare `useX` exports (see [Hooks](./hooks#one-name-for-every-hook-ardor)).
+
 ```tsx
 import React from 'react';
-import { useMenuEntries, useUntypedTranslate } from '@venizia/ardor';
+import { Link } from 'react-router-dom';
+import { Ardor } from '@venizia/ardor';
 
 export const ShellMenu: React.FC = () => {
-  const entries = useMenuEntries();
-  const translate = useUntypedTranslate();
+  const entries = Ardor.useMenuEntries();
+  const translate = Ardor.useUntypedTranslate();
 
   return (
     <nav>
       <ul>
         {entries.map((entry) => (
           <li key={`${entry.feature}:${entry.to}`}>
-            <a href={entry.to}>{translate(entry.label)}</a>
+            <Link to={entry.to}>{translate(entry.label)}</Link>
           </li>
         ))}
       </ul>
@@ -274,6 +287,7 @@ export const ShellMenu: React.FC = () => {
 };
 ```
 
+- **Link with `Link`, not `<a href>`**: a plain anchor reloads the page. `label` is a translation key, so read it with `useUntypedTranslate`.
 - **Call it inside `ArdorApplication`**, such as in the `layout` or `menu` you pass: it reads react-admin's auth provider and query cache.
 - **The answers share react-admin's cache** under `['auth', 'canAccess', { resource, action }]`, so a sign-in of another user or `useRefreshToken` renews them.
 - **Hiding a link is not protection.** Give the route the same `access`, and let the backend check every request.
@@ -284,10 +298,10 @@ The `useFeatures()` hook returns the features `ArdorApplication` mounts: the `fe
 
 ```tsx
 import React from 'react';
-import { useFeatures } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export const RoleEditorPermissions: React.FC = () => {
-  const features = useFeatures();
+  const features = Ardor.useFeatures();
 
   return (
     <ul>

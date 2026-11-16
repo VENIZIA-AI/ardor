@@ -50,7 +50,7 @@ object of the wrong kind. Only a `target` is checked: a `key` carries its namesp
 is the caller's to be wrong about.
 
 A `{ target }` with no recorded key - an undecorated class, or one bound only through `service()`,
-`injectable()` or `bindingList()` - skips the namespace check and throws from `useInjectable`.
+or `bindingList()` - skips the namespace check and throws from `useInjectable`.
 Return-type inference from the class and the stereotype requirement are in
 [Hooks and context](/architecture/hooks-and-context.md).
 
