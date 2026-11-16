@@ -33,7 +33,8 @@
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.44"
+    "vue": "^3.5.44",
+    "yaml": "2.9.1"
   },
   "engines": {
     "bun": ">=1.4"
