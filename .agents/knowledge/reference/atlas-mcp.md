@@ -29,8 +29,8 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 `vulcan sync` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
-  `package.json`; `scripts/checks/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
-  fetching the unrelated unscoped `vulcan` package before `bun install` ran.
+  `package.json`; `scripts/checks/atlas-smoke.ts` runs `bun node_modules/.bin/vulcan x atlas mcp --root .`, the bin of
+  this checkout, so no runner can fetch the unrelated unscoped `vulcan` package.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
   nothing else of the project: it never imports `.configs/vulcan.config.mts`. `make vulcan-sync`
