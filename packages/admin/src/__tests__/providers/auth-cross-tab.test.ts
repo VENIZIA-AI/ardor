@@ -7,6 +7,7 @@ import {
   type IAuthTokenRecord,
   type IAuthUser,
 } from '@venizia/ardor-kernel';
+import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { Container } from '@venizia/ignis-inversion';
 
 class RecordingAuthProvider extends DefaultAuthProvider {
@@ -45,6 +46,19 @@ const buildProvider = (opts: { service: DefaultAuthService }): RecordingAuthProv
 };
 
 const SESSION_KEYS = ['@app/auth/token', '@app/auth/identity', '@app/auth/permission'];
+
+/** A storage that tells this tab of each write of another tab on its own, in the order of the writes. */
+class EventPerWriteStorage extends FakeStorage {
+  override setItem(key: string, value: string): void {
+    super.setItem(key, value);
+    fromOtherTab({ keys: [key] });
+  }
+
+  override removeItem(key: string): void {
+    super.removeItem(key);
+    fromOtherTab({ keys: [key] });
+  }
+}
 
 describe('DefaultAuthProvider and the session of another tab', () => {
   let service: DefaultAuthService;
@@ -87,6 +101,40 @@ describe('DefaultAuthProvider and the session of another tab', () => {
     expect(provider.started.at(-1)?.token.value).toBe('jwt-8');
     expect(sessionStorage.getItem('@app/store/tab')).toBeNull();
     expect(localStorage.getItem('@app/store/bob')).toBe('bob data');
+  });
+
+  test('a user switch written key by key starts the session once, as the new user with the new token', async () => {
+    const restoreStorage = new EventPerWriteStorage().install();
+    otherTabSignsIn({ userId: 7, token: 'jwt-7' });
+    await settle();
+
+    new DefaultAuthService().saveAuth({
+      userId: 8,
+      username: 'user-8',
+      token: { value: 'jwt-8', type: 'Bearer' },
+      roles: ['admin'],
+    });
+    await settle();
+    restoreStorage();
+
+    expect(provider.started.map((call) => `${call.user.userId}|${call.token.value}`)).toEqual([
+      '7|jwt-7',
+      '8|jwt-8',
+    ]);
+  });
+
+  test('a sign-out written key by key ends the session once and starts none', async () => {
+    const restoreStorage = new EventPerWriteStorage().install();
+    otherTabSignsIn({ userId: 7, token: 'jwt-7' });
+    await settle();
+    const started = provider.started.length;
+
+    new DefaultAuthService().cleanUp();
+    await settle();
+    restoreStorage();
+
+    expect(provider.started).toHaveLength(started);
+    expect(provider.cleared).toEqual(['external']);
   });
 
   test('a sign-in in another tab starts the session here: the hook runs with the new user', async () => {
