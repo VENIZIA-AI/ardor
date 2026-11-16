@@ -48,6 +48,9 @@ const VERIFIED_NAMESPACES = [
 
 const SCOPE = 'assertArdorApplicationBoots';
 
+/** The language `DefaultI18nProvider` falls back to when the options name none. */
+const DEFAULT_FALLBACK_LOCALE = 'en';
+
 const bootedApplications = new WeakSet<object>();
 
 const fail = (message: string): never => {
@@ -127,12 +130,10 @@ export const assertArdorApplicationBoots = async <Application extends AbstractAr
       key: CoreBindings.I18N_PROVIDER_OPTIONS,
       isOptional: true,
     });
-    const fallbackLocale = i18nOptions?.fallback?.locale;
+    const fallbackLocale = i18nOptions?.fallback?.locale ?? DEFAULT_FALLBACK_LOCALE;
     const checked = offered.length ? offered : [i18nProvider.getLocale()];
     // The fallback locale fills the gaps of every language, so its messages are read as the others are.
-    const locales = locale
-      ? [locale]
-      : [...new Set([...checked, ...(fallbackLocale ? [fallbackLocale] : [])])];
+    const locales = locale ? [locale] : [...new Set([...checked, fallbackLocale])];
     await Features.verifyMessages({ features, locales });
 
     // A skip that matched is a binding that exists: the core rejects one that matched nothing.
