@@ -34,6 +34,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'tok-secret-value',
       type: 'Bearer',
       provider: 'oidc',
+      userId: 'user-001',
     });
 
     expect(JSON.parse(storedIdentity ?? '{}')).toEqual({
@@ -109,6 +110,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'github-access-token',
       type: 'Bearer',
       provider: 'github',
+      userId: 42,
     });
   });
 
@@ -194,6 +196,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'token-only',
       type: 'Bearer',
       provider: '',
+      userId: 'usr-defaults',
     });
   });
 
