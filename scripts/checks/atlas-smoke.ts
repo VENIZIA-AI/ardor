@@ -12,7 +12,7 @@ const REPO = resolve(import.meta.dir, '..', '..');
 const cli = process.env.ARDOR_ATLAS_CLI;
 const command = cli
   ? ['bun', cli, 'mcp', '--root', REPO]
-  : ['bun', 'x', '--no-install', 'vulcan', 'x', 'atlas', 'mcp', '--root', REPO];
+  : ['bun', resolve(REPO, 'node_modules', '.bin', 'vulcan'), 'x', 'atlas', 'mcp', '--root', REPO];
 
 const QUERIES = [
   {
