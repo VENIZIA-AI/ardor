@@ -42,7 +42,11 @@ describe('the routes of the features', () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/1/show' });
 
-    const heading = await screen.findByRole('heading', { name: 'Access denied' }, { timeout: 5000 });
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Access denied' },
+      { timeout: 5000 },
+    );
     expect(heading).toBeDefined();
   });
 
