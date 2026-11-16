@@ -51,7 +51,7 @@ export const HOME: THomeContent = {
   tabs: [
     {
       file: 'src/configurations/admin.configuration.ts',
-      kind: 'code',
+      type: 'code',
       body: `import {
   configuration,
   CoreBindings,
@@ -83,7 +83,7 @@ export class AdminConfiguration {
     },
     {
       file: 'src/main.tsx',
-      kind: 'code',
+      type: 'code',
       body: `import 'reflect-metadata';
 
 import { configureStore } from '@reduxjs/toolkit';
@@ -112,7 +112,7 @@ createRoot(document.getElementById('root')!).render(
     },
     {
       file: 'terminal',
-      kind: 'term',
+      type: 'term',
       body: [
         [
           'cmd',
