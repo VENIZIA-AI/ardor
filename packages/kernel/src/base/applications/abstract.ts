@@ -218,7 +218,8 @@ export abstract class AbstractArdorApplication extends Container implements IArd
   /**
    * Whether two classes are one declaration evaluated twice, as a hot reload does: the same name and the same
    * source text. Two different classes that share a name (a minifier does it) are not, and the later one would
-   * silently replace the earlier.
+   * silently replace the earlier; two different classes with the same name and identical source text are taken as
+   * one, the price of allowing a hot reload.
    */
   private static isSameDeclaration(opts: { left: Function; right: Function }): boolean {
     const { left, right } = opts;
