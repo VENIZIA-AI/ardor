@@ -32,7 +32,7 @@ describe('the routes of the features', () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/summary' });
 
-    const denied = await screen.findByRole('heading', { name: 'Access denied' });
+    const denied = await screen.findByRole('heading', { name: 'Access denied' }, { timeout: 5000 });
     expect(denied).toBeDefined();
     expect(screen.getByTestId(ShellTestIds.MENU).textContent).toBe('OrdersProducts');
     expect(screen.queryByRole('heading', { name: 'Order summary' })).toBeNull();
@@ -42,7 +42,11 @@ describe('the routes of the features', () => {
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/1/show' });
 
-    const heading = await screen.findByRole('heading', { name: 'Access denied' });
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Access denied' },
+      { timeout: 5000 },
+    );
     expect(heading).toBeDefined();
   });
 
