@@ -116,7 +116,7 @@ export class Features {
 
   /**
    * Loads the lazy messages of the locale: `changeLocale()` to the same locale loads them before
-   * react-admin renders. A failed load, such as a key two features define, rejects.
+   * react-admin renders. With `DefaultI18nProvider` a failed load is logged and never rejects; a custom provider's rejection is passed on.
    */
   static async loadMessages(opts: {
     features: Array<TFeature>;
@@ -135,5 +135,19 @@ export class Features {
     }
 
     await i18nProvider.changeLocale(locale);
+  }
+
+  /**
+   * Loads and merges the features' messages of every locale in `locales`, as the i18n provider
+   * would, without changing the locale of any provider. Rejects with the first failure: a feature
+   * loader that rejects, or a key two features define.
+   */
+  static async verifyMessages(opts: {
+    features: Array<TFeature>;
+    locales: Array<string>;
+  }): Promise<void> {
+    const messages = new FeatureMessages({ features: opts.features });
+
+    await Promise.all(opts.locales.map((locale) => messages.read({ locale })));
   }
 }

@@ -885,6 +885,19 @@ describe('data stored by the signed-in user', () => {
     );
   });
 
+  test('a preference under @app/prefs/ outlives the sign-out', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+    localStorage.setItem(LocalStorageKeys.scoped().locale, 'vi');
+
+    await provider.logout({});
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.scoped().locale)).toBe('vi');
+    localStorage.removeItem(LocalStorageKeys.scoped().locale);
+  });
+
   test('clearStoredData can be overridden to keep preferences', () => {
     class KeepingProvider extends DefaultAuthProvider {
       protected override clearStoredData(): void {}

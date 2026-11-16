@@ -22,7 +22,7 @@ Follow [Testing conventions](/conventions/testing-conventions.md) for naming and
 
 ## Proving an application boots
 
-`assertArdorApplicationBoots` (`@venizia/ardor/testing`) is the one test an app needs for "does it start": an unregistered injection, a missing provider or a lazy locale that cannot load fails it, with no browser and no network. Its tests use a hand-written `BaseArdorApplication` fixture and bind services in `bindContext()`; they cover the incident shape (a service injecting a key nobody bound), a skip that matches nothing, an empty application, a second start of one instance, and `fetch` being replaced and restored on both paths.
+`assertArdorApplicationBoots` (`@venizia/ardor/testing`) is the one test an app needs for "does it start": an unregistered injection, a missing provider or a feature loader that cannot load, or a key two features define, in any offered locale fails it, with no browser and no network. Its tests use a hand-written `BaseArdorApplication` fixture and bind services in `bindContext()`; they cover the incident shape (a service injecting a key nobody bound), a skip that matches nothing, an empty application, a second start of one instance, and `fetch` being replaced and restored on both paths.
 
 ## Positive control procedure
 

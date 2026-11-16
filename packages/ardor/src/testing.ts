@@ -1,6 +1,6 @@
 import * as inversion from '@venizia/ignis-inversion';
 
-import { ApplicationProviders, Features } from '@venizia/ardor-admin';
+import { ApplicationProviders, Features, type II18nProviderOptions } from '@venizia/ardor-admin';
 import { type AbstractArdorApplication, CoreBindings } from '@venizia/ardor-kernel';
 
 // The browser fakes live in the kernel, so the React and admin tests can use them without a cycle.
@@ -23,7 +23,10 @@ export interface IAssertArdorApplicationBootsOptions {
    */
   skipBindings?: Array<TBootSkip>;
 
-  /** The locale whose messages must load. Default: the i18n provider's initial one. */
+  /**
+   * The one locale whose messages must load. Default: every locale the i18n provider offers, or its
+   * current one when it lists none.
+   */
   locale?: string;
 
   /**
@@ -45,6 +48,9 @@ const VERIFIED_NAMESPACES = [
 
 const SCOPE = 'assertArdorApplicationBoots';
 
+/** The language `DefaultI18nProvider` falls back to when the options name none. */
+const DEFAULT_FALLBACK_LOCALE = 'en';
+
 const bootedApplications = new WeakSet<object>();
 
 const fail = (message: string): never => {
@@ -55,8 +61,9 @@ const fail = (message: string): never => {
  * Proves an ARDOR application boots, without a browser and without a network: it runs `start()`,
  * resolves every service, repository, datasource, component and configuration the application
  * bound, then resolves what opening the app resolves (the data, auth and i18n providers, the
- * features, the messages of the first locale). It takes any application: a `BaseArdorApplication`
- * or another subclass of `AbstractArdorApplication`. It stops at the first failure, with the error the
+ * features) and loads the features' messages of every locale the i18n provider offers, without
+ * switching its locale. It takes any application: a `BaseArdorApplication` or another subclass of
+ * `AbstractArdorApplication`. It stops at the first failure, with the error the
  * app would raise; the check over the bindings reports every failure at once and names who needs
  * each missing key.
  *
@@ -118,7 +125,16 @@ export const assertArdorApplicationBoots = async <Application extends AbstractAr
     const { i18nProvider } = ApplicationProviders.resolve({ container: target });
     const features = Features.read({ container: target });
     Features.mount({ features });
-    await Features.loadMessages({ features, i18nProvider, locale });
+    const offered = i18nProvider.getLocales?.().map((language) => language.locale) ?? [];
+    const i18nOptions = target.get<II18nProviderOptions>({
+      key: CoreBindings.I18N_PROVIDER_OPTIONS,
+      isOptional: true,
+    });
+    const fallbackLocale = i18nOptions?.fallback?.locale ?? DEFAULT_FALLBACK_LOCALE;
+    const checked = offered.length ? offered : [i18nProvider.getLocale()];
+    // The fallback locale fills the gaps of every language, so its messages are read as the others are.
+    const locales = locale ? [locale] : [...new Set([...checked, fallbackLocale])];
+    await Features.verifyMessages({ features, locales });
 
     // A skip that matched is a binding that exists: the core rejects one that matched nothing.
     const hasBindings = verification.verified.length > 0 || (skipBindings?.length ?? 0) > 0;

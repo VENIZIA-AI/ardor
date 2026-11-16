@@ -1,9 +1,16 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
+import { CoreBindings, LocalStorageKeys } from '@venizia/ardor-kernel';
+
 import type { TI18nSource } from '@/common';
-import { Features } from '@/features';
+import { englishMessages } from '@/common/locales';
+import { Features, type TFeature } from '@/features';
 import { DefaultI18nProvider } from '@/providers/i18n';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('DefaultI18nProvider', () => {
   test('translates ra.action.add to Add from englishMessages and uses en as initial locale with default options', () => {
@@ -264,5 +271,494 @@ describe('DefaultI18nProvider lazy sources', () => {
 
     expect(i18n.translate('reports.title')).toBe('Bao cao');
     expect(i18n.translate('ra.action.add')).toBe('Add');
+  });
+});
+
+describe('DefaultI18nProvider English fallback', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+
+  test('a partial catalogue keeps the framework English for the keys it lacks', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { title: 'Quan tri' } } },
+      languages,
+    }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('app.title')).toBe('Quan tri');
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+  });
+
+  test('a feature that ships only English shows its English text in another locale', async () => {
+    const reports = Features.define({
+      name: 'reports',
+      messages: { en: { reports: { title: 'Reports' } } },
+    });
+    const i18n = new DefaultI18nProvider(
+      { i18nSources: { vi: { app: { title: 'Quan tri' } } }, languages },
+      [reports],
+    ).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('reports.title')).toBe('Reports');
+  });
+
+  test('layers English, the features, then the application, the chosen locale over English at each step', async () => {
+    const reports = Features.define({
+      name: 'reports',
+      messages: {
+        en: { a: 'feature en', b: 'feature en', c: 'feature en' },
+        vi: { b: 'feature vi', c: 'feature vi' },
+      },
+    });
+    const i18n = new DefaultI18nProvider(
+      {
+        i18nSources: {
+          en: { c: 'app en', d: 'app en' },
+          vi: { d: 'app vi' },
+        },
+        languages,
+      },
+      [reports],
+    ).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('a')).toBe('feature en');
+    expect(i18n.translate('b')).toBe('feature vi');
+    expect(i18n.translate('c')).toBe('app en');
+    expect(i18n.translate('d')).toBe('app vi');
+  });
+
+  test('an application that spreads englishMessages into its own catalogue still works', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { ...englishMessages, app: { title: 'Quan tri' } } },
+      languages,
+    }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+    expect(i18n.translate('app.title')).toBe('Quan tri');
+  });
+
+  test('fallback.locale picks the locale layered underneath', async () => {
+    const i18n = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { onlyVi: 'Chi co' } }, en: { app: { onlyEn: 'Only' } } },
+      languages,
+      fallback: { locale: 'vi' },
+    }).value(new Container());
+
+    await i18n.changeLocale('en');
+
+    expect(i18n.translate('app.onlyVi')).toBe('Chi co');
+    expect(i18n.translate('app.onlyEn')).toBe('Only');
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+  });
+
+  test('a lazy fallback locale is awaited before the first render', async () => {
+    const english = { app: { title: 'Admin' } };
+    const load = mock(() => Promise.resolve(english));
+    class ViProvider extends DefaultI18nProvider {
+      protected override resolveInitialLocale(): string {
+        return 'vi';
+      }
+    }
+    const i18n = new ViProvider({
+      i18nSources: { en: load, vi: { app: { other: 'Khac' } } },
+      languages,
+    }).value(new Container());
+
+    expect(Features.hasPendingMessages({ features: [], i18nProvider: i18n })).toBe(true);
+
+    await Features.loadMessages({ features: [], i18nProvider: i18n });
+
+    expect(i18n.translate('app.title')).toBe('Admin');
+    expect(i18n.translate('app.other')).toBe('Khac');
+    expect(Features.hasPendingMessages({ features: [], i18nProvider: i18n })).toBe(false);
+  });
+});
+
+describe('DefaultI18nProvider persisted locale', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const key = LocalStorageKeys.scoped().locale;
+
+  test('changeLocale stores the choice under the preferences prefix', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('vi');
+
+    expect(key).toBe('@app/prefs/locale');
+    expect(localStorage.getItem(key)).toBe('vi');
+  });
+
+  test('the next provider starts in the stored locale', async () => {
+    const defaultI18nProvider = new DefaultI18nProvider({ languages }).value(new Container());
+    await defaultI18nProvider.changeLocale('vi');
+
+    const next = new DefaultI18nProvider({ languages }).value(new Container());
+
+    expect(next.getLocale()).toBe('vi');
+  });
+
+  test('a stored locale that is not offered is ignored', () => {
+    localStorage.setItem(key, 'fr');
+
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('en');
+  });
+
+  test('a locale that is not offered is not stored', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('fr');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('choosing the locale already shown stores nothing', async () => {
+    const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+
+    await i18n.changeLocale('en');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('locale.persist.use false neither stores nor reads', async () => {
+    localStorage.setItem(key, 'vi');
+    const i18n = new DefaultI18nProvider({
+      languages,
+      locale: { persist: { use: false } },
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('en');
+
+    localStorage.clear();
+    await i18n.changeLocale('vi');
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('the application id scopes the key', async () => {
+    const container = new Container();
+    container
+      .bind({ key: CoreBindings.APPLICATION_INFO })
+      .toValue({ name: 'shop', version: '1', description: '', id: 'shop' });
+
+    const defaultI18nProvider2 = new DefaultI18nProvider({ languages }).value(container);
+    await defaultI18nProvider2.changeLocale('vi');
+
+    expect(localStorage.getItem('@app/prefs/shop/locale')).toBe('vi');
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  test('without a browser storage it neither throws nor stores', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', { value: undefined, configurable: true });
+
+    try {
+      const i18n = new DefaultI18nProvider({ languages }).value(new Container());
+      await i18n.changeLocale('vi');
+
+      expect(i18n.getLocale()).toBe('vi');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'localStorage', descriptor);
+      }
+    }
+
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+});
+
+describe('DefaultI18nProvider initial locale detection', () => {
+  const setNavigator = (opts: { language: string; languages?: Array<string> }) => {
+    Object.defineProperty(navigator, 'language', { value: opts.language, configurable: true });
+    Object.defineProperty(navigator, 'languages', {
+      value: opts.languages ?? [opts.language],
+      configurable: true,
+    });
+  };
+
+  const original = { language: navigator.language, languages: [...navigator.languages] };
+
+  afterEach(() => {
+    setNavigator(original);
+  });
+
+  const initialOf = (opts: {
+    browser: string;
+    offered: Array<string>;
+    languages?: Array<string>;
+  }) => {
+    setNavigator({ language: opts.browser, languages: opts.languages });
+
+    return new DefaultI18nProvider({
+      languages: opts.offered.map((locale) => ({ locale, name: locale })),
+    })
+      .value(new Container())
+      .getLocale();
+  };
+
+  const cases: Array<{ browser: string; offered: Array<string>; expected: string }> = [
+    { browser: 'fr-FR', offered: ['vi'], expected: 'vi' },
+    { browser: 'fr-FR', offered: ['en', 'vi'], expected: 'en' },
+    { browser: 'fr-FR', offered: ['vi', 'en'], expected: 'vi' },
+    { browser: 'pt-BR', offered: ['pt-BR', 'en'], expected: 'pt-BR' },
+    { browser: 'pt-BR', offered: ['en', 'pt'], expected: 'pt' },
+    { browser: 'zh-TW', offered: ['zh-CN', 'zh-TW'], expected: 'zh-TW' },
+    { browser: 'vi-vn', offered: ['en', 'vi-VN'], expected: 'vi-VN' },
+    { browser: 'en-US', offered: ['vi'], expected: 'vi' },
+    { browser: 'vi-VN', offered: ['en', 'vi'], expected: 'vi' },
+    { browser: 'en-US', offered: [], expected: 'en' },
+  ];
+
+  test.each(cases)(
+    'the browser $browser with $offered starts in $expected',
+    ({ browser, offered, expected }) => {
+      expect(initialOf({ browser, offered })).toBe(expected);
+    },
+  );
+
+  test('a later browser preference is used when the first is not offered', () => {
+    expect(
+      initialOf({ browser: 'fr-FR', languages: ['fr-FR', 'vi-VN'], offered: ['en', 'vi'] }),
+    ).toBe('vi');
+  });
+
+  test('a language the browser lists first wins over one it lists later', () => {
+    expect(
+      initialOf({ browser: 'vi-VN', languages: ['vi-VN', 'en-US'], offered: ['en', 'vi'] }),
+    ).toBe('vi');
+  });
+
+  test('the stored locale comes before the browser', async () => {
+    localStorage.setItem(LocalStorageKeys.scoped().locale, 'en');
+
+    expect(initialOf({ browser: 'vi-VN', offered: ['en', 'vi'] })).toBe('en');
+  });
+
+  test('a navigator that has no languages list still gives its language', () => {
+    setNavigator({ language: 'vi-VN' });
+    Object.defineProperty(navigator, 'languages', { value: undefined, configurable: true });
+
+    const i18n = new DefaultI18nProvider({
+      languages: [
+        { locale: 'en', name: 'English' },
+        { locale: 'vi', name: 'Tieng Viet' },
+      ],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test('a navigator that has no language at all falls to the first offered language', () => {
+    Object.defineProperty(navigator, 'language', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'languages', { value: undefined, configurable: true });
+
+    const i18n = new DefaultI18nProvider({
+      languages: [
+        { locale: 'vi', name: 'Tieng Viet' },
+        { locale: 'en', name: 'English' },
+      ],
+    }).value(new Container());
+
+    expect(i18n.getLocale()).toBe('vi');
+  });
+
+  test('without a navigator the first offered language is used', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true });
+
+    try {
+      const i18n = new DefaultI18nProvider({
+        languages: [
+          { locale: 'vi', name: 'Tieng Viet' },
+          { locale: 'en', name: 'English' },
+        ],
+      }).value(new Container());
+
+      expect(i18n.getLocale()).toBe('vi');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'navigator', descriptor);
+      }
+    }
+  });
+});
+
+describe('DefaultI18nProvider failed feature messages', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const spies: Array<{ mockRestore: () => void }> = [];
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) {
+      spy.mockRestore();
+    }
+  });
+
+  const build = (opts: { features: Array<TFeature>; languages?: typeof languages }) => {
+    const provider = new DefaultI18nProvider(
+      { languages: opts.languages ?? languages },
+      opts.features,
+    );
+    const error = spyOn(provider.logger, 'error').mockImplementation(() => undefined);
+    spies.push(error);
+
+    return { error, i18n: provider.value(new Container()) };
+  };
+
+  test('a feature loader that fails is logged, the locale shows English, and the next switch tries again', async () => {
+    const load = mock<() => Promise<object>>()
+      .mockRejectedValueOnce(new Error('chunk is down'))
+      .mockResolvedValueOnce({ reports: { title: 'Bao cao' } });
+    const reports = Features.define({
+      name: 'reports',
+      messages: { en: { reports: { title: 'Reports' } }, vi: load },
+    });
+    const { i18n, error } = build({ features: [reports] });
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.getLocale()).toBe('vi');
+    expect(i18n.translate('reports.title')).toBe('Reports');
+    expect(error).toHaveBeenCalledTimes(1);
+
+    await i18n.changeLocale('vi');
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(i18n.translate('reports.title')).toBe('Bao cao');
+    expect(error).toHaveBeenCalledTimes(1);
+  });
+
+  test('a key two features define in a locale that is not the initial one throws when the provider is built', () => {
+    const first = Features.define({ name: 'first', messages: { vi: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { vi: { shared: 'B' } } });
+
+    expect(() => build({ features: [first, second] })).toThrow(
+      "[features] Message 'shared' (vi) is defined by both 'first' and 'second'",
+    );
+  });
+
+  test('a key two features define in the fallback locale throws when the provider is built, even if it is not offered', () => {
+    const first = Features.define({ name: 'first', messages: { en: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { en: { shared: 'B' } } });
+
+    expect(() =>
+      build({ features: [first, second], languages: [{ locale: 'vi', name: 'Tieng Viet' }] }),
+    ).toThrow("[features] Message 'shared' (en) is defined by both 'first' and 'second'");
+  });
+
+  test('a key two features define only once their lazy bundles load is logged and the switch goes ahead', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { en: { first: 'F' }, vi: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { vi: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const { i18n, error } = build({ features: [first, second] });
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.getLocale()).toBe('vi');
+    expect(i18n.translate('first')).toBe('F');
+    expect(String(error.mock.calls[0]?.[0])).toContain('failed to load');
+  });
+
+  test('a locale the provider does not offer never makes changeLocale throw or reject', async () => {
+    const first = Features.define({ name: 'first', messages: { fr: { shared: 'A' } } });
+    const second = Features.define({ name: 'second', messages: { fr: { shared: 'B' } } });
+    const { i18n } = build({ features: [first, second] });
+
+    const task = i18n.changeLocale('fr');
+    const result = await task;
+
+    expect(result).toBeUndefined();
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+  });
+});
+
+describe('DefaultI18nProvider missing keys', () => {
+  const spies: Array<{ mockRestore: () => void }> = [];
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) {
+      spy.mockRestore();
+    }
+  });
+
+  const build = () => {
+    const provider = new DefaultI18nProvider({
+      i18nSources: { vi: { app: { title: 'Quan tri' } } },
+      languages: [
+        { locale: 'en', name: 'English' },
+        { locale: 'vi', name: 'Tieng Viet' },
+      ],
+    });
+    const warn = spyOn(provider.logger, 'warn').mockImplementation(() => undefined);
+    spies.push(warn);
+
+    return { warn, i18n: provider.value(new Container()) };
+  };
+
+  test('a missing key is logged once per locale and still renders as the key', async () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('Missing');
+
+    await i18n.changeLocale('vi');
+
+    expect(i18n.translate('app.nope')).toBe('app.nope');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a missing key still takes its tokens and plural forms', () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('Hello %{name}', { name: 'Ada' })).toBe('Hello Ada');
+    expect(
+      i18n.translate('%{smart_count} item |||| %{smart_count} items', { ['smart_count']: 2 }),
+    ).toBe('2 items');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a missing key takes a number as the plural count, as polyglot does', () => {
+    const { i18n } = build();
+
+    expect(i18n.translate('%{smart_count} item |||| %{smart_count} items', 2)).toBe('2 items');
+    expect(i18n.translate('%{smart_count} item |||| %{smart_count} items', 1)).toBe('1 item');
+  });
+
+  test('a different missing key is logged on its own', () => {
+    const { i18n, warn } = build();
+
+    i18n.translate('app.one');
+    i18n.translate('app.two');
+
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  test('a key that exists, and a key with a default text, are not reported', () => {
+    const { i18n, warn } = build();
+
+    expect(i18n.translate('ra.action.save')).toBe('Save');
+    expect(i18n.translate('app.other', { _: 'Hello %{name}', name: 'Ada' })).toBe('Hello Ada');
+    expect(warn).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 
 import { deepMerge, isRecord } from '@/common/merge';
+import { unwrapMessages } from '@/providers/i18n-sources';
 import type { TFeature } from './feature';
 
 interface IFeatureBundle {
@@ -15,6 +16,8 @@ interface IFeatureBundle {
  */
 export class FeatureMessages {
   private readonly loaded = new Map<string, object>();
+  /** Each lazy bundle's load, by locale and feature: one call, kept once it delivered, dropped when it fails. */
+  private readonly loads = new Map<string, Promise<object>>();
 
   constructor(private readonly opts: { features: Array<TFeature> }) {}
 
@@ -69,14 +72,18 @@ export class FeatureMessages {
     }
 
     const bundles = await Promise.all(
-      this.opts.features.map(async (feature) => {
+      this.opts.features.map(async (feature, index) => {
         const messages = feature.messages?.[locale];
-        let bundle = typeof messages === 'function' ? undefined : messages;
 
-        if (typeof messages === 'function') {
-          const result = await messages();
-          bundle = result;
+        if (typeof messages !== 'function') {
+          return { feature: feature.name, bundle: messages };
         }
+
+        const bundle = await this.load({
+          key: `${locale}:${index}`,
+          owner: `'${feature.name}' (${locale})`,
+          loader: () => messages(),
+        });
 
         return { feature: feature.name, bundle };
       }),
@@ -86,6 +93,25 @@ export class FeatureMessages {
     this.loaded.set(locale, combined);
 
     return combined;
+  }
+
+  private load(opts: {
+    key: string;
+    owner: string;
+    loader: () => Promise<object>;
+  }): Promise<object> {
+    const { key, owner, loader } = opts;
+    const waiting = this.loads.get(key);
+
+    if (waiting) {
+      return waiting;
+    }
+
+    const task = loader().then((value) => unwrapMessages({ value, owner }));
+    this.loads.set(key, task);
+    task.catch(() => this.loads.delete(key));
+
+    return task;
   }
 
   private static combine(opts: { locale: string; bundles: Array<IFeatureBundle> }): object {

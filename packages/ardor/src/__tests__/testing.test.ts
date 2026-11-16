@@ -2,14 +2,14 @@ import 'reflect-metadata';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication, Features } from '@venizia/ardor-admin';
+import { BaseArdorApplication, DefaultI18nProvider, Features } from '@venizia/ardor-admin';
 import {
   AbstractArdorApplication,
   CoreBindings,
   inject,
   type IApplicationInfo,
 } from '@venizia/ardor-kernel';
-import { getError } from '@venizia/ignis-inversion';
+import { Container, getError } from '@venizia/ignis-inversion';
 import * as Kernel from '@venizia/ardor-kernel/testing';
 import * as Testing from '@/testing';
 import { assertArdorApplicationBoots } from '@/testing';
@@ -34,7 +34,8 @@ interface IFixtureOptions {
   withAuthProvider?: boolean;
   withBrokenAuthProvider?: boolean;
   features?: ReturnType<typeof Features.define>[];
-  i18n?: typeof i18nProvider;
+  i18n?: object;
+  i18nOptions?: object;
 }
 
 const createApplication = (opts: IFixtureOptions = {}) => {
@@ -45,6 +46,7 @@ const createApplication = (opts: IFixtureOptions = {}) => {
     withBrokenAuthProvider = false,
     features,
     i18n = i18nProvider,
+    i18nOptions,
   } = opts;
 
   class FixtureApplication extends AbstractArdorApplication {
@@ -58,6 +60,10 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       }
 
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+
+      if (i18nOptions) {
+        this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue(i18nOptions);
+      }
 
       if (withAuthProvider || withBrokenAuthProvider) {
         this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
@@ -272,19 +278,152 @@ describe('assertArdorApplicationBoots', () => {
     expect(globalThis.fetch).toBe(originalFetch);
   });
 
-  test('rejects with the error raised while the first locale loads', async () => {
+  test('rejects with the error raised while the initial locale loads, when the provider offers one locale', async () => {
     const application = createApplication({
       services: [['services.Dependency', Dependency]],
-      features: [Features.define({ name: 'reports', messages: { en: () => Promise.resolve({}) } })],
-      i18n: {
-        getLocale: () => 'en',
-        changeLocale: () => Promise.reject(getError({ message: 'key defined twice' })),
-      },
+      features: [
+        Features.define({
+          name: 'reports',
+          messages: { en: () => Promise.reject(getError({ message: 'chunk is down' })) },
+        }),
+      ],
     });
 
     const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(message).toContain('key defined twice');
+    expect(message).toContain('chunk is down');
+  });
+});
+
+describe('assertArdorApplicationBoots messages', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const reports = Features.define({
+    name: 'reports',
+    messages: { en: { reports: 'Reports' }, vi: () => Promise.resolve({ reports: 'Bao cao' }) },
+  });
+
+  const realI18n = (opts: { features: ReturnType<typeof Features.define>[] }) => {
+    return new DefaultI18nProvider({ languages }, opts.features).value(new Container());
+  };
+
+  test('loads the messages of every offered locale, not the initial one only', async () => {
+    const lateFailure = Features.define({
+      name: 'late',
+      messages: { vi: () => Promise.reject(getError({ message: 'vi chunk is down' })) },
+    });
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [reports, lateFailure],
+      i18n: realI18n({ features: [reports, lateFailure] }),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain('vi chunk is down');
+  });
+
+  test('finds a key two lazy bundles define in a locale that is not the initial one', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { vi: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { vi: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18n: realI18n({ features: [first, second] }),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain("Message 'shared' (vi) is defined by both 'first' and 'second'");
+  });
+
+  test('checks the fallback locale too when it is not one of the offered locales', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { fr: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { fr: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages, fallback: { locale: 'fr' } };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain("Message 'shared' (fr) is defined by both 'first' and 'second'");
+  });
+
+  test('checks the default fallback locale when the options name none and it is not offered', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { en: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { en: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages: [{ locale: 'vi', name: 'Vietnamese' }] };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
+
+    const message = await messageOf(assertArdorApplicationBoots(application));
+
+    expect(message).toContain("Message 'shared' (en) is defined by both 'first' and 'second'");
+  });
+
+  test('leaves the locale of the provider where it was', async () => {
+    const i18n = realI18n({ features: [reports] });
+    const changes: Array<string> = [];
+    const original = i18n.changeLocale;
+
+    i18n.changeLocale = (next, options) => {
+      changes.push(next);
+
+      return original(next, options);
+    };
+
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [reports],
+      i18n,
+    });
+
+    await assertArdorApplicationBoots(application);
+
+    expect(changes).toEqual([]);
+    expect(i18n.getLocale()).toBe('en');
+  });
+
+  test('locale narrows the check to that one locale', async () => {
+    const lateFailure = Features.define({
+      name: 'late',
+      messages: { vi: () => Promise.reject(getError({ message: 'vi chunk is down' })) },
+    });
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [lateFailure],
+      i18n: realI18n({ features: [lateFailure] }),
+    });
+
+    await assertArdorApplicationBoots(application, { locale: 'en' });
   });
 });
 

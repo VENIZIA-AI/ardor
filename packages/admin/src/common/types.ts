@@ -138,10 +138,27 @@ export type TI18nSource = object | (() => Promise<object>);
 /** What `DefaultI18nProvider` is built from: the message sources and the languages on offer. */
 export interface II18nProviderOptions {
   /**
-   * Messages by locale: the application's own over the features', English for a locale with no source or whose loader failed.
+   * Messages by locale, layered from the bottom: ARDOR's `englishMessages`, the features' and the
+   * application's messages of the fallback locale, then the features' and the application's own
+   * messages of the chosen locale. A key a locale lacks reads in the layer below it.
    * @default { en: englishMessages }
    */
   i18nSources?: Record<string, TI18nSource>;
+  /** What `changeLocale` does with the choice. */
+  locale?: {
+    /**
+     * With `use: true` the chosen locale is kept in `localStorage` (`LocalStorageKeys.scoped({ id }).locale`,
+     * under `@app/prefs/`, so a sign-out keeps it) and read first when the provider is built. A stored
+     * locale that is not in `languages` is ignored. Outside a browser it does nothing.
+     * @default { use: true }
+     */
+    persist?: { use: false } | { use: true };
+  };
+  /**
+   * The locale whose messages are layered under every other locale.
+   * @default { locale: 'en' }
+   */
+  fallback?: { locale: string };
   /**
    * The locales the app offers.
    * @default [{ locale: 'en', name: 'English' }]

@@ -396,3 +396,43 @@ hooks-check-the-bound-class:
     steps:
       - Pin the ARDOR packages to 0.4.7 or earlier, where a hook returns whatever the key holds. A fake that extends the class it replaces keeps working.
   data: 'Nothing stored changes. A hook that resolves a class bound under the key of another class that does not extend it now throws with the key and both class names, at render. A value binding (toValue) has no class to compare and is not checked.'
+
+feature-key-collision-at-startup:
+  symbols: [DefaultI18nProvider, TFeature.messages]
+  upgrade:
+    before: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { shared: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { shared: { title: 'Kho' } } } });
+    after: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { orders: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { stock: { title: 'Kho' } } } });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 and the IGNIS packages to the 0.4.7 line; the collision is found again only when a user switches to that language.
+  data: Nothing stored changes. `assertArdorApplicationBoots` and any test that builds the i18n provider now fail on a collision in any offered language, which is the point.
+
+initial-locale-detection:
+  symbols: [DefaultI18nProvider.resolveInitialLocale, II18nProviderOptions.languages]
+  upgrade:
+    before: |-
+      languages: [{ locale: 'vi', name: 'Tieng Viet' }, { locale: 'en', name: 'English' }],
+    after: |-
+      // Put en first to keep English as the language of a visitor whose language is not offered.
+      languages: [{ locale: 'en', name: 'English' }, { locale: 'vi', name: 'Tieng Viet' }],
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where an unmatched visitor and a run with no navigator start in English, and the main part of the first browser language is compared.
+  data: 'Nothing stored changes shape. The chosen language is now kept in localStorage under @app/prefs/ (scoped by the application id); a downgrade leaves that key unread and it is harmless.'
+
+boot-test-every-locale:
+  symbols: [assertArdorApplicationBoots, Features.verifyMessages]
+  upgrade:
+    before: |-
+      await assertArdorApplicationBoots(application);
+    after: |-
+      // A loader that downloads its catalogue fails here (the test blocks fetch): limit the check to a language whose loader does not.
+      await assertArdorApplicationBoots(application, { locale: 'en' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where the boot test loads the messages of the first language only.
+  data: 'Nothing stored. A boot test that passed before can fail now: a loader that fails, or a key two features define, in any offered language fails it.'
