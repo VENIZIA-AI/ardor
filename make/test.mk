@@ -62,7 +62,7 @@ copies-check:
 # ----------------------------------------------------------------------------
 purity:
 	@echo "🔍 Checking browser purity for all claimed entries..."
-	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts
+	@$(DEVZ) check purity --claims scripts/checks/purity/manifest.ts
 
 # The positive controls of the shared purity engine, run against ARDOR's fixtures and claims. They live outside every package, so nothing else runs them.
 purity-test:
@@ -71,7 +71,7 @@ purity-test:
 
 $(addprefix purity-,$(PACKAGES)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
-	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts $*
+	@$(DEVZ) check purity --claims scripts/checks/purity/manifest.ts $*
 
 # ----------------------------------------------------------------------------
 # CLEAN-INSTALL TARGETS
@@ -94,7 +94,7 @@ layer-check:
 
 # `--max 0` is what makes this a gate; without it the script only reports.
 cycles-check:
-	@$(foreach p,$(PACKAGES),bun x --no-install devz check module-cycles packages/$(p)/dist --max 0 &&) true
+	@$(foreach p,$(PACKAGES),$(DEVZ) check module-cycles packages/$(p)/dist --max 0 &&) true
 
 # Bundle budgets, measured brotlied with every third-party peer external.
 size-check:

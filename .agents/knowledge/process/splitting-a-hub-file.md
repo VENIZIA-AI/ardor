@@ -38,7 +38,7 @@ and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class 
    must show `types/` and no `types.js`.
 6. Gates: the package suite and every downstream suite (kernel changes ripple into react and admin,
    which load `dist`), `make lint-<package>`,
-   `bun x --no-install devz check module-cycles packages/<package>/dist --max 0`, `make surface-check` (never
+   `bun node_modules/.bin/devz check module-cycles packages/<package>/dist --max 0`, `make surface-check` (never
    `surface-gen` for a split - a changed snapshot means a leak or a loss), `make okf-gen && make okf-check`,
    `make wiki-links-check` (repoint every doc link at the topic file that declares the named symbol).
 7. Commit the move and the doc repoints separately: `refactor(<package>): <scope> types split by topic`
