@@ -2003,6 +2003,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     expect(Object.keys(jobsOf(files.workflow)).toSorted()).toEqual([
       'approve',
       'atlas-index',
+      'deploy-docs',
       'heal-next',
       'plan',
       'publish',
@@ -2475,6 +2476,53 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
 // atlas pair of a release commit or tag. package-release.yml does it in a job of its own, as VULCAN's own release does:
 // the same action, pinned by the same commit, the same secret, one step for each package tag, and the key never
 // shares a job with the npm identity.
+// The same push starts no deploy-docs.yml run either, so the version box of the changelog would keep the prerelease it
+// had. A job of its own starts the deploy once the tags are pushed, with actions: write and nothing else.
+describe('package-release.yml starts the docs deploy after the tags are pushed, in a job of its own', () => {
+  const workflow = workflowText;
+  const jobs = jobsOf(workflow);
+  const job = jobs['deploy-docs'] ?? '';
+
+  test('the job reads back from the YAML: after publish, with actions: write only', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; permissions?: Record<string, string>; steps?: { name: string }[] }
+      >;
+    };
+    const deploy = parsed.jobs['deploy-docs'];
+
+    expect(deploy?.needs).toEqual(['plan', 'publish']);
+    expect(deploy?.permissions).toEqual({ actions: 'write' });
+    expect(deploy?.steps?.map((step) => step.name)).toEqual(['Start the docs deploy']);
+  });
+
+  test('it runs after publish, also after a chain that stopped, and never fails the run', () => {
+    expect(job).toContain(
+      "if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}",
+    );
+    expect(job).toMatch(/\n {4}continue-on-error: true\n/);
+    expect(job).toMatch(/\n {4}timeout-minutes: 5\n/);
+  });
+
+  test('it dispatches deploy-docs.yml on develop with the Actions token, and holds no other permission', () => {
+    expect(job).toContain('run: gh workflow run deploy-docs.yml --ref develop');
+    expect(job).toContain('GH_TOKEN: ${{ github.token }}');
+    expect(job).not.toContain('secrets.');
+    expect(job).not.toContain('id-token');
+    expect(job).not.toContain('contents:');
+    expect(job).not.toContain('environment:');
+    expect([...withoutComments(workflow).matchAll(/actions: write/g)]).toHaveLength(1);
+  });
+
+  test('deploy-docs.yml has a manual run for the docs job, which is what this dispatch starts', () => {
+    const docs = readFileSync(join(ROOT, '.github/workflows/deploy-docs.yml'), 'utf8');
+
+    expect(docs).toContain('workflow_dispatch:');
+    expect(docs).toMatch(/default: 'docs'/);
+  });
+});
+
 describe('package-release.yml publishes the atlas pair of each release tag, in a job of its own', () => {
   const workflow = workflowText;
   const jobs = jobsOf(workflow);
@@ -2521,6 +2569,7 @@ describe('package-release.yml publishes the atlas pair of each release tag, in a
       'approve',
       'publish',
       'atlas-index',
+      'deploy-docs',
       'heal-next',
     ]);
     expect(job).toContain('needs: [plan, publish]');
