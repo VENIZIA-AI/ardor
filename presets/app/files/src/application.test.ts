@@ -33,6 +33,14 @@ const restUrlOf = async (): Promise<unknown> => {
   return application.get<{ url: string }>({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).url;
 };
 
+const authOptionsOf = async (): Promise<unknown> => {
+  const application = new TestApplication();
+
+  await application.start();
+
+  return application.get({ key: CoreBindings.AUTH_PROVIDER_OPTIONS, isOptional: true });
+};
+
 describe('AdminConfiguration', () => {
   afterEach(() => {
     Reflect.deleteProperty(globalThis, RUNTIME_CONFIG_GLOBAL);
@@ -48,5 +56,10 @@ describe('AdminConfiguration', () => {
 
     const result = await restUrlOf();
     expect(result).toBe('https://api.example.com');
+  });
+
+  test('binds sign-in off: the admin has no sign-in page', async () => {
+    const result = await authOptionsOf();
+    expect(result).toEqual({ use: false });
   });
 });

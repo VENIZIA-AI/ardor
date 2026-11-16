@@ -53,24 +53,18 @@ export const HOME: THomeContent = {
       file: 'src/configurations/admin.configuration.ts',
       type: 'code',
       body: `import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
-  inject,
-  provide,
+  type IRestDataProviderOptions,
+  provideOption,
   RuntimeConfig,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
     const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
       buildTimeEnv: import.meta.env,
@@ -80,12 +74,12 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }`,
-      note: 'The configuration the preset writes into a new admin, with the i18n bindings left out. <a href="/guides/core-concepts/configuration">Configuration</a>',
+      note: 'The configuration the preset writes into a new admin: two options, the providers come from the base application. <a href="/guides/core-concepts/configuration">Configuration</a>',
     },
     {
       file: 'src/main.tsx',

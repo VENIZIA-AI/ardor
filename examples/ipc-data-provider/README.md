@@ -10,7 +10,8 @@ cd examples/ipc-data-provider
 bun run server:dev
 ```
 
-Only `send()` is replaced. Filter mapping, `value()` and the react-admin methods still come from
+Only `send()` is replaced, and `bindContext()` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`
+in one line: every other default provider stays. Filter mapping, `value()` and the react-admin methods still come from
 the base class; a shell with no HTTP at all overrides those the same way.
 
 ---
