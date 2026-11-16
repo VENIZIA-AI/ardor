@@ -79,9 +79,10 @@ export class DefaultAuthService extends BaseService {
 
     this.snapshot = this.readSnapshot();
 
-    const stops = [this.keys.token, this.keys.identity, this.keys.permission].map((key) => {
-      return BrowserStorage.subscribe({
-        key,
+    // The token key alone: `saveAuth` writes it last and `cleanUp` removes it first, so the session is whole when its event arrives, never the identity of one user with the token of another.
+    const stops = [
+      BrowserStorage.subscribe({
+        key: this.keys.token,
         storage: StorageAreas.LOCAL,
         listener: ({ isExternal }) => {
           // A write of this tab announced itself; an event it caused must not announce it again.
@@ -89,8 +90,8 @@ export class DefaultAuthService extends BaseService {
             this.notify({ isExternal: true });
           }
         },
-      });
-    });
+      }),
+    ];
 
     this.stopExternalSync = () => {
       for (const stop of stops) {
@@ -222,16 +223,17 @@ export class DefaultAuthService extends BaseService {
     }
 
     const { token, userId, username = '', provider = '', referenceId = '', roles } = opts;
-    // The identity first: another tab that reads between the two writes then sees another user's identity with the old token, never the old user's with the new token.
+    // The identity and the roles first and the token last: another tab that reads between the writes sees another user's identity with the old token, never the old user's with the new token, and it acts on the token's event only, when the session is whole.
     localStorage.setItem(
       this.keys.identity,
       JSON.stringify({ userId, username, referenceId, provider }),
     );
-    AuthTokenStore.write({ token, provider, key: this.keys.token });
 
     if (roles) {
       localStorage.setItem(this.keys.permission, JSON.stringify(roles));
     }
+
+    AuthTokenStore.write({ token, provider, key: this.keys.token });
 
     this.notify({ isExternal: false });
   }
@@ -264,13 +266,17 @@ export class DefaultAuthService extends BaseService {
       return;
     }
 
-    Object.keys(localStorage).forEach((key) => {
-      if (!this.isSessionKey({ key })) {
-        return;
-      }
+    const sessionKeys = Object.keys(localStorage).filter((key) => this.isSessionKey({ key }));
 
+    // The token first: another tab acts on its event, and then finds no session, not an identity without a token.
+    const ordered = [
+      ...sessionKeys.filter((key) => key === this.keys.token),
+      ...sessionKeys.filter((key) => key !== this.keys.token),
+    ];
+
+    for (const key of ordered) {
       localStorage.removeItem(key);
-    });
+    }
 
     this.notify({ isExternal: false });
   }
