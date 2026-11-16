@@ -303,7 +303,7 @@ ignis-peers:
     - '@venizia/ignis-filter'
   upgrade:
     steps:
-      - 'Move @venizia/ignis-kernel and -connectors to ^0.4.8-16 or newer, @venizia/ignis-helpers and -boot to ^0.4.8-14, @venizia/ignis-inversion to ^0.4.7-5 and @venizia/ignis-filter to ^0.4.7-6, together with the four ARDOR packages at 0.4.8, in one install.'
+      - 'Move @venizia/ignis-kernel to ^0.4.8-18 or newer, @venizia/ignis-connectors to ^0.4.8-16 or newer, @venizia/ignis-helpers and -boot to ^0.4.8-14, @venizia/ignis-inversion to ^0.4.7-5 and @venizia/ignis-filter to ^0.4.7-6, together with the four ARDOR packages at 0.4.8, in one install.'
       - 'Keep one copy of each. An ARDOR package of 0.4.7 or older does not compile on these IGNIS versions, because they no longer export AnyType and AnyObject.'
   downgrade:
     steps:
