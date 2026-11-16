@@ -149,6 +149,56 @@ describe('DefaultAuthService and the session of another tab', () => {
     ]);
   });
 
+  test('a token of another user than the stored identity is not announced nor read until the pair is whole', () => {
+    const tab = serviceOf();
+    const otherTab = serviceOf();
+    signIn(tab, 'alice');
+    const seen: Array<string> = [];
+    const stop = tab.subscribe({
+      listener: () => seen.push(`${tab.getUser().userId}|${tab.getAuth()?.value}`),
+    });
+
+    // The other tab switched twice: the identity of the second user is stored while this tab handles the event of the first token.
+    signIn(otherTab, 'bob');
+    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 'carol' }));
+    fromOtherTab({ keys: ['@app/auth/token'] });
+
+    expect(seen).toEqual([]);
+    expect(tab.getAuth()).toBeNull();
+
+    signIn(otherTab, 'carol');
+    fromOtherTab({ keys: ['@app/auth/token'] });
+
+    expect(seen).toEqual(['carol|carol-token']);
+    stop();
+  });
+
+  test('a page that comes back from the back-forward cache announces the session that changed meanwhile', () => {
+    const tab = serviceOf();
+    const otherTab = serviceOf();
+    signIn(tab, 'alice');
+    const seen: Array<string> = [];
+    const stop = tab.subscribe({
+      listener: () => seen.push(`${tab.getUser().userId}|${tab.getAuth()?.value}`),
+    });
+
+    signIn(otherTab, 'bob');
+    globalThis.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: false }));
+    expect(seen).toEqual([]);
+
+    globalThis.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    expect(seen).toEqual(['bob|bob-token']);
+    stop();
+  });
+
+  test('a token stored without a userId is read as before', () => {
+    const tab = serviceOf();
+    storage.setItem('@app/auth/identity', JSON.stringify({ userId: 'alice' }));
+    storage.setItem('@app/auth/token', JSON.stringify({ value: 'old-token', type: 'Bearer' }));
+
+    expect(tab.getAuth()?.value).toBe('old-token');
+  });
+
   test('a listener learns whether the change came from another tab', () => {
     const tab = serviceOf();
     const otherTab = serviceOf();

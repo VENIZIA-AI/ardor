@@ -246,6 +246,7 @@ describe('login', () => {
       value: 'jwt',
       type: 'Bearer',
       provider: '',
+      userId: 7,
     });
 
     const storedIdentity = readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY });
@@ -370,6 +371,7 @@ describe('login against the sign-in response shapes', () => {
       value: token,
       type: 'Bearer',
       provider: '',
+      userId: 'u-9',
     });
     expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toEqual({
       userId: 'u-9',
