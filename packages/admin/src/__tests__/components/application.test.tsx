@@ -3,7 +3,7 @@ import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
-import { useTranslate } from 'ra-core';
+import { type AuthProvider, useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
@@ -14,6 +14,7 @@ import { useFeatures } from '@/hooks/use-features';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
+import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
 import { Container } from '@venizia/ignis-inversion';
 
@@ -561,6 +562,36 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     ).toBeUndefined();
   });
 
+  test('is emptied once, with the token of the new user, when another tab writes its session key by key', async () => {
+    class EventPerWriteStorage extends FakeStorage {
+      override setItem(key: string, value: string): void {
+        super.setItem(key, value);
+        globalThis.dispatchEvent(
+          Object.assign(new Event('storage'), { key, storageArea: localStorage }),
+        );
+      }
+    }
+
+    const restoreStorage = new EventPerWriteStorage().install();
+    const { authService, queryClient } = renderWithSession();
+    await screen.findByText('R');
+    authService.saveAuth({ userId: 7, token: { value: 'jwt-alice', type: 'Bearer' } });
+    await settle();
+    const seen: Array<string | undefined> = [];
+    const reset = spyOn(queryClient, 'resetQueries').mockImplementation(() => {
+      seen.push(authService.getAuth()?.value);
+
+      return Promise.resolve();
+    });
+
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-bob', type: 'Bearer' } });
+    await settle();
+    restoreStorage();
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(['jwt-bob']);
+  });
+
   test('stops listening when the application unmounts', async () => {
     const { authService, queryClient } = renderWithSession();
     await screen.findByText('R');
@@ -659,6 +690,7 @@ describe('ArdorApplication route access', () => {
     container: Container;
     routes?: Array<TArdorRoute>;
     path?: string;
+    authProvider?: AuthProvider;
   }) => {
     return render(
       <MemoryRouter initialEntries={[opts.path ?? '/admin-only']}>
@@ -667,6 +699,7 @@ describe('ArdorApplication route access', () => {
           reduxStore={configureStore({ reducer: () => ({}) })}
           suspense={<span>loading</span>}
           {...(opts.routes ? { routes: opts.routes } : {})}
+          {...(opts.authProvider ? { authProvider: opts.authProvider } : {})}
         />
       </MemoryRouter>,
     );
@@ -783,6 +816,52 @@ describe('ArdorApplication route access', () => {
         ],
       }),
     ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
+  });
+
+  const guardedRoutes: Array<TArdorRoute> = [
+    {
+      path: '/admin-only',
+      element: <AdminPage />,
+      access: { resource: 'settings', action: 'edit' },
+    },
+  ];
+
+  const propProvider = (opts: { canAccess?: AuthProvider['canAccess'] }): AuthProvider => {
+    return {
+      checkAuth: () => Promise.resolve(),
+      checkError: () => Promise.resolve(),
+      login: () => Promise.resolve(),
+      logout: () => Promise.resolve(),
+      getPermissions: () => Promise.resolve(),
+      ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
+    };
+  };
+
+  test('the check reads the authProvider prop of the shell: a prop without canAccess fails at mount although the container provider has one', () => {
+    expect(() =>
+      renderRoute({
+        container: createGuardedContainer({
+          checkAuth: () => Promise.resolve(),
+          canAccess: denied,
+        }),
+        authProvider: propProvider({}),
+        routes: guardedRoutes,
+      }),
+    ).toThrow(/'\/admin-only'.*PERMISSION_PROVIDER/);
+  });
+
+  test('the check reads the authProvider prop of the shell: a prop with canAccess mounts although sign-in is off in the container, and is asked', async () => {
+    const canAccess = mock((_params: { resource: string; action: string }) => denied());
+
+    renderRoute({
+      container: createContainer({ load: () => Promise.resolve({}), withAuthProvider: false }),
+      authProvider: propProvider({ canAccess }),
+      routes: guardedRoutes,
+    });
+
+    await waitFor(() => expect(canAccess).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.queryByText('Admin only')).toBeNull();
   });
 
   test('guards a route that gives a Component, and a route of a feature', async () => {

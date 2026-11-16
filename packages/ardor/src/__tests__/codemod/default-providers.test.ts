@@ -74,6 +74,28 @@ describe('DefaultProvidersTransform', () => {
     ]);
   });
 
+  test('says .toClass(...) for a class that is built bare, not as a provider', () => {
+    const result = run(
+      configuration(
+        [
+          '  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })',
+          '  restDataProvider() {',
+          '    return this.application.instantiate(CountRestDataProvider);',
+          '  }',
+        ].join('\n'),
+      ),
+    );
+
+    expect(result.findings).toEqual([
+      {
+        line: FIRST_MEMBER_LINE,
+        name: 'restDataProvider(): instantiate(CountRestDataProvider)',
+        reason:
+          'replace this method by one line in bindContext(): .toClass(CountRestDataProvider).setScope(BindingScopes.SINGLETON) on the key, and delete the APPLICATION_INSTANCE it injects if nothing else uses it',
+      },
+    ]);
+  });
+
   test('reads the string value of a default key and @provideOption', () => {
     const result = run(
       configuration(
