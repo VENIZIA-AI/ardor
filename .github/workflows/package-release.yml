@@ -110,6 +110,8 @@ jobs:
       catalog_tag: ${{ steps.plan.outputs.catalog_tag }}
       # The head of develop the merge trial read (empty for a prerelease): the publish job stops if develop moved.
       develop_sha: ${{ steps.plan.outputs.develop_sha }}
+      # The previous stable tag of ardor (empty for a prerelease): the test job checks the changelog history from it.
+      changelog_base: ${{ steps.plan.outputs.changelog_base }}
 
     steps:
       # Full history: the merge trial of a stable needs the branches and their common ancestor, and the plan
@@ -126,8 +128,9 @@ jobs:
           bun-version: 1.4.4
 
       # A list that is not in dependency order, packages at different versions under a bump type, a stable that
-      # is not the promotion of a prerelease, an IGNIS stable that is not out, a merge back that would stop:
-      # each fails here, with every reason, before any build and before anyone is asked to approve.
+      # is not the promotion of a prerelease, a stable without its version folder or with one already released, an
+      # IGNIS stable that is not out, a merge back that would stop: each fails here, with every reason, before any
+      # build and before anyone is asked to approve.
       - name: Plan the run
         id: plan
         env:
@@ -149,10 +152,12 @@ jobs:
       # -------------------------------------------------------------------------
       # SETUP
       # -------------------------------------------------------------------------
+      # Full history: the changelog history check of a stable reads every commit and tag since the previous stable.
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -196,6 +201,15 @@ jobs:
           # The VULCAN this repository pins (root package.json), never the newest release.
           VULCAN_CMD: bun x @venizia/vulcan@0.4.10-18
         run: make gates GATE_PACKAGES="${PACKAGES//,/ }"
+
+      # A stable also checks the changelog history since the previous stable tag of ardor (the plan's changelog_base):
+      # no released version folder was edited and every entry since then has its migration block. A prerelease, or
+      # a stable with no earlier stable, skips it.
+      - name: Check the changelog history
+        if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}
+        env:
+          CHANGELOG_BASE: ${{ needs.plan.outputs.changelog_base }}
+        run: bun x --no-install vulcan changelog check --history --base "$CHANGELOG_BASE"
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
   # the gates, so the owner never approves a release that fails them, and its name carries the target version. The
@@ -322,8 +336,9 @@ jobs:
       # runs ahead of every git write, a stop in phase B still records what was published, and the same version
       # dispatched again records what is missing without a second publish. The push is never rebased, and a failure
       # is reported, never repaired by a force-push: npm cannot un-publish. A stable then merges main back into develop, in a worktree of its own
-      # and from a copy of this checkout's merge-back.ts. The state of every package is written to a file after
-      # each step.
+      # and from a copy of this checkout's merge-back.ts. In a stable the release commit of ardor also writes
+      # `released: <date>` into changelogs/<version>/log.md (stamp-release.ts) and adds that file. The state of every
+      # package is written to a file after each step.
       - name: Release the packages
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
@@ -337,13 +352,13 @@ jobs:
       # -------------------------------------------------------------------------
       # GITHUB RELEASE
       # -------------------------------------------------------------------------
-      # One Release for the run, on the tag of the last package it released (`ardor-v<version>` for a full run): a
-      # stable is marked Latest only when no higher stable tag exists, with the changelog entries added since the
-      # previous stable (or a line saying there is no change for users); a prerelease is marked Pre-release and
-      # never Latest. A tag that has a Release is skipped, and so is a tag this run did not make. The step runs
-      # after a chain that stopped too, because the tags it made stand. A failure is reported in the run summary
-      # and never fails or undoes a publish. The script refuses the tag of the atlas index, whose release is not a
-      # publish's.
+      # One Release for a stable run, on the tag of the last package it released (`ardor-v<version>` for a full run),
+      # marked Latest only when no higher stable tag exists. Its notes are changelogs/<version>/log.md without its
+      # frontmatter, then the packages, with migration-<version>.yaml attached when the folder holds a block. A
+      # prerelease makes no Release: the script says so and exits 0. A tag that has a Release is skipped, and so is a
+      # tag this run did not make. The step runs after a chain that stopped too, because the tags it made stand. A
+      # failure is reported in the run summary and never fails or undoes a publish. The script refuses the tag of the
+      # atlas index, whose release is not a publish's.
       - name: Create the GitHub Release
         if: ${{ !cancelled() }}
         continue-on-error: true

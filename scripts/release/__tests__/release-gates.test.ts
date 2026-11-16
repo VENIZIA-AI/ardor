@@ -776,6 +776,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   ];
   const REPORT_STEP = 'Report the run';
   const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
+  const HISTORY_STEP = 'Check the changelog history';
 
   const guards = {
     // S4.5, C3.5: a heal runs on develop or main and nowhere else; a release is planned unless it is a heal.
@@ -923,6 +924,43 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         steps.filter((step) => /GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(step.text)).length ===
           1 &&
         !/GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(publish.split(/\n {4}steps:\n/)[0] ?? '')
+      );
+    },
+    // #726: a stable checks the changelog history from the previous stable tag the plan found, on the whole history;
+    // a prerelease, or a stable with no earlier stable, skips it.
+    changelogHistoryForAStable: ({ workflow }: IFiles): boolean => {
+      const jobs = jobsOf(workflow);
+      const steps = stepsOf(jobs.test ?? '');
+      const names = steps.map((step) => step.name);
+      const history = steps.find((step) => step.name === HISTORY_STEP)?.text ?? '';
+      const checkout = steps.find((step) => step.name === 'Checkout')?.text ?? '';
+
+      return (
+        /\n {6}changelog_base: \$\{\{ steps\.plan\.outputs\.changelog_base \}\}\n/.test(
+          jobs.plan ?? '',
+        ) &&
+        /\n {10}fetch-depth: 0\n/.test(checkout) &&
+        names.filter((name) => name === HISTORY_STEP).length === 1 &&
+        names.indexOf(HISTORY_STEP) > names.indexOf('Install') &&
+        names.indexOf('Install') > -1 &&
+        /\n {8}if: \$\{\{ needs\.plan\.outputs\.kind == 'stable' && needs\.plan\.outputs\.changelog_base != '' \}\}\n/.test(
+          history,
+        ) &&
+        /\n {10}CHANGELOG_BASE: \$\{\{ needs\.plan\.outputs\.changelog_base \}\}\n/.test(history) &&
+        /\n {8}run: bun x --no-install vulcan changelog check --history --base "\$CHANGELOG_BASE"\n/.test(
+          history,
+        ) &&
+        !/continue-on-error/.test(history)
+      );
+    },
+    // #726: in a stable the release commit of ardor writes released: into the version folder and adds the file.
+    chainStampsTheFolder: ({ chain }: IFiles): boolean => {
+      const code = withoutComments(chain);
+
+      return (
+        code.includes("'scripts/release/stamp-release.ts'") &&
+        code.includes('...stampSteps,') &&
+        code.includes('...(stamp === undefined ? [] : [stamp.log]),')
       );
     },
     // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
@@ -1422,6 +1460,65 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
           '      - name: Report the run\n',
           '      - name: Create the GitHub Release\n        run: echo other\n\n      - name: Report the run\n',
         ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step is gone',
+      mutate: (text) =>
+        text.replace(
+          / {6}# A stable also checks the changelog history[\s\S]*?--base "\$CHANGELOG_BASE"\n/,
+          '',
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step runs for a prerelease too',
+      mutate: (text) =>
+        text.replace(
+          "if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}",
+          "if: ${{ needs.plan.outputs.changelog_base != '' }}",
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step is allowed to fail',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Check the changelog history\n',
+          '      - name: Check the changelog history\n        continue-on-error: true\n',
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step checks from another base',
+      mutate: (text) => text.replace('--base "$CHANGELOG_BASE"', '--base ardor-v0.4.7'),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the plan job does not output the base',
+      mutate: (text) =>
+        text.replace('      changelog_base: ${{ steps.plan.outputs.changelog_base }}\n', ''),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the test job checks out a shallow history',
+      mutate: (text) =>
+        text.replace(
+          /(\n {2}test:\n[\s\S]*?ref: \$\{\{ github\.sha \}\}\n) {10}fetch-depth: 0\n/,
+          '$1',
+        ),
+    },
+    {
+      guard: 'chainStampsTheFolder',
+      name: 'the release commit of ardor no longer stamps',
+      file: 'chain',
+      mutate: (text) => text.replace('      ...stampSteps,\n', ''),
+    },
+    {
+      guard: 'chainStampsTheFolder',
+      name: 'the release commit does not add the stamped file',
+      file: 'chain',
+      mutate: (text) => text.replace('...(stamp === undefined ? [] : [stamp.log]),', ''),
     },
     {
       guard: 'githubRelease',
