@@ -604,7 +604,7 @@ describe('release-plan.ts plan', () => {
     );
     const result2 = await Bun.file(result.outputPath).text();
     expect(result2).toBe(
-      'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\ndevelop_sha=\n',
+      'version=0.4.9-2\nkind=prerelease\nnpm_tag=next\ncatalog_tag=highest\ndevelop_sha=\nchangelog_base=\n',
     );
   });
 
@@ -820,5 +820,225 @@ describe('the driver picks the branch by the kind of the target (C1.5c)', () => 
         .split('\n')
         .filter((line) => !line.endsWith('release-plan.test.ts') && line !== ''),
     ).toEqual([]);
+  });
+});
+
+describe('ReleasePlan.changelogOf: what a stable needs of its version folder (#726)', () => {
+  const scratches: string[] = [];
+  const LOG = 'docs/changelogs/0.4.9/log.md';
+  const FRESH = '---\ntitle: 0.4.9\nversion: 0.4.9\n---\nBody.\n';
+  const DATE = '2026-11-20';
+
+  afterAll(() => {
+    for (const root of scratches) {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  /** A repository with the manifest, the tags of earlier runs and, unless `log` is undefined, the 0.4.9 folder. */
+  const repository = (opts: { log?: string; migrationFrom?: string }): string => {
+    const root = makeScratch({ prefix: 'release-plan-changelog-' });
+    const files: Record<string, string> = {
+      '.agents/vulcan.manifest.json': `${JSON.stringify({
+        release: { tagPattern: '<dir>-v<version>' },
+        knowledge: { changelogs: 'docs/changelogs', migrationFrom: opts.migrationFrom ?? '0.4.5' },
+        packages: ALL.map((dir) => ({ name: `@x/${dir}`, dir, retired: false })),
+      })}\n`,
+      ...(opts.log === undefined ? {} : { [LOG]: opts.log }),
+    };
+    const git = (args: string[]) =>
+      Bun.spawnSync(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: root });
+
+    scratches.push(root);
+
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(root, path, '..'), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+
+    git(['init', '-q', '-b', 'main']);
+    git(['add', '-A']);
+    git(['commit', '-q', '-m', 'init']);
+
+    for (const tag of [
+      'ardor-v0.4.7',
+      'ardor-v0.4.8',
+      'kernel-v0.4.8-9',
+      'ardor-v0.4.9-3',
+      'ardor-v0.4.10',
+    ]) {
+      git(['tag', tag]);
+    }
+
+    return root;
+  };
+  const stable = (packages: string[] = ALL) => ({
+    version: '0.4.9',
+    kind: 'stable' as const,
+    npmTag: 'latest' as const,
+    catalogTag: 'latest' as const,
+    packages,
+    skipped: ALL.filter((name) => !packages.includes(name)),
+  });
+
+  test('a stable whose folder is ready: no problem, the previous stable tag of ardor, and the date the trial stamps', () => {
+    expect(
+      ReleasePlan.changelogOf({ cwd: repository({ log: FRESH }), plan: stable(), date: DATE }),
+    ).toEqual({ problems: [], base: 'ardor-v0.4.8', stampDate: DATE });
+  });
+
+  test('a stable with no folder is refused, naming the missing path', () => {
+    const result = ReleasePlan.changelogOf({ cwd: repository({}), plan: stable(), date: DATE });
+
+    expect(result.problems).toEqual([
+      `the stable 0.4.9 has no version folder: write ${LOG} before releasing it`,
+    ]);
+  });
+
+  test('a stable whose folder already says released: is refused, the same day or another', () => {
+    for (const day of [DATE, '2026-11-03']) {
+      const result = ReleasePlan.changelogOf({
+        cwd: repository({ log: FRESH.replace('---\nBody', `released: ${day}\n---\nBody`) }),
+        plan: stable(),
+        date: DATE,
+      });
+
+      expect(result.problems.join('\n')).toContain(`${LOG} already says released: ${day}`);
+    }
+  });
+
+  test('the stamp is dry-run: a log.md with no frontmatter is refused before the approval', () => {
+    const result = ReleasePlan.changelogOf({
+      cwd: repository({ log: 'Body only.\n' }),
+      plan: stable(),
+      date: DATE,
+    });
+
+    expect(result.problems).toEqual([`${LOG} has no frontmatter to write released: into`]);
+  });
+
+  test('a resume whose ardor already has its release commit accepts the date that commit wrote, and stamps nothing', () => {
+    const result = ReleasePlan.changelogOf({
+      cwd: repository({ log: FRESH.replace('---\nBody', 'released: 2026-11-03\n---\nBody') }),
+      plan: stable(['kernel', 'react', 'admin']),
+      date: DATE,
+    });
+
+    expect(result).toEqual({ problems: [], base: 'ardor-v0.4.8', stampDate: undefined });
+  });
+
+  test('a plan that neither releases nor skips ardor does not accept a folder that is already dated', () => {
+    const result = ReleasePlan.changelogOf({
+      cwd: repository({ log: FRESH.replace('---\nBody', 'released: 2026-11-03\n---\nBody') }),
+      plan: { ...stable(['kernel']), skipped: [] },
+      date: DATE,
+    });
+
+    expect(result.problems.join('\n')).toContain('already says released: 2026-11-03');
+  });
+
+  test('a prerelease needs no folder, has no base and stamps nothing', () => {
+    expect(
+      ReleasePlan.changelogOf({
+        cwd: repository({}),
+        plan: {
+          ...stable(),
+          version: '0.4.9-4',
+          kind: 'prerelease',
+          npmTag: 'next',
+          catalogTag: 'highest',
+        },
+        date: DATE,
+      }),
+    ).toEqual({ problems: [], base: '', stampDate: undefined });
+  });
+
+  test('a project that keeps dated entries (migrationFrom is a date) needs no folder', () => {
+    expect(
+      ReleasePlan.changelogOf({
+        cwd: repository({ migrationFrom: '2026-11-15' }),
+        plan: stable(),
+        date: DATE,
+      }).problems,
+    ).toEqual([]);
+  });
+});
+
+describe('release-plan.ts plan: a stable and its version folder (#726)', () => {
+  const scratches: string[] = [];
+
+  afterAll(() => {
+    for (const root of scratches) {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  /** A resume on main: the four packages already at 0.4.9, so nothing reads the registry; `log` is the folder. */
+  const resume = (opts: { log?: string }) => {
+    const root = makeScratch({ prefix: 'release-plan-folder-' });
+    const files: Record<string, string> = {
+      '.agents/vulcan.manifest.json': `${JSON.stringify({
+        release: { tagPattern: '<dir>-v<version>' },
+        knowledge: { changelogs: 'docs/changelogs', migrationFrom: '0.4.5' },
+        packages: ALL.map((dir) => ({ name: `@x/${dir}`, dir, retired: false })),
+      })}\n`,
+      ...Object.fromEntries(
+        ALL.map((name) => [`packages/${name}/package.json`, JSON.stringify({ version: '0.4.9' })]),
+      ),
+      ...(opts.log === undefined ? {} : { 'docs/changelogs/0.4.9/log.md': opts.log }),
+    };
+    const git = (args: string[]) =>
+      Bun.spawnSync(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: root });
+
+    scratches.push(root);
+
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(root, path, '..'), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+
+    git(['init', '-q', '-b', 'main']);
+    git(['add', '-A']);
+    git(['commit', '-q', '-m', 'init']);
+    git(['tag', 'ardor-v0.4.8']);
+
+    const output = join(root, 'output.txt');
+    const proc = Bun.spawnSync(
+      [
+        'bun',
+        join(ROOT, 'scripts/release/release-plan.ts'),
+        'plan',
+        '--packages',
+        ALL.join(','),
+        '--version',
+        '0.4.9',
+        '--ref',
+        MAIN,
+      ],
+      { cwd: root, env: { ...process.env, GITHUB_OUTPUT: output } },
+    );
+
+    return { code: proc.exitCode, stderr: proc.stderr.toString(), output };
+  };
+
+  test('a stable with no folder exits 1 naming the path, and writes no output', async () => {
+    const result = resume({});
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'ERROR | the stable 0.4.9 has no version folder: write docs/changelogs/0.4.9/log.md before releasing it',
+    );
+    const written = await Bun.file(result.output).exists();
+
+    expect(written).toBe(false);
+  });
+
+  test('a stable with its folder writes changelog_base, the previous stable tag of ardor', async () => {
+    const result = resume({ log: '---\ntitle: 0.4.9\nreleased: 2026-11-03\n---\nBody.\n' });
+
+    expect(result.code).toBe(0);
+    const output = await Bun.file(result.output).text();
+
+    expect(output).toEndWith('changelog_base=ardor-v0.4.8\n');
   });
 });
