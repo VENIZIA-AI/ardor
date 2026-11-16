@@ -1,4 +1,3 @@
-import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 import { HttpResponseReader } from '@venizia/ignis-kernel/repository';
 
@@ -51,7 +50,10 @@ export class ResponseReader {
       };
     }
 
-    const parsedBody = await ResponseReader.readBody({ response, contentType });
+    const parsedBody = await HttpResponseReader.readBody({
+      response,
+      context: `[ResponseReader] ${response.status}`,
+    });
 
     // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
     // count-in-body request still reads `{ count, data }`.
@@ -206,37 +208,6 @@ export class ResponseReader {
     const header = opts.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
 
     return ResponseReader.parseFilename({ header });
-  }
-
-  /**
-   * The body of a textual 2xx answer: `null` when it is empty, the parsed value when the type says JSON,
-   * the text itself for any other textual type (`text/plain`, `text/csv`). A body that claims JSON and
-   * is not is a 502 `ApplicationError`; its content stays out of the message, which a server relaying
-   * the error may pass on to its own clients.
-   */
-  private static async readBody(opts: {
-    response: Response;
-    contentType: string;
-  }): Promise<unknown> {
-    const { response, contentType } = opts;
-    const text = await response.text();
-
-    if (text === '') {
-      return null;
-    }
-
-    if (!/json/i.test(contentType)) {
-      return text;
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw getError({
-        statusCode: HTTP.ResultCodes.RS_5.BadGateway,
-        message: `[ResponseReader] ${response.status} | The response body is not JSON (${text.length} chars, content-type: ${contentType})`,
-      });
-    }
   }
 
   /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
