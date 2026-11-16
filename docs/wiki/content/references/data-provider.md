@@ -74,11 +74,13 @@ export class RestDataConfiguration {
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
 | `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header |
 | `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options for the token refresh |
+| `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts a request that has not answered within `milliseconds` |
 
 - `noAuthPaths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
 - `noAuthPathRegex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
 - `requestTracingChannel`: defaults to `RequestChannel.WEB` (`'100_WEB'`).
 - `authRecovery`: `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint. A request to it never starts a refresh, and the default `refreshToken` posts to it.
+- `timeout`: `{ use: true, milliseconds: 15000 }` rejects a request still waiting after 15 seconds with a 504 coded `NETWORK_TIMEOUT_CODE`. `milliseconds` must be a positive integer, or building the provider throws. See [Abort and timeout](./network#abort-and-timeout).
 
 ## Example
 
@@ -192,12 +194,37 @@ Each react-admin method maps to one HTTP call:
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
 - **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
 - **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
-- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
+- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta` and `signal`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
 - **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
+
+## Abort a request
+
+The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none. One caveat of react-admin: its batched `getMany` (the references that several fields ask for in one tick) passes the signal of one caller for the whole batch, so unmounting one `ReferenceField` can abort the query of a sibling.
+
+To abort a request you send yourself, pass a `signal` in `ISendParams`:
+
+```ts
+import { type IDataProvider, RequestMethods } from '@venizia/ardor';
+
+export async function buildReport(opts: {
+  dataProvider: IDataProvider;
+  signal: AbortSignal;
+}): Promise<unknown> {
+  const { dataProvider, signal } = opts;
+  const response = await dataProvider.send({
+    resource: 'reports/build',
+    params: { method: RequestMethods.POST, body: { year: 2026 }, signal },
+  });
+
+  return response.data;
+}
+```
+
+An aborted request rejects with the signal's reason (an `AbortError`). It is not a 401: it starts no refresh, and `checkError` resolves for it. The `signal` is never sent as a filter key.
 
 ## Extended provider methods
 
-`IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
+`IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
 1. `send<TResult = unknown>(opts: { resource: TResource; params: ISendParams }): Promise<INetworkResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.

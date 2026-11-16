@@ -11,6 +11,7 @@ const native = {
   Blob: globalThis.Blob,
   File: globalThis.File,
   AbortController: globalThis.AbortController,
+  AbortSignal: globalThis.AbortSignal,
   URL: globalThis.URL,
   URLSearchParams: globalThis.URLSearchParams,
 };

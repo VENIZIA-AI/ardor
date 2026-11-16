@@ -1,6 +1,6 @@
 ---
 title: Network service
-description: DefaultNetworkRequestService - HTTP transport, headers, timeouts, 401 token recovery, and repository data source authentication.
+description: DefaultNetworkRequestService - HTTP transport, headers, abort and timeout, 401 token recovery, and repository data source authentication.
 ---
 
 # Network service
@@ -64,7 +64,9 @@ export class AuditReportService {
 | Export | Kind | Purpose |
 |---|---|---|
 | `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `NodeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with timeout and abort support |
+| `NodeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
+| `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
+| `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
 | `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
@@ -92,6 +94,7 @@ The data provider constructs the service using options injected from `CoreBindin
 - `headers` becomes base headers
 - `noAuthPaths` and `noAuthPathRegex` configure unauthenticated endpoints
 - `authRecovery` configures token refresh exclusion paths
+- `timeout` aborts a request that has not answered in time
 
 To supply custom network behavior - such as handling token refresh or in-memory credentials - subclass `DefaultNetworkRequestService` and override `createNetworkService()` on a `DefaultRestDataProvider` subclass (see [Auth recovery](../best-practices/auth-recovery) and [Data provider](./data-provider)).
 
@@ -102,7 +105,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Options
 
-`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
+`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService; timeout?: TRequestTimeoutOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
@@ -114,6 +117,7 @@ The configuration relies on the following defaults and container keys:
 | `authRecovery.refreshTokenPath` | `string` | `undefined` | Path substring excluded from 401 recovery retries. |
 | `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. |
 | `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel sent in the `x-request-channel` header. |
+| `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts each request after `milliseconds`; see [Abort and timeout](#abort-and-timeout). |
 
 - **`name`:** Used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
 - **`baseUrl` / `url`:** Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`.
@@ -125,7 +129,7 @@ The configuration relies on the following defaults and container keys:
 - **Your own `refreshToken`:** with no `authService`, an override that saves a new token itself must keep the identity of the session it refreshed, or return the new token, so the transport can tell a refresh from another user's sign-in in another tab during it; the default path does.
 - **`requestTracingChannel`:** Sent when `getRequestProps` prepares request options from `IRestDataProviderOptions`.
 
-## Fetch transport and timeout
+## Fetch transport
 
 ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out.
 
@@ -134,26 +138,56 @@ ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest`
 
 For non-HTTP transports such as WebSockets or custom protocols, see [Custom transport](../extensions/custom-transport).
 
-The fetcher handles request timeouts. If a `timeout` value in milliseconds is provided, it creates an `AbortController` and schedules a timer, combined with the caller's `signal`. If the request does not complete within the specified duration, the request is aborted and `fetch` rejects with an `AbortError`. The timer is cleared in a `finally` block:
+## Abort and timeout
+
+A hung server keeps a request waiting forever unless you set a timeout. Turn it on in the data provider options:
 
 ```ts
-import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import { configuration, CoreBindings, type IRestDataProviderOptions, provide } from '@venizia/ardor';
 
-export async function requestWithTimeout(): Promise<number> {
-  const transport = new NodeFetchNetworkRequest({
-    name: 'custom-transport',
-    networkOptions: { baseUrl: 'https://api.example.com' },
-  });
-
-  const service = transport.getNetworkService();
-  const response = await service.send({
-    url: 'https://api.example.com/health',
-    timeout: 3000,
-  });
-
-  return response.status;
+@configuration()
+export class ApiConfiguration {
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return {
+      url: 'https://api.example.com',
+      timeout: { use: true, milliseconds: 15000 },
+    };
+  }
 }
 ```
+
+- Each request of the data provider and of `doRequest`, the refresh request included, gets its own `milliseconds`. A repository request through an `HttpDataSource` does not.
+- A provider subclass that overrides `createNetworkService()` passes `timeout: this.restDataProviderOptions.timeout` to the service it builds, or the option has no effect.
+- A request that outlives it rejects with an `ApplicationError`: `statusCode` 504, `normalized.code` `NETWORK_TIMEOUT_CODE`, and a message naming the path and the milliseconds.
+- `milliseconds` must be a positive integer; any other value throws when the data provider is built, so `start()` fails.
+- The default is `{ use: false }`: no timeout.
+
+`doRequest` also takes a `signal` (an `AbortSignal`). An aborted request rejects with the signal's reason, an `AbortError` for `controller.abort()`. It is not a 401: it starts no refresh, and `DefaultAuthProvider.checkError` resolves for it. With a timeout on, a user abort still rejects with the abort, never with the timeout code.
+
+```ts
+import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
+
+export async function readHealth(controller: AbortController): Promise<unknown> {
+  const network = new DefaultNetworkRequestService({
+    name: 'health',
+    baseUrl: 'https://api.example.com',
+    noAuthPathRegex: /./,
+  });
+
+  const response = await network.doRequest({
+    type: RequestTypes.SEND,
+    method: RequestMethods.GET,
+    paths: ['/health'],
+    signal: controller.signal,
+  });
+
+  return response.data;
+}
+```
+
+> [!NOTE]
+> An abort cancels its own request only. A refresh its 401 started runs on for the other requests waiting on it; the aborted request then sends no retry.
 
 ## Headers and token resolution
 

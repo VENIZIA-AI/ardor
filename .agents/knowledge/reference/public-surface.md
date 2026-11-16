@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (102)
+### `@venizia/ardor-kernel` (104)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -74,6 +74,7 @@ generated:
 - `IStorageCodec` interface
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `provideOption` const
@@ -108,6 +109,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TStorageArea` type
 - `TStringConstValue` type
@@ -265,7 +267,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (204)
+### `@venizia/ardor` (206)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -379,6 +381,7 @@ generated:
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `provideOption` const
@@ -421,6 +424,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TSessionClearReason` type
 - `TStorageArea` type

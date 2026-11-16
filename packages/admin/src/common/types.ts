@@ -52,6 +52,8 @@ export interface IRestRequestOptions<TResource extends string = string> {
    * @default RequestCountData.DATA_ONLY
    */
   requestCountData?: TConstValue<typeof RequestCountData>;
+  /** Aborts the request; it then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
 
 /** The nine data methods of react-admin, as ra-core declares them. */
@@ -72,6 +74,12 @@ export type IReactAdminDataProvider<TResource extends string = string> = Pick<
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
+  /**
+   * `true` makes react-admin pass the `signal` of its queries to the read methods, so a read it no
+   * longer needs (a newer filter or page) is aborted. `DefaultRestDataProvider` sets it.
+   */
+  supportAbortSignal?: boolean;
+
   /** A request outside react-admin's methods: the same headers and auth, the method and body of `params`. */
   send: <TResult = unknown>(opts: {
     resource: TResource;

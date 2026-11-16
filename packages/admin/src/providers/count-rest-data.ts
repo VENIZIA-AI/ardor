@@ -22,8 +22,9 @@ export class CountRestDataProvider<
     queryKey: Record<string, unknown>;
     filter: IListFilter;
     extra?: TExtraRequest;
+    signal?: AbortSignal;
   }) {
-    const { resource, queryKey, filter } = opts;
+    const { resource, queryKey, filter, signal } = opts;
 
     // The base class reads the rows and keeps the route's list extras as `meta.extra`.
     const list = super.requestList<RecordType>(opts);
@@ -35,6 +36,7 @@ export class CountRestDataProvider<
       method: RequestMethods.GET,
       paths: [resource, 'count'],
       query: { ...queryKey, where: filter?.where },
+      signal,
     });
 
     return Promise.all([list, count]).then(([listResult, countResult]) => {
