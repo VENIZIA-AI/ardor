@@ -21,8 +21,9 @@ Service methods that make outbound calls are wrapped with the `@api()` decorator
 `DefaultAuthProvider.checkError` (part of the auth provider consumed by react-admin) inspects the status on the thrown error - `status` (react-admin's own `HttpError`), else `statusCode` (an `ApplicationError`) - and maps it to react-admin's expected reject shape:
 
 - `401` triggers `authService.cleanUp()` and rejects with `{ redirectTo: '/login' }`.
-- `403` rejects with `{ redirectTo: '/unauthorized', logoutUser: false }` - the session is kept alive, only the route changes.
+- `403` rejects with `{ redirectTo: '/access-denied', logoutUser: false }` (`unauthorizedPagePath`) - the session is kept alive, only the route changes. `/access-denied` is react-admin's route, where `ArdorApplication` mounts `AccessDeniedPage` unless the app passes `accessDenied`.
 - Anything else resolves, meaning react-admin treats it as not an auth-related failure.
+- An aborted request (a `DOMException` `AbortError`, no status) and a timed-out one (504, `NETWORK_TIMEOUT_CODE`) resolve with the rest: neither ends the session. See [Network layer](/architecture/network-layer.md).
 
 This is the bridge between thrown HTTP failures and the redirect behavior described in [Auth recovery](/architecture/auth-recovery.md). Since 2026-10-10 it falls back to `statusCode`, so every `doRequest` failure and the missing-token 401 (`getRequestAuthorizationHeader`) reach these branches; before, it read only `status`, which an `ApplicationError` never has, and a 401 or 403 from the data provider never redirected.
 

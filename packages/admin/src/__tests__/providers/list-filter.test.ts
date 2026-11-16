@@ -41,6 +41,14 @@ describe('ListFilterBuilder.build', () => {
     expect(extra).toBeUndefined();
   });
 
+  test('leaves react-admin abort signal out of the filter', () => {
+    const { filter } = ListFilterBuilder.build({
+      params: { filter: { status: 'open' }, signal: new AbortController().signal },
+    });
+
+    expect(Object.keys(filter)).not.toContain('signal');
+  });
+
   test('keeps a where the caller gave, and routes filter.params and meta into the query', () => {
     const { filter, queryKey, extra } = ListFilterBuilder.build({
       params: {

@@ -52,6 +52,8 @@ export interface IRestRequestOptions<TResource extends string = string> {
    * @default RequestCountData.DATA_ONLY
    */
   requestCountData?: TConstValue<typeof RequestCountData>;
+  /** Aborts the request; it then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
 
 /** The nine data methods of react-admin, as ra-core declares them. */
@@ -72,6 +74,12 @@ export type IReactAdminDataProvider<TResource extends string = string> = Pick<
 export interface IDataProvider<
   TResource extends string = string,
 > extends IReactAdminDataProvider<TResource> {
+  /**
+   * `true` makes react-admin pass the `signal` of its queries to the read methods, so a read it no
+   * longer needs (a newer filter or page) is aborted. `DefaultRestDataProvider` sets it.
+   */
+  supportAbortSignal?: boolean;
+
   /** A request outside react-admin's methods: the same headers and auth, the method and body of `params`. */
   send: <TResult = unknown>(opts: {
     resource: TResource;
@@ -178,8 +186,15 @@ export interface IApplication extends Omit<CoreAdminProps, 'children'> {
   logger?: ILogger;
   /** The store the Redux provider of the shell serves. Absent, the shell mounts no Redux provider. */
   reduxStore?: Store;
-  /** Rendered as the `Suspense` fallback and while feature messages for the locale load. */
+  /** Rendered while feature messages for the locale load, and inside the layout while a lazy route page loads. */
   suspense: ReactNode;
+
+  /**
+   * The page at `/access-denied`, where react-admin sends a user `canAccess` denies a resource and
+   * where `DefaultAuthProvider` sends a `403`.
+   * @default AccessDeniedPage
+   */
+  accessDenied?: CoreAdminProps['accessDenied'];
 
   /** The application's own resources; each feature's are mounted after them. */
   resources?: Array<ResourceProps>;

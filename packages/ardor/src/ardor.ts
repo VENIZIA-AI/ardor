@@ -10,9 +10,11 @@ export {
   useDocumentTitle,
   useFeatures,
   useHtmlLang,
+  useMenuEntries,
   useNotifyError,
   useRefreshToken,
   useRequestHeaderLocale,
+  useRoles,
   useTranslate,
   useUntypedTranslate,
 } from '@venizia/ardor-admin';

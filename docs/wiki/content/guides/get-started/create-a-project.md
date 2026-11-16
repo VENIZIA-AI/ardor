@@ -7,7 +7,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 `bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
 
-You get an ARDOR admin on Vite and React, styled with Tailwind CSS and shadcn components, with the REST data provider and i18n, plus a Dockerfile for an nginx image that gzips, answers `/health`, sends security headers and reads its configuration when the container starts. `bun x` fetches the latest VULCAN release, so you have the current preset unless you pinned an older one.
+You get an ARDOR admin on Vite and React, styled with Tailwind CSS and shadcn components, with the REST data provider and i18n (no sign-in), plus a Dockerfile for an nginx image that gzips, answers `/health`, sends security headers and reads its configuration when the container starts. `bun x` fetches the latest VULCAN release, so you have the current preset unless you pinned an older one.
 
 ## Initialize a New Monorepo
 
@@ -56,17 +56,17 @@ demo/
 
 - `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
-- `src/configurations/admin.configuration.ts` binds the REST data provider and the i18n provider (the auth provider stays unbound, so every page is public).
+- `src/configurations/admin.configuration.ts` binds two options: the REST data provider's (the API address, read with `RuntimeConfig.get`) and the auth provider's, `{ use: false }`, so every page is public. `BaseArdorApplication` binds the providers themselves, and the i18n provider needs no options for English.
 - `src/pages/home.tsx` is the one page: the ARDOR logo, the app name and the message the backend answers to `GET /api/hello`. It shows a placeholder while it loads, and when the backend is down it says so and shows `bun run server:dev`, the command that starts it, with a button to try again. The call goes through the data provider's `send`, not a raw `fetch`. Replace it with your own page.
 - `src/components/shadcn/*` are shadcn-style components, copied into the app as shadcn does, so you own them. There is no `components.json` (the app root holds nothing else): to add more with the shadcn CLI, run `bunx shadcn init` first, which writes its own.
 - `src/themes/index.css` is the whole Tailwind CSS v4 setup: `@import 'tailwindcss'`, the colour tokens of ARDOR's palette in a light and a dark set, and `@theme`. The theme follows the system's light or dark preference; there is no `tailwind.config` file.
-- `src/application.test.ts` has two tests: the container binds the REST data provider options (the API is `/api` by default), and the API url is the one `config.js` wrote when the container started.
+- `src/application.test.ts` has three tests: the container binds the REST data provider options (the API is `/api` by default), the API url is the one `config.js` wrote when the container started, and sign-in is off, so the admin has no sign-in page.
 - `src/boot.test.ts` calls `assertArdorApplicationBoots` on the real `Application`: every binding resolves, the providers the first render needs are bound and the messages load, with no browser and no network. See [Testing](../../references/testing).
 - `package.json` has the script names every ARDOR and IGNIS app has: `server:dev` and `compile` (`vite` and `vite build`, with `--config .configs/builders/vite.config.mts`; `compile` writes `dist/`), `typecheck` (`bun check`), `lint` and `lint:fix` (`devz lint`, the `devz` bin of `@venizia/dev-configs`), `test` (`bun test`) and `clean` (`devz clean`, which removes `dist/` and the tool caches). There is no `dev` and no `build`.
 - `.env.example` lists the variables the app reads: `PORT` (default 5173) and `API_URL`, the backend that the dev server forwards `/api` to, and `VITE_API_URL`, the API the app calls (see [One image for every environment](#one-image-for-every-environment)). An empty value keeps the default, which for `API_URL` is the backend chosen when the app was added and for `VITE_API_URL` is `/api`. Copy the file to `.env` to change them on your machine; `.env` stays out of git and out of the image.
 - `bunfig.toml` at the root of the monorepo holds the format of every file: its `[fmt]` section sets the print width, single quotes and arrow parentheses, and `devz lint` formats with `bun fmt`, which reads it from the app's folder up. There is no formatter config in the app.
 - `.configs/lints/.ignore` and `.configs/formatters/.ignore` hold only comments. `devz lint` skips the files whose patterns you add (one gitignore-style pattern per line, relative to the app): `lints/.ignore` for oxlint and ESLint, `formatters/.ignore` for `bun fmt`, which is where shadcn's `src/components/shadcn/**` goes if it must keep its own format.
-- `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables. Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
+- `.configs/builders/vite.config.mts` has the dev port and the `/api` proxy, from those variables, and `IgnisArtifactsVitePlugin`, which finds the decorated classes under `src/` ([Auto boot](../core-concepts/auto-boot)). Vite's root is `src/` (that is where `index.html` is), so the app root holds nothing but `.configs/`, `src/`, `package.json`, `tsconfig.json` and `.env.example`.
 - `.configs/builders/Dockerfile` and `nginx.conf.template` build and serve the app: see [An image of the app](#an-image-of-the-app).
 
 ### An image of the app
@@ -111,7 +111,7 @@ At start the image writes `/config.js` from the container's `VITE_` variables, a
 
 - **Only `VITE_` variables are published.** The name must be `VITE_` followed by capitals, digits and underscores. `DATABASE_URL`, `API_UPSTREAM` and every other variable stay in the container.
 - **A published value is public.** Every visitor can read `/config.js`. Never put a secret in a `VITE_` variable.
-- **Secret-looking names stop the container.** A `VITE_` name with `SECRET`, `PASSWORD`, `PASSWD`, `PASS`, `PRIVATE`, `CREDENTIAL` or `TOKEN` in it, or a value that is a URL with a user and a password in it, makes the container exit and name the variable (never the value), so a mistake shows at deploy. A name with `KEY` is fine: public keys are normal.
+- **Secret-looking names stop the container.** A `VITE_` name with `SECRET`, `PASSWORD`, `PASSWD`, `PASSPHRASE`, `PASSCODE`, `PRIVATE`, `CREDENTIAL` or `TOKEN` in it, or with `PASS` as a whole word between underscores (`VITE_DB_PASS`), or a value that is a URL with a user and a password in it, makes the container exit and name the variable (never the value), so a mistake shows at deploy. A name with `KEY` is fine: public keys are normal.
 - **Values are escaped.** Quotes, backslashes, newlines and `<` cannot end the string or the file.
 - **`config.js` is never cached.** nginx answers it with `Cache-Control: no-store`.
 - **A mounted `config.js` wins.** If you mount a read-only file over it, the container keeps your file.

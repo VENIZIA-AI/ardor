@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (100)
+### `@venizia/ardor-kernel` (104)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -66,6 +66,7 @@ generated:
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
 - `ISignInSession` interface
@@ -73,6 +74,7 @@ generated:
 - `IStorageCodec` interface
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `provideOption` const
@@ -85,6 +87,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -106,6 +109,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TStorageArea` type
 - `TStringConstValue` type
@@ -208,8 +212,9 @@ generated:
 
 ## admin
 
-### `@venizia/ardor-admin` (45)
+### `@venizia/ardor-admin` (50)
 
+- `AccessDeniedPage` const
 - `ApplicationProviders` class
 - `ArdorApplication` const
 - `BaseArdorApplication` class
@@ -227,6 +232,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
@@ -238,6 +244,7 @@ generated:
 - `SessionClearReasons` class
 - `TArdorRoute` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TI18nSource` type
 - `TSessionClearReason` type
@@ -249,18 +256,21 @@ generated:
 - `useDocumentTitle` const
 - `useFeatures` const
 - `useHtmlLang` const
+- `useMenuEntries` const
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
+- `useRoles` const
 - `useTranslate` const
 - `useUntypedTranslate` const
 - `vietnameseMessages` const
 
 ## ardor
 
-### `@venizia/ardor` (197)
+### `@venizia/ardor` (206)
 
 - `AbstractArdorApplication` class
+- `AccessDeniedPage` const
 - `api` const
 - `App` class
 - `ApplicationContext` const
@@ -327,6 +337,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `INetworkResponse` interface
 - `inject` const
 - `injectable` const
@@ -336,6 +347,7 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
+- `IRolePermissionProviderOptions` interface
 - `IRouteAccess` interface
 - `IScopedKeys` interface
 - `ISendParams` interface
@@ -369,6 +381,7 @@ generated:
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `provideOption` const
@@ -381,6 +394,7 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
@@ -399,6 +413,7 @@ generated:
 - `TElementTarget` type
 - `TEnvironment` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TFullPaths` type
 - `TI18nSource` type
@@ -409,6 +424,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TSessionClearReason` type
 - `TStorageArea` type
@@ -439,6 +455,7 @@ generated:
 - `useInjectable` function
 - `useIntersection` function
 - `useMediaQuery` const
+- `useMenuEntries` const
 - `useNotifyError` const
 - `useOnlineStatus` const
 - `useProvider` function
@@ -446,6 +463,7 @@ generated:
 - `useRepository` function
 - `useRequestHeaderLocale` const
 - `useResizeEffect` const
+- `useRoles` const
 - `useService` function
 - `useStoredState` const
 - `useTranslate` const

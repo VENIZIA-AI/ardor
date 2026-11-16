@@ -5,16 +5,14 @@ description: Configure custom message bundles, add a second language, type trans
 
 # Add a Language and Custom Messages
 
-To add custom messages and support multiple languages in ARDOR, bind `CoreBindings.I18N_PROVIDER_OPTIONS` in an application configuration class and provide `DefaultI18nProvider`.
+To add custom messages and support multiple languages in ARDOR, bind `CoreBindings.I18N_PROVIDER_OPTIONS` in an application configuration class. `BaseArdorApplication` binds `DefaultI18nProvider` itself and reads those options, so there is no provider to write.
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultI18nProvider,
-  inject,
-  provide,
+  type II18nProviderOptions,
+  provideOption,
   vietnameseMessages,
 } from '@venizia/ardor';
 
@@ -37,13 +35,8 @@ export const messagesVietnamese = {
 
 @configuration()
 export class I18nConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
+  @provideOption({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
+  i18nProviderOptions(): II18nProviderOptions {
     return {
       i18nSources: { en: messagesEnglish, vi: messagesVietnamese },
       languages: [
@@ -52,30 +45,53 @@ export class I18nConfiguration {
       ],
     };
   }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
-  }
 }
 ```
+
+`@configuration()` registers the class, and the build finds it.
 
 ## 1. Configure message bundles and provider options
 
 `DefaultI18nProvider` in `packages/admin/src/providers/i18n.ts` wraps `polyglotI18nProvider` from `ra-i18n-polyglot`. It resolves `II18nProviderOptions` (`packages/admin/src/common/types.ts`) bound under `CoreBindings.I18N_PROVIDER_OPTIONS`:
 
-- `i18nSources`: A dictionary mapping locale codes to translation objects, or to loaders (`vi: () => import('./vi')`) that keep a catalogue out of the boot bundle until its locale is used. Defaults to `{ en: englishMessages }`. See [Lazy sources](/references/i18n.md#lazy-sources).
+- `i18nSources`: A dictionary mapping locale codes to translation objects, or to loaders (`vi: () => import('./vi')`) that keep a catalogue out of the boot bundle until its locale is used. Defaults to `{ en: englishMessages }`. See [Lazy sources](../../references/i18n#lazy-sources).
 - `languages`: An array of available locales and their display labels. Defaults to `[{ locale: 'en', name: 'English' }]`.
 - `fallback`: The locale whose messages sit under every other locale. Defaults to `{ locale: 'en' }`.
 
-A catalogue lists only what it adds or changes. ARDOR's `englishMessages` (`packages/admin/src/common/locales/en.ts`) are always the bottom layer, so the standard react-admin keys (`ra.*`) read in English where a catalogue has no text for them, and a feature that ships only `en` shows its English texts in every language. A key a catalogue lacks falls back to English one key at a time; there is no need to spread `englishMessages` into it. Spread `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to take ARDOR's Vietnamese texts for `ra.*`, and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` layers the messages of `Features.define()` under `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features) and [Messages by layer](/references/i18n.md#messages-by-layer)). See [Configuration](../core-concepts/configuration) for configuration class details.
+A catalogue lists only what it adds or changes. ARDOR's `englishMessages` (`packages/admin/src/common/locales/en.ts`) are always the bottom layer, so the standard react-admin keys (`ra.*`) read in English where a catalogue has no text for them, and a feature that ships only `en` shows its English texts in every language. A key a catalogue lacks falls back to English one key at a time; there is no need to spread `englishMessages` into it. Spread `vietnameseMessages` (`packages/admin/src/common/locales/vi.ts`) to take ARDOR's Vietnamese texts for `ra.*`, and group custom translations under a dedicated namespace such as `app` to avoid collisions. When using modular features, `DefaultI18nProvider` layers the messages of `Features.define()` under `i18nSources`, so application dictionaries override feature labels (see [Features](../../references/features) and [Messages by layer](../../references/i18n#messages-by-layer)). See [Configuration](../core-concepts/configuration) for configuration class details.
 
 > [!NOTE]
 > `DefaultI18nProvider` sets `allowMissing: true`. If a translation key is missing from every layer, Polyglot outputs the key string instead of throwing an error, and the provider logs a warning once per key and locale.
 
-## 2. Translate messages in UI components
+## 2. Type custom keys with module augmentation
 
-Call the `useTranslate` hook from the `Ardor` namespace of `@venizia/ardor` to read messages inside React components:
+By default, `TUseTranslateKeys` accepts only `TUseTranslateKeysDefault`, computed as `TFullPaths<typeof englishMessages>`. Custom keys such as `'app.title'` cause a TypeScript error unless registered, so do this step before you call `translate` with them.
+
+Augment `IUseTranslateKeysOverrides` on `@venizia/ardor` using the kernel utility type `TFullPaths`. List only the keys you add: the default keys stay valid.
+
+```ts
+import type { TFullPaths } from '@venizia/ardor';
+
+export const appMessages = {
+  app: {
+    title: 'Acme Admin',
+    welcome: 'Welcome back',
+    products: { title: 'Products', empty: 'No products found' },
+  },
+};
+
+type TAppMessageKeys = TFullPaths<typeof appMessages>;
+
+declare module '@venizia/ardor' {
+  interface IUseTranslateKeysOverrides extends Record<TAppMessageKeys, true> {}
+}
+```
+
+Always augment `@venizia/ardor` rather than internal packages directly. For details, see [Module augmentation](../../best-practices/module-augmentation).
+
+## 3. Translate messages in UI components
+
+Call the `useTranslate` hook from the `Ardor` namespace of `@venizia/ardor` (the same function as `useTranslate`) to read messages inside React components:
 
 ```tsx
 import { Ardor } from '@venizia/ardor';
@@ -93,41 +109,13 @@ export const DashboardHeader = () => {
 };
 ```
 
-`Ardor.useTranslate()` already returns `TUseTranslateFn`, so a key is checked at compile time without an annotation. With no i18n provider mounted, ra-core's default provider answers.
-
-## 3. Type custom keys with module augmentation
-
-By default, `TUseTranslateKeys` accepts only `TUseTranslateKeysDefault`, computed as `TFullPaths<typeof englishMessages>`. Custom keys such as `'app.title'` cause a TypeScript error unless registered.
-
-Augment `IUseTranslateKeysOverrides` on `@venizia/ardor` using the kernel utility type `TFullPaths`:
-
-```ts
-import type { TFullPaths } from '@venizia/ardor';
-import { englishMessages } from '@venizia/ardor';
-
-export const appMessages = {
-  ...englishMessages,
-  app: {
-    title: 'Acme Admin',
-    welcome: 'Welcome back',
-    products: { title: 'Products', empty: 'No products found' },
-  },
-};
-
-type TAppMessageKeys = TFullPaths<typeof appMessages>;
-
-declare module '@venizia/ardor' {
-  interface IUseTranslateKeysOverrides extends Record<TAppMessageKeys, true> {}
-}
-```
-
-Always augment `@venizia/ardor` rather than internal packages directly. For details, see [Module augmentation](../../best-practices/module-augmentation).
+`Ardor.useTranslate()` already returns `TUseTranslateFn`, so a key is checked at compile time without an annotation: the keys under `app.*` compile because step 2 registered them. With no i18n provider mounted, ra-core's default provider answers.
 
 ## 4. Language switcher and initial locale
 
-`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It takes the stored locale, else the first of the browser's languages (`navigator.languages`) that `languages` offers, as the full tag (`pt-BR`) and then as its primary subtag (`pt`), else the first entry of `languages`. An app that offers only Vietnamese therefore starts in Vietnamese. See [Initial locale](/references/i18n.md#initial-locale). If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
+`DefaultI18nProvider.resolveInitialLocale` (`packages/admin/src/providers/i18n.ts`) determines the initial language when the provider is built. It takes the stored locale, else the first of the browser's languages (`navigator.languages`) that `languages` offers, as the full tag (`pt-BR`) and then as its primary subtag (`pt`), else the first entry of `languages`. An app that offers only Vietnamese therefore starts in Vietnamese. See [Initial locale](../../references/i18n#initial-locale). If a configured locale has no matching dictionary in `i18nSources`, `composeMessages` shows the fallback messages.
 
-The locale the user picks is stored in `localStorage` (`@app/prefs/locale`) and read first on the next visit, so a reload keeps the language. A sign-out does not remove it. Set `locale: { persist: { use: false } }` in the options to turn it off (see [The chosen locale is kept](/references/i18n.md#the-chosen-locale-is-kept)).
+The locale the user picks is stored in `localStorage` (`@app/prefs/locale`) and read first on the next visit, so a reload keeps the language. A sign-out does not remove it. Set `locale: { persist: { use: false } }` in the options to turn it off (see [The chosen locale is kept](../../references/i18n#the-chosen-locale-is-kept)).
 
 Use `useLocaleState` and `useLocales` from `ra-core` to render a language switcher:
 
@@ -166,7 +154,7 @@ Three hooks synchronize locale changes across the application:
 - `useHtmlLang()` (`packages/admin/src/hooks/use-html-lang.ts`): Sets `document.documentElement.lang` to the active locale string for screen readers.
 - `useDocumentTitle(options)` (`packages/admin/src/hooks/use-document-title.ts`): Sets `document.title` by joining `title` segments with `appTitle` using `separator` (default `' · '`). Options include `title`, `appTitle`, `separator`, and `enabled` (default `true`). On unmount, it restores the previous title unless a newer title was set.
 
-Place `useHtmlLang` and `useRequestHeaderLocale` in a root layout component, and use `useDocumentTitle` in screen components. Pass the layout component to the `layout` prop of `ArdorApplication` (see [Application](../core-concepts/application)):
+Place `useHtmlLang` and `useRequestHeaderLocale` in a root layout component, and use `useDocumentTitle` in screen components. The `app.*` keys of this step are the ones registered in step 2. Pass the layout component to the `layout` prop of `ArdorApplication` (see [Application](../core-concepts/application)):
 
 ```tsx
 import { Ardor } from '@venizia/ardor';

@@ -230,6 +230,7 @@ export class AppRestDataProvider extends DefaultRestDataProvider {
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery, // { refreshTokenPath: '/auth/token/refresh' }
       authService: this.authService, // the session of this application, with its keys
+      timeout: this.restDataProviderOptions.timeout, // without it the option has no effect
     });
   }
 }
@@ -305,6 +306,8 @@ export class ApiDataSource extends HttpDataSource {
 ```
 
 `getDataSourceAuth()` also sets `errorRootKey: 'error'`, so a repository error keeps the server's `normalized.code`, as the data provider's does. The refresh is shared by every call in flight, so one call's abort never cancels it: the aborted call is just not retried once the refresh settles.
+
+The data provider follows the same rule. react-admin aborts a read it no longer needs (the provider sets `supportAbortSignal: true`). When that read's `401` started the refresh, the refresh runs on, the other calls waiting on it retry with the new token, and the aborted call rejects with its `AbortError` and sends no retry. An abort is not a `401`: it never starts a refresh, and `checkError` resolves for it, so the session stays. With a `timeout` in the data provider options, the refresh request gets its own timeout too, so a hung refresh endpoint fails the refresh instead of holding every waiting call.
 
 The data provider must be a singleton. Declare it with `@provide` in a `@configuration()` class - `registerArtifacts()` binds it as a singleton. A bare `bind().toProvider()` in `bindContext()` is transient, so the datasource would receive its own data provider, with its own network service, token and refresh. Without a `refreshToken` override, a `401` from the repository stands, as it does for the data provider.
 

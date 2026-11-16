@@ -212,4 +212,11 @@ export const vietnameseMessages: TranslationMessages = {
       },
     },
   },
+  ardor: {
+    access_denied: {
+      title: 'Không có quyền truy cập',
+      message: 'Bạn không có quyền mở trang này.',
+      home: 'Về trang chủ',
+    },
+  },
 };

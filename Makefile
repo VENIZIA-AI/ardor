@@ -18,8 +18,8 @@ PKG_NAME = $(shell sed -n 's/^  "name": "\(.*\)",$$/\1/p' packages/$(1)/package.
 WIKI_REPO := VENIZIA-AI/ardor
 WIKI_LINKS_FLAGS := --skip .agents/knowledge/reference/public-surface.md,.agents/knowledge/reference/binding-keys.md,.agents/knowledge/reference/makefile-targets.md
 
-# The bins of this checkout, run by bun: never a fetching runner and never a same-named program on PATH.
-VULCAN := bun $(CURDIR)/node_modules/.bin/vulcan
+# VULCAN's own targets run its bin by path (the default of vulcan.mk). The dev-configs bin the same way: never a
+# fetching runner and never a same-named program on PATH.
 DEVZ := bun $(CURDIR)/node_modules/.bin/devz
 
 # VULCAN's targets (vulcan-sync, vulcan-doctor, okf-*, surface-*, atlas-symbols, atlas-releases).

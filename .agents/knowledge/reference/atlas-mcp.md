@@ -26,7 +26,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 
 ## How it runs
 
-`vulcan sync` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
+`vulcan sync` registers it as `bun <root>/node_modules/.bin/vulcan x atlas mcp --root <root>`: the bin of this checkout by its path, never a runner that fetches a package by name.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
   `package.json`; `scripts/checks/atlas-smoke.ts` runs `bun node_modules/.bin/vulcan x atlas mcp --root .`, the bin of

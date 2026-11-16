@@ -5,7 +5,7 @@ description: How to write ARDOR services on BaseService and resource repositorie
 
 # Writing services and repositories
 
-A service is a plain class that owns one job and one logger: extend `BaseService`. Reading and writing one backend resource is a repository's job: extend `HttpRepository` from `@venizia/ardor/repository`. This page shows how to write both so they stay small, testable, and free of react-admin types.
+A service is a plain class that owns one job and one logger: extend `BaseService` and mark it `@service()`. Reading and writing one backend resource is a repository's job: extend `HttpRepository` from `@venizia/ardor/repository` and mark it `@repository()`. This page shows how to write both so they stay small, testable, and free of react-admin types.
 
 ## Prerequisites
 
@@ -16,10 +16,12 @@ A running ARDOR application with a container - see the [quickstart](../guides/ge
 | Export | Kind | Use it for |
 | --- | --- | --- |
 | `BaseService` | class | Any service. Takes `{ scope }` and sets `this.logger`. |
+| `@service()` | decorator | Registers the class, so components resolve it with `Ardor.useService({ target })`. |
 | `HttpRepository` | class | Reads and writes one backend resource over an `HttpDataSource`. From `@venizia/ardor/repository`. |
+| `@repository()` | decorator | Registers the repository and injects its datasource into constructor parameter 0. |
 | `api` | function | Method decorator for any `BaseService`. Logs a failure with the method name, then rethrows. |
 | `ISendParams` / `INetworkResponse` | interface | The kernel's transport contract. Enough for a service - no react-admin types needed. |
-| `useService` / `useRepository` | const | How a component resolves a service or a repository from the container. |
+| `Ardor.useService` / `Ardor.useRepository` | const | How a component resolves a service or a repository from the container. |
 
 ## BaseService: scope + logger
 
@@ -36,8 +38,9 @@ class BaseService {
 Use the class name as the scope. That way the log line names the class that wrote it.
 
 ```ts
-import { BaseService } from '@venizia/ardor';
+import { BaseService, service } from '@venizia/ardor';
 
+@service()
 export class ClockService extends BaseService {
   constructor() {
     super({ scope: ClockService.name });
@@ -54,9 +57,10 @@ Without a logger provider the lines go to the console as `[scope] message`. To s
 
 ## A resource: HttpRepository
 
-A class about one backend collection, such as `products` or `orders`, is a repository. `HttpRepository` reads and writes it through an `HttpDataSource` with the IGNIS filter vocabulary, and reads totals from the `Content-Range` header.
+A class about one backend collection, such as `products` or `orders`, is a repository. `HttpRepository` reads and writes it through an `HttpDataSource` with the IGNIS filter vocabulary, and reads totals from the `Content-Range` header. `@repository` injects the datasource, declared with `@datasource()`, into constructor parameter 0.
 
 ```ts
+import { datasource, repository, RepositoryTypes } from '@venizia/ardor';
 import { HttpDataSource, HttpRepository } from '@venizia/ardor/repository';
 
 interface IProduct {
@@ -64,9 +68,17 @@ interface IProduct {
   price: number;
 }
 
+@datasource()
+export class ApiDataSource extends HttpDataSource {
+  constructor() {
+    super({ baseUrl: '/api' });
+  }
+}
+
+@repository({ type: RepositoryTypes.REMOTE, dataSource: ApiDataSource })
 export class ProductRepository extends HttpRepository<IProduct> {
-  constructor(opts: { dataSource: HttpDataSource }) {
-    super({ dataSource: opts.dataSource, resource: 'products' });
+  constructor(dataSource: ApiDataSource) {
+    super({ dataSource, resource: 'products' });
   }
 
   countAbove(opts: { price: number }) {
@@ -102,8 +114,10 @@ function api(): (
 The logged line looks like `[getPrice] resource: products | error: ...`. You get this for free on every method you decorate, so you do not write a `try/catch` just to log.
 
 ```ts
-import { api, BaseService } from '@venizia/ardor';
+import { api, BaseService, service } from '@venizia/ardor';
+import { getError } from '@venizia/ignis-inversion';
 
+@service()
 export class PricingService extends BaseService {
   protected resource = 'products';
 
@@ -114,27 +128,61 @@ export class PricingService extends BaseService {
   @api()
   async getPrice(opts: { id: number }): Promise<number> {
     const response = await fetch(`/${this.resource}/${opts.id}/price`);
+
     if (!response.ok) {
-      throw new Error(`price lookup failed with ${response.status}`);
+      throw getError({
+        message: `[getPrice] Price lookup failed | id: ${opts.id} | status: ${response.status}`,
+      });
     }
-    return response.json();
+
+    const price: unknown = await response.json();
+
+    if (typeof price !== 'number') {
+      throw getError({ message: `[getPrice] The price is not a number | id: ${opts.id}` });
+    }
+
+    return price;
   }
 }
 ```
 
 ## Return `response.data`
 
-When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service.
+When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service. `IDataProvider.send` is the transport call: it takes the resource and an `ISendParams` and answers an `INetworkResponse`.
 
-```ts no-check
-import { api, BaseService, ISendParams, INetworkResponse } from '@venizia/ardor';
+```ts
+import {
+  api,
+  BaseService,
+  CoreBindings,
+  type IDataProvider,
+  inject,
+  type INetworkResponse,
+  RequestMethods,
+  service,
+} from '@venizia/ardor';
 
-export class PricingService extends BaseService {
-  ...
+interface IQuote {
+  id: number;
+  total: number;
+}
+
+@service()
+export class QuoteService extends BaseService {
+  constructor(
+    @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+    private readonly dataProvider: IDataProvider,
+  ) {
+    super({ scope: QuoteService.name });
+  }
 
   @api()
-  async list(opts: ISendParams): Promise<INetworkResponse['data']> {
-    const response = await ... // your transport call, see the network reference
+  async list(): Promise<INetworkResponse<Array<IQuote>>['data']> {
+    const response = await this.dataProvider.send<Array<IQuote>>({
+      resource: 'quotes',
+      params: { method: RequestMethods.GET },
+    });
+
     return response.data;
   }
 }
@@ -142,7 +190,7 @@ export class PricingService extends BaseService {
 
 ## Throw with `getError`
 
-The kernel throws its own errors with `getError` from `@venizia/ignis-inversion`, using an options object:
+The kernel throws its own errors with `getError` from `@venizia/ignis-inversion`, using an options object. ARDOR does not re-export it:
 
 ```ts no-check
 import { getError } from '@venizia/ignis-inversion';
@@ -167,19 +215,50 @@ So do not keep per-request state on the class. No `this.currentId`, no `this.las
 
 ## Where a service lives and how a component reaches it
 
-Register the class by stereotype or by hand (`this.service(PricingService)`, `this.repository(ProductRepository)`); either binds a singleton and records the key on the class. A component does not import the class and `new` it. It asks the container by class, and the hook checks the class is bound under `services.` or `repositories.`.
+Register the class by stereotype (`@service()`, `@repository()`) or by hand (`this.service(PricingService)`, `this.repository(ProductRepository)`); either binds a singleton and records the key on the class. A component does not import the class and `new` it. It asks the container by class, and the hook checks the class is bound under `services.` or `repositories.`.
 
-```tsx no-check
-import { useRepository, useService } from '@venizia/ardor';
+```tsx
+import { Ardor, BaseService, repository, service } from '@venizia/ardor';
+import { useEffect, useState } from 'react';
+
+@service()
+export class PricingService extends BaseService {
+  constructor() {
+    super({ scope: PricingService.name });
+  }
+
+  getPrice(opts: { id: number }): Promise<number> {
+    return Promise.resolve(opts.id * 3);
+  }
+}
+
+@repository()
+export class ProductRepository {
+  countAbove(opts: { price: number }): Promise<number> {
+    return Promise.resolve(opts.price > 100 ? 0 : 7);
+  }
+}
 
 export function ProductPrice(props: { id: number }) {
-  const pricing = useService({ target: PricingService });
-  const products = useRepository({ target: ProductRepository });
-  ...
+  const pricing = Ardor.useService({ target: PricingService });
+  const products = Ardor.useRepository({ target: ProductRepository });
+  const [price, setPrice] = useState<number>();
+  const [expensive, setExpensive] = useState<number>();
+
+  useEffect(() => {
+    pricing.getPrice({ id: props.id }).then(setPrice);
+    products.countAbove({ price: 100 }).then(setExpensive);
+  }, [pricing, products, props.id]);
+
+  return (
+    <p>
+      {price} ({expensive} products cost more than 100)
+    </p>
+  );
 }
 ```
 
-The component never sees how the class was built. Swap the implementation in the container and the component does not change. See [binding keys](./binding-keys) for how to name keys and [hooks](../references/hooks) for the hook signatures.
+The classes here stand in for yours, which live in their own files. The component never sees how the class was built. Swap the implementation in the container and the component does not change, as long as the replacement extends the class it replaces (the hook checks the bound class) or is a value binding. `Ardor.useX` and `useX` are the same function. See [binding keys](./binding-keys) for how keys are built and [hooks](../references/hooks) for the hook signatures.
 
 ## Common pitfalls
 
@@ -188,6 +267,7 @@ The component never sees how the class was built. Swap the implementation in the
 - **Reusing a scope.** Two classes with one scope are indistinguishable in the log.
 - **Hiding debug lines by accident.** Each level is written through the console method of the same name (`console.debug`, `info`, `warn`, `error`). Browsers hide `console.debug` under the default filter, so enable the Verbose level to see debug output.
 - **Storing request state on the class.** The service is a singleton. State on the instance is shared by every caller.
+- **Leaving out the stereotype.** A class with no `@service()` and no `this.service(X)` has no recorded key, so `Ardor.useService({ target })` throws.
 
 ## Related
 
@@ -196,4 +276,4 @@ The component never sees how the class was built. Swap the implementation in the
 - [Network](../references/network) - the transport a service calls
 - [Data provider](../references/data-provider) - where react-admin types belong
 - [Types](../references/types) - `ISendParams`, `INetworkResponse`, and other kernel types
-- [Module augmentation](./module-augmentation) - typing your own binding keys
+- [Module augmentation](./module-augmentation) - typing translation keys and the keys of values bound by hand

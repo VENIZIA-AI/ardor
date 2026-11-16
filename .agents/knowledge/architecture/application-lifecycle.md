@@ -69,7 +69,8 @@ The tree it mounts, outermost first:
 - `ApplicationContext.Provider`, whose value (`IApplicationContextValue`) carries the container and an IGNIS `ILogger`: the `logger` prop of `ArdorApplication`, else a console logger named after the application (built once per name, not per render) - see [debugging](/process/debugging.md). Hooks throughout the tree call `container.get(...)` through it for anything else the application bound.
 - A react-redux `Provider` over `reduxStore`, mounted only when the prop is passed.
 - `React.Suspense` with `suspense` as its fallback.
-- `CoreAdmin` with `adminProps`.
+- `CoreAdmin` with `adminProps`. Each custom route page sits in its own `React.Suspense` with the same
+  fallback, so a `React.lazy` page suspends inside the layout and the layout stays mounted.
 
 See [hooks and context](/architecture/hooks-and-context.md) for how components reach back into the container, and [the public surface](/reference/public-surface.md) for the providers and hooks each package exports.
 

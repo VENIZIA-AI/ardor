@@ -5,28 +5,19 @@ description: Options, configuration, HTTP mapping, and error handling for Defaul
 
 # REST data provider
 
-`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON:
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. `BaseArdorApplication` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` itself, as a singleton, so react-admin, the auth provider and every hook share one instance. Your application binds only its options: a `@configuration()` class with a `@provideOption({ key })` method, which `start()` binds as a lazy singleton:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
-  type IDataProvider,
-  inject,
   type IRestDataProviderOptions,
-  provide,
+  provideOption,
 } from '@venizia/ardor';
 
 @configuration()
 export class RestDataConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
@@ -34,17 +25,14 @@ export class RestDataConfiguration {
       requestTracingChannel: 'admin',
     };
   }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider(): IDataProvider {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
 }
 ```
 
+To replace the provider with a subclass, bind the subclass class under the key in `bindContext()`: `.toProvider(MyRestDataProvider).setScope(BindingScopes.SINGLETON)` (see [CountRestDataProvider](../extensions/count-provider)).
+
 ## What it does
 
-`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) instantiates the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) builds the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
@@ -74,11 +62,13 @@ export class RestDataConfiguration {
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
 | `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header |
 | `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options for the token refresh |
+| `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts a request that has not answered within `milliseconds` |
 
 - `noAuthPaths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
 - `noAuthPathRegex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
 - `requestTracingChannel`: defaults to `RequestChannel.WEB` (`'100_WEB'`).
 - `authRecovery`: `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint. A request to it never starts a refresh, and the default `refreshToken` posts to it.
+- `timeout`: `{ use: true, milliseconds: 15000 }` rejects a request still waiting after 15 seconds with a 504 coded `NETWORK_TIMEOUT_CODE`. `milliseconds` must be a positive integer, or building the provider throws. See [Abort and timeout](./network#abort-and-timeout).
 
 ## Example
 
@@ -192,17 +182,44 @@ Each react-admin method maps to one HTTP call:
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
 - **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
 - **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
-- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
+- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta` and `signal`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
 - **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
+
+## Abort a request
+
+The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none. One caveat of react-admin: its batched `getMany` (the references that several fields ask for in one tick) passes the signal of one caller for the whole batch, so unmounting one `ReferenceField` can abort the query of a sibling.
+
+To abort a request you send yourself, pass a `signal` in `ISendParams`:
+
+```ts
+import { type IDataProvider, RequestMethods } from '@venizia/ardor';
+
+export async function buildReport(opts: {
+  dataProvider: IDataProvider;
+  signal: AbortSignal;
+}): Promise<unknown> {
+  const { dataProvider, signal } = opts;
+  const response = await dataProvider.send({
+    resource: 'reports/build',
+    params: { method: RequestMethods.POST, body: { year: 2026 }, signal },
+  });
+
+  return response.data;
+}
+```
+
+An aborted request rejects with the signal's reason (an `AbortError`). It is not a 401: it starts no refresh, and `checkError` resolves for it. The `signal` is never sent as a filter key.
 
 ## Extended provider methods
 
-`IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
+`IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
 1. `send<TResult = unknown>(opts: { resource: TResource; params: ISendParams }): Promise<INetworkResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   type IDataProvider,
   RequestBodyTypes,
@@ -231,7 +248,7 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 
   const dataSourceAuth = dataProvider.getDataSourceAuth();
   if (dataSourceAuth.errorRootKey !== 'error') {
-    throw new Error('Unexpected error root key');
+    throw getError({ message: '[configureNetwork] Unexpected error root key' });
   }
 }
 ```
@@ -239,8 +256,8 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 ## Error handling
 
 When the backend responds with an HTTP status outside the 200-299 range:
-1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` unwraps the response payload using the `'error'` root key (`HttpResponseReader.readError`).
-2. The service creates an application error via `getError` with:
+1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` hands the response to `ResponseReader.toError` (`packages/kernel/src/helpers/networks/response-reader.ts`), which unwraps the payload using the `'error'` root key (`HttpResponseReader.readError`).
+2. `ResponseReader.toError` creates an application error via `getError` with:
    - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
    - `message`: `server.normalized?.text ?? server.message ?? \`HTTP ${response.status}\``. This provides the user-facing error message displayed by react-admin notifications.
    - `messageCode`: Server error code from `server.normalized?.code` (for example, `ERR_NOT_FOUND`).
@@ -248,4 +265,4 @@ When the backend responds with an HTTP status outside the 200-299 range:
    - `extra`: Dictionary containing `extra.requestId` (assigned from `server.requestId`, preserving any upstream request ID in `extra.upstreamRequestIds`), or `undefined` if empty.
    - `cause`: Underlying server cause details from `server.details?.cause`.
 3. React-admin catches the thrown error and forwards it to `authProvider.checkError(error)`.
-4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it clears local session storage (`DefaultAuthService.cleanUp()`) and rejects with `{ redirectTo: this.loginPagePath }`, prompting react-admin to redirect the user to the login screen. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }`.
+4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: this.loginPagePath }`, which has react-admin send the user to the login screen) and clears the session (`DefaultAuthService.cleanUp()`) unless that rejection says `logoutUser: false`. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }` (`/access-denied` by default).

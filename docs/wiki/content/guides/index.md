@@ -9,13 +9,13 @@ ARDOR is the browser framework of [VENIZIA](https://venizia.ai). It structures r
 
 ARDOR gives you:
 
-- **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks to resolve what you bind (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
+- **A container and decorators in the browser** (`@venizia/ardor-kernel`), with React hooks that resolve what you bind by class (`@venizia/ardor-react`). `@venizia/ardor` re-exports the kernel, react and admin packages.
 - **A REST data provider, token refresh on a 401 and i18n for ra-core** (`@venizia/ardor-admin`).
 - **An HTTP repository** from IGNIS on `@venizia/ardor/repository`, which can share the data provider's token and 401 refresh through `getDataSourceAuth()`.
 - **Runtime configuration.** `RuntimeConfig.get` reads `window.__APP_CONFIG__`, so one built image serves every environment; `RuntimeConfig.getRequired` throws an error that carries a code when a value is missing. See [One image for every environment](./get-started/create-a-project#one-image-for-every-environment).
 - **A VULCAN preset** that generates an admin with Tailwind, an nginx image (gzip, `/health`, security headers) and that runtime configuration.
 
-ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
+ARDOR is before 1.0, and any release, a patch included, can break: read [where ARDOR is today](./get-started/philosophy#where-ardor-is-today).
 
 <WhereToStart :items="[
   { title: 'Create a Project', text: 'Start a monorepo with an admin, or add one to a monorepo you have, with one VULCAN command.', href: '/guides/get-started/create-a-project' },
@@ -72,6 +72,10 @@ ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](
   <h3>Dependency Injection</h3>
   <p>Resolve services and repositories across React components and container scopes</p>
 </a>
+<a href="./core-concepts/auto-boot" class="guide-card">
+  <h3>Auto Boot</h3>
+  <p>How the build finds your decorated classes, binds them at start, and what to do when it does not</p>
+</a>
 <a href="./get-started/philosophy" class="guide-card">
   <h3>Philosophy</h3>
   <p>Architectural principles and design decisions behind ARDOR and IGNIS</p>
@@ -101,7 +105,7 @@ ARDOR is before 1.0, and a minor release can break: read [where ARDOR is today](
 </div>
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">3</span><h4>Understand the Framework</h4></div>
-  <p><a href="./core-concepts/application">Application</a> → <a href="./core-concepts/configuration">Configuration</a> → <a href="./core-concepts/providers">Providers</a> → <a href="./core-concepts/resources-and-pages">Resources and Pages</a> → <a href="./core-concepts/dependency-injection">Dependency Injection</a></p>
+  <p><a href="./core-concepts/application">Application</a> → <a href="./core-concepts/configuration">Configuration</a> → <a href="./core-concepts/providers">Providers</a> → <a href="./core-concepts/resources-and-pages">Resources and Pages</a> → <a href="./core-concepts/dependency-injection">Dependency Injection</a> → <a href="./core-concepts/auto-boot">Auto Boot</a></p>
   <span class="stage-desc">Deep dive into container lifecycles, configuration classes, and dependency resolution</span>
 </div>
 <div class="roadmap-stage">

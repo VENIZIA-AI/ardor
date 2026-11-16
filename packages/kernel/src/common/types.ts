@@ -63,7 +63,15 @@ export interface ISendParams {
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
+  /** Aborts the request; it then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
+
+/**
+ * How long a request may take before it is aborted and rejects with `NETWORK_TIMEOUT_CODE`.
+ * `milliseconds` is a positive integer.
+ */
+export type TRequestTimeoutOptions = { use: false } | { use: true; milliseconds: number };
 
 /** One of the `RequestBodyTypes` values. */
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
@@ -223,6 +231,13 @@ export interface IRestDataProviderOptions extends INoAuthOptions {
 
   /** Enables the refresh-and-retry after a 401. */
   authRecovery?: IAuthRecoveryOptions;
+
+  /**
+   * Aborts a request that has not answered within `milliseconds`; it rejects with a 504 whose
+   * `normalized.code` is `NETWORK_TIMEOUT_CODE`. An invalid `milliseconds` throws when the provider is built.
+   * @default { use: false }
+   */
+  timeout?: TRequestTimeoutOptions;
 }
 
 /** The token an application is signed in with. */
@@ -280,7 +295,18 @@ export interface IFeatureBase {
    * @default []
    */
   configurations?: Array<TClass<unknown>>;
-  /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
+  /**
+   * The feature's own stereotyped classes, by value, in the shape of the application's
+   * `artifacts()` index. Importing the feature module imports them, so discovery binds them, and
+   * `start()` checks each was discovered.
+   * @default {}
+   */
+  artifacts?: IArtifactIndex;
+  /**
+   * The permission names the feature's pages use, in the application's vocabulary: metadata for a
+   * role editor to list. Descriptive only, it enforces nothing; `access` on a route or a menu entry
+   * is what asks `canAccess`.
+   */
   permissions?: Array<string>;
 }
 
@@ -305,6 +331,16 @@ export interface IArtifactIndex {
  */
 export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
+}
+
+/** The options of `RolePermissionProvider`, bound under `CoreBindings.PERMISSION_PROVIDER_OPTIONS`. */
+export interface IRolePermissionProviderOptions {
+  /**
+   * Role name to grant patterns. A pattern is `'<resource>.<action>'`, `'<resource>.*'`, `'*.<action>'`
+   * or `'*'`; anything else throws when the provider is built. A pattern has one `.`, so a resource whose
+   * name contains a `.` cannot be named exactly: grant it with `'*.<action>'` or `'*'`, or give it a name without one.
+   */
+  grants: Record<string, ReadonlyArray<string>>;
 }
 
 /**

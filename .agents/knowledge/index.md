@@ -100,7 +100,7 @@ How the work gets done.
 
 ## Examples
 
-Runnable apps. [5-mins-qs](/examples/5-mins-qs.md) is the smallest thing that runs; [vert-admin](/examples/vert-admin.md) is the family reference over IGNIS's `vert` API; [ipc-data-provider](/examples/ipc-data-provider.md) is the custom-transport tutorial.
+Runnable apps. [5-mins-qs](/examples/5-mins-qs.md) is the smallest thing that runs; [vert-admin](/examples/vert-admin.md) is the family reference over IGNIS's `vert` API; [ipc-data-provider](/examples/ipc-data-provider.md) is the custom-transport tutorial; [shell](/examples/shell.md) is a thin shell over two feature packages, with role-based permissions.
 
 ## Reference
 

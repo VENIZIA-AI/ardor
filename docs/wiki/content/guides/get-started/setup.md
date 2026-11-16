@@ -49,7 +49,7 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 bun add -d @venizia/ignis-boot
 ```
 
-Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`. `@venizia/ignis-boot` is the build tool of [Auto boot](../core-concepts/auto-boot): it finds the decorated classes of your app so you keep no list of them.
 
 ARDOR needs the IGNIS versions its peers name: `bun pm view @venizia/ardor@<version> peerDependencies` prints them, and the [0.4.8 changelog](../../changelogs/0.4.8) lists them for the 0.4.8 prerelease.
 
@@ -84,10 +84,21 @@ ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires l
 
 ## Step 5: Verify Your Setup
 
-Check that TypeScript compiles without errors and that Vite produces a production build:
+The `react-ts` template builds with `tsc -b && vite build`. ARDOR type-checks with `bun check`, so change the `build` script in `package.json` to `vite build` and add a `typecheck` script:
+
+```json
+{
+  "scripts": {
+    "typecheck": "bun check --no-pretty -p tsconfig.app.json",
+    "build": "vite build"
+  }
+}
+```
+
+Then check that the types are sound and that Vite produces a production build:
 
 ```bash
-bun check --no-pretty -p tsconfig.app.json
+bun run typecheck
 bun run build
 ```
 

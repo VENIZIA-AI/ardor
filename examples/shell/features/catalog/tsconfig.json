@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "@venizia/dev-configs/tsconfig.react.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "isolatedModules": true,
+
+    // Restated, not inherited: Bun and Vite read the decorator options of the tsconfig next to the file.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src"]
+}

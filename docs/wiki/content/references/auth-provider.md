@@ -5,30 +5,20 @@ description: DefaultAuthProvider and DefaultAuthService - sign-in contract, stor
 
 # Auth provider
 
-`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. Bind `AUTH_PROVIDER_OPTIONS`, `DEFAULT_AUTH_SERVICE`, and `DEFAULT_AUTH_PROVIDER` in an application [configuration](../guides/core-concepts/configuration) class:
+`DefaultAuthProvider` bridges react-admin authentication with the backend API through the REST data provider, storing authentication tokens, identity records, and role sets in `localStorage` via `DefaultAuthService`. `BaseArdorApplication` binds `DefaultAuthProvider`, `DefaultAuthService` and the data provider itself. Your application binds only the options, in a [configuration](../guides/core-concepts/configuration) class: `AUTH_PROVIDER_OPTIONS` with `use: true` turns sign-in on, and `REST_DATA_PROVIDER_OPTIONS` names the sign-in route in `noAuthPaths`.
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultRestDataProvider,
-  type IAuthProviderOptions,
   type IRestDataProviderOptions,
-  inject,
-  provide,
+  provideOption,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AuthConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
@@ -36,9 +26,10 @@ export class AuthConfiguration {
     };
   }
 
-  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions(): IAuthProviderOptions {
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
     return {
+      use: true,
       paths: {
         signIn: '/auth/sign-in',
         checkAuth: '/auth/whoami',
@@ -46,23 +37,10 @@ export class AuthConfiguration {
       },
     };
   }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService(): DefaultAuthService {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
-  }
 }
 ```
+
+To replace the provider, subclass it and bind the subclass under `CoreBindings.DEFAULT_AUTH_PROVIDER` in `bindContext()`: `this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(MyAuthProvider).setScope(BindingScopes.SINGLETON)`. The examples below subclass it.
 
 ## Exports
 
@@ -70,6 +48,7 @@ export class AuthConfiguration {
 | --- | --- | --- |
 | `DefaultAuthProvider` | class | react-admin auth provider implementing `IAuthProvider` |
 | `DefaultAuthService` | class | Service managing auth tokens, identity, and permissions in `localStorage` |
+| `TAuthProviderOptions` | type | `{ use: false }`, or `{ use: true }` with the `IAuthProviderOptions` fields: the value of `AUTH_PROVIDER_OPTIONS` |
 | `IAuthProviderOptions` | interface | Configuration options for authentication routes under `paths` |
 | `IAuthProvider` | interface | Extended react-admin auth provider including `getRoles` and `refreshToken` |
 | `IReactAdminAuthProvider` | type | Standard react-admin auth provider contract |
@@ -84,10 +63,11 @@ export class AuthConfiguration {
 
 ## Options
 
-`IAuthProviderOptions` in `packages/kernel/src/common/types.ts` defines route paths for authentication operations.
+`TAuthProviderOptions` in `packages/kernel/src/common/types.ts` is the value of `AUTH_PROVIDER_OPTIONS`: `use` turns sign-in on, and `IAuthProviderOptions` defines the route paths for authentication operations.
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
+| `use` | `boolean` | None (required) | `true` signs in; `false`, or no binding, is an application with no sign-in |
 | `paths` | `object` | `undefined` | Endpoint routing settings (the whole object is optional) |
 | `paths.signIn` | `string` | `'/auth/sign-in'` | API resource route where `login` sends a `POST` request with credentials |
 | `paths.checkAuth` | `string` | not called; the stored token is enough | API resource route where `checkAuth` sends a `GET` request to validate the token against the backend |
@@ -156,11 +136,11 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 ### `checkAuth(params)`
 
 - Calls: `authService.getAuth()`. Rejects if no token value is stored. When `paths.checkAuth` is set, sends a `GET` request to that path and rejects if response data is missing.
-- Returns: `Promise<void>` (resolves on success, rejects with `{ redirectTo: loginPagePath }` on failure)
+- Returns: `Promise<void>` (resolves on success; with no stored token, or when `paths.checkAuth` answers no data, it ends the session and rejects with `unauthenticatedRejection({ reason: 'rejected' })`, by default `{ redirectTo: loginPagePath }`; an error of the `paths.checkAuth` request is rethrown as it is)
 
 ### `checkError(params)`
 
-- Calls: reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, calls `authService.cleanUp()` and rejects with `{ redirectTo: loginPagePath }`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
+- Calls: reads HTTP status from `params.status` (react-admin `HttpError`) or `params.statusCode` (`ApplicationError`). On 401, rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: loginPagePath }`) and ends the session (`authService.cleanUp()` and `clearStoredData()`), unless that rejection says `logoutUser: false`. On 403, rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`.
 - Returns: `Promise<void>` (resolves for any status other than 401 or 403)
 
 ### `getIdentity(params)`
@@ -199,10 +179,12 @@ With an application `id` in `IApplicationInfo`, the three keys are `@app/auth/<i
 | `signInPath` | `protected get: string` | `paths.signIn ?? '/auth/sign-in'` | Target API route for sign-in requests |
 | `afterLoginPath` | `protected get: string \| false` | `paths.afterLogin ?? '/'` | Redirect destination following successful sign-in |
 | `loginPagePath` | `protected get: string` | `'/login'` | Route of login page redirected to on 401 or authentication failure |
-| `unauthorizedPagePath` | `protected get: string` | `'/unauthorized'` | Route redirected to on 403 authorization failure |
+| `unauthorizedPagePath` | `protected get: string` | `'/access-denied'` | Route a 403 redirects to; `ArdorApplication` mounts its `accessDenied` page there |
 | `sessionHookTimeout` | `protected get: number` | `10000` | Milliseconds a session hook may run before the provider logs it and carries on |
 
 For `sessionHookTimeout`, see [Session hooks](#session-hooks).
+
+`unauthorizedPagePath` is react-admin's own access-denied route, so a 403 and a resource `canAccess` denies end on one page: `AccessDeniedPage`, or the `accessDenied` prop of `ArdorApplication`. An app that mounts its own page at another path overrides the getter. See [ArdorApplication props](./application#props).
 
 ### Overridable methods
 
@@ -240,6 +222,8 @@ For `sessionHookTimeout`, see [Session hooks](#session-hooks).
 Subclasses can override any hook to customize authentication:
 
 ```ts
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   DefaultAuthProvider,
   type ILoginParams,
@@ -269,7 +253,7 @@ export class CustomAuthProvider extends DefaultAuthProvider {
     params: ILoginParams;
   }): Promise<void> {
     if (!opts.session.roles.includes('admin')) {
-      throw new Error('[signIn] Only administrators may sign in');
+      throw getError({ message: '[signIn] Only administrators may sign in' });
     }
   }
 }
@@ -362,31 +346,22 @@ A 401 whose rejection has `logoutUser: false` keeps the stored session: the prov
 
 ## An application with no sign-in
 
-`ArdorApplication` in `packages/admin/src/components/application.tsx` injects `CoreBindings.DEFAULT_AUTH_PROVIDER` with `isOptional: true`.
-
-An application with no sign-in leaves `DEFAULT_AUTH_PROVIDER` unbound; `ArdorApplication` then runs without an auth provider. In this configuration, react-admin mounts no login page, runs no `checkAuth` guards, and treats all routes as public. `CoreBindings.AUTH_PROVIDER_OPTIONS` and `CoreBindings.DEFAULT_AUTH_SERVICE` can also be left unbound.
+`ArdorApplication` resolves `CoreBindings.DEFAULT_AUTH_PROVIDER` only when `CoreBindings.AUTH_PROVIDER_OPTIONS` is `{ use: true }`. An application with no sign-in binds `{ use: false }`, or nothing; `ArdorApplication` then runs without an auth provider. In this configuration, react-admin mounts no login page, runs no `checkAuth` guards, and treats all routes as public, except that a route with `access` fails at mount and names the route. A provider of your own under `DEFAULT_AUTH_PROVIDER` with no `AUTH_PROVIDER_OPTIONS` fails at start, because sign-in would be off and the provider ignored. `ArdorApplication` does not resolve the default auth provider.
 
 To ensure the REST data provider does not attach `Authorization` headers to outgoing requests, configure `noAuthPathRegex: /./` in `IRestDataProviderOptions`:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
   type IRestDataProviderOptions,
-  inject,
-  provide,
+  provideOption,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class PublicConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: 'https://api.example.com',
@@ -394,9 +369,9 @@ export class PublicConfiguration {
     };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }
 ```

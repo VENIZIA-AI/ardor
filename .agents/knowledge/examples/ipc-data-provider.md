@@ -76,28 +76,32 @@ provider options, even though the URL is never dereferenced by `send()`:
 
 ```ts
 @configuration()
-class IpcConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
-  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return {
-      url: 'ipc://local',
-      noAuthPathRegex: /./,
-    };
+export class IpcConfiguration {
+  @provideOption({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(IpcDataProvider).value(this.application);
+  @provideOption({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
+  }
+}
+
+class Application extends BaseArdorApplication {
+  // ... getAppInfo()
+
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(IpcDataProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 ```
 
-`registerArtifacts()` binds each `@provide` method under its key, lazy and singleton, following
+`registerArtifacts()` binds each `@provideOption` method under its key, lazy and singleton, following
 [Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for `CoreBindings`.
+`BaseArdorApplication` binds the default providers itself; the one line in `bindContext()` replaces the data provider with the IPC one.
 `noAuthPathRegex: /./` opts out of the auth pipeline entirely (every path is no-auth) -
 see [No-auth paths](/architecture/no-auth-paths.md) - since this example has no session concept.
 

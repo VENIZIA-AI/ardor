@@ -1,20 +1,20 @@
 ---
 title: Best Practices
-description: Architecture patterns, key naming conventions, type augmentation, and service design in ARDOR.
+description: Class registration, key conventions, typing translation keys and hand-bound values, and service design in ARDOR.
 ---
 
 # Best Practices in ARDOR
 
-Writing maintainable frontend applications requires clear structural boundaries between state, transport, and dependency resolution. These best practices describe established patterns for registering container services, typing keys with module augmentation, authoring repositories, and handling token recovery.
+Writing maintainable frontend applications requires clear structural boundaries between state, transport, and dependency resolution. These best practices describe established patterns for registering container classes, typing the keys of values bound by hand with module augmentation, authoring repositories, and handling token recovery.
 
 <div class="guide-cards">
 <a href="./binding-keys" class="guide-card">
   <h3>Binding Keys and Registration</h3>
-  <p>Register classes via stereotype discovery or by hand, manage singleton scopes, and wire provider slots</p>
+  <p>Register classes via stereotype discovery or by hand, manage singleton scopes, and bind provider options</p>
 </a>
 <a href="./module-augmentation" class="guide-card highlight">
   <h3>Module Augmentation</h3>
-  <p>Extend key unions for useInjectable and useTranslate through TypeScript module augmentation on @venizia/ardor</p>
+  <p>Type translation keys and the keys of values bound by hand through module augmentation on @venizia/ardor; classes are typed by { target }</p>
 </a>
 <a href="./services" class="guide-card">
   <h3>Services and Repositories</h3>
@@ -37,7 +37,7 @@ Writing maintainable frontend applications requires clear structural boundaries 
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">2</span><h4>Type Safety</h4></div>
   <p><a href="./module-augmentation">Module Augmentation</a></p>
-  <span class="stage-desc">Augment the umbrella package to enforce strict type checking on injectable and translation keys</span>
+  <span class="stage-desc">Augment the umbrella package to type translation keys and the keys of values bound by hand; classes are typed by { target }</span>
 </div>
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">3</span><h4>Domain Architecture</h4></div>

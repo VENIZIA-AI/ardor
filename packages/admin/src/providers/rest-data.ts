@@ -102,12 +102,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     protected applicationInfo: IApplicationInfo,
   ) {
     super({ scope: DefaultRestDataProvider.name });
+    DefaultNetworkRequestService.assertTimeout({ timeout: restDataProviderOptions.timeout });
   }
 
   /**
    * Builds the network service this provider sends through. Override it to return a subclass of
    * `DefaultNetworkRequestService` that overrides its hooks (`refreshToken`, `resolveAuthToken`, ...).
-   * Called once, on first use, so a subclass's own fields are set by then.
+   * Called once, on first use, so a subclass's own fields are set by then. A service you build
+   * yourself times out only when you pass it `timeout`.
    */
   protected createNetworkService(): DefaultNetworkRequestService {
     return new DefaultNetworkRequestService({
@@ -118,6 +120,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery,
       authService: this.authService,
+      timeout: this.restDataProviderOptions.timeout,
     });
   }
 
@@ -181,6 +184,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
       headers,
       requestCountData = RequestCountData.DATA_ONLY,
+      signal,
     } = opts;
 
     const props = this.networkService.getRequestProps({
@@ -199,6 +203,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       method,
       paths,
       query,
+      signal,
       ...props,
       headers: headers
         ? NetworkHeaders.merge({ sources: [props.headers, headers] })
@@ -216,8 +221,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     queryKey: Record<string, unknown>;
     filter: IListFilter;
     extra?: TExtraRequest;
+    signal?: AbortSignal;
   }) {
-    const { resource, type, queryKey, filter, extra } = opts;
+    const { resource, type, queryKey, filter, extra, signal } = opts;
 
     return this.request<RecordType[]>({
       resource,
@@ -225,6 +231,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       method: RequestMethods.GET,
       query: { ...queryKey, filter },
       extra,
+      signal,
     }).then(({ extra: answered, ...rest }) => {
       return answered ? { ...rest, meta: { extra: answered } } : rest;
     });
@@ -240,7 +247,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     params: GetListParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetListResult<RecordType>> {
     const { resource, params } = opts;
-    const { filter, queryKey, extra } = this.buildListFilter({ params });
+    // A `buildListFilter` override copies unknown keys into the filter: it never sees the signal.
+    const { signal, ...listParams } = params;
+    const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 
     return this.requestList<RecordType>({
       type: RequestTypes.GET_LIST,
@@ -248,6 +257,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       queryKey,
       filter,
       extra,
+      signal,
     });
   }
 
@@ -269,6 +279,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       method: RequestMethods.GET,
       paths: recordPaths({ resource, id: params.id }),
       query: { ...queryKey, filter },
+      signal: params.signal,
     });
   }
 
@@ -298,6 +309,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
           where: { ...filter?.where, id: { inq: params.ids } },
         },
       },
+      signal: params.signal,
     });
   }
 
@@ -310,7 +322,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
   }): Promise<GetManyReferenceResult<RecordType>> {
     const { resource, params } = opts;
 
-    const { target, id, ...listParams } = params;
+    const { target, id, signal, ...listParams } = params;
     const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 
     filter.where[target] = id;
@@ -321,6 +333,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       queryKey,
       filter,
       extra,
+      signal,
     });
   }
 
@@ -450,7 +463,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
     }
 
-    const { method, query, requestCountData, requestType, headers, body, bodyType, extra } = params;
+    const { method, query, requestCountData, requestType, headers, body, bodyType, extra, signal } =
+      params;
 
     return this.request<TResult>({
       resource,
@@ -462,6 +476,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
       headers: headers as HeadersInit | undefined,
       requestCountData,
+      signal,
     });
   }
 
@@ -477,6 +492,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
 
     return {
+      supportAbortSignal: true,
       getList: (resource, params) => {
         return this.getList({ resource, params: { ...params } });
       },

@@ -19,9 +19,9 @@ resolved with `useRepository`.
 | `src/application.ts` | The application alone: `artifacts()` returns `AutoArtifacts`, the list of decorated classes the build made |
 | `src/datasources/api.datasource.ts`, `src/repositories/product.repository.ts` | An `HttpDataSource` and an `HttpRepository`, one decorated class per file, found by the build and bound at start |
 | `src/configurations/admin.configuration.ts` | The options of the REST data, auth and i18n providers, as `@provideOption` methods: `BaseArdorApplication` binds the providers |
-| `src/pages/product-list.tsx` | `useListContext` + `useRepository` + `useTranslate` in one component |
+| `src/pages/product-list.tsx` | `useListContext` + `Ardor.useRepository` + `Ardor.useTranslate` in one component |
 | `src/main.tsx` | `ArdorApplication` receiving the container |
-| `.configs/builders/vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and the vendor chunks that keep each chunk under Vite's 500 KB warning |
+| `.configs/builders/vite.config.ts` | `IgnisArtifactsVitePlugin`, the `@` alias, the `/api` proxy and `strictExecutionOrder`, and a chunk of its own for React, as the preset has |
 | `api/server.ts` | The list contract the data provider expects |
 
 ---

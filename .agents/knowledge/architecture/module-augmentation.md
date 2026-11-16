@@ -27,7 +27,7 @@ Only the `keyof` of the override interface matters - property values are ignored
 
 ## The per-stereotype hooks share the key union
 
-`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form, so one augmentation of `IUseInjectableKeysOverrides` on the React package types all six DI hooks. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form. One augmentation of `IUseInjectableKeyTypes` on the React package types the `{ key }` form of `useInjectable` and `useProvider`, for a value with no class; the other four take the type from the generic you pass. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
 
 ## The two override interfaces and their owning packages
 
@@ -46,7 +46,7 @@ The declaring packages are the fragile target. An application depends on `@veniz
 
 ## The any-widening footgun
 
-Applications are expected to derive their key unions from something real - a `const` bindings map, an application's `bindingList()` method, or a message object - rather than typing literals by hand twice. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof ReturnType<any>` collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
+Applications are expected to derive their key unions from something real - a `static readonly` constants class for the keys of values with no class, or a message object for translation keys - rather than typing literals by hand twice. A class needs no key at all: it resolves by `{ target }`. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof` of it collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
 
 ## Where the augmentation lives
 
