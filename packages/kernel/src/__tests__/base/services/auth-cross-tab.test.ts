@@ -35,6 +35,27 @@ const fromOtherTab = (opts: { keys: Array<string | null>; area?: Storage }) => {
   }
 };
 
+/** The storage of a browser: each write of another tab reaches this tab as its own event, in order. */
+const eventPerWrite = (): (() => void) => {
+  const setItem = spyOn(localStorage, 'setItem');
+  const removeItem = spyOn(localStorage, 'removeItem');
+  const area = localStorage;
+
+  setItem.mockImplementation((key: string, value: string) => {
+    FakeStorage.prototype.setItem.call(area, key, value);
+    fromOtherTab({ keys: [key] });
+  });
+  removeItem.mockImplementation((key: string) => {
+    FakeStorage.prototype.removeItem.call(area, key);
+    fromOtherTab({ keys: [key] });
+  });
+
+  return () => {
+    setItem.mockRestore();
+    removeItem.mockRestore();
+  };
+};
+
 describe('DefaultAuthService and the session of another tab', () => {
   let restore = () => {};
 
@@ -62,6 +83,70 @@ describe('DefaultAuthService and the session of another tab', () => {
 
     expect(calls).toEqual(['alice-token']);
     stop();
+  });
+
+  test('a user switch in another tab is announced once, when its token is written, as the new user with the new token', () => {
+    const tab = serviceOf();
+    const otherTab = serviceOf();
+    signIn(tab, 'alice');
+    const seen: Array<string> = [];
+    const stop = tab.subscribe({
+      listener: () => seen.push(`${tab.getUser().userId}|${tab.getAuth()?.value}`),
+    });
+    const stopEvents = eventPerWrite();
+
+    signIn(otherTab, 'bob');
+
+    stopEvents();
+    expect(seen).toEqual(['bob|bob-token']);
+    stop();
+  });
+
+  test('a sign-out in another tab is announced once, when its token is removed, not as an identity without a token', () => {
+    const tab = serviceOf();
+    const otherTab = serviceOf();
+    signIn(tab, 'alice');
+    const seen: Array<string> = [];
+    const stop = tab.subscribe({
+      listener: () => seen.push(`${tab.getUser().userId}|${tab.getAuth()?.value}`),
+    });
+    const stopEvents = eventPerWrite();
+
+    otherTab.cleanUp();
+
+    stopEvents();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toEndWith('|undefined');
+    stop();
+  });
+
+  test('saveAuth writes the token after the identity and the roles, and cleanUp removes the token first', () => {
+    const tab = serviceOf();
+    const order: Array<string> = [];
+    const setItem = spyOn(localStorage, 'setItem');
+    const removeItem = spyOn(localStorage, 'removeItem');
+    setItem.mockImplementation((key: string, value: string) => {
+      order.push(`set ${key}`);
+      FakeStorage.prototype.setItem.call(localStorage, key, value);
+    });
+    removeItem.mockImplementation((key: string) => {
+      order.push(`remove ${key}`);
+      FakeStorage.prototype.removeItem.call(localStorage, key);
+    });
+
+    signIn(tab, 'alice');
+    tab.cleanUp();
+    setItem.mockRestore();
+    removeItem.mockRestore();
+
+    expect(order).toEqual([
+      'set @app/auth/identity',
+      'set @app/auth/permission',
+      'set @app/auth/token',
+      'remove @app/auth/token',
+      'remove @app/auth/identity',
+      'remove @app/auth/permission',
+    ]);
   });
 
   test('a listener learns whether the change came from another tab', () => {
