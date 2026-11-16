@@ -44,6 +44,7 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Providers', link: '/guides/core-concepts/providers' },
       { text: 'Resources and pages', link: '/guides/core-concepts/resources-and-pages' },
       { text: 'Dependency injection', link: '/guides/core-concepts/dependency-injection' },
+      { text: 'Auto boot', link: '/guides/core-concepts/auto-boot' },
     ],
   },
   {
