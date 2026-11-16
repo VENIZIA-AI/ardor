@@ -401,9 +401,13 @@ export class DefaultNetworkRequestService extends BaseService {
       return false;
     }
 
+    // A user switch in progress (a token stored for another user than the identity) is someone signing in: it
+    // reads no token, but it is not a sign-out.
     return (
       this.readSessionChange({ sent: opts.sent }) === false &&
-      (opts.isRetried || this.readSession().token !== undefined)
+      (opts.isRetried ||
+        this.readSession().token !== undefined ||
+        this.authService?.isSwitching() === true)
     );
   }
 
