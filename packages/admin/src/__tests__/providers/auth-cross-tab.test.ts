@@ -143,6 +143,18 @@ describe('DefaultAuthProvider and the session of another tab', () => {
     ]);
   });
 
+  test('checkAuth in the middle of a switch of another tab resolves and ends no session', async () => {
+    otherTabSignsIn({ userId: 7, token: 'jwt-7' });
+    await settle();
+    new DefaultAuthService().saveAuth({ userId: 8, token: { value: 'jwt-alice', type: 'Bearer' } });
+    localStorage.setItem('@app/auth/identity', JSON.stringify({ userId: 9 }));
+
+    await provider.checkAuth();
+
+    expect(provider.cleared).toEqual([]);
+    expect(localStorage.getItem('@app/auth/token')).not.toBeNull();
+  });
+
   test('a sign-out written key by key ends the session once and starts none', async () => {
     const restoreStorage = new EventPerWriteStorage().install();
     otherTabSignsIn({ userId: 7, token: 'jwt-7' });
