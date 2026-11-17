@@ -9,6 +9,7 @@ highlights:
   - 'A late 401 no longer reaches the next user, and sign-out clears stored data and the query cache'
   - 'The chosen language is remembered, and English fills the gaps of a partial language'
   - 'Shell apps get public and no-layout routes, `RolePermissionProvider` and one access-denied page'
+released: 2026-11-17
 ---
 ARDOR 0.4.8 adds a set of browser hooks and helpers (media query, visibility, online status, intersection, resize, clipboard, storage listing and a plain-text codec), a default token refresh, and an application id that keeps two apps on one origin apart. It also drops `lodash`, removes `useSizer`, `AnyType`, `AnyObject`, two aliases and the HTTP repository's `updateAll` and `deleteAll`, renames one hook, makes sign-out clear the user's stored data and query cache, remembers the chosen language, fills the gaps of a partial language with English and checks feature messages of every language at start, and moves the packages to the IGNIS 0.4.8 line.
 
