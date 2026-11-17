@@ -51,6 +51,7 @@ export class HookRenames {
   static readonly OWNER = 'Ardor';
 
   static readonly NAMES = new Set([
+    'useApplicationContainer',
     'useApplicationContext',
     'useApplicationLogger',
     'useAutosave',
@@ -61,20 +62,26 @@ export class HookRenames {
     'useCopyToClipboard',
     'useDebounce',
     'useDocumentTitle',
+    'useDocumentVisibility',
     'useElementSize',
     'useFeatures',
     'useHtmlLang',
     'useInjectable',
-    'useInjectableContainer',
+    'useIntersection',
+    'useMediaQuery',
+    'useMenuEntries',
     'useNotifyError',
+    'useOnlineStatus',
     'useProvider',
     'useRefreshToken',
     'useRepository',
     'useRequestHeaderLocale',
+    'useResizeEffect',
+    'useRoles',
     'useService',
-    'useSizer',
     'useStoredState',
     'useTranslate',
+    'useUntypedTranslate',
     'useWindowDimensions',
   ]);
 
@@ -96,12 +103,26 @@ export class TypeRenames {
   }
 }
 
+/** Types removed in favour of another export of the same packages: the import and each use are renamed. */
+export class TypeExportRenames {
+  static readonly TARGETS: Readonly<Record<string, string>> = {
+    ISendResponse: 'INetworkResponse',
+  };
+
+  static find(opts: { name: string }): string | undefined {
+    return Object.hasOwn(this.TARGETS, opts.name) ? this.TARGETS[opts.name] : undefined;
+  }
+}
+
 /** Exports and members removed with no code the codemod can write in their place. */
 export class RemovedNames {
   static readonly EXPORTS: Readonly<Record<string, string>> = {
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
+    useInjectableContainer: 'renamed: call useApplicationContainer',
+    useSizer:
+      'use useElementSize({ ref, box: "border-box", round: true }) with a ref in place of the id',
   };
 
   /** Class name to removed static member to the reason. */
@@ -110,6 +131,16 @@ export class RemovedNames {
     HeaderConstants: {
       REQUEST_DEVICE_INFO: 'nothing in ARDOR sent or read this header',
       RESPONSE_FORMAT: 'nothing in ARDOR sent or read this header',
+    },
+  };
+
+  /** A property removed from the list filter: listed in a file that imports one of `owners`, as the file may use it. */
+  static readonly PROPERTIES: Readonly<
+    Record<string, { owners: ReadonlySet<string>; reason: string }>
+  > = {
+    offset: {
+      owners: new Set(['IListFilter', 'ListFilterBuilder']),
+      reason: 'the list filter has no offset, use skip',
     },
   };
 

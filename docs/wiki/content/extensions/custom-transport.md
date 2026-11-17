@@ -9,7 +9,7 @@ description: Subclass DefaultRestDataProvider so the react-admin calls route thr
 
 ## Prerequisites
 
-You have an application built with `ArdorApplication` and know how a binding key is resolved - see [Binding keys](../references/binding-keys) and [Data provider](../references/data-provider).
+You have an application whose container class extends `BaseArdorApplication` (`ArdorApplication` is the React shell that mounts it) and know how a binding key is resolved - see [Binding keys](../references/binding-keys) and [Data provider](../references/data-provider).
 
 ## Quick Reference
 
@@ -21,7 +21,9 @@ You have an application built with `ArdorApplication` and know how a binding key
 | `IDataProvider` | interface | The shape the container hands to react-admin. Unchanged by the subclass. |
 | `IRestDataProviderOptions` | interface | Injected under `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. `url` is required. |
 | `IApplicationInfo` | interface | Injected under `CoreBindings.APPLICATION_INFO`. |
-| `CoreBindings` | class | Keys for the two base constructor injections. |
+| `CoreBindings` | class | Keys for the two base constructor injections and the provider slot you replace. |
+| `NetworkHeaders` | class | `merge({ sources })` combines header sources; a later source wins. |
+| `@configuration()`, `@provide()` | decorators | Bind the transport function under a key of your own. |
 | `TRequestType`, `TRequestMethod` | types | Types of the request type and method constants. |
 
 ## What the base class does per call
@@ -29,10 +31,10 @@ You have an application built with `ArdorApplication` and know how a binding key
 Every react-admin method in `DefaultRestDataProvider`, and `send()`, ends in one protected call:
 
 ```ts
-import { type AnyType, type INetworkResponse, type IRestRequestOptions } from '@venizia/ardor';
+import { type INetworkResponse, type IRestRequestOptions } from '@venizia/ardor';
 
 declare class DefaultRestDataProvider<TResource extends string = string> {
-  protected request<TResult = AnyType>(
+  protected request<TResult = unknown>(
     opts: IRestRequestOptions<TResource>,
   ): Promise<INetworkResponse<TResult>>;
 }
@@ -60,18 +62,25 @@ Keys of `filter.params` and of `meta` are lifted to the top level of `query`, ne
 Define a function type for your transport. It receives what the base would have handed to `doRequest` and resolves to an `INetworkResponse`.
 
 ```ts
-import { type AnyType, type INetworkResponse, type TRequestMethod, type TRequestType } from '@venizia/ardor';
+import { type INetworkResponse, type TRequestMethod, type TRequestType } from '@venizia/ardor';
 
 export interface ITransportRequest {
   type: TRequestType;
   method: TRequestMethod;
   paths: string[];
-  query?: Record<string, AnyType>;
+  query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
-  body?: AnyType;
+  body?: unknown;
+  /** The abort signal of the call: react-admin aborts a read that a newer filter replaced. */
+  signal?: AbortSignal;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
+export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+
+// A transport answers parsed JSON, as a server does: `JSON.parse` is the typed boundary.
+const reply = <TResult>(opts: { data: unknown; total?: number }): INetworkResponse<TResult> => {
+  return { data: JSON.parse(JSON.stringify(opts.data)), total: opts.total };
+};
 
 // An in-memory transport, useful in tests.
 const products = [
@@ -82,14 +91,14 @@ const products = [
 export const memoryTransport: TTransport = async req => {
   const [resource, id] = req.paths;
   if (resource !== 'products') {
-    return { data: [] };
+    return reply({ data: [] });
   }
   if (id !== undefined) {
-    return { data: products.find(p => `${p.id}` === id) };
+    return reply({ data: products.find(p => `${p.id}` === id) });
   }
   const limit = req.query?.filter?.limit ?? products.length;
   const skip = req.query?.filter?.skip ?? 0;
-  return { data: products.slice(skip, skip + limit), total: products.length };
+  return reply({ data: products.slice(skip, skip + limit), total: products.length });
 };
 ```
 
@@ -100,15 +109,15 @@ The same type fits a Tauri `invoke` wrapper or a `postMessage` bridge to a Worke
 The subclass keeps the two base injections, adds a third for the transport, and overrides `request()`. The transport type from the previous section is repeated here so the snippet stands on its own.
 
 ```ts
-import { inject } from '@venizia/ignis-inversion';
 import {
-  type AnyType,
   CoreBindings,
   DefaultRestDataProvider,
   type IApplicationInfo,
+  inject,
   type INetworkResponse,
   type IRestDataProviderOptions,
   type IRestRequestOptions,
+  NetworkHeaders,
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
@@ -118,14 +127,19 @@ export interface ITransportRequest {
   type: TRequestType;
   method: TRequestMethod;
   paths: string[];
-  query?: Record<string, AnyType>;
+  query?: { filter?: { limit?: number; skip?: number } } & Record<string, unknown>;
   headers?: HeadersInit;
-  body?: AnyType;
+  body?: unknown;
+  /** The abort signal of the call: react-admin aborts a read that a newer filter replaced. */
+  signal?: AbortSignal;
 }
 
-export type TTransport = (req: ITransportRequest) => Promise<INetworkResponse>;
+export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
 
-export const TRANSPORT_KEY = 'app.transport';
+// A key for a value with no class: the transport function.
+export class TransportBindings {
+  static readonly TRANSPORT = 'app.transport';
+}
 
 export class TransportDataProvider<
   TResource extends string = string,
@@ -135,17 +149,29 @@ export class TransportDataProvider<
     restDataProviderOptions: IRestDataProviderOptions,
     @inject({ key: CoreBindings.APPLICATION_INFO })
     applicationInfo: IApplicationInfo,
-    @inject({ key: TRANSPORT_KEY })
+    @inject({ key: TransportBindings.TRANSPORT })
     protected transport: TTransport,
   ) {
     super(restDataProviderOptions, applicationInfo);
   }
 
   // getList, getOne, ..., send: every method has already mapped its params by the time it calls this.
-  protected override request<TResult = AnyType>(
+  protected override request<TResult = unknown>(
     opts: IRestRequestOptions<TResource>,
   ): Promise<INetworkResponse<TResult>> {
-    const { resource, type, method, paths = [resource], query, body, bodyType, extra } = opts;
+    const {
+      resource,
+      type,
+      method,
+      paths = [resource],
+      query,
+      body,
+      bodyType,
+      extra,
+      headers,
+      requestCountData,
+      signal,
+    } = opts;
 
     // Still from the base: headers built from the options and application info.
     const props = this.networkService.getRequestProps({
@@ -153,6 +179,7 @@ export class TransportDataProvider<
       body,
       bodyType,
       extra,
+      requestCountData,
       restDataProviderOptions: this.restDataProviderOptions,
       applicationInfo: this.applicationInfo,
     });
@@ -162,31 +189,86 @@ export class TransportDataProvider<
       method,
       paths,
       query,
-      headers: props.headers,
+      // A header the caller named wins over the computed ones, as in the base.
+      headers: headers ? NetworkHeaders.merge({ sources: [props.headers, headers] }) : props.headers,
       body: props.body,
-    }) as Promise<INetworkResponse<TResult>>;
+      signal,
+    });
   }
 }
 ```
 
+`@inject` comes from `@venizia/ardor`. A string key is right for `TransportBindings.TRANSPORT`: the value is a function with no class. Keep the key in a `static readonly` constants class.
+
+`getRequestProps` throws a 401 error, "Invalid auth token to fetch!", when no token is stored and the resource is not a no-auth path. The error reaches `checkError` like any request error. An application with no sign-in sets `noAuthPathRegex: /./` in its options so that no request needs a token.
+
 What still comes from the base:
 
 - The `BaseProvider<IDataProvider<TResource>>` contract. The container resolves your subclass exactly as it resolves `DefaultRestDataProvider`; you override nothing on the provider side.
-- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers` and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
+- The protected `createNetworkService()`, called once on first use, which reads `url`, `noAuthPaths`, `noAuthPathRegex`, `headers`, and `authRecovery` from the options and builds the `DefaultNetworkRequestService`. `getNetworkService()` still returns it.
 - `getRequestProps`, reached through `this.networkService`, which produces the `headers` and `body` for a request.
+- Not the abort and the timeout: the `signal` of a call reaches your transport in `ITransportRequest.signal`, and the `timeout` option applies to `doRequest`, which a transport replaces. Pass the signal on to what sends the request, and put your own time limit in the transport.
 - The filter mapping: the protected `buildListFilter({ params })` (a delegate of `ListFilterBuilder.build`) is shared by `getList` and `getManyReference`, and `getMany` builds its own with `ListFilterBuilder.extractQueryParams`. Keep it when you override a method, or re-use the same mapping.
 - `updateMany` and `deleteMany` read the affected ids from `result.data` (`toAffectedIds`), so a transport answers the affected rows, as the server does.
 
 ## Binding the subclass
 
-Two of the three injections are already bound by the application: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` and `CoreBindings.APPLICATION_INFO`. You add a binding for `TRANSPORT_KEY` with your transport function, and register `TransportDataProvider` under the key the application uses for its data provider in place of `DefaultRestDataProvider`.
+Two of the three injections are options you bind: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (with `url`) and, from the framework, `CoreBindings.APPLICATION_INFO`. Bind the third, `TransportBindings.TRANSPORT`, with a `@provide` method of a `@configuration()` class. Replace the default data provider with one line in `bindContext()`: your provider class under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, as a singleton.
 
-```ts no-check
-// In a @configuration() class - see the binding keys reference for the exact shape.
-// 1. bind TRANSPORT_KEY -> memoryTransport (or a Tauri / Worker bridge)
-// 2. @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) returning
-//    application.instantiate(TransportDataProvider).value(application)
-// ...
+```ts
+import { BindingScopes } from '@venizia/ignis-inversion';
+
+import {
+  BaseArdorApplication,
+  configuration,
+  CoreBindings,
+  type DefaultRestDataProvider,
+  type IApplicationInfo,
+  type INetworkResponse,
+  type IRestDataProviderOptions,
+  provide,
+  type TRequestMethod,
+  type TRequestType,
+} from '@venizia/ardor';
+
+// Declared in the sections above.
+interface ITransportRequest {
+  type: TRequestType;
+  method: TRequestMethod;
+  paths: string[];
+}
+type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<TResult>>;
+declare const memoryTransport: TTransport;
+declare class TransportDataProvider extends DefaultRestDataProvider {}
+declare class TransportBindings {
+  static readonly TRANSPORT: 'app.transport';
+}
+
+@configuration()
+export class TransportConfiguration {
+  @provide({ key: TransportBindings.TRANSPORT })
+  transport(): TTransport {
+    return memoryTransport;
+  }
+
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    // The url is required but never used by this transport; no sign-in, so no request needs a token.
+    return { url: '/api', noAuthPathRegex: /./ };
+  }
+}
+
+export class Application extends BaseArdorApplication {
+  getAppInfo(): IApplicationInfo {
+    return { name: 'desktop', version: '1.0.0', description: 'Desktop shell' };
+  }
+
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(TransportDataProvider)
+      .setScope(BindingScopes.SINGLETON);
+  }
+}
 ```
 
 The `IDataProvider` react-admin receives from the container is unchanged: positional `(resource, params)` methods, as documented in [Data provider](../references/data-provider). Your subclass methods use the options object form, as the base does.

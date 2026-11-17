@@ -2,7 +2,7 @@
  * `make gates` after the Test job's catalog refresh, in a scratch copy of this tree.
  *
  * The Test job of `package-release.yml` first moves every IGNIS package to the highest published line
- * (`refresh-catalog.ts`, `force-update`, `bun install`) and only then runs the gates. A plain checkout
+ * (`refresh-catalog.ts`, `bun install`) and only then runs the gates. A plain checkout
  * never sees what that refresh moves, and two dispatches failed on it. This replays the job in a copy
  * that is a git repository of its own, so lint and the build-info test see a checkout:
  *
@@ -31,9 +31,9 @@ interface IRefreshStep {
 export class GatesRefreshed {
   static readonly WORKFLOW = '.github/workflows/package-release.yml';
 
-  static readonly REFRESH_STEP = 'Force update workspace';
+  static readonly REFRESH_STEP = 'Refresh the catalog';
 
-  static readonly SMOKE_STEP = 'VULCAN preset smoke';
+  static readonly GATES_STEP = 'Gates';
 
   /** The env of the Test job of a prerelease dispatch: the IGNIS line is the highest, the packages are all four. */
   static readonly ENV = {
@@ -43,10 +43,7 @@ export class GatesRefreshed {
   } as const;
 
   /** What the refresh block may hold: each line is one of these, so a changed block fails here, not on a runner. */
-  static readonly REFRESH_LINES = [
-    /^bun scripts\/build\/refresh-catalog\.ts "\$CATALOG_TAG"$/,
-    /^bun run --filter "@venizia\/\*" force-update "\$CATALOG_TAG"$/,
-  ];
+  static readonly REFRESH_LINES = [/^bun scripts\/build\/refresh-catalog\.ts "\$CATALOG_TAG"$/];
 
   /** The text of the `test` job: from `  test:` under `jobs:` to the next job. */
   static testJobOf(opts: { workflow: string }): string {
@@ -89,22 +86,22 @@ export class GatesRefreshed {
     const shape = GatesRefreshed.REFRESH_LINES;
     if (lines.length !== shape.length || lines.some((line, i) => !shape[i]?.test(line))) {
       throw new Error(
-        `[gates-refreshed] the run block of '${GatesRefreshed.REFRESH_STEP}' is not the two refresh commands | found ${JSON.stringify(lines)}`,
+        `[gates-refreshed] the run block of '${GatesRefreshed.REFRESH_STEP}' is not the refresh command | found ${JSON.stringify(lines)}`,
       );
     }
 
     return lines;
   }
 
-  /** The `VULCAN_CMD` the preset smoke step sets: the VULCAN this repository pins. */
+  /** The `VULCAN_CMD` the Gates step sets for the preset smoke: the VULCAN this repository pins. */
   static vulcanCmd(opts: { workflow: string }): string {
     const step = GatesRefreshed.stepOf({
       workflow: opts.workflow,
-      name: GatesRefreshed.SMOKE_STEP,
+      name: GatesRefreshed.GATES_STEP,
     });
     const found = step.match(/^ {10}VULCAN_CMD: (\S.*)$/m)?.[1]?.trim();
     if (found === undefined || found === '') {
-      throw new Error(`[gates-refreshed] step '${GatesRefreshed.SMOKE_STEP}' sets no VULCAN_CMD`);
+      throw new Error(`[gates-refreshed] step '${GatesRefreshed.GATES_STEP}' sets no VULCAN_CMD`);
     }
 
     return found;
@@ -121,7 +118,7 @@ export class GatesRefreshed {
         script: GatesRefreshed.refreshCommands(opts).join('\n'),
       },
       { label: 'Install', script: 'bun install' },
-      { label: 'Gates', script: 'make gates' },
+      { label: GatesRefreshed.GATES_STEP, script: 'make gates' },
       // Not in the Test job (the chain installs each package after its sibling is out), but what a dispatch
       // fails on when the peer ranges name a mix of prerelease and stable IGNIS packages (issue #488): the four
       // packages packed together and installed from the live registry, like an application would.

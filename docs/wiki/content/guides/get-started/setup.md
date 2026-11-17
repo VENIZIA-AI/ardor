@@ -13,7 +13,9 @@ Install the tools to build an ARDOR admin by hand: Bun, a Vite project with Reac
 |---|---|---|---|
 | **Bun** | >= 1.4 | Yes | Installs dependencies and runs builds; ARDOR uses Bun across all packages |
 | **REST API** | Any | Yes | Backing API for data and authentication; an IGNIS backend or `examples/5-mins-qs/api/server.ts` |
-| **Browser** | Current | Yes | The packages are compiled with `lib: ES2025, DOM, DOM.Iterable` (from `@venizia/dev-configs/tsconfig.browser.json`, which `packages/kernel/tsconfig.json` extends) |
+| **Browser** | Current | Yes | The packages are compiled with `lib: ES2025, DOM, DOM.Iterable` |
+
+The `lib` setting comes from `@venizia/dev-configs/tsconfig.browser.json`, which `packages/kernel/tsconfig.json` extends.
 
 ## Step 1: Install Bun
 
@@ -47,7 +49,9 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 bun add -d @venizia/ignis-boot
 ```
 
-Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+Everything after `@venizia/ardor` is a peer dependency, except `@venizia/ignis-boot`, which is a dev dependency. Peers let your application control a single instance of React, `ra-core`, TanStack Query, and the IGNIS packages; two copies of the same library break React context and container resolution. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`. `@venizia/ignis-boot` is the build tool of [Auto boot](../core-concepts/auto-boot): it finds the decorated classes of your app so you keep no list of them.
+
+ARDOR needs the IGNIS versions its peers name: `bun pm view @venizia/ardor@<version> peerDependencies` prints them, and the [0.4.8 changelog](../../changelogs/0.4.8) lists them for the 0.4.8 prerelease.
 
 Declare every IGNIS package yourself, in every workspace package that uses ARDOR; do not rely on the peer alone. A peer range such as `^0.4.1` never matches a prerelease (`0.4.5-0`), so a package that lists no IGNIS dependency gets the stable copy from the install, next to the prerelease the rest of the repository uses. Two copies of `@venizia/ignis-inversion` are two sets of types, and the build fails with `Type 'Application' is not assignable to type 'IContainer'`. In a monorepo, put the versions in the root `workspaces.catalog` and write `"catalog:"` in each package.
 
@@ -80,10 +84,21 @@ ARDOR uses `@venizia/ignis-inversion` for dependency injection, which requires l
 
 ## Step 5: Verify Your Setup
 
-Check that TypeScript compiles without errors and that Vite produces a production build:
+The `react-ts` template builds with `tsc -b && vite build`. ARDOR type-checks with `bun check`, so change the `build` script in `package.json` to `vite build` and add a `typecheck` script:
+
+```json
+{
+  "scripts": {
+    "typecheck": "bun check --no-pretty -p tsconfig.app.json",
+    "build": "vite build"
+  }
+}
+```
+
+Then check that the types are sound and that Vite produces a production build:
 
 ```bash
-bun check --no-pretty -p tsconfig.app.json
+bun run typecheck
 bun run build
 ```
 

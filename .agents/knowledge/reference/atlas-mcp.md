@@ -26,11 +26,11 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 
 ## How it runs
 
-`vulcan sync` registers it as `bun x --no-install vulcan x atlas mcp --root .`.
+`vulcan sync` registers it as `bun <root>/node_modules/.bin/vulcan x atlas mcp --root <root>`: the bin of this checkout by its path, never a runner that fetches a package by name.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
-  `package.json`; `scripts/checks/atlas-smoke.ts` runs the same command. `--no-install` keeps `bun x` from
-  fetching the unrelated unscoped `vulcan` package before `bun install` ran.
+  `package.json`; `scripts/checks/atlas-smoke.ts` runs `bun node_modules/.bin/vulcan x atlas mcp --root .`, the bin of
+  this checkout, so no runner can fetch the unrelated unscoped `vulcan` package.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
   nothing else of the project: it never imports `.configs/vulcan.config.mts`. `make vulcan-sync`
@@ -112,6 +112,11 @@ frontmatter:
   entry counts as newer than every release, and a `release: '<npm name>@<version>'` line places it
   by hand.
 
+From 0.4.5 on the changelog is one folder per version (`changelogs/<X.Y.Z>/`). `search` and `get` cite an item as
+`changelog:<version>#<item-id>` with its migration block, and `changes` lists the items of a version window with their
+block; a dated file that a folder covers is left out of a window that holds the folder's items, and kept in one that
+does not.
+
 ## When an answer is stale
 
 - **The tags move.** The release table is built when the server starts, so a tag pushed or fetched
@@ -127,8 +132,8 @@ frontmatter:
 - **A manifest edit** reaches atlas only after `make vulcan-sync`.
 - **A source** is as old as the commit the cache holds, or the last one served while offline.
 
-None of these is a CI gate any more: the old `symbols-check` and `releases-check` are gone, because
-nothing is committed to compare. `make atlas-smoke` is manual and gates nothing: it starts VULCAN's
+None of the staleness above has a freshness gate: the old `symbols-check` and `releases-check` are gone, because
+nothing is committed to compare. `make atlas-smoke` is a step of the build-and-test job of Checks (not a required check): it starts VULCAN's
 server against this repository and checks that it names itself `ardor-atlas`,
 lists the five tools, finds `no-auth-paths` in the knowledge corpus and the data provider page in
 the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.

@@ -36,30 +36,23 @@ bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --a
 cd demo && make dev    # the admin on http://localhost:5173/
 ```
 
-The generated `src/configurations/admin.configuration.ts` binds the providers the admin needs:
+The generated `src/configurations/admin.configuration.ts` binds the options of the providers the admin
+needs; `BaseArdorApplication` binds the providers themselves:
 
 ```typescript
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultI18nProvider,
-  DefaultRestDataProvider,
-  englishMessages,
-  inject,
+  type IRestDataProviderOptions,
   provide,
   RuntimeConfig,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  restDataProviderOptions(): IRestDataProviderOptions {
     // The API is `/api` unless VITE_API_URL says otherwise, in .env or in the container's config.js.
     const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
@@ -70,22 +63,9 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {
-      i18nSources: { en: englishMessages },
-      languages: [{ locale: 'en', name: 'English' }],
-    };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }
 ```

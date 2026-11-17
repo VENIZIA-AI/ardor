@@ -6,6 +6,7 @@ import { BaseHelper } from '@venizia/ignis-helpers/core';
 
 import { ApplicationContext, type IApplicationContextValue } from '@/contexts/application';
 import { useApplicationContext, useApplicationLogger } from '@/hooks/use-application-context';
+
 interface IRenderHookOptions<TReturn> {
   readonly hook: () => TReturn;
   readonly providerValue?: IApplicationContextValue;

@@ -1,3 +1,8 @@
+---
+title: Migrate from ra-core-infra
+description: Move an application from the frozen @minimaltech/ra-core-infra package to ARDOR - the four renames, the removed names, and the edits per repository.
+---
+
 # Migrating from `@minimaltech/ra-core-infra` to ARDOR
 
 `@minimaltech/ra-core-infra` became ARDOR. The code is the same code; it was split along its real
@@ -6,7 +11,7 @@ specifier, so the migration is four mechanical edits, not a redesign.
 
 > **`@minimaltech/ra-core-infra` is frozen at 0.0.3-18.** No further release will be cut from it.
 > ARDOR is the only home for this code - a fix belongs in `packages/kernel`, `packages/react` or
-> `packages/admin`, never in `aether/packages/ra-core-infra`. Export parity was verified against
+> `packages/admin`, never in the frozen package. Export parity was verified against
 > that final state: 146 exported symbols, all present in ARDOR under the same names except the
 > four renames below and `DIContainer`, which was dropped.
 
@@ -16,12 +21,18 @@ ARDOR is the frontend member of the [VENIZIA](https://venizia.ai) family. IGNIS 
 consumer of IGNIS - it builds a frontend application on `@venizia/ignis-inversion` for inversion of
 control and `@venizia/ignis-filter` for the query vocabulary the data layer speaks.
 
-| Package | Role | Depends on |
-|---|---|---|
-| `@venizia/ardor-kernel` | Isomorphic core: application base, service and CRUD bases, request and auth constants, binding keys, logger, network fetchers, socket client. No React, no react-admin. | IGNIS inversion + filter |
-| `@venizia/ardor-react` | The application context, the hooks that read it (`useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin. | kernel, React |
-| `@venizia/ardor-admin` | The react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles. | kernel, react, `ra-core` |
-| `@venizia/ardor` | Umbrella. Re-exports all three, so an application needs one dependency and one import specifier. | the three above |
+- **`@venizia/ardor-kernel`**
+  - Role: isomorphic core: application base, service base, request and auth constants, binding keys, network helpers. No React, no react-admin.
+  - Depends on: the IGNIS packages in its peer list.
+- **`@venizia/ardor-react`**
+  - Role: the application context, the hooks that read it (`useService` and the other namespace hooks, `useInjectable`, `useApplicationContext`), the typed Redux hook factories, and the UI hooks (`useDebounce`, `useAutosave`, `useConfirm`, ...). No react-admin.
+  - Depends on: kernel, React, the IGNIS packages in its peer list.
+- **`@venizia/ardor-admin`**
+  - Role: the react-admin adapter: REST data provider, auth provider, i18n provider, the `ArdorApplication` root component, `useTranslate`, `useNotifyError`, and the English and Vietnamese message bundles.
+  - Depends on: kernel, react, `ra-core`.
+- **`@venizia/ardor`**
+  - Role: umbrella. Re-exports all three, so an application needs one dependency and one import specifier.
+  - Depends on: the three above.
 
 Install `@venizia/ardor` unless a package genuinely needs only one layer.
 
@@ -30,9 +41,9 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `ra-core-infra` | ARDOR |
 |---|---|
 | `src/common/{constants,keys}.ts` | `@venizia/ardor-kernel` |
-| `src/common/types.ts` | split: the pure types to `ardor-kernel`, the `ra-core` provider contracts (`IDataProvider`, `IAuthProvider`, `II18nProviderOptions`) to `ardor-admin` |
+| `src/common/types.ts` | split between `ardor-kernel` and `ardor-admin` |
 | `src/common/locales/{en,vi}.ts` | `@venizia/ardor-admin` |
-| `src/helpers/**` (logger, networks, fetchers, socket client) | `@venizia/ardor-kernel` |
+| `src/helpers/**` (networks) | `@venizia/ardor-kernel`; the logger, fetchers and socket client moved to IGNIS helpers or were removed |
 | `src/utilities/**` | `@venizia/ardor-kernel` |
 | `src/base/applications`, `src/base/services`, `src/base/decorators` | `@venizia/ardor-kernel` |
 | `src/base/services/base-crud.service.ts` | Removed - use an `HttpRepository` from `@venizia/ardor/repository` |
@@ -42,13 +53,14 @@ Install `@venizia/ardor` unless a package genuinely needs only one layer.
 | `src/ui/hooks/{use-translate,use-notify-error,use-refresh-token,use-request-header-locale}` | `@venizia/ardor-admin` - each one calls a `ra-core` hook |
 | `src/ui/components/CoreRaApplication.tsx` | `@venizia/ardor-admin` as `ArdorApplication` |
 
+`src/common/types.ts` is split: the pure types go to `ardor-kernel`, and the `ra-core` provider contracts (`IDataProvider`, `IAuthProvider`, `II18nProviderOptions`) go to `ardor-admin`.
+
 File names follow the family convention - named by role, never repeating the folder - so
-`helpers/logger.helper.ts` is now `helpers/logger.ts` and `providers/default-rest-data.provider.ts`
-is now `providers/rest-data.ts`. This is invisible to consumers, which import from the barrel.
+`providers/default-rest-data.provider.ts` is now `providers/rest-data.ts`. This is invisible to consumers, which import from the barrel.
 
 ## Breaking changes
 
-There are exactly four renames. Every other exported symbol keeps its name.
+As of ra-core-infra 0.0.3-18 there are exactly four renames. Every other exported symbol keeps its name. Later ARDOR releases removed and moved names too: after the move, run `ardor codemod namespace` and read [Upgrading ARDOR](./upgrading-ardor).
 
 | Before | After |
 |---|---|
@@ -57,33 +69,41 @@ There are exactly four renames. Every other exported symbol keeps its name.
 | `CoreRaApplication` | `ArdorApplication` |
 | `ICoreRaApplication` | `IArdorApplication` |
 
-Three removals and one requirement:
+Two removals and three requirements:
 
 - **`DIContainer` is gone.** It was a second, weaker container beside the IGNIS one. Use the
   inversion `Container` the application already is.
-- **`BaseApiService` is gone.** Extend `BaseService` and declare a `resource` field if the `@api()`
+- **`BaseApiService` is gone.** Extend `BaseService`, decorate the class with `@service()`, and declare a `resource` field if the `@api()`
   log line should name one; `@api()` works on any `BaseService`. For calls to one REST resource,
   reads and writes, prefer an `HttpRepository` from `@venizia/ardor/repository`. The old
   `BaseCrudApiService.find()` merged `limit: 100` into every filter that had none;
   `HttpRepository.find()` sends the filter as given, so a call site that relied on that default
   gets the server's own page size. Pass `filter: { limit }` where it matters.
-- **Module augmentation targets the umbrella.** `@venizia/ardor` re-exports the two override
+- **Module augmentation targets the umbrella.** `@venizia/ardor` re-exports the override
   interfaces with `export *`, and TypeScript follows that chain to the declaring package, so one
-  block on the umbrella merges into both:
+  block on the umbrella merges into every one of them. Do not retarget the block to
+  `@venizia/ardor-react` or `@venizia/ardor-admin` unless the application depends on that package
+  itself: under a linker that does not hoist (Bun's `isolated` linker, pnpm) it fails with TS2664
+  and the keys are missing.
+- **Classes are resolved by class, with no augmentation.** The old `IUseInjectableKeysOverrides`
+  block listed a string key for every class. Resolve a class by the class instead:
+  `Ardor.useService({ target: OrderService })`, or `@inject({ target: OrderService })` in a
+  constructor. Augment `IUseInjectableKeyTypes` only for a binding that has no class.
 
-  ```typescript
-  declare module '@venizia/ardor' {
-    interface IUseInjectableKeysOverrides extends Record<keyof ReturnType<Application['bindingList']>, unknown> {}
-    interface IUseTranslateKeysOverrides extends ITranslateKeys {}
-  }
-  ```
+- **`@venizia/ignis-inversion` must satisfy the peer range in the ARDOR `package.json`.** ARDOR resolves a binding from a class through
+  the metadata registry (`Ardor.useService({ target })` and the other namespace hooks), which the 0.1 line does not expose.
 
-  Do not retarget the block to `@venizia/ardor-react` or `@venizia/ardor-admin` unless the
-  application depends on that package itself: under a linker that does not hoist (Bun's
-  `isolated` linker, pnpm) it fails with TS2664 and the keys are missing.
+The block that remains is the one for translation keys:
 
-- **`@venizia/ignis-inversion` must be `^0.3.0`.** ARDOR resolves a binding from a class through
-  the metadata registry (`useInjectable({ target })`), which the 0.1 line does not expose.
+```ts
+import type { TFullPaths } from '@venizia/ardor';
+
+const orderMessages = { orders: { title: 'Orders' } };
+
+declare module '@venizia/ardor' {
+  interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof orderMessages>, true> {}
+}
+```
 
 One logger change worth knowing about, because it changes the call:
 
@@ -96,23 +116,24 @@ gap. They are mechanical, but the last one is the reason this is a reviewed pass
 search-and-replace.
 
 1. **The dependency.** Swap `@minimaltech/ra-core-infra` for `@venizia/ardor` in every
-   `package.json`, and pin `@venizia/ignis-inversion` to `^0.3.0` (a Bun catalog entry, or
-   each manifest).
+   `package.json`, and set `@venizia/ignis-inversion` to the peer range in the ARDOR `package.json` (a Bun
+   catalog entry, or each manifest).
 2. **The import specifier.** `@minimaltech/ra-core-infra` -> `@venizia/ardor` in every `import`
    and `export ... from`. Nothing else about the import changes: the umbrella re-exports all three
    layers under the same names.
 3. **The four renames** from the table above.
-4. **The `declare module` blocks.** Retarget each one to `@venizia/ardor`; one block can hold
-   both override interfaces. Probe it once: a `// @ts-expect-error` above a key you did not
-   declare must be a real error (see
+4. **The `declare module` blocks.** Retarget each one to `@venizia/ardor`. Drop the
+   `IUseInjectableKeysOverrides` keys of classes: their call sites move to `{ target }`
+   (`Ardor.useService({ target: OrderService })`). Keep the `IUseTranslateKeysOverrides` block.
+   Probe it once: a `// @ts-expect-error` above a key you did not declare must be a real error (see
    [Module augmentation](../../best-practices/module-augmentation#verify-with-a-compile-error)).
 
 Grep for `DIContainer` before you start - it was dropped, and every use becomes the inversion
 `Container` the application already is.
 
 Then install and type-check per application. The type checker is what catches what a manual pass
-misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.3
-requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
+misses. If the consumer ships its own Vietnamese message bundle, note that `ra-core` 5.15.5 or newer
+(the peer range) requires `ra.validation.unique`; ARDOR's bundled `vietnameseMessages` now provides it.
 
 ## Retiring the old package
 

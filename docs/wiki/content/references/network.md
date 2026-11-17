@@ -1,6 +1,6 @@
 ---
 title: Network service
-description: DefaultNetworkRequestService - HTTP transport, headers, timeouts, 401 token recovery, and repository data source authentication.
+description: DefaultNetworkRequestService - HTTP transport, headers, abort and timeout, 401 token recovery, and repository data source authentication.
 ---
 
 # Network service
@@ -10,6 +10,7 @@ ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps th
 ```ts
 import {
   CoreBindings,
+  HeaderConstants,
   type IDataProvider,
   inject,
   RequestCountData,
@@ -41,14 +42,15 @@ export class AuditReportService {
       },
     });
 
+    // `doRequest` sends only the headers it is given; `getRequestHeader` returns the session headers, including the ones set above, and `Authorization`.
+    const headers = networkService.getRequestHeader({ resource: '/audit/export' });
+
     const response = await networkService.doRequest<AuditReport>({
       type: RequestTypes.SEND,
       method: RequestMethods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
-      headers: {
-        'content-type': 'application/json',
-      },
+      headers: { ...headers, [HeaderConstants.CONTENT_TYPE]: 'application/json' },
       requestCountData: RequestCountData.DATA_ONLY,
     });
 
@@ -62,7 +64,9 @@ export class AuditReportService {
 | Export | Kind | Purpose |
 |---|---|---|
 | `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `NodeFetchNetworkRequest` | class | The IGNIS transport helper (`@venizia/ignis-helpers/core`) `DefaultNetworkRequestService` sends through: standard `fetch` with timeout and abort support |
+| `NodeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
+| `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
+| `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
 | `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
@@ -71,13 +75,15 @@ export class AuditReportService {
 | `RequestCountData` | class | Flag constants for count responses (`DATA_ONLY`, `DATA_WITH_COUNT`) |
 | `RequestChannel` | class | Default channel constant (`WEB`) |
 | `LocalStorageKeys` | class | Local storage key constants including `KEY_AUTH_TOKEN` |
-| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`) |
+| `IAuthTokenRecord` | interface | Authentication token structure (`value`, `type`, `provider`, and the `userId` `saveAuth` stores with it) |
 | `IDataSourceAuth` | interface | Authentication configuration shared with an `HttpDataSource` |
 | `IDataSourceRequestContext` | interface | Request path context passed to data source auth resolvers |
 | `INoAuthOptions` | interface | Options defining path strings and regex patterns that bypass authentication |
 | `IAuthRecoveryOptions` | interface | Authentication recovery configuration (`refreshTokenPath`) |
 | `IGetRequestPropsParams` | interface | Input parameters passed to `getRequestProps` |
 | `IGetRequestPropsResult` | interface | Normalized headers and body returned by `getRequestProps` |
+
+`NodeFetchNetworkRequest` comes from `@venizia/ignis-helpers/core`.
 
 ## How to provide it
 
@@ -88,6 +94,7 @@ The data provider constructs the service using options injected from `CoreBindin
 - `headers` becomes base headers
 - `noAuthPaths` and `noAuthPathRegex` configure unauthenticated endpoints
 - `authRecovery` configures token refresh exclusion paths
+- `timeout` aborts a request that has not answered in time
 
 To supply custom network behavior - such as handling token refresh or in-memory credentials - subclass `DefaultNetworkRequestService` and override `createNetworkService()` on a `DefaultRestDataProvider` subclass (see [Auth recovery](../best-practices/auth-recovery) and [Data provider](./data-provider)).
 
@@ -98,19 +105,31 @@ The configuration relies on the following defaults and container keys:
 
 ## Options
 
-`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
+`DefaultNetworkRequestService` accepts constructor options conforming to `INoAuthOptions & { name: string; baseUrl?: string; headers?: HeadersInit; authRecovery?: IAuthRecoveryOptions; authService?: DefaultAuthService; timeout?: TRequestTimeoutOptions }`. In standard ARDOR applications, these options are configured through `IRestDataProviderOptions` and passed by the data provider to the network service.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `name` | `string` | *(required)* | Identifier scope used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`. |
-| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`. |
-| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. Keys are converted to lowercase and merged with runtime headers. |
-| `noAuthPaths` | `string[]` | `undefined` | Exact resource path strings that bypass the `Authorization` header. Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression pattern or patterns tested against `resource` or joined paths to bypass authorization. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints. |
-| `authRecovery.refreshTokenPath` | `string` | `undefined` | Endpoint path substring that is excluded from 401 recovery retries to prevent recursive refresh loops. |
-| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel identifier sent in the `x-request-channel` header when `getRequestProps` prepares request options from `IRestDataProviderOptions`. |
+| `name` | `string` | *(required)* | Identifier scope for logger tagging and the transport instance. |
+| `baseUrl` / `url` | `string` | `''` | Base endpoint URL prepended to all request paths. |
+| `headers` | `HeadersInit` | `{}` | Base headers included in every HTTP request. |
+| `noAuthPaths` | `string[]` | `undefined` | Exact resource paths that bypass the `Authorization` header. |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns tested against `resource` or joined paths to bypass authorization. |
+| `authRecovery.refreshTokenPath` | `string` | `undefined` | Path substring excluded from 401 recovery retries. |
+| `authService` | `DefaultAuthService` | `undefined` | The auth service the default `refreshToken` saves the new token through. |
+| `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel sent in the `x-request-channel` header. |
+| `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts each request after `milliseconds`; see [Abort and timeout](#abort-and-timeout). |
 
-## Fetch transport and timeout
+- **`name`:** Used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
+- **`baseUrl` / `url`:** Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`.
+- **`headers`:** Keys are converted to lowercase and merged with runtime headers.
+- **`noAuthPaths`:** Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`.
+- **`noAuthPathRegex`:** A regular expression pattern or patterns. String patterns are compiled via `new RegExp`. Set to `/./` to bypass authorization on all endpoints.
+- **`authRecovery.refreshTokenPath`:** Excluded from 401 recovery retries to prevent recursive refresh loops. It is also the path the default `refreshToken` posts to.
+- **`authService`:** `DefaultRestDataProvider.value(container)` gives it the optional `CoreBindings.DEFAULT_AUTH_SERVICE` binding; without it the default `refreshToken` makes no request.
+- **Your own `refreshToken`:** with no `authService`, an override that saves a new token itself must keep the identity of the session it refreshed, or return the new token, so the transport can tell a refresh from another user's sign-in in another tab during it; the default path does.
+- **`requestTracingChannel`:** Sent when `getRequestProps` prepares request options from `IRestDataProviderOptions`.
+
+## Fetch transport
 
 ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out.
 
@@ -119,26 +138,56 @@ ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest`
 
 For non-HTTP transports such as WebSockets or custom protocols, see [Custom transport](../extensions/custom-transport).
 
-The fetcher handles request timeouts. If a `timeout` value in milliseconds is provided, it creates an `AbortController` and schedules a timer, combined with the caller's `signal`. If the request does not complete within the specified duration, the request is aborted and `fetch` rejects with an `AbortError`. The timer is cleared in a `finally` block:
+## Abort and timeout
+
+A hung server keeps a request waiting forever unless you set a timeout. Turn it on in the data provider options:
 
 ```ts
-import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import { configuration, CoreBindings, type IRestDataProviderOptions, provide } from '@venizia/ardor';
 
-export async function requestWithTimeout(): Promise<number> {
-  const transport = new NodeFetchNetworkRequest({
-    name: 'custom-transport',
-    networkOptions: { baseUrl: 'https://api.example.com' },
-  });
-
-  const service = transport.getNetworkService();
-  const response = await service.send({
-    url: 'https://api.example.com/health',
-    timeout: 3000,
-  });
-
-  return response.status;
+@configuration()
+export class ApiConfiguration {
+  @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return {
+      url: 'https://api.example.com',
+      timeout: { use: true, milliseconds: 15000 },
+    };
+  }
 }
 ```
+
+- Each request of the data provider and of `doRequest`, the refresh request included, gets its own `milliseconds`. A repository request through an `HttpDataSource` does not.
+- A provider subclass that overrides `createNetworkService()` passes `timeout: this.restDataProviderOptions.timeout` to the service it builds, or the option has no effect.
+- A request that outlives it rejects with an `ApplicationError`: `statusCode` 504, `normalized.code` `NETWORK_TIMEOUT_CODE`, and a message naming the path and the milliseconds.
+- `milliseconds` must be a positive integer; any other value throws when the data provider is built, so `start()` fails.
+- The default is `{ use: false }`: no timeout.
+
+`doRequest` also takes a `signal` (an `AbortSignal`). An aborted request rejects with the signal's reason, an `AbortError` for `controller.abort()`. It is not a 401: it starts no refresh, and `DefaultAuthProvider.checkError` resolves for it. With a timeout on, a user abort still rejects with the abort, never with the timeout code.
+
+```ts
+import { DefaultNetworkRequestService, RequestMethods, RequestTypes } from '@venizia/ardor';
+
+export async function readHealth(controller: AbortController): Promise<unknown> {
+  const network = new DefaultNetworkRequestService({
+    name: 'health',
+    baseUrl: 'https://api.example.com',
+    noAuthPathRegex: /./,
+  });
+
+  const response = await network.doRequest({
+    type: RequestTypes.SEND,
+    method: RequestMethods.GET,
+    paths: ['/health'],
+    signal: controller.signal,
+  });
+
+  return response.data;
+}
+```
+
+> [!NOTE]
+> An abort cancels its own request only. A refresh its 401 started runs on for the other requests waiting on it; the aborted request then sends no retry.
 
 ## Headers and token resolution
 
@@ -148,7 +197,7 @@ Headers are assembled in layers:
 1. **Base and session headers:** Constructed from constructor `headers` and dynamic headers added via `setHeaders({ headers })` (or removed via `removeHeaders({ keys })`). Session headers automatically include `timezone` (`App.TIMEZONE`) and `timezone-offset` (`App.TIMEZONE_OFFSET`).
 2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HeaderConstants.X_LOCALE]: locale } })` so that subsequent requests include the active locale.
 3. **Tracing headers:** `x-request-channel` is set to `restDataProviderOptions.requestTracingChannel` (default `RequestChannel.WEB` which is `'100_WEB'`). `x-request-id` is generated via `buildRequestTracingId({ applicationInfo })`, defaulting to `${applicationInfo.name}_${uuidV4()}`.
-4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. By default, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type ?? 'Bearer'} ${value}`. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
+4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. With an `authService` (the data provider passes its own), the hook reads `authService.getAuth()`; without one, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type} ${value}`, with `Bearer` as the type when it is empty or absent. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
 
 If an endpoint path matches an entry in `noAuthPaths` or matches a pattern in `noAuthPathRegex`, the `Authorization` header is omitted:
 
@@ -206,10 +255,12 @@ When a request receives a 401 Unauthorized status, `doRequest` triggers token re
 Recovery calls `refresh()`, which delegates to the protected `refreshToken()` hook:
 - Concurrent requests share a single in-flight promise (`AuthRecovery.refresh`), preventing duplicate refresh calls.
 - If `refreshToken()` resolves `true`, `doRequest` retrieves updated authorization headers and retries the original request once.
-- If `refreshToken()` resolves `false` (the default behavior), no retry is attempted and the 401 error is thrown.
+- If `refreshToken()` resolves `false` (the default without a `refreshTokenPath` or an auth service), no retry is attempted and the 401 error is thrown. With a path, the default posts to it and saves the new token.
 - If `refreshToken()` throws, `onAuthFailure()` runs, and the original 401 error is thrown.
 
 ## Repository data source authentication
+
+The data provider and the repositories use two HTTP clients: `doRequest` sends with its own sender, and the repositories of `@venizia/ardor/repository` send through IGNIS's `HttpDataSource`, which lives in the optional peer `@venizia/ignis-connectors`. The service cannot import that peer without making it required, so the two stay apart until IGNIS's transport core is in a required peer; `getDataSourceAuth` is what gives the second client the session, headers and 401 recovery of the first. They differ in the timeout the service adds (a repository call gets none; its `options.signal` aborts it), in how a path is checked and in how an empty or non-JSON body is read.
 
 `DefaultNetworkRequestService.prototype.getDataSourceAuth(opts)` provides an `IDataSourceAuth` configuration object. `DefaultRestDataProvider.prototype.getDataSourceAuth()` forwards this to repository data sources (`HttpDataSource` in `@venizia/ardor/repository`), ensuring repository queries share the exact authentication, headers, and refresh handling of the data provider.
 

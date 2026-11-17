@@ -4,8 +4,12 @@ The isomorphic core of [ARDOR](https://github.com/VENIZIA-AI/ardor). No React, n
 layer a browser data client and a plain TypeScript consumer can both use.
 
 ```bash
-bun add @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter reflect-metadata
+bun add @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-helpers @venizia/ignis-kernel reflect-metadata
 ```
+
+`@venizia/ignis-connectors` is an optional peer, needed only for `./repository`.
+
+`@venizia/ardor-kernel/testing` holds fakes of `ResizeObserver`, `IntersectionObserver`, `matchMedia`, `Storage` and `navigator.clipboard` for your tests; the main entry does not include them.
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
 which re-exports this package.
@@ -14,15 +18,15 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
-| Application | `AbstractArdorApplication`, `BaseArdorApplication` - an IGNIS inversion `Container` with `injectable()` and `service()` helpers |
+| Application | `AbstractArdorApplication` - an IGNIS inversion `Container` to extend with `getAppInfo()` and `bindContext()`. `BaseArdorApplication`, which also binds the default providers, lives in `@venizia/ardor-admin` and is exported from `@venizia/ardor` |
 | Services | `BaseService`, `DefaultAuthService`, `DefaultNetworkRequestService` |
 | Providers | `BaseProvider` |
-| Decorators | `api()` - logs and rethrows a failing API method |
-| Bindings | `CoreBindings`, `LocalStorageKeys` |
-| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App` |
+| Decorators | `api()` - logs and rethrows a failing API method; the IGNIS stereotypes it re-exports (`component`, `configuration`, `datasource`, `inject`, `injectable`, `model`, `provide`, `repository`, `service`) |
+| Bindings | `CoreBindings`, `LocalStorageKeys`, `BindingKeys`, `BindingNamespaces` |
+| Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App`, `Authentication`, `StorageAreas`, `RequestChannel` |
 | Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NodeFetchNetworkRequest`) |
-| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
-| Types | `IdType`, `AnyType`, `AnyObject`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
+| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get` and `RuntimeConfig.getRequired` (with `RUNTIME_CONFIG_GLOBAL`, `RUNTIME_CONFIG_REQUIRED_CODE` and `RUNTIME_CONFIG_INVALID_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
+| Types | `IdType`, `IAuthUser`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License
 

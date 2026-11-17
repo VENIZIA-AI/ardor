@@ -18,12 +18,7 @@ bun add @venizia/ardor
 
 ## What changed
 
-| Kind | Change | Packages | In | Entry |
-|------|--------|----------|----|-------|
-| New feature | `buildInfoFile` in the new Node-only entry `@venizia/ardor/vite` writes `build-info.json` (service, version, commit, branch, build time, installed `@venizia/*` versions) into the build and serves it on the dev server; `IBuildInfoFile` types the file | `@venizia/ardor`, `@venizia/ardor-kernel` | 0.4.4 | [Chunks keep import order, and buildInfoFile writes build-info.json](./2026-10-26-vite-build-info) |
-| Behavior change | The preset's `vite.config.mts` sets `output.strictExecutionOrder: true`, so a split chunk never runs a DI package before `reflect-metadata`; it costs about 3 percent of the gzip size | `@venizia/ardor` (the preset) | 0.4.4 | [Chunks keep import order, and buildInfoFile writes build-info.json](./2026-10-26-vite-build-info) |
-| New feature | `ArdorApplication` takes an optional `features` prop, the list of features to mount, so a shell can mount a filtered list (by industry, plan or role); absent, every bound feature is mounted | `@venizia/ardor-admin`, `@venizia/ardor` | 0.4.4 | [ArdorApplication takes a features prop, so a shell mounts a filtered list](./2026-10-27-application-features-prop) |
-| New feature | `assertArdorApplicationBoots` in the new entry `@venizia/ardor/testing` starts an application and resolves every binding and what the first render resolves, with no network; a new app from the preset ships `src/boot.test.ts` | `@venizia/ardor`, `@venizia/ardor-admin` | 0.4.4 | [assertArdorApplicationBoots proves an application boots](./2026-10-27-assert-ardor-application-boots) |
+Each change has its own entry in the [changelog list](./), newest first.
 
 | Package | ARDOR 0.4.3 | ARDOR 0.4.4 |
 |---------|------------|--------------|
@@ -37,7 +32,7 @@ The IGNIS peers stay `^0.4.1` on `@venizia/ardor-kernel`, `@venizia/ardor-react`
 
 - **An application on ARDOR 0.4.3.** No action is needed to keep running. The checklist below takes the new behavior.
 - **An application generated from the preset.** Optional and recommended: step 3.
-- **An application with its own `reflectMetadataFirst` or `buildInfoFile` plugin (BANA).** Steps 2 to 4.
+- **An application with its own `reflectMetadataFirst` or `buildInfoFile` plugin.** Steps 2 to 4.
 - **An app that wants a boot test.** Step 5.
 
 ## Upgrade checklist

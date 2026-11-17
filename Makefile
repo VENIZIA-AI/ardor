@@ -5,7 +5,7 @@
 .DEFAULT_GOAL := help
 
 # Every package directory under packages/, in dependency order. Each per-package target (`<pkg>`,
-# `update-<pkg>`, `lint-<pkg>`, `lint-fix-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`)
+# `lint-<pkg>`, `lint-fix-<pkg>`, `test-<pkg>`, `purity-<pkg>`, `clean-install-<pkg>`)
 # is generated from this list - add a package here and every target exists for it.
 PACKAGES := kernel react admin ardor
 
@@ -16,7 +16,11 @@ PKG_NAME = $(shell sed -n 's/^  "name": "\(.*\)",$$/\1/p' packages/$(1)/package.
 # the wiki links point into. The generated reference tables name symbols and paths of the code, not links, so the
 # link gate does not read them.
 WIKI_REPO := VENIZIA-AI/ardor
-WIKI_LINKS_FLAGS := --skip .agents/knowledge/reference/public-surface.md,.agents/knowledge/reference/source-map.md,.agents/knowledge/reference/binding-keys.md,.agents/knowledge/reference/makefile-targets.md
+WIKI_LINKS_FLAGS := --skip .agents/knowledge/reference/public-surface.md,.agents/knowledge/reference/binding-keys.md,.agents/knowledge/reference/makefile-targets.md
+
+# VULCAN's own targets run its bin by path (the default of vulcan.mk). The dev-configs bin the same way: never a
+# fetching runner and never a same-named program on PATH.
+DEVZ := bun $(CURDIR)/node_modules/.bin/devz
 
 # VULCAN's targets (vulcan-sync, vulcan-doctor, okf-*, surface-*, atlas-symbols, atlas-releases).
 -include node_modules/@venizia/vulcan/base/make/vulcan.mk

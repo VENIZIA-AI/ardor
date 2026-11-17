@@ -5,27 +5,18 @@ description: Options, configuration, HTTP mapping, and error handling for Defaul
 
 # REST data provider
 
-`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. The configuration class is the main way to configure ARDOR: a `@configuration()` class whose `@provide({ key })` methods return the options or the provider instances; `start()` binds each as a lazy SINGLETON:
+`DefaultRestDataProvider` maps react-admin data queries to REST HTTP requests against an IGNIS backend. `BaseArdorApplication` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER` itself, as a singleton, so react-admin, the auth provider and every hook share one instance. Your application binds only its options: a `@configuration()` class with a `@provide({ key })` method, which `start()` binds as a lazy singleton:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
-  type IDataProvider,
-  inject,
   type IRestDataProviderOptions,
   provide,
 } from '@venizia/ardor';
 
 @configuration()
 export class RestDataConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
   restDataProviderOptions(): IRestDataProviderOptions {
     return {
@@ -34,17 +25,14 @@ export class RestDataConfiguration {
       requestTracingChannel: 'admin',
     };
   }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider(): IDataProvider {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
 }
 ```
 
+To replace the provider with a subclass, bind the subclass class under the key in `bindContext()`: `.toProvider(MyRestDataProvider).setScope(BindingScopes.SINGLETON)` (see [CountRestDataProvider](../extensions/count-provider)).
+
 ## What it does
 
-`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) instantiates the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) builds the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
@@ -53,9 +41,9 @@ export class RestDataConfiguration {
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
-| `IReactAdminDataProvider<TResource>` | interface | The standard nine-method react-admin data provider interface. |
+| `IReactAdminDataProvider<TResource>` | type | The standard nine-method react-admin data provider interface. |
 | `ISendParams` | interface | Parameters accepted by `IDataProvider.send()`. |
-| `ISendResponse<T>` | type | Response object returned by `IDataProvider.send()` (an `INetworkResponse<T>`). |
+| `INetworkResponse<T>` | interface | Response object returned by `IDataProvider.send()`. |
 | `ICustomParams` | interface | Custom parameter dictionary supported on read operations via `params.params`. |
 | `CoreBindings` | class | Container keys: `REST_DATA_PROVIDER_OPTIONS` and `DEFAULT_REST_DATA_PROVIDER`. |
 | `RequestMethods` | class | HTTP method string constants (`GET`, `POST`, `PATCH`, `DELETE`, etc.). |
@@ -69,11 +57,18 @@ export class RestDataConfiguration {
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `url` | `string` | (Required) | Base URL prepended to all resource request paths. |
-| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource path strings requested without an `Authorization` header and excluded from 401 refresh. Entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match. |
-| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Regular expression patterns matching resource paths that must omit `Authorization` headers. Set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path. |
+| `noAuthPaths` | `Array<string>` | `undefined` | Exact resource paths requested without an `Authorization` header and excluded from 401 refresh |
+| `noAuthPathRegex` | `string \| RegExp \| Array<string \| RegExp>` | `undefined` | Patterns matching resource paths that must omit `Authorization` headers |
 | `headers` | `HeadersInit` | `undefined` | Default HTTP headers included on every network request. |
-| `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header. Defaults to `RequestChannel.WEB` (`'100_WEB'`). |
-| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options. `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint to prevent recursive 401 recovery loops. |
+| `requestTracingChannel` | `string` | `'100_WEB'` | Channel name sent in the `x-request-channel` HTTP header |
+| `authRecovery` | `IAuthRecoveryOptions` | `undefined` | Recovery options for the token refresh |
+| `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts a request that has not answered within `milliseconds` |
+
+- `noAuthPaths`: entries are compared by exact equality with the request resource as written, so a path written without the leading slash (such as `'auth/sign-in'`) does not match.
+- `noAuthPathRegex`: set to `/./` to disable authentication on all paths. String patterns are compiled with `new RegExp(...)` and tested against both the resource string and the full joined URL path.
+- `requestTracingChannel`: defaults to `RequestChannel.WEB` (`'100_WEB'`).
+- `authRecovery`: `authRecovery.refreshTokenPath` sets the path of the token refresh endpoint. A request to it never starts a refresh, and the default `refreshToken` posts to it.
+- `timeout`: `{ use: true, milliseconds: 15000 }` rejects a request still waiting after 15 seconds with a 504 coded `NETWORK_TIMEOUT_CODE`. `milliseconds` must be a positive integer, or building the provider throws. See [Abort and timeout](./network#abort-and-timeout).
 
 ## Example
 
@@ -118,20 +113,67 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 
 ## HTTP request and response mapping
 
-| react-admin method | HTTP method | Path | Request body / query | Result conversion |
-| --- | --- | --- | --- | --- |
-| `getList` | `GET` | `/{resource}` | Query `filter` JSON string (`where`, `order`, `limit`, `skip`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
-| `getOne` | `GET` | `/{resource}/{id}` | Query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body. | `{ data: RecordType }` from JSON response body. |
-| `getMany` | `GET` | `/{resource}` | Always a GET with the ids in `filter.where.id.inq` (query `filter` JSON string containing `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`). A very long id list can answer 414 or 431. No body. | `{ data: RecordType[] }` from JSON response array. |
-| `getManyReference` | `GET` | `/{resource}` | Same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body. | `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` read from `Content-Range` header, falling back to `data.length`. |
-| `create` | `POST` | `/{resource}` | JSON body `params.data`. No query. | `{ data: ResultRecordType }` containing the assigned `id`. |
-| `update` | `PATCH` | `/{resource}/{id}` | JSON body `params.data`. `previousData` is not sent. No query. | `{ data: RecordType }` from JSON response body. |
-| `updateMany` | `PATCH` | `/{resource}` | JSON body `{ ...params.data, where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty or if `params.data` contains a `where` property. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
-| `delete` | `DELETE` | `/{resource}/{id}` | No body. No query. | `{ data: RecordType }` from JSON response body. |
-| `deleteMany` | `DELETE` | `/{resource}` | JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty. | `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if response body is not an array. |
+Each react-admin method maps to one HTTP call:
+
+### `getList`
+
+- HTTP: `GET /{resource}`
+- Request: query `filter` JSON string (`where`, `order`, `limit`, `skip`, `include`, `fields`) plus query keys from `filter.params` and `meta`. Header `x-request-extra` from `meta.extra`. No body.
+- Result: `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` is read from the `Content-Range` header, falling back to `data.length`.
+
+### `getOne`
+
+- HTTP: `GET /{resource}/{id}`
+- Request: query `filter` JSON string containing `params.meta.filter` (without `params`), plus query keys from `meta.filter.params`. `params.filter` is ignored. No body.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `getMany`
+
+- HTTP: `GET /{resource}`
+- Request: always a GET with the ids in `filter.where.id.inq`. The query `filter` JSON string contains `{ ...meta.filter, where: { ...meta.filter.where, id: { inq: ids } } }` without `params`, plus query keys from `meta.filter.params`. A very long id list can answer 414 or 431. No body.
+- Result: `{ data: RecordType[] }` from the JSON response array.
+
+### `getManyReference`
+
+- HTTP: `GET /{resource}`
+- Request: same as `getList`, with `filter.where[target] = id`. Header `x-request-extra` from `meta.extra`. No body.
+- Result: `{ data: RecordType[], total: number, meta?: { extra: ... } }`. `total` is read from the `Content-Range` header, falling back to `data.length`.
+
+### `create`
+
+- HTTP: `POST /{resource}`
+- Request: JSON body `params.data`. No query.
+- Result: `{ data: ResultRecordType }` containing the assigned `id`.
+
+### `update`
+
+- HTTP: `PATCH /{resource}/{id}`
+- Request: JSON body `params.data`. `previousData` is not sent. No query.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `updateMany`
+
+- HTTP: `PATCH /{resource}`
+- Request: JSON body `{ ...params.data, where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty or if `params.data` contains a `where` property.
+- Result: `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if the response body is not an array.
+
+### `delete`
+
+- HTTP: `DELETE /{resource}/{id}`
+- Request: no body. No query.
+- Result: `{ data: RecordType }` from the JSON response body.
+
+### `deleteMany`
+
+- HTTP: `DELETE /{resource}`
+- Request: JSON body `{ where: { id: { inq: ids } } }`. No query. Throws if `ids` is empty.
+- Result: `{ data: Identifier[] \| undefined }` mapped from returned row IDs (`toAffectedIds`). Returns `undefined` if the response body is not an array.
 
 > [!NOTE]
 > `updateMany` and `deleteMany` send row selectors in the request body rather than the URL query string to avoid HTTP 414 and 431 errors on long ID lists. Backend endpoints handling bulk operations must support body-based selectors.
+
+> [!NOTE]
+> The `{id}` of `getOne`, `update` and `delete` is one path segment: the provider percent-encodes it, so an id with `/`, `?` or `#` reaches the server whole. The ids `.` and `..` cannot be a segment, and the call rejects before any request.
 
 ## Filter and pagination encoding
 
@@ -140,17 +182,44 @@ export async function manageProducts(dataProvider: IDataProvider): Promise<void>
 - **Sorting**: `params.sort.field` is serialized to `order: ["<field> <order>"]` (for example, `["price DESC"]`).
 - **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
 - **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
-- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
+- **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta` and `signal`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
 - **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
+
+## Abort a request
+
+The provider returns `supportAbortSignal: true`, so react-admin passes the `signal` of its queries to `getList`, `getOne`, `getMany` and `getManyReference`. A read that a newer filter or page replaced is aborted instead of running on. The writes take no signal, because react-admin passes none. One caveat of react-admin: its batched `getMany` (the references that several fields ask for in one tick) passes the signal of one caller for the whole batch, so unmounting one `ReferenceField` can abort the query of a sibling.
+
+To abort a request you send yourself, pass a `signal` in `ISendParams`:
+
+```ts
+import { type IDataProvider, RequestMethods } from '@venizia/ardor';
+
+export async function buildReport(opts: {
+  dataProvider: IDataProvider;
+  signal: AbortSignal;
+}): Promise<unknown> {
+  const { dataProvider, signal } = opts;
+  const response = await dataProvider.send({
+    resource: 'reports/build',
+    params: { method: RequestMethods.POST, body: { year: 2026 }, signal },
+  });
+
+  return response.data;
+}
+```
+
+An aborted request rejects with the signal's reason (an `AbortError`). It is not a 401: it starts no refresh, and `checkError` resolves for it. The `signal` is never sent as a filter key.
 
 ## Extended provider methods
 
-`IDataProvider` extends react-admin's nine data methods with exactly three more: `send`, `getNetworkService`, `getDataSourceAuth`:
-1. `send<TResult = AnyType>(opts: { resource: TResource; params: ISendParams }): Promise<ISendResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+`IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
+1. `send<TResult = unknown>(opts: { resource: TResource; params: ISendParams }): Promise<INetworkResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
 ```ts
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   type IDataProvider,
   RequestBodyTypes,
@@ -179,7 +248,7 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 
   const dataSourceAuth = dataProvider.getDataSourceAuth();
   if (dataSourceAuth.errorRootKey !== 'error') {
-    throw new Error('Unexpected error root key');
+    throw getError({ message: '[configureNetwork] Unexpected error root key' });
   }
 }
 ```
@@ -187,8 +256,8 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 ## Error handling
 
 When the backend responds with an HTTP status outside the 200-299 range:
-1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` unwraps the response payload using the `'error'` root key (`HttpResponseReader.readError`).
-2. The service creates an application error via `getError` with:
+1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` hands the response to `ResponseReader.toError` (`packages/kernel/src/helpers/networks/response-reader.ts`), which unwraps the payload using the `'error'` root key (`HttpResponseReader.readError`).
+2. `ResponseReader.toError` creates an application error via `getError` with:
    - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
    - `message`: `server.normalized?.text ?? server.message ?? \`HTTP ${response.status}\``. This provides the user-facing error message displayed by react-admin notifications.
    - `messageCode`: Server error code from `server.normalized?.code` (for example, `ERR_NOT_FOUND`).
@@ -196,4 +265,4 @@ When the backend responds with an HTTP status outside the 200-299 range:
    - `extra`: Dictionary containing `extra.requestId` (assigned from `server.requestId`, preserving any upstream request ID in `extra.upstreamRequestIds`), or `undefined` if empty.
    - `cause`: Underlying server cause details from `server.details?.cause`.
 3. React-admin catches the thrown error and forwards it to `authProvider.checkError(error)`.
-4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it clears local session storage (`DefaultAuthService.cleanUp()`) and rejects with `{ redirectTo: this.loginPagePath }`, prompting react-admin to redirect the user to the login screen. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }`.
+4. `DefaultAuthProvider.checkError` inspects `error?.status ?? error?.statusCode`. If status is 401, it rejects with `unauthenticatedRejection({ reason: 'unauthorized' })` (by default `{ redirectTo: this.loginPagePath }`, which has react-admin send the user to the login screen) and clears the session (`DefaultAuthService.cleanUp()`) unless that rejection says `logoutUser: false`. If status is 403, it rejects with `{ redirectTo: this.unauthorizedPagePath, logoutUser: false }` (`/access-denied` by default).

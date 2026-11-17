@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-admin",
-  "version": "0.4.7",
+  "version": "0.4.8-20",
   "description": "ARDOR react-admin adapter - the REST data provider, auth provider and i18n provider wired through IGNIS inversion, the ArdorApplication root component, the translate and notify hooks, and the English and Vietnamese message bundles.",
   "keywords": [
     "admin",
@@ -37,6 +37,7 @@
     "LICENSE.md",
     "dist",
     "!/**/__tests__",
+    "!**/*.map",
     "!**/*.tsbuildinfo"
   ],
   "type": "module",
@@ -56,13 +57,11 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
     "@venizia/ardor-kernel": "workspace:*",
-    "@venizia/ardor-react": "workspace:*",
-    "lodash": "catalog:"
+    "@venizia/ardor-react": "workspace:*"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "catalog:",
@@ -71,7 +70,6 @@
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/bun": "catalog:",
-    "@types/lodash": "catalog:",
     "@types/react": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
@@ -95,10 +93,10 @@
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
     "@tanstack/react-query": ">=5.104.5",
-    "@venizia/ignis-filter": "^0.4.6",
-    "@venizia/ignis-helpers": "^0.4.7",
-    "@venizia/ignis-inversion": "^0.4.6",
-    "@venizia/ignis-kernel": "^0.4.7",
+    "@venizia/ignis-filter": "^0.4.7",
+    "@venizia/ignis-helpers": "^0.4.8",
+    "@venizia/ignis-inversion": "^0.4.7",
+    "@venizia/ignis-kernel": "^0.4.8",
     "ra-core": ">=5.15.5",
     "ra-i18n-polyglot": ">=5.15.5",
     "react": ">=19.3.1",
@@ -118,7 +116,6 @@
         "@venizia/ardor-react",
         "@venizia/ignis-filter",
         "@venizia/ignis-inversion",
-        "lodash",
         "ra-core",
         "ra-i18n-polyglot",
         "react",
@@ -126,7 +123,7 @@
         "react-redux",
         "react-router-dom"
       ],
-      "limit": "10.65 KB"
+      "limit": "14180 B"
     }
   ],
   "engines": {

@@ -10,7 +10,11 @@ import {
   type IRestDataProviderOptions,
 } from '@venizia/ardor-kernel';
 import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@venizia/ardor-kernel/repository';
-import { DefaultNetworkRequestService } from '@venizia/ardor-kernel';
+import {
+  CoreBindings,
+  DefaultAuthService,
+  DefaultNetworkRequestService,
+} from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
 interface IRecordedRequest {
@@ -23,23 +27,28 @@ interface IRecordedRequest {
 
 const isRecord = (opts: { value: unknown }): opts is { value: Record<string, unknown> } => {
   const { value } = opts;
+
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const parseFilterQuery = (opts: { raw?: string }): Record<string, unknown> => {
   const { raw } = opts;
+
   if (!raw) {
     return {};
   }
+
   try {
     const parsed: unknown = JSON.parse(raw);
     const check = { value: parsed };
+
     if (isRecord(check)) {
       return check.value;
     }
   } catch (err) {
     console.error(err);
   }
+
   return {};
 };
 
@@ -54,6 +63,7 @@ const createProvider = (opts: { baseUrl: string }): DefaultRestDataProvider => {
     version: '1.0.0',
     description: 'ARDOR test application',
   };
+
   return new DefaultRestDataProvider(restDataProviderOptions, applicationInfo);
 };
 
@@ -73,6 +83,7 @@ beforeAll(() => {
         if (contentType.includes('application/json')) {
           try {
             const text = await req.text();
+
             if (text.length > 0) {
               body = JSON.parse(text);
             }
@@ -96,6 +107,7 @@ beforeAll(() => {
         } else {
           try {
             const text = await req.text();
+
             if (text.length > 0) {
               body = text;
             }
@@ -333,6 +345,69 @@ describe('getList behavior', () => {
   });
 });
 
+describe('the record id in the path', () => {
+  const ids = ['a/b', 'a?b=c', 'a#b', 'a b', 'a%2Fb', '...', 'a..b'];
+
+  test.each(ids)('getOne, update and delete send the id %p as one path segment', async (id) => {
+    const provider = createProvider({ baseUrl });
+    const segment = encodeURIComponent(id);
+
+    await provider.getOne({ resource: 'posts', params: { id } });
+    await provider.update({
+      resource: 'posts',
+      params: { id, data: { title: 'x' }, previousData: {} },
+    });
+    await provider.delete({ resource: 'posts', params: { id } });
+
+    expect(recordedRequests.map((request) => request.method)).toEqual(['GET', 'PATCH', 'DELETE']);
+
+    for (const request of recordedRequests) {
+      expect(request.pathname).toBe(`/posts/${segment}`);
+      expect(Object.keys(request.query).filter((key) => key !== 'filter')).toEqual([]);
+    }
+  });
+
+  test.each(['.', '..'])('the id %p is refused before any request', async (id) => {
+    const provider = createProvider({ baseUrl });
+
+    const outcomes = await Promise.allSettled([
+      provider.getOne({ resource: 'posts', params: { id } }),
+      provider.delete({ resource: 'posts', params: { id } }),
+    ]);
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual(['rejected', 'rejected']);
+    expect(
+      outcomes.map((outcome) => (outcome.status === 'rejected' ? String(outcome.reason) : '')),
+    ).toEqual([
+      expect.stringContaining('not a valid path segment'),
+      expect.stringContaining('not a valid path segment'),
+    ]);
+    expect(recordedRequests).toEqual([]);
+  });
+
+  test('an empty id, a lone surrogate id and a resource with a line break are refused before any request', async () => {
+    const provider = createProvider({ baseUrl });
+
+    const outcomes = await Promise.allSettled([
+      provider.getOne({ resource: 'posts', params: { id: '' } }),
+      provider.delete({ resource: 'posts', params: { id: '' } }),
+      provider.getOne({ resource: 'posts', params: { id: '\uD800' } }),
+      provider.getOne({ resource: '.\t.', params: { id: '1' } }),
+    ]);
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual(Array(4).fill('rejected'));
+    expect(recordedRequests).toEqual([]);
+  });
+
+  test('a numeric id is sent as it is', async () => {
+    const provider = createProvider({ baseUrl });
+
+    await provider.getOne({ resource: 'posts', params: { id: 77 } });
+
+    expect(recordedRequests[0]?.pathname).toBe('/posts/77');
+  });
+});
+
 describe('getOne behavior', () => {
   test('requests resource by id and forwards meta.filter without params as query', async () => {
     const provider = createProvider({ baseUrl });
@@ -412,7 +487,7 @@ describe('getMany behavior', () => {
     expect(sent.method).toBe(RequestMethods.GET);
     expect(sent.paths).toEqual(['posts']);
     expect(sent.body).toBeUndefined();
-    expect(sent.query.filter.where).toEqual({ id: { inq: ids } });
+    expect(sent.query).toMatchObject({ filter: { where: { id: { inq: ids } } } });
   });
 });
 
@@ -847,12 +922,45 @@ describe('network service creation', () => {
     description: 'x',
   };
 
+  test('value() hands the network service the auth service of the container, so a refresh path refreshes', async () => {
+    localStorage.clear();
+    const authService = new DefaultAuthService();
+    authService.saveAuth({ userId: 7, token: { value: 'stale', type: 'Bearer' } });
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    const provider = new DefaultRestDataProvider(
+      { url: baseUrl, authRecovery: { refreshTokenPath: '/auth/refresh' } },
+      applicationInfo,
+    );
+    provider.value(container);
+    const service = provider.getNetworkService();
+    spyOn(service, 'doRequest').mockResolvedValue({ data: { token: 'fresh' } });
+
+    const isRefreshed = await service.refresh();
+
+    expect(isRefreshed).toBe(true);
+    expect(authService.getAuth()?.value).toBe('fresh');
+  });
+
+  test('without an auth service in the container a refresh path refreshes nothing', async () => {
+    const provider = new DefaultRestDataProvider(
+      { url: baseUrl, authRecovery: { refreshTokenPath: '/auth/refresh' } },
+      applicationInfo,
+    );
+    provider.value(new Container());
+
+    const isRefreshed = await provider.getNetworkService().refresh();
+
+    expect(isRefreshed).toBe(false);
+  });
+
   test('createNetworkService is the one place the service is built, once, on first use', () => {
     let built = 0;
 
     class CountingProvider extends DefaultRestDataProvider {
       protected override createNetworkService() {
         built += 1;
+
         return super.createNetworkService();
       }
     }
@@ -882,7 +990,8 @@ describe('network service creation', () => {
     }
 
     recordedRequests.length = 0;
-    await new TokenProvider({ url: baseUrl }, applicationInfo).getOne({
+    const tokenProvider = new TokenProvider({ url: baseUrl }, applicationInfo);
+    await tokenProvider.getOne({
       resource: 'posts',
       params: { id: 1 },
     });

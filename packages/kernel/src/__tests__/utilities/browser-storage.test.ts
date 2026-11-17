@@ -1,51 +1,27 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 
 import { type IStorageCodec, LocalStorageKeys, StorageAreas } from '@/common';
-import { BrowserStorage } from '@/utilities/browser-storage';
+import { BrowserStorage, type IStorageChange } from '@/utilities/browser-storage';
+import { FakeStorage } from '@/testing';
 
-class StorageStub implements Storage {
-  [name: string]: unknown;
-
-  get length(): number {
-    return Object.keys(this).length;
-  }
-
-  getItem(key: string): string | null {
-    const value = Object.getOwnPropertyDescriptor(this, key)?.value;
-    return typeof value === 'string' ? value : null;
-  }
-
-  setItem(key: string, value: string): void {
-    this[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this[key];
-  }
-
-  clear(): void {
-    for (const key of Object.keys(this)) {
-      delete this[key];
-    }
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this)[index] ?? null;
-  }
-}
-
-class QuotaStorage extends StorageStub {
+class QuotaStorage extends FakeStorage {
   override setItem(_key: string, _value: string): void {
     throw new DOMException('The quota has been exceeded', 'QuotaExceededError');
   }
 }
 
-class BlockedStorage extends StorageStub {
+class BlockedStorage extends FakeStorage {
   override getItem(_key: string): string | null {
     throw new DOMException('Access is denied', 'SecurityError');
   }
 
   override removeItem(_key: string): void {
+    throw new DOMException('Access is denied', 'SecurityError');
+  }
+}
+
+class UnlistableStorage extends FakeStorage {
+  override get length(): number {
     throw new DOMException('Access is denied', 'SecurityError');
   }
 }
@@ -73,8 +49,8 @@ const storageEvent = (opts: { key: string | null; storageArea: Storage }): Event
 };
 
 beforeEach(() => {
-  install({ name: 'localStorage', storage: new StorageStub() });
-  install({ name: 'sessionStorage', storage: new StorageStub() });
+  install({ name: 'localStorage', storage: new FakeStorage() });
+  install({ name: 'sessionStorage', storage: new FakeStorage() });
 });
 
 afterEach(() => {
@@ -205,6 +181,154 @@ describe('BrowserStorage.remove', () => {
   });
 });
 
+describe('BrowserStorage.keys', () => {
+  beforeEach(() => {
+    localStorage.setItem('@app/store/theme', '"dark"');
+    localStorage.setItem('@app/store/old/a', '1');
+    localStorage.setItem('@app/store/old/b', '2');
+    sessionStorage.setItem('@app/store/old/session', '3');
+  });
+
+  test('lists every key of the area, and only the keys with the prefix when one is given', () => {
+    expect(BrowserStorage.keys().sort()).toEqual([
+      '@app/store/old/a',
+      '@app/store/old/b',
+      '@app/store/theme',
+    ]);
+    expect(BrowserStorage.keys({ prefix: '@app/store/old/' }).sort()).toEqual([
+      '@app/store/old/a',
+      '@app/store/old/b',
+    ]);
+    expect(BrowserStorage.keys({ prefix: '@app/store/none' })).toEqual([]);
+  });
+
+  test('reads the area named by storage', () => {
+    expect(BrowserStorage.keys({ storage: StorageAreas.SESSION })).toEqual([
+      '@app/store/old/session',
+    ]);
+  });
+
+  test('lists the session keys too, because listing writes nothing', () => {
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'real-token');
+
+    expect(BrowserStorage.keys({ prefix: LocalStorageKeys.PREFIX_AUTH })).toEqual([
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+    ]);
+  });
+
+  test('answers [], and never throws, when the area is missing or cannot be listed', () => {
+    install({ name: 'sessionStorage', storage: undefined });
+    expect(BrowserStorage.keys({ storage: StorageAreas.SESSION })).toEqual([]);
+
+    install({ name: 'localStorage', storage: new UnlistableStorage() });
+    expect(BrowserStorage.keys()).toEqual([]);
+  });
+});
+
+describe('BrowserStorage.removeWhere', () => {
+  beforeEach(() => {
+    localStorage.setItem('@app/store/theme', '"dark"');
+    localStorage.setItem('@app/store/old/a', '1');
+    localStorage.setItem('@app/store/old/b', '2');
+    sessionStorage.setItem('@app/store/old/session', '3');
+  });
+
+  test('tells the subscribers of a key under the prefix, stored or not, and no one else', () => {
+    const heard: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({ key: '@app/store/old/a', listener: () => heard.push('stored') }),
+      BrowserStorage.subscribe({
+        key: '@app/store/old/never',
+        listener: () => heard.push('never'),
+      }),
+      BrowserStorage.subscribe({ key: '@app/store/theme', listener: () => heard.push('theme') }),
+      BrowserStorage.subscribe({ key: '@app/other', listener: () => heard.push('other') }),
+      BrowserStorage.subscribe({
+        key: '@app/store/old/never',
+        storage: StorageAreas.SESSION,
+        listener: () => heard.push('session'),
+      }),
+    ];
+
+    BrowserStorage.removeWhere({ prefix: '@app/store/old/' });
+
+    expect(heard.filter((who) => who !== 'session').toSorted()).toEqual([
+      'never',
+      'stored',
+      'stored',
+    ]);
+    expect(heard).not.toContain('theme');
+    expect(heard).not.toContain('other');
+    expect(heard).not.toContain('session');
+
+    for (const stop of stops) {
+      stop();
+    }
+  });
+
+  test('removes every key with the prefix, answers how many, and leaves the others', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '@app/store/old/' })).toBe(2);
+    expect(BrowserStorage.keys()).toEqual(['@app/store/theme']);
+    expect(sessionStorage.getItem('@app/store/old/session')).toBe('3');
+  });
+
+  test('works in the area named by storage', () => {
+    expect(
+      BrowserStorage.removeWhere({ prefix: '@app/store/old/', storage: StorageAreas.SESSION }),
+    ).toBe(1);
+    expect(localStorage.getItem('@app/store/old/a')).toBe('1');
+  });
+
+  test('answers 0 for a prefix nothing has', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '@app/store/none' })).toBe(0);
+    expect(BrowserStorage.keys()).toHaveLength(3);
+  });
+
+  test('an empty prefix removes nothing, so a call cannot clear an area by leaving the prefix out', () => {
+    expect(BrowserStorage.removeWhere({ prefix: '' })).toBe(0);
+    expect(BrowserStorage.keys()).toHaveLength(3);
+  });
+
+  test('never removes a key under the session prefix, even when the prefix reaches it', () => {
+    localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'real-token');
+
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(3);
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
+    expect(BrowserStorage.removeWhere({ prefix: LocalStorageKeys.PREFIX_AUTH })).toBe(0);
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBe('real-token');
+  });
+
+  test('notifies the subscribers of the removed keys, and of no key outside the prefix', () => {
+    const calls: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({ key: '@app/store/old/a', listener: () => calls.push('a') }),
+      BrowserStorage.subscribe({ key: '@app/store/old/b', listener: () => calls.push('b') }),
+      BrowserStorage.subscribe({ key: '@app/store/theme', listener: () => calls.push('theme') }),
+    ];
+
+    BrowserStorage.removeWhere({ prefix: '@app/store/old/' });
+
+    for (const stop of stops) {
+      stop();
+    }
+
+    expect([...new Set(calls)].sort()).toEqual(['a', 'b']);
+  });
+
+  test('answers 0, and never throws, when the area is missing, cannot be listed or refuses removals', () => {
+    install({ name: 'sessionStorage', storage: undefined });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/', storage: StorageAreas.SESSION })).toBe(0);
+
+    install({ name: 'localStorage', storage: new UnlistableStorage() });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(0);
+
+    const blocked = new BlockedStorage();
+    blocked.setItem('@app/store/old/a', '1');
+    install({ name: 'localStorage', storage: blocked });
+    expect(BrowserStorage.removeWhere({ prefix: '@app/' })).toBe(0);
+  });
+});
+
 describe('BrowserStorage.subscribe in one tab', () => {
   test('a set and a remove through BrowserStorage notify the subscribers of that key and area only', () => {
     const calls: Array<string> = [];
@@ -222,6 +346,7 @@ describe('BrowserStorage.subscribe in one tab', () => {
     BrowserStorage.remove({ key: '@app/store/a' });
 
     expect(calls).toEqual(['a', 'a']);
+
     for (const stop of stops) {
       stop();
     }
@@ -264,6 +389,7 @@ describe('BrowserStorage.subscribe in one tab', () => {
 
     expect(stored).toBe(true);
     expect(calls).toEqual(['second']);
+
     for (const stop of stops) {
       stop();
     }
@@ -293,6 +419,7 @@ describe('BrowserStorage.subscribe across tabs', () => {
     globalThis.dispatchEvent(storageEvent({ key: null, storageArea: localStorage }));
 
     expect(calls).toEqual(['a', 'b']);
+
     for (const stop of stops) {
       stop();
     }
@@ -313,5 +440,73 @@ describe('BrowserStorage.subscribe across tabs', () => {
 
     add.mockRestore();
     remove.mockRestore();
+  });
+});
+
+describe('BrowserStorage.subscribe tells a change of this tab from one of another tab', () => {
+  test('a set, a remove and a removeWhere through BrowserStorage are not external', () => {
+    const changes: Array<IStorageChange> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: (change) => changes.push(change),
+    });
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    BrowserStorage.remove({ key: '@app/store/a' });
+    BrowserStorage.removeWhere({ prefix: '@app/store/' });
+
+    expect(changes).toEqual([{ isExternal: false }, { isExternal: false }, { isExternal: false }]);
+    stop();
+  });
+
+  test('a storage event of another tab is external, for a key and for a clear', () => {
+    const changes: Array<IStorageChange> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: (change) => changes.push(change),
+    });
+
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+    globalThis.dispatchEvent(storageEvent({ key: null, storageArea: localStorage }));
+
+    expect(changes).toEqual([{ isExternal: true }, { isExternal: true }]);
+    stop();
+  });
+
+  test('one listener can tell its own write from a remote one in a row', () => {
+    const seen: Array<string> = [];
+    const stop = BrowserStorage.subscribe({
+      key: '@app/store/a',
+      listener: ({ isExternal }) => seen.push(isExternal ? 'remote' : 'own'),
+    });
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+    BrowserStorage.set({ key: '@app/store/a', value: 2 });
+
+    expect(seen).toEqual(['own', 'remote', 'own']);
+    stop();
+  });
+
+  test('a listener that takes no argument is called as before, and one that throws does not stop the others', () => {
+    const calls: Array<string> = [];
+    const stops = [
+      BrowserStorage.subscribe({
+        key: '@app/store/a',
+        listener: () => {
+          throw new Error('listener failed');
+        },
+      }),
+      BrowserStorage.subscribe({ key: '@app/store/a', listener: () => calls.push('plain') }),
+    ];
+
+    BrowserStorage.set({ key: '@app/store/a', value: 1 });
+    globalThis.dispatchEvent(storageEvent({ key: '@app/store/a', storageArea: localStorage }));
+
+    expect(calls).toEqual(['plain', 'plain']);
+
+    for (const stop of stops) {
+      stop();
+    }
   });
 });

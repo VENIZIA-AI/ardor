@@ -45,6 +45,7 @@ describe('RequestMethods scheme validation and members', () => {
     ];
 
     expect(RequestMethods.SCHEME_SET.size).toBe(declaredMethods.length);
+
     for (const method of declaredMethods) {
       expect(RequestMethods.SCHEME_SET.has(method)).toBe(true);
     }
@@ -90,6 +91,7 @@ describe('RequestTypes scheme validation and members', () => {
     ];
 
     expect(RequestTypes.SCHEME_SET.size).toBe(declaredTypes.length);
+
     for (const type of declaredTypes) {
       expect(RequestTypes.SCHEME_SET.has(type)).toBe(true);
     }
@@ -125,6 +127,7 @@ describe('RequestBodyTypes scheme validation and members', () => {
     ];
 
     expect(RequestBodyTypes.SCHEME_SET.size).toBe(declaredBodyTypes.length);
+
     for (const bodyType of declaredBodyTypes) {
       expect(RequestBodyTypes.SCHEME_SET.has(bodyType)).toBe(true);
     }
@@ -148,6 +151,7 @@ describe('Environments scheme validation and members', () => {
     const declaredEnvironments = [Environments.DEVELOPMENT, Environments.PRODUCTION];
 
     expect(Environments.SCHEME_SET.size).toBe(declaredEnvironments.length);
+
     for (const env of declaredEnvironments) {
       expect(Environments.SCHEME_SET.has(env)).toBe(true);
     }
@@ -194,9 +198,11 @@ describe('Authentication, RequestChannel, RequestCountData, and LocalStorageKeys
       Authentication.STRATEGY_JWT,
     ];
     expect(Authentication.SCHEME_SET.size).toBe(declared.length);
+
     for (const entry of declared) {
       expect(Authentication.isValid(entry)).toBe(true);
     }
+
     expect(Authentication.isValid('Digest')).toBe(false);
     expect(Authentication.isValid('')).toBe(false);
   });
@@ -210,9 +216,11 @@ describe('Authentication, RequestChannel, RequestCountData, and LocalStorageKeys
   test('RequestCountData.isValid and SCHEME_SET cover declared modes', () => {
     const declared = [RequestCountData.DATA_ONLY, RequestCountData.DATA_WITH_COUNT];
     expect(RequestCountData.SCHEME_SET.size).toBe(declared.length);
+
     for (const entry of declared) {
       expect(RequestCountData.isValid(entry)).toBe(true);
     }
+
     expect(RequestCountData.isValid('2')).toBe(false);
   });
 
@@ -223,9 +231,11 @@ describe('Authentication, RequestChannel, RequestCountData, and LocalStorageKeys
       LocalStorageKeys.KEY_AUTH_PERMISSION,
     ];
     expect(LocalStorageKeys.SCHEME_SET.size).toBe(declared.length);
+
     for (const entry of declared) {
       expect(LocalStorageKeys.isValid(entry)).toBe(true);
     }
+
     expect(LocalStorageKeys.isValid('@app/auth/unknown')).toBe(false);
   });
 });
@@ -235,6 +245,7 @@ describe('CoreBindings and LocalStorageKeys prefixes and uniqueness', () => {
     const bindingValues = Object.values(CoreBindings);
 
     expect(bindingValues.length).toBeGreaterThan(0);
+
     for (const key of bindingValues) {
       expect(key.startsWith('@app/application/')).toBe(true);
     }
@@ -247,6 +258,7 @@ describe('CoreBindings and LocalStorageKeys prefixes and uniqueness', () => {
     const storageValues = [...LocalStorageKeys.SCHEME_SET];
 
     expect(storageValues.length).toBeGreaterThan(0);
+
     for (const key of storageValues) {
       expect(key.startsWith('@app/auth/')).toBe(true);
     }

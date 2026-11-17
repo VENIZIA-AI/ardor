@@ -104,11 +104,26 @@ describe('security-headers.conf', () => {
     expect(HEADERS).toContain('add_header X-Frame-Options "SAMEORIGIN" always;');
   });
 
-  test('a Content-Security-Policy is only a commented example', () => {
-    expect(HEADERS).not.toContain('Content-Security-Policy');
-    expect(read('nginx-snippets/security-headers.conf')).toMatch(
-      /^# add_header Content-Security-Policy /m,
-    );
+  test('a Content-Security-Policy is sent in report-only mode, exactly this policy, and the enforcing header is not', () => {
+    const policy = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+    ].join('; ');
+
+    expect(HEADERS).toContain(`add_header Content-Security-Policy-Report-Only "${policy}" always;`);
+    expect(HEADERS).not.toMatch(/add_header Content-Security-Policy "/);
+    expect(HEADERS).not.toMatch(/unsafe-eval|script-src[^;]*\*/);
+  });
+
+  test('the server does not name its version', () => {
+    expect(withoutComments(TEMPLATE)).toContain('server_tokens off;');
   });
 });
 

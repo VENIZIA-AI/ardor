@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
+import { TestArdorApplication } from './test-application';
 import { component, configuration, service } from '@/base/metadata';
 import type { IApplicationInfo, IArtifactIndex } from '@/common';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
@@ -31,7 +31,7 @@ const generated: IArtifactIndex = {
 };
 
 const createApplication = (opts: { artifacts: Array<IArtifactIndex> }) => {
-  class IndexedApplication extends BaseArdorApplication {
+  class IndexedApplication extends TestArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'artifact-index', version: '1.0.0', description: 'generated artifact index' };
     }
@@ -156,6 +156,7 @@ describe('AbstractArdorApplication.artifacts', () => {
 
       async resolve(): Promise<IArtifactIndex> {
         this.resolveCalls++;
+
         return this.resolver();
       }
 

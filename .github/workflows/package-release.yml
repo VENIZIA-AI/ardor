@@ -50,7 +50,8 @@ on:
         default: false
 
 # The workflow can write nothing by default; the jobs that write say so: `publish` pushes the release commits and
-# the tags, and `atlas-index` uploads the signed atlas pair of each tag, with no npm identity.
+# the tags, `atlas-index` uploads the signed atlas pair of each tag, with no npm identity, and `deploy-docs` holds
+# actions: write only, to start the docs deploy.
 # Every job checks out the commit that was dispatched, so the plan, the test job, the publish job and the run
 # name all name the same commit. There is no npm token anywhere: the release publishes through npm trusted
 # publishing, so the two jobs that talk to npm (publish, heal-next) name the environment npm-release and hold
@@ -110,6 +111,8 @@ jobs:
       catalog_tag: ${{ steps.plan.outputs.catalog_tag }}
       # The head of develop the merge trial read (empty for a prerelease): the publish job stops if develop moved.
       develop_sha: ${{ steps.plan.outputs.develop_sha }}
+      # The previous stable tag of ardor (empty for a prerelease): the test job checks the changelog history from it.
+      changelog_base: ${{ steps.plan.outputs.changelog_base }}
 
     steps:
       # Full history: the merge trial of a stable needs the branches and their common ancestor, and the plan
@@ -126,8 +129,9 @@ jobs:
           bun-version: 1.4.4
 
       # A list that is not in dependency order, packages at different versions under a bump type, a stable that
-      # is not the promotion of a prerelease, an IGNIS stable that is not out, a merge back that would stop:
-      # each fails here, with every reason, before any build and before anyone is asked to approve.
+      # is not the promotion of a prerelease, a stable without its version folder or with one already released, an
+      # IGNIS stable that is not out, a merge back that would stop: each fails here, with every reason, before any
+      # build and before anyone is asked to approve.
       - name: Plan the run
         id: plan
         env:
@@ -149,10 +153,12 @@ jobs:
       # -------------------------------------------------------------------------
       # SETUP
       # -------------------------------------------------------------------------
+      # Full history: the changelog history check of a stable reads every commit and tag since the previous stable.
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -175,80 +181,36 @@ jobs:
       # PREPARE
       # -------------------------------------------------------------------------
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
-      # `force-update` rewrites version ranges; an install that ran first has already resolved the
+      # The catalog rewrites version ranges; an install that ran first has already resolved the
       # old ones. A prerelease tracks the HIGHEST published IGNIS line (prerelease included), a stable the IGNIS
-      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range, so it is refreshed
-      # first, then the per-package script refreshes any range the catalog does not own. Once per job, not per
-      # package: four refreshes could give four different catalogs inside one run.
-      - name: Force update workspace
+      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range. Once per job, not
+      # per package: four refreshes could give four different catalogs inside one run.
+      - name: Refresh the catalog
         run: |
           bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
-          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install
 
-      # Every ARDOR sibling is a member of this workspace, so resolving one to a registry tarball is
-      # always wrong: the build would validate code that is not in this repository. The failure mode is
-      # invisible otherwise - install succeeds, and the lie surfaces as unrelated-looking type errors.
-      - name: Assert internal dependencies link to the workspace
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            bun scripts/release/release-gates.ts links "packages/$package"
-          done
-
-      # One copy of every @venizia/* package. A workspace member that does not declare an IGNIS package
-      # itself gets the stable copy for its peer range (it excludes the prerelease), and two copies of
-      # inversion are two sets of types: the build fails far from the cause. This names the member.
-      - name: Assert one copy of every @venizia package
-        run: bun scripts/release/release-gates.ts single-copy
-
-      # -------------------------------------------------------------------------
-      # BUILD, LINT & VALIDATE (uses Makefile dependency chain)
-      # -------------------------------------------------------------------------
-      - name: Build
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "$package"
-          done
-
-      - name: Lint
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "lint-$package"
-          done
-
-      - name: Test the package
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "test-$package"
-          done
-
-      - name: Test the repository scripts
-        run: make test-scripts
-
-      # The gate's own regression tests run first: a probe that silently stopped detecting anything
-      # would leave every `purity-*` target green for the wrong reason.
-      - name: Purity probe self-test
-        run: make purity-test
-
-      - name: Purity gate
-        run: |
-          for package in ${PACKAGES//,/ }; do
-            make "purity-$package"
-          done
-
-      - name: Check dependency catalog
-        run: make catalog-check
-
-      # An app created from the PACKED preset typechecks, lints, builds and starts without a warning.
-      # Before the bump and the publish: a preset that cannot create a working app must not ship.
-      - name: VULCAN preset smoke
-        if: ${{ contains(format(',{0},', inputs.packages), ',ardor,') }}
+      # The gates of `make gates`, for the packages of this run, in the order that target lists them: every ARDOR
+      # sibling links to the workspace and every @venizia/* package resolves to one copy (a registry tarball or
+      # a second copy shows up as unrelated type errors), then build, lint, test, the scripts, purity, the
+      # catalog and, when the run holds ardor, the preset smoke: an app created from the PACKED preset
+      # typechecks, lints, builds and starts without a warning, before the bump and the publish.
+      - name: Gates
         env:
           # The VULCAN this repository pins (root package.json), never the newest release.
-          VULCAN_CMD: bun x @venizia/vulcan@0.4.9-5
-        run: make preset-smoke
+          VULCAN_CMD: bun x @venizia/vulcan@0.4.10-21
+        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"
+
+      # A stable also checks the changelog history since the previous stable tag of ardor (the plan's changelog_base):
+      # no released version folder was edited and every entry since then has its migration block. A prerelease, or
+      # a stable with no earlier stable, skips it.
+      - name: Check the changelog history
+        if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}
+        env:
+          CHANGELOG_BASE: ${{ needs.plan.outputs.changelog_base }}
+        run: bun node_modules/.bin/vulcan changelog check --history --base "$CHANGELOG_BASE"
 
   # The one human stop, for a stable only: the plan says so, and the job is skipped for a prerelease. It runs after
   # the gates, so the owner never approves a release that fails them, and its name carries the target version. The
@@ -354,15 +316,13 @@ jobs:
       # The version, the kind and the IGNIS line were decided by the plan job and are not worked out again here:
       # the chain gets the plan's version and kind and refuses a run that would publish another.
       # BEFORE the install, and across the WHOLE workspace - not just the packages being released.
-      # `force-update` rewrites version ranges; an install that ran first has already resolved the
-      # old ones. ARDOR tracks the HIGHEST published IGNIS line (prerelease included), never
-      # `latest`: the root catalog owns every @venizia/* range, so it is refreshed first, then the
-      # per-package script refreshes any range the catalog does not own. Once per job, not per package:
-      # four refreshes could give four different catalogs inside one run.
-      - name: Force update workspace
+      # The catalog rewrites version ranges; an install that ran first has already resolved the
+      # old ones. A prerelease tracks the HIGHEST published IGNIS line (prerelease included), a stable the IGNIS
+      # `latest` (the plan chose: CATALOG_TAG): the root catalog owns every @venizia/* range. Once per job, not
+      # per package: four refreshes could give four different catalogs inside one run.
+      - name: Refresh the catalog
         run: |
           bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"
-          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"
 
       - name: Install
         run: bun install
@@ -377,8 +337,9 @@ jobs:
       # runs ahead of every git write, a stop in phase B still records what was published, and the same version
       # dispatched again records what is missing without a second publish. The push is never rebased, and a failure
       # is reported, never repaired by a force-push: npm cannot un-publish. A stable then merges main back into develop, in a worktree of its own
-      # and from a copy of this checkout's merge-back.ts. The state of every package is written to a file after
-      # each step.
+      # and from a copy of this checkout's merge-back.ts. In a stable the release commit of ardor also writes
+      # `released: <date>` into changelogs/<version>/log.md (stamp-release.ts) and adds that file. The state of every
+      # package is written to a file after each step.
       - name: Release the packages
         env:
           RELEASE_ISSUE: ${{ inputs.issue }}
@@ -392,13 +353,13 @@ jobs:
       # -------------------------------------------------------------------------
       # GITHUB RELEASE
       # -------------------------------------------------------------------------
-      # One Release for the run, on the tag of the last package it released (`ardor-v<version>` for a full run): a
-      # stable is marked Latest only when no higher stable tag exists, with the changelog entries added since the
-      # previous stable (or a line saying there is no change for users); a prerelease is marked Pre-release and
-      # never Latest. A tag that has a Release is skipped, and so is a tag this run did not make. The step runs
-      # after a chain that stopped too, because the tags it made stand. A failure is reported in the run summary
-      # and never fails or undoes a publish. The script refuses the tag of the atlas index, whose release is not a
-      # publish's.
+      # One Release for a stable run, on the tag of the last package it released (`ardor-v<version>` for a full run),
+      # marked Latest only when no higher stable tag exists. Its notes are changelogs/<version>/log.md without its
+      # frontmatter, then the packages, with migration-<version>.yaml attached when the folder holds a block. A
+      # prerelease makes no Release: the script says so and exits 0. A tag that has a Release is skipped, and so is a
+      # tag this run did not make. The step runs after a chain that stopped too, because the tags it made stand. A
+      # failure is reported in the run summary and never fails or undoes a publish. The script refuses the tag of the
+      # atlas index, whose release is not a publish's.
       - name: Create the GitHub Release
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -468,7 +429,7 @@ jobs:
       - name: Publish the atlas index of the kernel tag
         if: ${{ steps.tags.outputs.kernel != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b4a973dfb790f2c9b5eabc4282e887133b8fcba0 # v0.4.10-21
         with:
           ref: ${{ steps.tags.outputs.kernel }}
         env:
@@ -477,7 +438,7 @@ jobs:
       - name: Publish the atlas index of the react tag
         if: ${{ steps.tags.outputs.react != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b4a973dfb790f2c9b5eabc4282e887133b8fcba0 # v0.4.10-21
         with:
           ref: ${{ steps.tags.outputs.react }}
         env:
@@ -486,7 +447,7 @@ jobs:
       - name: Publish the atlas index of the admin tag
         if: ${{ steps.tags.outputs.admin != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b4a973dfb790f2c9b5eabc4282e887133b8fcba0 # v0.4.10-21
         with:
           ref: ${{ steps.tags.outputs.admin }}
         env:
@@ -495,11 +456,32 @@ jobs:
       - name: Publish the atlas index of the ardor tag
         if: ${{ steps.tags.outputs.ardor != '' }}
         continue-on-error: true
-        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b468960b381f0a23c22d99d3bbe4768f6c468065 # v0.4.9-5
+        uses: VENIZIA-AI/vulcan/.github/actions/atlas-index@b4a973dfb790f2c9b5eabc4282e887133b8fcba0 # v0.4.10-21
         with:
           ref: ${{ steps.tags.outputs.ardor }}
         env:
           ATLAS_INDEX_KEY: ${{ secrets.ATLAS_INDEX_KEY }}
+
+  # The docs deploy again after a release. The release pushes with the Actions token, and GitHub starts no workflow
+  # from such a push, so the push of a release commit never starts deploy-docs.yml; the version box of the
+  # changelog names the newest prerelease from the release tags, so this job starts the deploy by hand once the tags
+  # are pushed. It holds actions: write and nothing else, and never fails or undoes a release that has published.
+  deploy-docs:
+    name: Deploy the docs
+    needs: [plan, publish]
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}
+    continue-on-error: true
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Start the docs deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run deploy-docs.yml --ref develop
 
   # A dispatch with heal_only runs only this job: it moves a stale `next` tag to `latest` for every
   # ARDOR package without publishing anything (the same check a release runs after each publish).

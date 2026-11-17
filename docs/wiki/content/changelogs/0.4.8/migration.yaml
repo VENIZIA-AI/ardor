@@ -1,0 +1,534 @@
+remove-use-sizer:
+  symbols: [useSizer, IUseSizerOptions, IUseSizerReturn, Ardor.useSizer]
+  upgrade:
+    steps:
+      - 'Give the element a ref with `React.useRef<HTMLDivElement>(null)` instead of an id.'
+      - "Replace `useSizer({ containerId })` with `useElementSize({ ref, box: 'border-box', round: true })`."
+    before: |-
+      const { width, height } = useSizer({ containerId: 'chart' });
+    after: |-
+      const ref = React.useRef<HTMLDivElement>(null);
+      const { width, height } = useElementSize({ ref, box: 'border-box', round: true });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7 or earlier, where useSizer exists.
+      - Give the element back its id and call useSizer({ containerId }) in place of useElementSize.
+  data: Nothing stored changes.
+
+rename-use-injectable-container:
+  symbols: [useInjectableContainer, Ardor.useInjectableContainer]
+  upgrade:
+    steps:
+      - 'Rename `useInjectableContainer` and `Ardor.useInjectableContainer` to `useApplicationContainer`.'
+      - 'Update a test that matches the old error text to `[useApplicationContainer] Failed to determine the application container!`.'
+    before: |-
+      const container = useInjectableContainer();
+    after: |-
+      const container = useApplicationContainer();
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier and rename useApplicationContainer back to useInjectableContainer.
+  data: Nothing stored changes. A test that matches the old error text must match `[useApplicationContainer] Failed to determine the application container!`.
+
+remove-send-response:
+  symbols: [ISendResponse]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --write` inside the package; it renames `ISendResponse` to `INetworkResponse`.'
+      - 'Rename any `ISendResponse` it left to `INetworkResponse`.'
+    before: |-
+      import type { ISendResponse } from '@venizia/ardor';
+      const reply: ISendResponse<Product[]> = await dataProvider.send({ resource, params });
+    after: |-
+      import type { INetworkResponse } from '@venizia/ardor';
+      const reply: INetworkResponse<Product[]> = await dataProvider.send({ resource, params });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier and rename INetworkResponse back to ISendResponse where you changed it (INetworkResponse also exists in 0.4.7, so leaving it is safe).
+  data: Nothing stored changes.
+  codemod: namespace
+
+remove-list-filter-offset:
+  symbols: [IListFilter.offset]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod namespace --check` to list each `.offset` in a file that imports `IListFilter` or `ListFilterBuilder`.'
+      - 'Rename each `offset` of an `IListFilter` to `skip`.'
+    before: |-
+      const filter: IListFilter = { where: {}, offset: 20 };
+    after: |-
+      const filter: IListFilter = { where: {}, skip: 20 };
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier; skip stays valid there, so leaving skip is safe.
+  data: Nothing stored changes. `ardor codemod namespace --check` lists each `.offset` in a file that imports IListFilter or ListFilterBuilder, but does not rewrite it.
+
+remove-http-repository-update-all-delete-all:
+  symbols: [HttpRepository.updateAll, HttpRepository.deleteAll, HttpRepository.deleteBy]
+  upgrade:
+    steps:
+      - 'Replace `updateAll({ where, data })` with `updateBy({ where, data })`.'
+      - 'Replace `deleteAll({ where })` with `deleteBy({ where })`.'
+      - 'Pass `where` to every `deleteBy` call: it is required now.'
+    before: |-
+      await repository.updateAll({ where, data });
+      await repository.deleteAll({ where });
+    after: |-
+      await repository.updateBy({ where, data });
+      await repository.deleteBy({ where });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages and the IGNIS packages to the 0.4.7 line, where updateAll and deleteAll exist. updateBy and deleteBy also exist there, so leaving them is safe.
+  data: 'The requests are unchanged on the wire (PATCH or DELETE with where in the body). deleteBy now requires where. A call that left it out failed at run time before and no longer compiles.'
+
+drop-lodash:
+  symbols:
+    [
+      '@venizia/ardor-react',
+      '@venizia/ardor-admin',
+      SelectorHooks.create,
+      DefaultI18nProvider.composeMessages,
+    ]
+  upgrade:
+    steps:
+      - If your code imports lodash, add lodash (and @types/lodash) to your own package.json, because ARDOR no longer installs it.
+      - If a useDeepEqualSelector selector returns a Map, a Set or a class instance, return plain data or compare inside the selector.
+      - 'If two message sources hold the same array, the later source now replaces the earlier one instead of merging them. Put the whole array in the later source.'
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier, which depend on lodash again. Nothing else changes.
+  data: Nothing stored changes.
+
+default-token-refresh:
+  symbols:
+    [
+      IAuthRecoveryOptions.refreshTokenPath,
+      DefaultNetworkRequestService.refreshToken,
+      DefaultRestDataProvider.createNetworkService,
+    ]
+  upgrade:
+    steps:
+      - 'Delete a `DefaultNetworkRequestService` subclass whose only job is to post to `refreshTokenPath` and save the token.'
+      - 'If your refresh endpoint answers in another shape, override `readRefreshedToken({ data })`.'
+      - 'In a `createNetworkService` override of `DefaultRestDataProvider`, pass `authService` on.'
+    before: |-
+      // authRecovery.refreshTokenPath only stopped the refresh endpoint from starting a refresh;
+      // a subclass overrode refreshToken to post to it and save the token.
+      class AppNetworkRequestService extends DefaultNetworkRequestService {
+        protected override async refreshToken(): Promise<boolean> { /* post and save */ return true; }
+      }
+    after: |-
+      const restDataProviderOptions: IRestDataProviderOptions = {
+        url: 'https://api.example.com',
+        authRecovery: { refreshTokenPath: '/auth/refresh' },
+        noAuthPaths: ['/auth/sign-in'],
+      };
+      // refreshToken() posts to the path itself; delete the subclass. A DefaultRestDataProvider subclass that overrides createNetworkService passes authService on.
+      // Override readRefreshedToken({ data }) for another answer shape.
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier and restore your refreshToken override, since the default refresh does not exist there. Remove the authService you pass in a createNetworkService override, because 0.4.7 has no such option.
+  data: The refresh keeps the stored user id, username, referenceId and provider and never passes roles. Nothing stored changes shape.
+
+sign-out-clears-store:
+  symbols:
+    [
+      DefaultAuthProvider.clearStoredData,
+      LocalStorageKeys.PREFIX_STORE,
+      DefaultAuthService.cleanUp,
+      ArdorApplication,
+    ]
+  upgrade:
+    steps:
+      - 'Move each preference that must survive sign-out from `@app/store/<name>` to `@app/prefs/<name>` (`@app/prefs/<id>/<name>` when the app has an `id`; `keys.prefsPrefix` holds it).'
+      - "Do not name a preference `locale`: that key is ARDOR's own, for the chosen language. Old keys are not migrated."
+      - 'Or override `clearStoredData` to keep the keys you choose.'
+    before: |-
+      BrowserStorage.set({ key: '@app/store/sidebar', value: 'open' });
+    after: |-
+      BrowserStorage.set({ key: '@app/prefs/sidebar', value: 'open' });
+  downgrade:
+    steps:
+      - Pin the packages to 0.4.7 or earlier, where sign-out removes only keys under @app/auth/ and empties the query cache only on react-admin's own logout. Keys you moved to @app/prefs/ stay valid there.
+  data: Keys under @app/store/ (or @app/store/<id>/ when the application has an id), in localStorage and sessionStorage, are removed at the end of every session, and the old key of a moved preference is not migrated. Another open tab clears as soon as it sees the session end. Override clearStoredData to keep some keys.
+
+remove-any-aliases:
+  symbols: [AnyType, AnyObject]
+  upgrade:
+    steps:
+      - 'Run `bun run devz codemod any-aliases --all` to list the uses, then `--write --all` to rewrite the imports (needs `@venizia/dev-configs`).'
+      - 'Replace `AnyType` and `AnyObject` with `unknown`, a named type or `Record<string, unknown>`.'
+      - 'Leave out the second type argument of `HttpRepository`; `unknown` is rejected there.'
+      - 'Spread an `interface` value, or type it as `object` or a `type` alias, where `Record<string, unknown>` is expected.'
+      - 'Type a `TClass<HttpRepository<...>>` slot on the members the code calls, or make the code that takes it generic over the entity.'
+    before: |-
+      import type { AnyObject, AnyType } from '@venizia/ardor';
+      const read = (value: AnyType) => value.name.toUpperCase();
+      const bag: AnyObject = { page: 1 };
+      const repository: HttpRepository<IProduct, AnyType> = products;
+      const slot: TClass<HttpRepository<TNamedEntity, AnyType>> = OrganizerRepository;
+    after: |-
+      const read = (value: { name: string }) => value.name.toUpperCase();
+      const bag: Record<string, unknown> = { page: 1 };
+      const repository: HttpRepository<IProduct> = products;
+      const slot: TClass<Pick<HttpRepository<TNamedEntity>, 'find' | 'count'>> = OrganizerRepository;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where AnyType and AnyObject exist, and undo the replacements.
+      - To stay on the new ARDOR, declare the two names in your own code. AnyType is the any type; AnyObject is a Record of string, symbol and number keys whose values are any.
+  data: Nothing stored changes. If the project uses @venizia/dev-configs, the IGNIS codemod rewrites the imports of both names, from @venizia/ardor and @venizia/ardor-kernel too. `bun run devz codemod any-aliases --all` is a dry run that only reports, and `bun run devz codemod any-aliases --write --all` applies it; replace by hand what it lists. The second type argument of HttpRepository is the payload type, which must extend object; leave it out for Partial of the entity, because unknown is rejected. A slot typed TClass of HttpRepository of one entity does not accept the repository class of another entity under the IGNIS TClass that ships with this release, with or without the AnyType argument; type the slot on the members the code calls, or make the code that takes it generic over the entity. An interface value does not fit Record<string, unknown>; spread it, type it as object, or declare it as a type alias.
+
+typed-do-request-query:
+  symbols: [DefaultNetworkRequestService.doRequest]
+  upgrade:
+    steps:
+      - 'Pass `query` as `Record<string, unknown>`; spread an `interface` value: `query: { ...listOptions }`.'
+    before: |-
+      await networkService.doRequest({ type, method, paths, query: listOptions });
+    after: |-
+      await networkService.doRequest({ type, method, paths, query: { ...listOptions } });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the query of doRequest is any.
+  data: Nothing stored changes. The query is sent as it was.
+
+typed-stored-user:
+  symbols:
+    [
+      DefaultAuthService.getUser,
+      DefaultAuthProvider.onSessionStarted,
+      DefaultAuthProvider.getIdentity,
+      IAuthUser,
+    ]
+  upgrade:
+    steps:
+      - 'Check a custom field with `in` and `typeof` before you read it from `getUser()` or the `user` of `onSessionStarted`.'
+      - 'Add the `id` that `getIdentity()` now returns to a test that compares its result with `toEqual`.'
+    before: |-
+      const tenant = authService.getUser().tenant.toUpperCase();
+    after: |-
+      const user = authService.getUser();
+      const label = 'tenant' in user && typeof user.tenant === 'string' ? user.tenant.toUpperCase() : '';
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and onSessionStarted takes user as any.
+      - Remove the id that getIdentity now adds from any test that compares its result with toEqual.
+  data: The identity in localStorage has the same shape before and after. A stored identity whose userId or referenceId is not a string or a number, or whose username or provider is not a string, now reads as an empty object; saveAuth never writes one.
+
+typed-user-override:
+  symbols: [DefaultAuthService.getUser]
+  upgrade:
+    steps:
+      - 'Make an override of `DefaultAuthService.getUser`, or a stub of it, return fields that fit `IAuthUser`.'
+      - 'Return an `interface` that extends `IAuthUser` and adds your own fields; `userId` is never `null`.'
+    before: |-
+      override getUser(): { userId: string | null; role: string } {
+        return { userId: null, role: 'admin' };
+      }
+    after: |-
+      override getUser(): { userId: string; role: string } {
+        return { userId: 'u-1', role: 'admin' };
+      }
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where getUser returns any and an override may return any shape.
+  data: An override of getUser, or a stub of the auth service, must return fields that fit IAuthUser. userId and referenceId are a string or a number, and username and provider are a string; extra fields and an interface of your own are fine. TypeScript reports TS2416 on the override, and TS2345 where the stub is passed as DefaultAuthService. An override that returns a plain object type with a tenant string field compiled before, as getUser returned any, and now fails with TS2416, so return an interface that extends IAuthUser and adds the field.
+
+typed-user-id:
+  symbols: [DefaultAuthService.getUser, DefaultAuthProvider.getIdentity, IAuthUser]
+  upgrade:
+    steps:
+      - 'Check `userId !== undefined` before you use `getUser().userId`: it is absent when nothing is stored.'
+      - 'Convert `userId` and `getIdentity().id` with `String()` where a string is needed.'
+      - 'In a test, replace `expect(getUser()).toEqual(...)` on keys outside `IAuthUser` with `toMatchObject`.'
+    before: |-
+      setViewer(authService.getUser().userId);
+      setViewer(identity.id);
+    after: |-
+      const { userId } = authService.getUser();
+      if (userId !== undefined) {
+        setViewer(String(userId));
+      }
+      setViewer(String(identity.id));
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the user id is any.
+  data: The user id is a string or a number (IdType), and absent when nothing is stored. A function that takes a string needs the value converted. In a test, expect(getUser()).toEqual with a key that is not on IAuthUser fails with TS2769; use toMatchObject, or expect with unknown as the type argument.
+
+typed-list-params:
+  symbols:
+    [DefaultRestDataProvider.getList, DefaultRestDataProvider.getManyReference, ICustomParams]
+  upgrade:
+    steps:
+      - 'In an override of `getList` or `getManyReference`, pass the params on spread: `params: { ...opts.params }`.'
+      - 'Leave an override of `getOne` or `getMany` as it is.'
+    before: |-
+      override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+        resource: string;
+        params: GetListParams & QueryFunctionContext;
+      }) {
+        return super.getList<RecordType>(opts);
+      }
+    after: |-
+      override async getList<RecordType extends RaRecord = RaRecord>(opts: {
+        resource: string;
+        params: GetListParams & QueryFunctionContext;
+      }) {
+        return super.getList<RecordType>({ resource: opts.resource, params: { ...opts.params } });
+      }
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where the index signature of ICustomParams is any and an interface fits it.
+  data: Nothing stored changes. ICustomParams has an index signature of unknown, not any, and the params of getList and getManyReference must have one, because a react-admin params type is an interface, so an override that passes it to super spreads it. getOne and getMany no longer ask for ICustomParams, so an override of them that calls super needs no change. TypeScript reports TS2345 on the call to super.
+
+codemod-safe-write:
+  symbols:
+    - '@venizia/ardor'
+  upgrade:
+    steps:
+      - 'In a CI step or a script that runs ardor codemod namespace --write on a folder that is not a git repository, such as an exported tree, add --allow-dirty. Without it the command exits 1 and writes nothing.'
+      - 'Inside a git repository nothing changes for a clean tree. A file with local changes is still refused unless you add --allow-dirty.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 writes outside a git repository without the flag.'
+  data: Nothing stored.
+
+ignis-peers:
+  symbols:
+    - '@venizia/ignis-kernel'
+    - '@venizia/ignis-connectors'
+    - '@venizia/ignis-helpers'
+    - '@venizia/ignis-boot'
+    - '@venizia/ignis-inversion'
+    - '@venizia/ignis-filter'
+  upgrade:
+    steps:
+      - 'Move @venizia/ignis-kernel, -connectors, -helpers and -boot to ^0.4.8, @venizia/ignis-inversion and @venizia/ignis-filter to ^0.4.7 (the IGNIS stables), together with the four ARDOR packages at 0.4.8, in one install.'
+      - 'Keep one copy of each. An ARDOR package of 0.4.7 or older does not compile on these IGNIS versions, because they no longer export AnyType and AnyObject.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7 and the IGNIS packages to the 0.4.7 line together. ARDOR 0.4.7 imports AnyType and AnyObject, which the IGNIS 0.4.8 packages no longer export.'
+  data: Nothing stored.
+
+stereotype-when-honoured:
+  symbols: [service, component, repository, configuration, datasource, injectable]
+  upgrade:
+    steps:
+      - 'Find every stereotype that sets when, for example @service({ when: () => isDevelopment }). A class whose when returned false was bound before and is not now, and neither are its @provide methods.'
+      - 'If the class should stay bound, remove the when option. If you want it bound only where you decide, keep when and bind the class by hand in bindContext(), for example this.service(MockMailService).'
+      - 'A when must return true or false at once: change an async function, and one that can throw, to read its value synchronously.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 binds every stereotyped class and does not call when.'
+  data: Nothing stored.
+
+duplicate-explicit-key-throws:
+  symbols:
+    [
+      service,
+      component,
+      repository,
+      configuration,
+      datasource,
+      injectable,
+      bindingList,
+      IArtifactRegistration.allowOverride,
+    ]
+  upgrade:
+    steps:
+      - 'If start() now fails with "The key ... is claimed by both A and B", give one of the two classes another binding key. If one of them is meant to replace the other, bind the replacement in bindContext() (it must extend the class it replaces, because the hooks check the bound class, or be a value binding), or select one of them with when.'
+      - 'If start() now fails with "[bindingList] ... is held by X with allowOverride false", move the entry from bindingList() to bindContext() (this.bind({ key }).toClass(Replacement), where Replacement extends X, or this.bind({ key }).toValue(instance)), or remove allowOverride: false from X. A discovered class that meets a class of that kind fails with "[registerArtifacts] ... is held by X with allowOverride false": give one of them another key.'
+  downgrade:
+    steps:
+      - 'Move the four ARDOR packages back to 0.4.7, with the IGNIS packages of the 0.4.7 line. 0.4.7 lets the class imported last win a shared key and lets bindingList() replace a class declared allowOverride: false.'
+  data: Nothing stored.
+
+auth-provider-toggle:
+  symbols:
+    [
+      CoreBindings.AUTH_PROVIDER_OPTIONS,
+      IAuthProviderOptions,
+      DefaultAuthProvider.authProviderOptions,
+    ]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod auth-options --write` to add `use: true` to each options object literal.'
+      - 'Fix by hand the options the codemod lists: add `use: true`, or `{ use: false }` for a guest app.'
+      - 'Type options returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
+      - 'If you bind your own auth provider under `DEFAULT_AUTH_PROVIDER`, also bind `AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`.'
+    before: |-
+      @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+      authProviderOptions() {
+        return { paths: { afterLogin: '/products' } };
+      }
+    after: |-
+      @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+      authProviderOptions() {
+        return { use: true, paths: { afterLogin: '/products' } };
+      }
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line.'
+      - 'Drop use from the auth options and bind { paths } again. A guest app with no sign-in leaves DEFAULT_AUTH_PROVIDER unbound, because 0.4.7 uses any auth provider that is bound.'
+      - 'Type a DefaultAuthProvider subclass constructor parameter as IAuthProviderOptions again.'
+  data: 'Nothing stored changes. Options bound without a use value fail at start with an error that names AUTH_PROVIDER_OPTIONS, so no page goes public by mistake: check every binding of AUTH_PROVIDER_OPTIONS. An app that binds an auth provider of its own under DEFAULT_AUTH_PROVIDER (not a DefaultAuthProvider subclass) must also bind AUTH_PROVIDER_OPTIONS as { use: true, ...paths }, or { use: false }: without options start() fails and names both keys. The auth-options codemod puts use: true first in an options object literal returned by a @provide method, or given to bind({ key }).toValue(...); it leaves a literal that has use, and lists options that are not a plain object literal (a variable, a call, only a spread) for you to change, and lists a return type, as or satisfies of IAuthProviderOptions (type it as TAuthProviderOptions). A guest app with no sign-in returns { use: false } or binds no options, and needs no change. A DefaultAuthProvider subclass whose constructor declares IAuthProviderOptions and passes it to super fails to compile; type the parameter as TAuthProviderOptions.'
+  codemod: auth-options
+
+base-application-moved:
+  symbols: [BaseArdorApplication]
+  upgrade:
+    steps:
+      - 'Run `bun run ardor codemod base-application-import --write`, or import it from `@venizia/ardor-admin` or `@venizia/ardor`.'
+      - 'In a package that needs only the kernel, extend `AbstractArdorApplication`; it binds no default provider.'
+    before: |-
+      import { BaseArdorApplication } from '@venizia/ardor-kernel';
+    after: |-
+      import { BaseArdorApplication } from '@venizia/ardor-admin';
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, and import BaseArdorApplication from @venizia/ardor-kernel again. An import from @venizia/ardor works in both versions.'
+      - 'Bind the default providers yourself again: 0.4.7 binds none of them.'
+  data: 'Nothing stored changes. An import from @venizia/ardor does not change. A package that needs only the kernel extends AbstractArdorApplication, which binds no default provider.'
+  codemod: base-application-import
+
+injectable-removed:
+  symbols: [AbstractArdorApplication.injectable, IArdorApplication.injectable]
+  upgrade:
+    steps:
+      - 'Replace this.injectable(scope, X, tags) with the method of its namespace: this.service(X), this.repository(X), this.dataSource(X) or this.component(X).'
+      - 'To keep a key the old call built, pass { binding: { namespace, key } }; to keep the tags, call setTags on the binding the method returns.'
+      - 'Or list the class under its key in bindingList().'
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where injectable() exists. The per-namespace methods also exist there, so leaving them is safe.'
+  data: 'Nothing stored changes. The per-namespace methods use the scope declared on the class (SINGLETON by default), where injectable() always made a singleton.'
+
+boot-validates-configuration:
+  symbols: [IApplicationInfo.name, BaseArdorApplication.postConfigure]
+  upgrade:
+    steps:
+      - 'Give `getAppInfo()` a `name` that is not empty or blank.'
+      - 'Bind `REST_DATA_PROVIDER_OPTIONS`: an app whose providers cannot be built now fails in `start()`, not at the first render.'
+      - 'Call `super.postConfigure()` in an override of `postConfigure()` on a `BaseArdorApplication` subclass.'
+    before: |-
+      getAppInfo(): IApplicationInfo {
+        return { name: '', version: '1.0.0', description: 'The shop' };
+      }
+    after: |-
+      getAppInfo(): IApplicationInfo {
+        return { name: 'shop', version: '1.0.0', description: 'The shop' };
+      }
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, which accept any name at start() and build the providers at the first render. A name you added to pass the check can stay.
+  data: 'Nothing stored. An app whose providers cannot be built, for example one with no REST_DATA_PROVIDER_OPTIONS, now fails at start() with the key to bind, no longer at the first render. A BaseArdorApplication subclass that overrides postConfigure() must call super.postConfigure(), which runs that check.'
+
+runtime-config-get-required:
+  symbols: [RuntimeConfig.get]
+  upgrade:
+    steps:
+      - 'Replace `RuntimeConfig.get({ key, required: true })` with `RuntimeConfig.getRequired({ key })`.'
+    before: |-
+      const apiUrl: string = RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
+    after: |-
+      const apiUrl: string = RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where RuntimeConfig.getRequired does not exist.
+      - 'Write RuntimeConfig.get({ key, required: true }) again for each RuntimeConfig.getRequired({ key }), and remove any transform.'
+  data: 'Nothing stored. A call that has both required: true and a defaultValue never threw, because the default answered: write it as get({ key, defaultValue }), not getRequired.'
+
+hooks-check-the-bound-class:
+  symbols: [useInjectable, useService, useRepository, useProvider, useComponent, useConfiguration]
+  upgrade:
+    steps:
+      - 'Make a fake or an override that you bind under the key of a class extend the class it replaces, or bind it with `toValue`.'
+      - 'Give two classes that share a name their own `binding: { namespace, key }`.'
+    before: |-
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+    after: |-
+      class FakeMailer extends Mailer {
+        override send() {}
+      }
+      container.bind({ key: 'services.Mailer' }).toClass(FakeMailer);
+      const mailer = Ardor.useService({ target: Mailer });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where a hook returns whatever the key holds. A fake that extends the class it replaces keeps working.
+  data: 'Nothing stored changes. A hook that resolves a class bound under the key of another class that does not extend it now throws with the key and both class names, at render. A value binding (toValue) has no class to compare and is not checked.'
+
+feature-key-collision-at-startup:
+  symbols: [DefaultI18nProvider, TFeature.messages]
+  upgrade:
+    steps:
+      - 'Give each feature its own top-level key in `messages` for each language, so two features never share one.'
+      - 'Run your boot test (`assertArdorApplicationBoots`): a collision in any offered language now fails it.'
+    before: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { shared: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { shared: { title: 'Kho' } } } });
+    after: |-
+      const orders = Features.define({ name: 'orders', messages: { vi: { orders: { title: 'Don hang' } } } });
+      const stock = Features.define({ name: 'stock', messages: { vi: { stock: { title: 'Kho' } } } });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 and the IGNIS packages to the 0.4.7 line; the collision is found again only when a user switches to that language.
+  data: Nothing stored changes. `assertArdorApplicationBoots` and any test that builds the i18n provider now fail on a collision in any offered language, which is the point.
+
+access-denied-page:
+  symbols: [DefaultAuthProvider.unauthorizedPagePath, IApplication.accessDenied]
+  upgrade:
+    steps:
+      - 'If your app mounts its own page at /unauthorized, pass that component as the accessDenied prop of ArdorApplication and remove the /unauthorized route: a 403 now redirects to /access-denied, where react-admin renders accessDenied.'
+      - 'Or keep the old path: in your DefaultAuthProvider subclass, override the unauthorizedPagePath getter to return /unauthorized, and keep your route.'
+      - 'If your app mounts no such page, nothing to do: a denied resource and a 403 now show AccessDeniedPage instead of the catch-all.'
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 with the IGNIS packages of the 0.4.7 line.
+      - 'Mount a route at /unauthorized if you want a page for a 403, since 0.4.7 redirects there and mounts no page; an accessDenied prop you pass still renders at /access-denied.'
+      - Remove any translation override of the ardor.access_denied keys, which 0.4.7 does not read.
+  data: Nothing stored changes.
+
+route-conflicts-throw:
+  symbols:
+    - TArdorRoute
+    - TFeature.menu
+  upgrade:
+    steps:
+      - Give every route of the application and of its features a path no other route has, and no route the path of a resource.
+      - Add an id to a route that has no path, such as a layout route with children.
+      - If a Features.define extension of your own has a menu field, rename it, because menu is now a field of TFeature that ARDOR reads.
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.7, with the IGNIS packages of the 0.4.7 line, where a duplicate route path is dropped without an error and menu is yours.
+  data: Nothing stored.
+initial-locale-detection:
+  symbols: [DefaultI18nProvider.resolveInitialLocale, II18nProviderOptions.languages]
+  upgrade:
+    steps:
+      - 'Put `en` first in `languages` if a visitor whose language is not offered, or a run with no navigator, should start in English.'
+    before: |-
+      languages: [{ locale: 'vi', name: 'Tieng Viet' }, { locale: 'en', name: 'English' }],
+    after: |-
+      // Put en first to keep English as the language of a visitor whose language is not offered.
+      languages: [{ locale: 'en', name: 'English' }, { locale: 'vi', name: 'Tieng Viet' }],
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where an unmatched visitor and a run with no navigator start in English, and the main part of the first browser language is compared.
+  data: 'Nothing stored changes shape. The chosen language is now kept in localStorage under @app/prefs/ (scoped by the application id); a downgrade leaves that key unread and it is harmless.'
+
+boot-test-every-locale:
+  symbols: [assertArdorApplicationBoots, Features.verifyMessages]
+  upgrade:
+    steps:
+      - 'Pass `{ locale }` to `assertArdorApplicationBoots` for a loader that downloads its catalogue: the test blocks `fetch`.'
+      - 'Fix the loader, or the key two features define, that now fails the test in a language it did not load before.'
+    before: |-
+      await assertArdorApplicationBoots(application);
+    after: |-
+      // A loader that downloads its catalogue fails here (the test blocks fetch): limit the check to a language whose loader does not.
+      await assertArdorApplicationBoots(application, { locale: 'en' });
+  downgrade:
+    steps:
+      - Pin the ARDOR packages to 0.4.7 or earlier, where the boot test loads the messages of the first language only.
+  data: 'Nothing stored. A boot test that passed before can fail now: a loader that fails, or a key two features define, in any offered language fails it.'

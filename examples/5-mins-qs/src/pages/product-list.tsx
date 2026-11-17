@@ -1,4 +1,4 @@
-import { useRepository, useTranslate } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 import { useEffect, useState } from 'react';
 import { useListContext, useLogout } from 'ra-core';
 
@@ -8,9 +8,10 @@ import { type IProduct, ProductRepository } from '@/repositories/product.reposit
 // question the page alone cannot.
 export const ProductList = () => {
   const { data, total, isPending } = useListContext<IProduct>();
-  const translate = useTranslate();
+  const translate = Ardor.useTranslate();
+  const logger = Ardor.useApplicationLogger();
   const logout = useLogout();
-  const products = useRepository({ target: ProductRepository });
+  const products = Ardor.useRepository({ target: ProductRepository });
   const [expensive, setExpensive] = useState(0);
 
   useEffect(() => {
@@ -18,9 +19,9 @@ export const ProductList = () => {
       .countExpensive({ minimumPrice: 5000 })
       .then(({ count }) => setExpensive(count))
       .catch((error: unknown) => {
-        console.error('[ProductList] countExpensive failed | error: %s', error);
+        logger.error('[ProductList] countExpensive failed | error: %o', error);
       });
-  }, [products]);
+  }, [products, logger]);
 
   if (isPending) {
     return <p>Loading</p>;

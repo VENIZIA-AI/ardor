@@ -50,24 +50,31 @@ interface IMagazineRecord extends RaRecord {
 
 const parseRequestBody = async (opts: { request: Request }): Promise<unknown> => {
   const { request } = opts;
+
   if (request.method === 'GET' || request.method === 'HEAD' || !request.body) {
     return null;
   }
+
   const contentType = request.headers.get('content-type');
+
   if (!contentType?.includes('application/json')) {
     return null;
   }
+
   try {
     const result = await request.json();
+
     return result;
   } catch (error) {
     console.error(error);
+
     return null;
   }
 };
 
 const createJsonResponse = (opts: { data: unknown; status?: number }): Response => {
   const { data, status = 200 } = opts;
+
   return new Response(JSON.stringify(data), {
     status,
     headers: { 'content-type': 'application/json' },
@@ -76,9 +83,11 @@ const createJsonResponse = (opts: { data: unknown; status?: number }): Response 
 
 const ensureFound = <T>(opts: { value: T | undefined; message: string }): T => {
   const { value, message } = opts;
+
   if (value === undefined) {
     throw getError({ message });
   }
+
   return value;
 };
 
@@ -93,6 +102,7 @@ const createProvider = (opts: { baseUrl: string }): CountRestDataProvider => {
     version: '1.0.0',
     description: 'Test application for ARDOR count rest data provider',
   };
+
   return new CountRestDataProvider(restDataProviderOptions, applicationInfo);
 };
 

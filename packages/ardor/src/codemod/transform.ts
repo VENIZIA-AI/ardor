@@ -6,6 +6,7 @@ import {
   type IMemberTarget,
   NamespaceModules,
   RemovedNames,
+  TypeExportRenames,
   TypeRenames,
 } from './renames';
 
@@ -33,8 +34,10 @@ interface IRename {
   local: string;
   /** A function or hook that becomes `Owner.member`. */
   target?: IMemberTarget;
-  /** A type that becomes this plain type. */
+  /** A type that becomes this plain type, or this export of the same packages (`importName`). */
   typeText?: string;
+  /** The export `typeText` names, imported in place of the old one. */
+  importName?: string;
   references: Array<{ start: number; end: number; text: string }>;
 }
 
@@ -51,7 +54,7 @@ interface IBindings {
 }
 
 /**
- * Rewrites the deprecated bare names of `@venizia/ardor` to their class members, in source text:
+ * Rewrites the removed bare names of `@venizia/ardor` to their class members, in source text:
  * `isDefined(x)` becomes `ValueUtility.isDefined(x)` and the import follows. With `hooks`, a hook
  * imported from `@venizia/ardor` itself becomes `Ardor.useX` (never one imported from the react or
  * admin package, which cannot import `Ardor`).
@@ -68,6 +71,7 @@ export class NamespaceTransform {
     hooks: boolean;
   }): INamespaceResult {
     const { ts, fileName, text, hooks } = opts;
+
     if (!text.includes('@venizia/ardor')) {
       return { text, renamed: 0, findings: [] };
     }
@@ -151,7 +155,8 @@ export class NamespaceTransform {
           continue;
         }
 
-        const typeText = TypeRenames.find({ name: imported });
+        const exportName = TypeExportRenames.find({ name: imported });
+        const typeText = exportName ?? TypeRenames.find({ name: imported });
 
         if (typeText) {
           renames.push({
@@ -159,6 +164,7 @@ export class NamespaceTransform {
             declaration: statement,
             local: specifier.name.text,
             typeText,
+            importName: exportName,
             references: [],
           });
           continue;
@@ -241,7 +247,9 @@ export class NamespaceTransform {
         (ts.isFunctionDeclaration(node) ||
           ts.isClassDeclaration(node) ||
           ts.isFunctionExpression(node) ||
-          ts.isClassExpression(node)) &&
+          ts.isClassExpression(node) ||
+          ts.isTypeAliasDeclaration(node) ||
+          ts.isInterfaceDeclaration(node)) &&
         node.name
       ) {
         declared.add(node.name.text);
@@ -274,6 +282,23 @@ export class NamespaceTransform {
           line,
           name: rename.local,
           reason: `the file also declares "${rename.local}" itself, so a use of the import cannot be told apart without types`,
+        });
+
+        return false;
+      }
+
+      const { importName } = rename;
+      const takenBy = importName ? bindings.imported.get(importName) : undefined;
+
+      if (
+        importName &&
+        (bindings.declared.has(importName) ||
+          (takenBy && !NamespaceModules.isValid(takenBy.module)))
+      ) {
+        findings.push({
+          line,
+          name: rename.local,
+          reason: `"${importName}" is already taken in this file; import it under another name and use it in place of ${rename.local}`,
         });
 
         return false;
@@ -390,7 +415,10 @@ export class NamespaceTransform {
 
     if (rename.typeText !== undefined) {
       // A type is a name in a type position only: `NullableType[]` needs parentheses once replaced.
-      if (ts.isTypeReferenceNode(parent) && parent.typeName === node) {
+      if (
+        (ts.isTypeReferenceNode(parent) && parent.typeName === node) ||
+        (ts.isExpressionWithTypeArguments(parent) && parent.expression === node)
+      ) {
         const grand = parent.parent;
         const wrap =
           rename.typeText.includes('|') &&
@@ -447,7 +475,40 @@ export class NamespaceTransform {
       return;
     }
 
+    const imported = new Set(owners.values());
+
     const visit = (node: TS.Node): void => {
+      let name: TS.Node | undefined;
+
+      if (
+        ts.isPropertyAccessExpression(node) ||
+        ts.isPropertyAssignment(node) ||
+        ts.isShorthandPropertyAssignment(node)
+      ) {
+        name = node.name;
+      } else if (ts.isBindingElement(node) && ts.isObjectBindingPattern(node.parent)) {
+        name = node.propertyName ?? node.name;
+      } else if (
+        ts.isElementAccessExpression(node) &&
+        ts.isStringLiteral(node.argumentExpression)
+      ) {
+        name = node.argumentExpression;
+      }
+
+      const key = name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name : undefined;
+      const property =
+        key && Object.hasOwn(RemovedNames.PROPERTIES, key.text)
+          ? RemovedNames.PROPERTIES[key.text]
+          : undefined;
+
+      if (key && property && [...property.owners].some((owner) => imported.has(owner))) {
+        findings.push({
+          line: sourceFile.getLineAndCharacterOfPosition(key.getStart(sourceFile)).line + 1,
+          name: `.${key.text}`,
+          reason: `removed: ${property.reason}`,
+        });
+      }
+
       if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
         const owner = owners.get(node.expression.text);
         const reason = owner
@@ -510,7 +571,21 @@ export class NamespaceTransform {
         added.add(owner);
       }
 
-      const names = [...kept, ...owners];
+      const types: string[] = [];
+
+      for (const { declaration: from, importName, specifier } of used) {
+        if (
+          from === declaration &&
+          importName &&
+          !bindings.imported.has(importName) &&
+          !added.has(importName)
+        ) {
+          added.add(importName);
+          types.push(`${specifier.isTypeOnly ? 'type ' : ''}${importName}`);
+        }
+      }
+
+      const names = [...kept, ...owners, ...types];
 
       if (names.length === 0) {
         edits.push(NamespaceTransform.removeImport({ sourceFile, declaration, clause, named, ts }));
@@ -546,6 +621,7 @@ export class NamespaceTransform {
 
       return before.slice(before.lastIndexOf('\n') + 1);
     };
+
     const closing = /^\s*/.exec(lineStart(declaration.getStart(sourceFile)))?.[0] ?? '';
     const first = named.elements[0];
     const indent = first

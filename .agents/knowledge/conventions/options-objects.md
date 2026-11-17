@@ -38,9 +38,8 @@ except the type guards `ValueUtility.isDefined(value)` and `ValueUtility.isStrin
 narrowing. The logger methods (`debug(message, ...args)`, IGNIS's `ILogger`) stay positional, console-style. Three more
 shapes are positional on purpose:
 
-- **Registration on the application.** `AbstractArdorApplication.injectable(scope, value, tags?)`
-  and `service(value)` (`packages/kernel/src/base/applications/abstract.ts`) take positional
-  arguments.
+- **Registration on the application.** `service(target, opts?)` and the other per-kind methods
+  (`packages/kernel/src/base/applications/abstract.ts`) take the class first, as IGNIS does.
 - **The react-admin contract.** The object `DefaultRestDataProvider.value()` hands to react-admin
   implements react-admin's own positional interface (`getList(resource, params)`). ARDOR does not
   own that contract, so `value()` only forwards to the options-object methods - see
@@ -69,7 +68,7 @@ This keeps call sites readable as the number of request-shaping concerns grows.
 
 Hooks follow the same rule. `useInjectable` (`packages/react/src/hooks/use-injectable.ts`) takes
 `{ key }` or `{ target }` as a discriminated union rather than two positional overloads, and
-`useInjectableContainer` takes `{ container }` even though that is its only field.
+`useApplicationContainer` takes `{ container }` even though that is its only field.
 
 ## Errors follow the same shape
 

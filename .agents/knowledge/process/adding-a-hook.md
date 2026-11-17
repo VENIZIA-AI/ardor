@@ -25,7 +25,7 @@ If the hook exposes an extensible key space (like `TUseInjectableKeys`), declare
 
 ## Access ApplicationContext
 
-A hook that needs the DI container accepts an optional `container` in its options object and calls `useInjectableContainer({ container: opts.container })` from `packages/react/src/hooks/use-injectable.ts`, never a fresh container instance. `useInjectableContainer` applies the override pattern - the passed `container`, else `applicationContext.container` - and throws when neither exists. This lets tests and unusual call sites bypass the ambient context while normal application code just relies on the provider set up during [Application lifecycle](/architecture/application-lifecycle.md).
+A hook that needs the DI container accepts an optional `container` in its options object and calls `useApplicationContainer({ container: opts.container })` from `packages/react/src/hooks/use-injectable.ts`, never a fresh container instance. `useApplicationContainer` applies the override pattern - the passed `container`, else `applicationContext.container` - and throws when neither exists. This lets tests and unusual call sites bypass the ambient context while normal application code just relies on the provider set up during [Application lifecycle](/architecture/application-lifecycle.md).
 
 Do not re-derive the container with your own `React.useContext(ApplicationContext)` plus fallback. A hook that checks the container and then resolves through `useInjectable` would otherwise check one container and resolve from another - see the per-stereotype hooks in [react package](/packages/react.md). Take the logger from `useApplicationLogger`; the metadata registry is `container.getMetadataRegistry()`, not a context field. Read more on the general pattern in [Hooks and context](/architecture/hooks-and-context.md) and [DI in the browser](/architecture/di-in-the-browser.md).
 
@@ -49,7 +49,7 @@ Add the new hook file to `packages/react/src/hooks/index.ts` (or the admin equiv
 
 If applicable, give the hook its own docs page describing options and gotchas, written per [Docs writing style](/conventions/docs-writing-style.md). The two reference catalogs are generated, never hand-edited:
 
-- Run `make okf-gen` to refresh [Hooks and services](/reference/hooks-and-services.md), which lists every exported hook from source.
+- Run `make surface-gen` (after `make build-all`) to refresh [Public surface](/reference/public-surface.md), which lists every exported hook from the built package.
 - Run `make build-all`, then `make surface-gen`, to refresh [Public surface](/reference/public-surface.md) - it reads the built `.d.ts`, not `src` (see [Build system](/process/build-system.md)).
 
-Skipping them does not hide the hook from consumers - the barrel export already ships it - but it leaves the catalogs stale: a stale hooks catalog fails `make okf-check`, and a stale public surface fails `make surface-check`. Both are steps of the CI workflow, which runs only when started by hand.
+Skipping them does not hide the hook from consumers - the barrel export already ships it - but it leaves the catalogs stale: a stale hooks catalog fails `make okf-check`, and a stale public surface fails `make surface-check`. Both are steps of the CI workflow, which runs on a pull request to `develop` or `main` and on demand.

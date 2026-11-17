@@ -2,10 +2,15 @@ import React from 'react';
 
 type TDocumentTitleSegment = string | false | null | undefined;
 
+/** What `useDocumentTitle` writes into the tab title, and when. */
 export interface IUseDocumentTitleOptions {
+  /** The screen title, or a list of segments in order; `false`, `null`, `undefined` and empty segments are dropped. */
   title: TDocumentTitleSegment | Array<TDocumentTitleSegment>;
+  /** The last segment of the tab title. */
   appTitle: string;
+  /** Joins the segments. @default ' · ' */
   separator?: string;
+  /** When `false` the call writes no title. @default true */
   enabled?: boolean;
   /**
    * A base title for a layout. It shows only while no other call is mounted, so a screen's title
@@ -36,6 +41,7 @@ const resolveTitle = (): string | undefined => {
     if (!entry.isFallback) {
       return entry.title;
     }
+
     fallback ??= entry.title;
   }
 
@@ -64,6 +70,7 @@ const unregister = (entry: ITitleEntry) => {
 
   if (entries.length > 0) {
     writeTitle();
+
     return;
   }
 
@@ -72,6 +79,7 @@ const unregister = (entry: ITitleEntry) => {
   if (originalTitle !== undefined && document.title === writtenTitle) {
     document.title = originalTitle;
   }
+
   originalTitle = undefined;
   writtenTitle = undefined;
 };

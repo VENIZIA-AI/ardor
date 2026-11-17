@@ -15,6 +15,7 @@ const isCountedBody = (value: unknown): value is { data: unknown; count?: number
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
 };
 
+/** Reads a `Response` into an `INetworkResponse`, and an error response into an error. */
 export class ResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';
@@ -49,7 +50,10 @@ export class ResponseReader {
       };
     }
 
-    const parsedBody = await response.json();
+    const parsedBody = await HttpResponseReader.readBody({
+      response,
+      context: `[ResponseReader] ${response.status}`,
+    });
 
     // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
     // count-in-body request still reads `{ count, data }`.
@@ -67,6 +71,13 @@ export class ResponseReader {
     return extra ? { ...converted, extra } : converted;
   }
 
+  /**
+   * Shapes a parsed body by request type. `GET_LIST` and `GET_MANY_REFERENCE` give `data` as an
+   * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
+   * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
+   * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
+   * `{ data, count }` body unchanged.
+   */
   static convert<TData = unknown>(opts: {
     response: {
       data: TData | { data: TData; count?: number };
@@ -97,9 +108,7 @@ export class ResponseReader {
 
           const dataFormatted = data as { data: TData; count?: number };
 
-          const normalizedData = !Array.isArray(dataFormatted.data)
-            ? [dataFormatted.data]
-            : dataFormatted.data;
+          const normalizedData = ResponseReader.toRows({ data: dataFormatted.data });
 
           const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
 
@@ -110,7 +119,7 @@ export class ResponseReader {
           };
         }
 
-        const normalizedData = !Array.isArray(data) ? [data] : data;
+        const normalizedData = ResponseReader.toRows({ data });
 
         const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
 
@@ -126,12 +135,24 @@ export class ResponseReader {
 
         // A missing or non-numeric header means the server sent no count - never NaN.
         const count = Number.parseInt(headers?.get(HeaderConstants.RESPONSE_COUNT_DATA) ?? '', 10);
+
         return {
           data: data as TData,
           count: Number.isNaN(count) ? undefined : count,
         };
       }
     }
+  }
+
+  /** The rows of a list answer: an array as it is, no body at all (an empty answer) as no row, any other value as the one row. */
+  private static toRows(opts: { data: unknown }): unknown[] {
+    const { data } = opts;
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    return data === null || data === undefined ? [] : [data];
   }
 
   /**
@@ -148,9 +169,11 @@ export class ResponseReader {
 
     // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
     const extra: Record<string, unknown> = { ...server.extra };
+
     if (server.requestId) {
       const upstreamRequestId = extra.requestId;
       extra.requestId = server.requestId;
+
       if (upstreamRequestId !== undefined && upstreamRequestId !== server.requestId) {
         const known = Array.isArray(extra.upstreamRequestIds) ? extra.upstreamRequestIds : [];
         extra.upstreamRequestIds = [upstreamRequestId, ...known];
@@ -172,6 +195,7 @@ export class ResponseReader {
     const range = HttpResponseReader.parseContentRange({
       header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
     });
+
     return range?.total ?? opts.rowCount;
   }
 
@@ -195,6 +219,7 @@ export class ResponseReader {
     }
 
     const encodedMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
+
     if (encodedMatch) {
       try {
         return decodeURIComponent(encodedMatch[2].trim());
@@ -204,11 +229,13 @@ export class ResponseReader {
     }
 
     const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
+
     if (quotedMatch) {
       return quotedMatch[1];
     }
 
     const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
+
     if (bareMatch) {
       return bareMatch[1].trim();
     }

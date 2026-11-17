@@ -112,11 +112,11 @@ describe('the real ARDOR stack, with a React chunk group like the preset and the
         'src/main.ts': [
           "import 'reflect-metadata';",
           '',
-          "import { ArdorApplication } from '@venizia/ardor-admin';",
-          "import { BaseArdorApplication } from '@venizia/ardor-kernel';",
+          "import { ArdorApplication, BaseArdorApplication } from '@venizia/ardor-admin';",
+          "import { AbstractArdorApplication } from '@venizia/ardor-kernel';",
           "import { createRoot } from 'react-dom/client';",
           '',
-          "console.log('STACK-OK', typeof ArdorApplication, typeof BaseArdorApplication, typeof createRoot);",
+          "console.log('STACK-OK', typeof ArdorApplication, typeof BaseArdorApplication, typeof AbstractArdorApplication, typeof createRoot);",
           '',
         ].join('\n'),
       },
@@ -137,7 +137,7 @@ describe('the real ARDOR stack, with a React chunk group like the preset and the
     const run = await runBuiltEntry({ root });
 
     expect(run.stderr).toBe('');
-    expect(run.stdout).toContain('STACK-OK function function function');
+    expect(run.stdout).toContain('STACK-OK function function function function');
     expect(run.exitCode).toBe(0);
   });
 });

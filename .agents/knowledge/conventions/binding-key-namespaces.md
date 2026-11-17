@@ -40,8 +40,8 @@ export class CoreBindings {
 }
 ```
 
-The framework binds the first two itself in `preConfigure()`; every other `CoreBindings` key is
-declared with `@provide` in the application's `@configuration()` class and bound by
+The framework binds the first two itself in `preConfigure()`, and `BaseArdorApplication` binds the four
+`DEFAULT_*` keys in `bindDefaults()`; every other `CoreBindings` key is declared with `@provide` in the application's `@configuration()` class and bound by
 `registerArtifacts()`. Which is which is listed per key in
 [binding keys](/reference/binding-keys.md).
 
@@ -67,12 +67,12 @@ this.service(AuditService, { binding: { namespace: 'services', key: 'audit' } })
 `allowOverride: false` throws when the key is already bound instead of silently replacing it.
 
 Every kind defaults to `BindingScopes.SINGLETON`, discovery included. IGNIS's server defaults
-services and repositories to transient; ARDOR does not, because a React hook resolves on every
-render and a transient repository would hand each render a new instance (an effect keyed on it
-loops). `scope` overrides it per registration.
+services and repositories to transient; ARDOR does not, because every component then shares one
+repository or service. `scope` overrides it per registration; a hook resolves on every render, so a transient
+binding gives a new instance each time.
 
-The older `injectable(scope, X, tags?)` still binds `<scope>.<ClassName>` as a singleton and records
-the key; prefer the per-kind methods, whose namespace is a constant rather than a string you type.
+The per-kind methods (`service`, `repository`, `dataSource`, `component`) take their namespace from a constant,
+not from a string you type; the older `injectable(scope, X, tags?)` was removed.
 
 ## Only the stereotype and the hooks check the namespace
 
@@ -82,7 +82,7 @@ resolve, `useService`, `useRepository`, `useProvider`, `useComponent` and `useCo
 `packages/react/src/hooks/use-artifact.ts` assert that a `{ target }` is bound under their
 namespace; a `{ key }` is the caller's to get right.
 
-`bindingList()` and `injectable()` check nothing. A typo there binds the class under a key nobody
+`bindingList()` checks nothing. A typo there binds the class under a key nobody
 asks for, and the failure surfaces later as an unresolved binding inside `useInjectable`.
 
 ## Discovery: declare with a stereotype
@@ -132,14 +132,13 @@ same object, so a mangled name still agrees with itself:
 const products = useRepository({ target: ProductRepository });
 ```
 
-Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. The
-literal keys in `bindingList()` are what types `useInjectable({ key })`:
-`keyof ReturnType<Application['bindingList']>` is the union an application feeds into
-`IUseInjectableKeysOverrides`.
+Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. A class
+is still resolved by `{ target }`, whichever way its key was made; only a value with no class has a
+key an application types, through `IUseInjectableKeyTypes`.
 
 One limit remains: **a derived key is still `<namespace>.<Class.name>`**, and the container stores
-bindings by that string. Two classes with the same name in one namespace share one binding, the last
-registered wins, and resolving the first by `target` returns the second. Two same-named classes in
+bindings by that string. Two stereotyped classes with the same name in one namespace make `start()` throw
+(`describeCollision`); registration by hand replaces silently, and resolving the first class by `target` then throws, naming the key and the class, because the hook compares the bound class with the target. Two same-named classes in
 different feature folders hit this, and so can a minified build whose chunks reuse a short name. An
 explicit `binding` avoids it.
 
@@ -156,12 +155,12 @@ packages are needed: an older inversion reads the derived key first.
 (`packages/kernel/src/base/applications/abstract.ts`), so a second class with the same derived key no
 longer silently replaces the first. A pinned `binding` is never counted, and a subclass discovered
 after its same-named parent is an override. Only `start()` checks, never decoration, so a hot reload
-that re-evaluates a module is not an error. `service()`/`injectable()` derive through
+that re-evaluates a module is not an error. A pinned key is checked too, by ARDOR: two different classes of different names that pin one key (or one pins what the other derives) throw `The key '<key>' is claimed by both <A> and <B>`; before, the later import won in silence. `service()` and the other by-hand methods derive through
 `ArtifactBindingKeys.resolve`, the one IGNIS derivation, re-exported from ARDOR's metadata barrel.
-BANA's `kits/admin` pins `binding` on all 122 of its decorated classes, so it cannot collide.
+One project that uses Venizia pins `binding` on all 122 of its decorated classes, so it cannot collide.
 
 A `useInjectable({ key })` miss names this cause in its error, after the container's own
-`Binding key: <key> is not bounded in context!`, which BANA matches with `/is not bounded/`.
+`Binding key: <key> is not bounded in context!`, which a project that uses Venizia matches with `/is not bounded/`.
 
 ## How a key becomes a type
 
@@ -169,7 +168,10 @@ A `useInjectable({ key })` miss names this cause in its error, after the contain
 
 ```typescript
 export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-export type TUseInjectableKeys = TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides;
+export type TUseInjectableKeys =
+  | TUseInjectableKeysDefault
+  | keyof IUseInjectableKeysOverrides
+  | keyof IUseInjectableKeyTypes;
 ```
 
 The first half is every `CoreBindings` value, free. The second half is empty until an application
@@ -182,7 +184,7 @@ for the declaration and for the `any`-widening trap that silently turns the unio
 `LocalStorageKeys` in the same `keys.ts` names browser storage rather than container bindings:
 `@app/auth/token`, `@app/auth/identity`, `@app/auth/permission`. The prefix is load-bearing.
 `DefaultAuthService.cleanUp()` in `packages/kernel/src/base/services/auth.ts` clears only keys
-starting with `@app/auth/`, so anything an application stores outside that prefix
+starting with `@app/auth/` (an application without an `id` skips the keys of applications that have one), so anything an application stores outside that prefix
 survives a logout - intentional for a UI preference, a leak for anything user-scoped.
 
 ## Related

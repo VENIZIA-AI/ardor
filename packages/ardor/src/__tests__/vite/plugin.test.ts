@@ -46,7 +46,6 @@ const makeFakeSources = (
 
       return opts.record ?? STAMP;
     },
-    readGit: async () => ({ ok: false, reason: 'no git in this test' }),
     readFrameworkVersions: async () => ({ versions: FRAMEWORKS, missing: [], invalid: [] }),
   };
 };
@@ -322,6 +321,59 @@ describe('the build', () => {
     );
 
     expect(info.commit).toBe(BuildInfoRegistry.UNSPECIFIED);
+  });
+});
+
+describe('a build that runs again with the same plugin, as in watch mode', () => {
+  let root: string;
+  let stamps: number;
+
+  const makeCountingSources = (): IBuildInfoSources => ({
+    resolveRecord: async () => {
+      stamps += 1;
+
+      return {
+        ...STAMP,
+        commit: `commit${stamps}`.padEnd(12, '0'),
+        builtAt: `2026-10-26T10:00:0${stamps}.000Z`,
+      };
+    },
+    readFrameworkVersions: async () => ({ versions: FRAMEWORKS, missing: [], invalid: [] }),
+  });
+
+  const readEmitted = (): IBuildInfoFile =>
+    JSON.parse(readFileSync(join(root, 'dist', 'build-info.json'), 'utf8'));
+
+  beforeAll(() => {
+    root = makeScratch({ prefix: 'build-info-again-' });
+    writeFiles({ root, files: appFiles });
+  });
+
+  afterAll(() => {
+    removeScratch({ root });
+  });
+
+  test('each build emits the commit and the time of its own run, not those of the first', async () => {
+    stamps = 0;
+    const plugin = createBuildInfoFilePlugin({ options: { root }, sources: makeCountingSources() });
+    const buildOnce = () =>
+      build({
+        root,
+        configFile: false,
+        logLevel: 'silent',
+        plugins: [plugin],
+        build: { outDir: 'dist', rolldownOptions: { input: 'src/main.ts' } },
+      });
+
+    await buildOnce();
+    const first = readEmitted();
+    await buildOnce();
+    const second = readEmitted();
+
+    expect(first.builtAt).toBe('2026-10-26T10:00:01.000Z');
+    expect(second.builtAt).toBe('2026-10-26T10:00:02.000Z');
+    expect(second.commit).toBe('commit200000');
+    expect(stamps).toBe(2);
   });
 });
 

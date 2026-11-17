@@ -150,6 +150,7 @@ describe('PURITY_MANIFEST derivation', () => {
       'packages/ardor/dist/testing.js',
       'packages/kernel/dist/base/repositories/index.js',
       'packages/kernel/dist/index.js',
+      'packages/kernel/dist/testing.js',
       'packages/react/dist/index.js',
     ]);
   });
@@ -179,6 +180,6 @@ describe('PURITY_MANIFEST derivation', () => {
 
     // Each condition set names import AND default; default repeats the import file, so every
     // entry yields ONE row - the root without a suffix, each sub-path labelled by its own.
-    expect(labels).toEqual(['kernel', 'kernel/repository']);
+    expect(labels).toEqual(['kernel', 'kernel/repository', 'kernel/testing']);
   });
 });

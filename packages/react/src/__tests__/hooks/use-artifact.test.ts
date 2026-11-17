@@ -75,7 +75,7 @@ describe('the per-stereotype hooks', () => {
    * must return an `AuditService` with no generic written down - the target already carries the
    * type, and a hook that made the caller repeat it would be a second place to get it wrong.
    *
-   * The assertion is the `@ts-expect-error`, NOT an annotation. `AnyType` is `any`, so
+   * The assertion is the `@ts-expect-error`, NOT an annotation. The `any` type accepts everything, so
    * `const x: AuditService = result.current` compiles just as happily when inference has collapsed
    * to `any` - it would witness nothing. A deliberately wrong assignment only errors while the type
    * is real; the moment it degrades, the error disappears, the directive becomes unused, and
@@ -154,5 +154,44 @@ describe('the per-stereotype hooks', () => {
     expect(() => renderHook(() => useRepository({ target: AuditService }), { wrapper })).toThrow(
       /services\.AuditService.*repositories/s,
     );
+  });
+});
+
+describe('the per-stereotype hooks and the scope of the binding', () => {
+  test('a singleton service is the same instance on every render', () => {
+    const container = new Container();
+    container
+      .bind({ key: 'services.AuditService' })
+      .toClass(AuditService)
+      .setScope(BindingScopes.SINGLETON);
+
+    const one = renderHook(() => useService({ target: AuditService }), {
+      wrapper: createWrapper({ container }),
+    });
+    const first = one.result.current;
+    one.rerender();
+
+    expect(one.result.current).toBe(first);
+  });
+
+  test('useService names its own hook when another class of the same name holds the key', () => {
+    const createPlain = () => {
+      @service()
+      class Plain {}
+
+      return Plain;
+    };
+
+    const bound = createPlain();
+    const other = createPlain();
+
+    const container = new Container();
+    container.bind({ key: 'services.Plain' }).toClass(bound);
+
+    expect(() =>
+      renderHook(() => useService({ target: other }), {
+        wrapper: createWrapper({ container }),
+      }),
+    ).toThrow(/\[useService\] The key "services\.Plain" is bound to the class Plain/);
   });
 });

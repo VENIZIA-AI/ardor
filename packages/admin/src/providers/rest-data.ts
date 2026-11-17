@@ -1,5 +1,4 @@
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
-import omit from 'lodash/omit.js';
 import type {
   CreateParams,
   CreateResult,
@@ -27,6 +26,7 @@ import type {
 import {
   BaseProvider,
   CoreBindings,
+  type DefaultAuthService,
   DefaultNetworkRequestService,
   type IApplicationInfo,
   type INetworkResponse,
@@ -35,7 +35,6 @@ import {
   ValueUtility,
   NetworkHeaders,
   type ISendParams,
-  type ISendResponse,
   RequestCountData,
   RequestMethods,
   RequestTypes,
@@ -46,10 +45,55 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
+/**
+ * The path of one record: the id is a single path segment, whatever characters it holds. An empty
+ * id, `.` and `..` (dot segments even when written `%2E`) and a lone surrogate (which cannot be
+ * encoded) are refused, without naming the id.
+ */
+const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> => {
+  let segment = '';
+
+  try {
+    segment = encodeURIComponent(`${opts.id}`);
+    // eslint-disable-next-line venizia/no-silent-catch -- a lone surrogate cannot be encoded: the empty segment below refuses it
+  } catch {
+    segment = '';
+  }
+
+  if (segment === '' || segment === '.' || segment === '..') {
+    throw getError({ message: '[recordPaths] The record id is not a valid path segment' });
+  }
+
+  return [opts.resource, segment];
+};
+
+/**
+ * The react-admin data provider over an IGNIS REST API. Each method takes one `opts` object
+ * (`{ resource, params }`) and resolves the result react-admin expects; it rejects with the error
+ * the network service throws (a non-2xx response, an empty base URL, an auth failure that cannot be
+ * recovered). A subclass overrides the protected hooks (`createNetworkService`, `buildListFilter`,
+ * `requestList`).
+ *
+ * @example
+ * ```ts
+ * import { configuration, CoreBindings, provide } from '@venizia/ardor';
+ *
+ * // BaseArdorApplication binds DefaultRestDataProvider: the application binds its options.
+ * @configuration()
+ * export class DataConfiguration {
+ *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+ *   options() {
+ *     return { url: '/api', noAuthPaths: ['/auth/sign-in'] };
+ *   }
+ * }
+ * ```
+ */
 export class DefaultRestDataProvider<TResource extends string = string> extends BaseProvider<
   IDataProvider<TResource>
 > {
   private cachedNetworkService?: DefaultNetworkRequestService;
+  /** The auth service of the container, set when `value` builds the provider; pass it to the network service you return from `createNetworkService`. */
+  protected authService?: DefaultAuthService;
 
   constructor(
     @inject({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
@@ -58,12 +102,14 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     protected applicationInfo: IApplicationInfo,
   ) {
     super({ scope: DefaultRestDataProvider.name });
+    DefaultNetworkRequestService.assertTimeout({ timeout: restDataProviderOptions.timeout });
   }
 
   /**
    * Builds the network service this provider sends through. Override it to return a subclass of
    * `DefaultNetworkRequestService` that overrides its hooks (`refreshToken`, `resolveAuthToken`, ...).
-   * Called once, on first use, so a subclass's own fields are set by then.
+   * Called once, on first use, so a subclass's own fields are set by then. A service you build
+   * yourself times out only when you pass it `timeout`.
    */
   protected createNetworkService(): DefaultNetworkRequestService {
     return new DefaultNetworkRequestService({
@@ -73,14 +119,18 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       noAuthPathRegex: this.restDataProviderOptions.noAuthPathRegex,
       headers: this.restDataProviderOptions.headers,
       authRecovery: this.restDataProviderOptions.authRecovery,
+      authService: this.authService,
+      timeout: this.restDataProviderOptions.timeout,
     });
   }
 
   protected get networkService(): DefaultNetworkRequestService {
     this.cachedNetworkService ??= this.createNetworkService();
+
     return this.cachedNetworkService;
   }
 
+  /** The network service every request of this provider goes through; built on first use. */
   getNetworkService() {
     return this.networkService;
   }
@@ -134,6 +184,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
       headers,
       requestCountData = RequestCountData.DATA_ONLY,
+      signal,
     } = opts;
 
     const props = this.networkService.getRequestProps({
@@ -152,6 +203,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       method,
       paths,
       query,
+      signal,
       ...props,
       headers: headers
         ? NetworkHeaders.merge({ sources: [props.headers, headers] })
@@ -169,8 +221,9 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     queryKey: Record<string, unknown>;
     filter: IListFilter;
     extra?: TExtraRequest;
+    signal?: AbortSignal;
   }) {
-    const { resource, type, queryKey, filter, extra } = opts;
+    const { resource, type, queryKey, filter, extra, signal } = opts;
 
     return this.request<RecordType[]>({
       resource,
@@ -178,17 +231,25 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       method: RequestMethods.GET,
       query: { ...queryKey, filter },
       extra,
+      signal,
     }).then(({ extra: answered, ...rest }) => {
       return answered ? { ...rest, meta: { extra: answered } } : rest;
     });
   }
 
+  /**
+   * `GET /{resource}` with the filter built from the list params in the query. Resolves the rows and
+   * `total` (the `Content-Range` total, else the page's row count), plus `meta.extra` when a route
+   * answered extras.
+   */
   async getList<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetListParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetListResult<RecordType>> {
     const { resource, params } = opts;
-    const { filter, queryKey, extra } = this.buildListFilter({ params });
+    // A `buildListFilter` override copies unknown keys into the filter: it never sees the signal.
+    const { signal, ...listParams } = params;
+    const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 
     return this.requestList<RecordType>({
       type: RequestTypes.GET_LIST,
@@ -196,35 +257,44 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       queryKey,
       filter,
       extra,
+      signal,
     });
   }
 
+  /**
+   * `GET /{resource}/{id}`, with `params.meta.filter` as the query filter. Resolves `{ data }`.
+   */
   async getOne<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
-    params: GetOneParams<RecordType> & QueryFunctionContext & ICustomParams;
+    params: GetOneParams<RecordType> & QueryFunctionContext;
   }): Promise<GetOneResult<RecordType>> {
     const { resource, params } = opts;
 
-    const filter = params?.meta?.filter ?? {};
-    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+    const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
     return this.request<RecordType>({
       resource,
       type: RequestTypes.GET_ONE,
       method: RequestMethods.GET,
-      paths: [resource, `${params.id}`],
-      query: { ...queryKey, filter: { ...omit(filter, 'params') } },
+      paths: recordPaths({ resource, id: params.id }),
+      query: { ...queryKey, filter },
+      signal: params.signal,
     });
   }
 
+  /**
+   * `GET /{resource}` with the ids in `filter.where.id.inq`, merged into `params.meta.filter`.
+   * Resolves `{ data }`.
+   */
   async getMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
-    params: GetManyParams<RecordType> & QueryFunctionContext & ICustomParams;
+    params: GetManyParams<RecordType> & QueryFunctionContext;
   }): Promise<GetManyResult<RecordType>> {
     const { resource, params } = opts;
 
-    const filter = params?.meta?.filter ?? {};
-    const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+    const { params: filterParams, ...filter } = params?.meta?.filter ?? {};
+    const queryKey = ListFilterBuilder.extractQueryParams({ params: filterParams });
 
     // Always the GET, under the controller's own `find()`, so its scoping applies. A very long id
     // list answers 414/431.
@@ -235,20 +305,24 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       query: {
         ...queryKey,
         filter: {
-          ...omit(filter, 'params'),
+          ...filter,
           where: { ...filter?.where, id: { inq: params.ids } },
         },
       },
+      signal: params.signal,
     });
   }
 
+  /**
+   * As `getList`, with `filter.where[target] = id`. Resolves the rows and `total`.
+   */
   async getManyReference<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: GetManyReferenceParams & QueryFunctionContext & ICustomParams;
   }): Promise<GetManyReferenceResult<RecordType>> {
     const { resource, params } = opts;
 
-    const { target, id, ...listParams } = params;
+    const { target, id, signal, ...listParams } = params;
     const { filter, queryKey, extra } = this.buildListFilter({ params: listParams });
 
     filter.where[target] = id;
@@ -259,9 +333,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       queryKey,
       filter,
       extra,
+      signal,
     });
   }
 
+  /** `PATCH /{resource}/{id}` with `params.data` as the body. Resolves `{ data }`. */
   async update<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateParams;
@@ -272,11 +348,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.UPDATE,
       method: RequestMethods.PATCH,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
       body: params.data,
     });
   }
 
+  /**
+   * `PATCH /{resource}` with `{ ...params.data, where: { id: { inq: ids } } }` as the body. Resolves
+   * `{ data }`, the ids of the rows the server answered (`undefined` when the answer is not a row
+   * array). Rejects when `ids` is empty or `params.data` has a `where` field, before any request.
+   */
   async updateMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: UpdateManyParams;
@@ -307,6 +388,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /** `POST /{resource}` with `params.data` as the body. Resolves `{ data }`, the created record. */
   async create<
     RecordType extends Omit<RaRecord, 'id'> = Omit<RaRecord, 'id'>,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
@@ -321,6 +403,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /** `DELETE /{resource}/{id}`. Resolves `{ data }`, the record the server answered. */
   async delete<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteParams<RecordType>;
@@ -331,10 +414,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       resource,
       type: RequestTypes.DELETE,
       method: RequestMethods.DELETE,
-      paths: [resource, `${params.id}`],
+      paths: recordPaths({ resource, id: params.id }),
     });
   }
 
+  /**
+   * `DELETE /{resource}` with `{ where: { id: { inq: ids } } }` as the body. Resolves `{ data }`, the
+   * ids of the rows the server answered (`undefined` when the answer is not a row array). Rejects
+   * when `ids` is empty, before any request.
+   */
   async deleteMany<RecordType extends RaRecord = RaRecord>(opts: {
     resource: TResource;
     params: DeleteManyParams<RecordType>;
@@ -358,10 +446,15 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     });
   }
 
+  /**
+   * Sends `params.method` to `/{resource}` with the provider's headers and auth; `requestType`
+   * defaults to `RequestTypes.SEND`. Resolves the response read by that type. Rejects when
+   * `params.method` is missing, before any request.
+   */
   async send<TResult = unknown>(opts: {
     resource: TResource;
     params: ISendParams;
-  }): Promise<ISendResponse<TResult>> {
+  }): Promise<INetworkResponse<TResult>> {
     const { resource, params } = opts;
 
     if (!params?.method) {
@@ -370,7 +463,8 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       });
     }
 
-    const { method, query, requestCountData, requestType, headers, body, bodyType, extra } = params;
+    const { method, query, requestCountData, requestType, headers, body, bodyType, extra, signal } =
+      params;
 
     return this.request<TResult>({
       resource,
@@ -382,6 +476,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       extra,
       headers: headers as HeadersInit | undefined,
       requestCountData,
+      signal,
     });
   }
 
@@ -389,10 +484,17 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
    * react-admin's data provider contract takes positional arguments, `(resource, params)`: the one
    * place this class does not take an `opts` object. Each method hands them to the `opts` method.
    */
-  override value(_container: Container): IDataProvider<TResource> {
+  override value(container: Container): IDataProvider<TResource> {
+    // Read here, not injected: a subclass with its own constructor rarely forwards a further argument.
+    this.authService = container.get<DefaultAuthService>({
+      key: CoreBindings.DEFAULT_AUTH_SERVICE,
+      isOptional: true,
+    });
+
     return {
+      supportAbortSignal: true,
       getList: (resource, params) => {
-        return this.getList({ resource, params });
+        return this.getList({ resource, params: { ...params } });
       },
       getOne: (resource, params) => {
         return this.getOne({ resource, params });
@@ -401,7 +503,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
         return this.getMany({ resource, params });
       },
       getManyReference: (resource, params) => {
-        return this.getManyReference({ resource, params });
+        return this.getManyReference({ resource, params: { ...params } });
       },
       create: (resource, params) => {
         return this.create({ resource, params });

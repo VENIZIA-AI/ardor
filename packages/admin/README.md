@@ -4,7 +4,7 @@ The [react-admin](https://marmelab.com/react-admin/) adapter of
 [ARDOR](https://github.com/VENIZIA-AI/ardor): every place the framework touches `ra-core`.
 
 ```bash
-bun add @venizia/ardor-admin @venizia/ardor-kernel @venizia/ardor-react @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata ra-core ra-i18n-polyglot
+bun add @venizia/ardor-admin @venizia/ardor-kernel @venizia/ardor-react @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata ra-core ra-i18n-polyglot react react-dom react-redux react-router-dom @reduxjs/toolkit @tanstack/react-query
 ```
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
@@ -14,12 +14,17 @@ which re-exports this package.
 
 | Area | Exports |
 |---|---|
+| Application | `BaseArdorApplication` - the base to extend: it binds the default providers, so an app binds only their options |
 | Data | `DefaultRestDataProvider`, `CountRestDataProvider` |
-| Auth | `DefaultAuthProvider` |
+| Auth | `DefaultAuthProvider`, `SessionClearReasons`, `IAuthRejection` |
 | i18n | `DefaultI18nProvider`, `englishMessages`, `vietnameseMessages` |
-| Component | `ArdorApplication` - the `CoreAdmin` root, wired from the container |
-| Hooks | `useTranslate`, `useNotifyError`, `useRefreshToken`, `useRequestHeaderLocale` |
-| Types | `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys` |
+| Component | `ArdorApplication` - the `CoreAdmin` root, wired from the container; `ApplicationProviders` |
+| Features | `Features`, `TFeature`, `useFeatures` |
+| Lists | `ListFilterBuilder` |
+| Hooks | `useTranslate`, `useUntypedTranslate`, `useNotifyError`, `useRefreshToken`, `useRequestHeaderLocale`, `useFeatures`, `useMenuEntries`, `useDocumentTitle`, `useHtmlLang` |
+| Types | `IDataProvider`, `IAuthProvider`, `II18nProviderOptions`, `IApplication`, `TUseTranslateKeys`, `TI18nSource` |
+
+Every export, with its signature, is in the [references](https://ardor.venizia.ai/references/).
 
 The data provider speaks the `@venizia/ignis-filter` vocabulary - react-admin pagination, sort and
 filter are mapped onto `{ where, order, limit, skip, fields, include }`.

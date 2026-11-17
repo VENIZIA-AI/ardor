@@ -1,3 +1,4 @@
+export * from './applications';
 export * from './common';
 export * from './components';
 export * from './features';

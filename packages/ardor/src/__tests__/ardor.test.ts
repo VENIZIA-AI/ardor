@@ -1,8 +1,20 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
 
+import * as admin from '@venizia/ardor-admin';
+import * as kernel from '@venizia/ardor-kernel';
+
 import * as umbrella from '@/index';
-import { Ardor } from '@/index';
+import {
+  AbstractArdorApplication,
+  Ardor,
+  BaseArdorApplication,
+  CoreBindings,
+  useInjectable,
+  useProvider,
+  type IAuthProvider,
+  type IDataProvider,
+} from '@/index';
 import { makeScratch, REPOSITORY_ROOT, removeScratch, writeFiles } from './vite/fixture';
 
 const HOOK_NAME = /^use[A-Z]/;
@@ -16,7 +28,7 @@ describe('Ardor', () => {
   test('gathers every hook the package exports, and nothing else', () => {
     // A new hook in react or admin that is not listed in ardor.ts fails here.
     expect(hooksOf(Ardor)).toEqual(hooksOf(umbrella));
-    expect(Object.keys(Ardor)).toHaveLength(25);
+    expect(Object.keys(Ardor)).toHaveLength(32);
   });
 
   test('each member is the very function the react or admin package exports', () => {
@@ -44,6 +56,15 @@ describe('Ardor', () => {
  * component and in a custom hook passes, and the same call under a condition is reported, so the
  * rule does treat it as a hook.
  */
+describe('the application classes', () => {
+  test('BaseArdorApplication is the admin class, which extends the kernel AbstractArdorApplication', () => {
+    expect(BaseArdorApplication).toBe(admin.BaseArdorApplication);
+    expect(Object.getPrototypeOf(BaseArdorApplication)).toBe(kernel.AbstractArdorApplication);
+    expect(AbstractArdorApplication).toBe(kernel.AbstractArdorApplication);
+    expect(Reflect.get(kernel, 'BaseArdorApplication')).toBeUndefined();
+  });
+});
+
 describe('Ardor and the Rules of Hooks', () => {
   const REACT_PACKAGE = join(REPOSITORY_ROOT, 'packages', 'react');
   let scratch = '';
@@ -121,5 +142,34 @@ describe('Ardor and the Rules of Hooks', () => {
     expect(result.stdout).toContain('rules-of-hooks');
     expect(result.stdout).toContain('"useRepository" is called conditionally');
     expect(result.exitCode).toBe(1);
+  });
+});
+
+describe('the umbrella types the provider keys', () => {
+  // Compiled, never called: the claim is that an application importing only `@venizia/ardor` gets
+  // the types with no augmentation of its own.
+  test('useProvider and useInjectable return the provider a CoreBindings key holds', () => {
+    const typed = () => {
+      const data: IDataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+      const auth: IAuthProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+      const injected: IDataProvider = useInjectable({
+        key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
+      });
+      // @ts-expect-error - the data provider is not a number
+      const collapsed: number = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+
+      return [data, auth, injected, collapsed];
+    };
+
+    expect(typeof typed).toBe('function');
+  });
+
+  test('a key that is not listed does not compile', () => {
+    const typed = () => {
+      // @ts-expect-error - 'providers.Unlisted' is not a key of the kernel or an augmentation
+      useProvider({ key: 'providers.Unlisted' });
+    };
+
+    expect(typeof typed).toBe('function');
   });
 });

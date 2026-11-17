@@ -1,24 +1,19 @@
 ---
 type: Playbook
 title: Writing a changelog entry
-description: The shape of a wiki changelog entry, the parts every entry needs, and the template to copy.
+description: The version folder of the changelog, what an item and its migration block need, and the checks that read them.
 tags: [process, changelog, docs]
 ---
 
 # Writing a changelog entry
 
-<!-- okf:generated:contents start -->
-**Contents**
-
-- [What gets an entry](#what-gets-an-entry)
-- [What every entry needs](#what-every-entry-needs)
-- [Optional frontmatter](#optional-frontmatter)
-- [Template](#template)
-<!-- okf:generated:contents end -->
-
-An entry is a file in `docs/wiki/content/changelogs/` named `YYYY-MM-DD-<slug>.md`. The changelog index
-(`/changelogs/`) is built from the entries themselves: add the file and it appears, grouped by year, with
-no table to edit. Copy the template below.
+The changelog is one folder per version, `docs/wiki/content/changelogs/<X.Y.Z>/`, from 0.4.5 on
+(`knowledge.migrationFrom`). The folder of the next stable is the changelog of the work in progress: every
+change a user sees is a line in it, each prerelease edits it, and it states the net change from the previous
+stable. The files named `YYYY-MM-DD-<slug>.md` up to `knowledge.datedUntil` (2026-11-15) are history: do not
+add or edit one (`vulcan changelog check` fails a dated file later than `datedUntil`). The index (`/changelogs/`) and the
+page of a version (`/changelogs/<X.Y.Z>`) are built from the folders by the shared theme, so there is no table
+row and no sidebar link to add.
 
 ## What gets an entry
 
@@ -37,94 +32,39 @@ A pull request with only the right-hand kind of change gets no entry, and a rele
 either. A mixed pull request gets an entry for the left-hand part only. Write the user's benefit and what
 to do about it, in a few lines; the implementation stays in the code and the knowledge bundle.
 
-## What every entry needs
+## The version folder
 
-| Part | Where | Rule |
-|---|---|---|
-| **Badge** | one `<Badge>` line under the first heading | Keep the ones that apply: New Feature, Enhancement, Bug Fix, Security, Behavior Change, Breaking Change. The first types the entry on the index and in the filters. |
-| **`packages:`** | frontmatter | The npm names whose code changed, from `packages[].name`. An entry about no package is internal and has no place here. `okf check --strict` fails an entry without the list. |
-| **Upgrade note for a breaking change** | the `## Breaking changes` section | Who is affected, then Before and After code or numbered steps. Delete the section when nothing breaks. |
-| **Who is affected** | `## Who is affected` | Each audience, and whether it must act ("No action needed" where true). |
-
-The title and the description (one plain sentence) are the entry's card on the index. The shared index lives in `docs/wiki/site/.vitepress/theme/shared/` (copied from VULCAN, never edited here). An optional
-`summary:` (one or two plain sentences) replaces the description there when the card needs better text.
-
-## Optional frontmatter
-
-| Field | Use |
+| File | Holds |
 |---|---|
-| `summary:` | The card text on the index and the feed; defaults to `description:`. |
-| `type: release` | Marks a release overview (the batch page with the upgrade checklist) as its own type. A file name with `batch-overview`, or a title ending "(Overview)", does the same. |
-| `release: '<npm name>@<version>'` | Places an entry git would place wrongly (a backfill); it must name a tag that exists. The index shows this version; without it the first x.y.z of the title is shown. |
-| `badges: [...]` | Overrides the `<Badge>` line when the types are wanted without the markup. |
+| `log.md` | Frontmatter `title`, `version`, `packages` (npm names whose code changed, from `packages[].name`) and, for a stable only, `released: YYYY-MM-DD`; then one plain sentence for the version; then Keep a Changelog sections in the order Breaking, Deprecated, Added, Changed, Fixed, Security. |
+| `migration.yaml` | One block per Breaking or Deprecated item, keyed by the item id at the top level of the file. |
 
-## Template
+An item is one line: `- **Title** \`item-id\` (\`@venizia/ardor-kernel\`, \`@venizia/ardor\`): what changed and what to do, in plain words.` The id is lower-case words joined by `-` and unique in the folder; the package list is optional and every name in it must be a package of the project. A change to an item that shipped in a prerelease edits that line: the folder says what the stable changes, not the history of the prereleases. A released folder (one with `released:`) is never edited.
 
-````markdown
----
-title: [Short, plain title - what a user would search for]
-description: [One sentence, plain - what changed and why it matters]
-# Mandatory: the npm names whose code changed in this release.
-packages: ['@venizia/ardor']
----
+## The migration block
 
-# Changelog - YYYY-MM-DD
+A Breaking or Deprecated item has a block in `migration.yaml`, and a block has an item. A behaviour-only break counts: the block says what the app now sees and does.
 
-## [Main Title/Focus Area]
-
-<!-- Keep only the badges that apply -->
-<Badge type="tip" text="New Feature" /> <Badge type="tip" text="Enhancement" /> <Badge type="info" text="Bug Fix" /> <Badge type="danger" text="Security" /> <Badge type="warning" text="Breaking Change" />
-
-**In one line.** [One plain sentence: what this release is, for a user.]
-
-## What changed
-
-- **[Thing 1].** [One crisp point in plain language - what changed, not the internal how.]
-- **[Thing 2].** [One crisp point in plain language.]
-- **[Thing 3].** [One crisp point in plain language.]
-
-<!-- Group with ### sub-heads only if there are many bullets -->
-
-## Who is affected
-
-- **[Audience or situation 1].** [Are they impacted, and do they need to act? Say "No action needed" where true.]
-- **[Audience or situation 2].** [Are they impacted, and do they need to act?]
-
-## Breaking changes
-
-<!-- ONLY include this section if there are breaking changes - delete it otherwise -->
-
-> [!WARNING]
-> [One sentence: who this affects and why.]
-
-**Before:**
-
-```typescript
-// Code that no longer works
+```yaml
+redis-factory-per-topology:             # the item id
+  symbols: [RedisHelperFactory.create]  # the names an app's code uses: Name, Name.member or a module specifier
+  upgrade:
+    before: |-
+      RedisHelper.new()
+    after: |-
+      RedisHelperFactory.create()
+  downgrade:
+    steps:
+      - Call RedisHelper.new() again
+  data: Stored tokens keep the old prefix.   # optional: stored data that does not cross the boundary
+  codemod: namespace                         # optional: the name `ardor codemod --list` prints
 ```
 
-**After:**
+List the symbols as the app spells them before the change (a removed or renamed name is not in the new exports, so the check does not look them up). `before`/`after` and `steps` are alternatives, never both, in `upgrade` and in `downgrade`. A plain YAML scalar that holds a colon followed by a space is read as a map: reword it or quote it. The codemod is named, never a command: `knowledge.codemodCommand` (`ardor codemod`) is the runner, and a name must be one of `ardor codemod --list`.
 
-```typescript
-// New pattern
-```
+## Checks
 
-<!-- Or, for a non-code migration, a short numbered list -->
-1. [Step one]
-2. [Step two]
-
-## Details
-
-<!-- Optional - the "why/how". Keep it tight: bullets, a short code example, a small table. No wall-of-text paragraphs. -->
-
-- [Why/how point 1]
-- [Why/how point 2]
-
-| File | Package |
-|------|---------|
-| `src/path/to/file.ts` | core |
-````
-
-The entry's own first heading (`# Changelog - date`), its title heading and its badge line are replaced on
-the page by a title block built from the same fields; write them as the template shows so the page and the
-source both read well.
+| Command | What it fails |
+|---|---|
+| `make changelog-check` (part of `make lint-all`) | a Breaking or Deprecated item with no block, a block with no item, a package the project does not declare, an invalid `log.md` or block, a codemod name that `ardor codemod --list` does not print (skipped, with a notice, when the runner is not installed: the repository root has no `ardor` bin, so names are not checked here), a dated file later than `datedUntil`, more than one folder without `released:`, a folder in progress that is not above every released one |
+| `bun node_modules/.bin/vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |

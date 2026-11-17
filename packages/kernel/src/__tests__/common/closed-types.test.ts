@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { IApplicationInfo, INetworkResponse, ISendParams, ISendResponse } from '@/common';
+import type { IApplicationInfo, INetworkResponse, ISendParams } from '@/common';
 
 describe('request types name every field they accept', () => {
   test('ISendParams takes its named fields, and a typo is a compile error', () => {
@@ -36,13 +36,12 @@ describe('request types name every field they accept', () => {
     expect(extra.name).toBe('app');
   });
 
-  test('ISendResponse is the INetworkResponse the network service answers', () => {
-    const response: ISendResponse<number> = { data: 1, total: 4, count: 2 };
-    const network: INetworkResponse<number> = response;
+  test('INetworkResponse is closed: a field it does not name is refused', () => {
+    const response: INetworkResponse<number> = { data: 1, total: 4, count: 2 };
     // @ts-expect-error - `rows` is not a field of the response
-    const typo: ISendResponse = { data: [], rows: 1 };
+    const typo: INetworkResponse = { data: [], rows: 1 };
 
-    expect(network.total).toBe(4);
+    expect(response.total).toBe(4);
     expect(typo.data).toEqual([]);
   });
 });

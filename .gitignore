@@ -114,7 +114,6 @@ GEMINI.md
 .mcp.local.json
 
 # Generated or scratch output
-.agents/knowledge/viz.html
 .agents/specs
 docs/temp
 docs/generate

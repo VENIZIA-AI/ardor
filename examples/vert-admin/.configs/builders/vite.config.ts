@@ -2,15 +2,15 @@ import { IgnisArtifactsVitePlugin } from '@venizia/ignis-boot/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-// IGNIS `examples/vert` serves its API under /api on :3000 (see its .env.example).
-const API_URL = 'http://127.0.0.1:3000';
+// IGNIS `examples/vert` serves its API under /v1/api on :1190 (see its .env.example).
+const API_URL = 'http://127.0.0.1:1190';
 
 export default defineConfig({
   // Builds the class list of src/ into the bundle, so a decorated class is bound without being imported.
   plugins: [IgnisArtifactsVitePlugin.create(), react()],
   resolve: { alias: { '@': '/src' } },
-  server: { proxy: { '/api': API_URL } },
-  preview: { proxy: { '/api': API_URL } },
+  server: { proxy: { '/v1/api': API_URL } },
+  preview: { proxy: { '/v1/api': API_URL } },
   build: {
     rolldownOptions: {
       output: {

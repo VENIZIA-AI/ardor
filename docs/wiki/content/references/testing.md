@@ -1,11 +1,11 @@
 ---
 title: Testing - prove the application boots
-description: assertArdorApplicationBoots in @venizia/ardor/testing starts an application, resolves every binding it made and what the first render resolves, with no browser and no network, and fails with the error opening the app would raise. FakeResizeObserver delivers a size to code that observes an element.
+description: assertArdorApplicationBoots resolves an application's bindings with no browser; fakes for ResizeObserver, IntersectionObserver, matchMedia, storage and the clipboard.
 ---
 
 # Testing - prove the application boots
 
-A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. Available in 0.4.4; it needs `@venizia/ignis-inversion` 0.4.6-1 or newer.
+A service whose injection nobody registered fails when something first resolves it, which in the browser is the first render. `assertArdorApplicationBoots` finds it in a unit test instead. It needs `@venizia/ignis-inversion` at the version `@venizia/ardor` names as a peer.
 
 ```ts
 import { assertArdorApplicationBoots } from '@venizia/ardor/testing';
@@ -21,8 +21,8 @@ In order, and it stops at the first failure with the error the app would raise:
 
 1. Calls `start()`: the artifact index, the stereotype bindings, the features, `bindContext()`.
 2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed.
-3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (optional) and the i18n provider, through the same function the component calls.
-4. Reads and mounts the features, and loads the messages of the first locale, so a key two features define fails here.
+3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (only when `AUTH_PROVIDER_OPTIONS` is `{ use: true }`) and the i18n provider, through the same function the component calls.
+4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched. `fetch` is blocked, so a loader that downloads its messages fails here: limit the check with `locale` to a language whose loader does not.
 
 `fetch` is replaced for the run by a function that rejects, so nothing leaves the process, and put back afterwards. The helper returns the application it started.
 
@@ -30,11 +30,13 @@ In order, and it stops at the first failure with the error the app would raise:
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
-| `skipBindings` | `Array<TClass \| string>` | none | Bindings left unresolved: an exact class, a class name or a binding key, among the five namespaces of step 2. A skip that matches no binding rejects, so a typo does not skip silently. It does not reach step 3: see below. |
-| `locale` | `string` | the i18n provider's | The locale whose messages must load. |
+| `skipBindings` | `Array<TClass \| string>` | none | Bindings left unresolved: a class, a class name or a binding key. |
+| `locale` | `string` | every offered locale | Check this one locale only. |
 | `allowEmpty` | `boolean` | `false` | An application with nothing to check and no feature rejects: the artifact index is usually empty. |
 
-`skipBindings` applies to step 2 only. Step 3 builds the data, auth and i18n providers the application bound, so a bound auth provider that cannot be built fails the check even when you name its key, and the key, outside the five namespaces, rejects as a skip that matched nothing. An application that never signs in, such as a guest app that builds its own react-admin tree, leaves `CoreBindings.DEFAULT_AUTH_PROVIDER` unbound (see [Authentication (No Sign-In)](../guides/core-concepts/providers#authentication-no-sign-in)).
+`skipBindings` takes an exact class, a class name or a binding key, among the five namespaces of step 2. A skip that matches no binding rejects, so a typo does not skip silently. It does not reach step 3.
+
+`skipBindings` applies to step 2 only. Step 3 builds the data and i18n providers, and the auth provider when sign-in is on, so a provider that cannot be built fails the check even when you name its key, and the key, outside the five namespaces, rejects as a skip that matched nothing. An application that never signs in, such as a guest app, binds `AUTH_PROVIDER_OPTIONS` as `{ use: false }` or leaves it unbound, and step 3 builds no auth provider (see [Authentication (No Sign-In)](../guides/core-concepts/providers#authentication-no-sign-in)).
 
 The first argument is an instance or a function that returns one. Pass a function: a failed start leaves a half-started instance, and the same instance cannot be passed twice.
 
@@ -44,22 +46,41 @@ The first argument is an instance or a function that returns one. Pass a functio
 - A request a service makes with its own transport, or a socket it opens when it is built. Name such a binding in `skipBindings`.
 - A wrong API url, a server that is down, an expired token: nothing here reaches the network.
 
-## Test a ResizeObserver
+## Fake the browser APIs your code reads
 
-happy-dom and some other test hosts have a `ResizeObserver` whose `observe()` does nothing, so a hook such as `useElementSize` never gets a size. `FakeResizeObserver` replaces it and delivers the size you choose.
+happy-dom and some other test hosts have a `ResizeObserver` or `IntersectionObserver` whose `observe()` does nothing, no `matchMedia`, a `localStorage` that never fails and a `navigator.clipboard` that does not exist. ARDOR's hooks and helpers read all of them, so the same entry holds a fake of each. Each `install` returns a function that puts back what was there; call it in `afterEach`.
 
 ```ts
-import { FakeResizeObserver } from '@venizia/ardor/testing';
+import {
+  FakeClipboard,
+  FakeIntersectionObserver,
+  FakeMatchMedia,
+  FakeResizeObserver,
+  FakeStorage,
+} from '@venizia/ardor/testing';
 
-declare const element: Element; // the element the component under test observes
+declare const element: Element; // an element the component under test observes
 
-const restore = FakeResizeObserver.install();
+const restore = [
+  FakeResizeObserver.install(),
+  FakeIntersectionObserver.install(),
+  FakeMatchMedia.install(),
+  new FakeStorage().install(),
+  new FakeClipboard().install(),
+];
 // render the component, then:
 FakeResizeObserver.flush({ element, width: 320, height: 200 });
-restore();
+FakeIntersectionObserver.flush({ element, isIntersecting: true });
+FakeMatchMedia.set({ query: '(min-width: 600px)', matches: true });
+restore.forEach((undo) => undo());
 ```
 
-- **`FakeResizeObserver.install()`** puts the fake on `globalThis.ResizeObserver` and returns a function that leaves `ResizeObserver` as it was before that call. Call it before the code under test creates its observer. It does not nest: an inner `install()` forgets the observers of the outer one, so install once per test.
-- **`FakeResizeObserver.flush({ element, width, height })`** calls every observer of `element` at once, with one entry whose content box and border box have that size. An element nobody observes, an element that was unobserved and a disconnected observer get nothing.
-- **Animation frames are yours.** `useElementSize` applies a size on the next animation frame, so the test also runs its frames, with a fake `requestAnimationFrame` or its runner's timers, inside `act`.
-- It needs no DOM of its own. Call the function `install` returned in `afterEach`.
+The same classes are in `@venizia/ardor-kernel/testing`, for a project that uses the kernel without the umbrella. They need no DOM of their own.
+
+- **`FakeResizeObserver.install()` and `FakeIntersectionObserver.install()`** put the fake on `globalThis` and forget the observers of an earlier install, so install once per test. Every `install` also puts the fake on `window` where that is another object (happy-dom), because code reads `window.matchMedia` and `window.localStorage`; the restore function puts both back. `FakeResizeObserver.all` and `FakeIntersectionObserver.all` list the observers the code created; each has its `callback`, `targets` (the elements observed now), `isDisconnected`, and `options` (the `FakeResizeObserver` one has an entry per `observe` call, and an `unobserved` list).
+- **`flush`** calls every observer of `element` at once: `FakeResizeObserver.flush({ element, width, height })` with one entry whose content box and border box have that size, `FakeIntersectionObserver.flush({ element, isIntersecting, ratio })` with one entry (`ratio` is 1 or 0 by `isIntersecting` unless you give it). An element nobody observes, an element that was unobserved and a disconnected observer get nothing. For an entry of your own, call `FakeResizeObserver.all[0].callback`.
+- **`FakeIntersectionObserver.settle({ isIntersecting?, ratio? })`** is the first report of a browser, which an observer sends for every newly observed element: each live observer is called once per element it has not reported on (not intersecting unless you say so). `flush` counts as a report, and an element observed again is reported again. `FakeIntersectionObserver.live()` lists the observers that are not disconnected and `FakeIntersectionObserver.created` counts the ones made since the last `install`.
+- **Animation frames are yours.** `useElementSize` and `useResizeEffect` apply a size on the next animation frame (`useResizeEffect` with `beforePaint: true` calls inside the observer callback, with no frame), so the test also runs its frames, with a fake `requestAnimationFrame` or its runner's timers, inside `act`.
+- **`FakeMatchMedia.install()`** replaces `matchMedia` with a function that answers one list per query, `false` until `FakeMatchMedia.set({ query, matches })` sets it and tells the listeners with a `change` event. `FakeMatchMedia.queries` holds the queries the code asked about, so `size === 0` shows that it never asked, and `FakeMatchMedia.of(query).listenerCount` counts the `change` listeners of a query, so a test can assert a subscribe and an unsubscribe.
+- **`new FakeStorage()`** is a `Storage` that keeps its keys as own properties, as the real one does. `storage.install()` makes it `localStorage`; `storage.install('session')` makes it `sessionStorage`. Each way to fail has its own switch: `failReads = true` makes `getItem` throw `SecurityError`, `failListing = true` makes `key` and `length` throw it, and `failWrites = true` makes `setItem` throw `QuotaExceededError` and `removeItem` throw `SecurityError`. `writes` lists the values it accepted. Flip them at any time to see the code recover. A key named like a member of the fake (`getItem`, `length`, `writes`, `failWrites` and the rest) would shadow it, so `setItem` throws a `TypeError` for it, where the real `Storage` accepts it.
+- **`new FakeClipboard()`** replaces `navigator.clipboard` with one that keeps the text: `written` lists every `writeText`, `text` is what `readText` answers, and `isDenied = true` makes both reject with `NotAllowedError`. To test a missing clipboard, or one that throws before it returns a promise, replace `navigator.clipboard` yourself.

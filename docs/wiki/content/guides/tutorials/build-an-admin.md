@@ -33,7 +33,7 @@ The `resources` prop registers hash routes: `list` at `#/products`, `create` at 
 
 | Operation | react-admin method | HTTP verb | Path | Body or query | Total count source |
 | --- | --- | --- | --- | --- | --- |
-| Load list page | `getList` | GET | `/api/products` | Query: `filter` JSON string (`order`, `limit`, `skip`) | `Content-Range` header |
+| Load list page | `getList` | GET | `/api/products` | Query: `filter` JSON string (`where`, `order`, `limit`, `skip`) | `Content-Range` header |
 | Open edit page | `getOne` | GET | `/api/products/:id` | Query: `filter` JSON string from `meta.filter` | N/A |
 | Submit create form | `create` | POST | `/api/products` | Body: JSON object with record data | N/A |
 | Submit edit form | `update` | PATCH | `/api/products/:id` | Body: JSON object with updated fields | N/A |
@@ -43,60 +43,38 @@ The backend must format `Content-Range` as `records <start>-<end>/<total>` (or `
 
 ## Step 1: Configure Providers
 
-Create `src/configurations/admin.configuration.ts`:
+`BaseArdorApplication` binds the data, auth and i18n providers, so the configuration class binds only their options. Create `src/configurations/admin.configuration.ts`:
 
 ```ts
 import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultI18nProvider,
-  DefaultRestDataProvider,
-  englishMessages,
-  inject,
+  type IRestDataProviderOptions,
   provide,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  restDataProviderOptions(): IRestDataProviderOptions {
     return { url: '/api', noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {
-      i18nSources: { en: englishMessages },
-      languages: [{ locale: 'en', name: 'English' }],
-    };
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }
 ```
 
-`noAuthPathRegex: /./` sends requests without `Authorization`, and leaving `DEFAULT_AUTH_PROVIDER` unbound keeps all routes public. See [Configuration](../core-concepts/configuration).
+`@configuration()` registers the class, and the build finds it. `noAuthPathRegex: /./` sends requests without `Authorization`, and `{ use: false }` keeps all routes public. The i18n provider needs no options for English; [Add a language](./add-a-language) binds more. See [Configuration](../core-concepts/configuration).
 
 ## Step 2: Build the List View
 
 Create `src/pages/products/product-list.tsx`:
 
 ```tsx
-import React from 'react';
 import { ListBase, useListContext } from 'ra-core';
 
 export interface IProduct {
@@ -281,8 +259,8 @@ export const ProductEditPage = () => (
 
 - **Total equals page size**: The backend is missing the `Content-Range` header. `DefaultRestDataProvider` falls back to `data.length`. Ensure the API returns `Content-Range: records 0-9/27` and includes `Access-Control-Expose-Headers: Content-Range` for cross-origin requests.
 - **Form updates return 404 or 405**: The backend expects `PUT /api/products/:id`. ARDOR uses `PATCH` for updates.
-- **Blank page with unhandled binding key error**: Calling `createRoot().render()` before `await application.start()` completes causes `useInjectable` to throw `Binding key: @app/application/data/rest/default is not bounded in context! | A key derived from a class name (<namespace>.<ClassName>) changes when a minifier renames the class: resolve it by { target }, or pin it with binding: { namespace, key } on the class`. Always await `application.start()` before mounting the React tree.
-- **Accidental sign-in redirects**: For an open admin, leave `DEFAULT_AUTH_PROVIDER` unbound and omit `loginPage` on `ArdorApplication`.
+- **Blank page with unhandled binding key error**: Calling `createRoot().render()` before `await application.start()` completes means nothing is bound yet. `ArdorApplication` resolves its providers with the container, and the container throws `Binding key: @app/application/data/rest/default is not bounded in context!`. Always await `application.start()` before mounting the React tree. (A hook that resolves a missing key throws a longer message that adds how to resolve a class by `{ target }`.)
+- **Accidental sign-in redirects**: For an open admin, bind `{ use: false }` for the auth options (or none) and omit `loginPage` on `ArdorApplication`.
 
 ## Related
 

@@ -9,6 +9,12 @@
 import { realpathSync } from 'node:fs';
 import { dirname, sep } from 'node:path';
 
+const isNotFound = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  (error.code === 'ERR_MODULE_NOT_FOUND' || error.code === 'ENOENT');
+
 const isBare = (specifier: string): boolean =>
   !/^(\.|\/|[a-z][a-z0-9+.-]*:)/i.test(specifier) || /^@/.test(specifier);
 
@@ -28,7 +34,11 @@ export const createSandboxGuard = (opts: { sandbox: string }): Bun.BunPlugin => 
           resolved = realpathSync(
             Bun.resolveSync(args.path, args.importer ? dirname(args.importer) : sandbox),
           );
-        } catch {
+        } catch (error) {
+          if (!isNotFound(error)) {
+            throw error;
+          }
+
           return undefined; // not found: the default resolution reports it
         }
 

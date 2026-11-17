@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor",
-  "version": "0.4.7",
+  "version": "0.4.8-20",
   "description": "ARDOR - frontend application framework for the VENIZIA family. One entry point over ardor-kernel, ardor-react and ardor-admin: IGNIS inversion of control, a REST data layer, auth and i18n providers, and the React bindings for a react-admin application.",
   "keywords": [
     "ardor",
@@ -40,6 +40,7 @@
     "LICENSE.md",
     "dist",
     "!/**/__tests__",
+    "!**/*.map",
     "!**/*.tsbuildinfo"
   ],
   "type": "module",
@@ -74,7 +75,6 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
@@ -104,12 +104,12 @@
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
     "@tanstack/react-query": ">=5.104.5",
-    "@venizia/ignis-boot": "^0.4.7",
-    "@venizia/ignis-connectors": "^0.4.7",
-    "@venizia/ignis-filter": "^0.4.6",
-    "@venizia/ignis-helpers": "^0.4.7",
-    "@venizia/ignis-inversion": "^0.4.6",
-    "@venizia/ignis-kernel": "^0.4.7",
+    "@venizia/ignis-boot": "^0.4.8",
+    "@venizia/ignis-connectors": "^0.4.8",
+    "@venizia/ignis-filter": "^0.4.7",
+    "@venizia/ignis-helpers": "^0.4.8",
+    "@venizia/ignis-inversion": "^0.4.7",
+    "@venizia/ignis-kernel": "^0.4.8",
     "ra-core": ">=5.15.5",
     "ra-i18n-polyglot": ">=5.15.5",
     "react": ">=19.3.1",
@@ -153,7 +153,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "700 B"
+      "limit": "760 B"
     },
     {
       "path": "dist/testing.js",
@@ -173,7 +173,7 @@
         "react-router-dom",
         "reflect-metadata"
       ],
-      "limit": "1.1 KB"
+      "limit": "1150 B"
     }
   ],
   "engines": {

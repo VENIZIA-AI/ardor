@@ -8,17 +8,25 @@ description: Reference for every React hook exported by ARDOR, covering containe
 ARDOR provides hooks to interact with the dependency injection container, Redux state, react-admin contexts, and browser APIs. All hooks are exported from `@venizia/ardor`.
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
 
-export function StatusWidget() {
-  useDocumentTitle({ title: 'Status', appTitle: 'Back Office' });
-  return <span>Ready</span>;
+@service()
+export class PricingService {
+  total(opts: { quantity: number }): number {
+    return opts.quantity * 3;
+  }
+}
+
+export function Total() {
+  const pricing = Ardor.useService({ target: PricingService });
+
+  return <span>{pricing.total({ quantity: 2 })}</span>;
 }
 ```
 
 ## One name for every hook: `Ardor`
 
-`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page, the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
+`@venizia/ardor` also exports `Ardor`, a namespace that holds every hook on this page except the Redux factories (`DispatchHooks.create`, `SelectorHooks.create`), the way `React.useState` holds a React hook. `Ardor.useRepository(...)` is the same function as `useRepository(...)`, and the React Rules of Hooks check a call through `Ardor` like any other hook call.
 
 ```tsx
 import { Ardor } from '@venizia/ardor';
@@ -29,50 +37,57 @@ export function StatusTitle() {
 }
 ```
 
-It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Read a hook through `Ardor.useX` in code; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
+It costs nothing in the bundle: a bundler keeps only the hooks you call through `Ardor`, so it adds the same bytes as importing them by name. Every example on this page reads a hook through `Ardor.useX`; do not index it with a computed key (`Ardor[name]`), which makes the bundler keep them all. The bare imports (`import { useX }`) are the same functions and keep working, and `@venizia/ardor-react` and `@venizia/ardor-admin` still export their own hooks for a project that installs one layer.
 
 ## Which hook do I need?
 
 | I want to... | Hook | Needs in the tree | Returns |
 | --- | --- | --- | --- |
 | Access the IoC container from context | `useApplicationContext` | `ApplicationContext` with a container | `Container` |
-| Access the container with an optional override | `useInjectableContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
-| Resolve a bound dependency by key or class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
+| Access the container with an optional override | `useApplicationContainer` | `ApplicationContext` with a container, or explicit option | `Container` |
+| Resolve a bound dependency by class, or by key for a binding with no class | `useInjectable` | `ApplicationContext` with a container, or explicit option | Bound instance |
 | Resolve a service from the `services` namespace | `useService` | `ApplicationContext` with a container, or explicit option | Bound service instance |
 | Resolve a repository from the `repositories` namespace | `useRepository` | `ApplicationContext` with a container, or explicit option | Bound repository instance |
-| Resolve a provider from the `providers` namespace | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
+| Resolve a provider from the `providers` namespace, or a `CoreBindings` provider by key | `useProvider` | `ApplicationContext` with a container, or explicit option | Bound provider instance |
 | Resolve a component from the `components` namespace | `useComponent` | `ApplicationContext` with a container, or explicit option | Bound component instance |
 | Resolve a configuration class from the `configurations` namespace | `useConfiguration` | `ApplicationContext` with a container, or explicit option | Bound configuration instance |
 | Access the application logger from context | `useApplicationLogger` | `ApplicationContext` with a logger | `ILogger` |
 | Build typed dispatch hooks for a Redux store | `DispatchHooks.create` | react-redux `Provider` | `{ useAppDispatch, useMultipleAppDispatch }` |
 | Build typed selector hooks for Redux state | `SelectorHooks.create` | react-redux `Provider` | `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` |
-| Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; falls back to identity) | Translation function |
-| Refresh session token and invalidate permissions query | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
+| Translate message keys with the active i18n provider | `useTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
+| Translate message keys without key type checking | `useUntypedTranslate` | ra-core i18n context (optional; ra-core's default provider answers without one) | Translation function |
+| Refresh session token and invalidate canAccess queries | `useRefreshToken` | ra-core auth provider context, TanStack `QueryClientProvider` | Refresh callback |
 | Display an `ApplicationError` as a notification toast | `useNotifyError` | ra-core notification context | Notification callback |
 | Synchronize request headers with the active locale | `useRequestHeaderLocale` | ra-core locale state, `CoreBindings.DEFAULT_REST_DATA_PROVIDER` bound | `void` |
 | List mounted application features | `useFeatures` | `ApplicationContext` with a container | `Array<TItem>` |
+| Read the roles of the signed-in user, and follow the session | `useRoles` | `ApplicationContext` with a container | `ReadonlySet<string>` |
+| List the menu entries of the mounted features the user may open | `useMenuEntries` | Inside `ArdorApplication` (ra-core auth provider, TanStack `QueryClientProvider`) | `Array<TFeatureMenuEntry>` |
 | Set document title with automatic restoration on unmount | `useDocumentTitle` | Browser DOM | `void` |
 | Synchronize `<html lang>` with the active locale | `useHtmlLang` | ra-core locale state, browser DOM | `void` |
 | Debounce a rapidly changing value | `useDebounce` | Browser DOM | `{ debouncedValue }` |
 | Automatically save stable form data | `useAutosave` | Browser DOM | `void` |
 | Show a Promise-based confirmation prompt | `useConfirm` | React tree | Confirmation controls |
-| Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy }` |
+| Copy text to clipboard using the Clipboard API | `useCopyToClipboard` | Browser Clipboard API | `{ copy, isCopied }` |
 | Warn user before leaving page with unsaved changes | `useBeforeUnload` | Browser window | `void` |
-| Observe element dimensions with `ResizeObserver` | `useSizer` | Browser DOM | `{ width, height }` |
 | Observe the content or border box of an element with `ResizeObserver` | `useElementSize` | Browser DOM | `{ width, height, measured }`, plus `ref` when you pass no `ref` option |
+| Run a callback when any of several elements, or their children, resizes | `useResizeEffect` | Browser DOM | `void` |
+| Know whether an element is in view, with `IntersectionObserver` | `useIntersection` | Browser DOM | `IntersectionObserverEntry \| undefined`, or one per target for a list |
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
+| Know whether a media query matches | `useMediaQuery` | Browser window | `boolean` |
+| Know whether the tab is visible | `useDocumentVisibility` | Browser DOM | `'visible' \| 'hidden'` |
+| Know whether the browser is online | `useOnlineStatus` | Browser window | `boolean` |
 
 ## Reach the container
 
 ### useApplicationContext
 
 ```tsx
-import { useApplicationContext } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ContainerStatus() {
-  const container = useApplicationContext();
-  return <span>{container ? 'container ready' : 'no container'}</span>;
+  const container = Ardor.useApplicationContext();
+  return <span>{container.constructor.name}</span>;
 }
 ```
 
@@ -80,30 +95,46 @@ export function ContainerStatus() {
 - **Return value**: `Container` from `@venizia/ignis-inversion`.
 - **Gotcha**: Throws an error (`[useApplicationContext] must be used within a ApplicationContextProvider`) if called when no container is mounted on `ApplicationContext`. Defined in `packages/react/src/hooks/use-application-context.ts`.
 
-### useInjectableContainer
+### useApplicationContainer
 
 ```tsx
-import { useInjectableContainer } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ContainerChecker() {
-  const container = useInjectableContainer();
+  const container = Ardor.useApplicationContainer();
   return <span>{container ? 'container ready' : 'no container'}</span>;
 }
 ```
 
 - **Parameters**: Optional `opts?: { container?: Container }`.
 - **Return value**: `Container`.
-- **Gotcha**: Throws an error (`[useInjectable] Failed to determine injectable container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
+- **Gotcha**: Throws an error (`[useApplicationContainer] Failed to determine the application container!`) if neither `opts.container` nor `ApplicationContext.container` is available. Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useInjectable
 
+Resolve a class with `{ target }`: the key is the one recorded on the class, and the return type is the class.
+
 ```tsx
-import { CoreBindings, type DefaultRestDataProvider, useInjectable } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
+
+@service()
+class PricingService {
+  total(opts: { quantity: number }) { return opts.quantity * 3; }
+}
+
+export function Total() {
+  const pricingService = Ardor.useInjectable({ target: PricingService });
+  return <span>{pricingService.total({ quantity: 2 })}</span>;
+}
+```
+
+For a binding with no class, pass `{ key }`. The providers of `CoreBindings` are typed with no generic and no augmentation:
+
+```tsx
+import { Ardor, CoreBindings } from '@venizia/ardor';
 
 export function TenantHeaderButton() {
-  const dataProvider = useInjectable<DefaultRestDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
+  const dataProvider = Ardor.useInjectable({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
   return (
     <button onClick={() => dataProvider.getNetworkService().setHeaders({ headers: { 'x-tenant': 'acme' } })}>
       Tenant
@@ -112,23 +143,25 @@ export function TenantHeaderButton() {
 }
 ```
 
-- **Parameters**: `opts: TUseInjectableOptions` - `{ key: TUseInjectableKeys; container?: Container }` or `{ target: TClass<AnyType>; container?: Container }`.
-- **Return value**: The resolved instance `TInstance`.
-- **Gotcha**: When resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
+- **Parameters**: `opts: IUseInjectableByTarget<TInstance> | IUseInjectableByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`. `TUseInjectableOptions` is the union of the two.
+- **Return value**: for `{ target }`, the instance type of the class. For `{ key }`, the type that [`IUseInjectableKeyTypes`](../best-practices/module-augmentation) lists for the key (`IDataProvider`, `IAuthProvider` and react-admin's `I18nProvider` for the three `CoreBindings` providers), else the type you pass as the generic, `unknown` without one.
+- **Gotcha**: the generic of a `{ key }` that is not in `IUseInjectableKeyTypes` is your claim: nothing checks it against what the binding holds. A key bound by `toValue` or `toProvider` holds the value, not a class: `CoreBindings.DEFAULT_REST_DATA_PROVIDER` holds the `IDataProvider` the provider returns, not a `DefaultRestDataProvider`.
+- **Gotcha**: a hook resolves on every render, as the container does for every `get`. A `BindingScopes.TRANSIENT` binding gives a new instance each time, so keep an instance that holds state in a `SINGLETON` binding (the default).
+- **Gotcha**: when resolving by `{ target }`, the class must have a registered binding key recorded by a stereotype decorator (`@service()`, `@repository()`, etc.) or registration helper; resolving an undecorated class throws an error. If the key is bound to another class (two classes of the same name share `<namespace>.<ClassName>`), the hook throws and names the key and the class. A subclass bound under the key of its parent is accepted. If code minifiers rename classes, keys derived from `<namespace>.<ClassName>` change unless pinned with `binding: { namespace, key }` on the class or resolved by `{ target }` (see [Binding keys](./binding-keys)). Defined in `packages/react/src/hooks/use-injectable.ts`.
 
 ### useService
 
 ```tsx
-import { service, useService } from '@venizia/ardor';
+import { Ardor, service } from '@venizia/ardor';
 
 @service()
 class OrderService {
-  calculateTotal(subtotal: number, tax: number) { return subtotal + tax; }
+  calculateTotal(opts: { subtotal: number; tax: number }) { return opts.subtotal + opts.tax; }
 }
 
 export function OrderTotal() {
-  const orderService = useService({ target: OrderService });
-  return <span>Total: {orderService.calculateTotal(100, 10)}</span>;
+  const orderService = Ardor.useService({ target: OrderService });
+  return <span>Total: {orderService.calculateTotal({ subtotal: 100, tax: 10 })}</span>;
 }
 ```
 
@@ -139,16 +172,16 @@ export function OrderTotal() {
 ### useRepository
 
 ```tsx
-import { repository, useRepository } from '@venizia/ardor';
+import { Ardor, repository } from '@venizia/ardor';
 
 @repository()
 class ProductRepository {
-  findStock(productId: string) { return productId ? 42 : 0; }
+  findStock(opts: { productId: string }) { return opts.productId ? 42 : 0; }
 }
 
 export function StockDisplay() {
-  const productRepository = useRepository({ target: ProductRepository });
-  return <span>Stock: {productRepository.findStock('p1')}</span>;
+  const productRepository = Ardor.useRepository({ target: ProductRepository });
+  return <span>Stock: {productRepository.findStock({ productId: 'p1' })}</span>;
 }
 ```
 
@@ -158,25 +191,42 @@ export function StockDisplay() {
 
 ### useProvider
 
+A provider class that declares the `providers` namespace is resolved by `{ target }`:
+
 ```tsx
-import { CoreBindings, type IDataProvider, useProvider } from '@venizia/ardor';
+import { Ardor, BindingNamespaces, service } from '@venizia/ardor';
+
+@service({ binding: { namespace: BindingNamespaces.PROVIDER, key: 'ThemeProvider' } })
+class ThemeProvider {
+  getColor() { return 'teal'; }
+}
+
+export function ThemeSwatch() {
+  const themeProvider = Ardor.useProvider({ target: ThemeProvider });
+  return <span>{themeProvider.getColor()}</span>;
+}
+```
+
+The framework providers sit under `CoreBindings` keys and are typed through the key, with no generic and no augmentation:
+
+```tsx
+import { Ardor, CoreBindings } from '@venizia/ardor';
 
 export function DataProviderWidget() {
-  const dataProvider = useProvider<IDataProvider>({
-    key: CoreBindings.DEFAULT_REST_DATA_PROVIDER,
-  });
-  return <span>Data provider mounted: {dataProvider ? 'yes' : 'no'}</span>;
+  const dataProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+  const authProvider = Ardor.useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+  return <span>{typeof dataProvider.getList} {typeof authProvider.getRoles}</span>;
 }
 ```
 
 - **Parameters**: `opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey` - `{ target: TClass<TInstance>; container?: Container }` or `{ key: TUseInjectableKeys; container?: Container }`.
-- **Return value**: `TInstance` (inferred from `target`, or supplied type argument).
-- **Gotcha**: When passing `target`, throws if the class is bound under a namespace other than `providers`. Defined in `packages/react/src/hooks/use-artifact.ts`.
+- **Return value**: for `{ target }`, the instance type of the class. For `{ key }` of `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, `DEFAULT_AUTH_PROVIDER` or `DEFAULT_I18N_PROVIDER`, `IDataProvider`, `IAuthProvider` or react-admin's `I18nProvider`; the same for any key in `IUseInjectableKeyTypes`. For another key, the type you pass as the generic (your claim), else `unknown`.
+- **Gotcha**: when passing `target`, throws if the class is bound under a namespace other than `providers`. Resolves on every render, like `useInjectable`. Defined in `packages/react/src/hooks/use-artifact.ts`.
 
 ### useComponent
 
 ```tsx
-import { component, useComponent } from '@venizia/ardor';
+import { Ardor, component } from '@venizia/ardor';
 
 @component()
 class BannerComponent {
@@ -184,7 +234,7 @@ class BannerComponent {
 }
 
 export function BannerView() {
-  const banner = useComponent({ target: BannerComponent });
+  const banner = Ardor.useComponent({ target: BannerComponent });
   return <span>{banner.getLabel()}</span>;
 }
 ```
@@ -196,7 +246,7 @@ export function BannerView() {
 ### useConfiguration
 
 ```tsx
-import { configuration, useConfiguration } from '@venizia/ardor';
+import { Ardor, configuration } from '@venizia/ardor';
 
 @configuration()
 class AppSettings {
@@ -204,7 +254,7 @@ class AppSettings {
 }
 
 export function EnvironmentLabel() {
-  const settings = useConfiguration({ target: AppSettings });
+  const settings = Ardor.useConfiguration({ target: AppSettings });
   return <span>{settings.environment}</span>;
 }
 ```
@@ -216,10 +266,10 @@ export function EnvironmentLabel() {
 ### useApplicationLogger
 
 ```tsx
-import { useApplicationLogger } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function LoggerButton() {
-  const logger = useApplicationLogger();
+  const logger = Ardor.useApplicationLogger();
   return <button onClick={() => logger.info('Action executed')}>Log action</button>;
 }
 ```
@@ -276,7 +326,7 @@ export function useUserState() {
 ```
 
 - **Parameters**: None. The factory accepts a type parameter `TState`.
-- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using default, react-redux `shallowEqual`, and lodash `isEqual` comparators.
+- **Return value**: `{ useAppSelector, useShallowEqualSelector, useDeepEqualSelector }` using the default comparator, react-redux `shallowEqual`, and a deep comparator. The deep one compares primitives, plain objects, arrays and dates by value (none of them cyclic); any other object, such as a `Map` or a class instance, is equal only to itself.
 - **Gotcha**: Requires a react-redux `Provider` in the tree. Defined in `packages/react/src/hooks/redux/use-app-selector.ts`.
 
 ## ra-core companions
@@ -284,46 +334,69 @@ export function useUserState() {
 ### useTranslate
 
 ```tsx
-import { useTranslate } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function SaveButton() {
-  const translate = useTranslate();
+  const translate = Ardor.useTranslate();
   return <button type="submit">{translate('ra.action.save')}</button>;
 }
 ```
 
 - **Parameters**: None.
-- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: AnyType) => string`) when an i18n provider is present, or a fallback identity function `(key: AnyType) => AnyType`.
-- **Gotcha**: Returns an identity function when no i18n provider is mounted in the tree, returning the key unchanged rather than throwing. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
+- **Return value**: `TUseTranslateFn` (`(key: TUseTranslateKeys, options?: TUseTranslateOptions) => string`).
+- **Gotcha**: With no i18n provider mounted, ra-core's default provider answers instead of throwing: it returns the `_` text of the options when given, else the key, and fills `%{token}` placeholders from the options. Keys can be extended by augmenting `IUseTranslateKeysOverrides` (see [Module augmentation](../best-practices/module-augmentation)). Defined in `packages/admin/src/hooks/use-translate.ts`.
+
+### useUntypedTranslate
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function ErrorLine(props: { code: string }) {
+  const translate = Ardor.useUntypedTranslate();
+  return <p>{translate(`errors.${props.code}`, { _: 'Something went wrong' })}</p>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `TUseUntypedTranslateFn`, ra-core's `TranslateFunction`.
+- **Gotcha**: For a key that exists only at run time, such as a server error code or a data label. A key written in code belongs to [`useTranslate`](#usetranslate), which checks it at compile time; both read the same i18n provider and share one implementation. It is ra-core's own `useTranslate` with a `string` key. A key the catalogs do not hold comes back unchanged, or as the `_` text of the options; with no i18n provider, ra-core's default provider answers the same way. Defined in `packages/admin/src/hooks/use-translate.ts`.
 
 ### useRefreshToken
 
 ```tsx
-import { useRefreshToken } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function RefreshTokenButton() {
-  const refreshToken = useRefreshToken();
+  const refreshToken = Ardor.useRefreshToken();
   return <button onClick={() => void refreshToken()}>Refresh token</button>;
 }
 ```
 
 - **Parameters**: None.
-- **Return value**: A callback function `() => Promise<any>`.
-- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. If no auth provider is mounted, calling the returned function resolves to `undefined` without executing anything. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
+- **Return value**: A callback function `() => Promise<boolean>`: `true` when the token was refreshed, `false` when there is no auth provider or no refresh to make; it rejects when the auth provider's `refreshToken` rejects.
+- **Gotcha**: Requires the ra-core auth provider context and a TanStack `QueryClientProvider` in the tree. After a refresh it invalidates the cached `canAccess` answers (queries under `['auth', 'canAccess']`), not `getPermissions`, which the default auth provider always resolves with `undefined`. Defined in `packages/admin/src/hooks/use-refresh-token.ts`.
 
 ### useNotifyError
 
 ```tsx
-import { useNotifyError } from '@venizia/ardor';
-
-type TNotifyError = ReturnType<typeof useNotifyError>;
-type TAppError = Parameters<TNotifyError>[0];
+import { Ardor } from '@venizia/ardor';
+import { isApplicationError } from '@venizia/ignis-inversion';
 
 export function DeleteAction(props: { onDelete: () => Promise<void> }) {
-  const notifyError = useNotifyError();
+  const notifyError = Ardor.useNotifyError();
+  const logger = Ardor.useApplicationLogger();
+
   const handleClick = () => {
-    props.onDelete().catch((error: TAppError) => notifyError(error));
+    props.onDelete().catch((error: unknown) => {
+      if (isApplicationError(error)) {
+        notifyError(error);
+        return;
+      }
+
+      logger.error('[DeleteAction] delete failed | error: %o', error);
+    });
   };
+
   return <button onClick={handleClick}>Delete</button>;
 }
 ```
@@ -335,10 +408,10 @@ export function DeleteAction(props: { onDelete: () => Promise<void> }) {
 ### useRequestHeaderLocale
 
 ```tsx
-import { useRequestHeaderLocale } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function LocaleHeaderSync() {
-  useRequestHeaderLocale({ key: 'accept-language' });
+  Ardor.useRequestHeaderLocale({ key: 'accept-language' });
   return null;
 }
 ```
@@ -350,25 +423,66 @@ export function LocaleHeaderSync() {
 ### useFeatures
 
 ```tsx
-import { useFeatures } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function FeatureNavigation() {
-  const features = useFeatures();
+  const features = Ardor.useFeatures();
   return <nav>{features.map((feature) => <span key={feature.name}>{feature.name}</span>)}</nav>;
 }
 ```
 
 - **Parameters**: None. Accepts type parameter `TItem extends TFeature = TFeature`.
 - **Return value**: `Array<TItem>` (typed `Array<TFeature>` by default).
-- **Gotcha**: Reads from the container using `useInjectableContainer()`, throwing if called outside `ApplicationContext`. Returns an empty array `[]` if no features were mounted. Defined in `packages/admin/src/hooks/use-features.ts`.
+- **Gotcha**: Inside `ArdorApplication` it returns the mounted features: the `features` prop when the shell passed one, else every bound feature. Outside, it reads `CoreBindings.FEATURES` from the container of `ApplicationContext` (`[]` when unbound) and throws without a container. Defined in `packages/admin/src/hooks/use-features.ts`.
+
+### useRoles
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function AdminBadge() {
+  const roles = Ardor.useRoles();
+  return roles.has('admin') ? <span>Administrator</span> : null;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `ReadonlySet<string>`, the role names `DefaultAuthService.getRoles()` holds. It is the same set while the roles stay the same, so it is safe in a dependency array.
+- **Gotcha**: Re-renders when the session changes, in this tab or in another one. It is empty when nobody is signed in, and when no `CoreBindings.DEFAULT_AUTH_SERVICE` is bound, without an error. Roles are read at sign-in: a token refresh keeps them. They only show or hide interface; the backend must check every request, see [Permission provider](./permission). Throws outside `ApplicationContext`. Defined in `packages/admin/src/hooks/use-roles.ts`.
+
+
+### useMenuEntries
+
+```tsx
+import { Link } from 'react-router-dom';
+import { Ardor } from '@venizia/ardor';
+
+export function ShellNavigation() {
+  const entries = Ardor.useMenuEntries();
+  const translate = Ardor.useUntypedTranslate();
+  return (
+    <nav>
+      {entries.map((entry) => (
+        <Link key={`${entry.feature}:${entry.to}`} to={entry.to}>
+          {translate(entry.label)}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `Array<TFeatureMenuEntry>`, each `IMenuEntry` of a mounted feature plus `feature`, its name, in feature order.
+- **Gotcha**: An entry with `access` is listed only once `canAccess` allows it; while the check runs, or when it fails, it is left out. With no `canAccess` (no sign-in, or no permission provider) every entry is listed. Call it inside `ArdorApplication`. Defined in `packages/admin/src/hooks/use-menu-entries.ts`. See [Menu entries](./features#menu-entries).
 
 ### useDocumentTitle
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function OrderPage(props: { orderNumber?: string }) {
-  useDocumentTitle({
+  Ardor.useDocumentTitle({
     title: [props.orderNumber && `Order #${props.orderNumber}`, 'Orders'],
     appTitle: 'Back Office',
   });
@@ -379,10 +493,10 @@ export function OrderPage(props: { orderNumber?: string }) {
 A layout with a base title; a screen such as `OrderPage` above overrides it:
 
 ```tsx
-import { useDocumentTitle } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function AppLayout(props: { appName: string; children: React.ReactNode }) {
-  useDocumentTitle({ title: undefined, appTitle: props.appName, fallback: true });
+  Ardor.useDocumentTitle({ title: undefined, appTitle: props.appName, fallback: true });
   return props.children;
 }
 ```
@@ -394,10 +508,10 @@ export function AppLayout(props: { appName: string; children: React.ReactNode })
 ### useHtmlLang
 
 ```tsx
-import { useHtmlLang } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function HtmlLangSync() {
-  useHtmlLang();
+  Ardor.useHtmlLang();
   return null;
 }
 ```
@@ -412,28 +526,28 @@ export function HtmlLangSync() {
 
 ```tsx
 import React from 'react';
-import { useDebounce } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ProductSearch() {
   const [term, setTerm] = React.useState('');
-  const { debouncedValue } = useDebounce({ value: term, delay: 400 });
+  const { debouncedValue } = Ardor.useDebounce({ value: term, delay: 400 });
   return <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={debouncedValue} />;
 }
 ```
 
 - **Parameters**: `opts: IUseDebounceOptions<TValue>` - `value`, optional `delay` (default `App.DEFAULT_DEBOUNCE_TIME` = 500 ms), optional `enabled` (default `true`).
 - **Return value**: `IUseDebounceReturn<TValue>` containing `{ debouncedValue: TValue }`.
-- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` retains its initial value. Defined in `packages/react/src/hooks/use-debounce.ts`.
+- **Gotcha**: When `enabled` is `false` or outside the browser (`!BrowserUtility.isBrowser()`), the timer does not run and `debouncedValue` keeps the last value it had. Defined in `packages/react/src/hooks/use-debounce.ts`.
 
 ### useAutosave
 
 ```tsx
 import React from 'react';
-import { useAutosave } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
   const [text, setText] = React.useState('');
-  useAutosave({ data: text, onSave: props.onSave, interval: 2000, enableSaveOnUnmount: true });
+  Ardor.useAutosave({ data: text, onSave: props.onSave, interval: 2000, enableSaveOnUnmount: true });
   return <textarea value={text} onChange={(e) => setText(e.target.value)} />;
 }
 ```
@@ -445,10 +559,10 @@ export function NotePad(props: { onSave: (text: string) => Promise<void> }) {
 ### useConfirm
 
 ```tsx
-import { useConfirm } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
-  const { message, confirm, handleConfirm, handleAbort } = useConfirm();
+  const { message, confirm, handleConfirm, handleAbort } = Ardor.useConfirm();
   const handleClick = async () => {
     if (await confirm({ message: 'Delete this item?' })) {
       await props.onDelete();
@@ -472,29 +586,27 @@ export function DeleteConfirmation(props: { onDelete: () => Promise<void> }) {
 
 ```tsx
 import React from 'react';
-import { useCopyToClipboard } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function CopyShareLink(props: { url: string }) {
-  const { copy } = useCopyToClipboard();
-  const [copied, setCopied] = React.useState(false);
-  const handleCopy = async () => setCopied(await copy({ value: props.url }));
-  return <button onClick={handleCopy}>{copied ? 'Copied' : 'Share'}</button>;
+  const { copy, isCopied } = Ardor.useCopyToClipboard({ resetMs: 2000 });
+  return <button onClick={() => copy({ value: props.url })}>{isCopied ? 'Copied' : 'Share'}</button>;
 }
 ```
 
-- **Parameters**: None. Returned `copy` callback takes `{ value: string }`.
-- **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean> }`.
-- **Gotcha**: Resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` if `navigator?.clipboard` is missing (such as non-HTTPS environments) or if the clipboard write operation fails. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
+- **Parameters**: optional `opts: IUseCopyToClipboardOptions` - `resetMs`: milliseconds after which `isCopied` goes back to `false` (default `0`: it stays as the last copy left it, and a value of `0` or less never resets). Returned `copy` callback takes `{ value: string }`.
+- **Return value**: `IUseCopyToClipboardReturn`: `{ copy: (opts: { value: string }) => Promise<boolean>; isCopied: boolean }`. `isCopied` is the result of the last copy; a new copy restarts the timer, and a refused copy sets it to `false`. `copy` keeps its identity as long as `resetMs` does not change, and the timer is cleared on unmount. The app puts its own message on `isCopied` or on the result of `copy`.
+- **Gotcha**: A `copy` still waiting for the clipboard when the component unmounts starts a timer that sets nothing visible. `copy` resolves to `false` and logs a warning through a logger scoped `useCopyToClipboard` whenever the text is not on the clipboard: no `navigator` (a server render), no `navigator.clipboard` (non-HTTPS environments, an old WebView), a denied permission or a failed write. It never throws. The write is [`BrowserClipboard.writeText`](./index#browser-clipboard), which is also what to call from code outside React. Defined in `packages/react/src/hooks/use-copy-to-clipboard.ts`.
 
 ### useBeforeUnload
 
 ```tsx
 import React from 'react';
-import { useBeforeUnload } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function EditFormGuard() {
   const [dirty, setDirty] = React.useState(false);
-  useBeforeUnload({ enabled: dirty, message: 'You have unsaved changes.' });
+  Ardor.useBeforeUnload({ enabled: dirty, message: 'You have unsaved changes.' });
   return <input onChange={() => setDirty(true)} />;
 }
 ```
@@ -503,34 +615,15 @@ export function EditFormGuard() {
 - **Return value**: `void`.
 - **Gotcha**: Modern browsers display a generic browser-defined confirmation prompt rather than custom `message` text, but assigning `message` populates `event.returnValue` as required by the specification. Defined in `packages/react/src/hooks/use-before-unload.ts`.
 
-### useSizer
-
-```tsx
-import { useSizer } from '@venizia/ardor';
-
-export function ChartContainer() {
-  const { width, height } = useSizer({ containerId: 'chart-panel' });
-  return (
-    <div id="chart-panel">
-      <span>Width: {width}, Height: {height}</span>
-    </div>
-  );
-}
-```
-
-- **Parameters**: `opts: IUseSizerOptions` - `containerId: string`.
-- **Return value**: `IUseSizerReturn`: `{ width: number; height: number }`.
-- **Gotcha**: Reported width and height are the element's `offsetWidth` and `offsetHeight`, as they are. Returns `0` for both dimensions until the target element exists in the DOM. The observer effect depends only on `containerId`, so passing an inline `{ containerId: '...' }` object does not cause re-subscription. Defined in `packages/react/src/hooks/use-sizer.ts`.
-
 ### useElementSize
 
 ```tsx
 import React from 'react';
-import { useElementSize } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Chart() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { width, height } = useElementSize({ ref });
+  const { width, height } = Ardor.useElementSize({ ref });
 
   return <div ref={ref}>Width: {width}, Height: {height}</div>;
 }
@@ -539,10 +632,10 @@ export function Chart() {
 Leave `ref` out when the element mounts later or is replaced, and give the returned `ref` to it:
 
 ```tsx
-import { useElementSize } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function Panel({ open }: { open: boolean }) {
-  const { ref, width, measured } = useElementSize({ round: true });
+  const { ref, width, measured } = Ardor.useElementSize({ round: true });
 
   return open ? <div ref={ref}>{measured ? `${width}px` : '...'}</div> : null;
 }
@@ -550,31 +643,151 @@ export function Panel({ open }: { open: boolean }) {
 
 - **Parameters**: `opts?: IUseElementSizeOptions` - optional `ref: React.RefObject<Element | null>`, optional `box`: `content-box` (default) or `border-box`, optional `round`: `true` rounds width and height to whole pixels (default `false`).
 - **Return value**: `IUseElementSizeReturn`: `{ width: number; height: number; measured: boolean }`, `0` by `0` with `measured` `false` until the first measure. Without a `ref` option the return is `IUseElementSizeRefReturn`, which adds `ref: React.RefCallback<Element>`; its identity never changes.
-- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#test-a-resizeobserver). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. `useSizer` stays for an element found by id and reads `offsetWidth` and `offsetHeight`. Defined in `packages/react/src/hooks/use-element-size.ts`.
+- **Gotcha**: The state changes once per animation frame, and not at all when the size is the same. `measured` tells an element measured at `0` by `0` from one not read yet. With the returned `ref`, the hook follows an element that mounts later, is replaced or is removed. With a `ref` object the element is read when the effect runs, so the hook follows a new `ref`, `box` or `round` (and starts again from `0` by `0` with `measured` `false`), not a `ref.current` replaced later. Pass a stable `ref`, as `useRef` gives. To test a component that uses it, see [`FakeResizeObserver`](./testing#fake-the-browser-apis-your-code-reads). With `box: 'border-box'` a browser without `borderBoxSize` (Safari before 15.4) reports the content size. On a host with no `ResizeObserver` it stays at `0` by `0` and observes nothing. Defined in `packages/react/src/hooks/use-element-size.ts`.
+
+### useResizeEffect
+
+```tsx
+import React from 'react';
+import { Ardor } from '@venizia/ardor';
+
+export function Toolbar() {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [isOverflowing, setOverflowing] = React.useState(false);
+
+  Ardor.useResizeEffect({
+    targets: [ref],
+    onResize: () => {
+      const element = ref.current;
+      setOverflowing(element !== null && element.scrollWidth > element.clientWidth);
+    },
+  });
+
+  return <div ref={ref}>{isOverflowing ? 'More...' : 'All'}</div>;
+}
+```
+
+Use it for a check that runs when something resizes and keeps no size in state, such as an overflow test, the edges of a scroll area or a canvas fit. For the size itself, use `useElementSize`. Add `children: true` to run the callback when a direct child of the element resizes too:
+
+```tsx
+import React from 'react';
+import { Ardor } from '@venizia/ardor';
+
+export function Tabs() {
+  const ref = React.useRef<HTMLUListElement>(null);
+  const [resized, setResized] = React.useState<Array<string>>([]);
+
+  Ardor.useResizeEffect({
+    targets: [ref],
+    children: true,
+    onResize: (entries) => {
+      setResized(entries.map((entry) => entry.target.tagName));
+    },
+  });
+
+  return <ul ref={ref} title={resized.join(', ')} />;
+}
+```
+
+An element that mounts conditionally goes in as state, with the setter as its `ref`:
+
+```tsx
+import React from 'react';
+import { Ardor } from '@venizia/ardor';
+
+export function Popover({ open }: { open: boolean }) {
+  const [element, setElement] = React.useState<HTMLDivElement | null>(null);
+
+  const [resizeCount, setResizeCount] = React.useState(0);
+
+  Ardor.useResizeEffect({ targets: [element], onResize: () => setResizeCount((count) => count + 1) });
+
+  return open ? <div ref={setElement} title={`resized ${resizeCount} times`} /> : null;
+}
+```
+
+- **Parameters**: `opts: IUseResizeEffectOptions` - `targets: Array<React.RefObject<Element | null> | Element | null>` (an element, a ref to one, or `null`, which is skipped), `onResize: (entries: ResizeObserverEntry[]) => void`, optional `box`: `content-box` (default) or `border-box`, optional `children`: `true` also observes the direct children of each target (default `false`), optional `beforePaint`: `true` calls `onResize` inside the `ResizeObserver` callback, after layout and before paint, so what it draws or styles directly shows in the frame that resized (default `false`: once per animation frame). A state update set in it renders later, and resizing an observed element from it can report "ResizeObserver loop completed with undelivered notifications".
+- **Return value**: `void`.
+- **Gotcha**: One `ResizeObserver` watches all the elements, and `onResize` runs at most once per animation frame (with `beforePaint`, once per observer callback) with the latest entry of each element that resized since the last call. The hook keeps the latest `onResize`, so a new function each render does not observe again. The targets are read after every render and the observer follows the set: a new element is observed, one that is gone is not, and an element that is already observed is left alone, so a list made anew in each render observes nothing again. Pass an element held in state (`useState` with the setter as `ref`) for one that mounts conditionally or is found by a query, or a ref whose `current` is read at each render; a `null` is skipped. A ref whose `current` changes without a render of this component is not seen until its next render. The first entries are delivered as the browser delivers them, so `onResize` runs once when observing starts. With `children`, a child added later is observed, and so delivers its first entry, and a removed child is not observed any more; a grandchild is never observed, and a `MutationObserver` exists only with `children`. Where there is no `ResizeObserver` the hook does nothing. To test a component that uses it, see [`FakeResizeObserver`](./testing#fake-the-browser-apis-your-code-reads). Defined in `packages/react/src/hooks/use-resize-effect.ts`.
+
+### useIntersection
+
+```tsx
+import React from 'react';
+import { Ardor } from '@venizia/ardor';
+
+export function LoadMore({ onLoad }: { onLoad: () => void }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const entry = Ardor.useIntersection({ target: ref, rootMargin: '200px' });
+  const latest = React.useRef(onLoad);
+
+  React.useEffect(() => {
+    latest.current = onLoad;
+  });
+
+  React.useEffect(() => {
+    if (entry?.isIntersecting) {
+      latest.current();
+    }
+  }, [entry?.isIntersecting]);
+
+  return <div ref={ref} />;
+}
+```
+
+Use it to know whether an element is in view: lazy content, a "load more" sentinel, a sticky header. A caller that wants only the boolean reads `entry?.isIntersecting`. For a scroll-spy pass the sections as a list and the scrolling container as `root`: `useIntersection({ target: sections, root: container, threshold: [0, 0.5, 1] })` returns one entry per section. An element that mounts conditionally goes in as state, as for `useResizeEffect`.
+
+- **Parameters**: `opts: IUseIntersectionOptions` - `target: Element | React.RefObject<Element | null> | null`, or an array of them (read after every render; `null` observes nothing), optional `root`: the scrolling container, an element or a ref to one (a ref with no element yet observes nothing until it has one; `null` or left out is the viewport), optional `rootMargin` (default `'0px'`), optional `threshold`: a number or an array of numbers from `0` to `1` (default `0`).
+- **Return value**: the latest `IntersectionObserverEntry`, or `undefined`. With an array as `target`, an array in target order: the entry of each target, `undefined` for one with no element or not reported yet.
+- **Gotcha**: The value is `undefined` before the first entry, where there is no `IntersectionObserver` (a server render), while `target` is `null`, and again right after a new element, `root`, `rootMargin` or `threshold` starts a new observation; with an array, the change starts every target again, and the browser reports each at once. The state changes only when `isIntersecting` or `intersectionRatio` changed, so the rectangles of the entry can be one delivery old. The viewport is the root: an app with a scrolling root passes `rootMargin`. A list of targets is watched by one observer, and a list made anew in each render observes nothing again while it holds the same elements; a `threshold` array is compared by value. For one delivery only, write an `IntersectionObserver` of your own. The load-more example calls `onLoad` once each time the sentinel enters view, through a ref that holds the latest one; the caller still guards against a load already in flight, and asks again after a load ends with the sentinel still in view (for example by keying on the item count). Defined in `packages/react/src/hooks/use-intersection.ts`.
 
 ### useStoredState
 
 ```tsx
-import { useStoredState } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ThemeToggle() {
-  const { value, setValue } = useStoredState({ key: '@app/store/theme', defaultValue: 'light' });
+  const { value, setValue } = Ardor.useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
 
   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
 }
 ```
 
-- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key` (used as it is: name it `@app/store/<name>`), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default).
+A value that changes many times a second, such as the width of a panel while the user drags its edge, writes the storage once with `writeDelayMs`:
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function SidebarWidth() {
+  const { value, setValue } = Ardor.useStoredState({
+    key: '@app/prefs/sidebar-width',
+    defaultValue: 240,
+    writeDelayMs: 200,
+  });
+
+  return <input type="range" min={160} max={480} value={value} onChange={(event) => setValue(event.target.valueAsNumber)} />;
+}
+```
+
+- **Parameters**: `opts: IUseStoredStateOptions<TValue>` - `key`: `string | null` (used as it is: name it `@app/prefs/<name>` to keep it after a sign-out, `@app/store/<name>` for the user's data, which sign-out removes), `defaultValue`, optional `storage` (`local`, the default, or `session`), optional `codec` (JSON by default; [`StorageCodecs.text()`](./index#a-bare-string-as-the-stored-text) for a key whose data is a bare string), optional `writeDelayMs` (default `0`: write at once). `key` may be `null`: see the last paragraph of this section.
 - **Return value**: `IUseStoredStateReturn<TValue>`: `value`, `setValue(next | updater)` and `remove()`.
-- **Gotcha**: Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
+- **Gotcha**: An updater passed to `setValue` runs against the value at the moment you call it (the stored one, or the one the hook keeps after a refused write), not the value of the last render, so several updaters in one tick compose like a functional `setState`. The one value the hook cannot see is a write it is not told about: after the storage refused a write, the hook keeps its own value, and an updater builds on that kept value, not on a raw `localStorage.setItem` made meanwhile that fired no event. A write through `BrowserStorage`, or a `storage` event from another tab, replaces the kept value. Hooks on the same key follow each other in one tab, code that writes through [`BrowserStorage`](./#browser-storage) reaches them, and a change in another tab arrives through the `storage` event. Where storage is missing or throws, `value` is `defaultValue`. A `setValue` or `remove` that the storage refuses (private mode, a full quota) is kept in the hook until the storage next changes, so the UI still reacts, but it is not stored and other hooks do not see it. With `writeDelayMs` above `0`, `value` changes at once and the storage is written once, that many milliseconds after the last `setValue`; the value waits in the hook in the meantime, the place a refused write is kept, so an updater builds on it and other hooks and tabs see it only after the write. `remove()` cancels the pending write, and so does any change of the storage from outside (a write through `BrowserStorage`, or a `storage` event from another tab): the later write wins. An unmount, or a new `key` or `storage`, writes the pending value at once, to the key it was set for. A `pagehide` event, or the page turning hidden, writes the pending value at once, so a tab closed inside the delay loses nothing. Two hooks on one key in a tab each keep their own timer, and the first write to land cancels the pending write of the other, so the earlier timer wins, not the last `setValue`; give a key one writer. Pass a stable `defaultValue` and `codec`. On a server the first render is `defaultValue`. Defined in `packages/react/src/hooks/use-stored-state.ts`.
+
+**A key that is not known yet.** A hook call cannot be conditional, so pass `key: null` until the key is known (a user id, a flag). With `null` the hook reads, writes and watches nothing: `value` starts from `defaultValue`, `setValue` keeps the value in memory only, as `useState` does, and `remove()` returns to `defaultValue`. When the key becomes a string the hook reads that key and the value held in memory is dropped; when it goes back to `null` the stored value is left alone, `value` is `defaultValue`, and a delayed write that was still pending is written to the old key.
+
+**Sign out without a flash.** `remove()` and `setValue` tell every hook mounted on the key, in this tab, so a screen that is still mounted re-renders with `defaultValue` while you sign out. The browser tells the other tabs on its own, and no option can stop that. There is no `silent` option, because it would leave the hooks of this tab out of step with the storage. Instead:
+
+- Remove the stored session keys after the protected tree has unmounted: navigate to the login page first, or unmount the tree, then remove the keys.
+- Gate every effect that writes the store on the signed-in state. An effect that is still mounted when the keys go can write its defaults back, and the next sign-in starts from them.
+- Or let a screen treat an absent value as "signing out" and render nothing.
 
 ### useWindowDimensions
 
 ```tsx
-import { useWindowDimensions } from '@venizia/ardor';
+import { Ardor } from '@venizia/ardor';
 
 export function ViewportInfo() {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = Ardor.useWindowDimensions();
   return <span>Viewport: {width}x{height}</span>;
 }
 ```
@@ -582,6 +795,51 @@ export function ViewportInfo() {
 - **Parameters**: None.
 - **Return value**: `{ width: number; height: number }`.
 - **Gotcha**: Reads `window.innerWidth` and `window.innerHeight` during initial state evaluation, and again once the effect runs. Where `window` is undefined (server-side rendering) the first render is `0` by `0`. Defined in `packages/react/src/hooks/use-window-dimensions.ts`.
+
+### useMediaQuery
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function Layout() {
+  const isWide = Ardor.useMediaQuery({ query: '(min-width: 768px)' });
+  return <span>{isWide ? 'Wide' : 'Narrow'}</span>;
+}
+```
+
+- **Parameters**: `opts: { query: string }`.
+- **Return value**: `boolean`: whether the query matches now, and again after each change. A new `query` is read at once and the old one is no longer listened to.
+- **Gotcha**: In a server render it is `false` and `window.matchMedia` is not called; the browser value arrives on the client render. Defined in `packages/react/src/hooks/use-media-query.ts`.
+
+### useDocumentVisibility
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function PauseWhenHidden() {
+  const visibility = Ardor.useDocumentVisibility();
+  return <span>{visibility === 'visible' ? 'Live' : 'Paused'}</span>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `'visible' | 'hidden'`, the value of `document.visibilityState`, kept by the `visibilitychange` event.
+- **Gotcha**: In a server render it is `'visible'` and the document is not read. Defined in `packages/react/src/hooks/use-document-visibility.ts`.
+
+### useOnlineStatus
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function OfflineBanner() {
+  const isOnline = Ardor.useOnlineStatus();
+  return isOnline ? null : <p>You are offline.</p>;
+}
+```
+
+- **Parameters**: None.
+- **Return value**: `boolean`: `navigator.onLine`, kept by the `online` and `offline` events.
+- **Gotcha**: `navigator.onLine` says whether the browser has a network connection, not whether your server answers. In a server render it is `true` and `navigator` is not read. Defined in `packages/react/src/hooks/use-online-status.ts`.
 
 ## Related
 

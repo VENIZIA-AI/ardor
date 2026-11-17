@@ -3,13 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import type { IBuildInfoFile } from '@venizia/ardor-kernel';
 import { BuildInfoRegistry, type TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 
-import { type IBuildInfoSources, type TGitReadResult, UnresolvedPolicies } from '@/vite/common';
-import {
-  completeFromGit,
-  resolveBuildInfo,
-  serializeBuildInfoFile,
-  toBuildInfoFile,
-} from '@/vite/resolver';
+import { type IBuildInfoSources, UnresolvedPolicies } from '@/vite/common';
+import { resolveBuildInfo, serializeBuildInfoFile, toBuildInfoFile } from '@/vite/resolver';
 
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -24,23 +19,11 @@ const makeRecord = (opts: { overrides?: Partial<TBuildInfoRecord> } = {}): TBuil
   ...opts.overrides,
 });
 
-const makeFound = (opts: { value: string }): TGitReadResult => ({ ok: true, value: opts.value });
-const makeNotFound = (opts: { reason: string }): TGitReadResult => ({
-  ok: false,
-  reason: opts.reason,
-});
-
 const makeSources = (opts: {
   record?: TBuildInfoRecord;
-  commit?: TGitReadResult;
-  branch?: TGitReadResult;
   frameworks?: { versions: Record<string, string>; missing: string[]; invalid: string[] };
 }): IBuildInfoSources => ({
   resolveRecord: async () => opts.record ?? makeRecord(),
-  readGit: async ({ args }) =>
-    args.includes('--abbrev-ref')
-      ? (opts.branch ?? makeFound({ value: 'main' }))
-      : (opts.commit ?? makeFound({ value: '0123456789ab' })),
   readFrameworkVersions: async () => opts.frameworks ?? { versions: {}, missing: [], invalid: [] },
 });
 
@@ -60,40 +43,6 @@ describe('UnresolvedPolicies', () => {
     expect(UnresolvedPolicies.isValid('error')).toBe(true);
     expect(UnresolvedPolicies.isValid('unspecified')).toBe(true);
     expect(UnresolvedPolicies.isValid('ignore')).toBe(false);
-  });
-});
-
-describe('completeFromGit', () => {
-  test('keeps what the pipeline gave, even when git answers differently', () => {
-    const result = completeFromGit({
-      record: makeRecord(),
-      commit: makeFound({ value: 'ffffffffffff' }),
-      branch: makeFound({ value: 'other' }),
-    });
-
-    expect(result.commit).toBe('abcdef123456');
-    expect(result.branch).toBe('main');
-  });
-
-  test('asks git only for a field that is unspecified', () => {
-    const result = completeFromGit({
-      record: makeRecord({ overrides: { commit: UNSPECIFIED, branch: UNSPECIFIED } }),
-      commit: makeFound({ value: 'ffffffffffff' }),
-      branch: makeFound({ value: 'release' }),
-    });
-
-    expect(result.commit).toBe('ffffffffffff');
-    expect(result.branch).toBe('release');
-  });
-
-  test('leaves a field unspecified when git has no answer', () => {
-    const result = completeFromGit({
-      record: makeRecord({ overrides: { commit: UNSPECIFIED } }),
-      commit: makeNotFound({ reason: 'no git' }),
-      branch: makeFound({ value: 'x' }),
-    });
-
-    expect(result.commit).toBe(UNSPECIFIED);
   });
 });
 
@@ -166,29 +115,26 @@ describe('resolveBuildInfo', () => {
     expect(warnings).toEqual([]);
   });
 
-  test('takes the commit from git when the pipeline gave none', async () => {
+  test('keeps the commit and the branch the stamp holds, and asks nothing else of git', async () => {
     const { info } = await resolveWith({
       sources: makeSources({
-        record: makeRecord({ overrides: { commit: UNSPECIFIED } }),
-        commit: makeFound({ value: '0123456789ab' }),
+        record: makeRecord({ overrides: { commit: 'fedcba654321', branch: 'release' } }),
       }),
     });
 
-    expect(info.commit).toBe('0123456789ab');
+    expect(info.commit).toBe('fedcba654321');
+    expect(info.branch).toBe('release');
   });
 
-  test('with neither the pipeline nor git it throws, and the message names both causes and the fix', async () => {
+  test('with no commit in the stamp it throws, and the message names the pipeline variable and the fix', async () => {
     const task = resolveWith({
-      sources: makeSources({
-        record: makeRecord({ overrides: { commit: UNSPECIFIED } }),
-        commit: makeNotFound({ reason: 'git rev-parse failed | not a git repository' }),
-      }),
+      sources: makeSources({ record: makeRecord({ overrides: { commit: UNSPECIFIED } }) }),
     });
     const result = await RejectionHelper.rejectionOf({ task });
     const message = String(result);
 
     expect(message).toContain('APP_BUILD_COMMIT');
-    expect(message).toContain('not a git repository');
+    expect(message).toContain('git checkout');
   });
 
   test('with the unspecified policy it keeps going and warns', async () => {
@@ -196,7 +142,6 @@ describe('resolveBuildInfo', () => {
       policy: UnresolvedPolicies.UNSPECIFIED,
       sources: makeSources({
         record: makeRecord({ overrides: { commit: UNSPECIFIED } }),
-        commit: makeNotFound({ reason: 'no git' }),
       }),
     });
 
@@ -209,7 +154,6 @@ describe('resolveBuildInfo', () => {
     const { info, warnings } = await resolveWith({
       sources: makeSources({
         record: makeRecord({ overrides: { branch: UNSPECIFIED } }),
-        branch: makeNotFound({ reason: 'detached' }),
       }),
     });
 

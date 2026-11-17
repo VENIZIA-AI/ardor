@@ -7,18 +7,15 @@ import { GatesRefreshed } from '../gates-refreshed';
 const ROOT = resolve(import.meta.dir, '..', '..', '..');
 const workflow = readFileSync(resolve(ROOT, GatesRefreshed.WORKFLOW), 'utf8');
 
-const REFRESH = [
-  'bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"',
-  'bun run --filter "@venizia/*" force-update "$CATALOG_TAG"',
-];
+const REFRESH = ['bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"'];
 
 describe('make gates-refreshed replays the refresh of the Test job of package-release.yml', () => {
-  test('it runs the two lines of the workflow step, as they are written there', () => {
+  test('it runs the line of the workflow step, as it is written there', () => {
     expect(GatesRefreshed.refreshCommands({ workflow })).toEqual(REFRESH);
     expect(workflow).toContain(`        run: |\n          ${REFRESH.join('\n          ')}\n`);
   });
 
-  test('it takes the VULCAN of the preset smoke step', () => {
+  test('it takes the VULCAN of the Gates step', () => {
     expect(GatesRefreshed.vulcanCmd({ workflow })).toMatch(/^bun x @venizia\/vulcan@\d+\.\d+\.\d+/);
   });
 
@@ -28,7 +25,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
     expect(steps.map((step) => step.label)).toEqual([
       GatesRefreshed.REFRESH_STEP,
       'Install',
-      'Gates',
+      GatesRefreshed.GATES_STEP,
       GatesRefreshed.CLEAN_INSTALL_STEP,
     ]);
     expect(steps.map((step) => step.script)).toEqual([
@@ -44,8 +41,7 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
 
     expect(at(GatesRefreshed.REFRESH_STEP)).toBeGreaterThan(-1);
     expect(at(GatesRefreshed.REFRESH_STEP)).toBeLessThan(at('Install'));
-    expect(at('Install')).toBeLessThan(at('Build'));
-    expect(at('Build')).toBeLessThan(at(GatesRefreshed.SMOKE_STEP));
+    expect(at('Install')).toBeLessThan(at(GatesRefreshed.GATES_STEP));
   });
 
   describe('a drifted workflow fails the parser instead of running something else', () => {
@@ -57,38 +53,38 @@ describe('make gates-refreshed replays the refresh of the Test job of package-re
 
     test('the refresh step is renamed', () => {
       const drifted = inTestJob((job) =>
-        job.replace(`- name: ${GatesRefreshed.REFRESH_STEP}`, '- name: Refresh the catalog'),
+        job.replace(`- name: ${GatesRefreshed.REFRESH_STEP}`, '- name: Update the catalog'),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /no step 'Force update workspace'/,
+        /no step 'Refresh the catalog'/,
       );
     });
 
-    test('a line of the refresh block changes', () => {
+    test('the line of the refresh block changes', () => {
       const drifted = inTestJob((job) =>
-        job.replace('force-update "$CATALOG_TAG"', 'force-update latest'),
+        job.replace('refresh-catalog.ts "$CATALOG_TAG"', 'refresh-catalog.ts highest'),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /not the two refresh commands/,
+        /not the refresh command/,
       );
     });
 
     test('a line is added to the refresh block', () => {
       const drifted = inTestJob((job) =>
         job.replace(
-          '          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"\n',
-          '          bun run --filter "@venizia/*" force-update "$CATALOG_TAG"\n          bun scripts/other.ts\n',
+          '          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"\n',
+          '          bun scripts/build/refresh-catalog.ts "$CATALOG_TAG"\n          bun scripts/other.ts\n',
         ),
       );
 
       expect(() => GatesRefreshed.refreshCommands({ workflow: drifted })).toThrow(
-        /not the two refresh commands/,
+        /not the refresh command/,
       );
     });
 
-    test('the preset smoke step sets no VULCAN_CMD', () => {
+    test('the Gates step sets no VULCAN_CMD', () => {
       const drifted = inTestJob((job) => job.replace('VULCAN_CMD:', 'OTHER_CMD:'));
 
       expect(() => GatesRefreshed.vulcanCmd({ workflow: drifted })).toThrow(/sets no VULCAN_CMD/);

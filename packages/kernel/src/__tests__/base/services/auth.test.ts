@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
 import { AuthTokenStore } from '@/helpers';
+import { FakeStorage } from '@/testing';
 
 // The store's own logger (private), so a test can see the one warning it writes.
 const storeLogger = () => AuthTokenStore['logger'];
@@ -33,6 +34,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'tok-secret-value',
       type: 'Bearer',
       provider: 'oidc',
+      userId: 'user-001',
     });
 
     expect(JSON.parse(storedIdentity ?? '{}')).toEqual({
@@ -41,6 +43,36 @@ describe('saveAuth and credential retrieval', () => {
       referenceId: 'ref-987',
       provider: 'oidc',
     });
+  });
+
+  test('saveAuth writes the identity before the token, so a reader in between sees another user, never a mixed one', () => {
+    const written: string[] = [];
+
+    class RecordingStorage extends FakeStorage {
+      override setItem(key: string, value: string): void {
+        written.push(key);
+        super.setItem(key, value);
+      }
+    }
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: new RecordingStorage(),
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      new DefaultAuthService().saveAuth({ userId: 'u-1', token: { value: 'tok', type: 'Bearer' } });
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, 'localStorage', original);
+      }
+    }
+
+    expect(written.indexOf(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeLessThan(
+      written.indexOf(LocalStorageKeys.KEY_AUTH_TOKEN),
+    );
   });
 
   test('saveAuth stores roles where getRoles reads them, and leaves them alone when none are given', () => {
@@ -78,6 +110,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'github-access-token',
       type: 'Bearer',
       provider: 'github',
+      userId: 42,
     });
   });
 
@@ -100,6 +133,50 @@ describe('saveAuth and credential retrieval', () => {
     });
   });
 
+  test('getUser reads an identity whose known field has the wrong type as an empty object', () => {
+    const service = new DefaultAuthService();
+
+    for (const stored of [
+      { userId: { id: 1 } },
+      { userId: 1, username: 7 },
+      { userId: 1, referenceId: { id: 2 } },
+      { userId: 1, provider: 5 },
+      ['usr-1'],
+      null,
+    ]) {
+      localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, JSON.stringify(stored));
+
+      expect(service.getUser()).toEqual({});
+    }
+  });
+
+  test('getUser keeps a field it does not know', () => {
+    const service = new DefaultAuthService();
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      JSON.stringify({ userId: 3, tenant: 'acme' }),
+    );
+
+    expect(service.getUser()).toMatchObject({ userId: 3, tenant: 'acme' });
+  });
+
+  test('an override of getUser may return an interface of its own that has the fields of IAuthUser', () => {
+    interface IStubUser {
+      userId: number;
+      role: string;
+    }
+
+    class StubAuthService extends DefaultAuthService {
+      override getUser(): IStubUser {
+        return { userId: 7, role: 'admin' };
+      }
+    }
+
+    const service: DefaultAuthService = new StubAuthService();
+
+    expect(service.getUser()).toMatchObject({ userId: 7, role: 'admin' });
+  });
+
   test('saveAuth applies default empty strings when optional identity parameters are omitted', () => {
     const service = new DefaultAuthService();
 
@@ -119,6 +196,7 @@ describe('saveAuth and credential retrieval', () => {
       value: 'token-only',
       type: 'Bearer',
       provider: '',
+      userId: 'usr-defaults',
     });
   });
 
@@ -183,6 +261,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null and logs the store warning when stored token is not valid JSON', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '{malformed-json');
 
@@ -199,6 +278,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null without logging when no token is stored', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(service['logger'], 'error').mockImplementation(() => {});
+
     try {
       expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
 
@@ -213,6 +293,7 @@ describe('getAuth error handling', () => {
   test('getAuth returns null without logging when the stored token is an empty string', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, '');
 
@@ -284,6 +365,7 @@ describe('corrupt storage', () => {
     const spies = (['warn', 'error'] as const).map((level) =>
       spyOn(service['logger'], level).mockImplementation(() => {}),
     );
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, 'username-secretpart{');
 
@@ -299,6 +381,7 @@ describe('corrupt storage', () => {
   test('getRoles reads corrupt permissions as an empty set', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(service['logger'], 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_PERMISSION, 'admin,editor{');
 
@@ -324,6 +407,7 @@ describe('corrupt storage', () => {
   test('getAuth logs the error name, never the stored token text', () => {
     const service = new DefaultAuthService();
     const loggerSpy = spyOn(storeLogger(), 'warn').mockImplementation(() => {});
+
     try {
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_TOKEN, 'eyJhbGciOiJIUzI1NiJ9.secretpart');
 
@@ -394,10 +478,11 @@ describe('subscribe', () => {
   test('saveAuth notifies after the token and the identity are stored', () => {
     const service = new DefaultAuthService();
     const seen: Array<string | undefined> = [];
-    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+    const stop = service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
 
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     service.saveAuth({ userId: 7, token: { value: 'tok-2', type: 'Bearer' } });
+    stop();
 
     expect(seen).toEqual(['tok-1', 'tok-2']);
   });
@@ -406,9 +491,10 @@ describe('subscribe', () => {
     const service = new DefaultAuthService();
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     const seen: Array<string | undefined> = [];
-    service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
+    const stop = service.subscribe({ listener: () => seen.push(service.getAuth()?.value) });
 
     service.cleanUp();
+    stop();
 
     expect(seen).toEqual([undefined]);
   });
@@ -427,15 +513,21 @@ describe('subscribe', () => {
   test('a listener that throws does not break saveAuth, cleanUp or the other listeners', () => {
     const service = new DefaultAuthService();
     const calls: Array<string> = [];
-    service.subscribe({
-      listener: () => {
-        throw new Error('listener failed');
-      },
-    });
-    service.subscribe({ listener: () => calls.push('second') });
+    const stops = [
+      service.subscribe({
+        listener: () => {
+          throw new Error('listener failed');
+        },
+      }),
+      service.subscribe({ listener: () => calls.push('second') }),
+    ];
 
     service.saveAuth({ userId: 7, token: { value: 'tok-1', type: 'Bearer' } });
     service.cleanUp();
+
+    for (const stop of stops) {
+      stop();
+    }
 
     expect(calls).toEqual(['second', 'second']);
     expect(service.getAuth()).toBeNull();

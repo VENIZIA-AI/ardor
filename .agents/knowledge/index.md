@@ -96,12 +96,11 @@ How the work gets done.
 - [Adding a hook](/process/adding-a-hook.md)
 - [Splitting a hub file by topic](/process/splitting-a-hub-file.md)
 - [Updating the wiki](/process/updating-the-wiki.md)
-- [Writing a changelog entry](/process/writing-a-changelog-entry.md) - the parts every entry needs and the template to copy
-- [Knowledge-sync area map](/process/knowledge-sync-areas.md)
+- [Writing a changelog entry](/process/writing-a-changelog-entry.md) - the version folder, its items and the migration block
 
 ## Examples
 
-Runnable apps. [5-mins-qs](/examples/5-mins-qs.md) is the smallest thing that runs; [vert-admin](/examples/vert-admin.md) is the family reference over IGNIS's `vert` API; [ipc-data-provider](/examples/ipc-data-provider.md) is the custom-transport tutorial.
+Runnable apps. [5-mins-qs](/examples/5-mins-qs.md) is the smallest thing that runs; [vert-admin](/examples/vert-admin.md) is the family reference over IGNIS's `vert` API; [ipc-data-provider](/examples/ipc-data-provider.md) is the custom-transport tutorial; [shell](/examples/shell.md) is a thin shell over two feature packages, with role-based permissions.
 
 ## Reference
 
@@ -113,9 +112,6 @@ Curated lookups:
 
 Generated from source - never hand-edited, run `make okf-gen`:
 
-- [Source map](/reference/source-map.md) - subsystems and file counts
-- [Providers catalog](/reference/providers.md)
-- [Hooks and services catalog](/reference/hooks-and-services.md)
 - [Binding keys](/reference/binding-keys.md)
 - [Makefile targets](/reference/makefile-targets.md)
 - [Public surface](/reference/public-surface.md) - every exported symbol, run `make surface-gen`

@@ -2,20 +2,38 @@ import React from 'react';
 
 import type { Store } from '@reduxjs/toolkit';
 import { type ILogger, LoggerFactory } from '@venizia/ignis-helpers/core';
-import type { Container } from '@venizia/ignis-inversion';
-import { CoreAdmin, CustomRoutes, type I18nProvider, Resource } from 'ra-core';
+import { Container } from '@venizia/ignis-inversion';
+import { QueryClient } from '@tanstack/react-query';
+import {
+  Authenticated,
+  CanAccess,
+  CoreAdmin,
+  CustomRoutes,
+  type I18nProvider,
+  Navigate,
+  Resource,
+  useBasename,
+} from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
-import { Route } from 'react-router-dom';
+import { Outlet, Route } from 'react-router-dom';
 
-import { type TFeature, Features } from '@/features/feature';
+import {
+  type TArdorRoute,
+  type TFeature,
+  Features,
+  MountedFeaturesContext,
+} from '@/features/feature';
+import { getError } from '@venizia/ignis-inversion';
+import { CoreBindings, type DefaultAuthService } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import type { IApplication } from '../common/types';
+import { AccessDeniedPage } from './access-denied';
 import { ApplicationProviders } from './resolve';
 
 const Wrapper: React.FC<{
   applicationName?: string;
   container: Container;
-  reduxStore: Store;
+  reduxStore?: Store;
   suspense: React.ReactNode;
   logger?: ILogger;
   children: React.ReactNode;
@@ -32,19 +50,107 @@ const Wrapper: React.FC<{
     return logger ?? LoggerFactory.getLogger([applicationName]);
   }, [logger, applicationName]);
 
+  const content = <React.Suspense fallback={suspense}>{children}</React.Suspense>;
+
   return (
     <ApplicationContext.Provider value={{ container, logger: applicationLogger }}>
-      <ReduxProvider store={reduxStore}>
-        <React.Suspense fallback={suspense}>{children}</React.Suspense>
-      </ReduxProvider>
+      {reduxStore ? <ReduxProvider store={reduxStore}>{content}</ReduxProvider> : content}
     </ApplicationContext.Provider>
   );
+};
+
+/** Sends a user who may not open a route to the access-denied page, where a denied resource lands too. */
+const AccessDeniedRedirect = () => {
+  const basename = useBasename();
+
+  return <Navigate to={`${basename}/access-denied`} replace />;
+};
+
+/**
+ * A route as react-router reads it. With `access`, the page is wrapped in sign-in and permission
+ * checks, with `auth: { use: true }` in a sign-in check: a custom route has neither in react-admin.
+ * Each page has its own `Suspense`, so a lazy page leaves the layout mounted while it loads.
+ */
+const renderRoute = (opts: {
+  route: TArdorRoute;
+  suspense: React.ReactNode;
+  /** The app sets `requireAuth`: react-admin guards the pages of the layout, not the routes outside it. */
+  isRequireAuth: boolean;
+}) => {
+  const { access, auth, layout, ...routeProps } = opts.route;
+  const { Component, element, ...rest } = routeProps;
+  const key = routeProps.id ?? routeProps.path;
+  const page = (
+    <React.Suspense fallback={opts.suspense}>
+      {element ?? (Component ? <Component /> : <Outlet />)}
+    </React.Suspense>
+  );
+
+  // A route outside the layout is open under `requireAuth` too, unless it says `auth: { use: false }` on purpose.
+  const isGuardedByApp = layout?.use === false && opts.isRequireAuth && auth?.use !== false;
+
+  if (!access && auth?.use !== true && !isGuardedByApp) {
+    return <Route key={key} {...rest} element={page} />;
+  }
+
+  return (
+    <Route
+      key={key}
+      {...rest}
+      element={
+        <Authenticated>
+          {access ? (
+            <CanAccess
+              resource={access.resource}
+              action={access.action}
+              accessDenied={<AccessDeniedRedirect />}
+            >
+              {page}
+            </CanAccess>
+          ) : (
+            page
+          )}
+        </Authenticated>
+      }
+    />
+  );
+};
+
+/**
+ * A route with `access` is open when nothing can answer it: react-admin treats a missing auth provider as
+ * everyone signed in, and a provider with no `canAccess` allows every page. Failing at mount keeps the route closed.
+ */
+const assertAccessRoutesCanBeChecked = (opts: {
+  routes: Array<TArdorRoute>;
+  authProvider?: object;
+}): void => {
+  const { routes, authProvider } = opts;
+
+  for (const route of routes) {
+    if (!route.access) {
+      continue;
+    }
+
+    const name = route.path ?? route.id;
+
+    if (!authProvider) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but sign-in is off, so nobody is asked who may open it | Turn sign-in on, or remove access from the route`,
+      });
+    }
+
+    if (!('canAccess' in authProvider) || !authProvider.canAccess) {
+      throw getError({
+        message: `[ArdorApplication] The route '${name}' has access, but no permission provider is bound, so every signed-in user would pass | Bind CoreBindings.PERMISSION_PROVIDER (RolePermissionProvider, or your own), or remove access from the route`,
+      });
+    }
+  }
 };
 
 /**
  * The i18n provider is built with the initial locale's eager messages only; when a feature loads
  * that locale lazily, `changeLocale()` to the same locale loads it before react-admin renders. A
- * failed load, such as a key two features define, is thrown from render for an error boundary.
+ * failed load of a custom i18n provider is thrown from render for an error boundary.
  */
 const useFeatureMessagesReady = (opts: {
   features: Array<TFeature>;
@@ -90,6 +196,25 @@ const useFeatureMessagesReady = (opts: {
   return state.isReady;
 };
 
+/** Who the stored session belongs to: the user id as text, `''` when the session names none, `undefined` without a session. */
+const readSessionUser = (opts: { authService: DefaultAuthService }): string | undefined => {
+  const { authService } = opts;
+
+  if (!authService.getAuth()?.value) {
+    return undefined;
+  }
+
+  return String(authService.getUser().userId ?? '');
+};
+
+/**
+ * The application shell. It resolves the data, auth and i18n providers from `container`, mounts the
+ * `resources` and `routes` of the application and of each feature inside react-admin, and wraps it
+ * all in `ApplicationContext.Provider` (`container`, `logger`), the Redux provider (only when
+ * `reduxStore` is passed) and `Suspense`. While a feature's lazy messages for the current locale
+ * load, it renders `suspense` instead of react-admin; a failed load is thrown from render. Remaining
+ * props go to react-admin's `CoreAdmin`.
+ */
 export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
   const {
     container,
@@ -107,6 +232,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return selected ?? Features.read({ container });
   }, [container, selected]);
 
+  // What `useFeatures` reads inside the shell: the list mounted here, not every bound feature.
+  const mountedScope = React.useMemo(() => {
+    const scope = new Container();
+    scope.bind({ key: CoreBindings.FEATURES }).toValue(features);
+
+    return scope;
+  }, [features]);
+
   // The application's own resources and routes, then each feature's it bound in `features()`.
   const mounted = React.useMemo(() => {
     return Features.mount({ features, resources, routes });
@@ -117,7 +250,73 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return ApplicationProviders.resolve({ container });
   }, [container]);
 
-  const adminProps = { ...providers, ...reactAdminProps };
+  // The cache is owned here, so it can be emptied when the session ends by any route (a sign-out
+  // button empties it itself; a failed refresh, or code that calls `cleanUp`, does not) and when
+  // another user signs in over the first, which also ends the answers of `canAccess` of the first.
+  const queryClient = React.useMemo(() => {
+    return reactAdminProps.queryClient ?? new QueryClient();
+  }, [reactAdminProps.queryClient]);
+
+  React.useEffect(() => {
+    const authService = container.get<DefaultAuthService>({
+      key: CoreBindings.DEFAULT_AUTH_SERVICE,
+      isOptional: true,
+    });
+
+    if (!authService) {
+      return undefined;
+    }
+
+    // `resetQueries`, not `clear`: a page that is open holds its query, and only a reset tells it to drop its data.
+    const resetCache = () => {
+      queryClient.resetQueries().catch((error: unknown) => {
+        LoggerFactory.getLogger(['ArdorApplication']).error(
+          '[resetCache] failed | error: %o',
+          error,
+        );
+      });
+    };
+
+    // The user the cache belongs to: `undefined` when no session was announced since the last clear.
+    let cachedUser = readSessionUser({ authService });
+
+    const stop = authService.subscribe({
+      listener: () => {
+        const user = readSessionUser({ authService });
+
+        if (user === undefined) {
+          // After the redirect to the sign-in page, as react-admin's own sign-out does.
+          setTimeout(() => {
+            // Not when the next user signed in meanwhile: that sign-in judged the cache itself.
+            if (readSessionUser({ authService }) === undefined) {
+              resetCache();
+              cachedUser = undefined;
+            }
+          }, 0);
+
+          return;
+        }
+
+        if (cachedUser !== undefined && cachedUser !== user) {
+          resetCache();
+        }
+
+        cachedUser = user;
+      },
+    });
+
+    return stop;
+  }, [container, queryClient]);
+
+  const adminProps = {
+    ...providers,
+    ...reactAdminProps,
+    accessDenied: reactAdminProps.accessDenied ?? AccessDeniedPage,
+    queryClient,
+  };
+
+  // The provider react-admin gets: a prop of the shell wins over the one the container resolved.
+  assertAccessRoutesCanBeChecked({ routes: mounted.routes, authProvider: adminProps.authProvider });
 
   const isMessagesReady = useFeatureMessagesReady({
     features,
@@ -134,17 +333,40 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
 
   return (
     <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
-      <CoreAdmin {...adminProps}>
-        {mounted.resources.map((resource) => {
-          return <Resource key={resource.name} {...resource} />;
-        })}
-
-        <CustomRoutes>
-          {mounted.routes.map((route) => {
-            return <Route key={route.id ?? route.path} {...route} />;
+      <MountedFeaturesContext.Provider value={mountedScope}>
+        <CoreAdmin {...adminProps}>
+          {mounted.resources.map((resource) => {
+            return <Resource key={resource.name} {...resource} />;
           })}
-        </CustomRoutes>
-      </CoreAdmin>
+
+          <CustomRoutes>
+            {mounted.routes
+              .filter((route) => route.layout?.use !== false)
+              .map((route) => {
+                return renderRoute({
+                  route,
+                  suspense,
+                  isRequireAuth: adminProps.requireAuth === true,
+                });
+              })}
+          </CustomRoutes>
+
+          {/* react-admin renders a route outside the layout whatever the sign-in status: a public page. */}
+          {mounted.routes.some((route) => route.layout?.use === false) ? (
+            <CustomRoutes noLayout>
+              {mounted.routes
+                .filter((route) => route.layout?.use === false)
+                .map((route) => {
+                  return renderRoute({
+                    route,
+                    suspense,
+                    isRequireAuth: adminProps.requireAuth === true,
+                  });
+                })}
+            </CustomRoutes>
+          ) : null}
+        </CoreAdmin>
+      </MountedFeaturesContext.Provider>
     </Wrapper>
   );
 };

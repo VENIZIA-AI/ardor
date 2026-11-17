@@ -26,9 +26,11 @@ const collectDottedKeys = ({
   prefix = '',
 }: ICollectDottedKeysOptions): readonly string[] => {
   const keys: string[] = [];
+
   for (const [key, value] of Object.entries(target)) {
     const path = prefix.length > 0 ? `${prefix}.${key}` : key;
     const recordCheck = { candidate: value };
+
     if (isRecord(recordCheck)) {
       keys.push(
         ...collectDottedKeys({
@@ -40,6 +42,7 @@ const collectDottedKeys = ({
       keys.push(path);
     }
   }
+
   return keys;
 };
 
@@ -62,6 +65,7 @@ const computeSymmetricDifference = ({
   const missingInLeft = [...rightKeys]
     .filter((key) => !leftKeys.has(key))
     .map((key) => `Missing in ${leftName}: ${key}`);
+
   return [...missingInRight, ...missingInLeft];
 };
 
@@ -75,9 +79,11 @@ const collectEmptyLeafPaths = ({
   prefix = '',
 }: ICollectEmptyLeafPathsOptions): readonly string[] => {
   const emptyPaths: string[] = [];
+
   for (const [key, value] of Object.entries(target)) {
     const path = prefix.length > 0 ? `${prefix}.${key}` : key;
     const recordCheck = { candidate: value };
+
     if (isRecord(recordCheck)) {
       emptyPaths.push(
         ...collectEmptyLeafPaths({
@@ -89,6 +95,7 @@ const collectEmptyLeafPaths = ({
       emptyPaths.push(path);
     }
   }
+
   return emptyPaths;
 };
 

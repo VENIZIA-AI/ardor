@@ -1,8 +1,19 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  linkSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { NamespaceCommand } from '@/codemod/cli';
+import { Migration } from '@/codemod/migrate';
 import { makeScratch, removeScratch, writeFiles } from '../vite/fixture';
 
 const OLD = "import { isDefined } from '@venizia/ardor';\nexport const a = isDefined(1);\n";
@@ -97,6 +108,33 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('b.ts:1 isDefined');
   });
 
+  test('--check exits 1 for the removed hooks useSizer and useInjectableContainer', async () => {
+    seed({
+      'src/removed.ts':
+        "import { useInjectableContainer, useSizer } from '@venizia/ardor';\nexport const a = [useInjectableContainer, useSizer];\n",
+    });
+    await run(['--write']);
+
+    const result = await run(['--check']);
+    expect(result).toBe(1);
+    expect(errors.join('\n')).toContain('removed.ts:1 useInjectableContainer');
+    expect(errors.join('\n')).toContain('removed.ts:1 useSizer');
+  });
+
+  test('--check exits 1 for IListFilter offset, and --write renames ISendResponse', async () => {
+    seed({
+      'src/alias.ts':
+        "import type { IListFilter, ISendResponse } from '@venizia/ardor';\nexport const a = (f: IListFilter, r: ISendResponse) => [f.offset, r];\n",
+    });
+    await run(['--write']);
+
+    expect(readFileSync(join(root, 'src/alias.ts'), 'utf8')).toContain('r: INetworkResponse');
+
+    const result = await run(['--check']);
+    expect(result).toBe(1);
+    expect(errors.join('\n')).toContain('alias.ts:2 .offset');
+  });
+
   test('--hooks moves a hook from the umbrella; without it the hook stays', async () => {
     seed({
       'src/hook.ts':
@@ -131,7 +169,7 @@ describe('ardor codemod namespace', () => {
     expect(errors.join('\n')).toContain('refused src/a.ts');
   });
 
-  // The BANA case: another codemod already changed a file, so the tree is dirty when this one runs.
+  // The downstream case: another codemod already changed a file, so the tree is dirty when this one runs.
   describe('a file another codemod already changed', () => {
     const OTHER = `${OLD}// changed by another codemod\n`;
     const OTHER_NEW = `${NEW}// changed by another codemod\n`;
@@ -187,6 +225,38 @@ describe('ardor codemod namespace', () => {
     expect(readFileSync(join(root, 'ignored/c.ts'), 'utf8')).toBe(OLD);
   });
 
+  describe('a symlink', () => {
+    let elsewhere = '';
+
+    beforeEach(() => {
+      elsewhere = makeScratch({ prefix: 'ardor-codemod-target-' });
+      writeFiles({ root: elsewhere, files: { 'other.ts': OLD } });
+      symlinkSync(join(elsewhere, 'other.ts'), join(root, 'src/linked.ts'));
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'link'] });
+    });
+
+    afterEach(() => {
+      removeScratch({ root: elsewhere });
+    });
+
+    test('is never written through, and is not listed', async () => {
+      const code = await run(['--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(elsewhere, 'other.ts'), 'utf8')).toBe(OLD);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+      expect(output.join('\n')).not.toContain('linked.ts');
+    });
+
+    test('given as the target, is skipped too', async () => {
+      const code = await run(['src/linked.ts', '--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(elsewhere, 'other.ts'), 'utf8')).toBe(OLD);
+    });
+  });
+
   test('outside git it walks the folder and skips node_modules, dist and dot-directories', async () => {
     const outside = makeScratch({ prefix: 'ardor-codemod-nogit-' });
     const ceiling = process.env.GIT_CEILING_DIRECTORIES;
@@ -205,7 +275,10 @@ describe('ardor codemod namespace', () => {
         },
       });
 
-      const result = await NamespaceCommand.run({ root: outside, args: ['--write'] });
+      const result = await NamespaceCommand.run({
+        root: outside,
+        args: ['--write', '--allow-dirty'],
+      });
       expect(result).toBe(0);
       expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(NEW);
       expect(readFileSync(join(outside, 'node_modules/x/b.ts'), 'utf8')).toBe(OLD);
@@ -220,6 +293,200 @@ describe('ardor codemod namespace', () => {
 
       removeScratch({ root: outside });
     }
+  });
+
+  describe('--write is all or nothing and safe on odd input', () => {
+    test('a file that fails stops every write, is named, and exits 1', async () => {
+      seed({ 'src/b.ts': OLD, 'src/z-bad.ts': OLD });
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        if (opts.fileName.endsWith('z-bad.ts')) {
+          throw new RangeError('Maximum call stack size exceeded');
+        }
+
+        return original(opts);
+      });
+      spies.push(spy);
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(1);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+      expect(readFileSync(join(root, 'src/b.ts'), 'utf8')).toBe(OLD);
+      expect(errors.join('\n')).toContain('failed src/z-bad.ts: Maximum call stack size exceeded');
+      expect(output.join('\n')).toContain('1 failed (listed above), nothing was written');
+    });
+
+    test('a file that is not valid UTF-8 and would change is left alone and fails', async () => {
+      const bytes = Buffer.concat([Buffer.from(OLD), Buffer.from([0x2f, 0x2f, 0xe9, 0x0a])]);
+      writeFileSync(join(root, 'src/latin1.ts'), bytes);
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'latin1'] });
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(1);
+      expect(readFileSync(join(root, 'src/latin1.ts')).equals(bytes)).toBe(true);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+      expect(errors.join('\n')).toContain('failed src/latin1.ts: it is not valid UTF-8');
+    });
+
+    test('a file that is not valid UTF-8 and needs no change does not stop the others', async () => {
+      writeFileSync(join(root, 'src/latin1.ts'), Buffer.from([0x2f, 0x2f, 0xe9, 0x0a]));
+      git({ cwd: root, args: ['add', '-A'] });
+      git({ cwd: root, args: ['commit', '-q', '-m', 'latin1'] });
+
+      const code = await run(['--write']);
+
+      expect(code).toBe(0);
+      expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+    });
+
+    test('outside git --write refuses and writes nothing, unless --allow-dirty is given', async () => {
+      const outside = makeScratch({ prefix: 'ardor-codemod-nogit2-' });
+      const ceiling = process.env.GIT_CEILING_DIRECTORIES;
+      process.env.GIT_CEILING_DIRECTORIES = join(outside, '..');
+
+      try {
+        writeFiles({ root: outside, files: { 'src/a.ts': OLD } });
+
+        const refused = await NamespaceCommand.run({ root: outside, args: ['--write'] });
+        expect(refused).toBe(1);
+        expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('not a git repository');
+
+        const dry = await NamespaceCommand.run({ root: outside, args: [] });
+        expect(dry).toBe(0);
+
+        const written = await NamespaceCommand.run({
+          root: outside,
+          args: ['--write', '--allow-dirty'],
+        });
+        expect(written).toBe(0);
+        expect(readFileSync(join(outside, 'src/a.ts'), 'utf8')).toBe(NEW);
+      } finally {
+        if (ceiling === undefined) {
+          delete process.env.GIT_CEILING_DIRECTORIES;
+        } else {
+          process.env.GIT_CEILING_DIRECTORIES = ceiling;
+        }
+
+        removeScratch({ root: outside });
+      }
+    });
+
+    test('a failure while writing leaves every file as it was and no temporary file behind', async () => {
+      if (process.getuid?.() === 0) {
+        return;
+      }
+
+      seed({ 'sub/b.ts': OLD });
+      chmodSync(join(root, 'sub'), 0o555);
+
+      try {
+        const code = await run(['--write']);
+
+        expect(code).toBe(1);
+        expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(OLD);
+        expect(readFileSync(join(root, 'sub/b.ts'), 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('failed sub/b.ts');
+        expect(readdirSync(join(root, 'src')).filter((name) => name.endsWith('.codemod'))).toEqual(
+          [],
+        );
+      } finally {
+        chmodSync(join(root, 'sub'), 0o755);
+      }
+    });
+
+    test('a file swapped for a symlink while the codemod runs is not written through', async () => {
+      const elsewhere = makeScratch({ prefix: 'ardor-codemod-swap-' });
+      const outside = join(elsewhere, 'outside.ts');
+      writeFileSync(outside, OLD);
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        const result = original(opts);
+
+        if (opts.fileName.endsWith('src/a.ts')) {
+          rmSync(opts.fileName);
+          symlinkSync(outside, opts.fileName);
+        }
+
+        return result;
+      });
+      spies.push(spy);
+
+      try {
+        const code = await run(['--write']);
+
+        expect(code).toBe(1);
+        expect(readFileSync(outside, 'utf8')).toBe(OLD);
+        expect(errors.join('\n')).toContain('failed src/a.ts: it changed while the codemod ran');
+      } finally {
+        removeScratch({ root: elsewhere });
+      }
+    });
+
+    test('a hard link to a file outside the project is not written through, and the mode is kept', async () => {
+      const elsewhere = makeScratch({ prefix: 'ardor-codemod-hard-' });
+      const outside = join(elsewhere, 'outside.ts');
+      writeFileSync(outside, OLD);
+      rmSync(join(root, 'src/a.ts'));
+      linkSync(outside, join(root, 'src/a.ts'));
+      chmodSync(join(root, 'src/a.ts'), 0o755);
+
+      try {
+        const code = await run(['--write', '--allow-dirty']);
+
+        expect(code).toBe(0);
+        expect(readFileSync(join(root, 'src/a.ts'), 'utf8')).toBe(NEW);
+        expect(readFileSync(outside, 'utf8')).toBe(OLD);
+        expect(statSync(join(root, 'src/a.ts')).mode & 0o777).toBe(0o755);
+      } finally {
+        removeScratch({ root: elsewhere });
+      }
+    });
+
+    test('the reason of a failure is cleaned too, and --check exits 1 for it', async () => {
+      const original = Migration.run.bind(Migration);
+      const spy = spyOn(Migration, 'run').mockImplementation((opts) => {
+        if (opts.fileName.endsWith('src/a.ts')) {
+          throw new Error(`bad ${String.fromCharCode(27)}]0;title${String.fromCharCode(7)} \u202e`);
+        }
+
+        return original(opts);
+      });
+      spies.push(spy);
+
+      const code = await run(['--check']);
+
+      expect(code).toBe(1);
+      const text = errors.join('\n');
+      expect(text).toContain('failed src/a.ts: bad ?]0;title? ?');
+      expect(text).not.toContain(String.fromCharCode(27));
+      expect(text).not.toContain('\u202e');
+    });
+
+    test('a path that does not exist is a usage error, and a file that is not a source file is left alone', async () => {
+      writeFiles({ root, files: { 'notes.md': OLD } });
+
+      const result3 = await run(['nope']);
+      expect(result3).toBe(2);
+      expect(errors.join('\n')).toContain('no such file or folder');
+      const result4 = await run(['notes.md', '--write', '--allow-dirty']);
+      expect(result4).toBe(0);
+      expect(readFileSync(join(root, 'notes.md'), 'utf8')).toBe(OLD);
+      expect(existsSync(join(root, 'notes.md'))).toBe(true);
+    });
+
+    test('a control character in a file name is not sent to the terminal', async () => {
+      const name = `src/evil${String.fromCharCode(27)}[2Jx.ts`;
+      seed({ [name]: OLD });
+
+      await run([]);
+
+      expect([...output, ...errors].join('\n')).not.toContain(String.fromCharCode(27));
+      expect(output.join('\n')).toContain('src/evil?[2Jx.ts');
+    });
   });
 
   test('a usage error exits 2 and touches nothing', async () => {

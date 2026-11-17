@@ -23,7 +23,7 @@ never its `src` (rule B-05): `kernel -> react -> admin -> ardor`.
 | [`admin`](/packages/admin.md) | `@venizia/ardor-admin` | ARDOR react-admin adapter - the REST data provider, auth provider and i18n provider wired through IGNIS inversion, the ArdorApplication root component, the translate and notify hooks, and the English and Vietnamese message bundles. |
 | [`ardor`](/packages/ardor.md) | `@venizia/ardor` | ARDOR - frontend application framework for the VENIZIA family. |
 | [`kernel`](/packages/kernel.md) | `@venizia/ardor-kernel` | ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and provider bases, request/auth constants, binding keys, the network request service, runtime config and the HTTP repository (from IGNIS). |
-| [`react`](/packages/react.md) | `@venizia/ardor-react` | ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). |
+| [`react`](/packages/react.md) | `@venizia/ardor-react` | ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, element size, window dimensions). |
 <!-- okf:generated:packages-table end -->
 
 Every runtime package is ESM only (`dist/index.js` + `dist/index.d.ts`), emitted by
@@ -35,13 +35,13 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 
 | Path | What it is |
 |---|---|
-| `packages/` | The five packages above |
+| `packages/` | The four packages above |
 | `presets/` | The VULCAN preset templates, a sibling of `packages/`: `presets/app/{preset.json,files/}` for the app kind and `presets/lib/{preset.json,files/}` for the library kind. The release writes the built copy into the published package (`packages/ardor/dist/presets/app`), so the package's `vulcan` field and `--preset ardor` do not change |
-| `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist`; no gate builds them - their format is checked by `make lint-files`, and each keeps its own `compile` and `typecheck` scripts for use by hand |
+| `examples/` | Consumer apps (`5-mins-qs`, `ipc-data-provider`, `shell`, `vert-admin`) on `workspace:*` deps, built against the packages' `dist`; no gate builds them - their format is checked by `make lint-files`, and each keeps its own `compile` and `typecheck` scripts for use by hand |
 | `docs/wiki/` | VitePress site `@venizia/ardor-docs` - `content/` pages, `site/` theme, `scripts/` gates (sidebar, snippet compile) |
 | `docs/migration/` | A pointer to the wiki migration guide, kept because the npm deprecation of `@minimaltech/ra-core-infra` links to it |
-| `scripts/` | Root tooling grouped by purpose, with a table in `scripts/README.md`: `release/` (`release.ts`, `release-plan.ts`, `release-chain.ts`, `release-verify.ts`, `merge-back.ts`, `sync-pr.ts`, `release-version.ts`, `release-wait.ts`, `release-gates.ts` - see [Release and publish](/process/release-publish.md)), `preset/` (`vulcan-preset.ts`, `preset-smoke.ts`), `checks/` (`layer-boundaries.ts`, `atlas-smoke.ts`, `purity/manifest.ts`, `clean-install/`; the catalog, cycles, split-report and purity gates are `devz check` commands of `@venizia/dev-configs`; VULCAN's atlas computes releases and reads symbols itself - see [Atlas MCP server](/reference/atlas-mcp.md)), `build/` (`force-update.sh`, `refresh-catalog.ts`); each group keeps its tests in its own `__tests__/` |
-| `.agents/` | `rules.md` (ARDOR's layer over the VULCAN base rules, and the minimap shape the session digest prints), this knowledge bundle, `okf/` (the `providers` and `hooks-and-services` renderers behind two generated reference pages), `vulcan.manifest.json` (written by `make vulcan-sync`, committed so another project's atlas can read ARDOR) |
+| `scripts/` | Root tooling grouped by purpose, with a table in `scripts/README.md`: `release/` (`release.ts`, `release-plan.ts`, `release-chain.ts`, `release-verify.ts`, `merge-back.ts`, `sync-pr.ts`, `release-version.ts`, `release-wait.ts`, `release-gates.ts`, `github-release.ts`, `release-notes.ts`, `stamp-release.ts`, `gates-refreshed.ts` - see [Release and publish](/process/release-publish.md)), `preset/` (`vulcan-preset.ts`, `preset-smoke.ts`, `declared-imports.ts`), `checks/` (`layer-boundaries.ts`, `catalog-scope.ts`, `atlas-smoke.ts`, `purity/manifest.ts`, `clean-install/`; the catalog, cycles, split-report and purity gates are `devz check` commands of `@venizia/dev-configs`; VULCAN's atlas computes releases and reads symbols itself - see [Atlas MCP server](/reference/atlas-mcp.md)), `build/` (`refresh-catalog.ts`); each group keeps its tests in its own `__tests__/` |
+| `.agents/` | `rules.md` (ARDOR's layer over the VULCAN base rules, and the minimap shape the session digest prints), this knowledge bundle, `vulcan.manifest.json` (written by `make vulcan-sync`, committed so another project's atlas can read ARDOR) |
 | `.configs/` | `vulcan.config.mts` - the one VULCAN config (every project of the repository keeps its own `.configs/` with `lints/` and, where it builds, `builders/`; an example and the presets also keep `formatters/`, until `devz` reads the root `bunfig.toml`): rule slot, project hooks, knowledge roots, atlas packages |
 | `.mcp.json` (gitignored) | Registers the `atlas` MCP server (VULCAN's atlas run against this checkout); `vulcan sync` writes it on each machine - see [Atlas MCP server](/reference/atlas-mcp.md) |
 | `.githooks/` | `pre-commit` runs `make lint-all`; enabled by `make setup-hooks` |
@@ -49,10 +49,13 @@ lints and formats through a one-line `Makefile` that includes `make/project.mk`.
 | `bunfig.toml` | Bun's config for commands run at the root: only `telemetry = false`. Bun reads it only from the directory a command runs in, and no `minimumReleaseAge`: it would refuse the young versions that the floors at the latest need |
 | `Makefile`, `make/` | Every entry point; one job per `make/*.mk` file, `make/project.mk` is the per-package include; a bare `make` lists them |
 
+The feature packages of `shell` (`@shell-example/orders`, `@shell-example/catalog`) are workspace
+packages under `examples/shell/features/*`, a glob of their own in the root `package.json`.
+
 ## Dependency versions
 
 The root `workspaces.catalog` owns every shared range. `@venizia/*` entries track the **highest**
 published IGNIS line (prerelease included), refreshed by `bun scripts/build/refresh-catalog.ts highest`;
-`make catalog-check` fails a package that pins a catalogued dependency by hand.
+`make catalog-check` fails a package that pins a catalogued dependency by hand, or declares any other `@venizia/*` dependency as a range (`scripts/checks/catalog-scope.ts`).
 
 Related: [Build, run, test](/overview/build-run-test.md), [Design decisions](/overview/design-decisions.md).

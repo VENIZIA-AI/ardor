@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { describe, expect, test } from 'bun:test';
 import { inject } from '@venizia/ignis-inversion';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
+import { TestArdorApplication } from './test-application';
 import { datasource, repository, RepositoryTypes } from '@/base/metadata';
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
 import type { IApplicationInfo } from '@/common';
@@ -71,7 +71,7 @@ class PinnedByTargetRepository extends HttpRepository<{ id: string }> {
   }
 }
 
-class RemoteApplication extends BaseArdorApplication {
+class RemoteApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
     return { name: 'remote', version: '1.0.0', description: 'REMOTE repositories' };
   }
@@ -85,6 +85,7 @@ class RemoteApplication extends BaseArdorApplication {
 const started = async () => {
   const application = new RemoteApplication();
   await application.start();
+
   return application;
 };
 

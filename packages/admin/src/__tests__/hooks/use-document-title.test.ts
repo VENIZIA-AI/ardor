@@ -94,8 +94,10 @@ describe('useDocumentTitle', () => {
   test('puts back the original title when two calls with the same title unmount together', () => {
     const Titled = () => {
       useDocumentTitle({ title: 'Orders', appTitle: 'Manager' });
+
       return null;
     };
+
     const Screen = () =>
       React.createElement(
         React.Fragment,
@@ -124,11 +126,13 @@ describe('useDocumentTitle with fallback', () => {
 
   const Layout = (props: { appTitle: string; children?: React.ReactNode }) => {
     useDocumentTitle({ title: undefined, appTitle: props.appTitle, fallback: true });
+
     return React.createElement(React.Fragment, null, props.children);
   };
 
   const Screen = (props: { title: string }) => {
     useDocumentTitle({ title: props.title, appTitle: 'Manager' });
+
     return null;
   };
 
@@ -170,21 +174,25 @@ describe('useDocumentTitle with fallback', () => {
 
   test('follows a fallback change while a screen is mounted, and shows it after the screen', () => {
     const view = render(
-      layoutWith(React.createElement(Screen, { title: 'Orders' }), 'BANA - Manager'),
+      layoutWith(React.createElement(Screen, { title: 'Orders' }), 'Back Office - Manager'),
     );
 
-    view.rerender(layoutWith(React.createElement(Screen, { title: 'Orders' }), 'BANA - Quản lý'));
+    view.rerender(
+      layoutWith(React.createElement(Screen, { title: 'Orders' }), 'Back Office - Quản lý'),
+    );
     expect(document.title).toBe('Orders · Manager');
 
-    view.rerender(layoutWith(undefined, 'BANA - Quản lý'));
-    expect(document.title).toBe('BANA - Quản lý');
+    view.rerender(layoutWith(undefined, 'Back Office - Quản lý'));
+    expect(document.title).toBe('Back Office - Quản lý');
   });
 
   test('shows the later of two fallbacks, then the earlier one, then the original title', () => {
     const Inner = () => {
       useDocumentTitle({ title: undefined, appTitle: 'Inner', fallback: true });
+
       return null;
     };
+
     const tree = (withInner: boolean) =>
       React.createElement(
         Layout,

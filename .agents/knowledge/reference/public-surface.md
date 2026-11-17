@@ -12,11 +12,9 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (93)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
-- `AnyObject` type
-- `AnyType` type
 - `api` const
 - `App` class
 - `ArtifactBindingKeys` class
@@ -25,11 +23,11 @@ generated:
 - `Authentication` class
 - `AuthRecovery` class
 - `AuthTokenStore` class
-- `BaseArdorApplication` class
 - `BaseProvider` class
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserClipboard` class
 - `BrowserStorage` class
 - `BrowserUtility` class
 - `component` const
@@ -47,9 +45,11 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthTokenRecord` interface
+- `IAuthUser` interface
 - `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
@@ -65,12 +65,15 @@ generated:
 - `INoAuthOptions` interface
 - `IPermissionProvider` interface
 - `IRestDataProviderOptions` interface
+- `IRolePermissionProviderOptions` interface
+- `IScopedKeys` interface
 - `ISendParams` interface
-- `ISendResponse` type
 - `ISignInSession` interface
+- `IStorageChange` interface
 - `IStorageCodec` interface
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `repository` const
@@ -82,11 +85,16 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `service` const
+- `SESSION_CHANGED_CODE` const
 - `StorageAreas` class
+- `StorageCodecs` class
+- `TAuthProviderOptions` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
@@ -99,6 +107,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TStorageArea` type
 - `TStringConstValue` type
@@ -108,7 +117,7 @@ generated:
 - `ValueOrPromise` type
 - `ValueUtility` class
 
-### `@venizia/ardor-kernel/repository` (23)
+### `@venizia/ardor-kernel/repository` (24)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -128,15 +137,24 @@ generated:
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
+- `THttpFetch` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
+### `@venizia/ardor-kernel/testing` (5)
+
+- `FakeClipboard` class
+- `FakeIntersectionObserver` class
+- `FakeMatchMedia` class
+- `FakeResizeObserver` class
+- `FakeStorage` class
+
 ## react
 
-### `@venizia/ardor-react` (41)
+### `@venizia/ardor-react` (51)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -146,48 +164,61 @@ generated:
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
+- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
 - `IUseElementSizeOptions` interface
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
+- `IUseInjectableByKey` interface
+- `IUseInjectableByTarget` interface
 - `IUseInjectableKeysOverrides` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
+- `IUseInjectableKeyTypes` interface
+- `IUseIntersectionOptions` interface
+- `IUseResizeEffectOptions` interface
+- `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `SelectorHooks` class
+- `TElementTarget` type
 - `TUseInjectableKeys` type
 - `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
-- `useComponent` const
-- `useConfiguration` const
+- `useComponent` function
+- `useConfiguration` function
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
+- `useDocumentVisibility` const
 - `useElementSize` function
-- `useInjectable` const
-- `useInjectableContainer` const
-- `useProvider` const
-- `useRepository` const
-- `useService` const
-- `useSizer` const
+- `useInjectable` function
+- `useIntersection` function
+- `useMediaQuery` const
+- `useOnlineStatus` const
+- `useProvider` function
+- `useRepository` function
+- `useResizeEffect` const
+- `useService` function
 - `useStoredState` const
 - `useWindowDimensions` const
 
 ## admin
 
-### `@venizia/ardor-admin` (39)
+### `@venizia/ardor-admin` (50)
 
+- `AccessDeniedPage` const
 - `ApplicationProviders` class
 - `ArdorApplication` const
+- `BaseArdorApplication` class
 - `CountRestDataProvider` class
 - `DefaultAuthProvider` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultRestDataProvider` class
 - `englishMessages` const
@@ -199,15 +230,19 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `IReactAdminAuthProvider` type
 - `IReactAdminDataProvider` type
 - `IRestRequestOptions` interface
+- `IRouteAccess` interface
 - `IUseDocumentTitleOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
 - `SessionClearReasons` class
+- `TArdorRoute` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TI18nSource` type
 - `TSessionClearReason` type
@@ -215,22 +250,25 @@ generated:
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
+- `TUseUntypedTranslateFn` type
 - `useDocumentTitle` const
 - `useFeatures` const
 - `useHtmlLang` const
+- `useMenuEntries` const
 - `useNotifyError` const
 - `useRefreshToken` const
 - `useRequestHeaderLocale` const
+- `useRoles` const
 - `useTranslate` const
+- `useUntypedTranslate` const
 - `vietnameseMessages` const
 
 ## ardor
 
-### `@venizia/ardor` (174)
+### `@venizia/ardor` (204)
 
 - `AbstractArdorApplication` class
-- `AnyObject` type
-- `AnyType` type
+- `AccessDeniedPage` const
 - `api` const
 - `App` class
 - `ApplicationContext` const
@@ -248,6 +286,7 @@ generated:
 - `BaseService` class
 - `BindingKeys` class
 - `BindingNamespaces` class
+- `BrowserClipboard` class
 - `BrowserStorage` class
 - `BrowserUtility` class
 - `component` const
@@ -257,6 +296,7 @@ generated:
 - `datasource` const
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
+- `DefaultBindingTags` class
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
@@ -274,11 +314,13 @@ generated:
 - `IArtifactMetadata` interface
 - `IArtifactRegistration` interface
 - `IArtifactRegistrationOptions` interface
+- `IAuthChange` interface
 - `IAuthProvider` interface
 - `IAuthProviderOptions` interface
 - `IAuthRecoveryOptions` interface
 - `IAuthRejection` interface
 - `IAuthTokenRecord` interface
+- `IAuthUser` interface
 - `IBuildInfoFile` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
@@ -292,6 +334,7 @@ generated:
 - `II18nProviderOptions` interface
 - `IListFilter` interface
 - `ILoginParams` interface
+- `IMenuEntry` interface
 - `INetworkResponse` interface
 - `inject` const
 - `injectable` const
@@ -301,15 +344,19 @@ generated:
 - `IReactAdminDataProvider` type
 - `IRestDataProviderOptions` interface
 - `IRestRequestOptions` interface
+- `IRolePermissionProviderOptions` interface
+- `IRouteAccess` interface
+- `IScopedKeys` interface
 - `ISendParams` interface
-- `ISendResponse` type
 - `ISignInSession` interface
+- `IStorageChange` interface
 - `IStorageCodec` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface
 - `IUseBeforeUnloadOptions` interface
 - `IUseConfirmReturn` interface
+- `IUseCopyToClipboardOptions` interface
 - `IUseCopyToClipboardReturn` interface
 - `IUseDebounceOptions` interface
 - `IUseDebounceReturn` interface
@@ -317,16 +364,21 @@ generated:
 - `IUseElementSizeOptions` interface
 - `IUseElementSizeRefReturn` interface
 - `IUseElementSizeReturn` interface
+- `IUseInjectableByKey` interface
+- `IUseInjectableByTarget` interface
 - `IUseInjectableKeysOverrides` interface
+- `IUseInjectableKeyTypes` interface
+- `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
-- `IUseSizerOptions` interface
-- `IUseSizerReturn` interface
+- `IUseResizeEffectOptions` interface
+- `IUseStoredState` interface
 - `IUseStoredStateOptions` interface
 - `IUseStoredStateReturn` interface
 - `IUseTranslateKeysOverrides` interface
 - `ListFilterBuilder` class
 - `LocalStorageKeys` class
 - `model` const
+- `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
 - `provide` const
 - `repository` const
@@ -338,18 +390,26 @@ generated:
 - `RequestMethods` class
 - `RequestTypes` class
 - `ResponseReader` class
+- `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
+- `RUNTIME_CONFIG_INVALID_CODE` const
 - `RUNTIME_CONFIG_REQUIRED_CODE` const
 - `RuntimeConfig` class
 - `SelectorHooks` class
 - `service` const
+- `SESSION_CHANGED_CODE` const
 - `SessionClearReasons` class
 - `StorageAreas` class
+- `StorageCodecs` class
+- `TArdorRoute` type
+- `TAuthProviderOptions` type
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
+- `TElementTarget` type
 - `TEnvironment` type
 - `TFeature` type
+- `TFeatureMenuEntry` type
 - `TFeatureMessages` type
 - `TFullPaths` type
 - `TI18nSource` type
@@ -360,6 +420,7 @@ generated:
 - `TRepositoryType` type
 - `TRequestBodyType` type
 - `TRequestMethod` type
+- `TRequestTimeoutOptions` type
 - `TRequestType` type
 - `TSessionClearReason` type
 - `TStorageArea` type
@@ -371,30 +432,38 @@ generated:
 - `TUseTranslateKeys` type
 - `TUseTranslateKeysDefault` type
 - `TUseTranslateOptions` type
+- `TUseUntypedTranslateFn` type
+- `useApplicationContainer` const
 - `useApplicationContext` const
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
-- `useComponent` const
-- `useConfiguration` const
+- `useComponent` function
+- `useConfiguration` function
 - `useConfirm` const
 - `useCopyToClipboard` const
 - `useDebounce` const
 - `useDocumentTitle` const
+- `useDocumentVisibility` const
 - `useElementSize` function
 - `useFeatures` const
 - `useHtmlLang` const
-- `useInjectable` const
-- `useInjectableContainer` const
+- `useInjectable` function
+- `useIntersection` function
+- `useMediaQuery` const
+- `useMenuEntries` const
 - `useNotifyError` const
-- `useProvider` const
+- `useOnlineStatus` const
+- `useProvider` function
 - `useRefreshToken` const
-- `useRepository` const
+- `useRepository` function
 - `useRequestHeaderLocale` const
-- `useService` const
-- `useSizer` const
+- `useResizeEffect` const
+- `useRoles` const
+- `useService` function
 - `useStoredState` const
 - `useTranslate` const
+- `useUntypedTranslate` const
 - `useWindowDimensions` const
 - `ValueOf` type
 - `ValueOptional` type
@@ -403,7 +472,7 @@ generated:
 - `ValueUtility` class
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (23)
+### `@venizia/ardor/repository` (24)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
@@ -423,16 +492,21 @@ generated:
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
+- `THttpFetch` type
 - `THttpHeaders` type
 - `THttpHeadersResolver` type
 - `THttpQuery` type
 - `THttpReadShape` type
 - `THttpRepositoryOptions` type
 
-### `@venizia/ardor/testing` (4)
+### `@venizia/ardor/testing` (8)
 
 - `assertArdorApplicationBoots` const
+- `FakeClipboard` class
+- `FakeIntersectionObserver` class
+- `FakeMatchMedia` class
 - `FakeResizeObserver` class
+- `FakeStorage` class
 - `IAssertArdorApplicationBootsOptions` interface
 - `TBootSkip` type
 

@@ -4,8 +4,10 @@ The React bindings of [ARDOR](https://github.com/VENIZIA-AI/ardor): the applicat
 hooks that resolve out of it, and the UI hooks. No react-admin.
 
 ```bash
-bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
+bun add @venizia/ardor-react @venizia/ardor-kernel @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata react react-redux
 ```
+
+`@reduxjs/toolkit` is an optional peer: only the types of `DispatchHooks` use it.
 
 Most applications install [`@venizia/ardor`](https://www.npmjs.com/package/@venizia/ardor) instead,
 which re-exports this package.
@@ -15,15 +17,14 @@ which re-exports this package.
 | Area | Exports |
 |---|---|
 | Context | `ApplicationContext`, `useApplicationContext`, `useApplicationLogger` |
-| Injection | `useInjectable` - resolve a binding by key or by class |
+| Injection | `useInjectable` - resolve a binding by key or by class; the artifact hooks `useApplicationContainer`, `useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository` |
 | Redux | `DispatchHooks.create`, `SelectorHooks.create` - factories that bind your `RootState` and `AppDispatch` (the old `createAppDispatch` and `createAppSelectors` are removed; `bun run ardor codemod namespace` moves your code) |
-| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useSizer`, `useWindowDimensions` |
+| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useWindowDimensions`, `useElementSize`, `useResizeEffect`, `useIntersection`, `useStoredState`, `useMediaQuery`, `useDocumentVisibility`, `useOnlineStatus` |
 | Types | `TUseInjectableKeys` |
 
 ## Typing your own binding keys
 
-`IUseInjectableKeysOverrides` is declared here, so augment this package - an interface merges only
-into the module that declares it, never through a re-export:
+`IUseInjectableKeysOverrides` is declared here, so augment this package when it is the one you depend on:
 
 ```typescript
 declare module '@venizia/ardor-react' {
@@ -32,6 +33,8 @@ declare module '@venizia/ardor-react' {
   }
 }
 ```
+
+With `@venizia/ardor`, write `declare module '@venizia/ardor'` instead.
 
 ## License
 

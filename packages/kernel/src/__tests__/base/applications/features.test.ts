@@ -2,8 +2,8 @@ import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
-import { configuration, provide } from '@/base/metadata';
+import { TestArdorApplication } from './test-application';
+import { configuration, provide, service } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -18,6 +18,11 @@ class InventoryConfiguration {
 // Never decorated: a feature that lists it has lost its bindings.
 class ForgottenConfiguration {}
 
+@service()
+class OrderLedgerService {}
+
+class OrderService {}
+
 const inventory: IFeatureBase = {
   name: 'inventory',
   configurations: [InventoryConfiguration],
@@ -25,7 +30,7 @@ const inventory: IFeatureBase = {
 };
 
 const createApplication = (opts: { features: Array<IFeatureBase> }) => {
-  class FeatureApplication extends BaseArdorApplication {
+  class FeatureApplication extends TestArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'features', version: '1.0.0', description: 'feature modules' };
     }
@@ -90,8 +95,32 @@ describe('AbstractArdorApplication.features', () => {
     });
   });
 
+  test('binds the classes a feature lists in artifacts, which discovery found', async () => {
+    const application = createApplication({
+      features: [{ name: 'orders', artifacts: { services: [OrderLedgerService] } }],
+    });
+    await application.start();
+
+    expect(application.get({ key: 'services.OrderLedgerService' })).toBeInstanceOf(
+      OrderLedgerService,
+    );
+  });
+
+  test('throws when a feature lists a class in artifacts that was never discovered', async () => {
+    const application = createApplication({
+      features: [{ name: 'orders', artifacts: { services: [OrderService] } }],
+    });
+
+    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    expect(result).toMatchObject({
+      message: expect.stringContaining(
+        "[features] 'orders' lists OrderService in artifacts.services, which was never discovered | Decorate it with its stereotype and import its module before start()",
+      ),
+    });
+  });
+
   test('bindContext still overrides what a feature provides', async () => {
-    class OverridingApplication extends BaseArdorApplication {
+    class OverridingApplication extends TestArdorApplication {
       getAppInfo(): IApplicationInfo {
         return { name: 'features', version: '1.0.0', description: 'feature modules' };
       }

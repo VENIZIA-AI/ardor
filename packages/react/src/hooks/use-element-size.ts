@@ -1,14 +1,18 @@
 import React from 'react';
 
+import { ResizeObservation, type TResizeBox } from './resize-observation';
+
+/** Which element `useElementSize` measures, which box it reads, and how it rounds. */
 export interface IUseElementSizeOptions {
   /** The element to measure. Leave it out to measure the element the returned `ref` is given to. */
   ref?: React.RefObject<Element | null>;
   /** @default 'content-box' */
-  box?: 'content-box' | 'border-box';
+  box?: TResizeBox;
   /** Round width and height to whole pixels, so a fractional size does not render again. @default false */
   round?: boolean;
 }
 
+/** The size `useElementSize` read, in CSS pixels. */
 export interface IUseElementSizeReturn {
   width: number;
   height: number;
@@ -16,7 +20,9 @@ export interface IUseElementSizeReturn {
   measured: boolean;
 }
 
+/** The size of `useElementSize` called without a `ref` option, with the ref to give an element. */
 export interface IUseElementSizeRefReturn extends IUseElementSizeReturn {
+  /** Give it to the element to measure. */
   ref: React.RefCallback<Element>;
 }
 
@@ -24,7 +30,7 @@ const ZERO_SIZE: IUseElementSizeReturn = { width: 0, height: 0, measured: false 
 
 const readSize = (opts: {
   entry: ResizeObserverEntry;
-  box: 'content-box' | 'border-box';
+  box: TResizeBox;
   round: boolean;
 }): IUseElementSizeReturn => {
   const { entry, box, round } = opts;
@@ -44,6 +50,16 @@ const readSize = (opts: {
  * is read when the effect runs, so it follows a new `ref`, `box` or `round`, not a `ref.current`
  * that is replaced later; pass a stable `ref`. A new element, `box` or `round` starts again from
  * 0 by 0 with `measured` false.
+ *
+ * @example
+ * ```tsx
+ * import { useElementSize } from '@venizia/ardor';
+ *
+ * export function Panel() {
+ *   const { ref, width, height, measured } = useElementSize();
+ *   return <div ref={ref}>{measured ? `${width} x ${height}` : '...'}</div>;
+ * }
+ * ```
  */
 export function useElementSize(
   opts: IUseElementSizeOptions & { ref: React.RefObject<Element | null> },
@@ -51,6 +67,7 @@ export function useElementSize(
 export function useElementSize(
   opts?: Omit<IUseElementSizeOptions, 'ref'>,
 ): IUseElementSizeRefReturn;
+
 export function useElementSize(
   opts: IUseElementSizeOptions = {},
 ): IUseElementSizeReturn | IUseElementSizeRefReturn {
@@ -62,41 +79,31 @@ export function useElementSize(
     setSize((current) => (current.measured ? ZERO_SIZE : current));
 
     const target = ref ? ref.current : element;
-    if (!target || typeof ResizeObserver === 'undefined') {
+
+    if (!target) {
       return () => {};
     }
 
-    let frame: number | undefined;
-    let latest: ResizeObserverEntry | undefined;
+    const observation = ResizeObservation.observe({
+      box,
+      onFrame: (entries) => {
+        const entry = entries.at(-1);
 
-    const observer = new ResizeObserver((entries) => {
-      latest = entries[entries.length - 1];
-      if (frame !== undefined) {
-        return;
-      }
-
-      frame = requestAnimationFrame(() => {
-        frame = undefined;
-        if (!latest) {
+        if (!entry) {
           return;
         }
 
-        const next = readSize({ entry: latest, box, round });
+        const next = readSize({ entry, box, round });
         setSize((current) => {
           return current.measured && current.width === next.width && current.height === next.height
             ? current
             : next;
         });
-      });
+      },
     });
-    observer.observe(target, { box });
+    observation.sync([target]);
 
-    return () => {
-      observer.disconnect();
-      if (frame !== undefined) {
-        cancelAnimationFrame(frame);
-      }
-    };
+    return observation.stop;
   }, [ref, element, box, round]);
 
   return ref ? size : { ...size, ref: setElement };

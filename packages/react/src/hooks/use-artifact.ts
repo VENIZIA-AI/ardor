@@ -1,98 +1,144 @@
 import { BindingNamespaces } from '@venizia/ardor-kernel';
-import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
+import { resolveInjectable } from './resolve-injectable';
 import {
-  useInjectable,
-  useInjectableContainer,
+  useApplicationContainer,
+  type IUseInjectableByKey,
+  type IUseInjectableByTarget,
+  type IUseInjectableKeyTypes,
   type TUseInjectableKeys,
-  type TUseInjectableOptions,
 } from './use-injectable';
 
 /** By class: the return type is inferred from the target. */
-export interface IUseArtifactByTarget<TInstance> {
-  container?: Container;
-  target: TClass<TInstance>;
-  key?: never;
-}
+export interface IUseArtifactByTarget<TInstance> extends IUseInjectableByTarget<TInstance> {}
 
-/** By key: the caller supplies the type. */
-export interface IUseArtifactByKey {
-  container?: Container;
-  key: TUseInjectableKeys;
-  target?: never;
-}
+/** By key: `useProvider` takes the type from `IUseInjectableKeyTypes` when the key is listed there; the other hooks take it from the caller. */
+export interface IUseArtifactByKey<
+  TKey extends TUseInjectableKeys = TUseInjectableKeys,
+> extends IUseInjectableByKey<TKey> {}
 
 /**
- * `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration`. Unlike
- * `useInjectable`, a `{ target }` must be bound under the hook's namespace, or it throws.
+ * `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration`: the same
+ * resolution as `useInjectable`, and a `{ target }` must be bound under the hook's namespace, or it throws.
  */
-const useArtifactInNamespace = <TInstance>(opts: {
-  options: TUseInjectableOptions;
+const useArtifactInNamespace = (opts: {
+  options: IUseArtifactByTarget<unknown> | IUseArtifactByKey;
   namespace: string;
   hook: string;
-}): TInstance => {
+}): unknown => {
   const { options, namespace, hook } = opts;
+  const container = useApplicationContainer({ container: options.container });
 
-  // Same inputs as `useInjectable`, so the check and the resolve read one container.
-  const container = useInjectableContainer({ container: options.container });
-
-  // A `key` carries its namespace in the string; only a `target` is checked.
-  if (options.target) {
-    const key = container.getMetadataRegistry().getBindingKey({ target: options.target });
-    // `String(...)`: a key may be a symbol, which a template literal throws on.
-    const bound = key === undefined ? undefined : String(key);
-
-    if (bound && !bound.startsWith(`${namespace}.`)) {
-      throw getError({
-        message: `[${hook}] ${options.target.name} is bound as "${bound}", not under "${namespace}". Use the hook for that namespace, or change the stereotype on the class.`,
-      });
-    }
-  }
-
-  return useInjectable<TInstance>(options);
+  return resolveInjectable({
+    container,
+    key: options.key,
+    target: options.target,
+    hook,
+    namespace,
+  });
 };
 
-export const useService = <TInstance = unknown>(
+/** Resolves the instance bound under the `service` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+export function useService<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance =>
-  useArtifactInNamespace<TInstance>({
+): TInstance;
+
+export function useService(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
+  return useArtifactInNamespace({
     options: opts,
     namespace: BindingNamespaces.SERVICE,
     hook: 'useService',
   });
+}
 
-export const useProvider = <TInstance = unknown>(
+/**
+ * Resolves the instance bound under the `provider` namespace. A `target` bound under another
+ * namespace throws.
+ *
+ * - `{ target }` returns the instance type of the class.
+ * - `{ key }` of a provider of `CoreBindings` returns what that key holds: `IDataProvider`,
+ *   `IAuthProvider` or react-admin's `I18nProvider`, with no generic and no augmentation. Any key listed
+ *   in `IUseInjectableKeyTypes` does the same.
+ * - Any other `{ key }` returns the type you pass as the generic, which is your claim.
+ *
+ * @example
+ * ```tsx
+ * import { CoreBindings, useProvider } from '@venizia/ardor';
+ *
+ * export function Providers() {
+ *   const dataProvider = useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER });
+ *   const authProvider = useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
+ *   return <span>{typeof dataProvider.getList} {typeof authProvider.getRoles}</span>;
+ * }
+ * ```
+ */
+export function useProvider<TKey extends keyof IUseInjectableKeyTypes>(
+  opts: IUseArtifactByKey<TKey>,
+): IUseInjectableKeyTypes[TKey];
+export function useProvider<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance =>
-  useArtifactInNamespace<TInstance>({
+): TInstance;
+
+export function useProvider(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
+  return useArtifactInNamespace({
     options: opts,
     namespace: BindingNamespaces.PROVIDER,
     hook: 'useProvider',
   });
+}
 
-export const useComponent = <TInstance = unknown>(
+/** Resolves the instance bound under the `component` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+export function useComponent<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance =>
-  useArtifactInNamespace<TInstance>({
+): TInstance;
+
+export function useComponent(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
+  return useArtifactInNamespace({
     options: opts,
     namespace: BindingNamespaces.COMPONENT,
     hook: 'useComponent',
   });
+}
 
-export const useConfiguration = <TInstance = unknown>(
+/** Resolves the instance bound under the `configuration` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+export function useConfiguration<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance =>
-  useArtifactInNamespace<TInstance>({
+): TInstance;
+
+export function useConfiguration(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
+  return useArtifactInNamespace({
     options: opts,
     namespace: BindingNamespaces.CONFIGURATION,
     hook: 'useConfiguration',
   });
+}
 
-export const useRepository = <TInstance = unknown>(
+/**
+ * Resolves the instance bound under the `repository` namespace by `target` or `key`. A `target` bound under another namespace throws.
+ *
+ * @example
+ * ```tsx
+ * import { repository, useRepository } from '@venizia/ardor';
+ *
+ * @repository()
+ * class ProductRepository {
+ *   findStock(productId: string) { return productId ? 42 : 0; }
+ * }
+ *
+ * export function StockDisplay() {
+ *   const productRepository = useRepository({ target: ProductRepository });
+ *   return <span>Stock: {productRepository.findStock('p1')}</span>;
+ * }
+ * ```
+ */
+export function useRepository<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance =>
-  useArtifactInNamespace<TInstance>({
+): TInstance;
+
+export function useRepository(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
+  return useArtifactInNamespace({
     options: opts,
     namespace: BindingNamespaces.REPOSITORY,
     hook: 'useRepository',
   });
+}

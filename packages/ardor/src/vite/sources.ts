@@ -1,16 +1,11 @@
-import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { promisify } from 'node:util';
 
 import { BuildInfoResolver } from '@venizia/ignis-boot/build-info';
 import { getError } from '@venizia/ignis-inversion';
 
-import type { IBuildInfoSources, IFrameworkVersions, TGitReadResult } from './common';
+import type { IBuildInfoSources, IFrameworkVersions } from './common';
 
-const runFile = promisify(execFile);
-
-const GIT_TIMEOUT_MS = 5_000;
 const MANIFEST_FILE = 'package.json';
 const PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
 
@@ -135,28 +130,9 @@ export const readFrameworkVersions = async (opts: {
   return { versions, missing, invalid };
 };
 
-/** Runs git without a shell, so no argument is ever interpreted. */
-export const readGit = async (opts: { root: string; args: string[] }): Promise<TGitReadResult> => {
-  try {
-    const { stdout } = await runFile('git', opts.args, {
-      cwd: opts.root,
-      timeout: GIT_TIMEOUT_MS,
-      windowsHide: true,
-    });
-    const value = stdout.trim();
-
-    return value === ''
-      ? { ok: false, reason: `git ${opts.args.join(' ')} printed nothing` }
-      : { ok: true, value };
-  } catch (error) {
-    return { ok: false, reason: `git ${opts.args.join(' ')} failed | ${String(error)}` };
-  }
-};
-
 export const defaultSources: IBuildInfoSources = {
   resolveRecord: (opts) => {
     return BuildInfoResolver.getInstance().resolve({ root: opts.root });
   },
-  readGit,
   readFrameworkVersions,
 };

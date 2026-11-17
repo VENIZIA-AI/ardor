@@ -8,28 +8,27 @@ controller with totals read from `content-range`.
 
 ## Run
 
-`vert` needs PostgreSQL and Redis - follow its README first:
+`vert` needs PostgreSQL, Redis and its ES256 keys - follow its README first (`docker compose up -d`, `cp .env.example .env`, the keys, then):
 
 ```bash
 cd ../../../ignis/examples/vert
-cp .env.example .env.development     # database credentials
-bun install && bun run migrate:dev && bun run server:dev      # API on :3000
+bun install && bun run migrate:dev && bun run server:dev      # API on :1190, under /v1/api
 ```
 
 Then this console:
 
 ```bash
 cd examples/vert-admin
-bun run server:dev                    # Vite on :5173, proxying /api to :3000
+bun run server:dev                    # Vite on :5173, proxying /v1/api to :1190
 ```
 
-Sign in with a user seeded in `vert` (`bun run seed:authz` there creates test accounts).
+Create a user with `POST /v1/api/auth/sign-up`, as the README of `vert` shows, and sign in with it. `bun run seed:authz` there makes organizations, roles and permissions, no user, and it deletes the rows of those tables first.
 
 | File | What it shows |
 | --- | --- |
 | `src/application.ts` | The application alone, with `AutoArtifacts` from the Vite plugin |
-| `src/constants/vert-paths.ts`, `src/services/`, `src/providers/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, the 401 refresh as a `refreshToken` hook of a network service subclass returned by `createNetworkService`, and the bindings - one decorated class per file |
-| `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useInjectable`, `useNotifyError` with an `ApplicationError` |
+| `src/constants/vert-paths.ts`, `src/services/`, `src/configurations/` | `VertPaths` (the IGNIS auth component's routes), `IdentityService`, and the provider options, with the 401 refresh set by `authRecovery.refreshTokenPath` and run by the default network service - one decorated class per file |
+| `src/pages/configurations.tsx` | `useListContext` over a CRUD controller, `useService`, `useNotifyError` with an `ApplicationError` |
 
 ---
 

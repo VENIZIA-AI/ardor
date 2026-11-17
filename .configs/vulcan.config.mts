@@ -1,15 +1,29 @@
 import type { VulcanConfig } from '@venizia/vulcan';
 
-// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). okf, atlas, make and
-// release all read the one `packages` list below.
+// ARDOR's project config for VULCAN (agent, knowledge and atlas tooling). okf, atlas and the manifest read
+// the one `packages` list below; the release scripts and the Makefile keep their own.
 export default {
   agents: ['claude'],
+
+  // The Venizia-stack rules: the app scripts, bun scripts, verb-first names, const classes and the awaited instance.
+  packs: ['venizia'],
 
   // The base slot V-W-01: git writes happen only on the user's word (ARDOR's own W-01 agrees).
   rules: { 'V-W-01': 'on-user-word' },
 
   // W-00: no agent signature in a commit message.
   commit: { message: { agent: { signature: 'deny' } } },
+
+  // A write outside the project folder is denied, not asked about.
+  guard: { outside: 'deny', runners: { allow: ['shadcn'] } },
+
+  // The wiki palette is read from the manifest copy of this theme (docs/wiki/site/.vitepress/config.mts).
+  theme: {
+    accent: '#0277bd',
+    accentDark: '#38bdf8',
+    accentText: '#01579b',
+    tokens: { 'accent-ink': { dark: '#03121c' } },
+  },
 
   // Team-shared Claude settings that `vulcan sync` merges into `.claude/settings.json`. The two
   // plugins are off here by choice of the team, not a VULCAN default.
@@ -35,14 +49,14 @@ export default {
     bundle: '.agents/knowledge',
     wiki: 'docs/wiki/content',
     changelogs: 'docs/wiki/content/changelogs',
-    syncAreas: '.agents/knowledge/process/knowledge-sync-areas.md',
+    // Version folders (changelogs/<X.Y.Z>/log.md and migration.yaml) are the changelog from 0.4.5 on; the dated files up to `datedUntil` are history.
+    migrationFrom: '0.4.5',
+    datedUntil: '2026-11-15',
+    codemodCommand: ['ardor', 'codemod'],
   },
 
   okf: {
     renderers: [
-      'source-map',
-      { id: 'providers', module: '.agents/okf/providers.ts' },
-      { id: 'hooks-and-services', module: '.agents/okf/hooks-and-services.ts' },
       {
         id: 'binding-keys',
         options: {
@@ -56,17 +70,6 @@ export default {
     regions: [
       { id: 'packages-table', file: 'overview/monorepo-layout.md', renderer: 'packages-table' },
     ],
-    sections: {
-      order: [
-        'overview',
-        'architecture',
-        'packages',
-        'conventions',
-        'process',
-        'examples',
-        'reference',
-      ],
-    },
     coverage: [
       { name: 'packages', path: 'packages/*' },
       { name: 'examples', path: 'examples/*' },

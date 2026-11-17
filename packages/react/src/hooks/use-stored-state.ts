@@ -1,31 +1,56 @@
 import React from 'react';
 
-import { BrowserStorage, type IStorageCodec, type TStorageArea } from '@venizia/ardor-kernel';
+import {
+  BrowserStorage,
+  type IStorageCodec,
+  StorageCodecs,
+  type TStorageArea,
+} from '@venizia/ardor-kernel';
 
+/** What `useStoredState` stores, where and how. */
 export interface IUseStoredStateOptions<TValue> {
-  key: string;
+  /** The storage key. `null` turns the storage off: nothing is read, written or watched, `value` starts from `defaultValue` and `setValue` keeps it in memory only, as `useState` does. */
+  key: string | null;
+  /** The value while the key holds nothing. */
   defaultValue: TValue;
   /** @default 'local' */
   storage?: TStorageArea;
   /** @default JSON */
   codec?: IStorageCodec<TValue>;
+  /** Write storage once, this many milliseconds after the last `setValue`; `value` changes at once. Above 0, also pass a stable `codec`. @default 0 */
+  writeDelayMs?: number;
 }
 
+/** The value `useStoredState` holds, and how to change or remove it. */
 export interface IUseStoredStateReturn<TValue> {
+  /** The stored value, or `defaultValue` when the key holds nothing. */
   value: TValue;
+  /** Stores a value, or the result of an updater called with the current one. */
   setValue: (next: TValue | ((current: TValue) => TValue)) => void;
+  /** Removes the key, so `value` is `defaultValue` again. */
   remove: () => void;
 }
 
-/** Reads the stored text as it is, `null` when there is none. */
-const RAW_TEXT: IStorageCodec<string | null> = {
-  encode: (text) => text ?? '',
-  decode: (text) => text,
-};
+/** The call signatures of `useStoredState`. */
+export interface IUseStoredState {
+  /** With a codec, the value type is the codec's: a literal `defaultValue` is checked against it, not widened past it. */
+  <TValue>(
+    opts: Omit<IUseStoredStateOptions<TValue>, 'defaultValue' | 'codec'> & {
+      defaultValue: NoInfer<TValue>;
+      codec: IStorageCodec<TValue>;
+    },
+  ): IUseStoredStateReturn<TValue>;
+  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  <TValue>(opts: IUseStoredStateOptions<TValue>): IUseStoredStateReturn<TValue>;
+}
+
+const RAW_TEXT = StorageCodecs.text();
 
 interface IKept<TValue> {
-  key: string;
+  /** `null`: kept in memory, with no key to write to. */
+  key: string | null;
   storage?: TStorageArea;
+  codec?: IStorageCodec<TValue>;
   value: TValue;
 }
 
@@ -45,41 +70,117 @@ interface IDecoded<TValue> {
  * A value kept in `localStorage` or `sessionStorage`, in step with other hooks on the key, with code
  * that writes through `BrowserStorage`, and with other tabs. Pass a stable `codec` and `defaultValue`.
  * A write or a removal that the storage refuses is kept in this hook until the storage next changes.
+ * With `writeDelayMs` the value waits in the same place for the delay: a change of the storage from
+ * outside drops it, and an unmount, a new key or storage, a `pagehide` event or a hidden page writes it at once.
+ *
+ * @example
+ * ```tsx
+ * import { useStoredState } from '@venizia/ardor';
+ *
+ * export function ThemeToggle() {
+ *   const { value, setValue } = useStoredState({ key: '@app/prefs/theme', defaultValue: 'light' });
+ *   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
+ * }
+ * ```
  */
-export const useStoredState = <TValue>(
+export const useStoredState: IUseStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,
 ): IUseStoredStateReturn<TValue> => {
-  const { key, defaultValue, storage, codec } = opts;
+  const { key, defaultValue, storage, codec, writeDelayMs = 0 } = opts;
   const decoded = React.useRef<IDecoded<TValue>>(undefined);
+  const keptRef = React.useRef<IKept<TValue>>(undefined);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined);
   const [kept, setKept] = React.useState<IKept<TValue>>();
+
+  // Every change of the kept value ends a pending write; only a delayed setValue starts one.
+  const keep = React.useCallback((next: IKept<TValue> | undefined) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = undefined;
+    keptRef.current = next;
+    setKept(next);
+  }, []);
+
+  const write = React.useCallback(
+    (entry: IKept<TValue> & { key: string }) => {
+      keep(BrowserStorage.set(entry) ? undefined : entry);
+    },
+    [keep],
+  );
+
+  const isDelayed = writeDelayMs > 0;
+
+  const flush = React.useCallback(() => {
+    const pending = keptRef.current;
+
+    if (timerRef.current !== undefined && pending?.key != null) {
+      write({ ...pending, key: pending.key });
+    }
+  }, [write]);
+
+  // A new key or storage, an unmount, and a page that closes or hides write the pending value to the
+  // key it was set for: closing a tab does not unmount.
+  React.useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') {
+        flush();
+      }
+    };
+
+    // The value kept in memory under a `null` key does not follow the hook to a real key, or back to a later `null`.
+    if (key !== null && keptRef.current?.key === null) {
+      keep(undefined);
+    }
+
+    if (isDelayed) {
+      window.addEventListener('pagehide', flush);
+      document.addEventListener('visibilitychange', onHide);
+    }
+
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+      flush();
+    };
+  }, [key, storage, isDelayed, flush, keep]);
 
   const subscribe = React.useCallback(
     (listener: () => void) => {
+      if (key === null) {
+        return () => {};
+      }
+
       return BrowserStorage.subscribe({
         key,
         storage,
         listener: () => {
-          setKept(undefined);
+          keep(undefined);
           listener();
         },
       });
     },
-    [key, storage],
+    [key, storage, keep],
   );
 
   const getSnapshot = React.useCallback((): TValue => {
+    if (key === null) {
+      return defaultValue;
+    }
+
     const text = BrowserStorage.get({ key, storage, fallback: null, codec: RAW_TEXT });
+
     if (text === null) {
       return defaultValue;
     }
 
     const hit = decoded.current;
+
     if (hit?.text === text && hit.key === key && hit.storage === storage && hit.codec === codec) {
       return hit.value;
     }
 
     const value = BrowserStorage.get({ key, fallback: defaultValue, storage, codec });
     decoded.current = { key, storage, codec, text, value };
+
     return value;
   }, [key, storage, codec, defaultValue]);
 
@@ -88,19 +189,41 @@ export const useStoredState = <TValue>(
 
   const setValue = React.useCallback(
     (next: TValue | ((current: TValue) => TValue)) => {
-      const resolved = isUpdater(next) ? next(value) : next;
-      const isStored = BrowserStorage.set({ key, value: resolved, storage, codec });
+      const hit = keptRef.current;
+      const current = hit?.key === key && hit.storage === storage ? hit.value : getSnapshot();
+      const nextValue = isUpdater(next) ? next(current) : next;
 
-      setKept(isStored ? undefined : { key, storage, value: resolved });
+      if (key === null) {
+        keep({ key, storage, codec, value: nextValue });
+
+        return;
+      }
+
+      const entry = { key, storage, codec, value: nextValue };
+
+      if (!(writeDelayMs > 0)) {
+        write(entry);
+
+        return;
+      }
+
+      keep(entry);
+      timerRef.current = setTimeout(() => write(entry), writeDelayMs);
     },
-    [key, storage, codec, value],
+    [key, storage, codec, writeDelayMs, getSnapshot, keep, write],
   );
 
   const remove = React.useCallback(() => {
+    if (key === null) {
+      keep(undefined);
+
+      return;
+    }
+
     const isRemoved = BrowserStorage.remove({ key, storage });
 
-    setKept(isRemoved ? undefined : { key, storage, value: defaultValue });
-  }, [key, storage, defaultValue]);
+    keep(isRemoved ? undefined : { key, storage, value: defaultValue });
+  }, [key, storage, defaultValue, keep]);
 
   return { value, setValue, remove };
 };

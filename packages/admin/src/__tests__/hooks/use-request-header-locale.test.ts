@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import React from 'react';
-import { CoreAdminContext } from 'ra-core';
+import { CoreAdminContext, useLocaleState } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
-import { cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 
 import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
 import { BaseHelper } from '@venizia/ignis-helpers/core';
@@ -172,9 +172,46 @@ describe('useRequestHeaderLocale', () => {
 
     rerender({ key: 'x-second-locale' });
 
-    expect(harness.setHeadersMock).toHaveBeenCalledTimes(2);
     expect(harness.setHeadersMock).toHaveBeenLastCalledWith({
       headers: { 'x-second-locale': harness.expectedLocale },
     });
+  });
+
+  test('sets the header again with the new locale when the locale changes', async () => {
+    const harness = createTestHarness({});
+
+    const { result } = renderHook(
+      () => {
+        useRequestHeaderLocale();
+
+        return useLocaleState();
+      },
+      { wrapper: harness.wrapper },
+    );
+
+    expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      const [, setLocale] = result.current;
+      setLocale('vi');
+    });
+
+    expect(harness.setHeadersMock).toHaveBeenLastCalledWith({ headers: { 'x-locale': 'vi' } });
+  });
+
+  test('sets the locale header once, however many times the component renders', () => {
+    const harness = createTestHarness({});
+
+    const { rerender } = renderHook(
+      () => {
+        useRequestHeaderLocale();
+      },
+      { wrapper: harness.wrapper },
+    );
+
+    rerender();
+    rerender();
+
+    expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
   });
 });

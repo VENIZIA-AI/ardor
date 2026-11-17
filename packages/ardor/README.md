@@ -13,6 +13,8 @@ control comes from `@venizia/ignis-inversion`, and the data layer speaks the que
 bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/ignis-kernel @venizia/ignis-helpers reflect-metadata
 ```
 
+The React-side peers (`react`, `react-dom`, `react-redux`, `@reduxjs/toolkit`, `@tanstack/react-query`, `ra-core`, `ra-i18n-polyglot`, `react-router-dom`) are installed too; the full `bun add` line is in the [setup guide](https://ardor.venizia.ai/guides/get-started/setup).
+
 ## The `Ardor` namespace
 
 `Ardor` gathers every React hook of the react and admin packages under one name: `Ardor.useRepository(...)`, `Ardor.useTranslate()`. It is the same function as the bare `useRepository`, the Rules of Hooks check the call, and a bundler keeps only the hooks you use, so it adds no bytes to an app.
@@ -20,8 +22,10 @@ bun add @venizia/ardor @venizia/ignis-inversion @venizia/ignis-filter @venizia/i
 ```tsx
 import { Ardor } from '@venizia/ardor';
 
+import { OrdersRepository } from './orders.repository';
+
 export const Orders = () => {
-  const repository = Ardor.useRepository({ key: 'repositories.Orders' });
+  const repository = Ardor.useRepository({ target: OrdersRepository });
 
   return <div>{String(repository)}</div>;
 };
@@ -29,36 +33,35 @@ export const Orders = () => {
 
 ## Moving to the new names
 
-`bun run ardor codemod namespace src` lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it, `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package.
+`bun run ardor codemod namespace src` (inside a package that depends on `@venizia/ardor`; never through `bunx`, `bun x` or `npx`, which fetch an unrelated package named `ardor` when the bin is not installed) lists the removed bare names that have a replacement (`getRuntimeConfig` to `RuntimeConfig.get`, `isDefined` to `ValueUtility.isDefined`, `NullableType` to `undefined | null | void`, `Logger.getInstance({ scope })` to `LoggerFactory.getLogger([scope])`, ...) and the removed names with none, and writes nothing; `--write` applies it (it refuses a file with local changes unless you add `--allow-dirty`), `--check` fails while any is left, and `--hooks` also moves hooks imported from `@venizia/ardor` to `Ardor.useX`. It needs the `typescript` package. `ardor codemod --list` prints the name of each codemod.
+
+## Subpaths
+
+- `@venizia/ardor/repository` - `HttpRepository` and the datasource settings; needs the optional peer `@venizia/ignis-connectors`.
+- `@venizia/ardor/testing` - `assertArdorApplicationBoots` and fakes of `ResizeObserver`, `IntersectionObserver`, `matchMedia`, storage and the clipboard, for your test suite.
+- `@venizia/ardor/vite` - `buildInfoFile`, a Vite plugin that writes the build info file; needs the optional peers `@venizia/ignis-boot` and `vite`.
 
 ## Quick start
+
+`BaseArdorApplication` binds the default providers. An application binds their options:
 
 ```typescript
 import 'reflect-metadata';
 
 import {
-  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
   configuration,
   CoreBindings,
-  DefaultAuthProvider,
-  DefaultAuthService,
-  DefaultI18nProvider,
-  DefaultRestDataProvider,
   type IApplicationInfo,
-  inject,
+  type IRestDataProviderOptions,
   provide,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
-// Every framework binding, declared: start() binds each @provide method under its key, SINGLETON.
 @configuration()
 export class SellerConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  restDataProviderOptions(): IRestDataProviderOptions {
     return {
       url: import.meta.env.VITE_API_URL,
       noAuthPaths: ['/auth/sign-in'],
@@ -66,35 +69,8 @@ export class SellerConfiguration {
   }
 
   @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-  authProviderOptions() {
-    return {
-      paths: { afterLogin: '/dashboard' },
-    };
-  }
-
-  @provide({ key: CoreBindings.I18N_PROVIDER_OPTIONS })
-  i18nProviderOptions() {
-    return {};
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
-  authService() {
-    return this.application.instantiate(DefaultAuthService);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
-  authProvider() {
-    return this.application.instantiate(DefaultAuthProvider).value(this.application);
-  }
-
-  @provide({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
-  i18nProvider() {
-    return this.application.instantiate(DefaultI18nProvider).value(this.application);
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: true, paths: { afterLogin: '/dashboard' } };
   }
 }
 
@@ -108,7 +84,8 @@ export class Application extends BaseArdorApplication {
 ```
 
 The full guide, including the root component and the typed hooks, is in the
-[repository README](https://github.com/VENIZIA-AI/ardor#readme).
+[Quickstart](https://ardor.venizia.ai/guides/get-started/5-minute-quickstart) and the
+[references](https://ardor.venizia.ai/references/hooks).
 
 ## Migrating from `@minimaltech/ra-core-infra`
 

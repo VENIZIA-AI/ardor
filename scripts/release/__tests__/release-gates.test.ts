@@ -303,30 +303,66 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   const workflow = workflowText;
   const testJob = jobsOf(workflow).test ?? '';
   const releaseJob = jobsOf(workflow).publish ?? '';
-  const loops = 'for package in ${PACKAGES//,/ }; do';
 
-  test.each([
-    'Assert internal dependencies link to the workspace',
-    'Build',
-    'Lint',
-    'Test the package',
-    'Purity gate',
-  ])('the test job runs "%s" for every package of the run', (name) => {
-    const step = stepsOf(testJob).find((candidate) => candidate.name === name);
+  test('the test job runs every gate in one step, for the packages of the run', () => {
+    const gates = stepsOf(testJob).filter((candidate) => candidate.name === 'Gates');
 
-    expect(step?.text).toContain(loops);
+    expect(gates).toHaveLength(1);
+    expect(gates[0]?.text).toContain(
+      '\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n',
+    );
   });
 
-  test.each([
-    'Test the repository scripts',
-    'Purity probe self-test',
-    'Check dependency catalog',
-    'VULCAN preset smoke',
-  ])('the test job runs "%s" once', (name) => {
-    const found = stepsOf(testJob).filter((candidate) => candidate.name === name);
+  describe('make gates lists the gates of the packages it is given', () => {
+    /** The first line `make -n gates` prints is the chain of sub-makes, one `make --no-print-directory <target>` each. */
+    const targets = (packages: string): string[] => {
+      const proc = Bun.spawnSync(
+        ['make', '-n', '--no-print-directory', 'gates', `GATE_PACKAGES=${packages}`],
+        { cwd: ROOT },
+      );
 
-    expect(found).toHaveLength(1);
-    expect(found[0]?.text).not.toContain(loops);
+      return (proc.stdout.toString().split('\n')[0] ?? '')
+        .split(' && ')
+        .map((part) => part.match(/^make --no-print-directory ([\w-]+)$/)?.[1])
+        .filter((target): target is string => target !== undefined);
+    };
+    const gatesOf = (names: string[]): string[] => [
+      'links-check',
+      'copies-check',
+      ...names,
+      ...names.map((name) => `lint-${name}`),
+      ...names.map((name) => `test-${name}`),
+      'test-scripts',
+      'purity-test',
+      ...names.map((name) => `purity-${name}`),
+      'catalog-check',
+    ];
+
+    test('all four packages: the links and copies gates first, the preset smoke last', () => {
+      expect(targets('kernel react admin ardor')).toEqual([
+        ...gatesOf(['kernel', 'react', 'admin', 'ardor']),
+        'preset-smoke',
+      ]);
+    });
+
+    test('a run without ardor has no preset smoke', () => {
+      expect(targets('kernel react')).toEqual(gatesOf(['kernel', 'react']));
+    });
+
+    test('a run of ardor alone still builds its three dependencies first', () => {
+      const proc = Bun.spawnSync(['make', '-n', 'gates', 'GATE_PACKAGES=ardor'], { cwd: ROOT });
+      const rebuilt = [
+        ...proc.stdout.toString().matchAll(/Rebuilding (@venizia\/ardor[\w-]*)\.\.\./g),
+      ];
+
+      expect(proc.exitCode).toBe(0);
+      expect(rebuilt.map((match) => match[1])).toEqual([
+        '@venizia/ardor-kernel',
+        '@venizia/ardor-react',
+        '@venizia/ardor-admin',
+        '@venizia/ardor',
+      ]);
+    });
   });
 
   test("clean-install is the chain's, after the sibling is out, and not the test job's", () => {
@@ -345,7 +381,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
         order: [
           'Refuse a stable when a branch moved since the plan',
           'Install the npm that publishes',
-          'Force update workspace',
+          'Refresh the catalog',
           'Install',
           'Release the packages',
           'Report the run',
@@ -492,8 +528,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
     expect(workflow).toContain('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true');
   });
 
-  test('the ARDOR-only steps stay: the preset, the version input, the catalog refresh', () => {
-    expect(workflow).toContain('make preset-smoke');
+  test('the ARDOR-only steps stay: the preset build, the version input, the catalog refresh', () => {
     expect(workflow).toContain('scripts/release/release-plan.ts plan');
     expect(workflow).toContain('scripts/build/refresh-catalog.ts "$CATALOG_TAG"');
     expect(chainText).toContain('scripts/preset/vulcan-preset.ts');
@@ -741,7 +776,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
   ];
   const REPORT_STEP = 'Report the run';
   const GITHUB_RELEASE_STEP = 'Create the GitHub Release';
-  const LOOP = 'for package in ${PACKAGES//,/ }; do';
+  const HISTORY_STEP = 'Check the changelog history';
 
   const guards = {
     // S4.5, C3.5: a heal runs on develop or main and nowhere else; a release is planned unless it is a heal.
@@ -891,6 +926,43 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         !/GH_TOKEN|GITHUB_TOKEN|GH_REPO|GH_HOST/.test(publish.split(/\n {4}steps:\n/)[0] ?? '')
       );
     },
+    // #726: a stable checks the changelog history from the previous stable tag the plan found, on the whole history;
+    // a prerelease, or a stable with no earlier stable, skips it.
+    changelogHistoryForAStable: ({ workflow }: IFiles): boolean => {
+      const jobs = jobsOf(workflow);
+      const steps = stepsOf(jobs.test ?? '');
+      const names = steps.map((step) => step.name);
+      const history = steps.find((step) => step.name === HISTORY_STEP)?.text ?? '';
+      const checkout = steps.find((step) => step.name === 'Checkout')?.text ?? '';
+
+      return (
+        /\n {6}changelog_base: \$\{\{ steps\.plan\.outputs\.changelog_base \}\}\n/.test(
+          jobs.plan ?? '',
+        ) &&
+        /\n {10}fetch-depth: 0\n/.test(checkout) &&
+        names.filter((name) => name === HISTORY_STEP).length === 1 &&
+        names.indexOf(HISTORY_STEP) > names.indexOf('Install') &&
+        names.indexOf('Install') > -1 &&
+        /\n {8}if: \$\{\{ needs\.plan\.outputs\.kind == 'stable' && needs\.plan\.outputs\.changelog_base != '' \}\}\n/.test(
+          history,
+        ) &&
+        /\n {10}CHANGELOG_BASE: \$\{\{ needs\.plan\.outputs\.changelog_base \}\}\n/.test(history) &&
+        /\n {8}run: bun node_modules\/\.bin\/vulcan changelog check --history --base "\$CHANGELOG_BASE"\n/.test(
+          history,
+        ) &&
+        !/continue-on-error/.test(history)
+      );
+    },
+    // #726: in a stable the release commit of ardor writes released: into the version folder and adds the file.
+    chainStampsTheFolder: ({ chain }: IFiles): boolean => {
+      const code = withoutComments(chain);
+
+      return (
+        code.includes("'scripts/release/stamp-release.ts'") &&
+        code.includes('...stampSteps,') &&
+        code.includes('...(stamp === undefined ? [] : [stamp.log]),')
+      );
+    },
     // S4.3: a stable builds on IGNIS latest and a prerelease on the highest line: the test and publish jobs read the plan's tag.
     catalogTagFromPlan: ({ workflow }: IFiles): boolean => {
       const jobs = jobsOf(workflow);
@@ -901,7 +973,6 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         return (
           job.includes('CATALOG_TAG: ${{ needs.plan.outputs.catalog_tag }}') &&
           job.includes('refresh-catalog.ts "$CATALOG_TAG"') &&
-          job.includes('force-update "$CATALOG_TAG"') &&
           !job.includes('refresh-catalog.ts highest')
         );
       });
@@ -1092,41 +1163,24 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
       /\n {6}packages:\n {8}type: string\n/.test(workflow) &&
       !/\n {6}package:\n/.test(workflow) &&
       !workflow.includes('chain_released'),
-    // S1b.5: the test job loops each gate over the packages of the run, runs no clean-install, and the
-    // preset smoke runs when the run holds ardor.
-    testJobLoops: ({ workflow }: IFiles): boolean => {
+    // S1b.5: the test job runs `make gates` once, for the packages of the run, with the pinned VULCAN, and no clean-install.
+    testJobGates: ({ workflow }: IFiles): boolean => {
       const testJob = jobsOf(workflow).test ?? '';
-      const steps = stepsOf(testJob);
-      const looped = [
-        'Assert internal dependencies link to the workspace',
-        'Build',
-        'Lint',
-        'Test the package',
-        'Purity gate',
-      ];
-      const smoke = steps.find((step) => step.name === 'VULCAN preset smoke')?.text ?? '';
+      const gates = stepsOf(testJob).find((step) => step.name === 'Gates')?.text ?? '';
 
       return (
         !testJob.includes('clean-install') &&
-        looped.every(
-          (name) => steps.find((step) => step.name === name)?.text.includes(LOOP) === true,
-        ) &&
-        /\n {8}if: .*',ardor,'/.test(smoke)
+        gates.includes('\n        run: make gates GATE_PACKAGES="${PACKAGES//,/ }"\n') &&
+        gates.includes('VULCAN_CMD:') &&
+        !/\n {8}(?:if|shell|continue-on-error):/.test(gates)
       );
     },
-    // #434: one copy of every @venizia package is checked in the test job, after the install and before the build,
-    // so a stable IGNIS copy next to a prerelease is named before it surfaces as a type error.
-    oneCopy: ({ workflow }: IFiles): boolean => {
+    // #434: the gates run after the install; their first ones (the links and the one copy of every @venizia package,
+    // named before it surfaces as a type error) come before the build because `make gates` lists them first.
+    installBeforeGates: ({ workflow }: IFiles): boolean => {
       const names = stepsOf(jobsOf(workflow).test ?? '').map((step) => step.name);
-      const step = stepsOf(jobsOf(workflow).test ?? '').find(
-        (candidate) => candidate.name === 'Assert one copy of every @venizia package',
-      );
 
-      return (
-        step?.text.includes('bun scripts/release/release-gates.ts single-copy') === true &&
-        names.indexOf('Install') < names.indexOf('Assert one copy of every @venizia package') &&
-        names.indexOf('Assert one copy of every @venizia package') < names.indexOf('Build')
-      );
+      return names.indexOf('Install') > -1 && names.indexOf('Install') < names.indexOf('Gates');
     },
     // S1b.3: the release job ends with a report that runs even when the job is cancelled or times out.
     reportAlways: ({ workflow }: IFiles): boolean => {
@@ -1406,6 +1460,65 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
           '      - name: Report the run\n',
           '      - name: Create the GitHub Release\n        run: echo other\n\n      - name: Report the run\n',
         ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step is gone',
+      mutate: (text) =>
+        text.replace(
+          / {6}# A stable also checks the changelog history[\s\S]*?--base "\$CHANGELOG_BASE"\n/,
+          '',
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step runs for a prerelease too',
+      mutate: (text) =>
+        text.replace(
+          "if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}",
+          "if: ${{ needs.plan.outputs.changelog_base != '' }}",
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step is allowed to fail',
+      mutate: (text) =>
+        text.replace(
+          '      - name: Check the changelog history\n',
+          '      - name: Check the changelog history\n        continue-on-error: true\n',
+        ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the history step checks from another base',
+      mutate: (text) => text.replace('--base "$CHANGELOG_BASE"', '--base ardor-v0.4.7'),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the plan job does not output the base',
+      mutate: (text) =>
+        text.replace('      changelog_base: ${{ steps.plan.outputs.changelog_base }}\n', ''),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the test job checks out a shallow history',
+      mutate: (text) =>
+        text.replace(
+          /(\n {2}test:\n[\s\S]*?ref: \$\{\{ github\.sha \}\}\n) {10}fetch-depth: 0\n/,
+          '$1',
+        ),
+    },
+    {
+      guard: 'chainStampsTheFolder',
+      name: 'the release commit of ardor no longer stamps',
+      file: 'chain',
+      mutate: (text) => text.replace('      ...stampSteps,\n', ''),
+    },
+    {
+      guard: 'chainStampsTheFolder',
+      name: 'the release commit does not add the stamped file',
+      file: 'chain',
+      mutate: (text) => text.replace('...(stamp === undefined ? [] : [stamp.log]),', ''),
     },
     {
       guard: 'githubRelease',
@@ -1773,50 +1886,58 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         ),
     },
     {
-      guard: 'oneCopy',
-      name: 'the copies gate runs after the build',
-      mutate: (text) =>
-        text
-          .replace(
-            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
-            '',
-          )
-          .replace(
-            '      - name: Lint\n',
-            '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n\n      - name: Lint\n',
-          ),
+      guard: 'installBeforeGates',
+      name: 'the gates run without the install before them',
+      mutate: (text) => text.replace('      - name: Install\n        run: bun install\n', ''),
     },
     {
-      guard: 'oneCopy',
-      name: 'the copies gate is removed',
+      guard: 'testJobGates',
+      name: 'the Gates step names one package',
+      mutate: (text) => text.replace('GATE_PACKAGES="${PACKAGES//,/ }"', 'GATE_PACKAGES=kernel'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step ignores a failure with `|| true`',
       mutate: (text) =>
         text.replace(
-          '      - name: Assert one copy of every @venizia package\n        run: bun scripts/release/release-gates.ts single-copy\n',
-          '',
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }"',
+          'run: make gates GATE_PACKAGES="${PACKAGES//,/ }" || true',
         ),
     },
     {
-      guard: 'testJobLoops',
-      name: 'a gate of the test job names one package',
+      guard: 'testJobGates',
+      name: 'the Gates step continues on error',
       mutate: (text) =>
         text.replace(
-          'for package in ${PACKAGES//,/ }; do\n            make "lint-$package"',
-          'for package in kernel; do\n            make "lint-$package"',
+          '      - name: Gates\n',
+          '      - name: Gates\n        continue-on-error: true\n',
         ),
     },
     {
-      guard: 'testJobLoops',
+      guard: 'testJobGates',
+      name: 'the Gates step is switched off',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        if: false\n'),
+    },
+    {
+      guard: 'testJobGates',
+      name: 'the Gates step runs in another shell',
+      mutate: (text) =>
+        text.replace('      - name: Gates\n', '      - name: Gates\n        shell: sh\n'),
+    },
+    {
+      guard: 'testJobGates',
       name: 'the test job runs clean-install again',
       mutate: (text) =>
         text.replace(
-          '      - name: Check dependency catalog\n',
-          '      - name: Clean-install gate\n        run: make clean-install-kernel\n\n      - name: Check dependency catalog\n',
+          '      - name: Gates\n',
+          '      - name: Clean-install gate\n        run: make clean-install-kernel\n\n      - name: Gates\n',
         ),
     },
     {
-      guard: 'testJobLoops',
-      name: 'the preset smoke runs without ardor in the run',
-      mutate: (text) => text.replace(/\n {8}if: \$\{\{ contains\(format\([^\n]*\n/, '\n'),
+      guard: 'testJobGates',
+      name: 'the Gates step loses its VULCAN pin',
+      mutate: (text) => text.replace('VULCAN_CMD:', 'OTHER_CMD:'),
     },
     {
       guard: 'reportAlways',
@@ -1882,6 +2003,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
     expect(Object.keys(jobsOf(files.workflow)).toSorted()).toEqual([
       'approve',
       'atlas-index',
+      'deploy-docs',
       'heal-next',
       'plan',
       'publish',
@@ -2354,6 +2476,53 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
 // atlas pair of a release commit or tag. package-release.yml does it in a job of its own, as VULCAN's own release does:
 // the same action, pinned by the same commit, the same secret, one step for each package tag, and the key never
 // shares a job with the npm identity.
+// The same push starts no deploy-docs.yml run either, so the version box of the changelog would keep the prerelease it
+// had. A job of its own starts the deploy once the tags are pushed, with actions: write and nothing else.
+describe('package-release.yml starts the docs deploy after the tags are pushed, in a job of its own', () => {
+  const workflow = workflowText;
+  const jobs = jobsOf(workflow);
+  const job = jobs['deploy-docs'] ?? '';
+
+  test('the job reads back from the YAML: after publish, with actions: write only', () => {
+    const parsed = Bun.YAML.parse(workflow) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; permissions?: Record<string, string>; steps?: { name: string }[] }
+      >;
+    };
+    const deploy = parsed.jobs['deploy-docs'];
+
+    expect(deploy?.needs).toEqual(['plan', 'publish']);
+    expect(deploy?.permissions).toEqual({ actions: 'write' });
+    expect(deploy?.steps?.map((step) => step.name)).toEqual(['Start the docs deploy']);
+  });
+
+  test('it runs after publish, also after a chain that stopped, and never fails the run', () => {
+    expect(job).toContain(
+      "if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'failure') }}",
+    );
+    expect(job).toMatch(/\n {4}continue-on-error: true\n/);
+    expect(job).toMatch(/\n {4}timeout-minutes: 5\n/);
+  });
+
+  test('it dispatches deploy-docs.yml on develop with the Actions token, and holds no other permission', () => {
+    expect(job).toContain('run: gh workflow run deploy-docs.yml --ref develop');
+    expect(job).toContain('GH_TOKEN: ${{ github.token }}');
+    expect(job).not.toContain('secrets.');
+    expect(job).not.toContain('id-token');
+    expect(job).not.toContain('contents:');
+    expect(job).not.toContain('environment:');
+    expect([...withoutComments(workflow).matchAll(/actions: write/g)]).toHaveLength(1);
+  });
+
+  test('deploy-docs.yml has a manual run for the docs job, which is what this dispatch starts', () => {
+    const docs = readFileSync(join(ROOT, '.github/workflows/deploy-docs.yml'), 'utf8');
+
+    expect(docs).toContain('workflow_dispatch:');
+    expect(docs).toMatch(/default: 'docs'/);
+  });
+});
+
 describe('package-release.yml publishes the atlas pair of each release tag, in a job of its own', () => {
   const workflow = workflowText;
   const jobs = jobsOf(workflow);
@@ -2400,6 +2569,7 @@ describe('package-release.yml publishes the atlas pair of each release tag, in a
       'approve',
       'publish',
       'atlas-index',
+      'deploy-docs',
       'heal-next',
     ]);
     expect(job).toContain('needs: [plan, publish]');

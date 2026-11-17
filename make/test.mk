@@ -5,7 +5,7 @@ TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 PURITY_TARGETS := $(addprefix purity-,$(PACKAGES))
 CLEAN_INSTALL_TARGETS := $(addprefix clean-install-,$(PACKAGES))
 
-.PHONY: test test-all test-scripts gates gates-refreshed links-check copies-check purity purity-test clean-install layer-check cycles-check \
+.PHONY: test test-all test-examples test-scripts gates gates-refreshed links-check copies-check purity purity-test clean-install layer-check cycles-check \
         size-check $(TEST_TARGETS) $(PURITY_TARGETS) $(CLEAN_INSTALL_TARGETS)
 
 # ----------------------------------------------------------------------------
@@ -23,30 +23,38 @@ test-all: $(TEST_TARGETS)
 $(TEST_TARGETS): test-%:
 	@$(MAKE) --no-print-directory -C packages/$* test
 
+# The test script of every example (the shell example has real tests). Needs a build.
+test-examples:
+	@echo "🧪 Testing the examples..."
+	@$(foreach e,$(EXAMPLES),bun run --cwd examples/$(e) test &&) true
+
 # The repository gate scripts' own regression tests - nothing else runs them.
 test-scripts:
 	@echo "🔍 Running the repository gate scripts' regression tests..."
 	@bun test scripts/release/__tests__ scripts/preset/__tests__ scripts/checks/__tests__
 
 # ----------------------------------------------------------------------------
-# GATES - the local twin of the Test job of package-release.yml: the same targets, in the same order.
-# scripts/release/__tests__/gates-twin.test.ts keeps the two lists equal. Needs `bun install`. Run it
-# without -j: the order is the point.
+# GATES - what the Test job of package-release.yml runs, in this order: it calls `make gates` for the packages of
+# the run, so a local `make gates` is the same list. `GATE_PACKAGES="kernel react"` limits the per-package gates, and the
+# preset smoke runs only when ardor is among them. PACKAGES stays the whole list: the build rules and the dependency
+# order (`react: kernel`) are generated from it. Needs `bun install`. Run it without -j: the order is the point.
 # ----------------------------------------------------------------------------
-GATE_TARGETS := links-check copies-check $(PACKAGES) $(addprefix lint-,$(PACKAGES)) $(addprefix test-,$(PACKAGES)) \
-                test-scripts purity-test $(addprefix purity-,$(PACKAGES)) catalog-check preset-smoke
+GATE_PACKAGES ?= $(PACKAGES)
+GATE_TARGETS := links-check copies-check $(GATE_PACKAGES) $(addprefix lint-,$(GATE_PACKAGES)) $(addprefix test-,$(GATE_PACKAGES)) \
+                test-scripts purity-test $(addprefix purity-,$(GATE_PACKAGES)) catalog-check \
+                $(if $(filter ardor,$(GATE_PACKAGES)),preset-smoke)
 
 gates:
 	@$(foreach target,$(GATE_TARGETS),$(MAKE) --no-print-directory $(target) &&) true
 
 # `gates` after the Test job's catalog refresh, in a scratch copy under .agents/local/tmp: what a plain checkout cannot see.
-# The commands come from the workflow (scripts/release/__tests__/gates-refreshed.test.ts). About two minutes; run it before every dispatch.
+# The commands come from the workflow (scripts/release/__tests__/gates-refreshed.test.ts). About four minutes; run it before every dispatch.
 gates-refreshed:
 	@bun scripts/release/gates-refreshed.ts
 
 # Every ARDOR sibling resolves to the workspace, never to a registry tarball (the first gate of the Test job).
 links-check:
-	@$(foreach p,$(PACKAGES),bun scripts/release/release-gates.ts links packages/$(p) &&) true
+	@$(foreach p,$(GATE_PACKAGES),bun scripts/release/release-gates.ts links packages/$(p) &&) true
 
 # Every @venizia/* package resolves to one version, never a stable copy next to a prerelease (the second gate of the Test job).
 copies-check:
@@ -59,7 +67,7 @@ copies-check:
 # ----------------------------------------------------------------------------
 purity:
 	@echo "🔍 Checking browser purity for all claimed entries..."
-	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts
+	@$(DEVZ) check purity --claims scripts/checks/purity/manifest.ts
 
 # The positive controls of the shared purity engine, run against ARDOR's fixtures and claims. They live outside every package, so nothing else runs them.
 purity-test:
@@ -68,7 +76,7 @@ purity-test:
 
 $(addprefix purity-,$(PACKAGES)): purity-%:
 	@echo "🔍 Checking browser purity for $(call PKG_NAME,$*)..."
-	@bun x --no-install devz check purity --claims scripts/checks/purity/manifest.ts $*
+	@$(DEVZ) check purity --claims scripts/checks/purity/manifest.ts $*
 
 # ----------------------------------------------------------------------------
 # CLEAN-INSTALL TARGETS
@@ -91,7 +99,7 @@ layer-check:
 
 # `--max 0` is what makes this a gate; without it the script only reports.
 cycles-check:
-	@$(foreach p,$(PACKAGES),bun x --no-install devz check module-cycles packages/$(p)/dist --max 0 &&) true
+	@$(foreach p,$(PACKAGES),$(DEVZ) check module-cycles packages/$(p)/dist --max 0 &&) true
 
 # Bundle budgets, measured brotlied with every third-party peer external.
 size-check:

@@ -12,32 +12,7 @@ packages: ['@venizia/ardor-admin', '@venizia/ardor']
 
 **In one line.** Override `onSessionStarted` and `onSessionCleared` on `DefaultAuthProvider` to keep a socket or a per-user cache in step with the session. You no longer override `checkAuth` for it.
 
-```ts
-import {
-  type AnyType,
-  DefaultAuthProvider,
-  type IAuthTokenRecord,
-  type TSessionClearReason,
-} from '@venizia/ardor';
-
-declare const socket: {
-  connect: (opts: { token: string }) => Promise<void>;
-  disconnect: (opts: { reason: string }) => void;
-};
-
-export class SocketAuthProvider extends DefaultAuthProvider {
-  protected override async onSessionStarted(opts: {
-    token: IAuthTokenRecord;
-    user: AnyType;
-  }): Promise<void> {
-    await socket.connect({ token: opts.token.value });
-  }
-
-  protected override onSessionCleared(opts: { reason: TSessionClearReason }): void {
-    socket.disconnect({ reason: opts.reason });
-  }
-}
-```
+The example is in [Session hooks](../references/auth-provider#session-hooks).
 
 ## What changed
 

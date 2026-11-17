@@ -24,8 +24,22 @@ const create = (opts: {
 };
 
 describe('AuthRecovery.refresh', () => {
+  test('a caller of another session starts its own refresh, and callers of one session share one', async () => {
+    const { recovery, refresh } = create({});
+
+    const results = await Promise.all([
+      recovery.refresh({ key: 'alice' }),
+      recovery.refresh({ key: 'alice' }),
+      recovery.refresh({ key: 'bob' }),
+    ]);
+
+    expect(results).toEqual([true, true, true]);
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
   test('every caller in flight shares one refresh, and the next burst makes a new one', async () => {
     let release: (value: boolean) => void = () => {};
+
     let started = 0;
     const { recovery, refresh } = create({
       // Only the first refresh is held open; a later one settles at once.

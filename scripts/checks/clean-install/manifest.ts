@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -80,14 +80,7 @@ export const listPackageDirectories = (): string[] =>
   readdirSync(join(REPOSITORY_ROOT, 'packages'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((name) => {
-      try {
-        readPackageManifest({ package: name });
-        return true;
-      } catch {
-        return false;
-      }
-    });
+    .filter((name) => existsSync(join(REPOSITORY_ROOT, 'packages', name, 'package.json')));
 
 /** Rows come from each `exports` map, so a new sub-path is gated the day it is published. */
 export const deriveInstallRows = (opts: { claims: IInstallClaim[] }): IInstallRow[] => {

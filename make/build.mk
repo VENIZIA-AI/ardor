@@ -1,9 +1,7 @@
-# Install, clean, git hooks, the package build order, the wiki build, and the force-update targets.
-
-UPDATE_TARGETS := $(addprefix update-,$(PACKAGES))
+# Install, clean, git hooks, the package build order and the wiki build.
 
 .PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all typecheck-examples \
-        $(PACKAGES) $(UPDATE_TARGETS)
+        $(PACKAGES)
 
 # ----------------------------------------------------------------------------
 # INSTALL & CLEAN
@@ -63,12 +61,3 @@ EXAMPLES := $(notdir $(patsubst %/,%,$(wildcard examples/*/)))
 typecheck-examples:
 	@echo "🔎 Type-checking the examples..."
 	@$(foreach e,$(EXAMPLES),bun run --cwd examples/$(e) typecheck &&) true
-
-# ----------------------------------------------------------------------------
-# FORCE UPDATE TARGETS - ARDOR tracks the HIGHEST published IGNIS line (prerelease included),
-# never `latest`. The root catalog is refreshed first, by `bun scripts/build/refresh-catalog.ts highest`; the
-# per-package force-update skips catalogued ranges by design. The release workflow runs both.
-# ----------------------------------------------------------------------------
-$(UPDATE_TARGETS): update-%:
-	@echo "🔄 Force updating $(call PKG_NAME,$*)..."
-	@bun run --filter "$(call PKG_NAME,$*)" force-update highest

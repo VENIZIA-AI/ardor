@@ -1,5 +1,6 @@
 import type { TranslationMessages } from 'ra-core';
 
+/** The built-in Vietnamese messages, the same shape as `englishMessages`. */
 export const vietnameseMessages: TranslationMessages = {
   ra: {
     action: {
@@ -209,6 +210,13 @@ export const vietnameseMessages: TranslationMessages = {
         secondaryText: 'Văn bản phụ',
         tertiaryText: 'Văn bản thứ ba',
       },
+    },
+  },
+  ardor: {
+    access_denied: {
+      title: 'Không có quyền truy cập',
+      message: 'Bạn không có quyền mở trang này.',
+      home: 'Về trang chủ',
     },
   },
 };

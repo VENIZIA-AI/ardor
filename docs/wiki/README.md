@@ -20,7 +20,7 @@ It is a private workspace package, not published to npm.
 ```bash
 bun run docs:dev       # dev server
 make docs              # build, with the sidebar and snippet gates
-bun run docs:preview   # preview the build
+bun run --filter '@venizia/ardor-docs' docs:preview   # preview the build
 make lint-wiki         # lint the site and its scripts
 ```
 
@@ -29,8 +29,8 @@ make lint-wiki         # lint the site and its scripts
 ```
 docs/wiki/
 ├── content/
-│   ├── guides/          # get-started (quickstart, philosophy), migration
-│   ├── references/      # application, features, binding keys, data provider, network, auth, i18n, hooks
+│   ├── guides/          # core-concepts, get-started, migrations, tutorials
+│   ├── references/      # application, features, binding keys, data provider, network, auth, i18n, permission, repository, hooks, testing, types
 │   ├── extensions/      # socket client, count provider, custom transport
 │   ├── best-practices/  # module augmentation, binding keys, services, auth recovery
 │   └── changelogs/      # one entry per change users can see or use

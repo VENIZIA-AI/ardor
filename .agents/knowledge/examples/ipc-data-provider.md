@@ -39,7 +39,7 @@ Worker port.
 
 Before touching ARDOR at all, model whatever channel you're bridging to. Here it's a `COMMANDS`
 map keyed by resource name, each entry a function taking `ISendParams` and returning raw data. An
-`invoke()` helper looks up the command and returns a `Promise<ISendResponse<TResponse>>`, rejecting
+`invoke()` helper looks up the command and returns a `Promise<INetworkResponse<TResponse>>`, rejecting
 with a `{ message, statusCode }` shape if the command doesn't exist - matching the error shape the
 rest of ARDOR expects, per [Error flow](/architecture/error-flow.md).
 
@@ -50,7 +50,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   override send<TResponse = unknown>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<ISendResponse<TResponse>> {
+  }): Promise<INetworkResponse<TResponse>> {
     return invoke<TResponse>({ command: opts.resource, payload: opts.params });
   }
 }
@@ -76,28 +76,32 @@ provider options, even though the URL is never dereferenced by `send()`:
 
 ```ts
 @configuration()
-class IpcConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE }) private readonly application: TArdorApplication,
-  ) {}
-
+export class IpcConfiguration {
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
-    return {
-      url: 'ipc://local',
-      noAuthPathRegex: /./,
-    };
+  restDataProviderOptions(): IRestDataProviderOptions {
+    return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(IpcDataProvider).value(this.application);
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
+  }
+}
+
+class Application extends BaseArdorApplication {
+  // ... getAppInfo()
+
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(IpcDataProvider)
+      .setScope(BindingScopes.SINGLETON);
   }
 }
 ```
 
 `registerArtifacts()` binds each `@provide` method under its key, lazy and singleton, following
 [Binding key namespaces](/conventions/binding-key-namespaces.md) conventions for `CoreBindings`.
+`BaseArdorApplication` binds the default providers itself; the one line in `bindContext()` replaces the data provider with the IPC one.
 `noAuthPathRegex: /./` opts out of the auth pipeline entirely (every path is no-auth) -
 see [No-auth paths](/architecture/no-auth-paths.md) - since this example has no session concept.
 
@@ -123,4 +127,4 @@ To add a new transport to ARDOR: subclass the default provider, override `send()
 transport has no HTTP, the CRUD methods as well, since they bypass `send()` - bind the subclass in
 `bindContext()`, and consume it through the same `IDataProvider` interface everywhere else. See
 [Adding a provider](/process/adding-a-provider.md) for the general checklist and
-[Providers reference](/reference/providers.md) for what ships today.
+[Public surface](/reference/public-surface.md) for what ships today.

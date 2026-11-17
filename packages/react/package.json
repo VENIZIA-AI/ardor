@@ -1,7 +1,7 @@
 {
   "name": "@venizia/ardor-react",
-  "version": "0.4.7",
-  "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, sizer, window dimensions). No react-admin.",
+  "version": "0.4.8-20",
+  "description": "ARDOR React bindings - the application context, the injectable and logger hooks that read it, typed Redux hook factories, and the framework-agnostic UI hooks (debounce, autosave, confirm, clipboard, element size, window dimensions). No react-admin.",
   "keywords": [
     "ardor",
     "ardor-react",
@@ -35,6 +35,7 @@
     "LICENSE.md",
     "dist",
     "!/**/__tests__",
+    "!**/*.map",
     "!**/*.tsbuildinfo"
   ],
   "type": "module",
@@ -54,12 +55,10 @@
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "dependencies": {
-    "@venizia/ardor-kernel": "workspace:*",
-    "lodash": "catalog:"
+    "@venizia/ardor-kernel": "workspace:*"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "catalog:",
@@ -67,8 +66,8 @@
     "@size-limit/preset-small-lib": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/bun": "catalog:",
-    "@types/lodash": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-filter": "catalog:",
     "@venizia/ignis-helpers": "catalog:",
@@ -78,6 +77,7 @@
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "react-redux": "catalog:",
     "reflect-metadata": "catalog:",
     "size-limit": "catalog:",
@@ -86,10 +86,10 @@
   },
   "peerDependencies": {
     "@reduxjs/toolkit": ">=2.13.0",
-    "@venizia/ignis-filter": "^0.4.6",
-    "@venizia/ignis-helpers": "^0.4.7",
-    "@venizia/ignis-inversion": "^0.4.6",
-    "@venizia/ignis-kernel": "^0.4.7",
+    "@venizia/ignis-filter": "^0.4.7",
+    "@venizia/ignis-helpers": "^0.4.8",
+    "@venizia/ignis-inversion": "^0.4.7",
+    "@venizia/ignis-kernel": "^0.4.8",
     "react": ">=19.3.1",
     "react-redux": ">=9.3.0",
     "reflect-metadata": ">=0.2.2"
@@ -107,11 +107,10 @@
         "@reduxjs/toolkit",
         "@venizia/ardor-kernel",
         "@venizia/ignis-inversion",
-        "lodash",
         "react",
         "react-redux"
       ],
-      "limit": "2.55 KB"
+      "limit": "4080 B"
     }
   ],
   "engines": {

@@ -1,18 +1,20 @@
 import 'reflect-metadata';
 
+import { BindingScopes } from '@venizia/ignis-inversion';
+
 import {
-  type BaseArdorApplication as TArdorApplication,
   BaseArdorApplication,
   configuration,
   CoreBindings,
   DefaultRestDataProvider,
   type IApplicationInfo,
   type IDataProvider,
-  inject,
+  type INetworkResponse,
+  type IRestDataProviderOptions,
   type ISendParams,
-  type ISendResponse,
   provide,
   RequestMethods,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 // --- the transport: what a desktop shell exposes instead of fetch (Tauri's `invoke`, a Worker
@@ -42,7 +44,7 @@ const COMMANDS: Record<string, TCommand> = {
 const invoke = <TResponse>(opts: {
   command: string;
   payload: ISendParams;
-}): Promise<ISendResponse<TResponse>> => {
+}): Promise<INetworkResponse<TResponse>> => {
   const handler = COMMANDS[opts.command];
   if (!handler) {
     return Promise.reject({ message: `[ipc] unknown command ${opts.command}`, statusCode: 404 });
@@ -56,7 +58,7 @@ export class IpcDataProvider extends DefaultRestDataProvider {
   override send<TResponse = unknown>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<ISendResponse<TResponse>> {
+  }): Promise<INetworkResponse<TResponse>> {
     return invoke<TResponse>({ command: opts.resource, payload: opts.params });
   }
 }
@@ -64,20 +66,16 @@ export class IpcDataProvider extends DefaultRestDataProvider {
 // Discovered, never referenced by name: start() binds its @provide methods.
 @configuration()
 export class IpcConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
   // The base class still needs its options; the URL is never used by the IPC send.
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  restDataProviderOptions(): IRestDataProviderOptions {
     return { url: 'ipc://local', noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(IpcDataProvider).value(this.application);
+  // No react-admin shell here: nothing signs in through an auth provider.
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }
 
@@ -86,7 +84,12 @@ class Application extends BaseArdorApplication {
     return { name: 'ipc-example', version: '0.0.0', description: 'ARDOR over an IPC transport' };
   }
 
-  bindContext(): void {}
+  // The one line that replaces the default data provider with the IPC one.
+  bindContext(): void {
+    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .toProvider(IpcDataProvider)
+      .setScope(BindingScopes.SINGLETON);
+  }
 }
 
 const application = new Application();

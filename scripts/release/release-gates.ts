@@ -607,7 +607,7 @@ const presetFilesUnder = (opts: { path: string }): string[] =>
         : [],
   );
 
-const manifestFilesOf = (opts: { path: string }): string[] =>
+export const manifestFilesOf = (opts: { path: string }): string[] =>
   statSync(opts.path).isDirectory() ? presetFilesUnder({ path: opts.path }) : [opts.path];
 
 const fail = (opts: { lines: string[] }): never => {
@@ -858,7 +858,7 @@ const main = async (): Promise<void> => {
   }
 
   throw new Error(
-    '[release-gates] use: artifacts <dir> | links <dir> | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
+    '[release-gates] use: artifacts <dir> | links <dir> | single-copy [<root>] | pack <dir> <out> | protocols <file> | registry <file> [--chain-released a,b] | stable-deps <path> | tag-highest --published <name>@<version> | heal-next [--dry-run]',
   );
 };
 

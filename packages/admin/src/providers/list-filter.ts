@@ -1,5 +1,4 @@
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
-import omit from 'lodash/omit.js';
 import type { GetListParams } from 'ra-core';
 
 import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
@@ -7,17 +6,21 @@ import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
 /** The IGNIS filter a list request sends. Any other key of the list params is a filter key too. */
 export interface IListFilter {
   where: Record<string, unknown>;
+  /** Each entry is `'<field> <ASC|DESC>'`. */
   order?: Array<string>;
   limit?: number;
+  /** IGNIS's offset; `ListFilterBuilder.build` sets this one. */
   skip?: number;
-  offset?: number;
   include?: unknown;
   fields?: unknown;
+  /** Not part of the filter sent: `ListFilterBuilder.build` moves it into the query string. */
   params?: Record<string, unknown>;
+  /** Lifts `limit` and `skip`: the list is not paginated. */
   noLimit?: boolean;
   [key: string]: unknown;
 }
 
+/** Builds the filter, query and extras of a list request from react-admin's list params. */
 export class ListFilterBuilder {
   /** `filter.params` as the keys of the query string, as a copy. */
   static extractQueryParams(opts: { params?: Record<string, unknown> }): Record<string, unknown> {
@@ -27,28 +30,29 @@ export class ListFilterBuilder {
   /**
    * The filter, query and list extras a list request sends, from react-admin's list params:
    * pagination into `limit`/`skip`, sort into `order`, `noLimit` lifting both, the remaining params
-   * into the filter, `filter.params` and `meta` into the query, and `meta.extra` into the list
-   * extras (sent in a header).
+   * into the filter (except `signal`), `filter.params` and `meta` into the query, and `meta.extra`
+   * into the list extras (sent in a header).
    */
   static build(opts: { params: GetListParams & ICustomParams }): {
     filter: IListFilter;
     queryKey: Record<string, unknown>;
     extra: TExtraRequest | undefined;
   } {
-    const { pagination, sort, filter: filterInput, meta, ...rest } = opts.params;
+    // `signal` is react-admin's abort signal, never a filter key.
+    const { pagination, sort, filter: filterInput, meta, signal: _signal, ...rest } = opts.params;
 
     let filter = {} as IListFilter;
 
     if (filterInput?.where) {
       filter = { ...filterInput, where: { ...filterInput.where } };
     } else {
-      filter['where'] = {
-        ...omit(filterInput, ['include', 'params', 'noLimit', 'fields']),
-      };
-      filter['include'] = filterInput?.include;
-      filter['fields'] = filterInput?.fields;
-      filter['params'] = filterInput?.params;
-      filter['noLimit'] = filterInput?.noLimit;
+      const { include, fields, params, noLimit, ...where } = filterInput ?? {};
+
+      filter['where'] = where;
+      filter['include'] = include;
+      filter['fields'] = fields;
+      filter['params'] = params;
+      filter['noLimit'] = noLimit;
     }
 
     if (sort?.field) {
@@ -64,7 +68,7 @@ export class ListFilterBuilder {
     } else {
       const { page = 1, perPage = 0 } = pagination ?? {};
 
-      // No `perPage` is no limit. `skip` is IGNIS's offset (`offset` is its alias): one is enough.
+      // No `perPage` is no limit. `skip` is IGNIS's offset.
       if (perPage > 0) {
         filter['limit'] = perPage;
         filter['skip'] = (Math.max(page, 1) - 1) * perPage;
@@ -81,12 +85,14 @@ export class ListFilterBuilder {
     }
 
     const queryKey = ListFilterBuilder.extractQueryParams({ params: filter?.params });
+
     if (filter?.params) {
       filter['params'] = undefined;
     }
 
     // `meta.extra` asks for list extras, in a header; every other `meta` key goes into the query.
     const { extra, ...queryMeta } = meta ?? {};
+
     for (const key in queryMeta) {
       queryKey[key] = queryMeta[key];
     }

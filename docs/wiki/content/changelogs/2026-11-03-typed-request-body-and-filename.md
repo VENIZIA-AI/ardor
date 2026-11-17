@@ -12,19 +12,7 @@ packages: ['@venizia/ardor-kernel', '@venizia/ardor']
 
 **In one line.** `RequestBodyEncoder.encode` now says what body it built, so a `FormData` goes to an API that takes `string | object` without a cast, and `ResponseReader.readFilename` gives you the file name of a download.
 
-```ts
-import { RequestBodyEncoder, RequestBodyTypes, ResponseReader } from '@venizia/ardor';
-
-export const toUpload = (data: Record<string, unknown>): FormData => {
-  const { body } = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.FORM_DATA, body: data });
-
-  return body;
-};
-
-export const fileNameOf = (response: Response): string | undefined => {
-  return ResponseReader.readFilename({ headers: response.headers });
-};
-```
+The example is in [Encode a body and read a file name yourself](../references/network#encode-a-body-and-read-a-file-name-yourself).
 
 ## What changed
 

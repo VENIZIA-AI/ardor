@@ -26,6 +26,7 @@ export const PURITY_CLAIMS: IPurityClaim[] = [
     package: 'kernel',
     external: {
       '.': [],
+      './testing': [],
     },
   },
   { package: 'react', external: { '.': ['react', 'react-redux', '@reduxjs/toolkit'] } },

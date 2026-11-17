@@ -15,6 +15,7 @@ type TPassThroughBodyType =
   | typeof RequestBodyTypes.NONE
   | typeof RequestBodyTypes.BINARY;
 
+/** Turns a request body into what `fetch` sends, by `RequestBodyTypes`. */
 export class RequestBodyEncoder {
   /**
    * The body as it is sent and the content type to send it under. The overloads give the type of what
@@ -64,6 +65,7 @@ export class RequestBodyEncoder {
 
         for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
           const values = Array.isArray(value) || RequestBodyEncoder.isFileList(value);
+
           for (const item of values ? Array.from(value as ArrayLike<unknown>) : [value]) {
             RequestBodyEncoder.appendFormValue({ formData, key, value: item });
           }
@@ -115,6 +117,7 @@ export class RequestBodyEncoder {
 
     if (value instanceof Blob) {
       formData.append(key, value, (value as File).name);
+
       return;
     }
 

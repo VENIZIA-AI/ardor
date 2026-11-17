@@ -10,18 +10,20 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**82 targets.**
+**81 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
 | `make admin` | `react` | Rebuild one package, after its dependencies. |
+| `make api-undocumented` | - | Gate: every published export has TSDoc. Needs a build. |
 | `make ardor` | `admin` | Rebuild one package, after its dependencies. |
 | `make atlas-releases` | - | Print the release table atlas computes from the tags. |
 | `make atlas-smoke` | - | Gate: VULCAN's atlas serves this checkout over MCP. |
 | `make atlas-symbols` | - | Print the symbols atlas reads from the built .d.ts. Needs a build. |
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
-| `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted. |
+| `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted, and no other @venizia/* dep is a range. |
+| `make changelog-check` | - | Gate: the version folders from knowledge.migrationFrom on are valid and every Breaking item carries a migration block. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
@@ -33,16 +35,16 @@ generated:
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |
 | `make fmt-files` | - | Format those files with bun fmt (part of lint-fix). |
 | `make fmt-scripts` | - | Format scripts/ with bun fmt (part of lint-fix; lint-scripts checks it). |
-| `make gates` | - | The Test job of the release workflow, locally: links, copies, build, lint, test, scripts, purity, catalog, preset smoke. Run without -j. |
+| `make gates` | - | What the Test job of the release workflow runs: links, copies, build, lint, test, scripts, purity, catalog, preset smoke (with ardor). GATE_PACKAGES="kernel react" limits it. Run without -j. |
 | `make gates-refreshed` | - | gates after the Test job's catalog refresh (highest IGNIS), then clean-install, in a scratch copy. About four minutes; run before every dispatch. |
 | `make help` | - | Show this help message (a bare 'make' does the same). |
 | `make install` | - | Install all dependencies with bun. |
 | `make kernel` | - | Rebuild one package, after its dependencies. |
 | `make layer-check` | - | Gate: no package imports a layer above it. |
 | `make links-check` | - | Gate: every ARDOR sibling resolves to the workspace, not to the registry. |
-| `make lint` | `lint-packages` | lint-<pkg> for every package. |
+| `make lint` | `lint-packages lint-scripts` | lint-<pkg> for every package. |
 | `make lint-admin` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
-| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files` | lint-packages, lint-wiki, lint-scripts and lint-files. |
+| `make lint-all` | `lint-packages lint-wiki lint-scripts lint-files changelog-check` | lint-packages, lint-wiki, lint-scripts, lint-files and changelog-check. |
 | `make lint-ardor` | - | oxlint + ESLint (naming-convention) + bun fmt check of one package. |
 | `make lint-files` | - | Format check of the files outside the projects: the root package.json, workflows, .agents, .configs, the presets, the examples. |
 | `make lint-fix` | `lint-fix-packages lint-fix-wiki fmt-files fmt-scripts` | lint-fix-<pkg> for every package. |
@@ -61,9 +63,8 @@ generated:
 | `make okf-check-strict` | - | Gate: okf-check plus links, style, coverage, freshness. |
 | `make okf-coverage` | - | Report bundle coverage against the source inventory. |
 | `make okf-gen` | - | Regenerate source-derived reference content. |
-| `make okf-viz` | - | Build the offline knowledge-graph explorer. |
-| `make preset-build` | - | - |
-| `make preset-smoke` | - | - |
+| `make preset-build` | - | Write the VULCAN app preset with this release's versions into packages/ardor/dist/presets/app. Run after the build. |
+| `make preset-smoke` | - | Gate: an app created from the packed preset typechecks, lints, builds and starts. Needs make build-all; ARGS=... as in scripts/preset/preset-smoke.ts. |
 | `make purity` | - | Gate: every entry claimed browser-pure has no node builtin or global. |
 | `make purity-admin` | - | Gate: one package's browser-pure entries. Needs a build. |
 | `make purity-ardor` | - | Gate: one package's browser-pure entries. Needs a build. |
@@ -73,6 +74,7 @@ generated:
 | `make react` | `kernel` | Rebuild one package, after its dependencies. |
 | `make release` | - | Dispatch the release workflow once for the four packages (a prerelease from develop, a stable from main), e.g. ARGS="--yes". |
 | `make release-plan` | - | Print the release plan (dependency order), dispatch nothing. |
+| `make runners-check` | - | Fail when a tracked file runs an unscoped package by name (bunx, bun x, npx, pnpm dlx) |
 | `make setup-hooks` | - | Configure git to use .githooks directory. |
 | `make size-check` | - | Gate: every bundle within its size-limit budget. Needs a build. |
 | `make split-report` | - | Report hub files, stray types, missing barrels, long files, cycles (informational). |
@@ -82,16 +84,13 @@ generated:
 | `make test-admin` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-all` | `test-kernel test-react test-admin test-ardor` | test-<pkg> for every package; one with no suite says so and passes. |
 | `make test-ardor` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
+| `make test-examples` | - | Run the test script of every example. Needs a build. |
 | `make test-kernel` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-react` | - | Run one package's suite with BUN_TEST_FLAGS. Needs a build. |
 | `make test-scripts` | - | Run the repository gate scripts' own regression tests. |
 | `make typecheck` | `typecheck-all` | Type-check every package (tests included) without emitting. |
 | `make typecheck-all` | - | Type-check every package (tests included) without emitting. |
 | `make typecheck-examples` | - | Type-check every example against the built packages. Needs a build. |
-| `make update-admin` | - | Force update one package's dependencies from NPM. |
-| `make update-ardor` | - | Force update one package's dependencies from NPM. |
-| `make update-kernel` | - | Force update one package's dependencies from NPM. |
-| `make update-react` | - | Force update one package's dependencies from NPM. |
 | `make vulcan-doctor` | - | Gate: the project follows VULCAN (config, layout, rules, make, adapters, style). |
 | `make vulcan-sync` | - | Write your agent adapters: CLAUDE.md, .claude/settings.json, skill links. |
 | `make wiki-anchors-check` | - | Gate: every wiki '#fragment' link resolves. Needs a build (make docs). |

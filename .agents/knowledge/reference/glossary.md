@@ -9,7 +9,7 @@ tags: [reference, glossary, terminology]
 This page defines terms as they are used across the bundle. Where a term has a fuller treatment,
 the definition links to it.
 
-**Application** - the IoC container at the root of an ARDOR app. It extends `BaseArdorApplication`,
+**Application** - the IoC container at the root of an ARDOR app. It extends `BaseArdorApplication` (admin package; it binds the default providers),
 implements `getAppInfo()` and `bindContext()`, and is started once (`await application.start()`)
 before being handed to `ArdorApplication` as the `container` prop. See
 [Application lifecycle](/architecture/application-lifecycle.md).
@@ -28,20 +28,22 @@ different value (`'@app/instance'`). See [Binding key namespaces](/conventions/b
 **Stereotype** - a class decorator from `@venizia/ignis-kernel/metadata`, re-exported by ARDOR
 (`service`, `component`, `configuration` and the rest). At import time it records the binding key
 on the class and appends the class to a process-global discovery list, which `registerArtifacts()`
-binds during `preConfigure()`. It binds first, so a `bindingList()` entry under the same key
-overrides it, and a `bindContext()` binding overrides both. See
+binds during `preConfigure()`, after the defaults of `BaseArdorApplication` and before the features, so
+a `bindingList()` entry under the same key overrides it, and a `bindContext()` binding overrides both - except that a class declared
+`allowOverride: false` is replaced by `bindContext()` alone. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
 **Binding list** - `bindingList()`, the application override that returns literal
 `{ 'services.PricingService': PricingService }` keys, bound as singletons after the stereotypes and before
-`bindContext()`. Literal keys survive a minifier that rewrites `Class.name`, and they are what types
-`useInjectable` through `IUseInjectableKeysOverrides`. See
+`bindContext()`. Literal keys survive a minifier that rewrites `Class.name`, and a class bound this way
+is still resolved by `{ target }`. Prefer a stereotype. See
 [Binding key namespaces](/conventions/binding-key-namespaces.md).
 
 **Provider** - something bound as a lazy resolver, typically producing a
-value used by react-admin (the REST data provider, the auth provider, the i18n provider). The
-framework keys are declared with `@provide({ key })` in a `@configuration()` class and bound by
-`registerArtifacts()`; a raw `.toProvider(...)` on a bare `bind()` is the transient, by-hand form.
+value used by react-admin (the REST data provider, the auth provider, the i18n provider).
+`BaseArdorApplication` binds the three defaults in `bindDefaults()` with `toProvider(Class)`, a
+singleton; an app replaces one with `toProvider(...).setScope(BindingScopes.SINGLETON)` in `bindContext()` or a
+`@provide({ key })` method. A raw `.toProvider(...)` on a bare `bind()` is transient unless `setScope` says otherwise.
 Contrast with a class bound with `.toClass(...)` and a static value bound with `.toValue(...)`. See
 [DI in the browser](/architecture/di-in-the-browser.md).
 
@@ -50,7 +52,7 @@ framework-level providers, bound under `services.<ClassName>`. Two ways to regis
 mark it `@service()` so the application discovers it, or call `this.service(X)` in `bindContext()`.
 Both record the key on the class, so `useService({ target })` resolves either and asserts the class
 landed in the `services` namespace. A repository is the same with `@repository` /
-`this.repository(X)` / `useRepository`. See [Hooks and services reference](/reference/hooks-and-services.md).
+`this.repository(X)` / `useRepository`. See [Public surface](/reference/public-surface.md).
 
 **ApplicationContext** - the React context in `ardor-react` that holds the `container` and the
 `logger` (`IApplicationContextValue`). `ArdorApplication` provides it, and `useInjectable` and the stereotype
@@ -99,7 +101,7 @@ verified by `make surface-check`) from the built `.d.ts` of the packages `.confi
 lists - the same tool IGNIS uses for its own packages. The snapshot is
 [Public surface](/reference/public-surface.md).
 
-**Changelog entry** - a file describing a change a user of the published packages sees or can use: what
+**Changelog entry** - an item in the `changelogs/<X.Y.Z>/log.md` of its version, describing a change a user of the published packages sees or can use: what
 changed, who is affected, and any breaking changes with their upgrade step. Internal work gets none. See
 [Writing a changelog entry](/process/writing-a-changelog-entry.md).
 
@@ -107,7 +109,6 @@ changed, who is affected, and any breaking changes with their upgrade step. Inte
 which ARDOR tracks instead of npm's `latest` tag because a feature shipped on the IGNIS prerelease
 line is what the framework builds on. The `@venizia/*` entries of the root `workspaces.catalog` (the
 IGNIS packages and `dev-configs`) follow the npm dist-tag `highest` through
-`bun scripts/build/refresh-catalog.ts highest`. ARDOR's own cross-package ranges sit outside the catalog
-and follow the semver-highest published version through each package's `force-update highest`.
-The release workflow runs both. See [Build system](/process/build-system.md) and
+`bun scripts/build/refresh-catalog.ts highest`, which the release workflow runs. ARDOR's own cross-package
+ranges are `workspace:*`. See [Build system](/process/build-system.md) and
 [Release and publish](/process/release-publish.md).

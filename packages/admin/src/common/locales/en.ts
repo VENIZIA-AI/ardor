@@ -1,3 +1,4 @@
+/** The built-in English messages: react-admin's `ra` catalogue and ARDOR's own keys under `ardor`. */
 export const englishMessages = {
   ra: {
     action: {
@@ -207,6 +208,13 @@ export const englishMessages = {
         secondaryText: 'Secondary text',
         tertiaryText: 'Tertiary text',
       },
+    },
+  },
+  ardor: {
+    access_denied: {
+      title: 'Access denied',
+      message: "You don't have permission to open this page.",
+      home: 'Go to the home page',
     },
   },
 };

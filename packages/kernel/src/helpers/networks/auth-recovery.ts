@@ -6,7 +6,8 @@ import type { ILogger } from '@venizia/ignis-helpers/core';
  * behind them takes effect.
  */
 export class AuthRecovery {
-  private refreshing: Promise<boolean> | null = null;
+  /** The refresh in flight for each session (`key`): a request of another session never joins it. */
+  private readonly refreshing = new Map<string, Promise<boolean>>();
 
   constructor(
     private readonly opts: {
@@ -17,16 +18,27 @@ export class AuthRecovery {
       refresh: () => Promise<boolean>;
       /** Runs once when the refresh threw. */
       onFailure: () => Promise<void>;
+      /** Whether the request, given by its paths, goes without a token; such a request never recovers. */
       isNoAuthPath: (paths: string[]) => boolean;
     },
   ) {}
 
-  /** Once for every 401 in flight: the callers share one `refresh`. `true` when the token was refreshed. */
-  refresh(): Promise<boolean> {
+  /**
+   * Once for every 401 in flight of one session (`key`): those callers share one `refresh`. A 401 of
+   * another session starts its own, so it never waits for an answer that belongs to someone else.
+   * `true` when the token was refreshed.
+   */
+  refresh(opts: { key?: string } = {}): Promise<boolean> {
     const { logger, refresh, onFailure } = this.opts;
+    const { key = '' } = opts;
+    const inFlight = this.refreshing.get(key);
+
+    if (inFlight) {
+      return inFlight;
+    }
 
     // A refresh that throws synchronously is still a failed refresh, not a stray exception.
-    this.refreshing ??= Promise.resolve()
+    const started = Promise.resolve()
       .then(() => refresh())
       .catch(async (error) => {
         logger.error('[refresh] refreshToken failed | error: %o', error);
@@ -36,13 +48,15 @@ export class AuthRecovery {
         } catch (failure) {
           logger.error('[refresh] onAuthFailure failed | error: %o', failure);
         }
+
         return false;
       })
       .finally(() => {
-        this.refreshing = null;
+        this.refreshing.delete(key);
       });
+    this.refreshing.set(key, started);
 
-    return this.refreshing;
+    return started;
   }
 
   /** Not for a no-auth path, nor for the refresh path itself, which would wait on itself. */
@@ -54,6 +68,7 @@ export class AuthRecovery {
     }
 
     const refreshTokenPath = this.opts.getRefreshTokenPath();
+
     if (refreshTokenPath && paths?.join('/').includes(refreshTokenPath)) {
       return false;
     }

@@ -1,4 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
@@ -14,12 +15,15 @@ import {
   type IGetRequestPropsResult,
   type INetworkResponse,
   type INoAuthOptions,
+  LocalStorageKeys,
   RequestChannel,
   RequestCountData,
   RequestMethods,
+  RequestTypes,
   type TConstValue,
   type TNoAuthPathRegex,
   type TRequestMethod,
+  type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
 import {
@@ -30,38 +34,97 @@ import {
   RequestBodyEncoder,
   ResponseReader,
 } from '@/helpers';
+import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
+/** Who sent a request, and with which token: what a 401 is judged against. */
+interface ISentSession {
+  /** `undefined` when the service cannot tell who is signed in (no auth service, or no user id stored). */
+  userId?: string;
+  token?: string;
+}
+
+/** The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight. */
+export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
+
+/** The `normalized.code` of the 504 a request rejects with when it outlives the configured `timeout`. */
+export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
+
 /**
+ * Sends the requests of the data provider with its own sender. The repositories of
+ * `@venizia/ardor/repository` send through IGNIS's `HttpDataSource`, from the optional peer
+ * `@venizia/ignis-connectors`, which this service cannot import without making that peer required:
+ * until IGNIS's transport core is in a required peer, two clients exist, and `getDataSourceAuth`
+ * gives the second the session of the first.
+ *
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
  */
 export class DefaultNetworkRequestService extends BaseService {
+  /** Resources sent without a token, matched exactly. */
   protected noAuthPaths?: string[];
+  /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
+  /** Headers added to every request, keyed by lowercase name. */
   protected headers: Record<string, string>;
   protected networkRequest: NodeFetchNetworkRequest;
+  /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
+  protected authService?: DefaultAuthService;
+  /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
+  protected timeout: TRequestTimeoutOptions;
 
   private readonly recovery: AuthRecovery;
 
+  /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
+  private readonly sentSessions = new WeakMap<object, ISentSession>();
+
   constructor(
     opts: INoAuthOptions & {
+      /** The name of the underlying network request helper. */
       name: string;
+      /**
+       * An empty one makes `doRequest` refuse, unless it is given its own `baseUrl`.
+       * @default ''
+       */
       baseUrl?: string;
+      /**
+       * Sent with every request; a name set later with `setHeaders` replaces it.
+       * @default {}
+       */
       headers?: HeadersInit;
+      /** Enables the refresh-and-retry after a 401. */
       authRecovery?: IAuthRecoveryOptions;
+      /** What the default `refreshToken` saves the new token through. */
+      authService?: DefaultAuthService;
+      /**
+       * Aborts each request that has not answered in time. Throws here for an invalid `milliseconds`.
+       * @default { use: false }
+       */
+      timeout?: TRequestTimeoutOptions;
     },
   ) {
     super({ scope: DefaultNetworkRequestService.name });
-    const { name, baseUrl = '', headers = {}, noAuthPaths, noAuthPathRegex, authRecovery } = opts;
+    const {
+      name,
+      baseUrl = '',
+      headers = {},
+      noAuthPaths,
+      noAuthPathRegex,
+      authRecovery,
+      authService,
+      timeout = { use: false },
+    } = opts;
 
+    DefaultNetworkRequestService.assertTimeout({ timeout });
+    this.timeout = timeout;
     this.headers = NetworkHeaders.toRecord({ headers });
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
+    this.authService = authService;
     this.recovery = new AuthRecovery({
       logger: this.logger,
       getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
@@ -77,11 +140,45 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * The stored token (`AuthTokenStore.read`), `undefined` outside a browser. The default of
-   * `resolveAuthToken`, and what to hand an `HttpDataSource` as its `authTokenResolver`.
+   * The token under the unscoped session key (`AuthTokenStore.read`), `undefined` outside a browser, for an
+   * application with no `id`. With an application `id` the session is under other keys: use
+   * `createAuthTokenReader({ id })`, the `HttpDataSource` `getDataSourceAuth()` of the data provider, or `authService.getAuth`.
    */
   static readAuthTokenFromStorage(): IAuthTokenRecord | undefined {
     return AuthTokenStore.read();
+  }
+
+  /**
+   * A reader of the stored token of the application with this `id` (`IApplicationInfo.id`): the same
+   * key `DefaultAuthService.getAuth` reads (`LocalStorageKeys.scoped({ id }).token`). Without an `id` it
+   * is `readAuthTokenFromStorage`. Throws for an invalid `id`, when it is created.
+   *
+   * @example
+   * ```ts
+   * super({ baseUrl: '/api', authTokenResolver: DefaultNetworkRequestService.createAuthTokenReader({ id: 'shop' }) });
+   * ```
+   */
+  static createAuthTokenReader(opts: { id?: string } = {}): () => IAuthTokenRecord | undefined {
+    const { token: key } = LocalStorageKeys.scoped({ id: opts.id });
+
+    return () => AuthTokenStore.read({ key });
+  }
+
+  /** Throws unless a timeout that is on has a positive integer `milliseconds`. */
+  static assertTimeout(opts: { timeout?: TRequestTimeoutOptions }): void {
+    const { timeout } = opts;
+
+    if (!timeout?.use) {
+      return;
+    }
+
+    const { milliseconds } = timeout;
+
+    if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0) {
+      throw getError({
+        message: `[DefaultNetworkRequestService] timeout.milliseconds must be a positive integer, got ${milliseconds}`,
+      });
+    }
   }
 
   // --- Hooks -----------------------------------------------------------------------------------
@@ -91,7 +188,10 @@ export class DefaultNetworkRequestService extends BaseService {
    * store, or to hold the token in memory.
    */
   protected resolveAuthToken(): IAuthTokenRecord | undefined {
-    return DefaultNetworkRequestService.readAuthTokenFromStorage();
+    // The auth service knows where this application's session is kept (its `id` scopes the keys).
+    return this.authService
+      ? (this.authService.getAuth() ?? undefined)
+      : DefaultNetworkRequestService.readAuthTokenFromStorage();
   }
 
   /**
@@ -119,6 +219,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return this.noAuthPathRegexes.some((regex) => {
       return candidates.some((candidate) => {
         regex.lastIndex = 0;
+
         return regex.test(candidate);
       });
     });
@@ -126,10 +227,113 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * Refreshes the session after a 401. `true`: refreshed, the request is retried; `false`: this
-   * service has no refresh (the default); a throw: the refresh failed and `onAuthFailure` runs.
+   * service has no refresh, or the session changed while the request was in flight (another user
+   * signed in, the user signed out, or another tab refreshed): the new token is not saved, and the
+   * failure of a refresh made for a session that is gone is not reported; a throw: the refresh
+   * failed and `onAuthFailure` runs. The default posts to `authRecovery.refreshTokenPath` with no
+   * body and saves the new token through `authService`, keeping the stored identity and roles;
+   * with no path or no `authService` it answers `false`.
    */
-  protected refreshToken(): Promise<boolean> {
-    return Promise.resolve(false);
+  protected async refreshToken(): Promise<boolean> {
+    const path = this.authRecovery?.refreshTokenPath;
+    const { authService } = this;
+
+    if (!path || !authService) {
+      return false;
+    }
+
+    // The session this refresh is for: the answer belongs to it and to no other.
+    const readSession = () => ({
+      userId: `${authService.getUser().userId}`,
+      token: authService.getAuth()?.value,
+    });
+    const startedFor = readSession();
+
+    // `false`: another user, or none, is signed in now. `true`: the same user holds another token
+    // now (another tab refreshed, or a new sign-in), which the retry uses. `undefined`: unchanged.
+    const readChange = (): boolean | undefined => {
+      const now = readSession();
+
+      if (now.userId !== startedFor.userId) {
+        return false;
+      }
+
+      return now.token === startedFor.token ? undefined : true;
+    };
+
+    let response: INetworkResponse<unknown>;
+
+    try {
+      const result = await this.doRequest({
+        paths: [path],
+        method: RequestMethods.POST,
+        type: RequestTypes.SEND,
+        headers: this.getRequestHeader({ resource: path }),
+      });
+      response = result;
+    } catch (error) {
+      const change = readChange();
+
+      if (change === undefined) {
+        throw error;
+      }
+
+      return change;
+    }
+
+    const user = authService.getUser();
+    const change = readChange();
+
+    // Signed out while the request was in flight: saving the token would start a session with no user.
+    if (user.userId === undefined) {
+      return false;
+    }
+
+    // The session moved on: this answer is for the one that asked, so it is not saved.
+    if (change !== undefined) {
+      this.logger.warn(
+        '[refreshToken] The session changed while the refresh was in flight, its answer is dropped',
+      );
+
+      return change;
+    }
+
+    authService.saveAuth({
+      userId: user.userId,
+      username: user.username,
+      referenceId: user.referenceId,
+      provider: user.provider,
+      token: this.readRefreshedToken({ data: response.data }),
+    });
+
+    return true;
+  }
+
+  /**
+   * The new token of a refresh response: `{ token: { value, type } }` or `{ token: '<jwt>' }`. A
+   * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
+   * a throw.
+   */
+  protected readRefreshedToken(opts: { data: unknown }): { value: string; type: string } {
+    const body: { token?: unknown } =
+      typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
+    const { token } = body;
+    let record: object = {};
+
+    if (typeof token === 'string') {
+      record = { value: token };
+    } else if (typeof token === 'object' && token !== null) {
+      record = token;
+    }
+
+    const value = 'value' in record ? record.value : undefined;
+    const type = 'type' in record ? record.type : undefined;
+
+    if (typeof value !== 'string' || !value) {
+      throw getError({ message: '[refreshToken] The refresh response carries no token' });
+    }
+
+    return { value, type: typeof type === 'string' ? type : 'Bearer' };
   }
 
   /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
@@ -137,7 +341,7 @@ export class DefaultNetworkRequestService extends BaseService {
     return Promise.resolve();
   }
 
-  /** The tracing id of a request, sent in `x-request-tracing-id`. Default `<application name>_<uuid>`. */
+  /** The tracing id of a request, sent in `x-request-id`. Default `<application name>_<uuid>`. */
   protected buildRequestTracingId(opts: { applicationInfo: IApplicationInfo }): string {
     return `${opts.applicationInfo.name}_${UuidV4Generator.generate()}`;
   }
@@ -184,7 +388,100 @@ export class DefaultNetworkRequestService extends BaseService {
    * Also what `DefaultAuthProvider.refreshToken` calls, so a refresh is made in one place.
    */
   refresh(): Promise<boolean> {
-    return this.recovery.refresh();
+    const { userId, token } = this.readSession();
+
+    return this.recovery.refresh({ key: `${userId}|${token}` });
+  }
+
+  /** The session signed in now: who, and with which token. */
+  private readSession(): ISentSession {
+    const userId = this.authService?.getUser().userId;
+
+    return {
+      userId: userId === undefined ? undefined : `${userId}`,
+      token: this.resolveAuthToken()?.value,
+    };
+  }
+
+  /** The 401 that answers a request whose session is gone: `DefaultAuthProvider.checkError` leaves the signed-in session alone for it. */
+  private sessionChangedError(): Error {
+    return getError({
+      statusCode: 401,
+      messageCode: SESSION_CHANGED_CODE,
+      message: '[doRequest] The session that sent this request ended while it was in flight',
+    });
+  }
+
+  /**
+   * How the session changed since `sent`: `undefined` when it did not, `true` when the same user holds
+   * another token now (the request can be sent again with it), `false` when the user who sent is gone. When
+   * nobody can tell who sent, another token is a switch: it is never read as the same user's.
+   */
+  private readSessionChange(opts: { sent: ISentSession }): boolean | undefined {
+    const { sent } = opts;
+    const now = this.readSession();
+
+    if (now.userId === sent.userId && now.token === sent.token) {
+      return undefined;
+    }
+
+    return sent.userId !== undefined && now.userId === sent.userId && !!now.token;
+  }
+
+  /** `task` settles as it does, or the wait rejects with the reason of `signal` once it aborts; the task itself is not cancelled. */
+  private static async untilAborted<TResult>(opts: {
+    task: Promise<TResult>;
+    signal?: AbortSignal;
+  }): Promise<TResult> {
+    const { task, signal } = opts;
+
+    if (!signal) {
+      return task;
+    }
+
+    let onAbort: (() => void) | undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      onAbort = () => reject(signal.reason);
+
+      if (signal.aborted) {
+        onAbort();
+
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+
+    try {
+      const settled = await Promise.race([task, aborted]);
+
+      return settled;
+    } finally {
+      if (onAbort) {
+        signal.removeEventListener('abort', onAbort);
+      }
+    }
+  }
+
+  /**
+   * Whether the 401 of a request that `sent` is a session change for the caller: the user who sent is gone and
+   * either the request was sent again since (`isRetried`) or another session is signed in now. A refresh that
+   * failed and ended the session itself leaves nobody to protect, and its 401 stands.
+   */
+  private isSessionTaken(opts: { sent: ISentSession; isRetried: boolean }): boolean {
+    // With no user to compare, the token that follows a refresh this service ran is that refresh's.
+    if (opts.sent.userId === undefined && opts.isRetried) {
+      return false;
+    }
+
+    // A user switch in progress (a token stored for another user than the identity) is someone signing in: it
+    // reads no token, but it is not a sign-out.
+    return (
+      this.readSessionChange({ sent: opts.sent }) === false &&
+      (opts.isRetried ||
+        this.readSession().token !== undefined ||
+        this.authService?.isSwitching() === true)
+    );
   }
 
   // --- Requests --------------------------------------------------------------------------------
@@ -198,23 +495,64 @@ export class DefaultNetworkRequestService extends BaseService {
     opts?: Pick<IGetRequestPropsParams, 'restDataProviderOptions' | 'applicationInfo'>,
   ): IDataSourceAuth {
     return {
-      authTokenResolver: ({ paths }) => {
-        return this.isNoAuthPath({ resource: paths[0], paths })
+      authTokenResolver: (context) => {
+        const { paths } = context;
+        const sent = this.sentSessions.get(context);
+
+        // The retry of a request whose user has gone must not carry the token of whoever signed in since.
+        if (sent && this.readSessionChange({ sent }) === false) {
+          return undefined;
+        }
+
+        const token = this.isNoAuthPath({ resource: paths[0], paths })
           ? undefined
           : this.resolveAuthToken();
+
+        // Both hooks receive this very object, and a retry sends again under the session of that moment.
+        this.sentSessions.set(context, { userId: this.readSession().userId, token: token?.value });
+
+        return token;
       },
       headersResolver: () => {
         return NetworkHeaders.merge({
           sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
         });
       },
-      onUnauthorized: ({ paths }) => {
-        return this.recovery.canRecover({ paths }) ? this.refresh() : Promise.resolve(false);
+      onUnauthorized: (context) => {
+        if (!this.recovery.canRecover({ paths: context.paths })) {
+          return Promise.resolve(false);
+        }
+
+        const sent = this.sentSessions.get(context);
+        const change = sent ? this.readSessionChange({ sent }) : undefined;
+
+        if (change === false) {
+          return Promise.reject(this.sessionChangedError());
+        }
+
+        if (change === true) {
+          return Promise.resolve(true);
+        }
+
+        return this.refresh().then((isRefreshed) => {
+          // The retry sends again under the session of this refresh.
+          if (sent && sent.userId === undefined && isRefreshed) {
+            this.sentSessions.set(context, this.readSession());
+          }
+
+          return sent && this.isSessionTaken({ sent, isRetried: isRefreshed })
+            ? Promise.reject(this.sessionChangedError())
+            : isRefreshed;
+        });
       },
       errorRootKey: ResponseReader.ERROR_ROOT_KEY,
     };
   }
 
+  /**
+   * The `token` (`<type> <value>`, `Bearer` when the type is empty) and `provider` of the stored
+   * token. Throws an error with status 401 when there is no token.
+   */
   getRequestAuthorizationHeader() {
     const authToken = this.resolveAuthToken();
 
@@ -236,6 +574,7 @@ export class DefaultNetworkRequestService extends BaseService {
     this.headers = NetworkHeaders.merge({ sources: [this.headers, opts.headers] });
   }
 
+  /** Removes the headers set by name, in any case. */
   removeHeaders(opts: { keys: string[] }) {
     if (!opts.keys?.length) {
       return;
@@ -275,6 +614,10 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /**
+   * The session headers, plus `authorization` and `x-auth-provider` unless `resource` is a no-auth
+   * path. Throws a 401 error for any other resource when there is no token.
+   */
   getRequestHeader(opts: { resource: string }): Record<string, string> {
     const { resource } = opts;
 
@@ -294,11 +637,44 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
+  /**
+   * Whether the request stays where `baseUrl` points: no entry of `paths` carries a tab, a line break,
+   * a backslash or a dot segment (also written `%2E`), and the URL built from
+   * them, resolved the way a browser does, has the origin of the base and a path under it.
+   */
+  private static isUnderBase(opts: { baseUrl: string; paths: string[]; url: string }): boolean {
+    const { baseUrl, paths, url } = opts;
+
+    // The joined path, so a dot segment is found whichever entry holds it.
+    if (/[\\\t\n\r]|(^|\/)(\.|%2e){1,2}(\/|$)/i.test(paths.join('/'))) {
+      return false;
+    }
+
+    try {
+      const origin = 'http://base.invalid';
+      const base = new URL(baseUrl, origin);
+      const target = new URL(url, origin);
+      const prefix = base.pathname.replace(/\/+$/, '');
+
+      return (
+        target.origin === base.origin &&
+        (target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))
+      );
+      // eslint-disable-next-line venizia/no-silent-catch -- a URL that does not parse is the answer: the request is refused
+    } catch {
+      return false;
+    }
+  }
+
   /** The body as it is sent and the content type to send it under. Override to encode another way. */
   protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
     return RequestBodyEncoder.encode(opts);
   }
 
+  /**
+   * The headers (session, auth, tracing, `x-request-count`, the `extra` header, and the content type
+   * of the encoded body) and the encoded body of a request. Throws as `getRequestHeader` does.
+   */
   getRequestProps(params: IGetRequestPropsParams) {
     const {
       bodyType,
@@ -338,26 +714,27 @@ export class DefaultNetworkRequestService extends BaseService {
     return ResponseReader.convert<TData>(opts);
   }
 
+  /**
+   * Sends the request and reads the response by `type`. Throws when `baseUrl` (the option, else the
+   * service's) is empty. A 401 on a path that can recover triggers `refresh` and, if it refreshed,
+   * one retry with the new token. Any other non-2xx response, or a retry that still fails, throws
+   * the error read from the response. An aborted `signal` rejects with its reason, and a request
+   * that outlives the service's `timeout` rejects with a 504 coded `NETWORK_TIMEOUT_CODE`.
+   */
   async doRequest<TResult = unknown>(
     opts: IGetRequestPropsResult & {
+      /** @default this.baseUrl */
       baseUrl?: string;
-      query?: any;
+      query?: Record<string, unknown>;
       type: TRequestType;
       method: TRequestMethod;
       paths: string[];
       requestCountData?: TConstValue<typeof RequestCountData>;
+      /** Aborts this request only: a refresh its 401 started runs on for the other requests. */
+      signal?: AbortSignal;
     },
   ): Promise<INetworkResponse<TResult>> {
-    const {
-      baseUrl = this.baseUrl,
-      type,
-      method,
-      paths,
-      body,
-      headers,
-      query,
-      requestCountData,
-    } = opts;
+    const { baseUrl = this.baseUrl, paths, signal } = opts;
 
     if (!baseUrl) {
       throw getError({
@@ -367,6 +744,54 @@ export class DefaultNetworkRequestService extends BaseService {
 
     const url = this.networkRequest.getRequestUrl({ baseUrl, paths });
 
+    if (!DefaultNetworkRequestService.isUnderBase({ baseUrl, paths, url })) {
+      throw getError({ message: '[doRequest] Invalid path to send request!' });
+    }
+
+    const timeoutSignal = this.timeout.use
+      ? AbortSignal.timeout(this.timeout.milliseconds)
+      : undefined;
+    const sendSignal =
+      timeoutSignal && signal
+        ? AbortSignal.any([signal, timeoutSignal])
+        : (timeoutSignal ?? signal);
+
+    try {
+      const response = await this.sendAndRead<TResult>({ ...opts, url, signal: sendSignal });
+
+      return response;
+    } catch (error) {
+      // The combined signal keeps the reason of whichever source aborted first.
+      if (
+        this.timeout.use &&
+        timeoutSignal?.aborted &&
+        sendSignal?.reason === timeoutSignal.reason
+      ) {
+        throw getError({
+          statusCode: HTTP.ResultCodes.RS_5.GatewayTimeout,
+          messageCode: NETWORK_TIMEOUT_CODE,
+          message: `[doRequest] The request to ${paths.join('/')} did not answer within ${this.timeout.milliseconds} ms`,
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  /** `doRequest` once the URL is checked: the send, the refresh and retry after a 401, then the read. */
+  private async sendAndRead<TResult>(
+    opts: IGetRequestPropsResult & {
+      url: string;
+      query?: Record<string, unknown>;
+      type: TRequestType;
+      method: TRequestMethod;
+      paths: string[];
+      requestCountData?: TConstValue<typeof RequestCountData>;
+      signal?: AbortSignal;
+    },
+  ): Promise<INetworkResponse<TResult>> {
+    const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
+
     const sendOnce = (sendHeaders?: HeadersInit) => {
       return this.networkRequest.getNetworkService().send(
         {
@@ -375,15 +800,42 @@ export class DefaultNetworkRequestService extends BaseService {
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
           headers: sendHeaders,
+          signal,
         },
         this.logger,
       );
     };
 
+    const sent = this.readSession();
+    let isRetried = false;
     let fetched = await sendOnce(headers);
 
     if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
-      const isRefreshed = await this.refresh();
+      // A 401 that arrives after the session changed is not the new session's to refresh or to end.
+      const change = this.readSessionChange({ sent });
+
+      if (change === false) {
+        throw this.sessionChangedError();
+      }
+
+      let isRefreshed = change === true;
+
+      if (change === undefined) {
+        // The wait ends with this request's abort; the refresh itself keeps running for the others.
+        const refreshed = await DefaultNetworkRequestService.untilAborted({
+          task: this.refresh(),
+          signal,
+        });
+        isRefreshed = refreshed;
+      }
+
+      // The session may have moved on while the refresh was in flight, or inside a `refreshToken` override.
+      if (this.isSessionTaken({ sent, isRetried: isRefreshed })) {
+        throw this.sessionChangedError();
+      }
+
+      // The shared refresh is never aborted for one request: this request stops when it returns.
+      signal?.throwIfAborted();
 
       if (isRefreshed) {
         const authHeader = this.getRequestAuthorizationHeader();
@@ -399,16 +851,32 @@ export class DefaultNetworkRequestService extends BaseService {
 
         const result = await sendOnce(retryHeaders);
         fetched = result;
+        isRetried = true;
       }
     }
 
     const status = fetched.status;
+
+    // The retry may have been answered 401 after the user who sent it had gone too.
+    if (
+      status === 401 &&
+      this.recovery.canRecover({ paths }) &&
+      this.isSessionTaken({ sent, isRetried })
+    ) {
+      throw this.sessionChangedError();
+    }
 
     if (status < 200 || status >= 300) {
       const result2 = await ResponseReader.toError({ response: fetched });
       throw result2;
     }
 
-    return ResponseReader.read<TResult>({ response: fetched, type, requestCountData });
+    const response = await ResponseReader.read<TResult>({
+      response: fetched,
+      type,
+      requestCountData,
+    });
+
+    return response;
   }
 }

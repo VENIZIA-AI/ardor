@@ -1,55 +1,10 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';
+import { FakeClipboard } from '@venizia/ardor-kernel/testing';
 import { useAutosave } from '@/hooks/use-autosave';
 import { useConfirm } from '@/hooks/use-confirm';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { useSizer } from '@/hooks/use-sizer';
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
-
-describe('useSizer', () => {
-  const original = globalThis.ResizeObserver;
-  let notify: (() => void) | undefined;
-
-  afterEach(() => {
-    globalThis.ResizeObserver = original;
-    notify = undefined;
-  });
-
-  test('reports the offset size of the container, with no extra pixel', () => {
-    globalThis.ResizeObserver = class {
-      constructor(callback: () => void) {
-        notify = callback;
-      }
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    } as never;
-
-    const container = document.createElement('div');
-    container.id = 'sizer-fixes';
-    // A scrollbar or a border makes clientWidth differ from offsetWidth: only offset is read.
-    for (const [key, value] of Object.entries({
-      offsetWidth: 300,
-      offsetHeight: 200,
-      clientWidth: 285,
-      clientHeight: 185,
-    })) {
-      Object.defineProperty(container, key, { value, configurable: true });
-    }
-    document.body.appendChild(container);
-
-    const { result, unmount } = renderHook(() => useSizer({ containerId: 'sizer-fixes' }));
-    act(() => notify?.());
-    expect(result.current).toEqual({ width: 300, height: 200 });
-
-    Object.defineProperty(container, 'offsetWidth', { value: 320, configurable: true });
-    act(() => notify?.());
-    expect(result.current).toEqual({ width: 320, height: 200 });
-
-    unmount();
-    document.body.removeChild(container);
-  });
-});
 
 describe('useWindowDimensions', () => {
   test('answers 0 x 0 in a render that has no window, then measures the browser', () => {
@@ -63,6 +18,7 @@ describe('useWindowDimensions', () => {
       try {
         const dimensions = useWindowDimensions();
         renders.push(dimensions);
+
         return dimensions;
       } finally {
         if (descriptor) {
@@ -134,15 +90,11 @@ describe('hooks log through the application logger', () => {
 
   test('useCopyToClipboard reports a failure through its scoped logger', async () => {
     const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
-    const original = navigator.clipboard;
+    const clipboard = new FakeClipboard();
+    clipboard.isDenied = true;
+    const restore = clipboard.install();
 
     try {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: { writeText: () => Promise.reject(new Error('denied')) },
-        configurable: true,
-        writable: true,
-      });
-
       const { result } = renderHook(() => useCopyToClipboard());
       let copied = true;
       await act(async () => {
@@ -154,11 +106,7 @@ describe('hooks log through the application logger', () => {
       expect(consoleSpy).toHaveBeenCalledTimes(1);
       expect(String(consoleSpy.mock.calls[0]?.[0])).toContain('[useCopyToClipboard]');
     } finally {
-      Object.defineProperty(navigator, 'clipboard', {
-        value: original,
-        configurable: true,
-        writable: true,
-      });
+      restore();
       consoleSpy.mockRestore();
     }
   });

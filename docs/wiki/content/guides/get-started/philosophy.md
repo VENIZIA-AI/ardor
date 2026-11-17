@@ -5,25 +5,27 @@ description: Why ARDOR exists next to react-admin, how it connects to IGNIS, and
 
 # Philosophy
 
-ARDOR exists to assemble `ra-core` applications inside an IGNIS inversion-of-control container (`@venizia/ignis-inversion`). While `ra-core` provides the CRUD data contract and UI runtime, ARDOR manages dependency injection, provider wiring, and service lifetimes across your application. It decides five core architectural concerns for you: the application is the container, configuration is a class of `@provide` methods, providers are resolved by key, classes are found by the build not listed by hand, and the same IGNIS packages run on browser and server.
+ARDOR exists to assemble `ra-core` applications inside an IGNIS inversion-of-control container (`@venizia/ignis-inversion`). While `ra-core` provides the CRUD data contract and UI runtime, ARDOR manages dependency injection, provider wiring, and service lifetimes across your application. It decides five core architectural concerns for you: the application is the container, configuration is a class of option methods, framework providers sit under keys while your own classes are resolved by class, classes are found by the build not listed by hand, and the same IGNIS packages run on browser and server.
 
 <<< @/../../../examples/5-mins-qs/src/application.ts{ts}
 
 ## The application is the container
 
-The application class inherits directly from the IGNIS `Container` rather than wrapping one. In `packages/kernel/src/base/applications/abstract.ts`, `AbstractArdorApplication` extends `Container` to manage the lifecycle and resolution of every service. During `start()`, `preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, registers discovered stereotypes, binds `FEATURES`, binds `bindingList()`, and finally calls `bindContext()`. The root component in `packages/admin/src/components/application.tsx` places this container into React context so hooks can resolve dependencies anywhere in the tree. See [Application](../core-concepts/application) and [Dependency injection](../core-concepts/dependency-injection).
+The application class inherits directly from the IGNIS `Container` rather than wrapping one. In `packages/kernel/src/base/applications/abstract.ts`, `AbstractArdorApplication` extends `Container` to manage the lifecycle and resolution of every service. During `start()`, `preConfigure()` binds `APPLICATION_INSTANCE` and `APPLICATION_INFO`, the base application binds the default providers, then it registers discovered stereotypes, binds `FEATURES`, binds `bindingList()`, and finally calls `bindContext()`. The root component in `packages/admin/src/components/application.tsx` places this container into React context so hooks can resolve dependencies anywhere in the tree. See [Application](../core-concepts/application) and [Dependency injection](../core-concepts/dependency-injection).
 
-## Configuration is a class of `@provide` methods
+## Configuration is a class of option methods
 
-Instead of passing static configuration dictionaries to initialization functions, ARDOR defines application configuration as a class decorated with `@configuration()`. Each provider or set of options is declared on a method decorated with `@provide({ key })`. When the application boots, `packages/kernel/src/base/applications/abstract.ts` iterates over the discovered provide metadata and registers each method as a lazy singleton provider. Options and services are therefore instantiated on demand and shared across components. See [Configuration](../core-concepts/configuration).
+Instead of passing static configuration dictionaries to initialization functions, ARDOR defines application configuration as a class decorated with `@configuration()`. Each set of options is declared on a method decorated with `@provide({ key })`, whose return type the compiler checks against the key. When the application boots, `packages/kernel/src/base/applications/abstract.ts` iterates over the discovered provide metadata and registers each method as a lazy singleton provider. Options are therefore built on demand and shared across components. The application binds only options: the providers themselves come from `BaseArdorApplication`. See [Configuration](../core-concepts/configuration).
 
-## Providers are resolved by key
+## Framework providers sit under keys, your classes are resolved by class
 
-`ra-core` providers are resolved by key from the container rather than passed as direct component props. The eleven standard framework keys are declared under `CoreBindings` in `packages/kernel/src/common/keys.ts`. In `packages/admin/src/components/application.tsx`, `ArdorApplication` retrieves the data provider and optional authentication provider using these keys, running without an authentication provider if `DEFAULT_AUTH_PROVIDER` is left unbound. You swap an implementation across the whole application simply by binding a different provider to its key in your configuration class. See [Providers](../core-concepts/providers) and [Binding keys](../../references/binding-keys).
+`ra-core` providers are resolved from the container rather than passed as direct component props. A framework provider is a value under a key, not a class you resolve, so its keys are declared under `CoreBindings` in `packages/kernel/src/common/keys.ts`. `ArdorApplication` resolves the data, i18n and, when the auth options say `{ use: true }`, the authentication provider through `ApplicationProviders.resolve` (`packages/admin/src/components/resolve.ts`); with `{ use: false }`, or no auth options, it runs without an authentication provider. You swap an implementation across the whole application with one line in `bindContext()`: `.toProvider(MyProvider).setScope(BindingScopes.SINGLETON)` on its key (a bare binding is transient: a new provider on every `get()`).
+
+Your own classes (a service, a repository) are the other case. You decorate them with a stereotype and resolve them by class: `@inject({ target })` in a constructor, `Ardor.useService({ target })` in a component. A string key is only for a binding that has no class. See [Providers](../core-concepts/providers) and [Binding keys](../../references/binding-keys).
 
 ## Classes are found by the build, not listed by hand
 
-Applications avoid manual registration lists and centralized barrels for decorated classes. The build system scans `src/` at compile time and emits `AutoArtifacts`, which lists decorated configurations, data sources, components, repositories, and services. In `packages/kernel/src/base/applications/abstract.ts`, `artifacts()` returns this index, and `preConfigure()` checks that every class the index lists was discovered, throwing an error that names the class when one was not. See [Quickstart](./5-minute-quickstart).
+Applications avoid manual registration lists and centralized barrels for decorated classes. The build system scans `src/` at compile time and emits `AutoArtifacts`, which lists decorated configurations, data sources, components, repositories, and services. In `packages/kernel/src/base/applications/abstract.ts`, `artifacts()` returns this index, and `preConfigure()` checks that every class the index lists was discovered, throwing an error that names the class when one was not. See [Quickstart](./5-minute-quickstart). The [Auto boot](../core-concepts/auto-boot) guide covers the setup, what is skipped, kits and features.
 
 ## Same IGNIS packages on browser and server
 
@@ -45,22 +47,22 @@ What ARDOR adds to ra-core:
 
 | Concern | In ARDOR |
 | :--- | :--- |
-| Services | An IGNIS container: `bindingList()`, `@inject`, `useInjectable` by key or by class |
-| Data layer | A REST data provider that sends the IGNIS filter language (`where`, `order`, `limit`, `skip`) and reads totals from `Content-Range` |
+| Services | An IGNIS container: stereotypes, `@inject`, and `Ardor.useService({ target })`, one hook per namespace |
+| Data layer | A REST data provider that sends the IGNIS filter language and reads totals from `Content-Range` |
 | Sign-in | A 401 triggers one token refresh for a burst of requests, then retries them; no-auth paths are explicit |
-| Keys | `useInjectable` and `useTranslate` keys typed through module augmentation |
+| Keys | `useTranslate` keys typed through module augmentation; a string key only for a binding with no class |
+
+The filter language uses `where`, `order`, `limit` and `skip`.
 
 ## Packages
 
-| Package | Contents |
-|---|---|
-| `@venizia/ardor` | Umbrella: re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository` sub-path and the VULCAN preset (`dist/presets`). |
-| `@venizia/ardor-kernel` | Container and service foundation, with no UI: application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository). |
-| `@venizia/ardor-react` | React bindings: application context, `useInjectable`, the artifact hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `DispatchHooks.create` and `SelectorHooks.create`. |
-| `@venizia/ardor-admin` | ra-core adapter: `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`). |
+- **`@venizia/ardor`**: umbrella. Re-exports kernel, react, and admin from one import, plus the `@venizia/ardor/repository`, `@venizia/ardor/vite` and `@venizia/ardor/testing` sub-paths, the `ardor` bin (the codemods) and the VULCAN presets (`app` and `lib`).
+- **`@venizia/ardor-kernel`**: container and service foundation, with no UI. It holds the application base classes, decorators and metadata, `CoreBindings`, the network request service, `RuntimeConfig.get`, and the `/repository` sub-path (IGNIS's HTTP repository).
+- **`@venizia/ardor-react`**: React bindings. It holds the application context, `useInjectable` (a key for a binding with no class), the namespace hooks (`useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository`), UI helper hooks, and the Redux hook factories `DispatchHooks.create` and `SelectorHooks.create`. `@venizia/ardor` also gathers every hook under one name, `Ardor`: `Ardor.useService` is the same function as `useService`.
+- **`@venizia/ardor-admin`**: ra-core adapter. It holds `ArdorApplication`, `DefaultRestDataProvider`, the auth and i18n providers, the permission provider, features, and the hooks that use them (`useTranslate`, `useFeatures`, `useRefreshToken`).
 
 The three layers use no Node builtins, so they run in the browser. Take `@venizia/ardor` unless you want only one layer.
 
 ## Where ARDOR is today
 
-ARDOR is before 1.0. A minor release in the 0.x line can break: some 0.4.x releases carried breaking changes (0.4.1 and 0.4.7), and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers on the 0.4 line; the exact ranges are in each `package.json`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.
+ARDOR is before 1.0. Any release in the 0.x line, a patch included, can break: some 0.4.x releases carried breaking changes (0.4.0, 0.4.1, 0.4.7 and 0.4.8), and every one is listed in the [changelogs](../../changelogs/) with who is affected and what to do. The packages declare IGNIS peers on the 0.4 line; the exact ranges are in each `package.json`. `@venizia/ignis-connectors` is an optional peer, needed only for `@venizia/ardor/repository`.

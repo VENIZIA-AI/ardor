@@ -5,11 +5,13 @@ shell (Tauri's `invoke`, an Electron bridge, a Worker port) uses while keeping t
 `IDataProvider` shape every hook and service expects. Runs as a plain Bun script:
 
 ```bash
+bun install && make build   # from the repository root: the example runs on the built packages
 cd examples/ipc-data-provider
 bun run server:dev
 ```
 
-Only `send()` is replaced. Filter mapping, `value()` and the react-admin methods still come from
+Only `send()` is replaced, and `bindContext()` binds it under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`
+in one line: every other default provider stays. Filter mapping, `value()` and the react-admin methods still come from
 the base class; a shell with no HTTP at all overrides those the same way.
 
 ---

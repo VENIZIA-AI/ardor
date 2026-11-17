@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import type { AuthProvider, DataProvider } from 'ra-core';
+import React from 'react';
+import { renderHook } from '@testing-library/react';
+import type { AuthProvider, DataProvider, I18nProvider } from 'ra-core';
+
+import { Container } from '@venizia/ignis-inversion';
+import { CoreBindings } from '@venizia/ardor-kernel';
+import { ApplicationContext, useInjectable, useProvider } from '@venizia/ardor-react';
 
 import type { TUseTranslateFn } from '@/hooks/use-translate';
 import type {
@@ -58,10 +64,12 @@ describe('provider types', () => {
 
   test('send answers unknown data until the caller names a type', () => {
     type TData = Awaited<ReturnType<IDataProvider['send']>>['data'];
+
     const read = (data: TData) => {
       // @ts-expect-error - `data` is unknown: narrow it, or name the type with send<T>()
       return data.name;
     };
+
     const named = (data: Awaited<ReturnType<IDataProvider['send']>>) => data.total;
 
     expect(typeof read).toBe('function');
@@ -76,5 +84,87 @@ describe('provider types', () => {
     translate(dynamic);
 
     expect(typeof text).toBe('string');
+  });
+});
+
+describe('the provider keys type their hooks', () => {
+  const expectSame = (actual: unknown, expected: unknown) => expect(actual).toBe(expected);
+
+  const dataProvider = { getList: () => Promise.resolve({ data: [], total: 0 }) };
+  const authProvider = { getRoles: () => Promise.resolve(new Set<string>()) };
+  const i18nProvider = { translate: (key: string) => key };
+
+  const createContainer = () => {
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(dataProvider);
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
+    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18nProvider);
+
+    return container;
+  };
+
+  const createWrapper = () => {
+    const container = createContainer();
+
+    return ({ children }: { children?: React.ReactNode }) =>
+      React.createElement(
+        ApplicationContext.Provider,
+        { value: { container, logger: null } },
+        children,
+      );
+  };
+
+  test('useProvider({ key }) returns the provider the key holds, with no generic', () => {
+    const { result } = renderHook(
+      () => ({
+        data: useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+        auth: useProvider({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+        i18n: useProvider({ key: CoreBindings.DEFAULT_I18N_PROVIDER }),
+      }),
+      { wrapper: createWrapper() },
+    );
+
+    const data: IDataProvider = result.current.data;
+    const auth: IAuthProvider = result.current.auth;
+    const i18n: I18nProvider = result.current.i18n;
+    // @ts-expect-error - the data provider is not a number: the type is real, not `any`
+    const collapsed: number = result.current.data;
+
+    expectSame(data, dataProvider);
+    expectSame(auth, authProvider);
+    expectSame(i18n, i18nProvider);
+    expectSame(collapsed, dataProvider);
+  });
+
+  test('useInjectable({ key }) answers the same types', () => {
+    const { result } = renderHook(
+      () => useInjectable({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    const auth: IAuthProvider = result.current;
+
+    expectSame(auth, authProvider);
+  });
+
+  test('a generic that equals the mapped type still compiles', () => {
+    const { result } = renderHook(
+      () => useProvider<IDataProvider>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+      { wrapper: createWrapper() },
+    );
+
+    expectSame(result.current, dataProvider);
+  });
+
+  test('a key that is not listed anywhere does not compile', () => {
+    expect(() =>
+      renderHook(
+        // @ts-expect-error - 'providers.Unlisted' is not a binding key of the kernel or an augmented key
+        () => useProvider({ key: 'providers.Unlisted' }),
+        { wrapper: createWrapper() },
+      ),
+    ).toThrow('providers.Unlisted');
   });
 });

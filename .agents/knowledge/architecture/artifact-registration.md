@@ -95,17 +95,35 @@ the stereotype wrote but has no discovery list, which is why the application bas
 explicit to most explicit - a later `bind` on the same key replaces the earlier one:
 
 ```
-registerArtifacts()  ->  bindingList()  ->  bindContext()
+bindDefaults()  ->  registerArtifacts()  ->  features  ->  bindingList()  ->  bindContext()
 ```
 
-A stereotype is what a class declares about itself; `bindingList()` is what this application decided
+`bindDefaults()` is empty in the kernel; the admin `BaseArdorApplication` binds the default data,
+i18n and auth providers and the auth service there, so any of the later steps replaces one. A stereotype is what a class declares about itself; `bindingList()` is what this application decided
 by hand for this build; a `this.bind(...)` in `bindContext()` overrides both. An override that lost to
-a decorator would be ignored with nothing to show it. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
+a decorator would be ignored with nothing to show it. A class declared `allowOverride: false` (by
+stereotype or by a by-hand method) is the exception: `bindingList()` throws
+`[bindingList] '<key>' is held by <Class> with allowOverride false` instead of replacing it, and only
+`bindContext()` replaces it, on purpose. Two classes that end on one key, where at least one pinned it
+with `binding`, throw at `start()` too: `[registerArtifacts] The key '<key>' is claimed by both <A> and
+<B>`. Two pinned classes with one name are not counted: a hot reload evaluates the module again and
+declares a new class of the same name, and the registry holds nothing to tell it from a real duplicate
+(a same-named pair in two files that pins one key is therefore not caught). A subclass that pins its
+parent's key is a duplicate like any other. The full boot sequence is [application lifecycle](/architecture/application-lifecycle.md).
 
-`registerArtifacts()` reads each discovered class's key, skips a class with none, and binds the rest
-`toClass()` under the scope the stereotype declares, `BindingScopes.SINGLETON` by default. It is not
-IGNIS's boot sequence. From `IArtifactRegistrationOptions` it honours **the key and the scope**;
-`when`, `order`, `after` and `allowOverride` are ignored. Each `@provide({ key })` method of a
+`registerArtifacts()` first asks each discovered class's `when`, checks the classes left for keys they
+share, then reads the key of each,
+skips a class with none, and binds the rest `toClass()` under the scope the stereotype declares,
+`BindingScopes.SINGLETON` by default. It is not IGNIS's boot sequence. From
+`IArtifactRegistrationOptions` it honours **the key, the scope, `when` and `allowOverride`**; `order` and `after` are
+ignored, because every binding is lazy and registration order changes nothing. `allowOverride: false`
+is honoured against `bindingList()` and by the by-hand methods. `when` is called once per class, with `{ application }`, and must return a
+boolean synchronously: `false` leaves the class and its `@provide` methods unbound (and out of the
+key collision check), a promise or any other value throws `[registerArtifacts] The 'when' of <Class>
+must return a boolean synchronously`, and a `when` that throws fails `start()` naming the class. A
+class left out is still discovered, so an index may list it; the key it recorded at decoration stays
+on the class, so `{ target }` for it throws not bound, as for any key nobody bound. A by-hand
+`service(X)` binds the class whatever its `when` says. Each `@provide({ key })` method of a
 discovered class is also bound, under the key the decorator names, as a lazy provider with
 SINGLETON default and `scope` honoured - the same as IGNIS's `bindProvidedKeys`. That is how the
 framework keys in a `@configuration()` class get bound. For a transient, a conditional binding or
@@ -128,24 +146,28 @@ Registration by hand is the second mode, as in IGNIS. Every path records the key
 - `bindingList()` - a record of literal key to class, bound as singletons. Literal keys survive a
   minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
   `IUseInjectableKeysOverrides`.
-- `injectable(scope, Class, tags?)` - binds `` `${scope}.${Class.name}` `` as a singleton with optional
-  tags. Prefer the per-kind methods.
 
-Singleton is the default on every path, unlike IGNIS's server: a hook resolves on every render, and a
-transient repository would hand each render a new instance. A class registered twice under different
+Singleton is the default on every path, unlike IGNIS's server: one repository or service is shared by every component. A class registered twice under different
 keys is bound twice, as two singletons, and `{ target }` reaches the key recorded last. How keys are named, and the minifier and same-name traps of a derived key, are in
 [binding key namespaces](/conventions/binding-key-namespaces.md).
 
 ## Resolve
 
 `useInjectable` takes `{ key }` or `{ target }`, never both, plus an optional `container`. The
-container comes from `useInjectableContainer`: the option, else `ApplicationContext.container`.
+container comes from `useApplicationContainer`: the option, else `ApplicationContext.container`.
 
-- **`{ key }`** calls `container.get({ key })`. The key is typed as `TUseInjectableKeys` - every
-  `CoreBindings` value plus the keys an application adds, see [module augmentation](/architecture/module-augmentation.md).
 - **`{ target }`** looks up the key recorded on the class with
   `container.getMetadataRegistry().getBindingKey({ target })`, then resolves that key. It never
-  guesses a key from the class name.
+  guesses a key from the class name. The return type is the instance type of the class. When the
+  binding holds a class, it is compared with `target` (a subclass is accepted): two classes of one
+  name share one key, and a mismatch throws naming the key and the class.
+- **`{ key }`** is for a binding with no class and calls `container.get({ key })`. The key is typed as
+  `TUseInjectableKeys` - every `CoreBindings` value plus the keys an application adds, see
+  [module augmentation](/architecture/module-augmentation.md). The return type comes from
+  `IUseInjectableKeyTypes` for a key listed there, else from the caller's generic.
+
+Every hook resolves on every render (`packages/react/src/hooks/resolve-injectable.ts`), so a
+`TRANSIENT` binding gives a new instance each time.
 
 `useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` (`use-artifact.ts`) take the same
 two shapes as an options object, never a positional class. With `{ target }` the return type is
@@ -153,21 +175,23 @@ inferred from the class; with `{ key }` the caller supplies it. They are not ali
 each asserts the recorded key starts with `services.`, `repositories.`, `providers.`,
 `components.` or `configurations.` and otherwise throws naming both. A `key` is not checked - its namespace is in the
 string, the caller's to get wrong - and a `target` with no recorded key skips the check and throws
-from `useInjectable`. The check reads the container through `useInjectableContainer` with the same
+from `useInjectable`. The check reads the container through `useApplicationContainer` with the same
 inputs as the resolve, so the two can never disagree.
 
 Since no stereotype maps to `providers`, `useProvider({ target })` passes only for a class declaring
 `binding: { namespace: BindingNamespaces.PROVIDER, key }`. ARDOR's default providers sit under
-`CoreBindings` keys: `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`.
+`CoreBindings` keys: `useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })`, which returns
+`IDataProvider` with no generic.
 
 ## Reading a failed resolve
 
 | Error says | Cause | Fix |
 |---|---|---|
-| `Failed to resolve binding key for target` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
+| `No binding key is recorded on` | No key on the class: neither stereotyped nor registered, or a subclass of a registered class | Add a stereotype, or register it by hand |
 | `is not bounded in context` | A key nobody bound: a typo, a module imported after `start()`, a `bindContext()` binding never made | Fix the key, import before `start()`, or bind it |
+| `is bound to the class ..., which is not the ... you passed` | Two different classes share one name, so one key | Rename one, or pin a key with `binding: { namespace, key }` |
 | `is bound as "...", not under "..."` | The hook does not match the class's namespace | Use the hook for that namespace |
-| `Failed to determine injectable container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
+| `Failed to determine the application container` | No container on `ApplicationContext` and none passed | Render under `ArdorApplication`, or pass `container` |
 
 
 ## Related

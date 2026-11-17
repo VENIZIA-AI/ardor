@@ -55,10 +55,19 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make okf-check-strict
 
+      - name: Changelog migration blocks
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make changelog-check
+
       # A fresh checkout has no adapters; sync writes them, so doctor checks the project, not the runner.
       - name: Agent setup (VULCAN)
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make vulcan-sync vulcan-doctor
+
+      # No tracked file runs an unscoped package by name (V-S-08); guard.runners.allow names shadcn.
+      - name: Runners
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make runners-check
 
       - name: Browser purity probe
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -130,6 +139,10 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make typecheck-examples
 
+      - name: Test the examples
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make test-examples
+
       - name: Layer boundaries
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make layer-check
@@ -141,6 +154,10 @@ jobs:
       - name: Public surface
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: make surface-check
+
+      - name: Published exports have TSDoc
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: make api-undocumented
 
       - name: Bundle budgets
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

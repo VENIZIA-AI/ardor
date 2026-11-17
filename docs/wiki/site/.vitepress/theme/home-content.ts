@@ -9,7 +9,7 @@
 import pkg from '../../../../../packages/ardor/package.json';
 import type { THomeContent, TSiteInfo } from './shared/home-types';
 
-export const COUNTS = { packages: 4, examples: 3, testFiles: 62, nodeBuiltins: 0 };
+export const COUNTS = { packages: 4, examples: 4, testFiles: 96, nodeBuiltins: 0 };
 
 export const VERSION: string = pkg.version;
 
@@ -51,26 +51,20 @@ export const HOME: THomeContent = {
   tabs: [
     {
       file: 'src/configurations/admin.configuration.ts',
-      kind: 'code',
+      type: 'code',
       body: `import {
-  type BaseArdorApplication as TArdorApplication,
   configuration,
   CoreBindings,
-  DefaultRestDataProvider,
-  inject,
+  type IRestDataProviderOptions,
   provide,
   RuntimeConfig,
+  type TAuthProviderOptions,
 } from '@venizia/ardor';
 
 @configuration()
 export class AdminConfiguration {
-  constructor(
-    @inject({ key: CoreBindings.APPLICATION_INSTANCE })
-    private readonly application: TArdorApplication,
-  ) {}
-
   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
-  restDataProviderOptions() {
+  restDataProviderOptions(): IRestDataProviderOptions {
     const url = RuntimeConfig.get({
       key: 'VITE_API_URL',
       buildTimeEnv: import.meta.env,
@@ -80,19 +74,18 @@ export class AdminConfiguration {
     return { url, noAuthPathRegex: /./ };
   }
 
-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-  restDataProvider() {
-    return this.application.instantiate(DefaultRestDataProvider).value(this.application);
+  @provide({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+  authProviderOptions(): TAuthProviderOptions {
+    return { use: false };
   }
 }`,
-      note: 'The configuration the preset writes into a new admin, with the i18n bindings left out. <a href="/guides/core-concepts/configuration">Configuration</a>',
+      note: 'The configuration the preset writes into a new admin: two options, the providers come from the base application. <a href="/guides/core-concepts/configuration">Configuration</a>',
     },
     {
       file: 'src/main.tsx',
-      kind: 'code',
+      type: 'code',
       body: `import 'reflect-metadata';
 
-import { configureStore } from '@reduxjs/toolkit';
 import { ArdorApplication } from '@venizia/ardor';
 import { createRoot } from 'react-dom/client';
 
@@ -100,25 +93,17 @@ import { Application } from '#src/application';
 import { Home } from '#src/pages/home';
 
 const application = new Application();
-const store = configureStore({
-  reducer: { app: (state: { ready: boolean } = { ready: true }) => state },
-});
 
 await application.start();
 
 createRoot(document.getElementById('root')!).render(
-  <ArdorApplication
-    container={application}
-    reduxStore={store}
-    suspense={<p>Loading</p>}
-    dashboard={Home}
-  />,
+  <ArdorApplication container={application} suspense={<p>Loading</p>} dashboard={Home} />,
 );`,
       note: 'The mount point of the same preset, without its stylesheet import. <a href="/guides/core-concepts/application">Application</a>',
     },
     {
       file: 'terminal',
-      kind: 'term',
+      type: 'term',
       body: [
         [
           'cmd',
@@ -143,7 +128,7 @@ createRoot(document.getElementById('root')!).render(
     {
       name: 'di',
       title: 'Dependency injection in the browser',
-      text: 'The application extends the IGNIS container. Bindings, @inject and useInjectable by key or class.',
+      text: 'The application extends the IGNIS container. Stereotyped classes, @inject, and Ardor.useService({ target }) per namespace.',
       href: '/guides/core-concepts/dependency-injection',
     },
     {
@@ -192,7 +177,7 @@ createRoot(document.getElementById('root')!).render(
   fitUse: [
     'An enterprise admin panel that needs a clean IoC architecture',
     'An application that pairs react-admin with an IGNIS backend',
-    'A team that wants DI in React through useInjectable',
+    'A team that wants DI in React, resolved by class (Ardor.useService)',
     'A typed REST data provider, token refresh and i18n',
   ],
   fitNot: [

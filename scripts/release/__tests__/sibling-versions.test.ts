@@ -103,7 +103,8 @@ describe('the packed manifest of each package', () => {
     });
     const exitCode = await proc.exited;
     if (exitCode !== 0) {
-      const stderr = await new Response(proc.stderr).text();
+      const stderrResponse = new Response(proc.stderr);
+      const stderr = await stderrResponse.text();
 
       throw new Error(`bun pm pack failed in ${opts.dir}: ${stderr}`);
     }
@@ -116,7 +117,8 @@ describe('the packed manifest of each package', () => {
     const tar = Bun.spawn(['tar', '-xzOf', join(out, tarball), 'package/package.json'], {
       stdout: 'pipe',
     });
-    const result = await new Response(tar.stdout).text();
+    const tarResponse = new Response(tar.stdout);
+    const result = await tarResponse.text();
     return JSON.parse(result) as TManifest;
   };
 

@@ -3,26 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "description": "Interactive documentation site for the ARDOR Framework. Includes a VitePress-powered documentation site with guides, API references, and best practices.",
-  "keywords": [
-    "api-docs",
-    "api-reference",
-    "bun",
-    "dev-tools",
-    "developer-tools",
-    "docs",
-    "documentation",
-    "examples",
-    "framework-docs",
-    "guide",
-    "ignis",
-    "nodejs",
-    "static-site",
-    "tutorials",
-    "typescript",
-    "venizia",
-    "vitepress",
-    "wiki"
-  ],
   "homepage": "https://ardor.venizia.ai",
   "bugs": {
     "url": "https://github.com/VENIZIA-AI/ardor/issues"
@@ -43,8 +23,7 @@
     "docs:build": "sh ./scripts/docs-build.sh",
     "docs:clean": "sh ./scripts/docs-clean.sh",
     "docs:dev": "vitepress dev site",
-    "docs:preview": "vitepress preview site",
-    "force-update": "sh ../../scripts/build/force-update.sh"
+    "docs:preview": "vitepress preview site"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
@@ -54,7 +33,8 @@
     "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.44"
+    "vue": "^3.5.44",
+    "yaml": "2.9.1"
   },
   "engines": {
     "bun": ">=1.4"

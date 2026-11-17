@@ -1,16 +1,22 @@
-import { type Container, getError, inject } from '@venizia/ignis-inversion';
+import { type Container, getError, inject, isApplicationError } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
-  type AnyType,
   BaseProvider,
+  BrowserStorage,
   CoreBindings,
   type DefaultAuthService,
   type IAuthProviderOptions,
+  type TAuthProviderOptions,
+  type IApplicationInfo,
   type IAuthTokenRecord,
+  type IAuthUser,
   type ISignInSession,
   type IPermissionProvider,
+  LocalStorageKeys,
   RequestMethods,
+  SESSION_CHANGED_CODE,
+  StorageAreas,
   type TStringConstValue,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
@@ -34,6 +40,7 @@ export class SessionClearReasons {
   static readonly REJECTED = 'rejected';
 }
 
+/** One of the `SessionClearReasons` values. */
 export type TSessionClearReason = TStringConstValue<typeof SessionClearReasons>;
 
 /** The status of a failure: react-admin's `HttpError` has `status`, the data provider's `ApplicationError` has `statusCode`. */
@@ -43,6 +50,7 @@ const readStatus = (error: unknown): unknown => {
   }
 
   const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
+
   return status ?? statusCode;
 };
 
@@ -55,6 +63,31 @@ const readStatus = (error: unknown): unknown => {
  * hook that throws, or does not settle in `sessionHookTimeout`, is logged and does not stop the call
  * that fired it. A hook does not call this provider's methods: they wait behind it. Build one provider
  * per auth service: a second one listening to the same service calls every hook again.
+ *
+ * @example
+ * ```ts
+ * import { BindingScopes } from '@venizia/ignis-inversion';
+ * import { BaseArdorApplication, CoreBindings, DefaultAuthProvider, type IApplicationInfo } from '@venizia/ardor';
+ *
+ * class AppAuthProvider extends DefaultAuthProvider {
+ *   protected override get afterLoginPath() {
+ *     return '/products';
+ *   }
+ * }
+ *
+ * export class Application extends BaseArdorApplication {
+ *   getAppInfo(): IApplicationInfo {
+ *     return { name: 'shop', version: '1.0.0', description: 'The shop admin' };
+ *   }
+ *
+ *   bindContext(): void {
+ *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api', noAuthPaths: ['/auth/sign-in'] });
+ *     // Sign-in is off unless the options say use: true.
+ *     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+ *     this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(AppAuthProvider).setScope(BindingScopes.SINGLETON);
+ *   }
+ * }
+ * ```
  */
 export class DefaultAuthProvider<
   TResource extends string = string,
@@ -62,8 +95,8 @@ export class DefaultAuthProvider<
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
     protected restDataProvider: IDataProvider<TResource>,
-    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-    protected authProviderOptions: IAuthProviderOptions,
+    @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS, isOptional: true })
+    protected authProviderOptions: TAuthProviderOptions = { use: false },
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
     protected authService: DefaultAuthService,
     @inject({ key: CoreBindings.PERMISSION_PROVIDER, isOptional: true })
@@ -71,7 +104,9 @@ export class DefaultAuthProvider<
   ) {
     super({ scope: DefaultAuthProvider.name });
 
-    this.stopSync = this.authService.subscribe({ listener: () => this.syncSession() });
+    this.stopSync = this.authService.subscribe({
+      listener: ({ isExternal }) => this.syncSession({ isExternal }),
+    });
   }
 
   /** Stops listening to the auth service. Call it when you discard a provider that you built yourself. */
@@ -84,6 +119,9 @@ export class DefaultAuthProvider<
   /** The session last announced to `onSessionStarted`: `undefined` when none is, or after it was cleared. */
   private announcedSession?: string;
 
+  /** The user of `announcedSession`. */
+  private announcedUserId?: string;
+
   /** The reason of the `cleanUp` this provider is running, for the listener of the service. */
   private clearing?: TSessionClearReason;
 
@@ -92,14 +130,19 @@ export class DefaultAuthProvider<
 
   // --- Paths -----------------------------------------------------------------------------------
 
-  /** Where `login` posts: `paths.signIn`, else the IGNIS auth controller's route. */
-  protected get signInPath(): string {
-    return this.authProviderOptions.paths?.signIn ?? '/auth/sign-in';
+  /** The `paths` of the options; none when sign-in is off (`{ use: false }`). */
+  protected get paths(): IAuthProviderOptions['paths'] {
+    return this.authProviderOptions.use ? this.authProviderOptions.paths : undefined;
   }
 
-  /** Where the admin goes once `login` resolves: `paths.afterLogin`, else `/`. */
-  protected get afterLoginPath(): string {
-    return this.authProviderOptions.paths?.afterLogin ?? '/';
+  /** Where `login` posts: `paths.signIn`, else the IGNIS auth controller's route. */
+  protected get signInPath(): string {
+    return this.paths?.signIn ?? '/auth/sign-in';
+  }
+
+  /** Where the admin goes once `login` resolves: `paths.afterLogin`, else `/`; `false` stays on the page. */
+  protected get afterLoginPath(): string | false {
+    return this.paths?.afterLogin ?? '/';
   }
 
   /** The route of the login page, which `checkAuth` and a `401` redirect to. */
@@ -107,9 +150,9 @@ export class DefaultAuthProvider<
     return '/login';
   }
 
-  /** The route a `403` redirects to; the application mounts it. */
+  /** The route a `403` redirects to: react-admin's `/access-denied`, where `ArdorApplication` mounts its `accessDenied` page. */
   protected get unauthorizedPagePath(): string {
-    return '/unauthorized';
+    return '/access-denied';
   }
 
   /** How long, in milliseconds, `login`, `logout` and the checks wait for a session hook before they log it and carry on. */
@@ -166,9 +209,11 @@ export class DefaultAuthProvider<
     }
 
     const claims = this.decodeJwtClaims({ jwt: record.value });
+
     const isUserId = (value: unknown): value is number | string => {
       return typeof value === 'number' || (typeof value === 'string' && value.length > 0);
     };
+
     const resolvedUserId = [userId, claims?.userId, claims?.sub].find(isUserId);
 
     if (resolvedUserId === undefined) {
@@ -191,6 +236,7 @@ export class DefaultAuthProvider<
   /** The claims of a JWT, or `undefined` for a token that is not one. The signature is not checked. */
   protected decodeJwtClaims(opts: { jwt: string }): Record<string, unknown> | undefined {
     const segment = opts.jwt.split('.')[1];
+
     if (!segment) {
       return undefined;
     }
@@ -200,6 +246,7 @@ export class DefaultAuthProvider<
         char.charCodeAt(0),
       );
       const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
+
       return typeof claims === 'object' && claims !== null
         ? (claims as Record<string, unknown>)
         : undefined;
@@ -209,6 +256,7 @@ export class DefaultAuthProvider<
         '[decodeJwtClaims] The token payload cannot be decoded, reading no claims | error: %s',
         error instanceof Error ? error.name : typeof error,
       );
+
       return undefined;
     }
   }
@@ -223,6 +271,7 @@ export class DefaultAuthProvider<
     }
 
     const names: Array<string> = [];
+
     for (const role of opts.roles as Array<unknown>) {
       const named =
         typeof role === 'object' && role !== null ? (role as Record<string, unknown>) : {};
@@ -230,6 +279,7 @@ export class DefaultAuthProvider<
         typeof role === 'string'
           ? role
           : [named.identifier, named.name].find((v) => typeof v === 'string');
+
       if (typeof name === 'string' && name.length > 0) {
         names.push(name);
       }
@@ -275,14 +325,14 @@ export class DefaultAuthProvider<
    * Runs when a session starts or its token is replaced: after `login` saved it, after a `checkAuth`
    * confirmed it (the first one of a page that finds a stored session too), and whenever anything saves
    * a new token through `DefaultAuthService.saveAuth`, such as the refresh the network service makes on
-   * a 401. `user` is the stored identity (`userId`, `username`,
+   * a 401, and when another tab of the application signs in or switches user. `user` is the stored identity (`userId`, `username`,
    * `referenceId`, `provider`), or `{ userId, username }` when `saveSession` keeps nothing in the
    * store. A re-check of the same session does not call it again. It is awaited; a throw or a
    * rejection is logged and the caller carries on.
    */
   protected onSessionStarted(_opts: {
     token: IAuthTokenRecord;
-    user: AnyType;
+    user: IAuthUser;
   }): void | Promise<void> {
     return undefined;
   }
@@ -291,8 +341,9 @@ export class DefaultAuthProvider<
    * Runs when the session this provider announced ends, with the reason: after `logout`, after the
    * 401 branch of `checkError`, when `checkAuth` rejects (that one does not clear the store), and when
    * other code calls `cleanUp` (reason `external`, for example the network service's `onAuthFailure`).
-   * It is called once for a session, and not at all for one that was never announced. It is awaited;
-   * a throw or a rejection is logged and the caller carries on.
+   * It is called once for a session, and not at all for one that was never announced. A sign-out, or a
+   * clear of the storage, in another tab of the application ends the session here too, with the reason
+   * `external`. It is awaited; a throw or a rejection is logged and the caller carries on.
    */
   protected onSessionCleared(_opts: { reason: TSessionClearReason }): void | Promise<void> {
     return undefined;
@@ -326,13 +377,30 @@ export class DefaultAuthProvider<
   }
 
   /** Announces a session unless it is the one announced last. The claim is made before the hook is awaited. */
-  private startSession(opts: { token: IAuthTokenRecord; user: AnyType }): Promise<void> {
+  private startSession(opts: {
+    token: IAuthTokenRecord;
+    user: IAuthUser;
+    isExternal?: boolean;
+  }): Promise<void> {
     const session = [opts.user?.userId, opts.token.value].join('|');
+
     if (session === this.announcedSession) {
       return this.hookQueue;
     }
 
+    const userId = `${opts.user?.userId}`;
+
+    // Another user over the one announced, with no sign-out between: that session ends first, with what it stored.
+    if (this.announcedUserId !== undefined && this.announcedUserId !== userId) {
+      this.clearStoredDataOfLeavingUser({ isExternal: opts.isExternal === true });
+      this.endSession({ reason: SessionClearReasons.EXTERNAL }).catch((error: unknown) => {
+        this.logger.error('[endSession] failed | error: %o', error);
+      });
+    }
+
     this.announcedSession = session;
+    this.announcedUserId = userId;
+
     return this.runSessionHook({
       name: 'onSessionStarted',
       run: () => this.onSessionStarted(opts),
@@ -346,6 +414,8 @@ export class DefaultAuthProvider<
     }
 
     this.announcedSession = undefined;
+    this.announcedUserId = undefined;
+
     return this.runSessionHook({
       name: 'onSessionCleared',
       run: () => this.onSessionCleared(opts),
@@ -353,14 +423,46 @@ export class DefaultAuthProvider<
   }
 
   /** Announces or ends the session after the service saved or cleared it. */
-  private syncSession(): Promise<void> {
-    return this.authService.getAuth()?.value
-      ? this.startStoredSession()
-      : this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+  private syncSession(opts: { isExternal: boolean }): Promise<void> {
+    if (this.authService.getAuth()?.value) {
+      return this.startStoredSession({ isExternal: opts.isExternal });
+    }
+
+    this.runClearStoredData();
+
+    return this.endSession({ reason: this.clearing ?? SessionClearReasons.EXTERNAL });
+  }
+
+  /** An override that throws must not stop the session from ending. */
+  private runClearStoredData(): void {
+    try {
+      this.clearStoredData();
+    } catch (error) {
+      this.logger.error('[clearStoredData] failed, the session ends anyway | error: %o', error);
+    }
+  }
+
+  /**
+   * What the user who leaves took into the page. A switch made in this tab clears the stored data as a
+   * sign-out does. A switch another tab made was cleared there before the new user wrote anything, so
+   * this tab clears only its own `sessionStorage`: the `localStorage` now holds the new user's data.
+   */
+  private clearStoredDataOfLeavingUser(opts: { isExternal: boolean }): void {
+    if (!opts.isExternal) {
+      this.runClearStoredData();
+
+      return;
+    }
+
+    BrowserStorage.removeWhere({
+      storage: StorageAreas.SESSION,
+      prefix: this.authService.keys.storePrefix,
+    });
   }
 
   private async clearSession(opts: { reason: TSessionClearReason }): Promise<void> {
     this.clearing = opts.reason;
+
     try {
       this.authService.cleanUp();
     } finally {
@@ -371,18 +473,42 @@ export class DefaultAuthProvider<
   }
 
   /** Announces the session in the store, when there is one. */
-  private startStoredSession(): Promise<void> {
+  private startStoredSession(opts?: { isExternal?: boolean }): Promise<void> {
     const token = this.authService.getAuth();
+
     if (!token?.value) {
       return Promise.resolve();
     }
 
-    return this.startSession({ token, user: this.authService.getUser() });
+    return this.startSession({
+      token,
+      user: this.authService.getUser(),
+      isExternal: opts?.isExternal,
+    });
+  }
+
+  /**
+   * Runs when the session is gone, however it ended (sign-out, a `401`, a failed refresh, other
+   * code calling `cleanUp`, a sign-out in another tab of the application): removes what the user stored under the store prefix of this
+   * application (`@app/store/`, or `@app/store/<id>/` with an application `id`) in `localStorage` and `sessionStorage`, so the next user does not see it. In another tab that
+   * hears the session end, the data of that tab is removed too.
+   * Override it to keep preferences, or put them under another prefix.
+   */
+  protected clearStoredData(): void {
+    const prefix = this.authService.keys.storePrefix;
+
+    BrowserStorage.removeWhere({ storage: StorageAreas.LOCAL, prefix });
+    BrowserStorage.removeWhere({ storage: StorageAreas.SESSION, prefix });
   }
 
   // --- react-admin's auth provider -------------------------------------------------------------
 
-  /** Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling. */
+  /**
+   * Posts the sign-in body to `signInPath`, stores the session and resolves `{ ...response,
+   * redirectTo }`, where `redirectTo` is `afterLoginPath` (`false` when it is `false`). Rejects when the request fails, when the
+   * response carries no token or user id, or when `beforeSaveSession` throws; no session is stored
+   * then. Typed `Promise<unknown>` so that a subclass override of `login` keeps compiling.
+   */
   async login(params: ILoginParams): Promise<unknown> {
     const response = await this.restDataProvider.send({
       resource: this.signInPath as TResource,
@@ -404,59 +530,121 @@ export class DefaultAuthProvider<
         : { token: session.token, user: { userId: session.userId, username } },
     );
 
+    const afterLogin = this.afterLoginPath;
+
     return {
       ...response,
-      redirectTo: removeDoubleSlashes(`/${this.afterLoginPath}`),
+      redirectTo: afterLogin === false ? false : removeDoubleSlashes(`/${afterLogin}`),
     };
   }
 
+  /** Clears the session and resolves. */
   async logout(_params?: unknown): Promise<void> {
     await this.clearSession({ reason: SessionClearReasons.LOGOUT });
   }
 
+  /**
+   * Resolves when a token is stored and, if `paths.checkAuth` is set, the server answers with data.
+   * Otherwise it ends the session (reason `rejected`) and rejects with `unauthenticatedRejection`;
+   * it rejects with the request's error when the check request fails.
+   */
   async checkAuth(_params?: unknown) {
     const token = this.authService.getAuth();
 
+    // Another tab is switching users and has not finished writing: nobody is signed out, and its last write starts the session.
+    if (!token?.value && this.authService.isSwitching()) {
+      return Promise.resolve();
+    }
+
     if (!token?.value) {
       await this.endSession({ reason: SessionClearReasons.REJECTED });
+
       return Promise.reject(
         this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
       );
     }
 
-    if (!this.authProviderOptions.paths?.checkAuth) {
+    const checkAuthPath = this.paths?.checkAuth;
+
+    if (!checkAuthPath) {
       await this.startStoredSession();
+
       return Promise.resolve();
     }
 
     const checked = this.announcedSession;
-    const response = await this.restDataProvider.send({
-      resource: this.authProviderOptions.paths.checkAuth as TResource,
-      params: { method: RequestMethods.GET },
+    const { response, isStale } = await this.askCheckAuth({
+      resource: checkAuthPath,
     });
+
+    // The user who asked is gone: the answer says nothing about the session signed in now, which decides.
+    if (isStale) {
+      if (this.authService.getAuth()?.value || this.authService.isSwitching()) {
+        return Promise.resolve();
+      }
+
+      await this.endSession({ reason: SessionClearReasons.REJECTED });
+
+      return Promise.reject(
+        this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
+      );
+    }
 
     if (!response?.data) {
       // The answer belongs to the session announced before the request.
       if (this.announcedSession === checked) {
         await this.endSession({ reason: SessionClearReasons.REJECTED });
       }
+
       return Promise.reject(
         this.unauthenticatedRejection({ reason: SessionClearReasons.REJECTED }),
       );
     }
 
     await this.startStoredSession();
+
     return Promise.resolve();
   }
 
+  /** The `checkAuth` request. `isStale` is a 401 that answers a user who is gone (`SESSION_CHANGED_CODE`): it has no answer. */
+  private async askCheckAuth(opts: { resource: string }) {
+    try {
+      const response = await this.restDataProvider.send({
+        resource: opts.resource as TResource,
+        params: { method: RequestMethods.GET },
+      });
+
+      return { response, isStale: false };
+    } catch (error) {
+      if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+        return { response: undefined, isStale: true };
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Resolves for every error but 401 and 403. A 401 clears the session (unless
+   * `unauthenticatedRejection` says `logoutUser: false`) and rejects with that rejection; a 403
+   * rejects with `{ redirectTo: unauthorizedPagePath, logoutUser: false }`. A 401 that answers a
+   * request sent by a session that has ended since (the network service marks it with
+   * `SESSION_CHANGED_CODE`) resolves and leaves the signed-in session alone.
+   */
   async checkError(error: unknown) {
     const status = readStatus(error);
 
+    if (isApplicationError(error) && error.normalized.code === SESSION_CHANGED_CODE) {
+      return Promise.resolve();
+    }
+
     if (status === 401) {
       const rejection = this.unauthenticatedRejection({ reason: SessionClearReasons.UNAUTHORIZED });
+
       if (rejection.logoutUser !== false) {
         await this.clearSession({ reason: SessionClearReasons.UNAUTHORIZED });
       }
+
       return Promise.reject(rejection);
     }
 
@@ -470,20 +658,27 @@ export class DefaultAuthProvider<
     return Promise.resolve();
   }
 
+  /** Resolves the stored user, with `id` set to its `userId` as react-admin's `UserIdentity` needs; rejects when there is no `userId`. */
   getIdentity(_params?: unknown) {
     const user = this.authService.getUser();
+    const { userId } = user;
 
-    if (!user?.userId) {
+    if (!userId) {
       return Promise.reject({ message: '[getIdentity] No userId to get user identity!' });
     }
 
-    return Promise.resolve(user);
+    return Promise.resolve({ ...user, id: userId });
   }
 
+  /** Resolves with nothing; the roles come from `getRoles`. */
   getPermissions(_params?: unknown) {
     return Promise.resolve();
   }
 
+  /**
+   * Resolves the roles of the stored session. They are read from browser storage, which the user can
+   * edit: use them to show or hide interface only, and let the backend check every permission.
+   */
   getRoles(_params?: unknown) {
     return Promise.resolve(this.authService.getRoles());
   }
@@ -492,9 +687,23 @@ export class DefaultAuthProvider<
    * Refreshes the session through the network service's `refresh`, the one place a refresh is made:
    * `true` when it was refreshed, `false` when the service has no refresh to make. The `401`
    * recovery calls the same method, so one burst of 401s and this call share one refresh.
+   *
+   * @example
+   * ```tsx
+   * import { useRefreshToken } from '@venizia/ardor';
+   *
+   * // The data provider options name the refresh endpoint:
+   * // { url: '/api', authRecovery: { refreshTokenPath: '/auth/refresh-token' } }
+   * export const RefreshButton = () => {
+   *   const refreshToken = useRefreshToken();
+   *
+   *   return <button onClick={() => refreshToken()}>Refresh</button>;
+   * };
+   * ```
    */
   async refreshToken(): Promise<boolean> {
     const isRefreshed = await this.restDataProvider.getNetworkService().refresh();
+
     if (isRefreshed) {
       await this.startStoredSession();
     }
@@ -503,6 +712,20 @@ export class DefaultAuthProvider<
   }
 
   override value(container: Container): IAuthProvider {
+    // A subclass of DefaultAuthService with its own constructor must forward the application info to
+    // super(info): without it the service keeps the unscoped session, silently shared with every other
+    // application of the origin. Refuse that here, where the application info is at hand.
+    const id = container.get<IApplicationInfo>({
+      key: CoreBindings.APPLICATION_INFO,
+      isOptional: true,
+    })?.id;
+
+    if (id !== undefined && this.authService.keys.token !== LocalStorageKeys.scoped({ id }).token) {
+      throw getError({
+        message: `[DefaultAuthProvider] The auth service does not use the application id '${id}': a subclass of DefaultAuthService with its own constructor passes the application info to super(info)`,
+      });
+    }
+
     // A subclass with its own constructor rarely forwards the optional 4th argument to `super`.
     const permissionProvider =
       this.permissionProvider ??
@@ -525,6 +748,7 @@ export class DefaultAuthProvider<
         ? {
             canAccess: (params: { resource: string; action: string; record?: unknown }) => {
               const { resource, action, record } = params;
+
               return permissionProvider.canAccess({ resource, action, record });
             },
           }

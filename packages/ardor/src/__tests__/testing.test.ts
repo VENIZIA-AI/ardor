@@ -2,15 +2,17 @@ import 'reflect-metadata';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { Features } from '@venizia/ardor-admin';
+import { BaseArdorApplication, DefaultI18nProvider, Features } from '@venizia/ardor-admin';
 import {
-  BaseArdorApplication,
+  AbstractArdorApplication,
   CoreBindings,
   inject,
   type IApplicationInfo,
 } from '@venizia/ardor-kernel';
-import { getError } from '@venizia/ignis-inversion';
-import { assertArdorApplicationBoots, FakeResizeObserver } from '@/testing';
+import { Container, getError } from '@venizia/ignis-inversion';
+import * as Kernel from '@venizia/ardor-kernel/testing';
+import * as Testing from '@/testing';
+import { assertArdorApplicationBoots } from '@/testing';
 
 class Dependency {}
 
@@ -32,7 +34,8 @@ interface IFixtureOptions {
   withAuthProvider?: boolean;
   withBrokenAuthProvider?: boolean;
   features?: ReturnType<typeof Features.define>[];
-  i18n?: typeof i18nProvider;
+  i18n?: object;
+  i18nOptions?: object;
 }
 
 const createApplication = (opts: IFixtureOptions = {}) => {
@@ -43,9 +46,10 @@ const createApplication = (opts: IFixtureOptions = {}) => {
     withBrokenAuthProvider = false,
     features,
     i18n = i18nProvider,
+    i18nOptions,
   } = opts;
 
-  class FixtureApplication extends BaseArdorApplication {
+  class FixtureApplication extends AbstractArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'fixture', version: '0.0.0', description: 'A fixture' };
     }
@@ -54,16 +58,29 @@ const createApplication = (opts: IFixtureOptions = {}) => {
       if (!withoutDataProvider) {
         this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(dataProvider);
       }
+
       this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+
+      if (i18nOptions) {
+        this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue(i18nOptions);
+      }
+
+      if (withAuthProvider || withBrokenAuthProvider) {
+        this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+      }
+
       if (withAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
       }
+
       if (withBrokenAuthProvider) {
         this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toClass(Detached);
       }
+
       if (features) {
         this.bind({ key: CoreBindings.FEATURES }).toValue(features);
       }
+
       for (const [key, target] of services) {
         this.bind({ key }).toClass(target);
       }
@@ -79,6 +96,7 @@ const messageOf = async (task: Promise<unknown>): Promise<string> => {
   } catch (error) {
     return (error as Error).message;
   }
+
   throw getError({ message: 'Expected the task to reject' });
 };
 
@@ -180,6 +198,24 @@ describe('assertArdorApplicationBoots', () => {
     expect(message).toContain('allowEmpty');
   });
 
+  test('boots a BaseArdorApplication that binds only the REST options', async () => {
+    class MinimalApplication extends BaseArdorApplication {
+      getAppInfo(): IApplicationInfo {
+        return { name: 'minimal', version: '0.0.0', description: 'Only the REST options' };
+      }
+
+      bindContext(): void {
+        this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api' });
+      }
+    }
+
+    const application = await assertArdorApplicationBoots(() => new MinimalApplication(), {
+      allowEmpty: true,
+    });
+
+    expect(application).toBeInstanceOf(MinimalApplication);
+  });
+
   test('resolves an empty application when allowEmpty is true', async () => {
     await assertArdorApplicationBoots(createApplication(), { allowEmpty: true });
   });
@@ -242,102 +278,161 @@ describe('assertArdorApplicationBoots', () => {
     expect(globalThis.fetch).toBe(originalFetch);
   });
 
-  test('rejects with the error raised while the first locale loads', async () => {
+  test('rejects with the error raised while the initial locale loads, when the provider offers one locale', async () => {
     const application = createApplication({
       services: [['services.Dependency', Dependency]],
-      features: [Features.define({ name: 'reports', messages: { en: () => Promise.resolve({}) } })],
-      i18n: {
-        getLocale: () => 'en',
-        changeLocale: () => Promise.reject(getError({ message: 'key defined twice' })),
-      },
+      features: [
+        Features.define({
+          name: 'reports',
+          messages: { en: () => Promise.reject(getError({ message: 'chunk is down' })) },
+        }),
+      ],
     });
 
     const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(message).toContain('key defined twice');
+    expect(message).toContain('chunk is down');
   });
 });
 
-describe('FakeResizeObserver', () => {
-  const targetOf = (): Element => {
-    const target: unknown = { tagName: 'DIV' };
-    return target as Element;
+describe('assertArdorApplicationBoots messages', () => {
+  const languages = [
+    { locale: 'en', name: 'English' },
+    { locale: 'vi', name: 'Tieng Viet' },
+  ];
+  const reports = Features.define({
+    name: 'reports',
+    messages: { en: { reports: 'Reports' }, vi: () => Promise.resolve({ reports: 'Bao cao' }) },
+  });
+
+  const realI18n = (opts: { features: ReturnType<typeof Features.define>[] }) => {
+    return new DefaultI18nProvider({ languages }, opts.features).value(new Container());
   };
 
-  test('install swaps the global observer and the returned function puts the previous one back', () => {
-    const previous = Reflect.get(globalThis, 'ResizeObserver');
-
-    const restore = FakeResizeObserver.install();
-    expect(Reflect.get(globalThis, 'ResizeObserver')).toBe(FakeResizeObserver);
-
-    restore();
-    expect(Reflect.get(globalThis, 'ResizeObserver')).toBe(previous);
-  });
-
-  test('flush calls an observer of the element once, with the size in every box', () => {
-    const restore = FakeResizeObserver.install();
-    const element = targetOf();
-    const received: Array<ResizeObserverEntry> = [];
-    const observer = new ResizeObserver((entries) => {
-      received.push(...entries);
+  test('loads the messages of every offered locale, not the initial one only', async () => {
+    const lateFailure = Features.define({
+      name: 'late',
+      messages: { vi: () => Promise.reject(getError({ message: 'vi chunk is down' })) },
     });
-    observer.observe(element);
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [reports, lateFailure],
+      i18n: realI18n({ features: [reports, lateFailure] }),
+    });
 
-    FakeResizeObserver.flush({ element, width: 120, height: 40 });
+    const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(received).toHaveLength(1);
-    const [entry] = received;
-    expect(entry?.target).toBe(element);
-    expect(entry?.contentRect.width).toBe(120);
-    expect(entry?.contentRect.height).toBe(40);
-    expect(entry?.borderBoxSize[0]).toEqual({ inlineSize: 120, blockSize: 40 });
-    expect(entry?.contentBoxSize[0]).toEqual({ inlineSize: 120, blockSize: 40 });
-    restore();
+    expect(message).toContain('vi chunk is down');
   });
 
-  test('flush skips an element nobody observes, one that was unobserved and a disconnected observer', () => {
-    const restore = FakeResizeObserver.install();
-    const watched = targetOf();
-    const other = targetOf();
-    const calls: Array<string> = [];
-    const first = new ResizeObserver(() => calls.push('first'));
-    const second = new ResizeObserver(() => calls.push('second'));
-    first.observe(watched);
-    first.unobserve(watched);
-    second.observe(watched);
-    second.disconnect();
+  test('finds a key two lazy bundles define in a locale that is not the initial one', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { vi: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { vi: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18n: realI18n({ features: [first, second] }),
+    });
 
-    FakeResizeObserver.flush({ element: watched, width: 1, height: 1 });
-    FakeResizeObserver.flush({ element: other, width: 1, height: 1 });
+    const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(calls).toEqual([]);
-    restore();
+    expect(message).toContain("Message 'shared' (vi) is defined by both 'first' and 'second'");
   });
 
-  test('flush reaches every observer of the same element', () => {
-    const restore = FakeResizeObserver.install();
-    const element = targetOf();
-    const calls: Array<string> = [];
-    new ResizeObserver(() => calls.push('a')).observe(element);
-    new ResizeObserver(() => calls.push('b')).observe(element);
+  test('checks the fallback locale too when it is not one of the offered locales', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { fr: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { fr: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages, fallback: { locale: 'fr' } };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
 
-    FakeResizeObserver.flush({ element, width: 5, height: 5 });
+    const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(calls).toEqual(['a', 'b']);
-    restore();
+    expect(message).toContain("Message 'shared' (fr) is defined by both 'first' and 'second'");
   });
 
-  test('install forgets the observers of an earlier install', () => {
-    const restoreFirst = FakeResizeObserver.install();
-    const element = targetOf();
-    const calls: Array<string> = [];
-    new ResizeObserver(() => calls.push('stale')).observe(element);
-    restoreFirst();
+  test('checks the default fallback locale when the options name none and it is not offered', async () => {
+    const first = Features.define({
+      name: 'first',
+      messages: { en: () => Promise.resolve({ shared: 'A' }) },
+    });
+    const second = Features.define({
+      name: 'second',
+      messages: { en: () => Promise.resolve({ shared: 'B' }) },
+    });
+    const options = { languages: [{ locale: 'vi', name: 'Vietnamese' }] };
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [first, second],
+      i18nOptions: options,
+      i18n: new DefaultI18nProvider(options, [first, second]).value(new Container()),
+    });
 
-    const restore = FakeResizeObserver.install();
-    FakeResizeObserver.flush({ element, width: 5, height: 5 });
+    const message = await messageOf(assertArdorApplicationBoots(application));
 
-    expect(calls).toEqual([]);
-    restore();
+    expect(message).toContain("Message 'shared' (en) is defined by both 'first' and 'second'");
+  });
+
+  test('leaves the locale of the provider where it was', async () => {
+    const i18n = realI18n({ features: [reports] });
+    const changes: Array<string> = [];
+    const original = i18n.changeLocale;
+
+    i18n.changeLocale = (next, options) => {
+      changes.push(next);
+
+      return original(next, options);
+    };
+
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [reports],
+      i18n,
+    });
+
+    await assertArdorApplicationBoots(application);
+
+    expect(changes).toEqual([]);
+    expect(i18n.getLocale()).toBe('en');
+  });
+
+  test('locale narrows the check to that one locale', async () => {
+    const lateFailure = Features.define({
+      name: 'late',
+      messages: { vi: () => Promise.reject(getError({ message: 'vi chunk is down' })) },
+    });
+    const application = createApplication({
+      services: [['services.Dependency', Dependency]],
+      features: [lateFailure],
+      i18n: realI18n({ features: [lateFailure] }),
+    });
+
+    await assertArdorApplicationBoots(application, { locale: 'en' });
+  });
+});
+
+describe('the browser fakes', () => {
+  test('are the ones of the kernel entry, so an app imports them from one place', () => {
+    expect(Testing.FakeResizeObserver).toBe(Kernel.FakeResizeObserver);
+    expect(Testing.FakeIntersectionObserver).toBe(Kernel.FakeIntersectionObserver);
+    expect(Testing.FakeMatchMedia).toBe(Kernel.FakeMatchMedia);
+    expect(Testing.FakeStorage).toBe(Kernel.FakeStorage);
+    expect(Testing.FakeClipboard).toBe(Kernel.FakeClipboard);
   });
 });

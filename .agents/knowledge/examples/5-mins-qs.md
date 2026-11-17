@@ -31,13 +31,13 @@ app needs together:
   [Hooks and context](/architecture/hooks-and-context.md) and
   [Module augmentation](/architecture/module-augmentation.md).
 - **Sign-in** through the auth provider, on IGNIS's contract by default: `POST /auth/sign-in` with the
-  `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
+  `identifier`/`credential` body, answered with `{ userId, roles, token: { value, type } }`; `AUTH_PROVIDER_OPTIONS` sets `use: true` and only `paths.afterLogin`, `noAuthPaths` lists `/auth/sign-in`, and `ProductList` calls `useLogout()` from ra-core to sign back out.
 
 - **Vendor chunks** - `.configs/builders/vite.config.ts` sets `build.rolldownOptions.output.codeSplitting` groups (React, other vendor): the build is about 595 KB whole (188 KB gzipped), over Vite's 500 KB warning, and three chunks of 10, 219 and 364 KB leave no warning.
 
 The wiki quickstart (`guides/get-started/5-minute-quickstart`) includes this example's `application.ts`, `datasources/`, `repositories/`, `configurations/`, `pages/*.tsx`, `main.tsx` and `.configs/builders/vite.config.ts` with VitePress code imports, so renaming or moving one of them breaks the docs build.
 
-Module augmentation is used once, on `@venizia/ardor-admin`, to teach `useTranslate` about the two `quickstart.*` message keys added to
+Module augmentation on `@venizia/ardor` teaches `useTranslate` about the two `quickstart.*` message keys added to
 `englishMessages`.
 
 ## How to run
@@ -69,6 +69,6 @@ Before reading the source, skim [What is ARDOR](/overview/what-is-ardor.md) and
 [Onboarding](/overview/onboarding.md) for the shape of an application, then
 [Application lifecycle](/architecture/application-lifecycle.md) and
 [DI in the browser](/architecture/di-in-the-browser.md) to understand `@configuration` + `@provide` and
-the registration modes. The files worth opening in order are `src/application.ts` (the application and `AutoArtifacts`), `src/configurations/admin.configuration.ts` (the three providers, the translate augmentation), `src/datasources/` and `src/repositories/` (one decorated class per file), `src/pages/product-list.tsx` (the three hooks used
+the registration modes. The files worth opening in order are `src/application.ts` (the application and `AutoArtifacts`), `src/configurations/admin.configuration.ts` (the three provider options, the translate augmentation), `src/datasources/` and `src/repositories/` (one decorated class per file), `src/pages/product-list.tsx` (the three hooks used
 together), `src/main.tsx` (`ArdorApplication` receiving the container), and `api/server.ts` (the
 list contract, especially `content-range`).

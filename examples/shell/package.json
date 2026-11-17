@@ -1,0 +1,45 @@
+{
+  "name": "shell",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A thin shell over two feature packages: role-based permissions, a menu filtered by access, a gated route, a public page outside the layout, and a lazy locale",
+  "type": "module",
+  "scripts": {
+    "server:dev": "sh scripts/server-dev.sh",
+    "compile": "sh scripts/compile.sh",
+    "typecheck": "bun check --no-pretty -p tsconfig.json",
+    "lint": "devz lint",
+    "lint:fix": "devz lint --fix",
+    "test": "NODE_ENV=test bun test --isolate --preload ./src/__tests__/setup.ts",
+    "clean": "sh scripts/clean.sh"
+  },
+  "dependencies": {
+    "@shell-example/catalog": "workspace:*",
+    "@shell-example/orders": "workspace:*",
+    "@venizia/ardor": "workspace:*",
+    "@venizia/ignis-inversion": "catalog:",
+    "ra-core": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@venizia/dev-configs": "catalog:",
+    "@venizia/ignis-boot": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "react-router-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "engines": {
+    "bun": ">=1.4"
+  }
+}

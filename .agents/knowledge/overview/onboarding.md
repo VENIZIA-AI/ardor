@@ -6,8 +6,8 @@ resource: AGENTS.md
 tags: [onboarding, playbook, getting-started]
 ---
 
-Start with `AGENTS.md`. It is routing only, holds no rules and no facts, and points to the two
-places that do: `.agents/rules.md` (the rules, cited by ID: W write boundaries, S security, P
+Start with `AGENTS.md`. It is routing only (apart from the blocks `make vulcan-sync` generates), holds no
+rules and no facts of its own, and points to the two places that do: `.agents/rules.md` (the rules, cited by ID: W write boundaries, S security, P
 process, B build, C code and writing) and `.agents/knowledge/index.md` (the facts - what ARDOR is,
 the monorepo layout, design decisions, conventions, per-package concepts, playbooks). Both are
 mandatory for every task, not optional background reading.
@@ -51,7 +51,7 @@ graph edges - served both as files under `.agents/knowledge/` and over MCP by `a
 
 1. [What is ARDOR](/overview/what-is-ardor.md) - the frontend framework, its role next to IGNIS,
    and the IoC-container mental model.
-2. [Monorepo layout](/overview/monorepo-layout.md) - where the five packages live and how they
+2. [Monorepo layout](/overview/monorepo-layout.md) - where the four packages live and how they
    relate.
 3. [Build, run, test](/overview/build-run-test.md) - the day-to-day commands, expanded from step 3
    and 4 above.

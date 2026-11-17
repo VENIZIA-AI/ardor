@@ -1,6 +1,4 @@
 import type {
-  AnyObject,
-  AnyType,
   TConstValue,
   TNumberConstValue,
   TPrettify,
@@ -14,6 +12,8 @@ import type { TBuildInfoRecord } from '@venizia/ignis-helpers/core';
 import type { TClass } from '@venizia/ignis-inversion';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 
+import type { AbstractArdorApplication } from '@/base/applications/abstract';
+
 import type {
   Environments,
   RequestBodyTypes,
@@ -23,12 +23,11 @@ import type {
   StorageAreas,
 } from './constants';
 
+/** A record id: a string or a number. */
 export type IdType = string | number;
 
 // The utility types are IGNIS's: one declaration, re-exported by name so ARDOR's surface is unchanged.
 export type {
-  AnyObject,
-  AnyType,
   TConstValue,
   TNumberConstValue,
   TPrettify,
@@ -39,26 +38,45 @@ export type {
   ValueOrPromise,
 };
 
+/** One of the `RequestMethods` values. */
 export type TRequestMethod = TStringConstValue<typeof RequestMethods>;
+/** One of the `Environments` values. */
 export type TEnvironment = TStringConstValue<typeof Environments>;
 
+/** What `IDataProvider.send` takes. */
 export interface ISendParams {
+  /** Required: `send` throws without it. */
   method?: TRequestMethod;
+  /** How the response is read. `RequestTypes.SEND` when absent. */
   requestType?: TRequestType;
+  /** How `body` is encoded; it goes through as JSON when absent. */
   bodyType?: TRequestBodyType;
   body?: unknown;
+  /** Sent as the query string of the request. */
   query?: Record<string, unknown>;
+  /** Added to the headers of this request. */
   headers?: Record<string, string | number>;
+  /**
+   * Whether the response carries a count; sent in `x-request-count`.
+   * @default RequestCountData.DATA_ONLY
+   */
   requestCountData?: TConstValue<typeof RequestCountData>;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
+  /** Aborts the request; it then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
 
-/** What `IDataProvider.send` answers: the network service's response. */
-export type ISendResponse<T = unknown> = INetworkResponse<T>;
+/**
+ * How long a request may take before it is aborted and rejects with `NETWORK_TIMEOUT_CODE`.
+ * `milliseconds` is a positive integer.
+ */
+export type TRequestTimeoutOptions = { use: false } | { use: true; milliseconds: number };
 
+/** One of the `RequestBodyTypes` values. */
 export type TRequestBodyType = TStringConstValue<typeof RequestBodyTypes>;
 
+/** One of the `StorageAreas` values. */
 export type TStorageArea = TStringConstValue<typeof StorageAreas>;
 
 /** How `BrowserStorage` turns a value into text and back. `decode` may throw: `get` then gives the fallback. */
@@ -66,28 +84,53 @@ export interface IStorageCodec<TValue> {
   encode: (value: TValue) => string;
   decode: (text: string) => TValue;
 }
+/** One of the `RequestTypes` values. */
 export type TRequestType = TStringConstValue<typeof RequestTypes>;
 
+/** What `DefaultNetworkRequestService.getRequestProps` takes. */
 export interface IGetRequestPropsParams {
+  /** Decides whether the request goes without a token (`noAuthPaths`, `noAuthPathRegex`). */
   resource: string;
+  /**
+   * Whether the response carries a count.
+   * @default RequestCountData.DATA_ONLY
+   */
   requestCountData?: TConstValue<typeof RequestCountData>;
   body?: unknown;
+  /** How `body` is encoded. */
   bodyType?: TRequestBodyType;
+  /** Gives the request channel. */
   restDataProviderOptions: IRestDataProviderOptions;
+  /** Gives the name the tracing id starts with. */
   applicationInfo: IApplicationInfo;
   /** The list extras to ask the route for, sent in `x-request-extra`. */
   extra?: TExtraRequest;
 }
 
+/** The headers and the encoded body of a request. */
 export interface IGetRequestPropsResult {
   headers?: HeadersInit;
   body?: unknown;
 }
 
-/** Keys react-admin does not know ride on its params and become filter keys; `any`, so ra-core's param interfaces stay assignable. */
+/**
+ * Keys react-admin does not know ride on its params and become filter keys. A react-admin param type
+ * is an interface, which has no index signature: spread it (`{ ...params }`) where this is expected.
+ */
 export interface ICustomParams {
-  params?: Record<string, AnyType>;
-  [key: string]: AnyType;
+  params?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+/**
+ * The identity `saveAuth` stores and `getUser` reads back: every field is absent when nothing is
+ * stored. It has no index signature, so an interface of your own that has these fields fits it.
+ */
+export interface IAuthUser {
+  userId?: IdType;
+  username?: string;
+  referenceId?: IdType;
+  provider?: string;
 }
 
 /** What `login` read from the sign-in response. `roles` are names. */
@@ -97,23 +140,63 @@ export interface ISignInSession {
   roles: Array<string>;
 }
 
-/** Data only: where the auth provider talks to. Behaviour is in `DefaultAuthProvider`'s protected hooks. */
+/**
+ * Data only: where the auth provider talks to, the `use: true` half of `TAuthProviderOptions`.
+ * Behaviour is in `DefaultAuthProvider`'s protected hooks.
+ */
 export interface IAuthProviderOptions {
   paths?: {
-    /** Where `login` posts. Default `/auth/sign-in`, the IGNIS auth controller's route. */
+    /**
+     * Where `login` posts: the IGNIS auth controller's route.
+     * @default '/auth/sign-in'
+     */
     signIn?: string;
     /** Where `checkAuth` validates the stored token. Default: not called; the stored token is enough. */
     checkAuth?: string;
-    /** Where the admin goes once `login` resolves. Default `/`. */
-    afterLogin?: string;
+    /**
+     * Where the admin goes once `login` resolves. `false`: nowhere, `login` resolves with
+     * `redirectTo: false` and the page stays (a guest or kiosk shell).
+     * @default '/'
+     */
+    afterLogin?: string | false;
   };
 }
 
+/**
+ * What `CoreBindings.AUTH_PROVIDER_OPTIONS` holds: sign-in on with its `paths`, or off. Unbound means
+ * `{ use: false }`: `ApplicationProviders.resolve` then hands react-admin no auth provider, and
+ * every page is public.
+ */
+export type TAuthProviderOptions = { use: false } | ({ use: true } & IAuthProviderOptions);
+
+/** How a request recovers from a 401. */
 export interface IAuthRecoveryOptions {
-  /** A request to this path never starts a refresh: it is the refresh. */
+  /**
+   * A request to this path never starts a refresh: it is the refresh. Listing it in `noAuthPaths`
+   * as well keeps the expired token off that request.
+   * @example
+   * ```ts
+   * import { configuration, CoreBindings, provide } from '@venizia/ardor';
+   *
+   * @configuration()
+   * export class ApiConfiguration {
+   *   @provide({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS })
+   *   restDataProviderOptions() {
+   *     return {
+   *       url: 'https://api.example.com',
+   *       // The refresh path is also a no-auth path: the expired token stays off that request, so the
+   *       // server identifies the session another way, such as a cookie.
+   *       noAuthPaths: ['/auth/sign-in', '/auth/refresh'],
+   *       authRecovery: { refreshTokenPath: '/auth/refresh' },
+   *     };
+   *   }
+   * }
+   * ```
+   */
   refreshTokenPath?: string;
 }
 
+/** One pattern or a list; a string is compiled with `new RegExp(...)`. */
 export type TNoAuthPathRegex = string | RegExp | Array<string | RegExp>;
 
 /**
@@ -133,20 +216,38 @@ export interface INoAuthOptions {
   noAuthPathRegex?: TNoAuthPathRegex;
 }
 
+/** Data only: where and how the REST data provider sends. */
 export interface IRestDataProviderOptions extends INoAuthOptions {
+  /** The base URL requests are sent to. */
   url: string;
-  /** Sent in `x-request-channel`. Default `RequestChannel.WEB`. */
+  /**
+   * Sent in `x-request-channel`.
+   * @default RequestChannel.WEB
+   */
   requestTracingChannel?: string;
 
+  /** Sent with every request. */
   headers?: HeadersInit;
 
+  /** Enables the refresh-and-retry after a 401. */
   authRecovery?: IAuthRecoveryOptions;
+
+  /**
+   * Aborts a request that has not answered within `milliseconds`; it rejects with a 504 whose
+   * `normalized.code` is `NETWORK_TIMEOUT_CODE`. An invalid `milliseconds` throws when the provider is built.
+   * @default { use: false }
+   */
+  timeout?: TRequestTimeoutOptions;
 }
 
+/** The token an application is signed in with. */
 export interface IAuthTokenRecord {
+  /** The authorization scheme; the service sends `Bearer` when it is empty or absent. */
   type?: string;
   value: string;
   provider?: string;
+  /** The user the token was issued to, stored by `saveAuth`; absent on a token stored without it. */
+  userId?: IdType;
 }
 
 /** What an `HttpDataSource` hook reads from the request it is asked about. */
@@ -168,7 +269,9 @@ export interface IDataSourceAuth {
 
 /** What `DefaultNetworkRequestService.doRequest` answers. */
 export interface INetworkResponse<TResult = unknown> {
+  /** The response body, or its rows for a list. */
   data: TResult;
+  /** The count the server sent, in the body or in `x-response-count`; absent when it sent none. */
   count?: number;
   /** GET_LIST and GET_MANY_REFERENCE: the total of `Content-Range`, else the page's own row count. */
   total?: number;
@@ -189,9 +292,21 @@ export interface IFeatureBase {
   /**
    * The feature's `@configuration()` classes, by value. Referencing them keeps a bundler from
    * dropping a module nothing else imports, and `start()` checks each was discovered.
+   * @default []
    */
   configurations?: Array<TClass<unknown>>;
-  /** What the feature checks, in the application's vocabulary. Declared for a role editor; ARDOR enforces nothing. */
+  /**
+   * The feature's own stereotyped classes, by value, in the shape of the application's
+   * `artifacts()` index. Importing the feature module imports them, so discovery binds them, and
+   * `start()` checks each was discovered.
+   * @default {}
+   */
+  artifacts?: IArtifactIndex;
+  /**
+   * The permission names the feature's pages use, in the application's vocabulary: metadata for a
+   * role editor to list. Descriptive only, it enforces nothing; `access` on a route or a menu entry
+   * is what asks `canAccess`.
+   */
   permissions?: Array<string>;
 }
 
@@ -209,27 +324,43 @@ export interface IArtifactIndex {
   controllers?: ReadonlyArray<TClass<unknown>>;
 }
 
-/** Answers whether the current actor may act on a resource. Bound by the application under `CoreBindings.PERMISSION_PROVIDER`. */
+/**
+ * Answers whether the current actor may act on a resource. Bound by the application under
+ * `CoreBindings.PERMISSION_PROVIDER`. It decides what the interface shows, not what a user is allowed
+ * to do: the backend must check every permission on every request.
+ */
 export interface IPermissionProvider {
   canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
 }
 
-export interface IArdorApplication {
-  preConfigure(): ValueOrPromise<void>;
-  postConfigure(): ValueOrPromise<void>;
-  bindContext(): ValueOrPromise<void>;
-  bindingList(): Record<string, TClass<unknown>>;
-  features(): Array<IFeatureBase>;
-  artifacts(): Array<IArtifactIndex>;
-
-  injectable<T>(scope: string, value: TClass<T>, tags?: Array<string>): void;
-  service<T>(value: TClass<T>): unknown;
-  repository<T>(value: TClass<T>): unknown;
-  dataSource<T>(value: TClass<T>): unknown;
-  component<T>(value: TClass<T>): unknown;
-
-  start(): ValueOrPromise<void>;
+/** The options of `RolePermissionProvider`, bound under `CoreBindings.PERMISSION_PROVIDER_OPTIONS`. */
+export interface IRolePermissionProviderOptions {
+  /**
+   * Role name to grant patterns. A pattern is `'<resource>.<action>'`, `'<resource>.*'`, `'*.<action>'`
+   * or `'*'`; anything else throws when the provider is built. A pattern has one `.`, so a resource whose
+   * name contains a `.` cannot be named exactly: grant it with `'*.<action>'` or `'*'`, or give it a name without one.
+   */
+  grants: Record<string, ReadonlyArray<string>>;
 }
+
+/**
+ * The contract of an application: lifecycle hooks, registration of artifacts, and `start`. Picked
+ * from `AbstractArdorApplication`, so its signatures are the class's own.
+ */
+export interface IArdorApplication extends Pick<
+  AbstractArdorApplication,
+  | 'preConfigure'
+  | 'postConfigure'
+  | 'bindContext'
+  | 'bindingList'
+  | 'features'
+  | 'artifacts'
+  | 'service'
+  | 'repository'
+  | 'dataSource'
+  | 'component'
+  | 'start'
+> {}
 
 type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -237,10 +368,10 @@ type TDeepPath = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 type TPathLeaf =
   | Date
   | RegExp
-  | ReadonlySet<AnyType>
-  | ReadonlyMap<AnyType, AnyType>
-  | Promise<AnyType>
-  | ((...args: Array<AnyType>) => AnyType);
+  | ReadonlySet<unknown>
+  | ReadonlyMap<unknown, unknown>
+  | Promise<unknown>
+  | ((...args: never[]) => unknown);
 
 type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
 
@@ -250,14 +381,14 @@ type TIsAny<TValue> = 0 extends 1 & TValue ? true : false;
  */
 export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
   ? never
-  : T extends Array<AnyType> | TPathLeaf
+  : T extends Array<unknown> | TPathLeaf
     ? never
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
             ? TIsAny<T[K]> extends true
               ? `${K}`
-              : NonNullable<T[K]> extends Array<AnyType> | TPathLeaf
+              : NonNullable<T[K]> extends Array<unknown> | TPathLeaf
                 ? `${K}`
                 : NonNullable<T[K]> extends object
                   ? `${K}` | `${K}.${TPaths<NonNullable<T[K]>, TDeepPath[DeepLevel]>}`
@@ -266,6 +397,7 @@ export type TPaths<T, DeepLevel extends number = 10> = DeepLevel extends 0
         }[keyof T]
       : never;
 
+/** The dotted paths of an object type, to `DeepLevel` levels (10 by default); unlike `TPaths`, only the paths down to a leaf value. */
 export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends never
   ? never
   : T extends Array<infer U>
@@ -273,17 +405,24 @@ export type TFullPaths<T, DeepLevel extends number = 10> = DeepLevel extends nev
     : T extends object
       ? {
           [K in keyof T]-?: K extends string | number
-            ? T[K] extends Array<any> | object
+            ? T[K] extends object
               ? `${K}.${TFullPaths<T[K], TDeepPath[DeepLevel]>}`
               : `${K}`
             : never;
         }[keyof T]
       : never;
 
+/** What an application is: bound under `CoreBindings.APPLICATION_INFO`, and the name a tracing id starts with. */
 export interface IApplicationInfo {
   name: string;
   version: string;
   description: string;
+  /**
+   * Scopes the session and store keys in browser storage to this application (`LocalStorageKeys.scoped`),
+   * so two applications on one origin do not share a session. Give every application of an origin an id.
+   * Without one the keys are the unscoped ones.
+   */
+  id?: string;
   author?: { name: string; email: string; url?: string };
 }
 

@@ -15,19 +15,23 @@ tags: [architecture, typescript, module-augmentation, useInjectable, useTranslat
 Both hooks follow the same pattern: a default union derived from something real (the core bindings, the default English messages) unioned with `keyof` of an empty override interface.
 
 - `TUseInjectableKeysDefault` is the string values of `CoreBindings`.
-- `TUseInjectableKeys` is `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides`.
+- `TUseInjectableKeys` is `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides | keyof IUseInjectableKeyTypes`.
 - `TUseTranslateKeysDefault` is the dotted-path union produced by `TFullPaths` over the default messages object.
 - `TUseTranslateKeys` follows the same union-with-overrides shape.
 
 Only the `keyof` of the override interface matters - property values are ignored, so the convention is to type them all as `true`. This gives applications compile-time protection against typo'd keys instead of accepting any string silently.
 
+## Two interfaces for injectable keys
+
+`IUseInjectableKeysOverrides` makes a key valid and ignores the property value; `useInjectable({ key })` then returns `unknown` or the caller's generic, an unchecked claim. `IUseInjectableKeyTypes` makes a key valid and its property value is the instance type, so `useInjectable({ key })` and `useProvider({ key })` return it with no generic. The react package declares both empty. `@venizia/ardor-admin` fills `IUseInjectableKeyTypes` with `declare module '@venizia/ardor-react'` for `DEFAULT_REST_DATA_PROVIDER` (`IDataProvider`), `DEFAULT_AUTH_PROVIDER` (`IAuthProvider`) and `DEFAULT_I18N_PROVIDER` (`I18nProvider`), because react cannot import admin. The block sits in `packages/admin/src/common/types.ts`, which the declaration files keep and the umbrella re-exports, so an application needs no augmentation for those. An explicit generic on such a key still compiles (it falls to the unchecked overload).
+
 ## The per-stereotype hooks share the key union
 
-`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form, so one augmentation of `IUseInjectableKeysOverrides` on the React package types all six DI hooks. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form. One augmentation of `IUseInjectableKeyTypes` on the React package types the `{ key }` form of `useInjectable` and `useProvider`, for a value with no class; the other four take the type from the generic you pass. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
 
 ## The two override interfaces and their owning packages
 
-- `IUseInjectableKeysOverrides` is declared in the [React package](/packages/react.md).
+- `IUseInjectableKeysOverrides` and `IUseInjectableKeyTypes` are declared in the [React package](/packages/react.md).
 - `IUseTranslateKeysOverrides` is declared in the [Admin package](/packages/admin.md).
 
 Both are re-exported from the [ARDOR umbrella package](/packages/ardor.md) with `export *`. An application augments the umbrella: `declare module '@venizia/ardor'` merges into both declaring interfaces (next section).
@@ -42,7 +46,7 @@ The declaring packages are the fragile target. An application depends on `@veniz
 
 ## The any-widening footgun
 
-Applications are expected to derive their key unions from something real - a `const` bindings map, an application's `bindingList()` method, or a message object - rather than typing literals by hand twice. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof ReturnType<any>` collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
+Applications are expected to derive their key unions from something real - a `static readonly` constants class for the keys of values with no class, or a message object for translation keys - rather than typing literals by hand twice. A class needs no key at all: it resolves by `{ target }`. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof` of it collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
 
 ## Where the augmentation lives
 

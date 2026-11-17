@@ -32,7 +32,8 @@
     "packages": [
       "packages/*",
       "docs/*",
-      "examples/*"
+      "examples/*",
+      "examples/*/features/*"
     ],
     "catalog": {
       "@happy-dom/global-registrator": "^21.0.4",
@@ -42,22 +43,20 @@
       "@tanstack/react-query": "^5.104.5",
       "@testing-library/react": "^16.3.3",
       "@types/bun": "^1.4.3",
-      "@types/lodash": "^4.17.27",
       "@types/node": "^25.0.10",
       "@types/react": "^19",
       "@types/react-dom": "^19",
-      "@venizia/dev-configs": "^0.4.7",
-      "@venizia/ignis-boot": "^0.4.7",
-      "@venizia/ignis-connectors": "^0.4.7",
-      "@venizia/ignis-filter": "^0.4.6",
-      "@venizia/ignis-helpers": "^0.4.7",
-      "@venizia/ignis-inversion": "^0.4.6",
-      "@venizia/ignis-kernel": "^0.4.7",
+      "@venizia/dev-configs": "^0.4.8",
+      "@venizia/ignis-boot": "^0.4.8",
+      "@venizia/ignis-connectors": "^0.4.8",
+      "@venizia/ignis-filter": "^0.4.7",
+      "@venizia/ignis-helpers": "^0.4.8",
+      "@venizia/ignis-inversion": "^0.4.7",
+      "@venizia/ignis-kernel": "^0.4.8",
       "@vitejs/plugin-react": "^6.1.2",
       "class-variance-authority": "^0.7.1",
       "clsx": "^2.1.1",
       "eslint": "^10.13.0",
-      "lodash": "^4.18.1",
       "oxlint": "1.89.0",
       "oxlint-tsgolint": "7.0.2004",
       "ra-core": "^5.15.5",
@@ -76,13 +75,13 @@
     }
   },
   "scripts": {
-    "force-update": "bun run --filter \"@venizia/*\" force-update",
     "docs:dev": "bun run --filter \"@venizia/ardor-docs\" docs:dev"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@venizia/dev-configs": "catalog:",
-    "@venizia/vulcan": "0.4.9-5",
+    "@venizia/vulcan": "0.4.10-21",
+    "eslint": "catalog:",
     "playwright-core": "1.64.1",
     "typescript": "catalog:"
   },

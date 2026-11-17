@@ -67,8 +67,9 @@ export const createBuildInfoFilePlugin = (opts: {
 
   let body: Promise<string> | undefined;
 
-  // One resolution per process, so the dev server and the build both serve the same builtAt; a failed
-  // one is not kept, because the cause (a half-saved package.json) may be gone on the next request.
+  // One resolution per run, so every request of the dev server and every output of a build carry the
+  // same builtAt; `buildStart` ends the run, so a rebuild in watch mode resolves again. A failed one
+  // is not kept, because the cause (a half-saved package.json) may be gone on the next request.
   const loadBody = (load: {
     warn: (message: string) => void;
     policy: TUnresolvedPolicy;
@@ -97,6 +98,10 @@ export const createBuildInfoFilePlugin = (opts: {
 
   return {
     name: 'ardor:build-info-file',
+
+    buildStart() {
+      body = undefined;
+    },
 
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
@@ -156,6 +161,16 @@ export const createBuildInfoFilePlugin = (opts: {
  * Emits `build-info.json` into the build and serves it on the dev server: the commit, the branch and
  * the build time from the pipeline or git, the app's name and version, and the installed versions of
  * the framework packages it depends on. The shape is `IBuildInfoFile` of `@venizia/ardor`.
+ *
+ * @example
+ * ```ts
+ * import { buildInfoFile } from '@venizia/ardor/vite';
+ * import { defineConfig } from 'vite';
+ *
+ * export default defineConfig({
+ *   plugins: [buildInfoFile({ fileName: 'build-info.json', onUnresolved: 'unspecified' })],
+ * });
+ * ```
  */
 export const buildInfoFile = (opts: IBuildInfoFileOptions = {}): Plugin =>
   createBuildInfoFilePlugin({ options: opts, sources: defaultSources });

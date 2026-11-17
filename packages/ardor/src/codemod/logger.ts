@@ -265,6 +265,7 @@ export class LoggerTransform {
           target,
           'Logger is removed; pass an object with a scope to `LoggerFactory.getLogger([scope])`, or use your own ILogger',
         );
+
         return;
       }
 
@@ -281,7 +282,7 @@ export class LoggerTransform {
           line: lineOf(call),
           name: 'enableDebug',
           reason:
-            'note: dropped. debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup',
+            'dropped. debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup',
           kind: 'note',
         });
       }

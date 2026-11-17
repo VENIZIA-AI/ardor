@@ -47,6 +47,7 @@ const preludeFor = (code: string): string => {
         !new RegExp(`\\b(class|const|let|function|interface|type|enum)\\s+${name}\\b`).test(code),
     )
     .map(([, declaration]) => declaration);
+
   return `${lines.join('\n')}\nexport {};\n`;
 };
 
@@ -54,8 +55,10 @@ type TSnippet = { file: string; line: number; code: string; lang: string; noChec
 
 const collect = async (): Promise<TSnippet[]> => {
   const snippets: TSnippet[] = [];
+
   for await (const file of new Glob('**/*.md').scan(CONTENT)) {
     const text = await Bun.file(join(CONTENT, file)).text();
+
     for (const match of text.matchAll(FENCE)) {
       const line = text.slice(0, match.index).split('\n').length;
       snippets.push({
@@ -73,6 +76,7 @@ const collect = async (): Promise<TSnippet[]> => {
       });
     }
   }
+
   return snippets;
 };
 
@@ -84,12 +88,15 @@ const snippets = await collect();
  */
 const isExcerpt = (code: string): boolean => {
   const trimmed = code.trim();
+
   if (/(^|\n)\s*\/\/\s*\.\.\.|\.\.\.\s*(\n|$)|\.\.\.\s*\}/.test(trimmed)) {
     return true;
   }
+
   // A declaration excerpt, decided by the parser rather than by a regex: every statement is a
   // type, an interface, a class or a variable/function signature with no body and no initializer.
   const source = ts.createSourceFile('excerpt.ts', trimmed, ts.ScriptTarget.ESNext, true);
+
   return source.statements.every((statement) => {
     if (
       ts.isInterfaceDeclaration(statement) ||
@@ -98,28 +105,34 @@ const isExcerpt = (code: string): boolean => {
     ) {
       return true;
     }
+
     if (ts.isClassDeclaration(statement)) {
       return statement.members.every((member) => !('body' in member) || member.body === undefined);
     }
+
     if (ts.isFunctionDeclaration(statement)) {
       return statement.body === undefined;
     }
+
     if (ts.isVariableStatement(statement)) {
       return statement.declarationList.declarations.every(
         (declaration) => declaration.type !== undefined && declaration.initializer === undefined,
       );
     }
+
     return false;
   });
 };
 
 const abused = snippets.filter((snippet) => snippet.noCheck && !isExcerpt(snippet.code));
+
 if (abused.length > 0) {
   console.error(
     `snippet check FAILED - ${abused.length} runnable snippet(s) marked no-check (only excerpts with \`...\` or declaration bodies may opt out):\n  ${abused.map((snippet) => `${snippet.file}:${snippet.line}`).join('\n  ')}`,
   );
   process.exit(1);
 }
+
 const checked = snippets.filter((snippet) => !snippet.noCheck);
 const dir = makeScratch({ prefix: 'ardor-docs-snippets-' });
 // removed on every exit, so a crash or a failing snippet leaves nothing in .agents/local/tmp
@@ -161,6 +174,7 @@ const compilerOptions: ts.CompilerOptions = {
 // One program per PAGE. A `declare module` augmentation is global to its program, so compiling every
 // page together would let one page's augmentation change what another page's snippet accepts.
 const byPage = new Map<string, TSnippet[]>();
+
 for (const snippet of checked) {
   byPage.set(snippet.file, [...(byPage.get(snippet.file) ?? []), snippet]);
 }
@@ -172,6 +186,7 @@ for (const [page, pageSnippets] of byPage) {
   const files = pageSnippets.map((snippet, index) => {
     const name = join(dir, `${page.replace(/[/.]/g, '_')}-${index}.${snippet.lang}`);
     writeFileSync(name, `${preludeFor(snippet.code)}\n${snippet.code}`);
+
     return { name, snippet };
   });
 
@@ -185,10 +200,12 @@ for (const [page, pageSnippets] of byPage) {
 
   for (const diagnostic of ts.getPreEmitDiagnostics(program)) {
     const file = diagnostic.file;
+
     if (!file) {
       problems.push(`${page}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`);
       continue;
     }
+
     const owner = files.find((entry) => entry.name === file.fileName);
     const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
     const preludeLines = owner ? preludeFor(owner.snippet.code).split('\n').length : 0;

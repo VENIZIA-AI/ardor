@@ -1,6 +1,6 @@
 {
   "name": "@venizia/ardor-kernel",
-  "version": "0.4.7",
+  "version": "0.4.8-20",
   "description": "ARDOR kernel - the isomorphic core of the ARDOR frontend framework: application base on IGNIS inversion, service and provider bases, request/auth constants, binding keys, the network request service, runtime config and the HTTP repository (from IGNIS). No React and no react-admin.",
   "keywords": [
     "ardor",
@@ -37,6 +37,7 @@
     "LICENSE.md",
     "dist",
     "!/**/__tests__",
+    "!**/*.map",
     "!**/*.tsbuildinfo"
   ],
   "type": "module",
@@ -55,13 +56,17 @@
       "import": "./dist/base/repositories/index.js",
       "default": "./dist/base/repositories/index.js"
     },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js",
+      "default": "./dist/testing.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "force-update": "sh ../../scripts/build/force-update.sh",
     "prepublishOnly": "make rebuild"
   },
   "devDependencies": {
@@ -82,11 +87,11 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@venizia/ignis-connectors": "^0.4.7",
-    "@venizia/ignis-filter": "^0.4.6",
-    "@venizia/ignis-helpers": "^0.4.7",
-    "@venizia/ignis-inversion": "^0.4.6",
-    "@venizia/ignis-kernel": "^0.4.7",
+    "@venizia/ignis-connectors": "^0.4.8",
+    "@venizia/ignis-filter": "^0.4.7",
+    "@venizia/ignis-helpers": "^0.4.8",
+    "@venizia/ignis-inversion": "^0.4.7",
+    "@venizia/ignis-kernel": "^0.4.8",
     "reflect-metadata": ">=0.2.2"
   },
   "peerDependenciesMeta": {
@@ -103,7 +108,12 @@
         "@venizia/ignis-inversion",
         "reflect-metadata"
       ],
-      "limit": "7.25 KB"
+      "limit": "11070 B"
+    },
+    {
+      "path": "dist/testing.js",
+      "import": "*",
+      "limit": "1640 B"
     }
   ],
   "engines": {

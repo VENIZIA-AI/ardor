@@ -1,19 +1,20 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IDataProvider } from '@/common';
-import { DefaultAuthProvider } from '@/providers/auth';
+import { DefaultAuthProvider, type ILoginParams } from '@/providers/auth';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
+import { BaseArdorApplication } from '@/applications';
 import {
-  type AnyType,
-  BaseArdorApplication,
   CoreBindings,
   DefaultAuthService,
   type IApplicationInfo,
-  type IAuthProviderOptions,
+  type TAuthProviderOptions,
   type ISignInSession,
   type IPermissionProvider,
   LocalStorageKeys,
+  NETWORK_TIMEOUT_CODE,
+  SESSION_CHANGED_CODE,
 } from '@venizia/ardor-kernel';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -38,6 +39,7 @@ type TServer = ReturnType<typeof Bun.serve>;
 
 let server: TServer;
 let whoamiReturnsData = true;
+let whoamiUnauthorizedHook: (() => void) | undefined;
 const defaultLoginBody = { userId: 7, token: { value: 'jwt', type: 'Bearer' } };
 let loginBody: unknown = defaultLoginBody;
 const recordedRequests: Array<IRecordedRequest> = [];
@@ -61,6 +63,7 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
       });
 
       this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
+        use: true,
         paths: { checkAuth: '/auth/whoami', afterLogin: '/dashboard' },
       });
 
@@ -92,14 +95,18 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
 
 const readStorageJson = (options: { readonly key: string }): unknown => {
   const item = localStorage.getItem(options.key);
+
   if (item === null || item.length === 0) {
     return null;
   }
+
   try {
     const parsed: unknown = JSON.parse(item);
+
     return parsed;
   } catch (error) {
     console.error('Failed to parse localStorage JSON for key:', options.key, error);
+
     return null;
   }
 };
@@ -110,6 +117,7 @@ const hasRedirectTo = (options: {
   if (typeof options.value !== 'object' || options.value === null) {
     return false;
   }
+
   return 'redirectTo' in options.value && typeof options.value.redirectTo === 'string';
 };
 
@@ -120,6 +128,7 @@ beforeAll(async () => {
       const url = new URL(request.url);
       const text = await request.text();
       let body: unknown = null;
+
       if (text.length > 0) {
         try {
           const parsed: unknown = JSON.parse(text);
@@ -142,9 +151,16 @@ beforeAll(async () => {
       }
 
       if (url.pathname === '/auth/whoami') {
+        if (whoamiUnauthorizedHook) {
+          whoamiUnauthorizedHook();
+
+          return Response.json({ error: 'expired' }, { status: 401 });
+        }
+
         if (whoamiReturnsData) {
           return Response.json({ id: 7 });
         }
+
         return Response.json(null);
       }
 
@@ -167,6 +183,7 @@ beforeEach(() => {
   localStorage.clear();
   recordedRequests.length = 0;
   whoamiReturnsData = true;
+  whoamiUnauthorizedHook = undefined;
   loginBody = defaultLoginBody;
 });
 
@@ -213,6 +230,7 @@ describe('login', () => {
 
     const loginOutcome = { value: loginResult };
     expect(hasRedirectTo(loginOutcome)).toBe(true);
+
     if (hasRedirectTo(loginOutcome)) {
       expect(loginOutcome.value.redirectTo).toBe('/dashboard');
     }
@@ -229,6 +247,7 @@ describe('login', () => {
       value: 'jwt',
       type: 'Bearer',
       provider: '',
+      userId: 7,
     });
 
     const storedIdentity = readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY });
@@ -251,7 +270,7 @@ const defaultSession = { userId: 7, roles: ['admin'], token: { value: 'jwt', typ
 /** A provider built on a data provider stub: what it posts lands in `sent`, and it answers `data`. */
 const signInWith = (opts: {
   providerClass?: TClass<DefaultAuthProvider>;
-  options?: IAuthProviderOptions;
+  options?: TAuthProviderOptions;
   data?: unknown;
   sent?: Array<SentRequest>;
 }) => {
@@ -259,10 +278,13 @@ const signInWith = (opts: {
   container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
     send: (request: { resource: string; params: { body: unknown } }) => {
       opts.sent?.push({ resource: request.resource, body: request.params.body });
+
       return Promise.resolve({ data: opts.data ?? defaultSession });
     },
   });
-  container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.options ?? {});
+  container
+    .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+    .toValue(opts.options ?? { use: true });
   container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
   container
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
@@ -274,8 +296,70 @@ const signInWith = (opts: {
 // A sign-in response that is only a bare token string, the user id and roles inside its payload.
 const jwtOf = (payload: object): string => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+
   return [encode({ alg: 'ES256' }), encode(payload), 'signature'].join('.');
 };
+
+describe('login and the page after it', () => {
+  const redirectOf = async (options: TAuthProviderOptions) => {
+    const outcome: unknown = await signInWith({ options }).login({
+      username: 'alice',
+      password: 'secret-password',
+    });
+
+    return Reflect.get(Object(outcome), 'redirectTo');
+  };
+
+  test('afterLogin false stays on the page: redirectTo is false', async () => {
+    const result2 = await redirectOf({ use: true, paths: { afterLogin: false } });
+    expect(result2).toBe(false);
+  });
+
+  test('afterLogin names the page, and the default is the root', async () => {
+    const result3 = await redirectOf({ use: true, paths: { afterLogin: 'dashboard' } });
+    expect(result3).toBe('/dashboard');
+    const result4 = await redirectOf({ use: true });
+    expect(result4).toBe('/');
+  });
+
+  test('with sign-in off the provider reads no paths: the default route and page', async () => {
+    const sent: Array<SentRequest> = [];
+    const outcome: unknown = await signInWith({ sent, options: { use: false } }).login({
+      username: 'alice',
+      password: 'secret-password',
+    });
+
+    expect(sent.map((request) => request.resource)).toEqual(['/auth/sign-in']);
+    expect(Reflect.get(Object(outcome), 'redirectTo')).toBe('/');
+  });
+
+  test('a subclass that overrides afterLoginPath with a path or false is obeyed', async () => {
+    class Guest extends DefaultAuthProvider {
+      protected override get afterLoginPath() {
+        return false as const;
+      }
+    }
+    class Fixed extends DefaultAuthProvider {
+      protected override get afterLoginPath() {
+        return '/home';
+      }
+    }
+
+    const outcome = async (providerClass: TClass<DefaultAuthProvider>) => {
+      const result: unknown = await signInWith({ providerClass }).login({
+        username: 'a',
+        password: 'b',
+      });
+
+      return Reflect.get(Object(result), 'redirectTo');
+    };
+
+    const result5 = await outcome(Guest);
+    expect(result5).toBe(false);
+    const result6 = await outcome(Fixed);
+    expect(result6).toBe('/home');
+  });
+});
 
 describe('login against the sign-in response shapes', () => {
   test('stores a bare token string as a Bearer token, with the user id read from its payload', async () => {
@@ -288,6 +372,7 @@ describe('login against the sign-in response shapes', () => {
       value: token,
       type: 'Bearer',
       provider: '',
+      userId: 'u-9',
     });
     expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toEqual({
       userId: 'u-9',
@@ -361,7 +446,7 @@ describe('login against the sign-in response shapes', () => {
     const sent: Array<SentRequest> = [];
     await signInWith({
       providerClass: FormAuthProvider,
-      options: { paths: { signIn: '/auth/login' } },
+      options: { use: true, paths: { signIn: '/auth/login' } },
       sent,
     }).login({ username: 'alice', password: 'secret-password' });
 
@@ -440,6 +525,37 @@ describe('login against the sign-in response shapes', () => {
   });
 });
 
+describe('checkAuth, when the user who asked is gone before the answer', () => {
+  test('another user signed in meanwhile: the late 401 resolves and the new session stays', async () => {
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    whoamiUnauthorizedHook = () => {
+      new DefaultAuthService().saveAuth({
+        userId: 8,
+        username: 'bob',
+        token: { value: 'bob-token', type: 'Bearer' },
+      });
+    };
+
+    const result = await authProvider.checkAuth({});
+
+    expect(result).toBeUndefined();
+    expect(new DefaultAuthService().getAuth()?.value).toBe('bob-token');
+  });
+
+  test('nobody signed in meanwhile: the late 401 rejects to login', async () => {
+    await authProvider.login({ username: 'alice', password: 'secret-password' });
+
+    whoamiUnauthorizedHook = () => {
+      new DefaultAuthService().cleanUp();
+    };
+
+    const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
+
+    expect(result).toEqual({ redirectTo: '/login' });
+  });
+});
+
 describe('checkAuth', () => {
   test('rejects with redirect to login when no token is stored', async () => {
     const result = await RejectionHelper.rejectionOf({ task: authProvider.checkAuth({}) });
@@ -508,7 +624,30 @@ describe('checkError', () => {
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).toBeNull();
   });
 
-  test('rejects with redirect to unauthorized and preserves session on 403 status', async () => {
+  test('a 401 that answers a request of a session that is gone resolves and leaves the signed-in session alone', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_IDENTITY,
+      JSON.stringify({ userId: 8, username: 'bob' }),
+    );
+
+    const result = await authProvider.checkError(
+      getError({
+        statusCode: 401,
+        messageCode: SESSION_CHANGED_CODE,
+        message: 'the session that sent this request ended',
+      }),
+    );
+
+    expect(result).toBeUndefined();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_IDENTITY)).not.toBeNull();
+  });
+
+  test('rejects with a redirect to the access-denied page and preserves the session on a 403', async () => {
     localStorage.setItem(
       LocalStorageKeys.KEY_AUTH_TOKEN,
       JSON.stringify({ value: 'jwt', type: 'Bearer' }),
@@ -522,7 +661,7 @@ describe('checkError', () => {
       task: authProvider.checkError({ status: 403 }),
     });
     expect(result).toEqual({
-      redirectTo: '/unauthorized',
+      redirectTo: '/access-denied',
       logoutUser: false,
     });
 
@@ -548,7 +687,7 @@ describe('checkError', () => {
     const result = await RejectionHelper.rejectionOf({
       task: authProvider.checkError(getError({ statusCode: 403, message: 'HTTP 403' })),
     });
-    expect(result).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(result).toEqual({ redirectTo: '/access-denied', logoutUser: false });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
 
     const result2 = await authProvider.checkError(
@@ -561,6 +700,24 @@ describe('checkError', () => {
     });
     expect(result3).toEqual({ redirectTo: '/login' });
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
+  });
+
+  test('an aborted or timed-out request resolves and leaves the session alone', async () => {
+    localStorage.setItem(
+      LocalStorageKeys.KEY_AUTH_TOKEN,
+      JSON.stringify({ value: 'jwt', type: 'Bearer' }),
+    );
+    const controller = new AbortController();
+    controller.abort();
+
+    const aborted = await authProvider.checkError(controller.signal.reason);
+    const timedOut = await authProvider.checkError(
+      getError({ statusCode: 504, messageCode: NETWORK_TIMEOUT_CODE, message: 'timed out' }),
+    );
+
+    expect(aborted).toBeUndefined();
+    expect(timedOut).toBeUndefined();
+    expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
   });
 
   test('resolves when react-admin passes no error', async () => {
@@ -590,9 +747,194 @@ describe('logout', () => {
   });
 });
 
+describe('data stored by the signed-in user', () => {
+  const STORE_KEY = `${LocalStorageKeys.PREFIX_STORE}draft`;
+
+  const build = (providerClass: TClass<DefaultAuthProvider> = DefaultAuthProvider) => {
+    const authService = new DefaultAuthService();
+    const container = new Container();
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(providerClass);
+
+    return {
+      authService,
+      provider: container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+    };
+  };
+
+  const fill = () => {
+    localStorage.setItem(STORE_KEY, 'secret-local');
+    sessionStorage.setItem(STORE_KEY, 'secret-session');
+    localStorage.setItem('other-app-config', 'kept');
+  };
+
+  const signIn = (authService: DefaultAuthService) => {
+    authService.saveAuth({ userId: 7, username: 'alice', token: { value: 'jwt', type: 'Bearer' } });
+  };
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  test('is removed from both storage areas when the user signs out, and other keys stay', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+
+    await provider.logout({});
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(STORE_KEY)).toBeNull();
+    expect(localStorage.getItem('other-app-config')).toBe('kept');
+  });
+
+  test('is removed when other code clears the session, such as a failed refresh', () => {
+    const { authService } = build();
+    signIn(authService);
+    fill();
+
+    authService.cleanUp();
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(STORE_KEY)).toBeNull();
+  });
+
+  test('is removed on a 401', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+
+    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+  });
+
+  test('stays while the session lives, including when a token is saved again', () => {
+    const { authService } = build();
+    signIn(authService);
+    fill();
+
+    signIn(authService);
+
+    expect(localStorage.getItem(STORE_KEY)).toBe('secret-local');
+    expect(sessionStorage.getItem(STORE_KEY)).toBe('secret-session');
+  });
+
+  test('an override that throws does not stop the session from ending', async () => {
+    const cleared: Array<string> = [];
+
+    class ThrowingProvider extends DefaultAuthProvider {
+      protected override clearStoredData(): void {
+        throw new Error('boom');
+      }
+
+      protected override onSessionCleared(opts: { reason: string }): void {
+        cleared.push(opts.reason);
+      }
+    }
+    const { authService, provider } = build(ThrowingProvider);
+    signIn(authService);
+    await provider.checkAuth({});
+
+    authService.cleanUp();
+    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+
+    expect(cleared).toHaveLength(1);
+  });
+
+  test('two applications with ids on one origin sweep their own store keys only', async () => {
+    const buildOf = (id: string) => {
+      const container = new Container();
+      container
+        .bind({ key: CoreBindings.APPLICATION_INFO })
+        .toValue({ name: id, version: '1', description: '', id });
+      container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+      container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+      container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
+      container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+      return {
+        authService: container.get<DefaultAuthService>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }),
+        provider: container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+      };
+    };
+
+    const shop = buildOf('shop');
+    const blog = buildOf('blog');
+    signIn(shop.authService);
+    blog.authService.saveAuth({
+      userId: 9,
+      username: 'bob',
+      token: { value: 'bob-jwt', type: 'Bearer' },
+    });
+    localStorage.setItem('@app/store/shop/draft', 'shop-draft');
+    localStorage.setItem('@app/store/blog/draft', 'blog-draft');
+    sessionStorage.setItem('@app/store/shop/tab', 'shop-tab');
+    sessionStorage.setItem('@app/store/blog/tab', 'blog-tab');
+
+    await shop.provider.logout({});
+
+    expect(localStorage.getItem('@app/store/shop/draft')).toBeNull();
+    expect(localStorage.getItem('@app/store/blog/draft')).toBe('blog-draft');
+    expect(sessionStorage.getItem('@app/store/shop/tab')).toBeNull();
+    expect(sessionStorage.getItem('@app/store/blog/tab')).toBe('blog-tab');
+    expect(blog.authService.getAuth()?.value).toBe('bob-jwt');
+    expect(shop.authService.getAuth()).toBeNull();
+  });
+
+  test('an auth service that lost the application id stops the provider from being built', () => {
+    class Forgetting extends DefaultAuthService {
+      constructor() {
+        super();
+      }
+    }
+    const container = new Container();
+    container
+      .bind({ key: CoreBindings.APPLICATION_INFO })
+      .toValue({ name: 'shop', version: '1', description: '', id: 'shop' });
+    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(Forgetting);
+    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+
+    expect(() => container.get({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })).toThrow(
+      "does not use the application id 'shop'",
+    );
+  });
+
+  test('a preference under @app/prefs/ outlives the sign-out', async () => {
+    const { authService, provider } = build();
+    signIn(authService);
+    fill();
+    localStorage.setItem(LocalStorageKeys.scoped().locale, 'vi');
+
+    await provider.logout({});
+
+    expect(localStorage.getItem(STORE_KEY)).toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.scoped().locale)).toBe('vi');
+    localStorage.removeItem(LocalStorageKeys.scoped().locale);
+  });
+
+  test('clearStoredData can be overridden to keep preferences', () => {
+    class KeepingProvider extends DefaultAuthProvider {
+      protected override clearStoredData(): void {}
+    }
+    const { authService } = build(KeepingProvider);
+    signIn(authService);
+    fill();
+
+    authService.cleanUp();
+
+    expect(localStorage.getItem(STORE_KEY)).toBe('secret-local');
+  });
+});
+
 describe('getIdentity', () => {
   test('rejects when no userId is stored in identity', async () => {
     expect(authProvider.getIdentity).toBeDefined();
+
     if (authProvider.getIdentity !== undefined) {
       const result = await RejectionHelper.rejectionOf({ task: authProvider.getIdentity({}) });
       expect(result).toEqual({
@@ -603,6 +945,7 @@ describe('getIdentity', () => {
 
   test('resolves stored user identity when userId is present', async () => {
     expect(authProvider.getIdentity).toBeDefined();
+
     if (authProvider.getIdentity !== undefined) {
       const identityPayload = {
         userId: 42,
@@ -612,10 +955,9 @@ describe('getIdentity', () => {
       };
       localStorage.setItem(LocalStorageKeys.KEY_AUTH_IDENTITY, JSON.stringify(identityPayload));
 
-      // `getIdentity` returns what `saveAuth` stored, which carries `userId` rather than react-admin's
-      // `id`; the type says UserIdentity, the wire object says userId - a seam this test records.
+      // react-admin's `UserIdentity` needs an `id`: it is the stored `userId`, next to the stored fields.
       const result = await authProvider.getIdentity({});
-      expect(result).toMatchObject(identityPayload);
+      expect(result).toMatchObject({ ...identityPayload, id: 42 });
     }
   });
 });
@@ -655,11 +997,12 @@ describe('getPermissions and refreshToken', () => {
       getNetworkService: () => ({
         refresh: () => {
           refreshed += 1;
+
           return Promise.resolve(true);
         },
       }),
     });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
 
@@ -680,12 +1023,14 @@ describe('canAccess', () => {
   }) => {
     const container = new Container();
     container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
+    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
     container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
     container.bind({ key: 'services.Extra' }).toValue({});
+
     if (opts.permissionProvider) {
       container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
     }
+
     container
       .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
       .toProvider(opts.providerClass ?? DefaultAuthProvider);
@@ -693,14 +1038,14 @@ describe('canAccess', () => {
     return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
   };
 
-  // The shape every BANA auth provider has: its own constructor, three arguments to `super`, and
+  // The shape an application's auth provider has: its own constructor, three arguments to `super`, and
   // another injection at the index the base uses for the permission provider.
   class ThreeArgumentAuthProvider extends DefaultAuthProvider {
     constructor(
       @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
       restDataProvider: IDataProvider,
       @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-      authProviderOptions: IAuthProviderOptions,
+      authProviderOptions: TAuthProviderOptions,
       @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
       authService: DefaultAuthService,
       @inject({ key: 'services.Extra' })
@@ -732,7 +1077,7 @@ describe('canAccess', () => {
         @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
         restDataProvider: IDataProvider,
         @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-        authProviderOptions: IAuthProviderOptions,
+        authProviderOptions: TAuthProviderOptions,
         @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
         authService: DefaultAuthService,
       ) {
@@ -761,6 +1106,7 @@ describe('canAccess', () => {
       permissionProvider: {
         canAccess: (params) => {
           asked.push(params);
+
           return Promise.resolve(params.action === 'list');
         },
       },
@@ -798,6 +1144,7 @@ describe('login hooks', () => {
     class SpyAuthProvider extends DefaultAuthProvider {
       protected override beforeSaveSession(opts: { session: ISignInSession; params: unknown }) {
         calls.push({ ...opts, wasStored: !isNothingStored() });
+
         return Promise.resolve();
       }
     }
@@ -823,6 +1170,7 @@ describe('login hooks', () => {
         if (!opts.session.roles.includes('superuser')) {
           throw new Error('[beforeSaveSession] Forbidden');
         }
+
         return Promise.resolve();
       }
     }
@@ -873,6 +1221,7 @@ describe('login hooks', () => {
     class ElsewhereAuthProvider extends DefaultAuthProvider {
       protected override beforeSaveSession(opts: { session: ISignInSession }) {
         seen.push(opts.session.token.value);
+
         return Promise.resolve();
       }
 
@@ -883,7 +1232,7 @@ describe('login hooks', () => {
 
     const result = await signInWith({
       providerClass: ElsewhereAuthProvider,
-      options: { paths: { afterLogin: '/dashboard' } },
+      options: { use: true, paths: { afterLogin: '/dashboard' } },
     }).login({ username: 'alice' });
 
     expect(seen).toEqual(['jwt']);
@@ -951,7 +1300,7 @@ describe('paths as protected getters', () => {
     const sent: Array<SentRequest> = [];
 
     await signInWith({ sent }).login({ username: 'alice' });
-    await signInWith({ sent, options: { paths: { signIn: '/api/login' } } }).login({
+    await signInWith({ sent, options: { use: true, paths: { signIn: '/api/login' } } }).login({
       username: 'a',
     });
     await signInWith({ sent, providerClass: RenamedAuthProvider }).login({ username: 'a' });
@@ -966,7 +1315,9 @@ describe('paths as protected getters', () => {
   test('afterLogin defaults to / and follows paths.afterLogin', async () => {
     const result = await signInWith({}).login({ username: 'a' });
     expect(result).toMatchObject({ redirectTo: '/' });
-    const result2 = await signInWith({ options: { paths: { afterLogin: '/home' } } }).login({
+    const result2 = await signInWith({
+      options: { use: true, paths: { afterLogin: '/home' } },
+    }).login({
       username: 'a',
     });
     expect(result2).toMatchObject({ redirectTo: '/home' });
@@ -998,6 +1349,7 @@ describe('readSignInSession as a hook', () => {
     class WrappedResponseAuthProvider extends DefaultAuthProvider {
       protected override readSignInSession(opts: { data: unknown }) {
         const { result } = opts.data as { result: { id: string; jwt: string } };
+
         return {
           userId: result.id,
           token: { value: result.jwt, type: 'Bearer' },
@@ -1022,7 +1374,7 @@ describe('readSignInSession as a hook', () => {
 // as `(params) => Promise<unknown>`, and a subclass that overrides it so must keep compiling.
 describe('login signature', () => {
   class LegacyLoginAuthProvider extends DefaultAuthProvider {
-    override async login(params: AnyType): Promise<unknown> {
+    override async login(params: ILoginParams): Promise<unknown> {
       return super.login(params);
     }
   }

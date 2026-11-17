@@ -1,6 +1,14 @@
 import { defineConfig, type DefaultTheme } from 'vitepress';
+import { changelogPageData } from './theme/shared/changelog-entries.ts';
 import { writeChangelogFeed } from './theme/shared/changelog-loader.ts';
 import { venziaCodeTheme } from './theme/shared/code-theme.ts';
+import { WikiTheme } from './theme/shared/wiki-theme.ts';
+
+// The colours of the wiki are the project's resolved theme, as `vulcan sync` wrote it to the manifest.
+const THEME = WikiTheme.read({
+  manifest: new URL('../../../../.agents/vulcan.manifest.json', import.meta.url).pathname,
+});
+const ACCENT_2 = '#0091ea';
 
 // Every page under content/ must be reachable from a sidebar below - scripts/check-sidebar.mts fails
 // the build on an orphan page or a dead link.
@@ -36,12 +44,14 @@ const guidesSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Providers', link: '/guides/core-concepts/providers' },
       { text: 'Resources and pages', link: '/guides/core-concepts/resources-and-pages' },
       { text: 'Dependency injection', link: '/guides/core-concepts/dependency-injection' },
+      { text: 'Auto boot', link: '/guides/core-concepts/auto-boot' },
     ],
   },
   {
     text: 'Migrations',
     collapsed: false,
     items: [
+      { text: 'Upgrading ARDOR', link: '/guides/migrations/upgrading-ardor' },
       { text: 'From @minimaltech/ra-core-infra', link: '/guides/migrations/from-ra-core-infra' },
     ],
   },
@@ -113,10 +123,16 @@ const config = defineConfig({
   appearance: 'dark',
   markdown: {
     // The code windows are dark in both themes (theme/shared/tokens.css), so one dark theme serves both: the
-    // shared theme built from ARDOR's accent on dark (the same value as --accent-on-dark in theme/product.css).
-    theme: venziaCodeTheme({ accent: '#38bdf8' }),
+    // shared theme built from the accent on dark of the manifest theme (the value of --accent-on-dark).
+    theme: venziaCodeTheme({ accent: THEME.dark.accent ?? '' }),
   },
   srcDir: '../content',
+  // A version folder keeps its page as changelogs/<X.Y.Z>/log.md; the site serves it at /changelogs/<X.Y.Z>.
+  rewrites: {
+    'changelogs/:version/log.md': 'changelogs/:version.md',
+    'changelogs/upgrade/:version.md': 'changelogs/:version/upgrade.md',
+  },
+  transformPageData: (pageData) => changelogPageData({ pageData }),
   outDir: './.vitepress/dist',
   title: 'ARDOR',
   description:
@@ -133,6 +149,7 @@ const config = defineConfig({
     });
   },
   head: [
+    WikiTheme.head({ theme: THEME, accent2: ACCENT_2 }),
     [
       'link',
       {

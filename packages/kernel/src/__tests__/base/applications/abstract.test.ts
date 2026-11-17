@@ -1,7 +1,17 @@
-import { describe, expect, spyOn, test } from 'bun:test';
+import 'reflect-metadata';
 
-import { BaseArdorApplication } from '@/base/applications/abstract';
-import { CoreBindings, type IApplicationInfo, type ValueOrPromise } from '@/common';
+import { describe, expect, test } from 'bun:test';
+import { type Binding, BindingScopes } from '@venizia/ignis-inversion';
+
+import { AbstractArdorApplication } from '@/base/applications/abstract';
+import { configuration, provide } from '@/base/metadata';
+import {
+  CoreBindings,
+  type IApplicationInfo,
+  type IArdorApplication,
+  type ValueOrPromise,
+} from '@/common';
+import { TestArdorApplication } from './test-application';
 
 class LifecycleSteps {
   static readonly PRE_CONFIGURE = 'preConfigure';
@@ -60,7 +70,7 @@ class LoggingService {
   }
 }
 
-class AppInfoTestApplication extends BaseArdorApplication {
+class AppInfoTestApplication extends TestArdorApplication {
   bindContextExecuted = false;
   appInfoAtBindContext: IApplicationInfo | null = null;
 
@@ -80,7 +90,7 @@ class AppInfoTestApplication extends BaseArdorApplication {
   }
 }
 
-class AsyncLifecycleApplication extends BaseArdorApplication {
+class AsyncLifecycleApplication extends TestArdorApplication {
   readonly executionLog: Array<string> = [];
 
   getAppInfo(): IApplicationInfo {
@@ -106,7 +116,7 @@ class AsyncLifecycleApplication extends BaseArdorApplication {
   }
 }
 
-class ContainerBindingApplication extends BaseArdorApplication {
+class ContainerBindingApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
     return {
       name: 'ARDOR-container-binding-test',
@@ -118,7 +128,7 @@ class ContainerBindingApplication extends BaseArdorApplication {
   bindContext(): void {}
 }
 
-class PostConfigureOverrideApplication extends BaseArdorApplication {
+class PostConfigureOverrideApplication extends TestArdorApplication {
   readonly lifecycleOrder: Array<string> = [];
 
   getAppInfo(): IApplicationInfo {
@@ -131,6 +141,7 @@ class PostConfigureOverrideApplication extends BaseArdorApplication {
 
   override preConfigure(): ValueOrPromise<void> {
     this.lifecycleOrder.push(LifecycleSteps.PRE_CONFIGURE);
+
     return super.preConfigure();
   }
 
@@ -143,7 +154,7 @@ class PostConfigureOverrideApplication extends BaseArdorApplication {
   }
 }
 
-class AsyncPostConfigureApplication extends BaseArdorApplication {
+class AsyncPostConfigureApplication extends TestArdorApplication {
   postConfigureCompleted = false;
 
   getAppInfo(): IApplicationInfo {
@@ -166,7 +177,7 @@ class AsyncPostConfigureApplication extends BaseArdorApplication {
   }
 }
 
-describe('BaseArdorApplication - CoreBindings.APPLICATION_INFO registration', () => {
+describe('AbstractArdorApplication - CoreBindings.APPLICATION_INFO registration', () => {
   test('start() binds CoreBindings.APPLICATION_INFO to getAppInfo() value before bindContext runs', async () => {
     const app = new AppInfoTestApplication();
     await app.start();
@@ -185,7 +196,7 @@ describe('BaseArdorApplication - CoreBindings.APPLICATION_INFO registration', ()
   });
 });
 
-describe('BaseArdorApplication - async bindContext lifecycle ordering', () => {
+describe('AbstractArdorApplication - async bindContext lifecycle ordering', () => {
   test('start() awaits an async bindContext before postConfigure runs', async () => {
     const app = new AsyncLifecycleApplication();
     await app.start();
@@ -198,34 +209,52 @@ describe('BaseArdorApplication - async bindContext lifecycle ordering', () => {
   });
 });
 
-describe('BaseArdorApplication - injectable and service registration', () => {
-  test('injectable() binds target class under scope with tags and is resolvable via container.get', async () => {
+describe('AbstractArdorApplication - service registration', () => {
+  test('injectable() is gone: register with service() and its binding option', () => {
     const app = new ContainerBindingApplication();
-    let capturedTags: Array<string> = [];
 
-    const originalBind = app.bind.bind(app);
-    spyOn(app, 'bind').mockImplementation(<T>(options: Parameters<typeof app.bind>[0]) => {
-      const binding = originalBind<T>(options);
-      const originalSetTags = binding.setTags.bind(binding);
-      spyOn(binding, 'setTags').mockImplementation((...tags: Array<string>) => {
-        capturedTags = tags;
-        return originalSetTags(...tags);
-      });
-      return binding;
+    expect(Reflect.get(AbstractArdorApplication.prototype, 'injectable')).toBeUndefined();
+    expect(Reflect.get(app, 'injectable')).toBeUndefined();
+
+    const binding = app.service(AuditService, {
+      binding: { namespace: InjectionScopes.SERVICES, key: 'Audit' },
     });
+    binding.setTags(TestTags.TAG_AUDIT, TestTags.TAG_LOGGING);
 
-    app.injectable(InjectionScopes.SERVICES, AuditService, [
-      TestTags.TAG_AUDIT,
-      TestTags.TAG_LOGGING,
-    ]);
-
-    const resolved = app.get<AuditService>({
-      key: `${InjectionScopes.SERVICES}.${AuditService.name}`,
-    });
+    const resolved = app.get<AuditService>({ key: `${InjectionScopes.SERVICES}.Audit` });
 
     expect(resolved).toBeInstanceOf(AuditService);
     expect(resolved.getScopeName()).toBe('audit-service-instance');
-    expect(capturedTags).toEqual([TestTags.TAG_AUDIT, TestTags.TAG_LOGGING]);
+    expect(binding.getTags()).toEqual(
+      expect.arrayContaining([TestTags.TAG_AUDIT, TestTags.TAG_LOGGING]),
+    );
+  });
+
+  test('IArdorApplication carries the registration signatures of the class, and no injectable', () => {
+    type TMembers = keyof IArdorApplication;
+    const members: Array<TMembers> = [
+      'preConfigure',
+      'postConfigure',
+      'bindContext',
+      'bindingList',
+      'features',
+      'artifacts',
+      'service',
+      'repository',
+      'dataSource',
+      'component',
+      'start',
+    ];
+    // @ts-expect-error - injectable() was removed
+    const removed: TMembers = 'injectable';
+    const app: IArdorApplication = new ContainerBindingApplication();
+    const binding: Binding<LoggingService> = app.service(LoggingService, {
+      scope: BindingScopes.TRANSIENT,
+    });
+
+    expect(members).toHaveLength(11);
+    expect(String(removed)).toBe('injectable');
+    expect(binding.getScope()).toBe(BindingScopes.TRANSIENT);
   });
 
   test('service() binds target class under services scope and is resolvable via container.get', () => {
@@ -246,7 +275,7 @@ describe('BaseArdorApplication - injectable and service registration', () => {
   });
 });
 
-describe('BaseArdorApplication - postConfigure override behavior', () => {
+describe('AbstractArdorApplication - postConfigure override behavior', () => {
   test('a subclass may override postConfigure and it runs after preConfigure', async () => {
     const app = new PostConfigureOverrideApplication();
     await app.start();
@@ -275,7 +304,7 @@ describe('BaseArdorApplication - postConfigure override behavior', () => {
 describe('bindingList', () => {
   class ListedAuditService {}
 
-  class ListedApplication extends BaseArdorApplication {
+  class ListedApplication extends TestArdorApplication {
     getAppInfo(): IApplicationInfo {
       return { name: 'listed', version: '0.0.0', description: 'bindingList test' };
     }
@@ -312,7 +341,7 @@ describe('bindingList', () => {
   });
 });
 
-class AsyncAppInfoApplication extends BaseArdorApplication {
+class AsyncAppInfoApplication extends TestArdorApplication {
   async getAppInfo(): Promise<IApplicationInfo> {
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 10);
@@ -328,7 +357,7 @@ class AsyncAppInfoApplication extends BaseArdorApplication {
   bindContext(): void {}
 }
 
-describe('BaseArdorApplication - an async getAppInfo', () => {
+describe('AbstractArdorApplication - an async getAppInfo', () => {
   test('start() binds the resolved info to CoreBindings.APPLICATION_INFO, not a promise', async () => {
     const app = new AsyncAppInfoApplication();
     await app.start();
@@ -341,5 +370,85 @@ describe('BaseArdorApplication - an async getAppInfo', () => {
       version: '1.0.0',
       description: 'Tests an async getAppInfo in ARDOR application',
     });
+  });
+});
+
+class DefaultKeys {
+  static readonly PROVIDED = 'test.defaults.provided';
+  static readonly LISTED = 'test.defaults.listed';
+  static readonly CONTEXT = 'test.defaults.context';
+  static readonly UNTOUCHED = 'test.defaults.untouched';
+}
+
+class DefaultValue {
+  readonly source = 'default';
+}
+
+class ListedValue {
+  readonly source = 'bindingList';
+}
+
+@configuration()
+class DefaultsOverridingConfiguration {
+  @provide({ key: DefaultKeys.PROVIDED })
+  provided() {
+    return { source: '@provide' };
+  }
+}
+
+class DefaultsApplication extends TestArdorApplication {
+  infoAtDefaults: IApplicationInfo | undefined;
+
+  getAppInfo(): IApplicationInfo {
+    return { name: 'defaults', version: '0.0.0', description: 'bindDefaults test' };
+  }
+
+  protected override bindDefaults(): void {
+    this.infoAtDefaults = this.get<IApplicationInfo>({ key: CoreBindings.APPLICATION_INFO });
+
+    for (const key of [
+      DefaultKeys.PROVIDED,
+      DefaultKeys.LISTED,
+      DefaultKeys.CONTEXT,
+      DefaultKeys.UNTOUCHED,
+    ]) {
+      this.bind({ key }).toClass(DefaultValue).setScope(BindingScopes.SINGLETON);
+    }
+  }
+
+  override bindingList() {
+    return { [DefaultKeys.LISTED]: ListedValue };
+  }
+
+  bindContext(): void {
+    this.bind({ key: DefaultKeys.CONTEXT }).toValue({ source: 'bindContext' });
+  }
+}
+
+describe('AbstractArdorApplication - bindDefaults', () => {
+  test('binds nothing by default', async () => {
+    const app = new ContainerBindingApplication();
+    await app.start();
+
+    expect(app.isBound({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })).toBe(false);
+    expect(app.isBound({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })).toBe(false);
+  });
+
+  test('runs after the application info is bound', async () => {
+    const app = new DefaultsApplication();
+    await app.start();
+
+    expect(app.infoAtDefaults?.name).toBe('defaults');
+  });
+
+  test('runs first: @provide, bindingList() and bindContext() each replace a default', async () => {
+    const app = new DefaultsApplication();
+    await app.start();
+
+    expect(DefaultsOverridingConfiguration.name).toBe('DefaultsOverridingConfiguration');
+    expect(app.get({ key: DefaultKeys.PROVIDED })).toEqual({ source: '@provide' });
+    expect(app.get({ key: DefaultKeys.LISTED })).toBeInstanceOf(ListedValue);
+    expect(app.get({ key: DefaultKeys.CONTEXT })).toEqual({ source: 'bindContext' });
+    expect(app.get({ key: DefaultKeys.UNTOUCHED })).toBeInstanceOf(DefaultValue);
   });
 });

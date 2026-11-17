@@ -5,7 +5,7 @@ description: Technical API reference for ARDOR container classes, providers, bin
 
 # ARDOR API References
 
-ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get`) has its own section below.
+ARDOR structures ra-core applications inside an IGNIS inversion-of-control container. This reference catalogs the classes, interfaces, binding keys, and hooks of `@venizia/ardor-kernel`, `@venizia/ardor-react` and `@venizia/ardor-admin`, which `@venizia/ardor` re-exports. Runtime configuration (`RuntimeConfig.get` and `getRequired`), browser storage and the browser clipboard have their own sections below.
 
 <div class="guide-cards">
 <a href="./application" class="guide-card"><h3>Application</h3><p>Container lifecycle, configuration, and ArdorApplication component</p></a>
@@ -18,7 +18,7 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 <a href="./features" class="guide-card"><h3>Features</h3><p>Feature package definitions, configuration classes, and route mounting</p></a>
 <a href="./repository" class="guide-card"><h3>Repository</h3><p>HttpRepository and HttpDataSource for resource-level operations</p></a>
 <a href="./hooks" class="guide-card"><h3>Hooks</h3><p>Container resolution, Redux hooks, ra-core helpers, and UI utilities</p></a>
-<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network; FakeResizeObserver delivers a size in a test</p></a>
+<a href="./testing" class="guide-card"><h3>Testing</h3><p>assertArdorApplicationBoots proves an application boots, with no browser and no network; fakes for the observers, matchMedia, storage and the clipboard</p></a>
 <a href="./types" class="guide-card"><h3>Types</h3><p>Kernel type aliases, const classes, path helpers, and options shapes</p></a>
 </div>
 
@@ -40,34 +40,59 @@ ARDOR structures ra-core applications inside an IGNIS inversion-of-control conta
 | Types | `@venizia/ardor-kernel` | [Types](./types) |
 | Runtime config | `@venizia/ardor-kernel` | [Runtime config](#runtime-config) |
 | Browser storage | `@venizia/ardor-kernel` | [Browser storage](#browser-storage) |
+| Browser clipboard | `@venizia/ardor-kernel` | [Browser clipboard](#browser-clipboard) |
 
 ## Runtime config
 
-`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a non-empty string counts, and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
+`RuntimeConfig.get` reads one configuration value: the runtime one from `window.__APP_CONFIG__` (the preset image writes it at container start from the `VITE_` variables), else `buildTimeEnv` (pass `import.meta.env`), else `defaultValue`. Only a string with text in it counts (an empty or blank one is unset), and a missing `window.__APP_CONFIG__` is not an error. How the image writes the file is in [One image for every environment](../guides/get-started/create-a-project#one-image-for-every-environment).
 
 | Option | Type | Default | Meaning |
 |---|---|---|---|
 | `key` | `string` | - | The variable name, for example `VITE_API_URL`. |
 | `buildTimeEnv` | `Record<string, unknown>` | none | The build-time source, normally `import.meta.env`. |
-| `defaultValue` | `string` | none | Used when neither source has a value. |
-| `required` | `boolean` | `false` | With `true` the result is a `string`, and a missing value throws. |
+| `defaultValue` | `string` | none | Used when neither source has a value. `get` only. |
+| `transform` | `(raw) => value` | none | Turns the value into a number, a boolean or another type. |
 
-Without `required` the result is `string | undefined`. With `required: true` and no value anywhere, it throws an `ApplicationError` from `@venizia/ignis-inversion`. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
+`get` returns `string | undefined`, or a `string` when you give a `defaultValue`. `getRequired` is for a value the app cannot run without: it returns a `string`, takes no `defaultValue`, and throws an `ApplicationError` from `@venizia/ignis-inversion` when the value is unset. Its message names the key and never a value. Detect it by code, not by message; the key is in `extra.key`:
 
 ```typescript
 import { RUNTIME_CONFIG_REQUIRED_CODE, RuntimeConfig } from '@venizia/ardor';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
-try {
-  RuntimeConfig.get({ key: 'VITE_API_URL', required: true });
-} catch (error) {
-  if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
-    console.error('missing config key', error.extra?.key);
+export const readMissingKey = (): unknown => {
+  try {
+    RuntimeConfig.getRequired({ key: 'VITE_API_URL' });
+  } catch (error) {
+    if (isApplicationError(error) && error.normalized.code === RUNTIME_CONFIG_REQUIRED_CODE) {
+      return error.extra?.key;
+    }
+
+    throw error;
   }
-}
+
+  return undefined;
+};
 ```
 
-`RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
+With `transform`, the result has the type the function returns. `get` hands it `undefined` for an unset value and uses `defaultValue` when it answers `undefined` or `null`; `getRequired` hands it the string and throws when it answers `undefined` or `null`. A `transform` that throws, in either method, raises an error with the code `RUNTIME_CONFIG_INVALID_CODE`; the key is in `extra.key`, and the value is never in the error.
+
+```typescript
+import { RuntimeConfig } from '@venizia/ardor';
+
+const toPort = (raw: string): number | undefined => {
+  const port = Number(raw);
+
+  return Number.isInteger(port) ? port : undefined;
+};
+
+export const apiPort: number = RuntimeConfig.getRequired({ key: 'VITE_API_PORT', transform: toPort });
+export const isDebug: boolean = RuntimeConfig.get({
+  key: 'VITE_DEBUG',
+  transform: (raw) => raw === 'true',
+});
+```
+
+`RUNTIME_CONFIG_REQUIRED_CODE` is `'ardor.runtime_config.required'`, `RUNTIME_CONFIG_INVALID_CODE` is `'ardor.runtime_config.invalid'`, and `RUNTIME_CONFIG_GLOBAL` is `'__APP_CONFIG__'`. The source is `packages/kernel/src/utilities/runtime-config.ts`.
 
 ## Browser storage
 
@@ -76,21 +101,65 @@ try {
 ```typescript
 import { BrowserStorage, StorageAreas } from '@venizia/ardor';
 
-BrowserStorage.set({ key: '@app/store/theme', value: { mode: 'dark' } });
-const theme = BrowserStorage.get({ key: '@app/store/theme', fallback: { mode: 'light' } });
-BrowserStorage.remove({ key: '@app/store/theme', storage: StorageAreas.LOCAL });
+BrowserStorage.set({ key: '@app/prefs/theme', value: { mode: 'dark' } });
+const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: { mode: 'light' } });
+BrowserStorage.remove({ key: '@app/prefs/theme', storage: StorageAreas.LOCAL });
+```
+
+| Method | Returns |
+|---|---|
+| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` |
+| `set({ key, value, storage?, codec? })` | `boolean` |
+| `remove({ key, storage? })` | `boolean` |
+| `keys({ storage?, prefix? })` | `Array<string>` |
+| `removeWhere({ storage?, prefix })` | `number` |
+| `subscribe({ key, storage?, listener })` | a function that stops it |
+
+- **`get`:** Answers `fallback` when the key is missing, the accessor throws, or `decode` throws.
+- **`set`:** `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`.
+- **`remove`:** `false` when the key was not removed, and for a key under `@app/auth/`.
+- **`keys`:** The keys of the area, only those that start with `prefix` when it is given. `[]` where the area is missing or throws. It lists the keys under `@app/auth/` too, because listing writes nothing.
+- **`removeWhere`:** Removes every key that starts with `prefix` and answers how many it removed. `prefix` is required, and an empty one removes nothing, so a call cannot clear an area. A key under `@app/auth/` is never removed, as in `remove`, and is not counted. A key another tab removed after the listing still counts.
+- **`subscribe`:** `listener({ isExternal })` runs after a `set`, `remove` or `removeWhere` through `BrowserStorage` (`isExternal` is `false`) and after another tab changes the key (`true`), so a listener can skip its own writes. A listener that takes no argument still works.
+
+`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default. With a `codec`, `fallback` may be of another type, such as `null` for "nothing is stored", and `get` answers the union.
+
+### A bare string as the stored text
+
+A key whose existing data is a bare string (`dark`, not `"dark"`) is not JSON, so the default codec cannot read it. `StorageCodecs.text()` stores a string as it is. With `allowed`, the codec is typed by the list (`'light' | 'dark'` below), so a literal outside it is a compile error; a stored text outside the list gives the `fallback`, and a value outside it, passed past the types, returns `false` from `set` and leaves the storage as it was.
+
+```typescript
+import { BrowserStorage, StorageCodecs } from '@venizia/ardor';
+
+const THEME = StorageCodecs.text({ allowed: ['light', 'dark'] });
+
+BrowserStorage.set({ key: '@app/prefs/theme', value: 'dark', codec: THEME });
+const theme = BrowserStorage.get({ key: '@app/prefs/theme', fallback: 'light', codec: THEME });
+```
+
+Create the codec once, outside a component: `useStoredState` asks for a stable `codec`. The error of a refused value names no value, because a stored text can be a token.
+
+Keys are used as you give them. Two prefixes are yours (`@app/prefs/locale` and `@app/prefs/<id>/locale` hold the chosen language of the i18n provider, so do not use those keys): `@app/prefs/<name>` for what outlives a sign-out (a theme, a sidebar width) and `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE`) for the data of the signed-in user, which sign-out removes in `localStorage` and `sessionStorage` so the next user does not see it (override `DefaultAuthProvider.clearStoredData` to change that). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
+
+## Browser clipboard
+
+`BrowserClipboard` reads and writes the text on the clipboard of the browser from code outside React, a service or a toast action for instance. Nothing throws or rejects: a refusal answers `false` or `undefined`. A refusal is any of these: no `navigator` (a server render), no `navigator.clipboard` (an insecure context, an old WebView), a denied permission, no user gesture, a document that is not focused. Nothing touches `navigator` at import.
+
+```typescript
+import { BrowserClipboard } from '@venizia/ardor';
+
+const isCopied = await BrowserClipboard.writeText({ text: 'https://example.com/share/42' });
+const pasted = await BrowserClipboard.readText();
 ```
 
 | Method | Returns | Meaning |
 |---|---|---|
-| `get({ key, fallback, storage?, codec? })` | the stored value, else `fallback` | The key is missing, the accessor throws, or `decode` throws. |
-| `set({ key, value, storage?, codec? })` | `boolean` | `false` when nothing was stored: no area, a quota error, a value the codec cannot encode, or a key under `@app/auth/`. |
-| `remove({ key, storage? })` | `boolean` | `false` when the key was not removed, and for a key under `@app/auth/`. |
-| `subscribe({ key, storage?, listener })` | a function that stops it | `listener` runs after a `set` or `remove` through `BrowserStorage` and after another tab changes the key. |
+| `writeText({ text })` | `Promise<boolean>` | `true` when the text is on the clipboard, `false` on any refusal. |
+| `readText()` | `Promise<string \| undefined>` | The text, or `undefined` on any refusal. |
 
-`storage` is `StorageAreas.LOCAL` (default, `local`) or `StorageAreas.SESSION` (`session`). `codec` is `{ encode(value): string; decode(text): TValue }`, JSON by default.
+Reading needs a permission and a user gesture, and some browsers do not offer it, so `undefined` is a normal answer.
 
-Keys are used as you give them. Name yours `@app/store/<name>` (`LocalStorageKeys.PREFIX_STORE` is `@app/store/`). Never write under `@app/auth/`: that prefix is the session, sign-out clears it, and `BrowserStorage` refuses it. The React side is [`useStoredState`](./hooks#usestoredstate). The source is `packages/kernel/src/utilities/browser-storage.ts`.
+There is no fallback to `document.execCommand('copy')`: it is deprecated and needs a DOM node, so a refusal returns `false` and the caller decides what to show. The helper logs nothing; [`useCopyToClipboard`](./hooks#usecopytoclipboard) calls it and keeps its warning. The source is `packages/kernel/src/utilities/browser-clipboard.ts`.
 
 ## Find the Exact API
 

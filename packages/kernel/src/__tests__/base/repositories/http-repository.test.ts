@@ -184,6 +184,7 @@ describe('the re-exported HTTP repository', () => {
     const echo = serve({
       handler: (req: Request) => {
         received.authorization = req.headers.get('authorization');
+
         return Response.json([]);
       },
     });
@@ -202,6 +203,7 @@ describe('the re-exported HTTP repository', () => {
       if (storageDescriptor) {
         Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
       }
+
       await echo.stop(true);
     }
   });
@@ -219,6 +221,7 @@ describe('the re-exported HTTP repository', () => {
       handler: (req: Request) => {
         headers.authorization = req.headers.get('authorization');
         headers.provider = req.headers.get('x-auth-provider');
+
         return Response.json([]);
       },
     });
@@ -298,6 +301,7 @@ describe('the re-exported HTTP repository', () => {
       const echo = serve({
         handler: (req: Request) => {
           received.tenant = req.headers.get('x-tenant');
+
           return Response.json([]);
         },
       });

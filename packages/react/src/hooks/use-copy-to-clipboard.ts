@@ -1,28 +1,75 @@
+import React from 'react';
+
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
+
+import { BrowserClipboard } from '@venizia/ardor-kernel';
 
 const logger = LoggerFactory.getLogger(['useCopyToClipboard']);
 
-export interface IUseCopyToClipboardReturn {
-  copy: (opts: { value: string }) => Promise<boolean>;
+/** How long `useCopyToClipboard` keeps `isCopied` set. */
+export interface IUseCopyToClipboardOptions {
+  /** Set `isCopied` back to `false` this many milliseconds after a copy; 0 or less never resets. @default 0 */
+  resetMs?: number;
 }
 
-// A hook is never handed an async function, so the copy lives outside it; it holds no state, which is
-// why the hook returns the same function on every render, as `useCallback(..., [])` did.
+/** The copy function of `useCopyToClipboard` and the result of its last call. */
+export interface IUseCopyToClipboardReturn {
+  /** Resolves `true` when the text is on the clipboard and `false` otherwise, and never throws. */
+  copy: (opts: { value: string }) => Promise<boolean>;
+  /** The result of the last copy, until `resetMs` has passed. */
+  isCopied: boolean;
+}
+
+// A hook is never handed an async function, so the copy lives outside it.
 const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
-  if (!navigator?.clipboard) {
-    logger.warn('[copy] The clipboard is not supported');
-    return false;
+  const isCopied = await BrowserClipboard.writeText({ text: opts.value });
+
+  if (!isCopied) {
+    logger.warn('[copy] The clipboard did not take the text');
   }
 
-  const { value } = opts;
-
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch (error) {
-    logger.warn('[copy] Copy failed | error: %s', error);
-    return false;
-  }
+  return isCopied;
 };
 
-export const useCopyToClipboard = (): IUseCopyToClipboardReturn => ({ copy: copyToClipboard });
+/**
+ * Copies text with `BrowserClipboard`; `isCopied` is the result of the last copy.
+ *
+ * @example
+ * ```tsx
+ * import { useCopyToClipboard } from '@venizia/ardor';
+ *
+ * export function CopyButton() {
+ *   const { copy, isCopied } = useCopyToClipboard({ resetMs: 2000 });
+ *   return <button onClick={() => copy({ value: 'hello' })}>{isCopied ? 'Copied' : 'Copy'}</button>;
+ * }
+ * ```
+ */
+export const useCopyToClipboard = (
+  opts: IUseCopyToClipboardOptions = {},
+): IUseCopyToClipboardReturn => {
+  const { resetMs = 0 } = opts;
+  const [isCopied, setCopied] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  React.useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
+
+  const copy = React.useCallback(
+    (copyOpts: { value: string }) => {
+      return copyToClipboard(copyOpts).then((isDone) => {
+        clearTimeout(timerRef.current);
+        setCopied(isDone);
+
+        if (isDone && resetMs > 0) {
+          timerRef.current = setTimeout(() => setCopied(false), resetMs);
+        }
+
+        return isDone;
+      });
+    },
+    [resetMs],
+  );
+
+  return { copy, isCopied };
+};

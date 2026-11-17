@@ -9,10 +9,10 @@ import {
   type TSessionClearReason,
 } from '@/providers/auth';
 import {
-  type AnyType,
   CoreBindings,
   DefaultAuthService,
   type IAuthTokenRecord,
+  type IAuthUser,
   type ISignInSession,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
@@ -20,7 +20,7 @@ import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 interface IStartedCall {
   readonly token: IAuthTokenRecord;
-  readonly user: AnyType;
+  readonly user: IAuthUser;
 }
 
 interface IHooks {
@@ -69,6 +69,7 @@ class RecordingAuthProvider extends DefaultAuthProvider {
     reason: TSessionClearReason;
   }): IAuthRejection {
     hooks.rejectionReasons.push(opts.reason);
+
     return super.unauthenticatedRejection(opts);
   }
 
@@ -124,20 +125,27 @@ const createContainer = (opts?: {
       if (request.resource === '/auth/whoami') {
         api.checkCalls += 1;
         const answer = { data: api.whoamiHasData ? { id: 7 } : null };
+
         return new Promise((resolve) => setTimeout(() => resolve(answer), api.whoamiDelay));
       }
+
       return Promise.resolve({ data: api.signIn });
     },
     getNetworkService: () => ({
       refresh: () => {
         api.refreshed = true;
+
         return Promise.resolve(api.refreshResult);
       },
     }),
   });
   container
     .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
-    .toValue(opts?.withCheckPath === false ? {} : { paths: { checkAuth: '/auth/whoami' } });
+    .toValue(
+      opts?.withCheckPath === false
+        ? { use: true }
+        : { use: true, paths: { checkAuth: '/auth/whoami' } },
+    );
   container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(service);
   container
     .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
@@ -302,6 +310,37 @@ describe('onSessionStarted', () => {
   });
 });
 
+describe('another user who signs in over the one signed in', () => {
+  test('the first session ends before the second starts, and what the first stored is removed', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+    localStorage.setItem('@app/store/draft', 'alice draft');
+    sessionStorage.setItem('@app/store/tab', 'alice tab');
+    hooks.events = [];
+    api.signIn = { userId: 8, token: { value: 'jwt-bob', type: 'Bearer' }, roles: [] };
+
+    await signIn(provider);
+
+    expect(
+      hooks.events.filter((event) => event.endsWith(':begin') || event.startsWith('cleared')),
+    ).toEqual(['cleared:external', 'started:begin']);
+    expect(localStorage.getItem('@app/store/draft')).toBeNull();
+    expect(sessionStorage.getItem('@app/store/tab')).toBeNull();
+  });
+
+  test('the same user who signs in again keeps what was stored', async () => {
+    const provider = buildProvider();
+    await signIn(provider);
+    localStorage.setItem('@app/store/draft', 'alice draft');
+    api.signIn = { userId: 7, token: { value: 'jwt-2', type: 'Bearer' }, roles: [] };
+
+    await signIn(provider);
+
+    expect(hooks.cleared).toEqual([]);
+    expect(localStorage.getItem('@app/store/draft')).toBe('alice draft');
+  });
+});
+
 describe('onSessionCleared', () => {
   test('logout clears the store first, then calls the hook with the reason logout, once', async () => {
     const provider = buildProvider();
@@ -404,6 +443,7 @@ describe('a hook that throws or is async', () => {
     hooks.onStarted = () => {
       throw new Error('socket is down');
     };
+
     const provider = buildProvider();
 
     const result = await signIn(provider);
@@ -416,6 +456,7 @@ describe('a hook that throws or is async', () => {
     hooks.onStarted = () => {
       throw new Error('socket is down');
     };
+
     const provider = buildProvider();
 
     await signIn(provider);
@@ -454,6 +495,7 @@ describe('a hook that throws or is async', () => {
   test('a hook that calls a provider method waits behind itself only until the timeout', async () => {
     hooks.timeout = 20;
     const provider = buildProvider();
+
     hooks.onStarted = async () => {
       await provider.logout({});
     };
@@ -468,10 +510,12 @@ describe('a hook that throws or is async', () => {
 
   test('login resolves after an async onSessionStarted has finished', async () => {
     let finished = false;
+
     hooks.onStarted = async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       finished = true;
     };
+
     const provider = buildProvider();
 
     await signIn(provider);
@@ -485,9 +529,11 @@ describe('a hook that throws or is async', () => {
     const provider = buildProvider();
 
     const checking = provider.checkAuth({});
+
     while (!hooks.events.includes('started:begin')) {
       await new Promise((resolve) => setTimeout(resolve, 1));
     }
+
     const loggingOut = provider.logout({});
     await Promise.all([checking, loggingOut]);
 
@@ -603,9 +649,11 @@ describe('a change of the session made outside the provider', () => {
     const provider = buildProvider();
 
     const signingIn = signIn(provider);
+
     while (!hooks.events.includes('started:begin')) {
       await new Promise((resolve) => setTimeout(resolve, 1));
     }
+
     service.cleanUp();
     await signingIn;
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -669,7 +717,7 @@ describe('unauthenticatedRejection', () => {
     });
     await provider.checkError({ status: 500 });
 
-    expect(forbidden).toEqual({ redirectTo: '/unauthorized', logoutUser: false });
+    expect(forbidden).toEqual({ redirectTo: '/access-denied', logoutUser: false });
     expect(hooks.rejectionReasons).toEqual([]);
   });
 });
