@@ -29,10 +29,9 @@ export interface IBreakpoint<TName extends string> {
 }
 
 /**
- * The current breakpoint, from a table of named widths: the default one follows Tailwind, and
- * `{ breakpoints: { compact: 600, wide: 1200 } }` replaces it, with the names typed. It reads the
- * viewport through `(min-width)` media queries, so browser zoom moves it as it moves the layout, and
- * it re-renders only when the name changes. The table's order is by width, not by key.
+ * The current breakpoint from a table of named widths: Tailwind's by default, or `{ breakpoints }`
+ * with typed names. It reads `(min-width)` media queries, so browser zoom moves it with the layout,
+ * and it re-renders only when the name changes. The table is ordered by width, not by key.
  *
  * @example
  * ```tsx
@@ -40,7 +39,9 @@ export interface IBreakpoint<TName extends string> {
  * return isAtLeast('md') ? <Sidebar /> : <Drawer />;
  * ```
  */
-export function useBreakpoint(): IBreakpoint<keyof typeof DefaultBreakpoints>;
+export function useBreakpoint(opts?: {
+  breakpoints?: undefined;
+}): IBreakpoint<keyof typeof DefaultBreakpoints>;
 export function useBreakpoint<TTable extends Record<string, number>>(opts: {
   breakpoints: TTable;
 }): IBreakpoint<keyof TTable & string>;

@@ -184,8 +184,22 @@ describe('useBreakpoint with a table of the app', () => {
     );
     expect(result.current.name).toBe('compact');
 
-    rerender({ table: { compact: 600, medium: 800, wide: 1200 } });
+    expect(FakeMatchMedia.of('(min-width: 1200px)').listenerCount).toBe(1);
+
+    rerender({ table: { compact: 600, medium: 800 } });
     expect(result.current.name).toBe('medium');
+    expect(FakeMatchMedia.of('(min-width: 1200px)').listenerCount).toBe(0);
+    expect(FakeMatchMedia.of('(min-width: 800px)').listenerCount).toBe(1);
+  });
+
+  test('an empty options object or an undefined table gives the default table', () => {
+    viewport(800);
+
+    const empty = renderHook(() => useBreakpoint({}));
+    const unset = renderHook(() => useBreakpoint({ breakpoints: undefined }));
+
+    expect(empty.result.current.name).toBe('md');
+    expect(unset.result.current.name).toBe('md');
   });
 
   test('a name that is not in the table does not compile', () => {
