@@ -932,7 +932,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(result).toMatchObject({
-        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        message: expect.stringContaining('A request path must stay under the base path'),
       });
       expect(recordedRequests.length).toBe(before);
     });
@@ -952,7 +952,9 @@ describe('DefaultNetworkRequestService', () => {
         });
 
         expect(result).toMatchObject({
-          message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+          message: expect.stringMatching(
+            /Relative baseUrl|A request path must stay under the base path/,
+          ),
         });
         expect(recordedRequests.length).toBe(before);
       },
@@ -974,7 +976,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(result).toMatchObject({
-        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        message: expect.stringContaining('A request path must stay under the base path'),
       });
       expect(recordedRequests.length).toBe(before);
     });

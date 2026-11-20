@@ -214,7 +214,7 @@ describe('where the two clients differ, as the docs say', () => {
 
     expect(recorded).toHaveLength(1);
     expect(recorded[0].body).toBe('');
-    expect(error).toBeInstanceOf(TypeError);
+    expect(isApplicationError(error)).toBe(true);
   });
 
   test('x-request-count: doRequest sends what it is given, the data source sends false and refuses a header of that name', async () => {
@@ -259,7 +259,7 @@ describe('where the two clients differ, as the docs say', () => {
     expect(recorded[1].headers['content-type']).toBe('application/json');
   });
 
-  test('a path that leaves the base: both answer 400 and send nothing, with a text of their own', async () => {
+  test('a path that leaves the base: both answer 400 and send nothing, with the same text', async () => {
     const { service, source } = createClients();
 
     const viaService = await RejectionHelper.rejectionOf({
@@ -274,17 +274,17 @@ describe('where the two clients differ, as the docs say', () => {
     });
 
     expect(recorded).toHaveLength(0);
-    expect(viaService).toMatchObject({
-      statusCode: 400,
-      message: '[doRequest] Invalid path to send request!',
-    });
+    expect(viaService).toMatchObject({ statusCode: 400 });
     expect(viaSource).toMatchObject({ statusCode: 400 });
+    expect(viaService instanceof Error ? viaService.message : '').toContain(
+      'A request path must stay under the base path',
+    );
     expect(viaSource instanceof Error ? viaSource.message : '').toContain(
       'A request path must stay under the base path',
     );
   });
 
-  test('a relative base URL: the data source resolves it only where a location exists, doRequest fails in fetch', async () => {
+  test('a relative base URL: both resolve it only where a location exists, and refuse it where there is none', async () => {
     const service = new DefaultNetworkRequestService({
       name: 'relative',
       baseUrl: '/api',
@@ -303,7 +303,7 @@ describe('where the two clients differ, as the docs say', () => {
       task: source.request({ paths: ['items'], method: 'GET' }),
     });
 
-    expect(viaService).toBeInstanceOf(TypeError);
+    expect(viaService instanceof Error ? viaService.message : '').toContain('Relative baseUrl');
     expect(viaSource instanceof Error ? viaSource.message : '').toContain('Relative baseUrl');
   });
 });
