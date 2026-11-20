@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (102)
+### `@venizia/ardor-kernel` (105)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -51,9 +51,11 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
+- `ICoreBindingTypes` interface
 - `ICustomParams` interface
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
+- `IDataSourceUnauthorizedInfo` interface
 - `IdType` type
 - `IEncodedBody` interface
 - `IFeatureBase` interface
@@ -98,6 +100,7 @@ generated:
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
+- `TCoreBindingType` type
 - `TEnvironment` type
 - `TFullPaths` type
 - `TNoAuthPathRegex` type
@@ -117,32 +120,29 @@ generated:
 - `ValueOrPromise` type
 - `ValueUtility` class
 
-### `@venizia/ardor-kernel/repository` (24)
+### `@venizia/ardor-kernel/repository` (21)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
 - `HttpReadShapes` class
 - `HttpRepository` class
-- `HttpResourceEntity` class
 - `HttpResponseReader` class
+- `HttpWireHeaders` class
 - `IAuthToken` interface
 - `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
 - `IHttpRequestContext` interface
 - `IHttpSearchResult` interface
+- `IHttpUnauthorizedInfo` interface
 - `IHttpWriteResult` interface
-- `TAuthTokenResolver` type
 - `TExtraRequest` type
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
 - `THttpFetch` type
 - `THttpHeaders` type
-- `THttpHeadersResolver` type
-- `THttpQuery` type
 - `THttpReadShape` type
-- `THttpRepositoryOptions` type
 
 ### `@venizia/ardor-kernel/testing` (5)
 
@@ -154,7 +154,7 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (51)
+### `@venizia/ardor-react` (47)
 
 - `ApplicationContext` const
 - `DispatchHooks` class
@@ -173,8 +173,6 @@ generated:
 - `IUseElementSizeReturn` interface
 - `IUseInjectableByKey` interface
 - `IUseInjectableByTarget` interface
-- `IUseInjectableKeysOverrides` interface
-- `IUseInjectableKeyTypes` interface
 - `IUseIntersectionOptions` interface
 - `IUseResizeEffectOptions` interface
 - `IUseStoredState` interface
@@ -182,8 +180,6 @@ generated:
 - `IUseStoredStateReturn` interface
 - `SelectorHooks` class
 - `TElementTarget` type
-- `TUseInjectableKeys` type
-- `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
 - `useApplicationContainer` const
 - `useApplicationContext` const
@@ -265,7 +261,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (204)
+### `@venizia/ardor` (203)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -322,10 +318,12 @@ generated:
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
 - `IBuildInfoFile` interface
+- `ICoreBindingTypes` interface
 - `ICustomParams` interface
 - `IDataProvider` interface
 - `IDataSourceAuth` interface
 - `IDataSourceRequestContext` interface
+- `IDataSourceUnauthorizedInfo` interface
 - `IdType` type
 - `IEncodedBody` interface
 - `IFeatureBase` interface
@@ -366,8 +364,6 @@ generated:
 - `IUseElementSizeReturn` interface
 - `IUseInjectableByKey` interface
 - `IUseInjectableByTarget` interface
-- `IUseInjectableKeysOverrides` interface
-- `IUseInjectableKeyTypes` interface
 - `IUseIntersectionOptions` interface
 - `IUseRequestHeaderLocaleOptions` interface
 - `IUseResizeEffectOptions` interface
@@ -406,6 +402,7 @@ generated:
 - `TBindingNamespace` type
 - `TBindingScope` type
 - `TConstValue` type
+- `TCoreBindingType` type
 - `TElementTarget` type
 - `TEnvironment` type
 - `TFeature` type
@@ -425,8 +422,6 @@ generated:
 - `TSessionClearReason` type
 - `TStorageArea` type
 - `TStringConstValue` type
-- `TUseInjectableKeys` type
-- `TUseInjectableKeysDefault` type
 - `TUseInjectableOptions` type
 - `TUseTranslateFn` type
 - `TUseTranslateKeys` type
@@ -472,32 +467,29 @@ generated:
 - `ValueUtility` class
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (24)
+### `@venizia/ardor/repository` (21)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
 - `HttpReadShapes` class
 - `HttpRepository` class
-- `HttpResourceEntity` class
 - `HttpResponseReader` class
+- `HttpWireHeaders` class
 - `IAuthToken` interface
 - `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
 - `IHttpReadResult` interface
 - `IHttpRequestContext` interface
 - `IHttpSearchResult` interface
+- `IHttpUnauthorizedInfo` interface
 - `IHttpWriteResult` interface
-- `TAuthTokenResolver` type
 - `TExtraRequest` type
 - `TExtraResult` type
 - `THttpBody` type
 - `THttpExtraQuery` type
 - `THttpFetch` type
 - `THttpHeaders` type
-- `THttpHeadersResolver` type
-- `THttpQuery` type
 - `THttpReadShape` type
-- `THttpRepositoryOptions` type
 
 ### `@venizia/ardor/testing` (8)
 

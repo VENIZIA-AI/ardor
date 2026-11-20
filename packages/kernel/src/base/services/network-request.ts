@@ -135,30 +135,25 @@ export class DefaultNetworkRequestService extends BaseService {
     this.networkRequest = new NativeFetchNetworkRequest({
       name,
       // A filter travels as one JSON parameter, and a null is left out: what an IGNIS server reads.
-      networkOptions: { baseUrl, headers, queryString: { nullish: 'skip', nested: 'json' } },
+      networkOptions: { baseUrl, queryString: { nullish: 'skip', nested: 'json' } },
     });
   }
 
   /**
-   * The headers of one call. A call that carries headers sends those alone: the constructor headers and
-   * the default content type are removed (`null`) unless the call names them, so a multipart body keeps
-   * the content type `fetch` writes.
+   * The headers of one call: its own alone, or the ones `setHeaders` holds now. The transport keeps no
+   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`).
    */
   private toSendHeaders(opts: {
     headers?: HeadersInit;
   }): Record<string, string | null> | undefined {
     if (!opts.headers) {
-      return undefined;
+      return Object.fromEntries(new Headers(this.headers));
     }
 
     const sent: Record<string, string | null> = Object.fromEntries(new Headers(opts.headers));
 
-    for (const name of [...Object.keys(this.headers), HeaderConstants.CONTENT_TYPE]) {
-      const lower = name.toLowerCase();
-
-      if (!(lower in sent)) {
-        sent[lower] = null;
-      }
+    if (!(HeaderConstants.CONTENT_TYPE in sent)) {
+      sent[HeaderConstants.CONTENT_TYPE] = null;
     }
 
     return sent;

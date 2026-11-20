@@ -121,10 +121,8 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
 }
 
 /**
- * Types the keys of `CoreBindings` whose values live in this package, so `useProvider({ key })` and
- * `container.get({ key })` answer them with no generic. The block is part of the declaration files of
- * `@venizia/ardor-admin`, which `@venizia/ardor` re-exports: an application that imports either gets
- * the types with no augmentation of its own.
+ * Types the `CoreBindings` keys whose values live in this package, so `useProvider({ key })` answers
+ * them with no generic and an application needs no augmentation of its own.
  */
 declare module '@venizia/ardor-kernel' {
   interface ICoreBindingTypes {

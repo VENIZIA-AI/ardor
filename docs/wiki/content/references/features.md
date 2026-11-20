@@ -154,7 +154,7 @@ Two more fields sit next to `access` on a route:
 | None | Inside the layout. Signed in only when the application sets `requireAuth`. |
 | `auth: { use: true }` | Renders only for a signed-in user, with no permission check. A signed-out user goes to sign-in. |
 | `auth: { use: false }` | Marks the route public. With `access` as well, `Features.mount()` throws. |
-| `layout: { use: false }` | Renders outside the layout, in a second `<CustomRoutes noLayout>`. Under `requireAuth` it still waits for sign-in, unless the route says `auth: { use: false }` too. |
+| `layout: { use: false }` | Renders in `<CustomRoutes noLayout>`; under `requireAuth` it waits for sign-in. |
 
 ```tsx
 import React from 'react';

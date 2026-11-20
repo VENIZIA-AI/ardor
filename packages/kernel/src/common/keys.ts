@@ -13,10 +13,8 @@ import type {
 } from './types';
 
 /**
- * The types of the values of `CoreBindings` that the kernel cannot name because they live in
- * `@venizia/ardor-admin`. That package merges them in (`declare module '@venizia/ardor-kernel'`), and
- * `@venizia/ardor` re-exports it, so an application that imports either reads the real types; the
- * kernel itself reads `unknown`.
+ * The types of the `CoreBindings` values that live in `@venizia/ardor-admin`, which merges them in;
+ * the kernel alone reads `unknown`.
  */
 export interface ICoreBindingTypes {}
 
