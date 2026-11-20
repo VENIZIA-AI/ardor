@@ -542,5 +542,27 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       expect(itemsRequests()).toHaveLength(1);
       expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
     });
+
+    test('a ReadableStream body that is answered 200 is sent once, with no refresh', async () => {
+      const service = createService();
+      const body = new ReadableStream({
+        start: (controller) => {
+          controller.enqueue(new TextEncoder().encode('payload'));
+          controller.close();
+        },
+      });
+
+      const response = await service.doRequest({
+        paths: ['items'],
+        method: RequestMethods.POST,
+        type: RequestTypes.CREATE,
+        headers: { authorization: 'Bearer fresh' },
+        body,
+      });
+
+      expect(response.data).toEqual({ data: 'ok' });
+      expect(itemsRequests()).toHaveLength(1);
+      expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(0);
+    });
   });
 });

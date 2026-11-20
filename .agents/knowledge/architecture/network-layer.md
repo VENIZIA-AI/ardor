@@ -17,7 +17,7 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 ## What doRequest sends
 
-`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` (a call that carries headers sends those alone, see Headers below), `acceptStatus: () => true` and `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. It passes a `signal` and never the fetcher's `timeout` (below).
+`doRequest` calls `send` with the joined `url`, `method`, `params` (its `query`), `headers` (a call that carries headers sends those alone, see Headers below), `body` - dropped for `GET`, sent for every other method - and passes its own `Logger` as the second argument. On a path that can recover, a 401 is thrown once (`acceptStatus` leaves it out) and the fetcher's `retry` (`maxAttempts: 2`, no delay) asks `getDataSourceAuth().onUnauthorized`: the one place the session guarantee lives, shared with the data source. The constructor's `onRequest` hook puts the fresh token on the second attempt. A `ReadableStream` body is sent once (the fetcher refuses to retry one): a 401 refreshes, then the call fails with a clear error. Every other status is an answer `doRequest` reads. It passes a `signal` and never the fetcher's `timeout` (below).
 
 ## Two clients
 

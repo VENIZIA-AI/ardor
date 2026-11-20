@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
-import { NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import { NativeFetchNetworkRequest, UrlFetchError } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -11,6 +11,7 @@ import {
   type IAuthTokenRecord,
   type IAuthRecoveryOptions,
   type IDataSourceAuth,
+  type IDataSourceRequestContext,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
   type INetworkResponse,
@@ -136,6 +137,23 @@ export class DefaultNetworkRequestService extends BaseService {
       name,
       // A filter travels as one JSON parameter, and a null is left out: what an IGNIS server reads.
       networkOptions: { baseUrl, queryString: { nullish: 'skip', nested: 'json' } },
+      hooks: {
+        // The retry after a 401 carries the token of the refresh: its provider wins, and a token with none removes the one the call carried.
+        onRequest: ({ headers: sending, attempt }) => {
+          if (attempt < 2) {
+            return;
+          }
+
+          const authHeader = this.getRequestAuthorizationHeader();
+          sending.set(HeaderConstants.AUTHORIZATION, authHeader.token);
+
+          if (authHeader.provider) {
+            sending.set(HeaderConstants.X_AUTH_PROVIDER, authHeader.provider);
+          } else {
+            sending.delete(HeaderConstants.X_AUTH_PROVIDER);
+          }
+        },
+      },
     });
   }
 
@@ -809,92 +827,97 @@ export class DefaultNetworkRequestService extends BaseService {
     },
   ): Promise<INetworkResponse<TResult>> {
     const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
+    const sendBody = method === RequestMethods.GET ? undefined : body;
+    const canRecover = this.recovery.canRecover({ paths });
+    // A stream can be read once: the fetcher refuses to retry it, so it is sent once and a 401 is read below.
+    const isStream = sendBody instanceof ReadableStream;
+    const isRetryable = canRecover && !isStream;
 
-    const sendOnce = (retryHeaders?: Record<string, string | null>) => {
-      return this.networkRequest.getNetworkService().send(
+    // The object the session of this request is remembered under: the recovery reads it on a 401.
+    const context: IDataSourceRequestContext = { paths };
+    const { onUnauthorized } = this.getDataSourceAuth();
+    const sent = this.readSession();
+    this.sentSessions.set(context, sent);
+    let isRetried = false;
+
+    let fetched: Response;
+
+    try {
+      const answer = await this.networkRequest.getNetworkService().send(
         {
           url,
           method,
           params: query,
-          body: method === RequestMethods.GET ? undefined : body,
-          headers: this.toSendHeaders({
-            headers,
-            extra: retryHeaders,
-            body: method === RequestMethods.GET ? undefined : body,
-          }),
+          body: sendBody,
+          headers: this.toSendHeaders({ headers, body: sendBody }),
           signal,
-          acceptStatus: () => true,
+          // A 401 that can recover is thrown once so the retry sees it; every other status is an answer read below.
+          acceptStatus: (status) => !isRetryable || status !== HTTP.ResultCodes.RS_4.Unauthorized,
+          retry: isRetryable
+            ? {
+                maxAttempts: 2,
+                backoff: { initialDelayMs: 0, maxDelayMs: 0 },
+                shouldRetry: async ({ error, attempt }) => {
+                  if (
+                    !UrlFetchError.is(error) ||
+                    error.status !== HTTP.ResultCodes.RS_4.Unauthorized
+                  ) {
+                    return false;
+                  }
+
+                  // The wait ends with this request's abort; the refresh itself keeps running for the others.
+                  const isRefreshed = await DefaultNetworkRequestService.untilAborted({
+                    task: onUnauthorized(context, { attempt }),
+                    signal,
+                  });
+
+                  isRetried = isRefreshed;
+
+                  return isRefreshed;
+                },
+              }
+            : undefined,
         },
         this.logger,
       );
-    };
-
-    const sent = this.readSession();
-    let isRetried = false;
-    let fetched = await sendOnce();
-
-    if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
-      // A 401 that arrives after the session changed is not the new session's to refresh or to end.
-      const change = this.readSessionChange({ sent });
-
-      if (change === false) {
-        throw this.sessionChangedError();
+      fetched = answer;
+    } catch (error) {
+      // The 401 that stands is the answer: its body is read into the error below.
+      if (
+        UrlFetchError.is(error) &&
+        error.status === HTTP.ResultCodes.RS_4.Unauthorized &&
+        error.response instanceof Response
+      ) {
+        fetched = error.response;
+      } else {
+        throw error;
       }
+    }
 
-      let isRefreshed = change === true;
-
-      if (change === undefined) {
-        // The wait ends with this request's abort; the refresh itself keeps running for the others.
-        const refreshed = await DefaultNetworkRequestService.untilAborted({
-          task: this.refresh(),
-          signal,
-        });
-        isRefreshed = refreshed;
-      }
-
-      // The session may have moved on while the refresh was in flight, or inside a `refreshToken` override.
-      if (this.isSessionTaken({ sent, isRetried: isRefreshed })) {
-        throw this.sessionChangedError();
-      }
-
-      // The shared refresh is never aborted for one request: this request stops when it returns.
-      signal?.throwIfAborted();
+    if (isStream && canRecover && fetched.status === HTTP.ResultCodes.RS_4.Unauthorized) {
+      const isRefreshed = await DefaultNetworkRequestService.untilAborted({
+        task: onUnauthorized(context, { attempt: 1 }),
+        signal,
+      });
 
       if (isRefreshed) {
-        if (method !== RequestMethods.GET && body instanceof ReadableStream) {
-          throw getError({
-            message:
-              '[doRequest] The session was refreshed, but a ReadableStream body cannot be sent a second time | Send the request again from your code, or send a body that can be read again (FormData, Blob, a string)',
-          });
-        }
-
-        const authHeader = this.getRequestAuthorizationHeader();
-        // The token's provider wins, and a token with none removes the one the call carried.
-        const retryHeaders = {
-          [HeaderConstants.AUTHORIZATION]: authHeader.token,
-          [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider ?? null,
-        };
-
-        const result = await sendOnce(retryHeaders);
-        fetched = result;
-        isRetried = true;
+        throw getError({
+          message:
+            '[doRequest] The session was refreshed, but a ReadableStream body cannot be sent a second time | Send the request again from your code, or send a body that can be read again (FormData, Blob, a string)',
+        });
       }
     }
 
     const status = fetched.status;
 
     // The retry may have been answered 401 after the user who sent it had gone too.
-    if (
-      status === 401 &&
-      this.recovery.canRecover({ paths }) &&
-      this.isSessionTaken({ sent, isRetried })
-    ) {
+    if (status === 401 && canRecover && this.isSessionTaken({ sent, isRetried })) {
       throw this.sessionChangedError();
     }
 
     if (status < 200 || status >= 300) {
-      const result2 = await NetworkResponseReader.toError({ response: fetched });
-      throw result2;
+      const result = await NetworkResponseReader.toError({ response: fetched });
+      throw result;
     }
 
     const response = await NetworkResponseReader.read<TResult>({
