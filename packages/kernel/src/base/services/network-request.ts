@@ -32,7 +32,7 @@ import {
   type IEncodedBody,
   NetworkHeaders,
   RequestBodyEncoder,
-  ResponseReader,
+  NetworkResponseReader,
 } from '@/helpers';
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
@@ -141,22 +141,43 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * The headers of one call: its own alone, or the ones `setHeaders` holds now. The transport keeps no
-   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`).
+   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`)
+   * when its body is one `fetch` types itself (`FormData`, `Blob`, bytes, a stream), so a multipart boundary is written.
    */
   private toSendHeaders(opts: {
     headers?: HeadersInit;
+    body?: unknown;
   }): Record<string, string | null> | undefined {
-    if (!opts.headers) {
-      return Object.fromEntries(new Headers(this.headers));
+    const sent: Record<string, string | null> = Object.fromEntries(
+      new Headers(opts.headers ?? this.headers),
+    );
+
+    if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
+      sent[HeaderConstants.CONTENT_TYPE] = null;
     }
 
-    const sent: Record<string, string | null> = Object.fromEntries(new Headers(opts.headers));
-
-    if (!(HeaderConstants.CONTENT_TYPE in sent)) {
+    if (
+      DefaultNetworkRequestService.isRawBody({ body: opts.body }) &&
+      !sent[HeaderConstants.CONTENT_TYPE]
+    ) {
       sent[HeaderConstants.CONTENT_TYPE] = null;
     }
 
     return sent;
+  }
+
+  /** A body the platform `fetch` gives a content type of its own, or none: it is sent as it is. */
+  private static isRawBody(opts: { body: unknown }): boolean {
+    const { body } = opts;
+
+    return (
+      body instanceof FormData ||
+      body instanceof Blob ||
+      body instanceof URLSearchParams ||
+      body instanceof ArrayBuffer ||
+      ArrayBuffer.isView(body) ||
+      body instanceof ReadableStream
+    );
   }
 
   /**
@@ -570,7 +591,7 @@ export class DefaultNetworkRequestService extends BaseService {
             : isRefreshed;
         });
       },
-      errorRootKey: ResponseReader.ERROR_ROOT_KEY,
+      errorRootKey: NetworkResponseReader.ERROR_ROOT_KEY,
     };
   }
 
@@ -705,9 +726,11 @@ export class DefaultNetworkRequestService extends BaseService {
     return props;
   }
 
-  /** Reads a response by the request type. See `ResponseReader.convert`. */
-  convertResponse<TData = unknown>(opts: Parameters<typeof ResponseReader.convert<TData>>[0]) {
-    return ResponseReader.convert<TData>(opts);
+  /** Reads a response by the request type. See `NetworkResponseReader.convert`. */
+  convertResponse<TData = unknown>(
+    opts: Parameters<typeof NetworkResponseReader.convert<TData>>[0],
+  ) {
+    return NetworkResponseReader.convert<TData>(opts);
   }
 
   /**
@@ -791,7 +814,10 @@ export class DefaultNetworkRequestService extends BaseService {
           method,
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
-          headers: this.toSendHeaders({ headers: sendHeaders }),
+          headers: this.toSendHeaders({
+            headers: sendHeaders,
+            body: method === RequestMethods.GET ? undefined : body,
+          }),
           signal,
           acceptStatus: () => true,
         },
@@ -860,11 +886,11 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     if (status < 200 || status >= 300) {
-      const result2 = await ResponseReader.toError({ response: fetched });
+      const result2 = await NetworkResponseReader.toError({ response: fetched });
       throw result2;
     }
 
-    const response = await ResponseReader.read<TResult>({
+    const response = await NetworkResponseReader.read<TResult>({
       response: fetched,
       type,
       requestCountData,

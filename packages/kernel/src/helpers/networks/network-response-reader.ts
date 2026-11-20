@@ -16,7 +16,7 @@ const isCountedBody = (value: unknown): value is { data: unknown; count?: number
 };
 
 /** Reads a `Response` into an `INetworkResponse`, and an error response into an error. */
-export class ResponseReader {
+export class NetworkResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';
 
@@ -41,7 +41,7 @@ export class ResponseReader {
 
     if (isAttachment || !isTextual) {
       const blob = await response.blob();
-      const filename = ResponseReader.parseFilename({ header: contentDisposition });
+      const filename = NetworkResponseReader.parseFilename({ header: contentDisposition });
 
       return {
         data: blob as TResult,
@@ -52,7 +52,7 @@ export class ResponseReader {
 
     const parsedBody = await HttpResponseReader.readBody({
       response,
-      context: `[ResponseReader] ${response.status}`,
+      context: `[NetworkResponseReader] ${response.status}`,
     });
 
     // A route with extras answers `{ data, extra }`; `readExtra` strips only `extra`, so a
@@ -62,7 +62,7 @@ export class ResponseReader {
       headers: response.headers,
     });
 
-    const converted = ResponseReader.convert<TResult>({
+    const converted = NetworkResponseReader.convert<TResult>({
       type,
       requestCountData,
       response: { headers: response.headers, data: body as TResult },
@@ -108,9 +108,12 @@ export class ResponseReader {
 
           const dataFormatted = data as { data: TData; count?: number };
 
-          const normalizedData = ResponseReader.toRows({ data: dataFormatted.data });
+          const normalizedData = NetworkResponseReader.toRows({ data: dataFormatted.data });
 
-          const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
+          const total = NetworkResponseReader.resolveTotal({
+            headers,
+            rowCount: normalizedData.length,
+          });
 
           return {
             data: normalizedData as TData,
@@ -119,9 +122,12 @@ export class ResponseReader {
           };
         }
 
-        const normalizedData = ResponseReader.toRows({ data });
+        const normalizedData = NetworkResponseReader.toRows({ data });
 
-        const total = ResponseReader.resolveTotal({ headers, rowCount: normalizedData.length });
+        const total = NetworkResponseReader.resolveTotal({
+          headers,
+          rowCount: normalizedData.length,
+        });
 
         return {
           data: normalizedData as TData,
@@ -164,7 +170,7 @@ export class ResponseReader {
     const { response } = opts;
     const server = await HttpResponseReader.readError({
       response,
-      rootKey: ResponseReader.ERROR_ROOT_KEY,
+      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
     });
 
     // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
@@ -207,7 +213,7 @@ export class ResponseReader {
   static readFilename(opts: { headers?: Pick<Headers, 'get'> }): string | undefined {
     const header = opts.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
 
-    return ResponseReader.parseFilename({ header });
+    return NetworkResponseReader.parseFilename({ header });
   }
 
   /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */

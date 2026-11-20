@@ -24,7 +24,7 @@ which re-exports this package.
 | Decorators | `api()` - logs and rethrows a failing API method; the IGNIS stereotypes it re-exports (`component`, `configuration`, `datasource`, `inject`, `injectable`, `model`, `provide`, `repository`, `service`) |
 | Bindings | `CoreBindings`, `LocalStorageKeys`, `BindingKeys`, `BindingNamespaces` |
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `HeaderConstants`, `Environments`, `App`, `Authentication`, `StorageAreas`, `RequestChannel` |
-| Network | `NetworkHeaders`, `RequestBodyEncoder`, `ResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NativeFetchNetworkRequest`) |
+| Network | `NetworkHeaders`, `RequestBodyEncoder`, `NetworkResponseReader`, `AuthRecovery`, `AuthTokenStore` (the fetch transport is IGNIS's `NativeFetchNetworkRequest`) |
 | Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`, `isObject`, `isValidDate`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get` and `RuntimeConfig.getRequired` (with `RUNTIME_CONFIG_GLOBAL`, `RUNTIME_CONFIG_REQUIRED_CODE` and `RUNTIME_CONFIG_INVALID_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
 | Types | `IdType`, `IAuthUser`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
