@@ -73,10 +73,10 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
  * `target` bound to another class of the same name, and a `target` with no recorded binding key,
  * throw.
  *
- * - `{ target }` returns the instance type of the class. Leave the generic out: one you pass with it
- *   is your claim, and nothing checks it.
+ * - `{ target }` returns the instance type of the class, and takes no generic that the class does not satisfy.
  * - `{ key }` returns the type the key carries: a key made by `BindingKeys.build<T>` answers `T`, with no
- *   generic. A generic you pass with it must fit that type.
+ *   generic. A generic you pass with it must be that type.
+ * - Options of either shape (a variable typed as both) return `unknown`, and take no generic.
  *
  * @example
  * ```tsx
@@ -98,11 +98,7 @@ export function useInjectable<TValue = unknown>(opts: IUseInjectableByKey<TValue
 export function useInjectable<TInstance = unknown>(
   opts: IUseInjectableByTarget<TInstance>,
 ): TInstance;
-// A generic written with a target that the class does not satisfy still compiles, as it always did.
-export function useInjectable<TInstance = unknown>(
-  // oxlint-disable-next-line typescript/unified-signatures -- keeps a generic that the class does not satisfy compiling
-  opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey,
-): TInstance;
+export function useInjectable(opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey): unknown;
 
 export function useInjectable(
   opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey,
