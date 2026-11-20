@@ -8,7 +8,7 @@ import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
 import { BaseHelper } from '@venizia/ignis-helpers/core';
 import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 interface IWrapperProps {
   children?: React.ReactNode;
@@ -42,7 +42,9 @@ const createTestHarness = (opts: ICreateTestHarnessOptions): ITestHarness => {
     },
   };
 
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(fakeDataProvider);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue(fakeDataProvider);
 
   const testI18nProvider = {
     translate: (key: string): string => {

@@ -9,7 +9,7 @@ import {
   inject,
   type IApplicationInfo,
 } from '@venizia/ardor-kernel';
-import { Container, getError } from '@venizia/ignis-inversion';
+import { BindingKeys, Container, getError } from '@venizia/ignis-inversion';
 import * as Kernel from '@venizia/ardor-kernel/testing';
 import * as Testing from '@/testing';
 import { assertArdorApplicationBoots } from '@/testing';
@@ -17,11 +17,17 @@ import { assertArdorApplicationBoots } from '@/testing';
 class Dependency {}
 
 class Orders {
-  constructor(@inject({ key: 'services.Dependency' }) readonly dependency: Dependency) {}
+  constructor(
+    @inject({ key: BindingKeys.build<unknown>({ key: 'services.Dependency' }) })
+    readonly dependency: Dependency,
+  ) {}
 }
 
 class Detached {
-  constructor(@inject({ key: 'services.Missing' }) readonly missing: unknown) {}
+  constructor(
+    @inject({ key: BindingKeys.build<unknown>({ key: 'services.Missing' }) })
+    readonly missing: unknown,
+  ) {}
 }
 
 const authProvider = {};
@@ -56,33 +62,47 @@ const createApplication = (opts: IFixtureOptions = {}) => {
 
     bindContext(): void {
       if (!withoutDataProvider) {
-        this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(dataProvider);
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+        }).toValue(dataProvider);
       }
 
-      this.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18n);
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }),
+      }).toValue(i18n);
 
       if (i18nOptions) {
-        this.bind({ key: CoreBindings.I18N_PROVIDER_OPTIONS }).toValue(i18nOptions);
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.I18N_PROVIDER_OPTIONS }),
+        }).toValue(i18nOptions);
       }
 
       if (withAuthProvider || withBrokenAuthProvider) {
-        this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }),
+        }).toValue({ use: true });
       }
 
       if (withAuthProvider) {
-        this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+        }).toValue(authProvider);
       }
 
       if (withBrokenAuthProvider) {
-        this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toClass(Detached);
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+        }).toClass(Detached);
       }
 
       if (features) {
-        this.bind({ key: CoreBindings.FEATURES }).toValue(features);
+        this.bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) }).toValue(
+          features,
+        );
       }
 
       for (const [key, target] of services) {
-        this.bind({ key }).toClass(target);
+        this.bind({ key: BindingKeys.build<unknown>({ key }) }).toClass(target);
       }
     }
   }
@@ -205,7 +225,9 @@ describe('assertArdorApplicationBoots', () => {
       }
 
       bindContext(): void {
-        this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api' });
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }),
+        }).toValue({ url: '/api' });
       }
     }
 
@@ -249,7 +271,9 @@ describe('assertArdorApplicationBoots', () => {
       createApplication({ services: [['services.Dependency', Dependency]] }),
     );
 
-    expect(application.isBound({ key: 'services.Dependency' })).toBe(true);
+    expect(
+      application.isBound({ key: BindingKeys.build<unknown>({ key: 'services.Dependency' }) }),
+    ).toBe(true);
   });
 
   test('replaces fetch with a rejecting one during the run and restores it after', async () => {

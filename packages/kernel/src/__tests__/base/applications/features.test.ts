@@ -1,3 +1,4 @@
+import { BindingKeys } from '@venizia/ignis-inversion';
 import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
@@ -9,7 +10,7 @@ import { RejectionHelper } from '@venizia/dev-configs/testing';
 
 @configuration()
 class InventoryConfiguration {
-  @provide({ key: 'test.features.inventory' })
+  @provide({ key: BindingKeys.build<unknown>({ key: 'test.features.inventory' }) })
   inventory() {
     return 'from the inventory feature';
   }
@@ -68,9 +69,11 @@ describe('AbstractArdorApplication.features', () => {
     const application = createApplication({ features: [inventory] });
     await application.start();
 
-    expect(application.get<string>({ key: 'test.features.inventory' })).toBe(
-      'from the inventory feature',
-    );
+    expect(
+      application.get<string>({
+        key: BindingKeys.build<string>({ key: 'test.features.inventory' }),
+      }),
+    ).toBe('from the inventory feature');
   });
 
   test('throws on two features with one name', async () => {
@@ -101,9 +104,9 @@ describe('AbstractArdorApplication.features', () => {
     });
     await application.start();
 
-    expect(application.get({ key: 'services.OrderLedgerService' })).toBeInstanceOf(
-      OrderLedgerService,
-    );
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.OrderLedgerService' }) }),
+    ).toBeInstanceOf(OrderLedgerService);
   });
 
   test('throws when a feature lists a class in artifacts that was never discovered', async () => {
@@ -130,13 +133,19 @@ describe('AbstractArdorApplication.features', () => {
       }
 
       bindContext(): void {
-        this.bind({ key: 'test.features.inventory' }).toValue('from bindContext');
+        this.bind({ key: BindingKeys.build<unknown>({ key: 'test.features.inventory' }) }).toValue(
+          'from bindContext',
+        );
       }
     }
 
     const application = new OverridingApplication();
     await application.start();
 
-    expect(application.get<string>({ key: 'test.features.inventory' })).toBe('from bindContext');
+    expect(
+      application.get<string>({
+        key: BindingKeys.build<string>({ key: 'test.features.inventory' }),
+      }),
+    ).toBe('from bindContext');
   });
 });

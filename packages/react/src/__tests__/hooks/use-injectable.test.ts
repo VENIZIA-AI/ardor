@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { describe, expect, spyOn, test } from 'bun:test';
 import React from 'react';
 import { renderHook } from '@testing-library/react';
-import { BindingScopes, Container } from '@venizia/ignis-inversion';
+import { BindingKeys, BindingScopes, Container } from '@venizia/ignis-inversion';
 import { CoreBindings, service } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@/contexts/application';
 import { useApplicationContainer, useInjectable } from '@/hooks/use-injectable';
@@ -31,7 +31,7 @@ class UnboundClass {
 }
 
 const bindConstantValue = <T>({ container, key, value }: IBindConstantValueOptions<T>) => {
-  const binding = container.bind({ key });
+  const binding = container.bind({ key: BindingKeys.build<unknown>({ key }) });
 
   if ('to' in binding && typeof binding['to'] === 'function') {
     binding['to'](value);
@@ -171,13 +171,18 @@ describe('useInjectable with key option', () => {
 describe('useInjectable with target option', () => {
   test('resolves class bound via container bind toClass through metadata registry', () => {
     const container = new Container({ scope: 'test' });
-    container.bind({ key: 'services.SomeClass' }).toClass(SomeClass);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.SomeClass' }) })
+      .toClass(SomeClass);
 
     const registry = container.getMetadataRegistry();
 
     if ('setBindingKey' in registry && typeof registry['setBindingKey'] === 'function') {
       try {
-        registry['setBindingKey']({ target: SomeClass, key: 'services.SomeClass' });
+        registry['setBindingKey']({
+          target: SomeClass,
+          key: BindingKeys.build<unknown>({ key: 'services.SomeClass' }),
+        });
       } catch (error) {
         console.warn('setBindingKey failed:', error);
       }
@@ -187,7 +192,7 @@ describe('useInjectable with target option', () => {
       spyOn(registry, 'getBindingKey').mockImplementation(
         ({ target }: { readonly target: unknown }) => {
           if (target === SomeClass) {
-            return 'services.SomeClass';
+            return BindingKeys.build<unknown>({ key: 'services.SomeClass' });
           }
 
           return undefined;
@@ -258,7 +263,9 @@ describe('useInjectable infers the instance type of a target', () => {
    */
   test('returns the class instance with no generic written down', () => {
     const container = new Container({ scope: 'test' });
-    container.bind({ key: 'services.PricingService' }).toClass(PricingService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
+      .toClass(PricingService);
 
     const { result } = renderHook(() => useInjectable({ target: PricingService }), {
       wrapper: createWrapper({ container }),
@@ -276,7 +283,9 @@ describe('useInjectable infers the instance type of a target', () => {
 describe('useInjectable keeps accepting a generic that goes with a target', () => {
   test("a type the class satisfies and one it does not both compile: the generic is the caller's claim", () => {
     const container = new Container({ scope: 'test' });
-    container.bind({ key: 'services.PricingService' }).toClass(PricingService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
+      .toClass(PricingService);
 
     const { result } = renderHook(
       () => {
@@ -304,7 +313,7 @@ describe('useInjectable checks the bound class', () => {
       readonly label = 'bound';
     }
 
-    container.bind({ key: 'services.Plain' }).toClass(Plain);
+    container.bind({ key: BindingKeys.build<unknown>({ key: 'services.Plain' }) }).toClass(Plain);
 
     return Plain;
   };
@@ -352,7 +361,7 @@ describe('useInjectable checks the bound class', () => {
     class Child extends Parent {}
 
     const container = new Container({ scope: 'test' });
-    container.bind({ key: 'services.Parent' }).toClass(Child);
+    container.bind({ key: BindingKeys.build<unknown>({ key: 'services.Parent' }) }).toClass(Child);
 
     const { result } = renderHook(() => useInjectable({ target: Parent }), {
       wrapper: createWrapper({ container }),
@@ -364,7 +373,9 @@ describe('useInjectable checks the bound class', () => {
   test('a value binding has no class to compare and resolves', () => {
     const container = new Container({ scope: 'test' });
     const value = { label: 'value' };
-    container.bind({ key: 'services.PricingService' }).toValue(value);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
+      .toValue(value);
 
     const { result } = renderHook(() => useInjectable({ target: PricingService }), {
       wrapper: createWrapper({ container }),
@@ -380,7 +391,7 @@ describe('useInjectable and the scope of the binding', () => {
   test('a singleton binding gives the same instance on every render', () => {
     const container = new Container({ scope: 'test' });
     container
-      .bind({ key: 'services.PricingService' })
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
       .toClass(PricingService)
       .setScope(BindingScopes.SINGLETON);
 
@@ -397,7 +408,7 @@ describe('useInjectable and the scope of the binding', () => {
   test('a transient binding gives a new instance on every render, as the container does for every get', () => {
     const container = new Container({ scope: 'test' });
     container
-      .bind({ key: 'services.PricingService' })
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
       .toClass(PricingService)
       .setScope(BindingScopes.TRANSIENT);
 
@@ -413,15 +424,20 @@ describe('useInjectable and the scope of the binding', () => {
 
   test('resolves again when the key changes', () => {
     const container = new Container({ scope: 'test' });
-    container.bind({ key: CoreBindings.APPLICATION_INSTANCE }).toValue({ id: 'application' });
-    container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ id: 'info' });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INSTANCE }) })
+      .toValue({ id: 'application' });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO }) })
+      .toValue({ id: 'info' });
+
+    type TKeys = typeof CoreBindings.APPLICATION_INSTANCE | typeof CoreBindings.APPLICATION_INFO;
+    const initialProps: { key: TKeys } = { key: CoreBindings.APPLICATION_INSTANCE };
 
     const { result, rerender } = renderHook(
-      (props: {
-        key: typeof CoreBindings.APPLICATION_INSTANCE | typeof CoreBindings.APPLICATION_INFO;
-      }) => useInjectable<ITestApp>({ key: props.key }),
+      (props: { key: TKeys }) => useInjectable<ITestApp>({ key: props.key }),
       {
-        initialProps: { key: CoreBindings.APPLICATION_INSTANCE },
+        initialProps,
         wrapper: createWrapper({ container }),
       },
     );

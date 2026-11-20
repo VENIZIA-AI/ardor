@@ -1,3 +1,4 @@
+import { BindingKeys } from '@venizia/ignis-inversion';
 import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
@@ -66,10 +67,12 @@ describe('AbstractArdorApplication.artifacts', () => {
     const application = createApplication({ artifacts: [generated] });
     await application.start();
 
-    expect(application.get({ key: 'services.IndexedService' })).toBeInstanceOf(IndexedService);
-    expect(application.get({ key: 'components.IndexedComponent' })).toBeInstanceOf(
-      IndexedComponent,
-    );
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.IndexedService' }) }),
+    ).toBeInstanceOf(IndexedService);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'components.IndexedComponent' }) }),
+    ).toBeInstanceOf(IndexedComponent);
   });
 
   test('throws when an index lists a class that was never discovered', async () => {
@@ -109,7 +112,9 @@ describe('AbstractArdorApplication.artifacts', () => {
       });
       await application.start();
 
-      expect(application.get({ key: 'services.IndexedService' })).toBeInstanceOf(IndexedService);
+      expect(
+        application.get({ key: BindingKeys.build<unknown>({ key: 'services.IndexedService' }) }),
+      ).toBeInstanceOf(IndexedService);
     });
 
     // `ArtifactGroup.define()` and `application()` build this shape: no content, no own resolve. It
@@ -176,9 +181,10 @@ describe('AbstractArdorApplication.artifacts', () => {
       await application.start();
 
       expect(group.resolveCalls).toBe(1);
-      expect(application.get<object>({ key: 'services.LateService' }).constructor.name).toBe(
-        'LateService',
-      );
+      expect(
+        application.get<object>({ key: BindingKeys.build<object>({ key: 'services.LateService' }) })
+          .constructor.name,
+      ).toBe('LateService');
     });
 
     test('checks the index it resolved', async () => {
@@ -216,9 +222,11 @@ describe('AbstractArdorApplication.artifacts', () => {
       await application.start();
 
       expect(slice.resolveCalls).toBe(1);
-      expect(application.get<object>({ key: 'services.PickedService' }).constructor.name).toBe(
-        'PickedService',
-      );
+      expect(
+        application.get<object>({
+          key: BindingKeys.build<object>({ key: 'services.PickedService' }),
+        }).constructor.name,
+      ).toBe('PickedService');
     });
 
     test('starts with an empty slice, which is not an error', async () => {

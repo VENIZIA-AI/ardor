@@ -1,7 +1,13 @@
 import 'reflect-metadata';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { BindingScopes, type Container, inject, type TClass } from '@venizia/ignis-inversion';
+import {
+  BindingKeys,
+  BindingScopes,
+  type Container,
+  inject,
+  type TClass,
+} from '@venizia/ignis-inversion';
 import { MetadataRegistry } from '@venizia/ignis-kernel/metadata';
 
 import { BaseArdorApplication } from '@/applications';
@@ -58,12 +64,16 @@ const createApplication = (opts: ITestApplicationOptions = {}) => {
     }
 
     bindContext(): void {
-      this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }),
+      }).toValue({
         url: 'http://localhost/api',
       });
 
       if (opts.auth) {
-        this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.auth);
+        this.bind({
+          key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }),
+        }).toValue(opts.auth);
       }
 
       opts.context?.(this);
@@ -144,7 +154,9 @@ describe('an application overrides a default', () => {
     const application = await started({
       context: (app) => {
         app
-          .bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+          .bind({
+            key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+          })
           .toProvider(Marked)
           .setScope(BindingScopes.SINGLETON);
       },
@@ -219,7 +231,11 @@ describe('an application overrides a default', () => {
     const application = await started({
       listed: { [CoreBindings.DEFAULT_REST_DATA_PROVIDER]: ListedDataProvider },
       context: (app) => {
-        app.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(Marked);
+        app
+          .bind({
+            key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+          })
+          .toProvider(Marked);
       },
     });
 
@@ -265,7 +281,10 @@ describe('BaseArdorApplication.start() validates the configuration', () => {
   test('auth options without the use toggle reject at start', async () => {
     const legacy = { paths: { signIn: '/auth/sign-in' } };
     const application = createApplication({
-      context: (target) => target.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(legacy),
+      context: (target) =>
+        target
+          .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+          .toValue(legacy),
     });
 
     const message = await rejection(application.start());

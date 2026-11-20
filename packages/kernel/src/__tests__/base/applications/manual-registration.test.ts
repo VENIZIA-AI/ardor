@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
-import { BindingScopes, inject } from '@venizia/ignis-inversion';
+import { BindingKeys, BindingScopes, inject } from '@venizia/ignis-inversion';
 
 import { TestArdorApplication } from './test-application';
 import type { IApplicationInfo } from '@/common';
@@ -39,17 +39,19 @@ describe('registration by hand', () => {
   test('each kind binds under its namespace and the class name', async () => {
     const application = await started();
 
-    expect(application.get({ key: 'datasources.ApiClient' })).toBeInstanceOf(ApiClient);
-    expect(application.get({ key: 'repositories.OrderRepository' })).toBeInstanceOf(
-      OrderRepository,
-    );
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'datasources.ApiClient' }) }),
+    ).toBeInstanceOf(ApiClient);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'repositories.OrderRepository' }) }),
+    ).toBeInstanceOf(OrderRepository);
   });
 
   // The key is recorded on the class, so `@inject({ target })` resolves a class registered by hand.
   test('@inject({ target }) resolves a class registered by hand', async () => {
     const result = await started();
     const repository = result.get<OrderRepository>({
-      key: 'repositories.OrderRepository',
+      key: BindingKeys.build<OrderRepository>({ key: 'repositories.OrderRepository' }),
     });
 
     expect(repository.client).toBeInstanceOf(ApiClient);
@@ -59,16 +61,20 @@ describe('registration by hand', () => {
     const application = await started();
 
     expect(application.getMetadataRegistry().getBindingKey({ target: AuditService })).toBe(
-      'services.audit',
+      BindingKeys.build<unknown>({ key: 'services.audit' }),
     );
-    expect(application.get({ key: 'services.audit' })).toBeInstanceOf(AuditService);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.audit' }) }),
+    ).toBeInstanceOf(AuditService);
   });
 
   test('singleton by default, since a hook resolves on every render', async () => {
     const application = await started();
 
-    expect(application.get({ key: 'repositories.OrderRepository' })).toBe(
-      application.get({ key: 'repositories.OrderRepository' }),
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'repositories.OrderRepository' }) }),
+    ).toBe(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'repositories.OrderRepository' }) }),
     );
   });
 
@@ -76,8 +82,10 @@ describe('registration by hand', () => {
     const application = await started();
     application.repository(OrderRepository, { scope: BindingScopes.TRANSIENT });
 
-    expect(application.get({ key: 'repositories.OrderRepository' })).not.toBe(
-      application.get({ key: 'repositories.OrderRepository' }),
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'repositories.OrderRepository' }) }),
+    ).not.toBe(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'repositories.OrderRepository' }) }),
     );
   });
 

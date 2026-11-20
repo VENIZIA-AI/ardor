@@ -5,17 +5,13 @@ import {
   useApplicationContainer,
   type IUseInjectableByKey,
   type IUseInjectableByTarget,
-  type IUseInjectableKeyTypes,
-  type TUseInjectableKeys,
 } from './use-injectable';
 
 /** By class: the return type is inferred from the target. */
 export interface IUseArtifactByTarget<TInstance> extends IUseInjectableByTarget<TInstance> {}
 
-/** By key: `useProvider` takes the type from `IUseInjectableKeyTypes` when the key is listed there; the other hooks take it from the caller. */
-export interface IUseArtifactByKey<
-  TKey extends TUseInjectableKeys = TUseInjectableKeys,
-> extends IUseInjectableByKey<TKey> {}
+/** By key: the instance type is the one the key carries. */
+export interface IUseArtifactByKey<TValue = unknown> extends IUseInjectableByKey<TValue> {}
 
 /**
  * `useService`, `useRepository`, `useProvider`, `useComponent`, `useConfiguration`: the same
@@ -72,12 +68,8 @@ export function useService(opts: IUseArtifactByTarget<unknown> | IUseArtifactByK
  * }
  * ```
  */
-export function useProvider<TKey extends keyof IUseInjectableKeyTypes>(
-  opts: IUseArtifactByKey<TKey>,
-): IUseInjectableKeyTypes[TKey];
-export function useProvider<TInstance = unknown>(
-  opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
-): TInstance;
+export function useProvider<TValue = unknown>(opts: IUseArtifactByKey<TValue>): TValue;
+export function useProvider<TInstance = unknown>(opts: IUseArtifactByTarget<TInstance>): TInstance;
 
 export function useProvider(opts: IUseArtifactByTarget<unknown> | IUseArtifactByKey): unknown {
   return useArtifactInNamespace({

@@ -1,14 +1,10 @@
-import { Ardor, useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
+import { Ardor, BindingKeys, useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
 
 // A type-level check, never imported or run: `tsc` (the `typecheck` script) is the test. The
-// application augments `@venizia/ardor`, which re-exports the two override interfaces; the claim
-// is that this merges into the real interfaces. If it stops holding, a `@ts-expect-error` below
+// translation keys are declared by the application's augmentation of `@venizia/ardor`, and an
+// injectable key carries the type of its value. If either stops holding, a `@ts-expect-error` below
 // becomes an unused directive, or a declared key is rejected, and the typecheck fails.
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeysOverrides {
-    'services.AugmentationProbe': true;
-  }
-}
+const PROBE = BindingKeys.build<{ ok: true }>({ key: 'services.AugmentationProbe' });
 
 export const checkAugmentation = () => {
   // Declared in `admin.configuration.ts`, through the umbrella.
@@ -18,15 +14,15 @@ export const checkAugmentation = () => {
   // @ts-expect-error - 'quickstart.missing' is not a declared translation key
   translate('quickstart.missing');
 
-  // Declared above, through the umbrella.
-  useInjectable<unknown>({ key: 'services.AugmentationProbe' });
+  // The key carries the type of its value, so the hook answers it with no generic.
+  const probe: { ok: true } = useInjectable({ key: PROBE });
+  const viaNamespace: { ok: true } = Ardor.useInjectable({ key: PROBE });
 
-  // @ts-expect-error - 'services.Missing' is not a declared injectable key
+  // @ts-expect-error - a plain string is not a binding key: make it with BindingKeys.build<T>
   useInjectable<unknown>({ key: 'services.Missing' });
 
-  // The `Ardor` namespace holds the same functions, so the same keys apply through it.
-  Ardor.useInjectable<unknown>({ key: 'services.AugmentationProbe' });
-
-  // @ts-expect-error - 'services.Missing' is not a declared injectable key
+  // @ts-expect-error - the same through the `Ardor` namespace
   Ardor.useInjectable<unknown>({ key: 'services.Missing' });
+
+  return { probe, viaNamespace };
 };

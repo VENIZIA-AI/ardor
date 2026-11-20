@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
@@ -17,9 +17,13 @@ const info = (id?: string): IApplicationInfo => ({
 const serviceOf = (id?: string): DefaultAuthService => {
   const container = new Container();
   container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue(info(id));
-  container.bind({ key: 'services.Auth' }).toClass(DefaultAuthService);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: 'services.Auth' }) })
+    .toClass(DefaultAuthService);
 
-  return container.get<DefaultAuthService>({ key: 'services.Auth' });
+  return container.get<DefaultAuthService>({
+    key: BindingKeys.build<DefaultAuthService>({ key: 'services.Auth' }),
+  });
 };
 
 const signIn = (service: DefaultAuthService, name: string) => {

@@ -6,6 +6,7 @@ import {
 } from '@venizia/ignis-kernel/metadata';
 import {
   type Binding,
+  BindingKeys,
   BindingScopes,
   Container,
   getError,
@@ -90,7 +91,8 @@ export abstract class AbstractArdorApplication extends Container {
     this.registerArtifacts();
     this.registerFeatures({ features: this.features() });
 
-    for (const [key, target] of Object.entries(this.bindingList())) {
+    for (const [name, target] of Object.entries(this.bindingList())) {
+      const key = BindingKeys.build<unknown>({ key: name });
       const holder = this.lockedKeys.get(key);
 
       if (holder !== undefined) {

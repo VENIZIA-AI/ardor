@@ -8,7 +8,7 @@ import {
   type IAuthUser,
 } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 class RecordingAuthProvider extends DefaultAuthProvider {
   started: Array<{ token: IAuthTokenRecord; user: IAuthUser }> = [];
@@ -38,9 +38,15 @@ const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve,
 
 const buildProvider = (opts: { service: DefaultAuthService }): RecordingAuthProvider => {
   const container = new Container();
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-  container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({});
-  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(opts.service);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({});
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+    .toValue({});
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+    .toValue(opts.service);
 
   return container.instantiate(RecordingAuthProvider);
 };

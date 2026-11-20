@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
-import { inject } from '@venizia/ignis-inversion';
+import { BindingKeys, inject } from '@venizia/ignis-inversion';
 
 import { TestArdorApplication } from './test-application';
 import { datasource, repository, RepositoryTypes } from '@/base/metadata';
@@ -93,7 +93,7 @@ describe('a REMOTE repository', () => {
   test('is discovered with its datasource, and the datasource is injected', async () => {
     const result = await started();
     const products = result.get<ProductRepository>({
-      key: 'repositories.ProductRepository',
+      key: BindingKeys.build<ProductRepository>({ key: 'repositories.ProductRepository' }),
     });
 
     expect(products).toBeInstanceOf(ProductRepository);
@@ -103,15 +103,21 @@ describe('a REMOTE repository', () => {
   test('is a singleton, like every discovered artifact', async () => {
     const application = await started();
 
-    expect(application.get({ key: 'repositories.ProductRepository' })).toBe(
-      application.get({ key: 'repositories.ProductRepository' }),
+    expect(
+      application.get({
+        key: BindingKeys.build<unknown>({ key: 'repositories.ProductRepository' }),
+      }),
+    ).toBe(
+      application.get({
+        key: BindingKeys.build<unknown>({ key: 'repositories.ProductRepository' }),
+      }),
     );
   });
 
   test('takes a datasource registered by hand when it has no @inject', async () => {
     const result = await started();
     const entries = result.get<EntryRepository>({
-      key: 'repositories.EntryRepository',
+      key: BindingKeys.build<EntryRepository>({ key: 'repositories.EntryRepository' }),
     });
 
     expect(entries.dataSource).toBeInstanceOf(LedgerDataSource);
@@ -120,7 +126,7 @@ describe('a REMOTE repository', () => {
   test('accepts @inject({ target }) naming a datasource registered by hand', async () => {
     const result = await started();
     const archive = result.get<ArchiveRepository>({
-      key: 'repositories.ArchiveRepository',
+      key: BindingKeys.build<ArchiveRepository>({ key: 'repositories.ArchiveRepository' }),
     });
 
     expect(archive.dataSource).toBeInstanceOf(ArchiveDataSource);
@@ -129,7 +135,9 @@ describe('a REMOTE repository', () => {
   test('resolves a datasource with a pinned key through @inject({ target }), whatever its class name', async () => {
     const result = await started();
     const pinned = result.get<PinnedByTargetRepository>({
-      key: 'repositories.PinnedByTargetRepository',
+      key: BindingKeys.build<PinnedByTargetRepository>({
+        key: 'repositories.PinnedByTargetRepository',
+      }),
     });
 
     expect(pinned.dataSource).toBeInstanceOf(Zv);
@@ -140,7 +148,7 @@ describe('a REMOTE repository', () => {
   test('resolves a datasource with a pinned key without @inject, whatever its class name', async () => {
     const result = await started();
     const pinned = result.get<PinnedRepository>({
-      key: 'repositories.PinnedRepository',
+      key: BindingKeys.build<PinnedRepository>({ key: 'repositories.PinnedRepository' }),
     });
 
     expect(pinned.dataSource).toBeInstanceOf(Zv);

@@ -1,4 +1,4 @@
-import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
+import { BindingKeys, type Container, getError, type TClass } from '@venizia/ignis-inversion';
 
 interface IResolveInjectableOptions {
   container: Container;
@@ -24,13 +24,15 @@ export const resolveInjectable = (opts: IResolveInjectableOptions): unknown => {
   const { container, key, target, hook, namespace } = opts;
 
   if (key) {
-    if (!container.isBound({ key })) {
+    const bindingKey = BindingKeys.build<unknown>({ key });
+
+    if (!container.isBound({ key: bindingKey })) {
       throw getError({
         message: `Binding key: ${key} is not bounded in context! | A key derived from a class name (<namespace>.<ClassName>) changes when a minifier renames the class: resolve it by { target }, or pin it with binding: { namespace, key } on the class`,
       });
     }
 
-    return container.get<unknown>({ key });
+    return container.get({ key: bindingKey });
   }
 
   if (!target) {

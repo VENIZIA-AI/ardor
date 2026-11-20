@@ -13,7 +13,6 @@ import type {
 import type { ReactNode } from 'react';
 
 import type {
-  CoreBindings,
   DefaultNetworkRequestService,
   IDataSourceAuth,
   INetworkResponse,
@@ -122,17 +121,17 @@ export interface IAuthProvider extends IReactAdminAuthProvider {
 }
 
 /**
- * Types the provider keys of `CoreBindings` for `useInjectable({ key })` and `useProvider({ key })`.
- * The two hooks live in `@venizia/ardor-react`, which cannot import this package, so they read the
- * types from `IUseInjectableKeyTypes` and this package fills it in. The block is part of the
- * declaration files of `@venizia/ardor-admin`, which `@venizia/ardor` re-exports: an application
- * that imports either gets the types with no augmentation of its own.
+ * Types the keys of `CoreBindings` whose values live in this package, so `useProvider({ key })` and
+ * `container.get({ key })` answer them with no generic. The block is part of the declaration files of
+ * `@venizia/ardor-admin`, which `@venizia/ardor` re-exports: an application that imports either gets
+ * the types with no augmentation of its own.
  */
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeyTypes {
-    [CoreBindings.DEFAULT_REST_DATA_PROVIDER]: IDataProvider;
-    [CoreBindings.DEFAULT_AUTH_PROVIDER]: IAuthProvider;
-    [CoreBindings.DEFAULT_I18N_PROVIDER]: I18nProvider;
+declare module '@venizia/ardor-kernel' {
+  interface ICoreBindingTypes {
+    restDataProvider: IDataProvider;
+    authProvider: IAuthProvider;
+    i18nProvider: I18nProvider;
+    i18nProviderOptions: II18nProviderOptions;
   }
 }
 
