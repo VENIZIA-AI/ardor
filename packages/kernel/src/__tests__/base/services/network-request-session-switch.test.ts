@@ -20,6 +20,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
   let baseUrl = '';
   let itemsHook: (() => void) | undefined;
   let refreshHook: (() => void) | undefined;
+  let isAlwaysUnauthorized = false;
   const requested: Array<{ pathname: string; authorization: string | null }> = [];
 
   beforeAll(() => {
@@ -37,7 +38,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
 
         itemsHook?.();
 
-        return req.headers.get('authorization') === 'Bearer fresh'
+        return !isAlwaysUnauthorized && req.headers.get('authorization') === 'Bearer fresh'
           ? Response.json({ data: 'ok' })
           : Response.json({ error: 'expired' }, { status: 401 });
       },
@@ -64,6 +65,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     requested.length = 0;
     itemsHook = undefined;
     refreshHook = undefined;
+    isAlwaysUnauthorized = false;
     Object.defineProperty(globalThis, 'localStorage', {
       value: new FakeStorage(),
       configurable: true,
@@ -225,7 +227,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         const context = contextOf();
 
         expect(auth.authTokenResolver(context)?.value).toBe('stale');
-        const isRefreshed = await auth.onUnauthorized(context);
+        const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
 
         expect(isRefreshed).toBe(false);
       });
@@ -283,7 +285,9 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       expect(auth.authTokenResolver(context)?.value).toBe('stale');
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+      const error = await RejectionHelper.rejectionOf({
+        task: auth.onUnauthorized(context, { attempt: 1 }),
+      });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(auth.authTokenResolver(context)).toBeUndefined();
@@ -301,7 +305,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       const context = contextOf();
 
       expect(auth.authTokenResolver(context)?.value).toBe('stale');
-      const isRefreshed = await auth.onUnauthorized(context);
+      const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
 
       expect(isRefreshed).toBe(true);
       expect(auth.authTokenResolver(context)?.value).toBe('fresh');
@@ -316,7 +320,9 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+      const error = await RejectionHelper.rejectionOf({
+        task: auth.onUnauthorized(context, { attempt: 1 }),
+      });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(refreshes()).toEqual([]);
@@ -330,7 +336,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       signIn({ userId: 7, username: 'alice', token: 'fresh' });
 
-      const result2 = await auth.onUnauthorized(context);
+      const result2 = await auth.onUnauthorized(context, { attempt: 1 });
       expect(result2).toBe(true);
       expect(refreshes()).toEqual([]);
     });
@@ -342,7 +348,9 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       authService.cleanUp();
 
-      const error = await RejectionHelper.rejectionOf({ task: auth.onUnauthorized(context) });
+      const error = await RejectionHelper.rejectionOf({
+        task: auth.onUnauthorized(context, { attempt: 1 }),
+      });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(refreshes()).toEqual([]);
@@ -381,16 +389,58 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
 
       auth.authTokenResolver(context);
 
-      const result4 = await auth.onUnauthorized(context);
+      const result4 = await auth.onUnauthorized(context, { attempt: 1 });
       expect(result4).toBe(true);
       expect(refreshes()).toHaveLength(1);
       expect(authService.getAuth()?.value).toBe('fresh');
     });
 
+    test('the 401 of the retry stands: one refresh, two requests, the call answers the 401', async () => {
+      isAlwaysUnauthorized = true;
+      const source = new HttpDataSource({
+        name: 'retry-401-source',
+        baseUrl,
+        ...createService().getDataSourceAuth(),
+      });
+
+      const response = await source.request({ paths: ['items'], method: 'GET' });
+
+      expect(response.status).toBe(401);
+      expect(refreshes()).toHaveLength(1);
+      expect(requested.filter((entry) => entry.pathname === '/items')).toHaveLength(2);
+    });
+
+    test("the retry's own 401 does not refresh again, and the 401 stands", async () => {
+      const auth = createService().getDataSourceAuth();
+      const context = contextOf();
+
+      auth.authTokenResolver(context);
+
+      const isRetried = await auth.onUnauthorized(context, { attempt: 2 });
+      expect(isRetried).toBe(false);
+      expect(refreshes()).toEqual([]);
+    });
+
+    test("the retry's own 401 after its user has gone rejects with the session-changed code", async () => {
+      const auth = createService().getDataSourceAuth();
+      const context = contextOf();
+
+      auth.authTokenResolver(context);
+      signIn({ userId: 8, username: 'bob', token: 'bob-token' });
+
+      const error = await RejectionHelper.rejectionOf({
+        task: auth.onUnauthorized(context, { attempt: 2 }),
+      });
+
+      expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
+      expect(refreshes()).toEqual([]);
+      expect(authService.getAuth()?.value).toBe('bob-token');
+    });
+
     test('a request that was never sent through the hooks is judged as before', async () => {
       const auth = createService().getDataSourceAuth();
 
-      const result5 = await auth.onUnauthorized(contextOf());
+      const result5 = await auth.onUnauthorized(contextOf(), { attempt: 1 });
       expect(result5).toBe(true);
       expect(refreshes()).toHaveLength(1);
     });

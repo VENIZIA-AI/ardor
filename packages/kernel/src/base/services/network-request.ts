@@ -543,7 +543,7 @@ export class DefaultNetworkRequestService extends BaseService {
           sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
         });
       },
-      onUnauthorized: (context) => {
+      onUnauthorized: (context, info) => {
         if (!this.recovery.canRecover({ paths: context.paths })) {
           return Promise.resolve(false);
         }
@@ -553,6 +553,11 @@ export class DefaultNetworkRequestService extends BaseService {
 
         if (change === false) {
           return Promise.reject(this.sessionChangedError());
+        }
+
+        // The retry's own 401 stands, as it does for `doRequest`: one refresh, one retry.
+        if (info.attempt >= 2) {
+          return Promise.resolve(false);
         }
 
         if (change === true) {
