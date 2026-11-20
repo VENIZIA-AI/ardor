@@ -194,7 +194,7 @@
         "@venizia/ignis-filter": "^0.5.0-0",
         "@venizia/ignis-helpers": "^0.5.0-0",
         "@venizia/ignis-inversion": "^0.5.0-0",
-        "@venizia/ignis-kernel": "^0.5.0-0",
+        "@venizia/ignis-kernel": "^0.5.0-1",
         "ra-core": ">=5.15.5",
         "ra-i18n-polyglot": ">=5.15.5",
         "react": ">=19.3.1",
@@ -238,11 +238,11 @@
         "@reduxjs/toolkit": ">=2.13.0",
         "@tanstack/react-query": ">=5.104.5",
         "@venizia/ignis-boot": "^0.5.0-0",
-        "@venizia/ignis-connectors": "^0.5.0-1",
+        "@venizia/ignis-connectors": "^0.5.0-2",
         "@venizia/ignis-filter": "^0.5.0-0",
         "@venizia/ignis-helpers": "^0.5.0-0",
         "@venizia/ignis-inversion": "^0.5.0-0",
-        "@venizia/ignis-kernel": "^0.5.0-0",
+        "@venizia/ignis-kernel": "^0.5.0-1",
         "ra-core": ">=5.15.5",
         "ra-i18n-polyglot": ">=5.15.5",
         "react": ">=19.3.1",
@@ -281,11 +281,11 @@
         "typescript": "catalog:",
       },
       "peerDependencies": {
-        "@venizia/ignis-connectors": "^0.5.0-1",
+        "@venizia/ignis-connectors": "^0.5.0-2",
         "@venizia/ignis-filter": "^0.5.0-0",
         "@venizia/ignis-helpers": "^0.5.0-0",
         "@venizia/ignis-inversion": "^0.5.0-0",
-        "@venizia/ignis-kernel": "^0.5.0-0",
+        "@venizia/ignis-kernel": "^0.5.0-1",
         "reflect-metadata": ">=0.2.2",
       },
       "optionalPeers": [
@@ -327,7 +327,7 @@
         "@venizia/ignis-filter": "^0.5.0-0",
         "@venizia/ignis-helpers": "^0.5.0-0",
         "@venizia/ignis-inversion": "^0.5.0-0",
-        "@venizia/ignis-kernel": "^0.5.0-0",
+        "@venizia/ignis-kernel": "^0.5.0-1",
         "react": ">=19.3.1",
         "react-redux": ">=9.3.0",
         "reflect-metadata": ">=0.2.2",
@@ -350,11 +350,11 @@
     "@types/react-dom": "^19",
     "@venizia/dev-configs": "^0.5.0-1",
     "@venizia/ignis-boot": "^0.5.0-0",
-    "@venizia/ignis-connectors": "^0.5.0-1",
+    "@venizia/ignis-connectors": "^0.5.0-2",
     "@venizia/ignis-filter": "^0.5.0-0",
     "@venizia/ignis-helpers": "^0.5.0-0",
     "@venizia/ignis-inversion": "^0.5.0-0",
-    "@venizia/ignis-kernel": "^0.5.0-0",
+    "@venizia/ignis-kernel": "^0.5.0-1",
     "@vitejs/plugin-react": "^6.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -778,7 +778,7 @@
 
     "@venizia/ignis-boot": ["@venizia/ignis-boot@0.5.0-0", "", { "dependencies": { "@venizia/ignis-helpers": "0.5.0-0", "@venizia/ignis-inversion": "0.5.0-0" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" }, "bin": { "ignis-artifacts": "dist/esm/clis/artifacts.js" } }, "sha512-8s1tuqmKwsWWxoXVBDZfEhWKPJD3h+kMWmYyq7AVvlhopXZHs/2J1aMe2A51GXfAYMW6+vNYx7CW/CX/NYIITQ=="],
 
-    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.5.0-1", "", { "dependencies": { "@venizia/ignis-filter": "0.5.0-0", "@venizia/ignis-helpers": "0.5.0-0", "@venizia/ignis-inversion": "0.5.0-0", "@venizia/ignis-kernel": "0.5.0-0", "zod": "^4.6.7" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.10", "@hono/zod-openapi": "^1.6.3", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.4", "drizzle-zod": "^0.8.3", "hono": "^4.13.13", "meilisearch": "^0.62.0", "pg": "^8.23.1", "postgres": "^3.4.9", "typesense": "^3.2.0" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-9exB/jnlWwL8GsfafkSRSn9jGYS8IWPowmzOft125OdloeDJ7f9/NjAJfT1mMykHajp3pbqXltFmgli8R948UQ=="],
+    "@venizia/ignis-connectors": ["@venizia/ignis-connectors@0.5.0-2", "", { "dependencies": { "@venizia/ignis-filter": "0.5.0-0", "@venizia/ignis-helpers": "0.5.0-0", "@venizia/ignis-inversion": "0.5.0-0", "@venizia/ignis-kernel": "0.5.0-1", "zod": "^4.6.7" }, "peerDependencies": { "@electric-sql/pglite": "^0.5.10", "@hono/zod-openapi": "^1.6.3", "@libsql/client": "^0.17.4", "drizzle-orm": "^0.45.4", "drizzle-zod": "^0.8.3", "hono": "^4.13.13", "meilisearch": "^0.62.0", "pg": "^8.23.1", "postgres": "^3.4.9", "typesense": "^3.2.0" }, "optionalPeers": ["@electric-sql/pglite", "@hono/zod-openapi", "@libsql/client", "drizzle-orm", "drizzle-zod", "hono", "meilisearch", "pg", "postgres", "typesense"] }, "sha512-+yDhi35aGazKqVGyNBvqiPZSroqn9WbyT0xBWAj7q/FEn7C7yBgVMUlFvdk60rvmcF7x0erX+dL2koZTQ5xdkw=="],
 
     "@venizia/ignis-filter": ["@venizia/ignis-filter@0.5.0-0", "", { "dependencies": { "@venizia/ignis-inversion": "0.5.0-0", "zod": "^4.6.7" } }, "sha512-MCI2cPNONgbJg3D8rjhwnU2T1LRwE16aotN8pGAyF427NcbUtYGTFxr2PYwm00yBAyrKqehsf9Bqvc2WexqYOA=="],
 
@@ -786,7 +786,7 @@
 
     "@venizia/ignis-inversion": ["@venizia/ignis-inversion@0.5.0-0", "", { "dependencies": { "reflect-metadata": "^0.2.2" } }, "sha512-O4FzYoUZM2+DSgXyJg3gykP92J09FGET5SBs384KOPHk4aljRDT903kaWqw2q/yeLGTQ/EYbSMP54nk+onUhCA=="],
 
-    "@venizia/ignis-kernel": ["@venizia/ignis-kernel@0.5.0-0", "", { "dependencies": { "@venizia/ignis-filter": "0.5.0-0", "@venizia/ignis-helpers": "0.5.0-0", "@venizia/ignis-inversion": "0.5.0-0", "reflect-metadata": "^0.2.2" }, "peerDependencies": { "@hono/zod-openapi": "^1.6.3", "casbin": "^5.51.1", "drizzle-orm": "^0.45.4", "hono": "^4.13.13", "jose": "^6.2.13" }, "optionalPeers": ["@hono/zod-openapi", "casbin", "drizzle-orm", "hono", "jose"] }, "sha512-6JuMdL/CPejdopimHNnSNa12aoAwXtY5AdHxtrUpFQk/3h313KUFgiMLwbWu8vISs54iM7ksksPEGwGX2vW54g=="],
+    "@venizia/ignis-kernel": ["@venizia/ignis-kernel@0.5.0-1", "", { "dependencies": { "@venizia/ignis-filter": "0.5.0-0", "@venizia/ignis-helpers": "0.5.0-0", "@venizia/ignis-inversion": "0.5.0-0", "reflect-metadata": "^0.2.2" }, "peerDependencies": { "@hono/zod-openapi": "^1.6.3", "casbin": "^5.51.1", "drizzle-orm": "^0.45.4", "hono": "^4.13.13", "jose": "^6.2.13" }, "optionalPeers": ["@hono/zod-openapi", "casbin", "drizzle-orm", "hono", "jose"] }, "sha512-Er731xgxI+eQrA7ILowLtkAS/1Kw+g8uFLoWGdzD+TH/rJ2Uojwgg5FkpCUSGZ4crJwEZqqc/pYL3o1+dQTKYQ=="],
 
     "@venizia/vulcan": ["@venizia/vulcan@0.5.0-0", "", { "dependencies": { "@clack/prompts": "1.8.1", "@venizia/vulcan-atlas": "0.5.0-0", "@venizia/vulcan-okf": "0.5.0-0", "zod": "^4.6.7" }, "bin": { "vulcan": "src/cli.ts" } }, "sha512-dyKUzphgmR84z0xLZBOAOkPYZyU7yIRZ76Xc8DX8hCFARhMXQKi+F4B4WshaW6WL9EWnog2+ik5WQ3QdokzEhQ=="],
 
