@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { type AuthProvider, useEditController, useShowController, useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -1294,7 +1294,12 @@ describe('ArdorApplication show and edit pages of a resource', () => {
         counters.edited += 1;
       }, []);
 
-      return <h1>{record ? `Editing ${record.id}` : 'Loading edit'}</h1>;
+      return (
+        <>
+          <h1>{record ? `Editing ${record.id}` : 'Loading edit'}</h1>
+          <input aria-label="Note" defaultValue="" />
+        </>
+      );
     };
 
     return { OrderShow, OrderEdit };
@@ -1442,6 +1447,35 @@ describe('ArdorApplication show and edit pages of a resource', () => {
 
     expect(screen.getByText('Order 1')).toBeDefined();
     expect(counters.shown).toBe(1);
+    expect(getOne).toHaveBeenCalledTimes(1);
+  });
+
+  test('a new resources array on every render does not remount the page, refetch or lose what was typed', async () => {
+    const getOne = mock(found);
+    const counters = createCounters();
+    const { OrderShow, OrderEdit } = createPages(counters);
+    const container = createOrdersContainer({ getOne, canAccess: allowed });
+    const reduxStore = configureStore({ reducer: () => ({}) });
+    const App = () => (
+      <MemoryRouter initialEntries={['/orders/1']}>
+        <ArdorApplication
+          container={container}
+          reduxStore={reduxStore}
+          suspense={<span>loading</span>}
+          resources={[{ name: 'orders', list: OrderList, show: OrderShow, edit: OrderEdit }]}
+        />
+      </MemoryRouter>
+    );
+    const { rerender } = render(<App />);
+
+    await screen.findByText('Editing 1');
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'draft' } });
+    rerender(<App />);
+    rerender(<App />);
+    await act(async () => {});
+
+    expect(screen.getByLabelText('Note')).toHaveProperty('value', 'draft');
+    expect(counters.edited).toBe(1);
     expect(getOne).toHaveBeenCalledTimes(1);
   });
 });
