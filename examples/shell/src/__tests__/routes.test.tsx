@@ -39,9 +39,6 @@ describe('the routes of the features', () => {
   });
 
   test('a viewer who opens an order lands on the default access-denied page', async () => {
-    // react-admin fetches the record in the render that sends the viewer away; a request that failed at once would send them to the list first.
-    restoreNetwork();
-    restoreNetwork = blockNetwork({ isPending: true });
     const application = await startShell({ roles: [Roles.VIEWER] });
     renderShell({ application, path: '/orders/1/show' });
 

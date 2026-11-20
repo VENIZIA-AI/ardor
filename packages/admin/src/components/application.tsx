@@ -12,6 +12,7 @@ import {
   type I18nProvider,
   Navigate,
   Resource,
+  type ResourceProps,
   useBasename,
 } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -64,6 +65,34 @@ const AccessDeniedRedirect = () => {
   const basename = useBasename();
 
   return <Navigate to={`${basename}/access-denied`} replace />;
+};
+
+/**
+ * A `show` or `edit` page of a resource behind its own access check. react-admin's controller sends
+ * `getOne` as soon as the check is no longer pending, a denial included, so a denied user would
+ * trigger a request, and a fast failure of it would redirect to the list before the denial lands.
+ * The page below the check mounts only for a user who may open it.
+ */
+const guardPage = (opts: {
+  resource: string;
+  action: 'show' | 'edit';
+  page: ResourceProps['show'];
+}): ResourceProps['show'] => {
+  const { resource, action, page } = opts;
+
+  if (!page) {
+    return page;
+  }
+
+  const content = React.isValidElement(page) ? page : React.createElement(page);
+  const GuardedPage: React.FC = () => (
+    <CanAccess resource={resource} action={action} accessDenied={<AccessDeniedRedirect />}>
+      {content}
+    </CanAccess>
+  );
+  GuardedPage.displayName = `Guarded${action}Page`;
+
+  return GuardedPage;
 };
 
 /**
@@ -245,6 +274,15 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     return Features.mount({ features, resources, routes });
   }, [features, resources, routes]);
 
+  // Built once per mounted list, so a re-render never gives react-admin a new page type to remount.
+  const guardedResources = React.useMemo(() => {
+    return mounted.resources.map((resource) => ({
+      ...resource,
+      show: guardPage({ resource: resource.name, action: 'show', page: resource.show }),
+      edit: guardPage({ resource: resource.name, action: 'edit', page: resource.edit }),
+    }));
+  }, [mounted.resources]);
+
   // Resolved once per container: the props below are a new object on every render.
   const providers = React.useMemo(() => {
     return ApplicationProviders.resolve({ container });
@@ -335,7 +373,7 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
     <Wrapper container={container} reduxStore={reduxStore} suspense={suspense} logger={logger}>
       <MountedFeaturesContext.Provider value={mountedScope}>
         <CoreAdmin {...adminProps}>
-          {mounted.resources.map((resource) => {
+          {guardedResources.map((resource) => {
             return <Resource key={resource.name} {...resource} />;
           })}
 

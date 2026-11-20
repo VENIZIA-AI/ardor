@@ -21,20 +21,12 @@ export const startShell = async (opts: { roles?: Array<string> } = {}) => {
   return application;
 };
 
-/**
- * Makes every request of the test reject, so a page that fetches fails loudly; returns the undo. With
- * `isPending`, a request never settles instead: for a page that react-admin fetches for a user it then sends
- * elsewhere (a denied show page), where an answer that came back at once would redirect to the list first.
- */
-export const blockNetwork = (opts: { isPending?: boolean } = {}): (() => void) => {
+/** Makes every request of the test reject, so a page that fetches fails loudly; returns the undo. */
+export const blockNetwork = (): (() => void) => {
   const original = globalThis.fetch;
-  globalThis.fetch = Object.assign(
-    () =>
-      opts.isPending
-        ? new Promise<Response>(() => {})
-        : Promise.reject(new TypeError('No network in tests')),
-    { preconnect: original.preconnect },
-  );
+  globalThis.fetch = Object.assign(() => Promise.reject(new TypeError('No network in tests')), {
+    preconnect: original.preconnect,
+  });
 
   return () => {
     globalThis.fetch = original;

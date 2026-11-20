@@ -3,7 +3,7 @@ import React from 'react';
 import { configureStore, type Store } from '@reduxjs/toolkit';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
-import { type AuthProvider, useTranslate } from 'ra-core';
+import { type AuthProvider, useEditController, useShowController, useTranslate } from 'ra-core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ArdorApplication } from '@/components/application';
@@ -1265,5 +1265,183 @@ describe('ArdorApplication access-denied page', () => {
     const result = await screen.findByText('Ask your administrator');
     expect(result).toBeDefined();
     expect(screen.queryByText('Access denied')).toBeNull();
+  });
+});
+
+describe('ArdorApplication show and edit pages of a resource', () => {
+  const OrderList = () => <h1>Orders list</h1>;
+
+  interface IPageCounters {
+    shown: number;
+    edited: number;
+  }
+
+  const createCounters = (): IPageCounters => ({ shown: 0, edited: 0 });
+
+  const createPages = (counters: IPageCounters) => {
+    const OrderShow = () => {
+      const { record } = useShowController();
+      React.useEffect(() => {
+        counters.shown += 1;
+      }, []);
+
+      return <h1>{record ? `Order ${record.id}` : 'Loading order'}</h1>;
+    };
+
+    const OrderEdit = () => {
+      const { record } = useEditController();
+      React.useEffect(() => {
+        counters.edited += 1;
+      }, []);
+
+      return <h1>{record ? `Editing ${record.id}` : 'Loading edit'}</h1>;
+    };
+
+    return { OrderShow, OrderEdit };
+  };
+
+  const createOrdersContainer = (opts: {
+    getOne: () => Promise<{ data: { id: string } }>;
+    canAccess?: (params: { resource: string; action: string }) => Promise<boolean>;
+  }) => {
+    const container = new Container();
+    container.bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) }).toValue([]);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({
+        getOne: opts.getOne,
+        getList: () => Promise.resolve({ data: [], total: 0 }),
+        getMany: () => Promise.resolve({ data: [] }),
+        getManyReference: () => Promise.resolve({ data: [], total: 0 }),
+        create: () => Promise.resolve({ data: { id: '1' } }),
+        update: () => Promise.resolve({ data: { id: '1' } }),
+        updateMany: () => Promise.resolve({ data: [] }),
+        delete: () => Promise.resolve({ data: { id: '1' } }),
+        deleteMany: () => Promise.resolve({ data: [] }),
+      });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue({
+        checkAuth: () => Promise.resolve(),
+        checkError: () => Promise.resolve(),
+        login: () => Promise.resolve(),
+        logout: () => Promise.resolve(),
+        getPermissions: () => Promise.resolve(),
+        ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
+      });
+    container
+      .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
+      .toValue(new DefaultI18nProvider({}, []).value(container));
+
+    return container;
+  };
+
+  const renderOrders = (opts: { container: Container; counters: IPageCounters; path: string }) => {
+    const { OrderShow, OrderEdit } = createPages(opts.counters);
+    const resources = [{ name: 'orders', list: OrderList, show: OrderShow, edit: OrderEdit }];
+    const tree = (
+      <MemoryRouter initialEntries={[opts.path]}>
+        <ArdorApplication
+          container={opts.container}
+          reduxStore={configureStore({ reducer: () => ({}) })}
+          suspense={<span>loading</span>}
+          resources={resources}
+        />
+      </MemoryRouter>
+    );
+
+    return { ...render(tree), tree };
+  };
+
+  const refused = () => Promise.reject(new Error('connection refused'));
+  const found = () => Promise.resolve({ data: { id: '1' } });
+  const denied = () => Promise.resolve(false);
+  const allowed = () => Promise.resolve(true);
+
+  test.each([
+    ['show', '/orders/1/show'],
+    ['edit', '/orders/1'],
+  ])(
+    'a denied user who opens %s lands on the access-denied page and no getOne is sent, over 10 runs',
+    async (_action, path) => {
+      for (let run = 0; run < 10; run++) {
+        const getOne = mock(refused);
+        renderOrders({
+          container: createOrdersContainer({ getOne, canAccess: denied }),
+          counters: createCounters(),
+          path,
+        });
+
+        const title = await screen.findByRole('heading', { name: 'Access denied' });
+        expect(title).toBeDefined();
+        expect(screen.queryByText('Orders list')).toBeNull();
+        expect(getOne).toHaveBeenCalledTimes(0);
+        cleanup();
+      }
+    },
+  );
+
+  test('a user who may open the pages sees them, with one getOne each', async () => {
+    const showGetOne = mock(found);
+    const counters = createCounters();
+    renderOrders({
+      container: createOrdersContainer({ getOne: showGetOne, canAccess: allowed }),
+      counters,
+      path: '/orders/1/show',
+    });
+
+    const title = await screen.findByText('Order 1');
+    expect(title).toBeDefined();
+    expect(showGetOne).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    const editGetOne = mock(found);
+    renderOrders({
+      container: createOrdersContainer({ getOne: editGetOne, canAccess: allowed }),
+      counters,
+      path: '/orders/1',
+    });
+
+    const editing = await screen.findByText('Editing 1');
+    expect(editing).toBeDefined();
+    expect(editGetOne).toHaveBeenCalledTimes(1);
+  });
+
+  test('an application with no permission provider shows the page with one getOne and no flash of its own', async () => {
+    const getOne = mock(found);
+    const counters = createCounters();
+    renderOrders({
+      container: createOrdersContainer({ getOne }),
+      counters,
+      path: '/orders/1/show',
+    });
+
+    const title = await screen.findByText('Order 1');
+    expect(title).toBeDefined();
+    expect(getOne).toHaveBeenCalledTimes(1);
+    expect(counters.shown).toBe(1);
+    expect(screen.queryByText('loading')).toBeNull();
+  });
+
+  test('a parent that renders again neither remounts the page nor fetches again', async () => {
+    const getOne = mock(found);
+    const counters = createCounters();
+    const { rerender, tree } = renderOrders({
+      container: createOrdersContainer({ getOne, canAccess: allowed }),
+      counters,
+      path: '/orders/1/show',
+    });
+
+    await screen.findByText('Order 1');
+    rerender(tree);
+    rerender(tree);
+    await act(async () => {});
+
+    expect(screen.getByText('Order 1')).toBeDefined();
+    expect(counters.shown).toBe(1);
+    expect(getOne).toHaveBeenCalledTimes(1);
   });
 });
