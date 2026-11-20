@@ -112,7 +112,7 @@
   "guard": {
     "outside": "deny",
     "runners": {
-      "allow": ["shadcn"]
+      "allow": ["shadcn", "vite"]
     }
   },
   "theme": {
