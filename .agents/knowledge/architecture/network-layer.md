@@ -55,11 +55,11 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 
 ## What comes back
 
-After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/helpers/networks/network-response-reader.ts`) decodes a 2xx response:
+After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `ResponseReader.read` (`packages/kernel/src/helpers/networks/response-reader.ts`) decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
-- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`; the public `NetworkResponseReader.readFilename({ headers })` returns the same name and is the one parser) and `contentDisposition` when present.
-- Anything else is read as text by `NetworkResponseReader.readBody`: an empty body is `null`; a JSON content type is parsed, and a body that claims JSON and is not is a `502` `ApplicationError` that names the type and the length, never the content; any other textual type (`text/plain`, `text/csv`, XML) is returned as its text. `convertResponse` then reads the totals described in [Header protocol](/architecture/header-protocol.md).
+- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`; the public `ResponseReader.readFilename({ headers })` returns the same name and is the one parser) and `contentDisposition` when present.
+- Anything else is read as text by `ResponseReader.readBody`: an empty body is `null`; a JSON content type is parsed, and a body that claims JSON and is not is a `502` `ApplicationError` that names the type and the length, never the content; any other textual type (`text/plain`, `text/csv`, XML) is returned as its text. `convertResponse` then reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
 A 2xx response with no `content-type` comes back as a `Blob`.
 

@@ -256,8 +256,8 @@ export function configureNetwork(dataProvider: IDataProvider): void {
 ## Error handling
 
 When the backend responds with an HTTP status outside the 200-299 range:
-1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` hands the response to `NetworkResponseReader.toError` (`packages/kernel/src/helpers/networks/network-response-reader.ts`), which unwraps the payload using the `'error'` root key (`HttpResponseReader.readError`).
-2. `NetworkResponseReader.toError` creates an application error via `getError` with:
+1. `DefaultNetworkRequestService` in `packages/kernel/src/base/services/network-request.ts` hands the response to `ResponseReader.toError` (`packages/kernel/src/helpers/networks/response-reader.ts`), which unwraps the payload using the `'error'` root key (`HttpResponseReader.readError`).
+2. `ResponseReader.toError` creates an application error via `getError` with:
    - `statusCode`: HTTP status code from `response.status` (for example, 400, 401, 403, 404, 500).
    - `message`: `server.normalized?.text ?? server.message ?? \`HTTP ${response.status}\``. This provides the user-facing error message displayed by react-admin notifications.
    - `messageCode`: Server error code from `server.normalized?.code` (for example, `ERR_NOT_FOUND`).

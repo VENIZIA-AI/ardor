@@ -77,7 +77,6 @@ generated:
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
-- `NetworkResponseReader` class
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -87,6 +86,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `ResponseReader` class
 - `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
@@ -376,7 +376,6 @@ generated:
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
 - `NetworkHeaders` class
-- `NetworkResponseReader` class
 - `provide` const
 - `repository` const
 - `RepositoryTypes` class
@@ -386,6 +385,7 @@ generated:
 - `RequestCountData` class
 - `RequestMethods` class
 - `RequestTypes` class
+- `ResponseReader` class
 - `RolePermissionProvider` class
 - `RUNTIME_CONFIG_GLOBAL` const
 - `RUNTIME_CONFIG_INVALID_CODE` const
