@@ -154,11 +154,13 @@ generated:
 
 ## react
 
-### `@venizia/ardor-react` (47)
+### `@venizia/ardor-react` (50)
 
 - `ApplicationContext` const
+- `DefaultBreakpoints` const
 - `DispatchHooks` class
 - `IApplicationContextValue` interface
+- `IBreakpoint` interface
 - `IUseArtifactByKey` interface
 - `IUseArtifactByTarget` interface
 - `IUseAutosaveOptions` interface
@@ -186,6 +188,7 @@ generated:
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
+- `useBreakpoint` function
 - `useComponent` function
 - `useConfiguration` function
 - `useConfirm` const
@@ -261,7 +264,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (203)
+### `@venizia/ardor` (206)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -293,6 +296,7 @@ generated:
 - `DefaultAuthProvider` class
 - `DefaultAuthService` class
 - `DefaultBindingTags` class
+- `DefaultBreakpoints` const
 - `DefaultI18nProvider` class
 - `DefaultNetworkRequestService` class
 - `DefaultRestDataProvider` class
@@ -317,6 +321,7 @@ generated:
 - `IAuthRejection` interface
 - `IAuthTokenRecord` interface
 - `IAuthUser` interface
+- `IBreakpoint` interface
 - `IBuildInfoFile` interface
 - `ICoreBindingTypes` interface
 - `ICustomParams` interface
@@ -433,6 +438,7 @@ generated:
 - `useApplicationLogger` const
 - `useAutosave` const
 - `useBeforeUnload` const
+- `useBreakpoint` function
 - `useComponent` function
 - `useConfiguration` function
 - `useConfirm` const

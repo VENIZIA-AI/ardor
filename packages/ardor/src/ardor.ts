@@ -24,6 +24,7 @@ export {
   useApplicationLogger,
   useAutosave,
   useBeforeUnload,
+  useBreakpoint,
   useComponent,
   useConfiguration,
   useConfirm,

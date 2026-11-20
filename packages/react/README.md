@@ -19,7 +19,7 @@ which re-exports this package.
 | Context | `ApplicationContext`, `useApplicationContext`, `useApplicationLogger` |
 | Injection | `useInjectable` - resolve a binding by key or by class; the artifact hooks `useApplicationContainer`, `useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository` |
 | Redux | `DispatchHooks.create`, `SelectorHooks.create` - factories that bind your `RootState` and `AppDispatch` (the old `createAppDispatch` and `createAppSelectors` are removed; `bun run ardor codemod namespace` moves your code) |
-| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useWindowDimensions`, `useElementSize`, `useResizeEffect`, `useIntersection`, `useStoredState`, `useMediaQuery`, `useDocumentVisibility`, `useOnlineStatus` |
+| UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useWindowDimensions`, `useElementSize`, `useResizeEffect`, `useIntersection`, `useStoredState`, `useMediaQuery`, `useBreakpoint`, `useDocumentVisibility`, `useOnlineStatus` |
 
 ## Typing your own binding keys
 

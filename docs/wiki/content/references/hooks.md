@@ -75,6 +75,7 @@ It costs nothing in the bundle: a bundler keeps only the hooks you call through 
 | Keep a value in `localStorage` or `sessionStorage`, in step across hooks and tabs | `useStoredState` | Browser storage | `{ value, setValue, remove }` |
 | Track window inner dimensions on resize | `useWindowDimensions` | Browser window | `{ width, height }` |
 | Know whether a media query matches | `useMediaQuery` | Browser window | `boolean` |
+| Know the current breakpoint (`sm`, `md`, ...) | `useBreakpoint` | Browser window | `{ name, isAtLeast, isBelow }` |
 | Know whether the tab is visible | `useDocumentVisibility` | Browser DOM | `'visible' \| 'hidden'` |
 | Know whether the browser is online | `useOnlineStatus` | Browser window | `boolean` |
 
@@ -810,6 +811,21 @@ export function Layout() {
 - **Parameters**: `opts: { query: string }`.
 - **Return value**: `boolean`: whether the query matches now, and again after each change. A new `query` is read at once and the old one is no longer listened to.
 - **Gotcha**: In a server render it is `false` and `window.matchMedia` is not called; the browser value arrives on the client render. Defined in `packages/react/src/hooks/use-media-query.ts`.
+
+### useBreakpoint
+
+```tsx
+import { Ardor } from '@venizia/ardor';
+
+export function Navigation() {
+  const { name, isAtLeast } = Ardor.useBreakpoint();
+  return <nav data-breakpoint={name}>{isAtLeast('md') ? 'Sidebar' : 'Drawer'}</nav>;
+}
+```
+
+- **Parameters**: none, or `opts: { breakpoints: Record<string, number> }`, a table of names and widths in CSS pixels. The default table follows Tailwind: `sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536 (`DefaultBreakpoints`).
+- **Return value**: `{ name, isAtLeast(name), isBelow(name) }`. `name` is the widest name reached, and `null` below the smallest. `isAtLeast(name)` is true from the width of `name` up, and `isBelow(name)` is its opposite. The names are the keys of the table, so `isAtLeast('xxl')` on a table with no `xxl` does not compile. The table is read by width, not by key order.
+- **Gotcha**: it reads the viewport through one `(min-width)` media query per breakpoint, as CSS does, so browser zoom (which changes the CSS width) moves the name with the layout. It re-renders only when the name changes, and an inline table, new on every render, is not subscribed again. In a server render `name` is `null` and `window.matchMedia` is not called. Defined in `packages/react/src/hooks/use-breakpoint.ts`; it shares its `matchMedia` code with `useMediaQuery`.
 
 ### useDocumentVisibility
 

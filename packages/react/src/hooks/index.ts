@@ -11,6 +11,7 @@ export * from './use-document-visibility';
 export * from './use-element-size';
 export * from './use-injectable';
 export * from './use-intersection';
+export * from './use-breakpoint';
 export * from './use-media-query';
 export * from './use-online-status';
 export * from './use-resize-effect';
