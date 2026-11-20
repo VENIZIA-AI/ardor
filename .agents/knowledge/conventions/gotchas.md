@@ -34,6 +34,10 @@ When you derive the keys you merge into `IUseTranslateKeysOverrides` from someth
 
 `IUseTranslateKeysOverrides` is declared in `@venizia/ardor-admin`; the `@venizia/ardor` umbrella only re-exports it through `export *`. A `declare module '@venizia/ardor'` block still merges into the real interface, because TypeScript follows the umbrella's `export *` to the module that declares it - so an umbrella target is not why keys are rejected, and an existing umbrella block is not broken. Prefer the umbrella in a new block: `declare module '@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist (Bun's `isolated` linker, pnpm) unless the application depends on that package itself. See [module-augmentation](/architecture/module-augmentation.md).
 
+## A denied show or edit page must not mount its controller
+
+react-admin's `useShowController` and `useEditController` enable `getOne` as soon as the access check is no longer pending, a denial included, and `useRequireAccess` navigates away in the same render. A `getOne` that fails at once (a refused connection, a provider that rejects synchronously) then redirects to the list before `/access-denied` commits, and the server gets a request for a record the client decided the user may not see. `ArdorApplication` therefore mounts the `show` and `edit` of every resource behind its own `CanAccess` (`guardPage` in `packages/admin/src/components/application.tsx`), built once per mounted list, so the controller never mounts for a denied user. `list` and `create` are not wrapped. A test of a denied page uses a `getOne` that rejects at once, not one that never settles.
+
 ## `ra.boolean.null` renders blank on purpose
 
 A boolean field with a `null` value shows nothing rather than a "false"-looking placeholder or a dash. This is intentional so that "unknown" is never visually confused with "false." Don't "fix" this into showing a default value.
