@@ -166,33 +166,10 @@ export class NetworkResponseReader {
    * the server's code and args, its `extra` with the `requestId` added, and `details.cause`.
    * `message` is the server's text, not a log line, because react-admin shows it to the user.
    */
-  static async toError(opts: { response: Response }) {
-    const { response } = opts;
-    const server = await HttpResponseReader.readError({
-      response,
+  static toError(opts: { response: Response }) {
+    return HttpResponseReader.toApplicationError({
+      response: opts.response,
       rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
-    });
-
-    // A relaying server's `extra.requestId` names the request it made upstream; keep it, nearest first.
-    const extra: Record<string, unknown> = { ...server.extra };
-
-    if (server.requestId) {
-      const upstreamRequestId = extra.requestId;
-      extra.requestId = server.requestId;
-
-      if (upstreamRequestId !== undefined && upstreamRequestId !== server.requestId) {
-        const known = Array.isArray(extra.upstreamRequestIds) ? extra.upstreamRequestIds : [];
-        extra.upstreamRequestIds = [upstreamRequestId, ...known];
-      }
-    }
-
-    return getError({
-      statusCode: response.status,
-      message: server.normalized?.text ?? server.message ?? `HTTP ${response.status}`,
-      messageCode: server.normalized?.code,
-      messageArgs: server.normalized?.args,
-      extra: Object.keys(extra).length > 0 ? extra : undefined,
-      cause: server.details?.cause,
     });
   }
 

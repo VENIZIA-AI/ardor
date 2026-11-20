@@ -175,7 +175,7 @@ ignis-0-5-peers:
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.4.8 or earlier, and the IGNIS packages to the 0.4 line.
-  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (`^0.5.0-1` for `@venizia/ignis-connectors` while IGNIS 0.5.0 is a prerelease); an app on a 0.4 IGNIS line does not satisfy them.
+  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (`^0.5.0-2` for `@venizia/ignis-connectors` and `^0.5.0-1` for `@venizia/ignis-kernel` while IGNIS 0.5.0 is a prerelease); an app on a 0.4 IGNIS line does not satisfy them.
 
 data-source-auth-attempt:
   symbols:
