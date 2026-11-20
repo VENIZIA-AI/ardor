@@ -15,7 +15,7 @@ export default {
   commit: { message: { agent: { signature: 'deny' } } },
 
   // A write outside the project folder is denied, not asked about.
-  guard: { outside: 'deny', runners: { allow: ['shadcn'] } },
+  guard: { outside: 'deny', runners: { allow: ['shadcn', 'vite'] } },
 
   // The wiki palette is read from the manifest copy of this theme (docs/wiki/site/.vitepress/config.mts).
   theme: {
