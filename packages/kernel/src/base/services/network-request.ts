@@ -141,8 +141,8 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * The headers of one call: its own alone, or the ones `setHeaders` holds now. The transport keeps no
-   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`)
-   * when its body is one `fetch` types itself (`FormData`, `Blob`, bytes, a stream), so a multipart boundary is written.
+   * default of ours, so a removed header is gone. A call with headers but no `content-type` sends none (`null`),
+   * and so does a raw body (`FormData`, `Blob`, `URLSearchParams`, bytes, a stream) with none, so `fetch` writes it.
    */
   private toSendHeaders(opts: {
     headers?: HeadersInit;

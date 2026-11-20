@@ -1,0 +1,194 @@
+typed-core-bindings:
+  symbols: [CoreBindings, ICoreBindingTypes, TCoreBindingType]
+  upgrade:
+    steps:
+      - 'Bind each value under a `CoreBindings` key with the type that key carries (the table below); a value of another type is a compile error.'
+      - 'In a test that binds a partial fake, make an untyped key from the constant: `BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO })`.'
+    before: |-
+      container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ id: 'info' });
+    after: |-
+      container.bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO }) }).toValue({ id: 'info' });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line, where the keys of CoreBindings are plain strings.
+  data: Nothing stored changes. The key strings are the same, so a stored or sent key still matches. The four values whose types live in `@venizia/ardor-admin` (the three default providers and the i18n options) are typed through `ICoreBindingTypes`, which that package merges into; code that imports only `@venizia/ardor-kernel` reads them as `unknown`.
+
+typed-injectable-keys:
+  symbols:
+    [
+      IUseInjectableKeyTypes,
+      IUseInjectableKeysOverrides,
+      TUseInjectableKeys,
+      TUseInjectableKeysDefault,
+      IUseInjectableByKey,
+      useInjectable,
+      useProvider,
+      useService,
+      useRepository,
+      useComponent,
+      useConfiguration,
+    ]
+  upgrade:
+    steps:
+      - 'Delete each `declare module` block that adds a key to `IUseInjectableKeyTypes` or `IUseInjectableKeysOverrides`.'
+      - 'Make the key with `BindingKeys.build<T>({ key })` and give `T` the type the block listed; use the constant where the value is bound and where the hook reads it.'
+      - 'Drop the generic you wrote with `useInjectable({ key })`: the key carries the type.'
+      - 'Keep `IUseTranslateKeysOverrides` blocks; they are unchanged.'
+    before: |-
+      class ClockKeys {
+        static readonly NOW = '@app/clock/now';
+      }
+      declare module '@venizia/ardor' {
+        interface IUseInjectableKeyTypes {
+          [ClockKeys.NOW]: () => number;
+        }
+      }
+      const now = useInjectable({ key: ClockKeys.NOW });
+    after: |-
+      class ClockKeys {
+        static readonly NOW = BindingKeys.build<() => number>({ key: '@app/clock/now' });
+      }
+      const now = useInjectable({ key: ClockKeys.NOW });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line, and restore the `declare module` blocks.
+  data: Nothing stored changes. The hooks take only a key made by `BindingKeys.build`; a plain string, a template literal or a symbol does not compile. A key made with `build<unknown>` answers `unknown`. `IUseInjectableByKey` is now generic over the value type of the key, not over a string union.
+
+built-keys-only:
+  symbols:
+    [
+      BindingKeys.build,
+      Container.get,
+      Container.bind,
+      Container.isBound,
+      Container.getBinding,
+      inject,
+      provide,
+    ]
+  upgrade:
+    steps:
+      - 'Run `bun run devz codemod binding-keys` inside the package (needs `@venizia/dev-configs` 0.5): it rewrites each literal key to `BindingKeys.build<T>({ key })` and lists each key it left as `build<unknown>` so you can name the real type.'
+      - 'Run `bun check`; each key it still reports is a plain string that needs the same wrap. A `Symbol` key becomes a string key by hand.'
+    before: |-
+      container.get<Mailer>({ key: 'services.Mailer' });
+      @provide({ key: 'services.Mailer' })
+    after: |-
+      container.get({ key: BindingKeys.build<Mailer>({ key: 'services.Mailer' }) });
+      @provide({ key: BindingKeys.build<Mailer>({ key: 'services.Mailer' }) })
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line, and restore the files from git.
+  data: Nothing stored changes; the key strings do not change. `bindingList()` still returns a record keyed by plain strings, and the application builds each key itself. `BindingKeys` is exported by `@venizia/ardor` and `@venizia/ardor-kernel`.
+
+network-response-reader-rename:
+  symbols: [ResponseReader, NetworkResponseReader]
+  upgrade:
+    steps:
+      - 'Rename `ResponseReader` to `NetworkResponseReader` in each import and use.'
+    before: |-
+      import { ResponseReader } from '@venizia/ardor';
+      const name = ResponseReader.readFilename({ headers: response.headers });
+    after: |-
+      import { NetworkResponseReader } from '@venizia/ardor';
+      const name = NetworkResponseReader.readFilename({ headers: response.headers });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier and rename `NetworkResponseReader` back to `ResponseReader`.
+  data: Nothing stored changes. The behaviour is the same; the name no longer collides with the `ResponseReader` of `@venizia/ignis-helpers`. There is no alias. Rename it by hand; there is no codemod.
+
+native-fetch-network-request:
+  symbols:
+    [
+      NodeFetchNetworkRequest,
+      NativeFetchNetworkRequest,
+      DefaultNetworkRequestService.networkRequest,
+    ]
+  upgrade:
+    steps:
+      - "In a service subclass that assigns the protected `networkRequest`, use `NativeFetchNetworkRequest` from `@venizia/ignis-helpers/core`, and `BaseNetworkRequest<'native'>` for a request with a fetcher of your own."
+      - 'A fetcher you pass must send with `acceptStatus` that accepts every status, because `doRequest` reads a 4xx or 5xx `Response` itself.'
+    before: |-
+      this.networkRequest = new NodeFetchNetworkRequest({ name, networkOptions: { baseUrl } });
+    after: |-
+      this.networkRequest = new NativeFetchNetworkRequest({ name, networkOptions: { baseUrl } });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line, and rename the class back.
+  data: "Nothing stored changes. `doRequest` sends every status through to ARDOR's own reader, so a non-2xx still becomes the same `ApplicationError`. A call that carries headers still sends those alone, and a header removed with `removeHeaders` is not sent; the default `content-type` is dropped unless the call names it, so a multipart body keeps the boundary `fetch` writes. A raw body (`FormData`, `Blob`, `URLSearchParams`, bytes, a stream) with no `content-type` of its own is sent with none, with or without call headers."
+
+request-path-refusal:
+  symbols: [DefaultNetworkRequestService.doRequest]
+  upgrade:
+    steps:
+      - 'Match the new text in a test or a handler: a path that leaves the base now answers `A request path must stay under the base path`, where it answered `[doRequest] Invalid path to send request!`.'
+      - 'Give a relative base URL (`/api`) only where the code runs in a page or a worker; with no location it is refused.'
+    before: |-
+      expect(error.message).toContain('[doRequest] Invalid path to send request!');
+    after: |-
+      expect(error.message).toContain('A request path must stay under the base path');
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line.
+  data: Nothing stored changes. The status is still 400 for a path and nothing is sent; a relative base without a location, and a base URL with a `?` or a `#`, answer a 500. The refusal now comes from IGNIS, which also refuses a base that carries a `?` or a `#`. A relative base resolves against the page's origin, and a space in a path is percent-encoded (`a%20b`).
+
+connectors-http-types-removed:
+  symbols:
+    [
+      THttpQuery,
+      TAuthTokenResolver,
+      THttpHeadersResolver,
+      HttpResourceEntity,
+      THttpRepositoryOptions,
+    ]
+  upgrade:
+    steps:
+      - 'Replace each use with a type of your own, or inline it. `TAuthTokenResolver` was `(context: IHttpRequestContext) => IAuthToken | undefined`, `THttpHeadersResolver` was `(context: IHttpRequestContext) => THttpHeaders | undefined` and `THttpQuery<E>` was `{ filter?: TFilter<E> }`.'
+    before: |-
+      import type { TAuthTokenResolver } from '@venizia/ardor/repository';
+      const resolve: TAuthTokenResolver = () => token;
+    after: |-
+      import type { IAuthToken, IHttpRequestContext } from '@venizia/ardor/repository';
+      const resolve = (_context: IHttpRequestContext): IAuthToken | undefined => token;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line, where the five types exist.
+  data: Nothing stored changes. These types are removed by IGNIS from `@venizia/ignis-connectors/http`, which `@venizia/ardor/repository` re-exports; `THttpFetch` stays. There is no codemod.
+
+ignis-0-5-peers:
+  symbols:
+    [
+      '@venizia/ignis-kernel',
+      '@venizia/ignis-helpers',
+      '@venizia/ignis-inversion',
+      '@venizia/ignis-filter',
+      '@venizia/ignis-connectors',
+      '@venizia/ignis-boot',
+      '@venizia/dev-configs',
+    ]
+  upgrade:
+    steps:
+      - 'Upgrade the IGNIS packages of the app to 0.5.0, with `@venizia/dev-configs` 0.5.0 for the app preset.'
+    before: |-
+      "@venizia/ignis-kernel": "^0.4.8"
+    after: |-
+      "@venizia/ignis-kernel": "^0.5.0"
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, and the IGNIS packages to the 0.4 line.
+  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (`^0.5.0-1` for `@venizia/ignis-connectors` while IGNIS 0.5.0 is a prerelease); an app on a 0.4 IGNIS line does not satisfy them.
+
+data-source-auth-attempt:
+  symbols:
+    [IDataSourceAuth, IDataSourceUnauthorizedInfo, DefaultNetworkRequestService.getDataSourceAuth]
+  upgrade:
+    steps:
+      - 'Pass the second argument where you call `getDataSourceAuth().onUnauthorized`, in a test or in code that wraps the hook: `{ attempt: 1 }` for the first 401.'
+      - "A hook of your own that you give `HttpDataSource` takes `(context, info)`; on `info.attempt` 2, the retry's own 401, return `false`."
+    before: |-
+      const isRefreshed = await auth.onUnauthorized(context);
+    after: |-
+      const isRefreshed = await auth.onUnauthorized(context, { attempt: 1 });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line.
+  data: "Nothing stored changes. IGNIS calls the hook on the retry's own 401 too; ARDOR answers false there without refreshing, so a request is refreshed once and retried once, as before."
