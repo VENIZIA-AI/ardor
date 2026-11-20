@@ -53,9 +53,8 @@ export function useService(opts: IUseArtifactByTarget<unknown> | IUseArtifactByK
  *
  * - `{ target }` returns the instance type of the class.
  * - `{ key }` of a provider of `CoreBindings` returns what that key holds: `IDataProvider`,
- *   `IAuthProvider` or react-admin's `I18nProvider`, with no generic and no augmentation. Any key listed
- *   in `IUseInjectableKeyTypes` does the same.
- * - Any other `{ key }` returns the type you pass as the generic, which is your claim.
+ *   `IAuthProvider` or react-admin's `I18nProvider`, with no generic and no augmentation. Any key made by
+ *   `BindingKeys.build<T>` does the same with its own `T`.
  *
  * @example
  * ```tsx

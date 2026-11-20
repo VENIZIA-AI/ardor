@@ -77,8 +77,8 @@ Authorization header and fails without a token. See [No-auth paths](/architectur
 three separate dependencies. See [`@venizia/ardor`](/packages/ardor.md).
 
 **Augmentation** - declaring extra members on an ARDOR-defined interface via `declare module`, used
-to teach TypeScript an application's own binding keys or message keys (for example extending
-`IUseInjectableKeysOverrides` or `IUseTranslateKeysOverrides`). See
+to teach TypeScript an application's own message keys (for example extending
+`IUseTranslateKeysOverrides`). See
 [Module augmentation](/architecture/module-augmentation.md).
 
 **Purity** - the requirement that ARDOR's runtime packages stay browser-safe: kernel and react

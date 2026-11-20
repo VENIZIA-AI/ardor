@@ -20,21 +20,18 @@ which re-exports this package.
 | Injection | `useInjectable` - resolve a binding by key or by class; the artifact hooks `useApplicationContainer`, `useService`, `useProvider`, `useComponent`, `useConfiguration`, `useRepository` |
 | Redux | `DispatchHooks.create`, `SelectorHooks.create` - factories that bind your `RootState` and `AppDispatch` (the old `createAppDispatch` and `createAppSelectors` are removed; `bun run ardor codemod namespace` moves your code) |
 | UI hooks | `useDebounce`, `useAutosave`, `useConfirm`, `useBeforeUnload`, `useCopyToClipboard`, `useWindowDimensions`, `useElementSize`, `useResizeEffect`, `useIntersection`, `useStoredState`, `useMediaQuery`, `useDocumentVisibility`, `useOnlineStatus` |
-| Types | `TUseInjectableKeys` |
 
 ## Typing your own binding keys
 
-`IUseInjectableKeysOverrides` is declared here, so augment this package when it is the one you depend on:
+A key carries the type of its value: make it with `BindingKeys.build<T>` and `useInjectable({ key })` returns `T`, with no generic and no augmentation.
 
 ```typescript
-declare module '@venizia/ardor-react' {
-  interface IUseInjectableKeysOverrides {
-    'services.PricingService': unknown;
-  }
-}
-```
+import { BindingKeys } from '@venizia/ignis-inversion';
 
-With `@venizia/ardor`, write `declare module '@venizia/ardor'` instead.
+export const PRICING_OPTIONS = BindingKeys.build<{ currency: string }>({
+  key: '@app/pricing/options',
+});
+```
 
 ## License
 

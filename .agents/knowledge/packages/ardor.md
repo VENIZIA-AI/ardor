@@ -68,7 +68,7 @@ The lib declares the six `@venizia/ignis-*` packages (boot, connectors, filter, 
 
 ## Why an app augments the umbrella
 
-Two of the typed hooks - `useInjectable` from ardor-react and `useTranslate` from ardor-admin - accept a union of string-literal keys built from an empty override interface plus a default set (see [Module augmentation](/architecture/module-augmentation.md)). `IUseInjectableKeysOverrides` is declared inside `@venizia/ardor-react` and `IUseTranslateKeysOverrides` inside `@venizia/ardor-admin`; the umbrella re-exports both with `export *`.
+`useTranslate` from ardor-admin accepts a union of string-literal keys built from an empty override interface plus a default set (see [Module augmentation](/architecture/module-augmentation.md)). `IUseTranslateKeysOverrides` is declared inside `@venizia/ardor-admin`; the umbrella re-exports it with `export *`. Binding keys carry their own type (`BindingKeys.build<T>`), and `@venizia/ardor-admin` merges the types of the provider keys of `CoreBindings` into the kernel's `ICoreBindingTypes`, so an application needs no augmentation for them.
 
 TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into both and the typed key unions pick up the keys. This is the target to use: an application depends on `@venizia/ardor` alone, and under a linker that does not hoist (Bun's `isolated` linker, pnpm) `declare module '@venizia/ardor-react'` fails with TS2664 because that package is not resolvable from the application.
 

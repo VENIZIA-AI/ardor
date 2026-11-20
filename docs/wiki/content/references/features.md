@@ -12,6 +12,7 @@ import React from 'react';
 import {
   BaseArdorApplication,
   BaseService,
+  BindingKeys,
   configuration,
   Features,
   provide,
@@ -29,7 +30,7 @@ export class OrderService extends BaseService {
 
 // A value with no class has a key: keep it in a constants class.
 export class OrdersBindings {
-  static readonly PAGE_SIZE = 'orders.pageSize';
+  static readonly PAGE_SIZE = BindingKeys.build<number>({ key: 'orders.pageSize' });
 }
 
 @configuration()

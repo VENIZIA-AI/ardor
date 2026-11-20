@@ -79,16 +79,16 @@ Two removals and three requirements:
   `BaseCrudApiService.find()` merged `limit: 100` into every filter that had none;
   `HttpRepository.find()` sends the filter as given, so a call site that relied on that default
   gets the server's own page size. Pass `filter: { limit }` where it matters.
-- **Module augmentation targets the umbrella.** `@venizia/ardor` re-exports the override
-  interfaces with `export *`, and TypeScript follows that chain to the declaring package, so one
-  block on the umbrella merges into every one of them. Do not retarget the block to
+- **Module augmentation targets the umbrella.** `@venizia/ardor` re-exports
+  `IUseTranslateKeysOverrides` with `export *`, and TypeScript follows that chain to the declaring
+  package, so one block on the umbrella merges into it. Do not retarget the block to
   `@venizia/ardor-react` or `@venizia/ardor-admin` unless the application depends on that package
   itself: under a linker that does not hoist (Bun's `isolated` linker, pnpm) it fails with TS2664
   and the keys are missing.
 - **Classes are resolved by class, with no augmentation.** The old `IUseInjectableKeysOverrides`
   block listed a string key for every class. Resolve a class by the class instead:
   `Ardor.useService({ target: OrderService })`, or `@inject({ target: OrderService })` in a
-  constructor. Augment `IUseInjectableKeyTypes` only for a binding that has no class.
+  constructor. Make a key with `BindingKeys.build<T>` only for a binding that has no class.
 
 - **`@venizia/ignis-inversion` must satisfy the peer range in the ARDOR `package.json`.** ARDOR resolves a binding from a class through
   the metadata registry (`Ardor.useService({ target })` and the other namespace hooks), which the 0.1 line does not expose.
