@@ -12,6 +12,7 @@ import {
   type I18nProvider,
   Navigate,
   Resource,
+  type ResourceProps,
   useBasename,
 } from 'ra-core';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -64,6 +65,30 @@ const AccessDeniedRedirect = () => {
   const basename = useBasename();
 
   return <Navigate to={`${basename}/access-denied`} replace />;
+};
+
+/**
+ * A `show` or `edit` page behind its own access check: react-admin's controller sends `getOne` even for
+ * a denied user. The page is an element, so React keeps the user's page mounted across renders.
+ */
+const guardPage = (opts: {
+  resource: string;
+  action: 'show' | 'edit';
+  page: ResourceProps['show'];
+}): ResourceProps['show'] => {
+  const { resource, action, page } = opts;
+
+  if (!page) {
+    return page;
+  }
+
+  const content = React.isValidElement(page) ? page : React.createElement(page);
+
+  return (
+    <CanAccess resource={resource} action={action} accessDenied={<AccessDeniedRedirect />}>
+      {content}
+    </CanAccess>
+  );
 };
 
 /**
@@ -336,7 +361,14 @@ export const ArdorApplication: React.FC<IApplication> = (props: IApplication) =>
       <MountedFeaturesContext.Provider value={mountedScope}>
         <CoreAdmin {...adminProps}>
           {mounted.resources.map((resource) => {
-            return <Resource key={resource.name} {...resource} />;
+            return (
+              <Resource
+                key={resource.name}
+                {...resource}
+                show={guardPage({ resource: resource.name, action: 'show', page: resource.show })}
+                edit={guardPage({ resource: resource.name, action: 'edit', page: resource.edit })}
+              />
+            );
           })}
 
           <CustomRoutes>
