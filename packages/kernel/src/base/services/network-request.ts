@@ -147,12 +147,12 @@ export class DefaultNetworkRequestService extends BaseService {
   private toSendHeaders(opts: {
     headers?: HeadersInit;
     /** What the retry of a 401 adds or replaces: the fresh token. It does not change which `content-type` rule applies. */
-    extra?: HeadersInit;
+    extra?: Record<string, string | null>;
     body?: unknown;
   }): Record<string, string | null> | undefined {
     const sent: Record<string, string | null> = {
       ...Object.fromEntries(new Headers(opts.headers ?? this.headers)),
-      ...Object.fromEntries(new Headers(opts.extra)),
+      ...opts.extra,
     };
 
     if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
@@ -810,7 +810,7 @@ export class DefaultNetworkRequestService extends BaseService {
   ): Promise<INetworkResponse<TResult>> {
     const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
 
-    const sendOnce = (retryHeaders?: HeadersInit) => {
+    const sendOnce = (retryHeaders?: Record<string, string | null>) => {
       return this.networkRequest.getNetworkService().send(
         {
           url,
@@ -869,14 +869,11 @@ export class DefaultNetworkRequestService extends BaseService {
         }
 
         const authHeader = this.getRequestAuthorizationHeader();
-        const retryHeaders = NetworkHeaders.merge({
-          sources: [
-            { [HeaderConstants.AUTHORIZATION]: authHeader.token },
-            authHeader.provider
-              ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider }
-              : undefined,
-          ],
-        });
+        // The token's provider wins, and a token with none removes the one the call carried.
+        const retryHeaders = {
+          [HeaderConstants.AUTHORIZATION]: authHeader.token,
+          [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider ?? null,
+        };
 
         const result = await sendOnce(retryHeaders);
         fetched = result;

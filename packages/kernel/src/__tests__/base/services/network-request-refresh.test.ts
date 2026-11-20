@@ -491,7 +491,34 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       expect(retry!.body).toContain('name="name"');
     });
 
-    test('a ReadableStream body is refused with a clear error, not sent empty', async () => {
+    test('a fresh token with no provider removes the provider the call carried', async () => {
+      class NoProviderService extends DefaultNetworkRequestService {
+        override getRequestAuthorizationHeader() {
+          return { token: 'Bearer fresh', provider: undefined };
+        }
+      }
+      const service = new NoProviderService({
+        name: 'retry-provider',
+        baseUrl,
+        authRecovery: { refreshTokenPath: REFRESH_PATH },
+        authService,
+      });
+
+      await service.doRequest({
+        paths: ['items'],
+        method: RequestMethods.GET,
+        type: RequestTypes.GET_ONE,
+        headers: { authorization: 'Bearer stale', 'x-auth-provider': 'ldap' },
+      });
+
+      const [first, retry] = itemsRequests();
+      expect(itemsRequests()).toHaveLength(2);
+      expect(first!.provider).toBe('ldap');
+      expect(retry!.authorization).toBe('Bearer fresh');
+      expect(retry!.provider).toBeNull();
+    });
+
+    test('a ReadableStream body is refused with a clear error, not an unclear TypeError', async () => {
       const service = createService();
       const body = new ReadableStream({
         start: (controller) => {
