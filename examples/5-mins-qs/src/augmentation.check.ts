@@ -1,4 +1,10 @@
-import { Ardor, BindingKeys, useInjectable, useTranslate, type TUseTranslateFn } from '@venizia/ardor';
+import {
+  Ardor,
+  BindingKeys,
+  useInjectable,
+  useTranslate,
+  type TUseTranslateFn,
+} from '@venizia/ardor';
 
 // A type-level check, never imported or run: `tsc` (the `typecheck` script) is the test. The
 // translation keys are declared by the application's augmentation of `@venizia/ardor`, and an
