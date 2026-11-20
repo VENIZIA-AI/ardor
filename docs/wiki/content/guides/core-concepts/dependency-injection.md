@@ -111,7 +111,7 @@ React components resolve dependencies through typed hooks exported from `@venizi
 | A component | `Ardor.useComponent` | `{ target: TClass<T> }` | Throws when the class is bound under another namespace. |
 | A provider class | `Ardor.useProvider` | `{ target: TClass<T> }` | Throws when the class is bound under another namespace. |
 | A framework provider | `Ardor.useProvider` | `{ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }` | The key is typed: no generic, no augmentation. |
-| A binding with no class | `Ardor.useInjectable` | `{ key }` | A key in `IUseInjectableKeyTypes` is typed; any other takes a generic. |
+| A binding with no class | `Ardor.useInjectable` | `{ key }` | The key must be made by `BindingKeys.build<T>`; the hook returns `T`. |
 | Any class, in any namespace | `Ardor.useInjectable` | `{ target: TClass<T> }` | Infers the instance type of the class. |
 | The active DI container | `Ardor.useApplicationContainer` | `{ container?: Container }` (optional) | Returns `opts.container` else the context container and throws when neither exists. |
 | The application container | `Ardor.useApplicationContext` | None | Returns the container and throws outside the application context. |
@@ -119,19 +119,13 @@ React components resolve dependencies through typed hooks exported from `@venizi
 
 With `{ target }`, TypeScript infers the return type from the class constructor, so no cast and no generic are needed. Every hook, `useInjectable` included, throws when another class of the same name holds the key, and names the key and the class. A hook resolves on every render (see [Scopes](#scopes-singleton-by-default-in-the-browser)).
 
-The five namespace hooks also accept a `{ key }`, but a class never needs one. A key is for a binding that has no class: a value you bind by hand, or a `CoreBindings` provider. Keep such keys as `static readonly` members of a constants class, and list them in `IUseInjectableKeyTypes` so `useInjectable` returns their type with no generic:
+The five namespace hooks also accept a `{ key }`, but a class never needs one. A key is for a binding that has no class: a value you bind by hand, or a `CoreBindings` provider. Keep such keys as `static readonly` members of a constants class, and make each with `BindingKeys.build<T>` so `useInjectable` returns its type with no generic and no augmentation:
 
 ```tsx
-import { Ardor, BaseArdorApplication, type IApplicationInfo } from '@venizia/ardor';
+import { Ardor, BaseArdorApplication, BindingKeys, type IApplicationInfo } from '@venizia/ardor';
 
 export class ClockKeys {
-  static readonly NOW = '@app/clock/now';
-}
-
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [ClockKeys.NOW]: () => number;
-  }
+  static readonly NOW = BindingKeys.build<() => number>({ key: '@app/clock/now' });
 }
 
 export class ClockApplication extends BaseArdorApplication {

@@ -255,6 +255,11 @@ export interface IDataSourceRequestContext {
   paths: Array<string>;
 }
 
+/** What `onUnauthorized` is told besides the request: `attempt` is 1 for the first 401 and 2 for the retry's own. */
+export interface IDataSourceUnauthorizedInfo {
+  attempt: number;
+}
+
 /**
  * The settings an `HttpDataSource` takes, bound to one `DefaultNetworkRequestService`, so a
  * repository sends what the data provider sends: the same headers, the same token on the same
@@ -263,7 +268,10 @@ export interface IDataSourceRequestContext {
 export interface IDataSourceAuth {
   authTokenResolver: (context: IDataSourceRequestContext) => IAuthTokenRecord | undefined;
   headersResolver: (context: IDataSourceRequestContext) => Record<string, string>;
-  onUnauthorized: (context: IDataSourceRequestContext) => Promise<boolean>;
+  onUnauthorized: (
+    context: IDataSourceRequestContext,
+    info: IDataSourceUnauthorizedInfo,
+  ) => Promise<boolean>;
   errorRootKey: string;
 }
 

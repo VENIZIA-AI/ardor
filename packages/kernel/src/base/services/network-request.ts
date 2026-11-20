@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
-import { NodeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import { NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -67,7 +67,7 @@ export class DefaultNetworkRequestService extends BaseService {
   protected noAuthPathRegexes: RegExp[];
   /** Headers added to every request, keyed by lowercase name. */
   protected headers: Record<string, string>;
-  protected networkRequest: NodeFetchNetworkRequest;
+  protected networkRequest: NativeFetchNetworkRequest;
   /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
   protected authRecovery?: IAuthRecoveryOptions;
@@ -132,11 +132,31 @@ export class DefaultNetworkRequestService extends BaseService {
       onFailure: () => this.onAuthFailure(),
       isNoAuthPath: (paths) => this.isNoAuthPath({ resource: paths?.[0], paths }),
     });
-    this.networkRequest = new NodeFetchNetworkRequest({
+    this.networkRequest = new NativeFetchNetworkRequest({
       name,
       // A filter travels as one JSON parameter, and a null is left out: what an IGNIS server reads.
-      networkOptions: { baseUrl, headers, queryString: { nullish: 'skip', nested: 'json' } },
+      networkOptions: { baseUrl, queryString: { nullish: 'skip', nested: 'json' } },
     });
+  }
+
+  /**
+   * The headers of one call: its own alone, or the ones `setHeaders` holds now. The transport keeps no
+   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`).
+   */
+  private toSendHeaders(opts: {
+    headers?: HeadersInit;
+  }): Record<string, string | null> | undefined {
+    if (!opts.headers) {
+      return Object.fromEntries(new Headers(this.headers));
+    }
+
+    const sent: Record<string, string | null> = Object.fromEntries(new Headers(opts.headers));
+
+    if (!(HeaderConstants.CONTENT_TYPE in sent)) {
+      sent[HeaderConstants.CONTENT_TYPE] = null;
+    }
+
+    return sent;
   }
 
   /**
@@ -518,7 +538,7 @@ export class DefaultNetworkRequestService extends BaseService {
           sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
         });
       },
-      onUnauthorized: (context) => {
+      onUnauthorized: (context, info) => {
         if (!this.recovery.canRecover({ paths: context.paths })) {
           return Promise.resolve(false);
         }
@@ -528,6 +548,11 @@ export class DefaultNetworkRequestService extends BaseService {
 
         if (change === false) {
           return Promise.reject(this.sessionChangedError());
+        }
+
+        // The retry's own 401 stands, as it does for `doRequest`: one refresh, one retry.
+        if (info.attempt >= 2) {
+          return Promise.resolve(false);
         }
 
         if (change === true) {
@@ -637,35 +662,6 @@ export class DefaultNetworkRequestService extends BaseService {
     };
   }
 
-  /**
-   * Whether the request stays where `baseUrl` points: no entry of `paths` carries a tab, a line break,
-   * a backslash or a dot segment (also written `%2E`), and the URL built from
-   * them, resolved the way a browser does, has the origin of the base and a path under it.
-   */
-  private static isUnderBase(opts: { baseUrl: string; paths: string[]; url: string }): boolean {
-    const { baseUrl, paths, url } = opts;
-
-    // The joined path, so a dot segment is found whichever entry holds it.
-    if (/[\\\t\n\r]|(^|\/)(\.|%2e){1,2}(\/|$)/i.test(paths.join('/'))) {
-      return false;
-    }
-
-    try {
-      const origin = 'http://base.invalid';
-      const base = new URL(baseUrl, origin);
-      const target = new URL(url, origin);
-      const prefix = base.pathname.replace(/\/+$/, '');
-
-      return (
-        target.origin === base.origin &&
-        (target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))
-      );
-      // eslint-disable-next-line venizia/no-silent-catch -- a URL that does not parse is the answer: the request is refused
-    } catch {
-      return false;
-    }
-  }
-
   /** The body as it is sent and the content type to send it under. Override to encode another way. */
   protected encodeBody(opts: { bodyType?: string; body: unknown }): IEncodedBody {
     return RequestBodyEncoder.encode(opts);
@@ -744,10 +740,6 @@ export class DefaultNetworkRequestService extends BaseService {
 
     const url = this.networkRequest.getRequestUrl({ baseUrl, paths });
 
-    if (!DefaultNetworkRequestService.isUnderBase({ baseUrl, paths, url })) {
-      throw getError({ message: '[doRequest] Invalid path to send request!' });
-    }
-
     const timeoutSignal = this.timeout.use
       ? AbortSignal.timeout(this.timeout.milliseconds)
       : undefined;
@@ -799,8 +791,9 @@ export class DefaultNetworkRequestService extends BaseService {
           method,
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
-          headers: sendHeaders,
+          headers: this.toSendHeaders({ headers: sendHeaders }),
           signal,
+          acceptStatus: () => true,
         },
         this.logger,
       );

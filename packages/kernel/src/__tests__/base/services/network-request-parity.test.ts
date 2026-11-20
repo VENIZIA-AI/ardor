@@ -140,6 +140,33 @@ describe('the headers a request carries', () => {
     expect(headers).not.toHaveProperty(HeaderConstants.REQUEST_COUNT_DATA);
   });
 
+  test('a header removed with removeHeaders is not sent, with or without call headers', async () => {
+    const service = createService({
+      headers: { 'X-Tenant-Id': 't1', Authorization: 'Bearer static' },
+      isOpen: true,
+    });
+    service.removeHeaders({ keys: ['x-tenant-id', 'authorization'] });
+
+    await service.doRequest({
+      paths: ['items'],
+      method: RequestMethods.GET,
+      type: RequestTypes.GET_ONE,
+    });
+    await service.doRequest({
+      paths: ['items'],
+      method: RequestMethods.GET,
+      type: RequestTypes.GET_ONE,
+      headers: { 'x-own': 'own-1' },
+    });
+
+    expect(recorded).toHaveLength(2);
+
+    for (const { headers } of recorded) {
+      expect(headers).not.toHaveProperty('x-tenant-id');
+      expect(headers).not.toHaveProperty('authorization');
+    }
+  });
+
   test('getRequestProps headers reach the server: session, tracing, count, token and provider', async () => {
     const service = createService({ headers: { 'X-Static': 'static-1' } });
     service.token = { value: 'tok-1', type: 'Bearer', provider: 'ldap' };

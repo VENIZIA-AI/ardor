@@ -96,7 +96,9 @@ export type UserLeaf = TFullPaths<UserRecord>;
 
 | Class | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `CoreBindings` | `class` | The twelve container keys for instances, options, providers, and features. | - |
+| `CoreBindings` | `class` | The twelve container keys, each made by `BindingKeys.build<T>` with the type of its value. | - |
+| `ICoreBindingTypes` | `interface` | Empty in the kernel. `@venizia/ardor-admin` merges the types of the provider keys and the i18n options into it. | `restDataProvider`, `authProvider`, `i18nProvider`, `i18nProviderOptions` (merged) |
+| `TCoreBindingType<TName>` | `type` | The type merged into `ICoreBindingTypes` under `TName`, or `unknown` when nothing merged it. | - |
 | `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the three prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE`, `PREFIX_PREFS` |
 | `RequestMethods` | `class` | HTTP method constants, with `SCHEME_SET` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
 | `RequestTypes` | `class` | Data operation constants with `SCHEME_SET` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
@@ -120,11 +122,8 @@ Source files: `packages/ardor/src/repository.ts` and `packages/kernel/src/base/r
 | `IHttpReadResult<R>` | `interface` | Response from `HttpDataSource.read` containing rows, range flag, and count. | - |
 | `IHttpWriteResult<R>` | `interface` | Response from `HttpDataSource.write` containing affected rows, count, and extras. | - |
 | `IHttpCallOptions` | `interface` | Per-request options accepted by repository calls. | `headers`, `signal` |
-| `THttpRepositoryOptions` | `type` | Options accepted by `HttpRepository` methods combining call options and query flags. | - |
 | `IAuthToken` | `interface` | Authentication token shape accepted by `HttpDataSource`. | `value`, `type`, `provider` |
-| `TAuthTokenResolver` | `type` | Hook function returning `IAuthToken \| undefined` for `HttpDataSource`. | - |
 | `THttpHeaders` | `type` | Header inputs accepted by `HttpDataSource`. | `Headers \| Array<[string, string]> \| Record<string, string>` |
-| `THttpHeadersResolver` | `type` | Hook function returning dynamic `THttpHeaders` on each request. | - |
 | `THttpBody` | `type` | Request body types accepted by `HttpDataSource`. | `string \| object` |
 | `TExtraRequest` | `type` | Request specification for list extras (`x-request-extra`). | - |
 | `TExtraResult<T>` | `type` | Type extraction helper for list extras returned in `x-response-extra`. | - |
@@ -136,13 +135,9 @@ Source file: `packages/react/src/hooks/use-injectable.ts`.
 
 | Type | Kind | Definition and usage | Shape |
 |---|---|---|---|
-| `IUseInjectableKeysOverrides` | `interface` | Augment it with a key of your own for a binding with no class; a class resolves by `{ target }`. | - |
-| `IUseInjectableKeyTypes` | `interface` | Maps a key with no class to the type it holds. Admin adds the `CoreBindings` providers; you add yours. | - |
-| `TUseInjectableKeysDefault` | `type` | Union of default string keys extracted from `CoreBindings`. | - |
-| `TUseInjectableKeys` | `type` | Complete key union accepted by `useInjectable`. | `TUseInjectableKeysDefault \| keyof IUseInjectableKeysOverrides \| keyof IUseInjectableKeyTypes` |
 | `TUseInjectableOptions` | `type` | Options discriminated union (`key` or `target`) accepted by `useInjectable`. | - |
 | `IUseInjectableByTarget<TInstance>` | `interface` | Options by class; the return type is the instance type of `target`. | - |
-| `IUseInjectableByKey<TKey>` | `interface` | Options by key: `{ key, container? }`. | - |
+| `IUseInjectableByKey<TValue>` | `interface` | Options by key: `{ key: TBindingKey<TValue>, container? }`; the return type is `TValue`. | - |
 
 ## @venizia/ardor-admin
 

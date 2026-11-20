@@ -134,7 +134,7 @@ const products = useRepository({ target: ProductRepository });
 
 Literal keys in `bindingList()`, or an explicit `binding: { namespace, key }`, also survive. A class
 is still resolved by `{ target }`, whichever way its key was made; only a value with no class has a
-key an application types, through `IUseInjectableKeyTypes`.
+key an application types, by building it with `BindingKeys.build<T>`.
 
 One limit remains: **a derived key is still `<namespace>.<Class.name>`**, and the container stores
 bindings by that string. Two stereotyped classes with the same name in one namespace make `start()` throw
@@ -164,20 +164,12 @@ A `useInjectable({ key })` miss names this cause in its error, after the contain
 
 ## How a key becomes a type
 
-`packages/react/src/hooks/use-injectable.ts` builds the accepted key union from two halves:
-
-```typescript
-export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-export type TUseInjectableKeys =
-  | TUseInjectableKeysDefault
-  | keyof IUseInjectableKeysOverrides
-  | keyof IUseInjectableKeyTypes;
-```
-
-The first half is every `CoreBindings` value, free. The second half is empty until an application
-augments `IUseInjectableKeysOverrides` - see [module augmentation](/architecture/module-augmentation.md)
-for the declaration and for the `any`-widening trap that silently turns the union back into
-`string`. Resolving by `{ target }` needs no augmentation at all.
+A key carries the type of its value: `BindingKeys.build<T>({ namespace?, key })` makes a
+`TBindingKey<T>`, and `useInjectable({ key })` returns `T` with no generic. A plain string, template
+literal or symbol is not a key and does not compile. `CoreBindings` is built this way
+(`packages/kernel/src/common/keys.ts`); see [module augmentation](/architecture/module-augmentation.md)
+for the four keys whose types `@venizia/ardor-admin` merges in. Resolving by `{ target }` needs no
+key at all.
 
 ## Storage keys are the same idea, different registry
 

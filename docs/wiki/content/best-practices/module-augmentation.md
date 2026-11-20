@@ -1,11 +1,11 @@
 ---
-title: Typing your keys with module augmentation
-description: Type the keys of values you bind by hand and your translation keys through TypeScript module augmentation, where to put the augmentation file, and how to prove it works.
+title: Typing your keys
+description: Type the values you bind by hand with BindingKeys.build, type your translation keys through TypeScript module augmentation, where to put the augmentation file, and how to prove it works.
 ---
 
-# Typing your keys with module augmentation
+# Typing your keys
 
-A class you registered is resolved by `{ target }` through its namespace hook, and it never needs a key. `Ardor.useService({ target: PricingService })` finds the binding from the class and returns the class's own type. Augment only for a value bound by hand under a key you own, and for the messages `useTranslate` accepts.
+A class you registered is resolved by `{ target }` through its namespace hook, and it never needs a key. `Ardor.useService({ target: PricingService })` finds the binding from the class and returns the class's own type. Two other things need typing: a value bound by hand under a key you own, and the messages `useTranslate` accepts.
 
 ```tsx
 import { Ardor, service } from '@venizia/ardor';
@@ -26,22 +26,15 @@ export function Total() {
 
 `@service()` registers the class when `start()` runs, because its module was imported. The hook reads the key that registration recorded on the class, checks the class sits under `services.`, and returns `PricingService`. Pass no generic: one you write is your claim, and nothing checks it. `Ardor.useX` and `useX` are the same function; this page writes `Ardor.useX`.
 
-A value with no class has only its key, and `useInjectable({ key })` and `useTranslate` do not accept any string. Each takes a union of string literals. The default union is small on purpose. You extend it by merging your own keys into an interface that the package leaves empty for you. The three providers of `CoreBindings` are already typed: `Ardor.useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })` returns `IDataProvider` with nothing to declare.
-
-## Prerequisites
-
-An ARDOR application that binds a value under a key of its own and, if you use i18n, a message object of your own - see [Quickstart](../guides/get-started/5-minute-quickstart).
-
+A value with no class has only its key. A key carries the type of its value: make it with `BindingKeys.build<T>`, and `useInjectable({ key })` returns `T` with no generic and no augmentation. The three providers of `CoreBindings` are already typed: `Ardor.useProvider({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })` returns `IDataProvider` with nothing to declare. `useTranslate` does not accept any string either; it takes a union of dotted paths, and you extend it by merging your own paths into an interface that the package leaves empty for you.
 
 ## Quick Reference
 
 | Export | Declared in | Role |
 | --- | --- | --- |
-| `useInjectable` | `@venizia/ardor-react` | Resolves a binding from the container by `target` class, or by `key` for a binding with no class |
-| `IUseInjectableKeysOverrides` | `@venizia/ardor-react` | Empty interface - augment it to add injectable keys; you supply the type |
-| `IUseInjectableKeyTypes` | `@venizia/ardor-react` | Empty interface - maps a key to its instance type, so the hook returns it |
-| `TUseInjectableKeysDefault` | `@venizia/ardor-react` | `Extract<ValueOf<typeof CoreBindings>, string>` - the built-in keys |
-| `TUseInjectableKeys` | `@venizia/ardor-react` | The default keys, plus the keys of both interfaces |
+| `BindingKeys.build<T>` | `@venizia/ignis-inversion`, re-exported by `@venizia/ardor` | Makes a binding key that carries the type `T` of its value |
+| `TBindingKey<T>` | `@venizia/ignis-inversion` | The type of such a key; `TBindingKeyValue<typeof key>` names `T` |
+| `useInjectable` | `@venizia/ardor-react` | Resolves a binding from the container by `target` class, or by a typed `key` for a binding with no class |
 | `useTranslate` | `@venizia/ardor-admin` | Returns a typed `translate` function |
 | `IUseTranslateKeysOverrides` | `@venizia/ardor-admin` | Empty interface - augment it to add translation keys |
 | `TUseTranslateKeysDefault` | `@venizia/ardor-admin` | `TFullPaths<typeof englishMessages>` - the built-in keys |
@@ -49,98 +42,22 @@ An ARDOR application that binds a value under a key of its own and, if you use i
 | `TUseTranslateFn` | `@venizia/ardor-admin` | `(key: TUseTranslateKeys, options?) => string` |
 | `TFullPaths` | `@venizia/ardor-kernel` | Turns a nested object type into a union of dotted paths |
 
-All of these are re-exported from `@venizia/ardor`, and that is the module to augment - read on.
-
-## Know what the key types are
-
-The two hooks build their accepted keys the same way: a default set, plus whatever keys you merge in.
-
-```ts no-check
-export interface IUseInjectableKeysOverrides {}
-export interface IUseInjectableKeyTypes {}
-export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-export type TUseInjectableKeys =
-  | TUseInjectableKeysDefault
-  | keyof IUseInjectableKeysOverrides
-  | keyof IUseInjectableKeyTypes;
-```
-
-There are two interfaces for injectable keys, and they differ in what you get back:
-
-- `IUseInjectableKeysOverrides` makes a key valid. The property value is ignored, so type it as `true`. `useInjectable({ key })` returns `unknown` unless you pass a generic, and that generic is your claim: nothing checks it against what the binding holds.
-- `IUseInjectableKeyTypes` makes a key valid and gives it a type. The property value is the instance type, and `useInjectable({ key })` and `useProvider({ key })` return it with no generic. `@venizia/ardor-admin` fills it in for the three providers of `CoreBindings`, and `@venizia/ardor` re-exports that package, so those need nothing from you.
-
-Prefer `IUseInjectableKeyTypes` for a key you own: the type is written once, next to the key.
-
-```ts no-check
-export interface IUseTranslateKeysOverrides {}
-export type TUseTranslateKeysDefault = TFullPaths<typeof englishMessages>;
-export type TUseTranslateKeys = TUseTranslateKeysDefault | keyof IUseTranslateKeysOverrides;
-```
-
-For `IUseTranslateKeysOverrides` and `IUseInjectableKeysOverrides` only the `keyof` is used. The property values are ignored, so the convention is to type every value as `true`.
-
-Out of the box, `useInjectable({ key })` accepts the string values of `CoreBindings` and nothing else. `useTranslate()` accepts the dotted paths of `englishMessages` and nothing else. A key you registered yourself is a compile error until you augment.
-
-### Do
-
-Treat a key compile error as a signal that the augmentation is missing, not that the type is wrong.
-
-### Do not
-
-Do not cast the key (`key: 'x' as TUseInjectableKeys`). That hides a real typo and defeats the purpose of the union.
-
-## Augment the umbrella
-
-TypeScript merges interface declarations by module identity. `IUseInjectableKeysOverrides` and `IUseInjectableKeyTypes` are declared in `@venizia/ardor-react` and `IUseTranslateKeysOverrides` in `@venizia/ardor-admin`; `@venizia/ardor` re-exports both with `export *`. TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into the real interfaces, and `TUseInjectableKeys` and `TUseTranslateKeys` see your keys. `@venizia/ardor-admin` uses the same mechanism for the `CoreBindings` providers: it merges them into `IUseInjectableKeyTypes` in its own declaration files.
-
-Measured with TypeScript 6, under both of Bun's linkers (`hoisted` and `isolated`): a declared key is accepted and an undeclared one is rejected.
-
-### Do
-
-Augment `@venizia/ardor`, the one package an application depends on.
-
-```ts
-import type { TFullPaths } from '@venizia/ardor';
-
-class ClockKeys {
-  static readonly NOW = '@app/clock/now';
-}
-
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [ClockKeys.NOW]: () => number;
-  }
-
-  interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
-}
-```
-
-### Do not
-
-Do not augment `@venizia/ardor-react` or `@venizia/ardor-admin` unless the application lists that package in its own `package.json`. A linker that does not hoist (Bun's `isolated` linker, pnpm) leaves a package that only `@venizia/ardor` depends on out of the application's reach. The block then fails with `TS2664: Invalid module name in augmentation, module '@venizia/ardor-react' cannot be found`, and your keys are missing, so every `useInjectable` and `translate` call that uses one is a compile error. The same block compiles under a hoisting linker, which is how it goes unnoticed.
+All of these are re-exported from `@venizia/ardor`, and that is the module to augment for translation keys.
 
 ## Type a value bound by hand
 
-Keep each key a constant in a `static readonly` class, and use it both where the binding is made and in the augmentation, so a rename is one edit. Bind the value in a `@configuration()` class with a `@provide({ key })` method, then merge the key and its type into `IUseInjectableKeyTypes`.
+Make each key once, in a `static readonly` class, with the type of its value. Use the same constant where the binding is made and where it is read, so a rename is one edit and a wrong value does not compile.
 
 ### Do
 
-Keep the keys in a class next to the application and use them as the property names.
-
 ```ts
-import { configuration, provide } from '@venizia/ardor';
+import { BindingKeys, configuration, provide } from '@venizia/ardor';
 
 export class AppBindings {
-  static readonly SOCKET_URL = '@app/socket/url';
-  static readonly FORMATTER = '@app/formatter';
-}
-
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [AppBindings.SOCKET_URL]: string;
-    [AppBindings.FORMATTER]: (opts: { value: number }) => string;
-  }
+  static readonly SOCKET_URL = BindingKeys.build<string>({ key: '@app/socket/url' });
+  static readonly FORMATTER = BindingKeys.build<(opts: { value: number }) => string>({
+    key: '@app/formatter',
+  });
 }
 
 @configuration()
@@ -160,16 +77,10 @@ export class SocketConfiguration {
 A component then reads them with no generic:
 
 ```tsx
-import { Ardor } from '@venizia/ardor';
+import { Ardor, BindingKeys } from '@venizia/ardor';
 
 class AppBindings {
-  static readonly SOCKET_URL = '@app/socket/url';
-}
-
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [AppBindings.SOCKET_URL]: string;
-  }
+  static readonly SOCKET_URL = BindingKeys.build<string>({ key: '@app/socket/url' });
 }
 
 export function SocketAddress() {
@@ -179,38 +90,62 @@ export function SocketAddress() {
 }
 ```
 
-`Ardor.useInjectable({ key })` throws when nothing is bound under the key, so bind it in a configuration the application discovers or in `bindContext()`.
+`Ardor.useInjectable({ key })` throws when nothing is bound under the key, so bind it in a configuration the application discovers or in `bindContext()`. `@inject({ key })` is not checked against the parameter it decorates: annotate that parameter with `TBindingKeyValue<typeof AppBindings.SOCKET_URL>`, which names the type the key carries.
 
 > [!WARNING]
-> Do not derive the key union from the application's `bindingList()`. `bindingList()` binds classes, and a class resolves by `{ target }`; a union built from its literal keys types a key nobody should write.
+> Do not derive the keys from the application's `bindingList()`. `bindingList()` binds classes, and a class resolves by `{ target }`.
 
 See [Binding keys](./binding-keys) for how to name and group the keys themselves.
 
 ### Do not
 
-Do not duplicate literals. Two lists drift, and the compile error you get later points at the wrong one.
+Do not pass a plain string as a key: `useInjectable({ key: '@app/socket/url' })` does not compile, because only a key made by `BindingKeys.build` carries a type. Do not write `build<unknown>` for a key whose value has a real type; it types nothing.
 
-Do not augment a key for a class. A class resolves with its namespace hook (`Ardor.useService`, `Ardor.useRepository`, `Ardor.useProvider`, `Ardor.useComponent`, `Ardor.useConfiguration`, or `Ardor.useInjectable({ target })`): the type is inferred and the namespace is checked. Augmentation only affects the `key` form.
+Do not make a key for a class. A class resolves with its namespace hook (`Ardor.useService`, `Ardor.useRepository`, `Ardor.useProvider`, `Ardor.useComponent`, `Ardor.useConfiguration`, or `Ardor.useInjectable({ target })`): the type is inferred and the namespace is checked.
 
 ## Derive translate keys from the message object
 
 `TUseTranslateKeysDefault` is `TFullPaths<typeof englishMessages>`. Apply the same helper to your own message object so every leaf path becomes a valid key.
+
+```ts no-check
+export interface IUseTranslateKeysOverrides {}
+export type TUseTranslateKeysDefault = TFullPaths<typeof englishMessages>;
+export type TUseTranslateKeys = TUseTranslateKeysDefault | keyof IUseTranslateKeysOverrides;
+```
+
+Only the `keyof` of `IUseTranslateKeysOverrides` is used. The property values are ignored, so the convention is to type every value as `true`. Out of the box, `useTranslate()` accepts the dotted paths of `englishMessages` and nothing else. A key you registered yourself is a compile error until you augment.
 
 ### Do
 
 ```ts
 import type { TFullPaths } from '@venizia/ardor';
 
+const messages = { app: { products: { title: 'Products' } } };
+
 declare module '@venizia/ardor' {
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
 }
 ```
 
-The `messages` object must be typed from its literal shape (a plain object literal, or `as const`) for `TFullPaths` to produce paths. A value typed as `Record<string, unknown>` gives you no useful union.
+The `messages` object must be typed from its literal shape (a plain object literal, or `as const`) for `TFullPaths` to produce paths. A value typed as `Record<string, unknown>` gives you no useful union. Treat a key compile error as a signal that the augmentation is missing, not that the type is wrong.
 
 ### Do not
 
-Do not list translation keys by hand. The message object is already the source of truth for the [i18n provider](../references/i18n); the type should come from it.
+Do not list translation keys by hand. The message object is already the source of truth for the [i18n provider](../references/i18n); the type should come from it. Do not cast the key (`key: 'x' as TUseTranslateKeys`): that hides a real typo.
+
+## Augment the umbrella
+
+TypeScript merges interface declarations by module identity. `IUseTranslateKeysOverrides` is declared in `@venizia/ardor-admin`, and `@venizia/ardor` re-exports it with `export *`. TypeScript follows an `export *` chain to the module that declares an interface, so a `declare module '@venizia/ardor'` block merges into the real interface and `TUseTranslateKeys` sees your keys. `@venizia/ardor-admin` uses the same mechanism for the values of `CoreBindings` that live in it: it merges them into `ICoreBindingTypes` of the kernel in its own declaration files.
+
+Measured with TypeScript 6, under both of Bun's linkers (`hoisted` and `isolated`): a declared key is accepted and an undeclared one is rejected.
+
+### Do
+
+Augment `@venizia/ardor`, the one package an application depends on.
+
+### Do not
+
+Do not augment `@venizia/ardor-admin` unless the application lists that package in its own `package.json`. A linker that does not hoist (Bun's `isolated` linker, pnpm) leaves a package that only `@venizia/ardor` depends on out of the application's reach. The block then fails with `TS2664: Invalid module name in augmentation, module '@venizia/ardor-admin' cannot be found`, and your keys are missing, so every `translate` call that uses one is a compile error. The same block compiles under a hoisting linker, which is how it goes unnoticed.
 
 ## Keep the augmentation in one file
 
@@ -228,15 +163,9 @@ In either case the file must be a module. A file with no top-level `import` or `
 ```ts
 import type { TFullPaths } from '@venizia/ardor';
 
-class ClockKeys {
-  static readonly NOW = '@app/clock/now';
-}
+const messages = { app: { products: { title: 'Products' } } };
 
 declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [ClockKeys.NOW]: () => number;
-  }
-
   interface IUseTranslateKeysOverrides extends Record<TFullPaths<typeof messages>, true> {}
 }
 
@@ -253,30 +182,26 @@ An augmentation that silently does nothing looks identical to one that works, un
 
 ### Do
 
-Keep a small check next to the augmentation. Both the augmentation and the check are shown in one file here so the sample is self-contained; in a project the augmentation lives in the file described above.
+Keep a small check next to the augmentation. Both are shown in one file here so the sample is self-contained; in a project the augmentation lives in the file described above.
 
 ```tsx
-import { Ardor, type TUseTranslateFn } from '@venizia/ardor';
+import { Ardor, BindingKeys, type TUseTranslateFn } from '@venizia/ardor';
 
 class ClockKeys {
-  static readonly NOW = '@app/clock/now';
+  static readonly NOW = BindingKeys.build<() => number>({ key: '@app/clock/now' });
 }
 
 declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [ClockKeys.NOW]: () => number;
-  }
-
   interface IUseTranslateKeysOverrides {
     'app.products.title': true;
   }
 }
 
 export const VerifyKeys = () => {
-  // Declared key - accepted, and typed with no generic.
+  // A typed key - accepted, and typed with no generic.
   const now: () => number = Ardor.useInjectable({ key: ClockKeys.NOW });
 
-  // @ts-expect-error - '@app/clock/missing' is not a declared injectable key
+  // @ts-expect-error - a plain string is not a binding key
   Ardor.useInjectable({ key: '@app/clock/missing' });
 
   const translate: TUseTranslateFn = Ardor.useTranslate();
@@ -297,12 +222,12 @@ Do not verify by reading the hover tooltip in the editor. Editors can resolve a 
 
 ## Common pitfalls
 
-- **Augmenting a declaring package the application does not depend on.** `declare module '@venizia/ardor-react'` or `'@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist, and the keys are missing. Augment `@venizia/ardor`.
+- **Augmenting a declaring package the application does not depend on.** `declare module '@venizia/ardor-admin'` fails with TS2664 under a linker that does not hoist, and the keys are missing. Augment `@venizia/ardor`.
 - **A `.d.ts` that is not a module.** Without an `import` or `export {}` the `declare module` block is an ambient declaration, not an augmentation.
 - **Augmentation file outside `tsconfig` `include`.** The editor may see it while the build does not. The `@ts-expect-error` check catches this.
 - **Message object typed too loosely.** `TFullPaths<Record<string, unknown>>` does not give you literal paths. Keep `messages` as a literal object.
-- **Augmenting a key for a class.** A class resolves by `{ target }`: the hook reads the key recorded on the class, returns the type of the class and ignores the key union. Register the class with a stereotype and resolve it with its namespace hook.
-- **A generic on a key that is in `IUseInjectableKeyTypes`.** `useInjectable<Other>({ key })` compiles and returns `Other`, the type you wrote instead of the type listed for the key. Leave the generic out.
+- **A key for a class.** A class resolves by `{ target }`: the hook reads the key recorded on the class and returns the type of the class.
+- **A generic on a typed key.** `useInjectable<Other>({ key })` compiles when `Other` is a subtype or a supertype of the key's type, and then returns `Other`. Leave the generic out.
 - **A key built at run time.** A plain `string` is not a `TUseTranslateKeys`; type the value as `TUseTranslateKeys` where it is made (a label map), or narrow it before the call.
 
 ## Related

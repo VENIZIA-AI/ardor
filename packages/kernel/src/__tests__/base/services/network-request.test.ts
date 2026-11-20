@@ -932,7 +932,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(result).toMatchObject({
-        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        message: expect.stringContaining('A request path must stay under the base path'),
       });
       expect(recordedRequests.length).toBe(before);
     });
@@ -942,19 +942,32 @@ describe('DefaultNetworkRequestService', () => {
       async (paths) => {
         const before = recordedRequests.length;
         const service = createService({ baseUrl: '/', isOpen: true });
-
-        const result = await RejectionHelper.rejectionOf({
-          task: service.doRequest({
-            paths,
-            method: RequestMethods.GET,
-            type: RequestTypes.GET_ONE,
-          }),
+        const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+        Object.defineProperty(globalThis, 'location', {
+          value: new URL('http://page.test/'),
+          configurable: true,
         });
 
-        expect(result).toMatchObject({
-          message: expect.stringContaining('[doRequest] Invalid path to send request!'),
-        });
-        expect(recordedRequests.length).toBe(before);
+        try {
+          const result = await RejectionHelper.rejectionOf({
+            task: service.doRequest({
+              paths,
+              method: RequestMethods.GET,
+              type: RequestTypes.GET_ONE,
+            }),
+          });
+
+          expect(result).toMatchObject({
+            message: expect.stringContaining('A request path must stay under the base path'),
+          });
+          expect(recordedRequests.length).toBe(before);
+        } finally {
+          if (originalLocation) {
+            Object.defineProperty(globalThis, 'location', originalLocation);
+          } else {
+            Reflect.deleteProperty(globalThis, 'location');
+          }
+        }
       },
     );
 
@@ -974,7 +987,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(result).toMatchObject({
-        message: expect.stringContaining('[doRequest] Invalid path to send request!'),
+        message: expect.stringContaining('A request path must stay under the base path'),
       });
       expect(recordedRequests.length).toBe(before);
     });

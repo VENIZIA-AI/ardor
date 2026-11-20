@@ -10,7 +10,7 @@ import {
   provide,
   service,
 } from '@venizia/ignis-kernel/metadata';
-import { BindingScopes } from '@venizia/ignis-inversion';
+import { BindingKeys, BindingScopes } from '@venizia/ignis-inversion';
 import type { IApplicationInfo } from '@/common';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 
@@ -38,14 +38,17 @@ let providedBuilds = 0;
 
 @configuration()
 class ProvidingConfiguration {
-  @provide({ key: 'test.provided.shared' })
+  @provide({ key: BindingKeys.build<unknown>({ key: 'test.provided.shared' }) })
   shared() {
     providedBuilds++;
 
     return { build: providedBuilds };
   }
 
-  @provide({ key: 'test.provided.fresh', scope: BindingScopes.TRANSIENT })
+  @provide({
+    key: BindingKeys.build<unknown>({ key: 'test.provided.fresh' }),
+    scope: BindingScopes.TRANSIENT,
+  })
   fresh() {
     return { at: Symbol('fresh') };
   }
@@ -60,7 +63,9 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
   });
 
   test('binds a stereotyped class the application never listed', () => {
-    const resolved = application.get<DiscoveredService>({ key: 'services.DiscoveredService' });
+    const resolved = application.get<DiscoveredService>({
+      key: BindingKeys.build<DiscoveredService>({ key: 'services.DiscoveredService' }),
+    });
 
     expect(resolved).toBeInstanceOf(DiscoveredService);
     expect(resolved.greet()).toBe('from the stereotype');
@@ -68,14 +73,16 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
 
   test('keys the binding by namespace, so a component and a service do not collide', () => {
     expect(
-      application.get<DiscoveredComponent>({ key: 'components.DiscoveredComponent' }),
+      application.get<DiscoveredComponent>({
+        key: BindingKeys.build<DiscoveredComponent>({ key: 'components.DiscoveredComponent' }),
+      }),
     ).toBeInstanceOf(DiscoveredComponent);
   });
 
   test('resolves by class, which is what survives a minifier', () => {
     const key = application.getMetadataRegistry().getBindingKey({ target: DiscoveredService });
 
-    expect(key).toBe('services.DiscoveredService');
+    expect(key).toBe(BindingKeys.build<unknown>({ key: 'services.DiscoveredService' }));
   });
 
   /**
@@ -88,7 +95,9 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
       application.getMetadataRegistry().getBindingKey({ target: UndecoratedService }),
     ).toBeUndefined();
 
-    expect(() => application.get({ key: 'services.UndecoratedService' })).toThrow();
+    expect(() =>
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.UndecoratedService' }) }),
+    ).toThrow();
   });
 
   /**
@@ -110,12 +119,18 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
     const app = new OverridingApplication();
     await app.start();
 
-    expect(app.get({ key: 'services.DiscoveredService' })).toBeInstanceOf(Replacement);
+    expect(
+      app.get({ key: BindingKeys.build<unknown>({ key: 'services.DiscoveredService' }) }),
+    ).toBeInstanceOf(Replacement);
   });
 
   test('binds as a singleton, so two resolves are one instance', () => {
-    const first = application.get<DiscoveredService>({ key: 'services.DiscoveredService' });
-    const second = application.get<DiscoveredService>({ key: 'services.DiscoveredService' });
+    const first = application.get<DiscoveredService>({
+      key: BindingKeys.build<DiscoveredService>({ key: 'services.DiscoveredService' }),
+    });
+    const second = application.get<DiscoveredService>({
+      key: BindingKeys.build<DiscoveredService>({ key: 'services.DiscoveredService' }),
+    });
 
     expect(first).toBe(second);
   });
@@ -132,9 +147,15 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
   // service, so a header or token set on one never reaches the others.
   test('binds a @provide method under its key, built once and shared', () => {
     const before = providedBuilds;
-    const first = application.get<{ build: number }>({ key: 'test.provided.shared' });
+    const first = application.get<{ build: number }>({
+      key: BindingKeys.build<{ build: number }>({ key: 'test.provided.shared' }),
+    });
 
-    expect(application.get<{ build: number }>({ key: 'test.provided.shared' })).toBe(first);
+    expect(
+      application.get<{ build: number }>({
+        key: BindingKeys.build<{ build: number }>({ key: 'test.provided.shared' }),
+      }),
+    ).toBe(first);
     expect(providedBuilds - before).toBe(1);
   });
 
@@ -142,21 +163,27 @@ describe('AbstractArdorApplication.registerArtifacts', () => {
     expect(MetadataRegistry.getInstance().getDiscoveredArtifacts()).toContain(
       ProvidingConfiguration,
     );
-    expect(application.get({ key: 'test.provided.fresh' })).not.toBe(
-      application.get({ key: 'test.provided.fresh' }),
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'test.provided.fresh' }) }),
+    ).not.toBe(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'test.provided.fresh' }) }),
     );
   });
 
   test('bindContext overrides a provided key', async () => {
     class OverridingApplication extends TestApplication {
       override bindContext(): void {
-        this.bind({ key: 'test.provided.shared' }).toValue('from bindContext');
+        this.bind({ key: BindingKeys.build<unknown>({ key: 'test.provided.shared' }) }).toValue(
+          'from bindContext',
+        );
       }
     }
     const overriding = new OverridingApplication();
     await overriding.start();
 
-    expect(overriding.get<string>({ key: 'test.provided.shared' })).toBe('from bindContext');
+    expect(
+      overriding.get<string>({ key: BindingKeys.build<string>({ key: 'test.provided.shared' }) }),
+    ).toBe('from bindContext');
   });
 });
 
@@ -206,8 +233,12 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
     const application = new TestApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.First' })).toBeInstanceOf(first);
-    expect(application.get({ key: 'services.Second' })).toBeInstanceOf(second);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.First' }) }),
+    ).toBeInstanceOf(first);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.Second' }) }),
+    ).toBeInstanceOf(second);
   });
 });
 
@@ -235,8 +266,12 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new TestApplication();
     await application.start();
 
-    expect(application.isBound({ key: 'services.DevOnlyMock' })).toBe(false);
-    expect(() => application.get({ key: 'services.DevOnlyMock' })).toThrow();
+    expect(
+      application.isBound({ key: BindingKeys.build<unknown>({ key: 'services.DevOnlyMock' }) }),
+    ).toBe(false);
+    expect(() =>
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.DevOnlyMock' }) }),
+    ).toThrow();
     expect(MetadataRegistry.getInstance().getDiscoveredArtifacts()).toContain(DevOnlyMock);
   });
 
@@ -255,7 +290,9 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new TestApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.SelectedService' })).toBeInstanceOf(SelectedService);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.SelectedService' }) }),
+    ).toBeInstanceOf(SelectedService);
     expect(calls).toEqual([application]);
   });
 
@@ -269,8 +306,16 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new TestApplication();
     await application.start();
 
-    expect(application.isBound({ key: 'components.SkippedComponent' })).toBe(false);
-    expect(application.isBound({ key: 'configurations.SkippedConfiguration' })).toBe(false);
+    expect(
+      application.isBound({
+        key: BindingKeys.build<unknown>({ key: 'components.SkippedComponent' }),
+      }),
+    ).toBe(false);
+    expect(
+      application.isBound({
+        key: BindingKeys.build<unknown>({ key: 'configurations.SkippedConfiguration' }),
+      }),
+    ).toBe(false);
     expect(registry.getDiscoveredArtifacts()).toEqual(
       expect.arrayContaining([SkippedComponent, SkippedConfiguration]),
     );
@@ -279,7 +324,7 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
   test('skips the @provide methods of a class whose when returns false', async () => {
     @configuration({ when: () => false })
     class SkippedProviders {
-      @provide({ key: 'test.when.skipped' })
+      @provide({ key: BindingKeys.build<unknown>({ key: 'test.when.skipped' }) })
       value() {
         return 'never';
       }
@@ -288,7 +333,9 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new TestApplication();
     await application.start();
 
-    expect(application.isBound({ key: 'test.when.skipped' })).toBe(false);
+    expect(
+      application.isBound({ key: BindingKeys.build<unknown>({ key: 'test.when.skipped' }) }),
+    ).toBe(false);
     expect(registry.getProvideMetadata({ target: SkippedProviders })).toHaveLength(1);
   });
 
@@ -306,7 +353,9 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new TestApplication();
     await application.start();
 
-    expect(application.isBound({ key: 'services.Twin' })).toBe(true);
+    expect(application.isBound({ key: BindingKeys.build<unknown>({ key: 'services.Twin' }) })).toBe(
+      true,
+    );
   });
 
   test('a class a when left out is still discovered, so an index that lists it passes', async () => {
@@ -322,7 +371,11 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     const application = new IndexedApplication();
     await application.start();
 
-    expect(application.isBound({ key: 'services.ListedButSkipped' })).toBe(false);
+    expect(
+      application.isBound({
+        key: BindingKeys.build<unknown>({ key: 'services.ListedButSkipped' }),
+      }),
+    ).toBe(false);
   });
 
   test('a when that throws fails start and names the class', async () => {
@@ -361,7 +414,9 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     application.service(HandBound);
     await application.start();
 
-    expect(application.get({ key: 'services.HandBound' })).toBeInstanceOf(HandBound);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.HandBound' }) }),
+    ).toBeInstanceOf(HandBound);
   });
 });
 
@@ -425,7 +480,9 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     const application = new TestApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.auth' })).toBeInstanceOf(RealAuth);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.auth' }) }),
+    ).toBeInstanceOf(RealAuth);
     expect(registry.getDiscoveredArtifacts()).toContain(MockAuth);
   });
 
@@ -473,7 +530,9 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     const application = new TestApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.auth' })).toBeInstanceOf(reloaded);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.auth' }) }),
+    ).toBeInstanceOf(reloaded);
   });
 });
 
@@ -592,14 +651,16 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
       }
 
       override bindContext(): void {
-        this.bind({ key: 'services.Locked' }).toClass(Shared);
+        this.bind({ key: BindingKeys.build<unknown>({ key: 'services.Locked' }) }).toClass(Shared);
       }
     }
 
     const application = new OverridingApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.Locked' })).toBeInstanceOf(Shared);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.Locked' }) }),
+    ).toBeInstanceOf(Shared);
     expect(registry.getDiscoveredArtifacts()).toContain(Locked);
   });
 
@@ -618,7 +679,9 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
     const application = new ListingApplication();
     await application.start();
 
-    expect(application.get({ key: 'services.Open' })).toBeInstanceOf(Shared);
+    expect(
+      application.get({ key: BindingKeys.build<unknown>({ key: 'services.Open' }) }),
+    ).toBeInstanceOf(Shared);
     expect(registry.getDiscoveredArtifacts()).toContain(Open);
   });
 });

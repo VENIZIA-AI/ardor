@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IAuthRejection } from '@/common';
 import {
@@ -120,35 +120,39 @@ const createContainer = (opts?: {
 }): Container => {
   const container = new Container();
   service = new DefaultAuthService();
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-    send: (request: { resource: string }) => {
-      if (request.resource === '/auth/whoami') {
-        api.checkCalls += 1;
-        const answer = { data: api.whoamiHasData ? { id: 7 } : null };
-
-        return new Promise((resolve) => setTimeout(() => resolve(answer), api.whoamiDelay));
-      }
-
-      return Promise.resolve({ data: api.signIn });
-    },
-    getNetworkService: () => ({
-      refresh: () => {
-        api.refreshed = true;
-
-        return Promise.resolve(api.refreshResult);
-      },
-    }),
-  });
   container
-    .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({
+      send: (request: { resource: string }) => {
+        if (request.resource === '/auth/whoami') {
+          api.checkCalls += 1;
+          const answer = { data: api.whoamiHasData ? { id: 7 } : null };
+
+          return new Promise((resolve) => setTimeout(() => resolve(answer), api.whoamiDelay));
+        }
+
+        return Promise.resolve({ data: api.signIn });
+      },
+      getNetworkService: () => ({
+        refresh: () => {
+          api.refreshed = true;
+
+          return Promise.resolve(api.refreshResult);
+        },
+      }),
+    });
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
     .toValue(
       opts?.withCheckPath === false
         ? { use: true }
         : { use: true, paths: { checkAuth: '/auth/whoami' } },
     );
-  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(service);
   container
-    .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+    .toValue(service);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
     .toProvider(opts?.providerClass ?? RecordingAuthProvider);
 
   return container;

@@ -38,11 +38,11 @@ ARDOR defines no stereotype decorators of its own. Its `metadata` barrel re-expo
 
 ## Fetch only, no socket client
 
-The network layer is `fetch` only; there is no second HTTP transport. The transport is IGNIS's (`NodeFetchNetworkRequest`, `@venizia/ignis-helpers/core`); ARDOR keeps no fork of the fetcher, the query string or the socket client (the browser-pure client is `@venizia/ignis-helpers/socket-io/client`). `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
+The network layer is `fetch` only; there is no second HTTP transport. The transport is IGNIS's (`NativeFetchNetworkRequest`, `@venizia/ignis-helpers/core`); ARDOR keeps no fork of the fetcher, the query string or the socket client (the browser-pure client is `@venizia/ignis-helpers/socket-io/client`). `@venizia/ardor-react` does not follow this yet - its root barrel re-exports the redux hooks, which import `react-redux`, a peer it declares optional.
 
 ## The augmentation seam
 
-Module augmentation is the one supported way to extend ARDOR's types without forking them - for example, widening what a resource's data shape or a context value can hold. It is documented as [Module augmentation](/architecture/module-augmentation.md) precisely because it is a seam: used correctly it lets consumers extend safely, used incorrectly it silently breaks type inference elsewhere. Anything that isn't going through this seam is not a supported extension point.
+Module augmentation is the one supported way to extend ARDOR's types without forking them - today, the translation keys (`IUseTranslateKeysOverrides`). Binding keys need no seam: a key made by `BindingKeys.build<T>` carries the type of its value. It is documented as [Module augmentation](/architecture/module-augmentation.md) precisely because it is a seam: used correctly it lets consumers extend safely, used incorrectly it silently breaks type inference elsewhere. Anything that isn't going through this seam is not a supported extension point.
 
 ## Snippet gate for docs
 

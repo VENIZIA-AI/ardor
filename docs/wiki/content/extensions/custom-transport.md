@@ -110,6 +110,7 @@ The subclass keeps the two base injections, adds a third for the transport, and 
 
 ```ts
 import {
+  BindingKeys,
   CoreBindings,
   DefaultRestDataProvider,
   type IApplicationInfo,
@@ -138,7 +139,7 @@ export type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkRe
 
 // A key for a value with no class: the transport function.
 export class TransportBindings {
-  static readonly TRANSPORT = 'app.transport';
+  static readonly TRANSPORT = BindingKeys.build<TTransport>({ key: 'app.transport' });
 }
 
 export class TransportDataProvider<
@@ -198,7 +199,7 @@ export class TransportDataProvider<
 }
 ```
 
-`@inject` comes from `@venizia/ardor`. A string key is right for `TransportBindings.TRANSPORT`: the value is a function with no class. Keep the key in a `static readonly` constants class.
+`@inject` comes from `@venizia/ardor`. A key made by `BindingKeys.build` is right for `TransportBindings.TRANSPORT`: the value is a function with no class, and the key carries its type. Keep the key in a `static readonly` constants class.
 
 `getRequestProps` throws a 401 error, "Invalid auth token to fetch!", when no token is stored and the resource is not a no-auth path. The error reaches `checkError` like any request error. An application with no sign-in sets `noAuthPathRegex: /./` in its options so that no request needs a token.
 
@@ -216,7 +217,7 @@ What still comes from the base:
 Two of the three injections are options you bind: `CoreBindings.REST_DATA_PROVIDER_OPTIONS` (with `url`) and, from the framework, `CoreBindings.APPLICATION_INFO`. Bind the third, `TransportBindings.TRANSPORT`, with a `@provide` method of a `@configuration()` class. Replace the default data provider with one line in `bindContext()`: your provider class under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`, as a singleton.
 
 ```ts
-import { BindingScopes } from '@venizia/ignis-inversion';
+import { BindingScopes, type TBindingKey } from '@venizia/ignis-inversion';
 
 import {
   BaseArdorApplication,
@@ -241,7 +242,7 @@ type TTransport = <TResult>(req: ITransportRequest) => Promise<INetworkResponse<
 declare const memoryTransport: TTransport;
 declare class TransportDataProvider extends DefaultRestDataProvider {}
 declare class TransportBindings {
-  static readonly TRANSPORT: 'app.transport';
+  static readonly TRANSPORT: TBindingKey<TTransport>;
 }
 
 @configuration()

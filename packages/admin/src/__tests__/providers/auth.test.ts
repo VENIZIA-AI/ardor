@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import { Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
+import { BindingKeys, Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IDataProvider } from '@/common';
 import { DefaultAuthProvider, type ILoginParams } from '@/providers/auth';
@@ -57,21 +57,29 @@ const createTestApplication = async (options: ITestAppContextOptions): Promise<I
     }
 
     override bindContext = (): void => {
-      this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }),
+      }).toValue({
         url: this.baseUrl,
         noAuthPaths: ['/auth/sign-in'],
       });
 
-      this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }),
+      }).toValue({
         use: true,
         paths: { checkAuth: '/auth/whoami', afterLogin: '/dashboard' },
       });
 
-      this.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-      this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toProvider(
-        DefaultRestDataProvider,
-      );
-      this.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }),
+      }).toClass(DefaultAuthService);
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }),
+      }).toProvider(DefaultRestDataProvider);
+      this.bind({
+        key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }),
+      }).toProvider(DefaultAuthProvider);
     };
 
     override getAppInfo = (): IApplicationInfo => {
@@ -275,19 +283,23 @@ const signInWith = (opts: {
   sent?: Array<SentRequest>;
 }) => {
   const container = new Container();
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-    send: (request: { resource: string; params: { body: unknown } }) => {
-      opts.sent?.push({ resource: request.resource, body: request.params.body });
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({
+      send: (request: { resource: string; params: { body: unknown } }) => {
+        opts.sent?.push({ resource: request.resource, body: request.params.body });
 
-      return Promise.resolve({ data: opts.data ?? defaultSession });
-    },
-  });
+        return Promise.resolve({ data: opts.data ?? defaultSession });
+      },
+    });
   container
-    .bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS })
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
     .toValue(opts.options ?? { use: true });
-  container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
   container
-    .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+    .toValue(new DefaultAuthService());
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
     .toProvider(opts.providerClass ?? DefaultAuthProvider);
 
   return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
@@ -753,10 +765,18 @@ describe('data stored by the signed-in user', () => {
   const build = (providerClass: TClass<DefaultAuthProvider> = DefaultAuthProvider) => {
     const authService = new DefaultAuthService();
     const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(providerClass);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(authService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toProvider(providerClass);
 
     return {
       authService,
@@ -848,12 +868,20 @@ describe('data stored by the signed-in user', () => {
     const buildOf = (id: string) => {
       const container = new Container();
       container
-        .bind({ key: CoreBindings.APPLICATION_INFO })
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO }) })
         .toValue({ name: id, version: '1', description: '', id });
-      container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-      container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-      container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(DefaultAuthService);
-      container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+        .toValue({});
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+        .toValue({ use: true });
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+        .toClass(DefaultAuthService);
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+        .toProvider(DefaultAuthProvider);
 
       return {
         authService: container.get<DefaultAuthService>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }),
@@ -892,12 +920,20 @@ describe('data stored by the signed-in user', () => {
     }
     const container = new Container();
     container
-      .bind({ key: CoreBindings.APPLICATION_INFO })
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO }) })
       .toValue({ name: 'shop', version: '1', description: '', id: 'shop' });
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toClass(Forgetting);
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toClass(Forgetting);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toProvider(DefaultAuthProvider);
 
     expect(() => container.get({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })).toThrow(
       "does not use the application id 'shop'",
@@ -993,18 +1029,26 @@ describe('getPermissions and refreshToken', () => {
   test('refreshToken is the network service refresh, the one place a refresh is made', async () => {
     let refreshed = 0;
     const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({
-      getNetworkService: () => ({
-        refresh: () => {
-          refreshed += 1;
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({
+        getNetworkService: () => ({
+          refresh: () => {
+            refreshed += 1;
 
-          return Promise.resolve(true);
-        },
-      }),
-    });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toProvider(DefaultAuthProvider);
+            return Promise.resolve(true);
+          },
+        }),
+      });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(new DefaultAuthService());
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toProvider(DefaultAuthProvider);
 
     const provider = container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
 
@@ -1022,17 +1066,25 @@ describe('canAccess', () => {
     providerClass?: TClass<DefaultAuthProvider>;
   }) => {
     const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(new DefaultAuthService());
-    container.bind({ key: 'services.Extra' }).toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(new DefaultAuthService());
+    container.bind({ key: BindingKeys.build<unknown>({ key: 'services.Extra' }) }).toValue({});
 
     if (opts.permissionProvider) {
-      container.bind({ key: CoreBindings.PERMISSION_PROVIDER }).toValue(opts.permissionProvider);
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.PERMISSION_PROVIDER }) })
+        .toValue(opts.permissionProvider);
     }
 
     container
-      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
       .toProvider(opts.providerClass ?? DefaultAuthProvider);
 
     return container.get<IAuthProvider>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER });
@@ -1048,7 +1100,7 @@ describe('canAccess', () => {
       authProviderOptions: TAuthProviderOptions,
       @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
       authService: DefaultAuthService,
-      @inject({ key: 'services.Extra' })
+      @inject({ key: BindingKeys.build<unknown>({ key: 'services.Extra' }) })
       protected extra: object,
     ) {
       super(restDataProvider, authProviderOptions, authService);

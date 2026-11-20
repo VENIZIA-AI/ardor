@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import React from 'react';
 import { renderHook } from '@testing-library/react';
 
-import { BindingScopes, Container } from '@venizia/ignis-inversion';
+import { BindingKeys, BindingScopes, Container } from '@venizia/ignis-inversion';
 // From ARDOR's own surface, not `@venizia/ignis-kernel/metadata` directly: this is the import a
 // consumer writes, so the test fails if the re-export ever stops carrying the stereotypes.
 import { component, datasource, repository, RepositoryTypes, service } from '@venizia/ardor-kernel';
@@ -41,19 +41,19 @@ const createContainer = (): Container => {
   const container = new Container();
 
   container
-    .bind({ key: 'services.AuditService' })
+    .bind({ key: BindingKeys.build<unknown>({ key: 'services.AuditService' }) })
     .toClass(AuditService)
     .setScope(BindingScopes.SINGLETON);
   container
-    .bind({ key: 'datasources.TicketDataSource' })
+    .bind({ key: BindingKeys.build<unknown>({ key: 'datasources.TicketDataSource' }) })
     .toClass(TicketDataSource)
     .setScope(BindingScopes.SINGLETON);
   container
-    .bind({ key: 'repositories.TicketRepository' })
+    .bind({ key: BindingKeys.build<unknown>({ key: 'repositories.TicketRepository' }) })
     .toClass(TicketRepository)
     .setScope(BindingScopes.SINGLETON);
   container
-    .bind({ key: 'components.MailComponent' })
+    .bind({ key: BindingKeys.build<unknown>({ key: 'components.MailComponent' }) })
     .toClass(MailComponent)
     .setScope(BindingScopes.SINGLETON);
 
@@ -161,7 +161,7 @@ describe('the per-stereotype hooks and the scope of the binding', () => {
   test('a singleton service is the same instance on every render', () => {
     const container = new Container();
     container
-      .bind({ key: 'services.AuditService' })
+      .bind({ key: BindingKeys.build<unknown>({ key: 'services.AuditService' }) })
       .toClass(AuditService)
       .setScope(BindingScopes.SINGLETON);
 
@@ -186,7 +186,7 @@ describe('the per-stereotype hooks and the scope of the binding', () => {
     const other = createPlain();
 
     const container = new Container();
-    container.bind({ key: 'services.Plain' }).toClass(bound);
+    container.bind({ key: BindingKeys.build<unknown>({ key: 'services.Plain' }) }).toClass(bound);
 
     expect(() =>
       renderHook(() => useService({ target: other }), {

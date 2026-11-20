@@ -1,36 +1,96 @@
-import { getError } from '@venizia/ignis-inversion';
+import { BindingKeys, getError, type TBindingKey } from '@venizia/ignis-inversion';
 
-/** The container keys the kernel binds and reads. */
+import type { AbstractArdorApplication } from '@/base/applications/abstract';
+import type { DefaultAuthService } from '@/base/services/auth';
+
+import type {
+  IApplicationInfo,
+  IFeatureBase,
+  IPermissionProvider,
+  IRestDataProviderOptions,
+  IRolePermissionProviderOptions,
+  TAuthProviderOptions,
+} from './types';
+
+/**
+ * The types of the `CoreBindings` values that live in `@venizia/ardor-admin`, which merges them in;
+ * the kernel alone reads `unknown`.
+ */
+export interface ICoreBindingTypes {}
+
+/** The type merged into `ICoreBindingTypes` under `TName`, or `unknown` when nothing merged it. */
+export type TCoreBindingType<TName extends string> = TName extends keyof ICoreBindingTypes
+  ? ICoreBindingTypes[TName]
+  : unknown;
+
+/**
+ * The container keys the kernel binds and reads, each made by `BindingKeys.build<T>` with the type of
+ * its value.
+ */
 export class CoreBindings {
   /** The application itself, bound by `preConfigure`. */
-  static readonly APPLICATION_INSTANCE = '@app/application/instance';
+  static readonly APPLICATION_INSTANCE = BindingKeys.build<AbstractArdorApplication>({
+    key: '@app/application/instance',
+  });
+
   /** The `IApplicationInfo`, bound by `preConfigure`. */
-  static readonly APPLICATION_INFO = '@app/application/info';
+  static readonly APPLICATION_INFO = BindingKeys.build<IApplicationInfo>({
+    key: '@app/application/info',
+  });
 
   /** The auth provider. */
-  static readonly DEFAULT_AUTH_PROVIDER = '@app/application/auth/default';
+  static readonly DEFAULT_AUTH_PROVIDER: TBindingKey<TCoreBindingType<'authProvider'>> =
+    BindingKeys.build<TCoreBindingType<'authProvider'>>({
+      key: '@app/application/auth/default',
+    });
+
   /** The i18n provider. */
-  static readonly DEFAULT_I18N_PROVIDER = '@app/application/i18n/default';
+  static readonly DEFAULT_I18N_PROVIDER: TBindingKey<TCoreBindingType<'i18nProvider'>> =
+    BindingKeys.build<TCoreBindingType<'i18nProvider'>>({
+      key: '@app/application/i18n/default',
+    });
+
   /** The REST data provider. */
-  static readonly DEFAULT_REST_DATA_PROVIDER = '@app/application/data/rest/default';
+  static readonly DEFAULT_REST_DATA_PROVIDER: TBindingKey<TCoreBindingType<'restDataProvider'>> =
+    BindingKeys.build<TCoreBindingType<'restDataProvider'>>({
+      key: '@app/application/data/rest/default',
+    });
 
   /** The `TAuthProviderOptions`: `{ use: true }` turns sign-in on; unbound means `{ use: false }`. */
-  static readonly AUTH_PROVIDER_OPTIONS = '@app/application/options/auth';
+  static readonly AUTH_PROVIDER_OPTIONS = BindingKeys.build<TAuthProviderOptions>({
+    key: '@app/application/options/auth',
+  });
+
   /** The `DefaultAuthService`. */
-  static readonly DEFAULT_AUTH_SERVICE = '@app/application/service/auth/default';
+  static readonly DEFAULT_AUTH_SERVICE = BindingKeys.build<DefaultAuthService>({
+    key: '@app/application/service/auth/default',
+  });
 
   /** The `IRestDataProviderOptions`. */
-  static readonly REST_DATA_PROVIDER_OPTIONS = '@app/application/options/rest/data';
+  static readonly REST_DATA_PROVIDER_OPTIONS = BindingKeys.build<IRestDataProviderOptions>({
+    key: '@app/application/options/rest/data',
+  });
 
   /** The options of the i18n provider; unbound means English only. */
-  static readonly I18N_PROVIDER_OPTIONS = '@app/application/options/i18n';
+  static readonly I18N_PROVIDER_OPTIONS: TBindingKey<TCoreBindingType<'i18nProviderOptions'>> =
+    BindingKeys.build<TCoreBindingType<'i18nProviderOptions'>>({
+      key: '@app/application/options/i18n',
+    });
 
   /** The `features()` an application mounts, bound by `preConfigure()`. */
-  static readonly FEATURES = '@app/application/features';
+  static readonly FEATURES = BindingKeys.build<Array<IFeatureBase>>({
+    key: '@app/application/features',
+  });
+
   /** An `IPermissionProvider`, bound by the application; unbound means every check passes. */
-  static readonly PERMISSION_PROVIDER = '@app/application/permission/provider';
+  static readonly PERMISSION_PROVIDER = BindingKeys.build<IPermissionProvider>({
+    key: '@app/application/permission/provider',
+  });
+
   /** The `IRolePermissionProviderOptions` that `RolePermissionProvider` reads. */
-  static readonly PERMISSION_PROVIDER_OPTIONS = '@app/application/options/permission';
+  static readonly PERMISSION_PROVIDER_OPTIONS = BindingKeys.build<IRolePermissionProviderOptions>({
+    key: '@app/application/options/permission',
+  });
 }
 
 /** The session keys and the store prefix of one application, from `LocalStorageKeys.scoped`. */

@@ -8,7 +8,7 @@ import { Features, type TFeature } from '@/features';
 import { useMenuEntries } from '@/hooks/use-menu-entries';
 import { DefaultI18nProvider } from '@/providers/i18n';
 import { CoreBindings } from '@venizia/ardor-kernel';
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 type TCanAccess = (params: { resource: string; action: string }) => Promise<boolean>;
 
@@ -49,19 +49,27 @@ const createContainer = (opts: {
   auth?: { canAccess?: TCanAccess };
 }) => {
   const container = new Container();
-  container.bind({ key: CoreBindings.FEATURES }).toValue(opts.features);
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) })
+    .toValue(opts.features);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({});
 
   if (opts.auth) {
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
-      checkAuth: () => Promise.resolve(),
-      checkError: () => Promise.resolve(),
-      login: () => Promise.resolve(),
-      logout: () => Promise.resolve(),
-      getPermissions: () => Promise.resolve(),
-      ...(opts.auth.canAccess ? { canAccess: opts.auth.canAccess } : {}),
-    });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue({
+        checkAuth: () => Promise.resolve(),
+        checkError: () => Promise.resolve(),
+        login: () => Promise.resolve(),
+        logout: () => Promise.resolve(),
+        getPermissions: () => Promise.resolve(),
+        ...(opts.auth.canAccess ? { canAccess: opts.auth.canAccess } : {}),
+      });
   }
 
   container

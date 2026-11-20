@@ -33,19 +33,19 @@ Both are thin, single-purpose accessors: they exist so components do not need to
 
 ```ts
 type TUseInjectableOptions =
-  | { container?: Container; key: TUseInjectableKeys; target?: never }
+  | { container?: Container; key: TBindingKey<unknown>; target?: never }
   | { container?: Container; key?: never; target: TClass<unknown> };
 ```
 
 Resolution rules:
 
 - `{ target }` is the main form. It reads the binding key recorded on the class from the container's metadata registry, then resolves it. A stereotype (`@service()`, `@component()`, ...) records that key, and so does registration by hand (`service(X)`, `repository(X)`, `dataSource(X)`, `component(X)`, `bindingList()`). A class that went through neither throws; resolve it by `{ key }` or register it. The return type is the instance type of the class.
-- `{ key }` is for a binding with no class: it calls `container.get({ key })` directly - `key` is typically a value from the const-class binding keys registry (see [Binding key namespaces](/conventions/binding-key-namespaces.md)). The return type comes from `IUseInjectableKeyTypes` when the key is listed there (the three provider keys of `CoreBindings`: `IDataProvider`, `IAuthProvider`, `I18nProvider`), else from the caller's generic, which is an unchecked claim.
+- `{ key }` is for a binding with no class: it calls `container.get({ key })` directly - `key` is typically a value from the const-class binding keys registry (see [Binding key namespaces](/conventions/binding-key-namespaces.md)), made as a `TBindingKey<TValue>`, and the hook returns `TValue` with no generic; a plain string does not compile.
 - For a `target`, the binding is read with `container.getBinding({ key })`: when it is a `toClass` binding and the class differs from `target` (and is not a subclass of it), the hook throws and names the key and the class. Two classes of one name share `<namespace>.<ClassName>`, so without this check the hook would return the other class. A value or provider binding has no class and passes.
 - One resolve path (`resolve-injectable.ts`, shared by `useInjectable` and the per-stereotype hooks), run on every render: a `TRANSIENT` binding gives a new instance each time, so state belongs in a `SINGLETON` binding or in `useState`.
 - If you pass an explicit `container`, that takes priority over the one in context. The choice lives in `useApplicationContainer({ container? })`, which returns the explicit container, else `ApplicationContext.container`, and throws `[useApplicationContainer] Failed to determine the application container!` when there is neither.
 
-The type `TUseInjectableKeys` is the union of core binding key strings plus the keys of `IUseInjectableKeysOverrides` and of `IUseInjectableKeyTypes`, two empty interfaces you augment for your own bindings: the first makes a key valid, the second also gives it a type. `@venizia/ardor-admin` merges the provider keys of `CoreBindings` into the second with `declare module '@venizia/ardor-react'` in its own declaration files (`packages/admin/src/common/types.ts`), so the umbrella needs no application augmentation for them. This is the same [module augmentation](/architecture/module-augmentation.md) pattern used elsewhere in ARDOR, and it keeps custom binding keys type-safe without ARDOR needing to know about them ahead of time. See also [Binding keys](/reference/binding-keys.md).
+A key carries the type of its value (`BindingKeys.build<T>`), so ARDOR needs no augmentation point for binding keys. `@venizia/ardor-admin` merges the types of the provider keys of `CoreBindings` into the kernel's `ICoreBindingTypes` (`packages/admin/src/common/types.ts`), so an application needs no augmentation for them. See [module augmentation](/architecture/module-augmentation.md) and [Binding keys](/reference/binding-keys.md).
 
 ## Per-stereotype hooks
 

@@ -78,10 +78,10 @@ part of its normal response pipeline.
 ## Module augmentation and i18n
 
 The example resolves `IdentityService` by class (`useService({ target })`), so it needs no
-`IUseInjectableKeysOverrides` augmentation. It augments `IUseTranslateKeysOverrides` from `@venizia/ardor` with
+binding key. It augments `IUseTranslateKeysOverrides` from `@venizia/ardor` with
 its own `vert.configurations` and `vert.signedInAs` keys. This is the standard
 [Module augmentation](/architecture/module-augmentation.md) technique for getting type-safe autocomplete
-on bindings and translation keys without editing framework packages. The i18n provider options add these
+on translation keys without editing framework packages. The i18n provider options add these
 keys to the English message bundle on top of `englishMessages`, following
 [i18n](/architecture/i18n.md).
 

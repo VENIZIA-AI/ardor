@@ -16,7 +16,7 @@ import { SelectorHooks, useApplicationLogger } from '@venizia/ardor-react';
 import { CoreBindings, DefaultAuthService } from '@venizia/ardor-kernel';
 import { FakeStorage } from '@venizia/ardor-kernel/testing';
 import { LoggerFactory, LogLevels } from '@venizia/ignis-helpers/core';
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
 const ReportList = () => {
   const translate = useTranslate();
@@ -37,18 +37,26 @@ const createContainer = (opts: {
   });
 
   const container = new Container();
-  container.bind({ key: CoreBindings.FEATURES }).toValue([reports]);
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) })
+    .toValue([reports]);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({});
 
   if (opts.withAuthProvider ?? true) {
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
-      checkAuth: () => Promise.resolve(),
-      checkError: () => Promise.resolve(),
-      login: () => Promise.resolve(),
-      logout: () => Promise.resolve(),
-      getPermissions: () => Promise.resolve(),
-    });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue({
+        checkAuth: () => Promise.resolve(),
+        checkError: () => Promise.resolve(),
+        login: () => Promise.resolve(),
+        logout: () => Promise.resolve(),
+        getPermissions: () => Promise.resolve(),
+      });
   }
 
   container
@@ -204,8 +212,12 @@ const reports = Features.define({
 
 const createFeatureContainer = () => {
   const container = new Container();
-  container.bind({ key: CoreBindings.FEATURES }).toValue([invoices, reports]);
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) })
+    .toValue([invoices, reports]);
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({});
   container
     .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
     .toValue(new DefaultI18nProvider({}, [invoices, reports]).value(container));
@@ -282,7 +294,9 @@ describe('ArdorApplication features prop', () => {
       routes: [{ path: '/names', element: <MountedNames /> }],
     });
     const container = createFeatureContainer();
-    container.bind({ key: CoreBindings.FEATURES }).toValue([invoices, reports, names]);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) })
+      .toValue([invoices, reports, names]);
 
     render(
       <MemoryRouter initialEntries={['/names']}>
@@ -365,7 +379,9 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
   const renderWithSession = () => {
     const authService = new DefaultAuthService();
     const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(authService);
     const queryClient = new QueryClient();
     queryClient.setQueryData(['reports', 'getList'], [{ id: 1, title: 'private' }]);
 
@@ -388,7 +404,9 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
   test('a page that is open shows the data of the user signed in now, not the one that left', async () => {
     const authService = new DefaultAuthService();
     const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(authService);
     authService.saveAuth({
       userId: 7,
       username: 'alice',
@@ -520,7 +538,9 @@ describe('ArdorApplication and the data cache of a signed-out user', () => {
     const authService = new DefaultAuthService();
     authService.saveAuth({ userId: 7, token: { value: 'jwt', type: 'Bearer' } });
     const container = createContainer({ load: () => Promise.resolve({ reports: { title: 'R' } }) });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_SERVICE }).toValue(authService);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_SERVICE }) })
+      .toValue(authService);
     const queryClient = new QueryClient();
     queryClient.setQueryData(['reports', 'getList'], [{ id: 1, title: 'private' }]);
     render(
@@ -700,17 +720,25 @@ describe('ArdorApplication route access', () => {
   }) => {
     const features = opts.features ?? [];
     const container = new Container();
-    container.bind({ key: CoreBindings.FEATURES }).toValue(features);
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
-      checkAuth: opts.checkAuth,
-      checkError: () => Promise.resolve(),
-      login: () => Promise.resolve(),
-      logout: () => Promise.resolve(),
-      getPermissions: () => Promise.resolve(),
-      canAccess: opts.canAccess,
-    });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) })
+      .toValue(features);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue({
+        checkAuth: opts.checkAuth,
+        checkError: () => Promise.resolve(),
+        login: () => Promise.resolve(),
+        logout: () => Promise.resolve(),
+        getPermissions: () => Promise.resolve(),
+        canAccess: opts.canAccess,
+      });
     container
       .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
       .toValue(new DefaultI18nProvider({}, features).value(container));
@@ -949,17 +977,23 @@ describe('ArdorApplication route toggles', () => {
     canAccess?: (params: { resource: string; action: string }) => Promise<boolean>;
   }) => {
     const container = new Container();
-    container.bind({ key: CoreBindings.FEATURES }).toValue([]);
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue({
-      checkAuth: opts.checkAuth,
-      checkError: () => Promise.resolve(),
-      login: () => Promise.resolve(),
-      logout: () => Promise.resolve(),
-      getPermissions: () => Promise.resolve(),
-      ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
-    });
+    container.bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) }).toValue([]);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue({ use: true });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue({
+        checkAuth: opts.checkAuth,
+        checkError: () => Promise.resolve(),
+        login: () => Promise.resolve(),
+        logout: () => Promise.resolve(),
+        getPermissions: () => Promise.resolve(),
+        ...(opts.canAccess ? { canAccess: opts.canAccess } : {}),
+      });
     container
       .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
       .toValue(new DefaultI18nProvider({}, []).value(container));
@@ -1189,8 +1223,10 @@ describe('ArdorApplication route toggles', () => {
 describe('ArdorApplication access-denied page', () => {
   const createDeniedContainer = () => {
     const container = new Container();
-    container.bind({ key: CoreBindings.FEATURES }).toValue([]);
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+    container.bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.FEATURES }) }).toValue([]);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue({});
     container
       .bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER })
       .toValue(new DefaultI18nProvider({}, []).value(container));

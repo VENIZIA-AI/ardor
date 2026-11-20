@@ -35,6 +35,25 @@ export const useRestDataProvider = () => {
 | `PERMISSION_PROVIDER` | `@app/application/permission/provider` | Application (`bindContext()`, or `@provide`) | `DefaultAuthProvider`, `canAccess` | Optional |
 | `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` | Application (`@provide`) | `RolePermissionProvider` | Required by `RolePermissionProvider` |
 
+Each key is made by `BindingKeys.build<T>` and carries the type of its value, so `container.get({ key })` and `useInjectable({ key })` answer it with no generic:
+
+| Constant | Value type |
+|---|---|
+| `APPLICATION_INSTANCE` | `AbstractArdorApplication` |
+| `APPLICATION_INFO` | `IApplicationInfo` |
+| `DEFAULT_AUTH_PROVIDER` | `IAuthProvider` |
+| `DEFAULT_I18N_PROVIDER` | react-admin's `I18nProvider` |
+| `DEFAULT_REST_DATA_PROVIDER` | `IDataProvider` |
+| `AUTH_PROVIDER_OPTIONS` | `TAuthProviderOptions` |
+| `DEFAULT_AUTH_SERVICE` | `DefaultAuthService` |
+| `REST_DATA_PROVIDER_OPTIONS` | `IRestDataProviderOptions` |
+| `I18N_PROVIDER_OPTIONS` | `II18nProviderOptions` |
+| `FEATURES` | `Array<IFeatureBase>` |
+| `PERMISSION_PROVIDER` | `IPermissionProvider` |
+| `PERMISSION_PROVIDER_OPTIONS` | `IRolePermissionProviderOptions` |
+
+The four types that live in `@venizia/ardor-admin` (the providers and the i18n options) reach `CoreBindings` through the `ICoreBindingTypes` interface of the kernel, which the admin package merges into: an application that imports `@venizia/ardor` or `@venizia/ardor-admin` reads the real types, and code that imports only the kernel reads `unknown`. Binding a value of another type under a key is a compile error.
+
 `BaseArdorApplication` binds the defaults itself, before anything of the application. To replace one, bind your provider class under its key in `bindContext()`: `.toProvider(MyProvider).setScope(BindingScopes.SINGLETON)`.
 
 For binding order in the application lifecycle, see [The bind order in Configuration](../guides/core-concepts/configuration#the-bind-order) and [Application](application).
@@ -104,23 +123,17 @@ export const useUserNames = () => {
 
 ## A binding with no class: by key
 
-A value bound by hand has only its key. Keep it in a `static readonly` constants class, give its type to `IUseInjectableKeyTypes`, and read it with `useInjectable({ key })`:
+A value bound by hand has only its key. Make the key with `BindingKeys.build<T>`, keep it in a `static readonly` constants class, and read it with `useInjectable({ key })`. The type travels with the key, so the hook needs no generic and no augmentation:
 
 ```tsx
-import { Ardor, configuration, provide } from '@venizia/ardor';
+import { Ardor, BindingKeys, configuration, provide } from '@venizia/ardor';
 
 interface IPricingOptions {
   currency: string;
 }
 
 export class PricingBindings {
-  static readonly OPTIONS = '@app/pricing/options';
-}
-
-declare module '@venizia/ardor' {
-  interface IUseInjectableKeyTypes {
-    [PricingBindings.OPTIONS]: IPricingOptions;
-  }
+  static readonly OPTIONS = BindingKeys.build<IPricingOptions>({ key: '@app/pricing/options' });
 }
 
 @configuration()
@@ -138,12 +151,7 @@ export const useCurrency = () => {
 };
 ```
 
-The hook accepts a key from these sets:
-
-- `TUseInjectableKeysDefault`: union of all string values on `CoreBindings`.
-- `IUseInjectableKeyTypes`: an interface you augment with a key and its type. The hook returns that type with no generic. The three providers of `CoreBindings` are listed already.
-- `IUseInjectableKeysOverrides`: an interface you augment with a key and no type. The key is valid, and the type is the one you pass as the generic: your claim, which nothing checks.
-- `TUseInjectableKeys`: the union of the three.
+`BindingKeys.build<T>({ namespace?, key })` makes the key string `<namespace>.<key>`, or `key` alone. The type argument is required: write `build<unknown>` for a key with no common value type. A plain string, a template literal or a symbol is not a key, and the hook, `bind`, `get`, `isBound` and `@inject` reject it. `TBindingKeyValue<typeof key>` names the value type, for a parameter annotation. A generic written with a key must be a subtype or a supertype of the key's type.
 
 ## Related
 

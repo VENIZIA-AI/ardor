@@ -144,8 +144,8 @@ Registration by hand is the second mode, as in IGNIS. Every path records the key
   them inside `bindContext()`.
 
 - `bindingList()` - a record of literal key to class, bound as singletons. Literal keys survive a
-  minifier, and `keyof ReturnType<Application['bindingList']>` is what an application feeds into
-  `IUseInjectableKeysOverrides`.
+  minifier, and the keys are literal strings that
+  an application wraps with `BindingKeys.build<T>` to type them.
 
 Singleton is the default on every path, unlike IGNIS's server: one repository or service is shared by every component. A class registered twice under different
 keys is bound twice, as two singletons, and `{ target }` reaches the key recorded last. How keys are named, and the minifier and same-name traps of a derived key, are in
@@ -161,10 +161,9 @@ container comes from `useApplicationContainer`: the option, else `ApplicationCon
   guesses a key from the class name. The return type is the instance type of the class. When the
   binding holds a class, it is compared with `target` (a subclass is accepted): two classes of one
   name share one key, and a mismatch throws naming the key and the class.
-- **`{ key }`** is for a binding with no class and calls `container.get({ key })`. The key is typed as
-  `TUseInjectableKeys` - every `CoreBindings` value plus the keys an application adds, see
-  [module augmentation](/architecture/module-augmentation.md). The return type comes from
-  `IUseInjectableKeyTypes` for a key listed there, else from the caller's generic.
+- **`{ key }`** is for a binding with no class and calls `container.get({ key })`. The key is a
+  `TBindingKey<TValue>` and the return type is `TValue`, see
+  [module augmentation](/architecture/module-augmentation.md).
 
 Every hook resolves on every render (`packages/react/src/hooks/resolve-injectable.ts`), so a
 `TRANSIENT` binding gives a new instance each time.

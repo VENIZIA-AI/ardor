@@ -10,24 +10,16 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Namespaces: [binding key namespaces](/conventions/binding-key-namespaces.md).
 
-**18 keys across 2 binding classes.**
+**10 keys across 2 binding classes.**
 
 ## CoreBindings
 
 | Constant | Key |
 |---|---|
-| `APPLICATION_INSTANCE` | `@app/application/instance` |
-| `APPLICATION_INFO` | `@app/application/info` |
-| `DEFAULT_AUTH_PROVIDER` | `@app/application/auth/default` |
-| `DEFAULT_I18N_PROVIDER` | `@app/application/i18n/default` |
-| `DEFAULT_REST_DATA_PROVIDER` | `@app/application/data/rest/default` |
-| `AUTH_PROVIDER_OPTIONS` | `@app/application/options/auth` |
-| `DEFAULT_AUTH_SERVICE` | `@app/application/service/auth/default` |
-| `REST_DATA_PROVIDER_OPTIONS` | `@app/application/options/rest/data` |
-| `I18N_PROVIDER_OPTIONS` | `@app/application/options/i18n` |
-| `FEATURES` | `@app/application/features` |
-| `PERMISSION_PROVIDER` | `@app/application/permission/provider` |
-| `PERMISSION_PROVIDER_OPTIONS` | `@app/application/options/permission` |
+| `DEFAULT_AUTH_PROVIDER` | `authProvider` |
+| `DEFAULT_I18N_PROVIDER` | `i18nProvider` |
+| `DEFAULT_REST_DATA_PROVIDER` | `restDataProvider` |
+| `I18N_PROVIDER_OPTIONS` | `i18nProviderOptions` |
 
 ## LocalStorageKeys
 

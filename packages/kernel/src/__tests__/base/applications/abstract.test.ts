@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { describe, expect, test } from 'bun:test';
-import { type Binding, BindingScopes } from '@venizia/ignis-inversion';
+import { BindingKeys, type Binding, BindingScopes } from '@venizia/ignis-inversion';
 
 import { AbstractArdorApplication } from '@/base/applications/abstract';
 import { configuration, provide } from '@/base/metadata';
@@ -221,7 +221,9 @@ describe('AbstractArdorApplication - service registration', () => {
     });
     binding.setTags(TestTags.TAG_AUDIT, TestTags.TAG_LOGGING);
 
-    const resolved = app.get<AuditService>({ key: `${InjectionScopes.SERVICES}.Audit` });
+    const resolved = app.get<AuditService>({
+      key: BindingKeys.build<AuditService>({ key: `${InjectionScopes.SERVICES}.Audit` }),
+    });
 
     expect(resolved).toBeInstanceOf(AuditService);
     expect(resolved.getScopeName()).toBe('audit-service-instance');
@@ -263,11 +265,13 @@ describe('AbstractArdorApplication - service registration', () => {
     app.service(LoggingService);
 
     expect(app.getMetadataRegistry().getBindingKey({ target: LoggingService })).toBe(
-      `${InjectionScopes.SERVICES}.${LoggingService.name}`,
+      BindingKeys.build<unknown>({ key: `${InjectionScopes.SERVICES}.${LoggingService.name}` }),
     );
 
     const resolved = app.get<LoggingService>({
-      key: `${InjectionScopes.SERVICES}.${LoggingService.name}`,
+      key: BindingKeys.build<LoggingService>({
+        key: `${InjectionScopes.SERVICES}.${LoggingService.name}`,
+      }),
     });
 
     expect(resolved).toBeInstanceOf(LoggingService);
@@ -320,8 +324,12 @@ describe('bindingList', () => {
     const app = new ListedApplication();
     await app.start();
 
-    const first = app.get<AuditService>({ key: 'services.AuditService' });
-    const second = app.get<AuditService>({ key: 'services.AuditService' });
+    const first = app.get<AuditService>({
+      key: BindingKeys.build<AuditService>({ key: 'services.AuditService' }),
+    });
+    const second = app.get<AuditService>({
+      key: BindingKeys.build<AuditService>({ key: 'services.AuditService' }),
+    });
 
     expect(first).toBeInstanceOf(ListedAuditService);
     expect(second).toBe(first);
@@ -331,13 +339,17 @@ describe('bindingList', () => {
     class Replacement {}
     class OverridingApplication extends ListedApplication {
       override bindContext(): void {
-        this.bind({ key: 'services.AuditService' }).toClass(Replacement);
+        this.bind({ key: BindingKeys.build<unknown>({ key: 'services.AuditService' }) }).toClass(
+          Replacement,
+        );
       }
     }
     const app = new OverridingApplication();
     await app.start();
 
-    expect(app.get({ key: 'services.AuditService' })).toBeInstanceOf(Replacement);
+    expect(
+      app.get({ key: BindingKeys.build<unknown>({ key: 'services.AuditService' }) }),
+    ).toBeInstanceOf(Replacement);
   });
 });
 
@@ -374,10 +386,10 @@ describe('AbstractArdorApplication - an async getAppInfo', () => {
 });
 
 class DefaultKeys {
-  static readonly PROVIDED = 'test.defaults.provided';
-  static readonly LISTED = 'test.defaults.listed';
-  static readonly CONTEXT = 'test.defaults.context';
-  static readonly UNTOUCHED = 'test.defaults.untouched';
+  static readonly PROVIDED = BindingKeys.build<unknown>({ key: 'test.defaults.provided' });
+  static readonly LISTED = BindingKeys.build<unknown>({ key: 'test.defaults.listed' });
+  static readonly CONTEXT = BindingKeys.build<unknown>({ key: 'test.defaults.context' });
+  static readonly UNTOUCHED = BindingKeys.build<unknown>({ key: 'test.defaults.untouched' });
 }
 
 class DefaultValue {

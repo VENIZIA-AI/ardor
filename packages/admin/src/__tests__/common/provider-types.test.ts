@@ -3,7 +3,7 @@ import React from 'react';
 import { renderHook } from '@testing-library/react';
 import type { AuthProvider, DataProvider, I18nProvider } from 'ra-core';
 
-import { Container } from '@venizia/ignis-inversion';
+import { BindingKeys, Container } from '@venizia/ignis-inversion';
 import { CoreBindings } from '@venizia/ardor-kernel';
 import { ApplicationContext, useInjectable, useProvider } from '@venizia/ardor-react';
 
@@ -96,9 +96,15 @@ describe('the provider keys type their hooks', () => {
 
   const createContainer = () => {
     const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue(dataProvider);
-    container.bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }).toValue(authProvider);
-    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue(i18nProvider);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+      .toValue(dataProvider);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
+      .toValue(authProvider);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }) })
+      .toValue(i18nProvider);
 
     return container;
   };

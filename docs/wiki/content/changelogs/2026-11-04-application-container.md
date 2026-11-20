@@ -13,11 +13,11 @@ packages: ['@venizia/ardor-react', '@venizia/ardor']
 **In one line.** `useInjectableContainer` returns IGNIS's `Container`, which is the application's own container (`AbstractApplication extends Container`). The hook is renamed `useApplicationContainer`, in `@venizia/ardor-react`, `@venizia/ardor` and the `Ardor` namespace. There is no alias.
 
 ```tsx
-import { useApplicationContainer } from '@venizia/ardor';
+import { BindingKeys, useApplicationContainer } from '@venizia/ardor';
 
 export function BindingCount() {
   const container = useApplicationContainer();
-  return <span>{container.isBound({ key: 'services.Orders' }) ? 'bound' : 'missing'}</span>;
+  return <span>{container.isBound({ key: BindingKeys.build<unknown>({ key: 'services.Orders' }) }) ? 'bound' : 'missing'}</span>;
 }
 ```
 

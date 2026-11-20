@@ -1,56 +1,54 @@
 ---
 type: Concept
 title: Module augmentation
-description: How ARDOR types the keys accepted by useInjectable and useTranslate through TypeScript module augmentation, and the traps that make it silently fail.
+description: How ARDOR types translation keys through TypeScript module augmentation, how binding keys carry their own type instead, and the traps that make augmentation silently fail.
 resource: packages/react/src/hooks/use-injectable.ts
 tags: [architecture, typescript, module-augmentation, useInjectable, useTranslate, di]
 ---
 
 # Module augmentation
 
-`useInjectable` and `useTranslate` do not accept arbitrary strings. Each takes a union of string literals built from a default set plus whatever an application merges in through TypeScript's module augmentation. This is why registering a binding or a translation key and then reaching for it in a hook can fail at compile time until the key is declared - that failure is the point, not a bug.
+`IUseTranslateKeysOverrides` is the one augmentation point an application uses. `useTranslate` does not accept arbitrary strings: it takes a union of dotted paths built from the default English messages plus whatever an application merges in. A translation key that is not declared fails at compile time, and that failure is the point, not a bug.
 
-## Why keys are typed
+Binding keys need no augmentation. A key carries the type of its value (`BindingKeys.build<T>`), so `useInjectable({ key })` returns `T` and a string that is not a key does not compile.
 
-Both hooks follow the same pattern: a default union derived from something real (the core bindings, the default English messages) unioned with `keyof` of an empty override interface.
+## Why translation keys are typed
 
-- `TUseInjectableKeysDefault` is the string values of `CoreBindings`.
-- `TUseInjectableKeys` is `TUseInjectableKeysDefault | keyof IUseInjectableKeysOverrides | keyof IUseInjectableKeyTypes`.
-- `TUseTranslateKeysDefault` is the dotted-path union produced by `TFullPaths` over the default messages object.
-- `TUseTranslateKeys` follows the same union-with-overrides shape.
+`TUseTranslateKeysDefault` is the dotted-path union produced by `TFullPaths` over the default messages object. `TUseTranslateKeys` unions it with `keyof IUseTranslateKeysOverrides`.
 
 Only the `keyof` of the override interface matters - property values are ignored, so the convention is to type them all as `true`. This gives applications compile-time protection against typo'd keys instead of accepting any string silently.
 
-## Two interfaces for injectable keys
+## Binding keys carry their type
 
-`IUseInjectableKeysOverrides` makes a key valid and ignores the property value; `useInjectable({ key })` then returns `unknown` or the caller's generic, an unchecked claim. `IUseInjectableKeyTypes` makes a key valid and its property value is the instance type, so `useInjectable({ key })` and `useProvider({ key })` return it with no generic. The react package declares both empty. `@venizia/ardor-admin` fills `IUseInjectableKeyTypes` with `declare module '@venizia/ardor-react'` for `DEFAULT_REST_DATA_PROVIDER` (`IDataProvider`), `DEFAULT_AUTH_PROVIDER` (`IAuthProvider`) and `DEFAULT_I18N_PROVIDER` (`I18nProvider`), because react cannot import admin. The block sits in `packages/admin/src/common/types.ts`, which the declaration files keep and the umbrella re-exports, so an application needs no augmentation for those. An explicit generic on such a key still compiles (it falls to the unchecked overload).
+`BindingKeys.build<T>({ namespace?, key })` (from `@venizia/ignis-inversion`, re-exported by `@venizia/ardor`) makes a `TBindingKey<T>`. The hooks take `{ key: TBindingKey<TValue> }` and return `TValue` with no generic. A plain string, template literal or symbol is not a key and does not compile. A generic written next to a key must be a subtype or supertype of the key's type. `TBindingKeyValue<typeof key>` names `T`. `@inject({ key })` is not checked against the decorated parameter.
 
-## The per-stereotype hooks share the key union
+`CoreBindings` is built this way (`packages/kernel/src/common/keys.ts`). Four of its keys have their value types in `@venizia/ardor-admin`, which the kernel cannot import: `DEFAULT_REST_DATA_PROVIDER`, `DEFAULT_AUTH_PROVIDER`, `DEFAULT_I18N_PROVIDER` and `I18N_PROVIDER_OPTIONS`. The kernel declares them as `TCoreBindingType<'restDataProvider' | 'authProvider' | 'i18nProvider' | 'i18nProviderOptions'>`, which is `unknown` in the kernel alone. `@venizia/ardor-admin` merges `IDataProvider`, `IAuthProvider`, `I18nProvider` and `II18nProviderOptions` into the kernel interface `ICoreBindingTypes` with `declare module '@venizia/ardor-kernel'` (`packages/admin/src/common/types.ts`). An application that imports `@venizia/ardor` or `@venizia/ardor-admin` reads the real types with no augmentation of its own.
 
-`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `TUseInjectableKeys` union for their `{ key }` form. One augmentation of `IUseInjectableKeyTypes` on the React package types the `{ key }` form of `useInjectable` and `useProvider`, for a value with no class; the other four take the type from the generic you pass. The `{ target }` form of every one of them bypasses the union entirely: it resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so it needs no augmentation at all. The augmentation matters only for the `{ key }` form. `{ target }` also sidesteps the any-widening footgun below, because no key string is involved.
+An application's own keys need nothing: build each with `BindingKeys.build<T>` and the type travels with the key. A class needs no key at all; it resolves by `{ target }`.
 
-## The two override interfaces and their owning packages
+## The per-stereotype hooks
 
-- `IUseInjectableKeysOverrides` and `IUseInjectableKeyTypes` are declared in the [React package](/packages/react.md).
-- `IUseTranslateKeysOverrides` is declared in the [Admin package](/packages/admin.md).
+`useService`, `useRepository`, `useProvider`, `useComponent` and `useConfiguration` take the same `{ key: TBindingKey<TValue> }` form as `useInjectable` and return `TValue`. The `{ target }` form of every one of them resolves through the binding key recorded on the class, by a stereotype or by registration by hand, so no key is involved.
 
-Both are re-exported from the [ARDOR umbrella package](/packages/ardor.md) with `export *`. An application augments the umbrella: `declare module '@venizia/ardor'` merges into both declaring interfaces (next section).
+## The owning package
+
+`IUseTranslateKeysOverrides` is declared in the [Admin package](/packages/admin.md) and re-exported from the [ARDOR umbrella package](/packages/ardor.md) with `export *`. An application augments the umbrella: `declare module '@venizia/ardor'` merges into the declaring interface.
 
 ## Why the umbrella is the module to augment
 
-TypeScript merges interface declarations by module identity, and it follows an `export *` chain to the module that declares the interface. `@venizia/ardor` re-exports `@venizia/ardor-react` and `@venizia/ardor-admin` with `export *`, so a `declare module '@venizia/ardor'` block merges into the real `IUseInjectableKeysOverrides` and `IUseTranslateKeysOverrides`. Measured on a registry-only app (`@venizia/ardor@0.1.4-5`, TypeScript 6, Bun 1.4.3) under both linkers: the umbrella block merges, a declared key is accepted and an undeclared one rejected (issue #98). An older claim here, that an umbrella block creates an unrelated interface and does nothing, was wrong.
+TypeScript merges interface declarations by module identity, and it follows an `export *` chain to the module that declares the interface. `@venizia/ardor` re-exports `@venizia/ardor-admin` with `export *`, so a `declare module '@venizia/ardor'` block merges into the real `IUseTranslateKeysOverrides`. Measured on a registry-only app (`@venizia/ardor@0.1.4-5`, TypeScript 6, Bun 1.4.3) under both linkers: the umbrella block merges, a declared key is accepted and an undeclared one rejected (issue #98).
 
-The declaring packages are the fragile target. An application depends on `@venizia/ardor` alone, so under a linker that does not hoist (Bun's `isolated` linker, pnpm) `@venizia/ardor-react` and `@venizia/ardor-admin` are not resolvable from it. `declare module '@venizia/ardor-react'` then fails with `TS2664 Invalid module name in augmentation, module cannot be found`, and the keys are missing; under a hoisting linker the same block compiles, which hides the problem. A declaring package works only when the application lists it as its own dependency. The rule: augment `@venizia/ardor`.
+The declaring package is the fragile target. An application depends on `@venizia/ardor` alone, so under a linker that does not hoist (Bun's `isolated` linker, pnpm) `@venizia/ardor-admin` is not resolvable from it. `declare module '@venizia/ardor-admin'` then fails with `TS2664 Invalid module name in augmentation, module cannot be found`, and the keys are missing; under a hoisting linker the same block compiles, which hides the problem. A declaring package works only when the application lists it as its own dependency. The rule: augment `@venizia/ardor`.
 
-`examples/5-mins-qs/src/augmentation.check.ts` holds the type-level check: it declares one injectable key through the umbrella, uses one translate key declared in `admin.configuration.ts`, and carries two `@ts-expect-error` lines. It is never imported; the example's `typecheck` fails if the claim stops holding.
+`examples/5-mins-qs/src/augmentation.check.ts` holds the type-level check. It is never imported; the example's `typecheck` fails if the claim stops holding.
 
 ## The any-widening footgun
 
-Applications are expected to derive their key unions from something real - a `static readonly` constants class for the keys of values with no class, or a message object for translation keys - rather than typing literals by hand twice. A class needs no key at all: it resolves by `{ target }`. This is efficient, but it has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof` of it collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection the augmentation exists to provide disappears without any warning - the code still compiles, it just no longer catches typos. This is the single most dangerous failure mode of the whole mechanism, because nothing looks wrong until a real typo makes it into production.
+Applications are expected to derive their translation keys from something real - a message object - rather than typing literals by hand twice. This has a sharp edge: if the type being derived from resolves to `any` (a broken import path, a stale build, a class that failed to compile), then `keyof` of it collapses to `string`. The override interface silently widens to accept every string as a valid key. All the compile-time protection disappears without any warning - the code still compiles, it just no longer catches typos. This is the most dangerous failure mode of the mechanism, because nothing looks wrong until a real typo makes it into production.
 
 ## Where the augmentation lives
 
-Augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten. One `declare module '@venizia/ardor'` block can hold both override interfaces.
+Augmentation should live in one place per application - either the file that constructs the application, or a dedicated ambient declaration file included by the TypeScript config - so it isn't scattered and forgotten.
 
 ## Verifying with @ts-expect-error
 
@@ -58,4 +56,4 @@ Because a broken augmentation looks identical to a working one until someone mis
 
 ## Related
 
-See [DI in the browser](/architecture/di-in-the-browser.md) for how bindings and keys are registered at runtime, and [Binding key namespaces](/conventions/binding-key-namespaces.md) for how to name the keys before typing them.
+See [DI in the browser](/architecture/di-in-the-browser.md) for how bindings and keys are registered at runtime, and [Binding key namespaces](/conventions/binding-key-namespaces.md) for how to name the keys.

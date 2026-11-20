@@ -7,7 +7,7 @@ import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings, type TAuthProviderOptions } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
-import { Container, getError } from '@venizia/ignis-inversion';
+import { BindingKeys, Container, getError } from '@venizia/ignis-inversion';
 
 const authProvider = {
   checkAuth: () => Promise.resolve(),
@@ -25,11 +25,13 @@ const createContainer = (opts: {
   authOptions?: TAuthProviderOptions;
 }) => {
   const container = new Container();
-  container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({ id: 'data' });
+  container
+    .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+    .toValue({ id: 'data' });
 
   if (opts.withAuthProvider) {
     const binding = container
-      .bind({ key: CoreBindings.DEFAULT_AUTH_PROVIDER })
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_AUTH_PROVIDER }) })
       .toValue(authProvider);
 
     if (opts.isDefaultAuthProvider) {
@@ -38,11 +40,15 @@ const createContainer = (opts: {
   }
 
   if (opts.authOptions) {
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(opts.authOptions);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue(opts.authOptions);
   }
 
   if (opts.withI18nProvider ?? true) {
-    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({ id: 'i18n' });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }) })
+      .toValue({ id: 'i18n' });
   }
 
   return container;
@@ -122,7 +128,9 @@ describe('ApplicationProviders.resolve', () => {
     // An app written before the toggle binds `{ paths }`: it must not silently run with every page public.
     const legacy = { paths: { signIn: '/auth/sign-in' } };
     const container = createContainer({ withAuthProvider: true });
-    container.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue(legacy);
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }) })
+      .toValue(legacy);
 
     expect(() => {
       ApplicationProviders.resolve({ container });
@@ -142,7 +150,9 @@ describe('ApplicationProviders.resolve', () => {
 
   test('throws when the data provider is unbound', () => {
     const container = new Container();
-    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({});
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }) })
+      .toValue({});
 
     expect(() => ApplicationProviders.resolve({ container })).toThrow(
       CoreBindings.DEFAULT_REST_DATA_PROVIDER,
@@ -197,11 +207,15 @@ describe('ApplicationProviders.assertConfigured', () => {
     const container = new Container();
 
     if (key !== CoreBindings.DEFAULT_REST_DATA_PROVIDER) {
-      container.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }).toValue({});
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
+        .toValue({});
     }
 
     if (key !== CoreBindings.DEFAULT_I18N_PROVIDER) {
-      container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toValue({});
+      container
+        .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }) })
+        .toValue({});
     }
 
     const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
@@ -213,9 +227,11 @@ describe('ApplicationProviders.assertConfigured', () => {
 
   test('names the unbound options key behind a provider, not only the provider', () => {
     const container = createContainer({ withAuthProvider: false });
-    container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ name: 'a', version: '1' });
     container
-      .bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO }) })
+      .toValue({ name: 'a', version: '1' });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) })
       .toProvider(() => container.instantiate(DefaultRestDataProvider).value(container));
 
     const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
@@ -226,9 +242,11 @@ describe('ApplicationProviders.assertConfigured', () => {
 
   test('says the providers could not be built, with the reason, for another failure', () => {
     const container = createContainer({ withAuthProvider: false });
-    container.bind({ key: CoreBindings.DEFAULT_I18N_PROVIDER }).toProvider(() => {
-      throw getError({ message: 'no messages' });
-    });
+    container
+      .bind({ key: BindingKeys.build<unknown>({ key: CoreBindings.DEFAULT_I18N_PROVIDER }) })
+      .toProvider(() => {
+        throw getError({ message: 'no messages' });
+      });
 
     const message = failureOf(() => ApplicationProviders.assertConfigured({ container }));
 

@@ -64,7 +64,7 @@ export class AuditReportService {
 | Export | Kind | Purpose |
 |---|---|---|
 | `DefaultNetworkRequestService` | class | Core HTTP request service handling headers, bodies, response parsing, and 401 recovery |
-| `NodeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
+| `NativeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
 | `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
 | `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
@@ -83,7 +83,7 @@ export class AuditReportService {
 | `IGetRequestPropsParams` | interface | Input parameters passed to `getRequestProps` |
 | `IGetRequestPropsResult` | interface | Normalized headers and body returned by `getRequestProps` |
 
-`NodeFetchNetworkRequest` comes from `@venizia/ignis-helpers/core`.
+`NativeFetchNetworkRequest` comes from `@venizia/ignis-helpers/core`.
 
 ## How to provide it
 
@@ -119,7 +119,7 @@ The configuration relies on the following defaults and container keys:
 | `requestTracingChannel` | `string` | `RequestChannel.WEB` (`'100_WEB'`) | Channel sent in the `x-request-channel` header. |
 | `timeout` | `TRequestTimeoutOptions` | `{ use: false }` | Aborts each request after `milliseconds`; see [Abort and timeout](#abort-and-timeout). |
 
-- **`name`:** Used for logger tagging and the underlying `NodeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
+- **`name`:** Used for logger tagging and the underlying `NativeFetchNetworkRequest` transport instance. In `DefaultRestDataProvider`, this defaults to `'default-application-network-service'`.
 - **`baseUrl` / `url`:** Trailing slashes are automatically stripped. In `IRestDataProviderOptions`, this is specified as `url`.
 - **`headers`:** Keys are converted to lowercase and merged with runtime headers.
 - **`noAuthPaths`:** Entries are compared as written, matching the leading slash of paths like `'/auth/sign-in'`.
@@ -131,7 +131,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Fetch transport
 
-ARDOR uses standard platform `fetch` through the IGNIS `NodeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out.
+ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `ResponseReader.toError`, and a call that carries headers sends those alone.
 
 - `getNetworkService()` returns the fetcher, whose `send` resolves a `Response`.
 - `getWorker()` returns the global `fetch` function.

@@ -1,48 +1,9 @@
 import React from 'react';
 
-import { type Container, getError, type TClass } from '@venizia/ignis-inversion';
+import { type Container, getError, type TBindingKey, type TClass } from '@venizia/ignis-inversion';
 
-import type { CoreBindings, ValueOf } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '../contexts/application';
 import { resolveInjectable } from './resolve-injectable';
-
-/** Declaration-merge string keys into this interface to make them valid `key` values of the injectable hooks. */
-export interface IUseInjectableKeysOverrides {}
-
-/**
- * The instance type of a binding key, so `useInjectable({ key })` and `useProvider({ key })` return it
- * with no generic. `@venizia/ardor-admin` merges the provider keys of `CoreBindings` into it, and
- * `@venizia/ardor` re-exports that package, so an application needs no augmentation of its own for
- * those. An application merges its own keys in with `declare module '@venizia/ardor'`; a key listed
- * here is a valid `key` and answers the type written against it.
- *
- * @example
- * ```ts
- * import { useInjectable } from '@venizia/ardor';
- *
- * class ClockKeys {
- *   static readonly NOW = '@app/clock/now';
- * }
- *
- * declare module '@venizia/ardor' {
- *   interface IUseInjectableKeyTypes {
- *     [ClockKeys.NOW]: () => number;
- *   }
- * }
- *
- * export const useNow = () => useInjectable({ key: ClockKeys.NOW });
- * ```
- */
-export interface IUseInjectableKeyTypes {}
-
-/** The binding keys the kernel defines (the string values of `CoreBindings`). */
-export type TUseInjectableKeysDefault = Extract<ValueOf<typeof CoreBindings>, string>;
-
-/** A key the injectable hooks accept: a kernel binding key, one added to `IUseInjectableKeysOverrides` or one in `IUseInjectableKeyTypes`. */
-export type TUseInjectableKeys =
-  | TUseInjectableKeysDefault
-  | keyof IUseInjectableKeysOverrides
-  | keyof IUseInjectableKeyTypes;
 
 /** By class: the return type is inferred from the target. */
 export interface IUseInjectableByTarget<TInstance> {
@@ -53,12 +14,12 @@ export interface IUseInjectableByTarget<TInstance> {
   key?: never;
 }
 
-/** By key: the type comes from `IUseInjectableKeyTypes` when the key is listed there, else from the caller. */
-export interface IUseInjectableByKey<TKey extends TUseInjectableKeys = TUseInjectableKeys> {
+/** By key: the instance type is the one the key carries (`BindingKeys.build<T>`). */
+export interface IUseInjectableByKey<TValue = unknown> {
   /** The container to resolve from. @default The application's container (`ApplicationContext`) */
   container?: Container;
   /** The binding key to resolve. */
-  key: TKey;
+  key: TBindingKey<TValue>;
   target?: never;
 }
 
@@ -76,9 +37,7 @@ export interface IUseInjectableByKey<TKey extends TUseInjectableKeys = TUseInjec
  * const byKey: TUseInjectableOptions = { key: CoreBindings.DEFAULT_REST_DATA_PROVIDER };
  * ```
  */
-export type TUseInjectableOptions =
-  | IUseInjectableByKey<TUseInjectableKeys>
-  | IUseInjectableByTarget<unknown>;
+export type TUseInjectableOptions = IUseInjectableByKey | IUseInjectableByTarget<unknown>;
 
 /**
  * The container an injectable hook resolves from: the one passed in, else the application's. Shared,
@@ -116,10 +75,8 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
  *
  * - `{ target }` returns the instance type of the class. Leave the generic out: one you pass with it
  *   is your claim, and nothing checks it.
- * - `{ key }` of a key in `IUseInjectableKeyTypes` (the providers of `CoreBindings`, and the keys an
- *   application adds) returns the type listed there.
- * - Any other `{ key }` returns the type you pass as the generic. That type is your claim: nothing
- *   checks it against what the binding holds.
+ * - `{ key }` returns the type the key carries: a key made by `BindingKeys.build<T>` answers `T`, with no
+ *   generic. A generic you pass with it must fit that type.
  *
  * @example
  * ```tsx
@@ -137,11 +94,9 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
  * }
  * ```
  */
-export function useInjectable<TKey extends keyof IUseInjectableKeyTypes>(
-  opts: IUseInjectableByKey<TKey>,
-): IUseInjectableKeyTypes[TKey];
+export function useInjectable<TValue = unknown>(opts: IUseInjectableByKey<TValue>): TValue;
 export function useInjectable<TInstance = unknown>(
-  opts: IUseInjectableByTarget<TInstance> | IUseInjectableByKey,
+  opts: IUseInjectableByTarget<TInstance>,
 ): TInstance;
 // A generic written with a target that the class does not satisfy still compiles, as it always did.
 export function useInjectable<TInstance = unknown>(
