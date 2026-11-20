@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { isApplicationError } from '@venizia/ignis-inversion';
 import { RequestCountData, RequestTypes } from '@/common';
-import { ResponseReader } from '@/helpers';
+import { NetworkResponseReader } from '@/helpers';
 
 const json = (body: unknown, headers: Record<string, string> = {}, status = 200) => {
   return new Response(JSON.stringify(body), {
@@ -10,9 +10,9 @@ const json = (body: unknown, headers: Record<string, string> = {}, status = 200)
   });
 };
 
-describe('ResponseReader.read', () => {
+describe('NetworkResponseReader.read', () => {
   test('a 204 is an empty object', async () => {
-    const result = await ResponseReader.read({
+    const result = await NetworkResponseReader.read({
       response: new Response(null, { status: 204 }),
       type: RequestTypes.DELETE,
     });
@@ -21,7 +21,7 @@ describe('ResponseReader.read', () => {
   });
 
   test('a list body is rows, with the total of Content-Range', async () => {
-    const result = await ResponseReader.read({
+    const result = await NetworkResponseReader.read({
       response: json([{ id: 1 }, { id: 2 }], { 'content-range': 'items 0-1/10' }),
       type: RequestTypes.GET_LIST,
     });
@@ -30,7 +30,7 @@ describe('ResponseReader.read', () => {
   });
 
   test('a list body with the count in it keeps the count, and the extras beside it', async () => {
-    const result = await ResponseReader.read({
+    const result = await NetworkResponseReader.read({
       response: json(
         { data: [{ id: 1 }], count: 4, extra: { facets: { open: 3 } } },
         { 'x-response-extra': 'facets' },
@@ -49,7 +49,7 @@ describe('ResponseReader.read', () => {
 
   test('an attachment is a Blob with its file name and Content-Disposition', async () => {
     const contentDisposition = "attachment; filename*=UTF-8''a%20b.txt";
-    const result = await ResponseReader.read({
+    const result = await NetworkResponseReader.read({
       response: new Response('content', {
         headers: {
           'content-type': 'application/octet-stream',
@@ -66,7 +66,7 @@ describe('ResponseReader.read', () => {
 
   test('a quoted and a bare file name are read, and none is not an error', async () => {
     const read = (contentDisposition: string) => {
-      return ResponseReader.read({
+      return NetworkResponseReader.read({
         response: new Response('x', {
           headers: { 'content-type': 'text/plain', 'content-disposition': contentDisposition },
         }),
@@ -83,11 +83,11 @@ describe('ResponseReader.read', () => {
   });
 });
 
-describe('ResponseReader.readFilename', () => {
+describe('NetworkResponseReader.readFilename', () => {
   const read = (header?: string) => {
     const headers = new Headers(header === undefined ? {} : { 'content-disposition': header });
 
-    return ResponseReader.readFilename({ headers });
+    return NetworkResponseReader.readFilename({ headers });
   };
 
   test('filename* is UTF-8 decoded and wins over filename', () => {
@@ -115,18 +115,18 @@ describe('ResponseReader.readFilename', () => {
         'content-disposition': 'attachment; filename="q.csv"',
       },
     });
-    const result = await ResponseReader.read({ response, type: RequestTypes.SEND });
+    const result = await NetworkResponseReader.read({ response, type: RequestTypes.SEND });
 
-    expect(ResponseReader.readFilename({ headers: response.headers })).toBe(result.filename);
+    expect(NetworkResponseReader.readFilename({ headers: response.headers })).toBe(result.filename);
   });
 });
 
-describe('ResponseReader.convert', () => {
+describe('NetworkResponseReader.convert', () => {
   const headers = new Headers();
 
   test('a row that is not a list becomes a list of one, with its own count as the total', () => {
     expect(
-      ResponseReader.convert<unknown>({
+      NetworkResponseReader.convert<unknown>({
         response: { data: { id: 1 }, headers },
         type: RequestTypes.GET_LIST,
       }),
@@ -136,7 +136,7 @@ describe('ResponseReader.convert', () => {
   test('a body that carries no count is refused when one is required', () => {
     for (const data of [null, 'text', [1]]) {
       expect(() =>
-        ResponseReader.convert({
+        NetworkResponseReader.convert({
           response: { data, headers },
           type: RequestTypes.GET_LIST,
           requestCountData: RequestCountData.DATA_WITH_COUNT,
@@ -147,7 +147,7 @@ describe('ResponseReader.convert', () => {
 
   test('another request type reads the count header, and a missing or bad one is no count', () => {
     const read = (count?: string) => {
-      return ResponseReader.convert({
+      return NetworkResponseReader.convert({
         response: {
           data: { ok: true },
           headers: new Headers(count ? { 'x-response-count': count } : {}),
@@ -162,9 +162,9 @@ describe('ResponseReader.convert', () => {
   });
 });
 
-describe('ResponseReader.toError', () => {
+describe('NetworkResponseReader.toError', () => {
   test('is an ApplicationError with the status, the server text and the request id', async () => {
-    const error = await ResponseReader.toError({
+    const error = await NetworkResponseReader.toError({
       response: json(
         {
           error: {
@@ -189,12 +189,14 @@ describe('ResponseReader.toError', () => {
   });
 
   test('a body that says nothing falls back to the HTTP status', async () => {
-    const error = await ResponseReader.toError({ response: new Response('', { status: 503 }) });
+    const error = await NetworkResponseReader.toError({
+      response: new Response('', { status: 503 }),
+    });
 
     expect(error.message).toBe('HTTP 503');
   });
 
   test('names the root key the data source auth shares', () => {
-    expect(ResponseReader.ERROR_ROOT_KEY).toBe('error');
+    expect(NetworkResponseReader.ERROR_ROOT_KEY).toBe('error');
   });
 });

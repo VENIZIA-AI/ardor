@@ -32,7 +32,7 @@ import {
   type IEncodedBody,
   NetworkHeaders,
   RequestBodyEncoder,
-  ResponseReader,
+  NetworkResponseReader,
 } from '@/helpers';
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
@@ -570,7 +570,7 @@ export class DefaultNetworkRequestService extends BaseService {
             : isRefreshed;
         });
       },
-      errorRootKey: ResponseReader.ERROR_ROOT_KEY,
+      errorRootKey: NetworkResponseReader.ERROR_ROOT_KEY,
     };
   }
 
@@ -705,9 +705,11 @@ export class DefaultNetworkRequestService extends BaseService {
     return props;
   }
 
-  /** Reads a response by the request type. See `ResponseReader.convert`. */
-  convertResponse<TData = unknown>(opts: Parameters<typeof ResponseReader.convert<TData>>[0]) {
-    return ResponseReader.convert<TData>(opts);
+  /** Reads a response by the request type. See `NetworkResponseReader.convert`. */
+  convertResponse<TData = unknown>(
+    opts: Parameters<typeof NetworkResponseReader.convert<TData>>[0],
+  ) {
+    return NetworkResponseReader.convert<TData>(opts);
   }
 
   /**
@@ -860,11 +862,11 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     if (status < 200 || status >= 300) {
-      const result2 = await ResponseReader.toError({ response: fetched });
+      const result2 = await NetworkResponseReader.toError({ response: fetched });
       throw result2;
     }
 
-    const response = await ResponseReader.read<TResult>({
+    const response = await NetworkResponseReader.read<TResult>({
       response: fetched,
       type,
       requestCountData,
