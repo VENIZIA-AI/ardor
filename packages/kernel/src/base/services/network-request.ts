@@ -146,11 +146,14 @@ export class DefaultNetworkRequestService extends BaseService {
    */
   private toSendHeaders(opts: {
     headers?: HeadersInit;
+    /** What the retry of a 401 adds or replaces: the fresh token. It does not change which `content-type` rule applies. */
+    extra?: Record<string, string | null>;
     body?: unknown;
   }): Record<string, string | null> | undefined {
-    const sent: Record<string, string | null> = Object.fromEntries(
-      new Headers(opts.headers ?? this.headers),
-    );
+    const sent: Record<string, string | null> = {
+      ...Object.fromEntries(new Headers(opts.headers ?? this.headers)),
+      ...opts.extra,
+    };
 
     if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
       sent[HeaderConstants.CONTENT_TYPE] = null;
@@ -807,7 +810,7 @@ export class DefaultNetworkRequestService extends BaseService {
   ): Promise<INetworkResponse<TResult>> {
     const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
 
-    const sendOnce = (sendHeaders?: HeadersInit) => {
+    const sendOnce = (retryHeaders?: Record<string, string | null>) => {
       return this.networkRequest.getNetworkService().send(
         {
           url,
@@ -815,7 +818,8 @@ export class DefaultNetworkRequestService extends BaseService {
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
           headers: this.toSendHeaders({
-            headers: sendHeaders,
+            headers,
+            extra: retryHeaders,
             body: method === RequestMethods.GET ? undefined : body,
           }),
           signal,
@@ -827,7 +831,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     const sent = this.readSession();
     let isRetried = false;
-    let fetched = await sendOnce(headers);
+    let fetched = await sendOnce();
 
     if (fetched.status === 401 && this.recovery.canRecover({ paths })) {
       // A 401 that arrives after the session changed is not the new session's to refresh or to end.
@@ -857,16 +861,19 @@ export class DefaultNetworkRequestService extends BaseService {
       signal?.throwIfAborted();
 
       if (isRefreshed) {
+        if (method !== RequestMethods.GET && body instanceof ReadableStream) {
+          throw getError({
+            message:
+              '[doRequest] The session was refreshed, but a ReadableStream body cannot be sent a second time | Send the request again from your code, or send a body that can be read again (FormData, Blob, a string)',
+          });
+        }
+
         const authHeader = this.getRequestAuthorizationHeader();
-        const retryHeaders = NetworkHeaders.merge({
-          sources: [
-            headers,
-            { [HeaderConstants.AUTHORIZATION]: authHeader.token },
-            authHeader.provider
-              ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider }
-              : undefined,
-          ],
-        });
+        // The token's provider wins, and a token with none removes the one the call carried.
+        const retryHeaders = {
+          [HeaderConstants.AUTHORIZATION]: authHeader.token,
+          [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider ?? null,
+        };
 
         const result = await sendOnce(retryHeaders);
         fetched = result;
