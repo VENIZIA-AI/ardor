@@ -13,6 +13,7 @@ interface IRecorded {
   authorization: string | null;
   provider: string | null;
   body: string;
+  headers: Record<string, string>;
 }
 
 const REFRESH_PATH = '/auth/refresh';
@@ -37,6 +38,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
           authorization: req.headers.get('authorization'),
           provider: req.headers.get('x-auth-provider'),
           body,
+          headers: Object.fromEntries(req.headers),
         });
 
         if (url.pathname === REFRESH_PATH) {
@@ -439,5 +441,79 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(heard).toEqual([false]);
     // The request that failed is not retried.
     expect(recorded.filter((entry) => entry.pathname === '/items')).toHaveLength(1);
+  });
+
+  describe('the retry of a call with no headers', () => {
+    const itemsRequests = () => recorded.filter((entry) => entry.pathname === '/items');
+
+    test('a JSON body keeps its content type and the service headers on the retry', async () => {
+      const service = new DefaultNetworkRequestService({
+        name: 'retry-headers',
+        baseUrl,
+        headers: { 'X-Static': 'static-1' },
+        authRecovery: { refreshTokenPath: REFRESH_PATH },
+        authService,
+      });
+      service.setHeaders({ headers: { 'x-tenant': 't-1' } });
+
+      await service.doRequest({
+        paths: ['items'],
+        method: RequestMethods.POST,
+        type: RequestTypes.CREATE,
+        body: JSON.stringify({ title: 'a' }),
+      });
+
+      const [first, retry] = itemsRequests();
+      expect(itemsRequests()).toHaveLength(2);
+      expect(retry!.authorization).toBe('Bearer fresh');
+      expect(retry!.headers['content-type']).toBe(first!.headers['content-type']);
+      expect(retry!.headers['content-type']).toContain('application/json');
+      expect(retry!.headers['x-static']).toBe('static-1');
+      expect(retry!.headers['x-tenant']).toBe('t-1');
+      expect(retry!.body).toBe('{"title":"a"}');
+    });
+
+    test('a FormData body is sent again with a multipart boundary', async () => {
+      const service = createService();
+      const body = new FormData();
+      body.append('name', 'a');
+
+      await service.doRequest({
+        paths: ['items'],
+        method: RequestMethods.POST,
+        type: RequestTypes.CREATE,
+        body,
+      });
+
+      const [, retry] = itemsRequests();
+      expect(itemsRequests()).toHaveLength(2);
+      expect(retry!.headers['content-type']).toMatch(/^multipart\/form-data; boundary=/);
+      expect(retry!.body).toContain('name="name"');
+    });
+
+    test('a ReadableStream body is refused with a clear error, not sent empty', async () => {
+      const service = createService();
+      const body = new ReadableStream({
+        start: (controller) => {
+          controller.enqueue(new TextEncoder().encode('payload'));
+          controller.close();
+        },
+      });
+
+      const error = await RejectionHelper.rejectionOf({
+        task: service.doRequest({
+          paths: ['items'],
+          method: RequestMethods.POST,
+          type: RequestTypes.CREATE,
+          body,
+        }),
+      });
+
+      expect(error instanceof Error ? error.message : '').toContain(
+        'a ReadableStream body cannot be sent a second time',
+      );
+      expect(itemsRequests()).toHaveLength(1);
+      expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
+    });
   });
 });
