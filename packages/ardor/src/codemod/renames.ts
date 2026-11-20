@@ -56,6 +56,7 @@ export class HookRenames {
     'useApplicationLogger',
     'useAutosave',
     'useBeforeUnload',
+    'useBreakpoint',
     'useComponent',
     'useConfiguration',
     'useConfirm',
