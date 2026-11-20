@@ -141,22 +141,43 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /**
    * The headers of one call: its own alone, or the ones `setHeaders` holds now. The transport keeps no
-   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`).
+   * default of ours, so a removed header is gone; a call that names no `content-type` sends none (`null`)
+   * when its body is one `fetch` types itself (`FormData`, `Blob`, bytes, a stream), so a multipart boundary is written.
    */
   private toSendHeaders(opts: {
     headers?: HeadersInit;
+    body?: unknown;
   }): Record<string, string | null> | undefined {
-    if (!opts.headers) {
-      return Object.fromEntries(new Headers(this.headers));
+    const sent: Record<string, string | null> = Object.fromEntries(
+      new Headers(opts.headers ?? this.headers),
+    );
+
+    if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
+      sent[HeaderConstants.CONTENT_TYPE] = null;
     }
 
-    const sent: Record<string, string | null> = Object.fromEntries(new Headers(opts.headers));
-
-    if (!(HeaderConstants.CONTENT_TYPE in sent)) {
+    if (
+      DefaultNetworkRequestService.isRawBody({ body: opts.body }) &&
+      !sent[HeaderConstants.CONTENT_TYPE]
+    ) {
       sent[HeaderConstants.CONTENT_TYPE] = null;
     }
 
     return sent;
+  }
+
+  /** A body the platform `fetch` gives a content type of its own, or none: it is sent as it is. */
+  private static isRawBody(opts: { body: unknown }): boolean {
+    const { body } = opts;
+
+    return (
+      body instanceof FormData ||
+      body instanceof Blob ||
+      body instanceof URLSearchParams ||
+      body instanceof ArrayBuffer ||
+      ArrayBuffer.isView(body) ||
+      body instanceof ReadableStream
+    );
   }
 
   /**
@@ -793,7 +814,10 @@ export class DefaultNetworkRequestService extends BaseService {
           method,
           params: query,
           body: method === RequestMethods.GET ? undefined : body,
-          headers: this.toSendHeaders({ headers: sendHeaders }),
+          headers: this.toSendHeaders({
+            headers: sendHeaders,
+            body: method === RequestMethods.GET ? undefined : body,
+          }),
           signal,
           acceptStatus: () => true,
         },

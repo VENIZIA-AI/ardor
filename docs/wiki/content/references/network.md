@@ -131,7 +131,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Fetch transport
 
-ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `ResponseReader.toError`, and a call that carries headers sends those alone.
+ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `NetworkResponseReader.toError`, and a call that carries headers sends those alone.
 
 - `getNetworkService()` returns the fetcher, whose `send` resolves a `Response`.
 - `getWorker()` returns the global `fetch` function.
@@ -223,10 +223,10 @@ export function configureHeaders(): Record<string, string> {
 
 `RequestBodyEncoder.encode({ bodyType, body })` builds the body the service sends, and its overloads type the result: a `FormData` for `form-data`, a `URLSearchParams` for `x-www-form-urlencoded`, and the body you passed for `json`, `none`, `binary` or no type. A `bodyType` that is only a `string` gives `body: unknown`. The result of the first two goes to any API that takes `string | object` without a cast.
 
-`ResponseReader.readFilename({ headers })` returns the file name a `Content-Disposition` header names: `filename*=` (UTF-8, decoded) first, then `filename=`, or `undefined`. `ResponseReader.read` returns the same name as `filename`.
+`NetworkResponseReader.readFilename({ headers })` returns the file name a `Content-Disposition` header names: `filename*=` (UTF-8, decoded) first, then `filename=`, or `undefined`. `NetworkResponseReader.read` returns the same name as `filename`.
 
 ```ts
-import { RequestBodyEncoder, RequestBodyTypes, ResponseReader } from '@venizia/ardor';
+import { RequestBodyEncoder, RequestBodyTypes, NetworkResponseReader } from '@venizia/ardor';
 
 export const toUpload = (data: Record<string, unknown>): FormData => {
   const { body } = RequestBodyEncoder.encode({ bodyType: RequestBodyTypes.FORM_DATA, body: data });
@@ -235,13 +235,13 @@ export const toUpload = (data: Record<string, unknown>): FormData => {
 };
 
 export const fileNameOf = (response: Response): string | undefined => {
-  return ResponseReader.readFilename({ headers: response.headers });
+  return NetworkResponseReader.readFilename({ headers: response.headers });
 };
 ```
 
 ## Error handling and 401 recovery
 
-When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `ResponseReader.toError` in `packages/kernel/src/helpers/networks/response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
+When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `NetworkResponseReader.toError` in `packages/kernel/src/helpers/networks/network-response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
 - `error.statusCode`: The HTTP status code of the response.
 - `error.message`: Server normalized text, server message, or `'HTTP ' + response.status`.
 - `error.normalized`: Server normalized details containing `text`, `code` (`error.normalized.code`, defaulting to `'core.system_error'`), and interpolation arguments `args` (`error.normalized.args`).

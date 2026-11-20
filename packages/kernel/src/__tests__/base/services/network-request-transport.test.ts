@@ -331,6 +331,23 @@ describe('what a request carries, through doRequest', () => {
     expect(decode(recorded[0]!.bytes)).toContain('name="file"; filename="a.txt"');
   });
 
+  test('a FormData body sent with no headers at all still gets the multipart boundary', async () => {
+    const service = createService();
+    const body = new FormData();
+    body.append('name', 'a');
+    body.append('file', new File(['content'], 'a.txt'));
+
+    await service.doRequest({
+      type: RequestTypes.CREATE,
+      method: 'POST',
+      paths: ['upload'],
+      body,
+    });
+
+    expect(recorded[0]!.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+    expect(decode(recorded[0]!.bytes)).toContain('name="file"; filename="a.txt"');
+  });
+
   test('a JSON body is sent as JSON, and a GET sends no body', async () => {
     const service = createService();
 
