@@ -227,7 +227,7 @@ Do not verify by reading the hover tooltip in the editor. Editors can resolve a 
 - **Augmentation file outside `tsconfig` `include`.** The editor may see it while the build does not. The `@ts-expect-error` check catches this.
 - **Message object typed too loosely.** `TFullPaths<Record<string, unknown>>` does not give you literal paths. Keep `messages` as a literal object.
 - **A key for a class.** A class resolves by `{ target }`: the hook reads the key recorded on the class and returns the type of the class.
-- **A generic on a typed key.** `useInjectable<Other>({ key })` compiles when `Other` is a subtype or a supertype of the key's type, and then returns `Other`. Leave the generic out.
+- **A generic on a typed key.** `useInjectable<Other>({ key })` compiles only when `Other` is the type of the key. Leave the generic out. Options that may be either shape (a `{ target }` or a `{ key }` in one variable) return `unknown`, and a generic on them does not compile: narrow the value after the call.
 - **A key built at run time.** A plain `string` is not a `TUseTranslateKeys`; type the value as `TUseTranslateKeys` where it is made (a label map), or narrow it before the call.
 
 ## Related

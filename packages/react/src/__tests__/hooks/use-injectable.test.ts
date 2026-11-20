@@ -6,7 +6,12 @@ import { renderHook } from '@testing-library/react';
 import { BindingKeys, BindingScopes, Container } from '@venizia/ignis-inversion';
 import { CoreBindings, service } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@/contexts/application';
-import { useApplicationContainer, useInjectable } from '@/hooks/use-injectable';
+import {
+  type IUseInjectableByKey,
+  type IUseInjectableByTarget,
+  useApplicationContainer,
+  useInjectable,
+} from '@/hooks/use-injectable';
 
 interface ITestApp {
   readonly id: string;
@@ -106,14 +111,14 @@ describe('useInjectable with key option', () => {
 
     const { result } = renderHook(
       () => {
-        return useInjectable<ITestApp>({ key: CoreBindings.APPLICATION_INSTANCE });
+        return useInjectable({ key: CoreBindings.APPLICATION_INSTANCE });
       },
       {
         wrapper: createWrapper({ container }),
       },
     );
 
-    expect(result.current).toBe(appInstance);
+    expect<unknown>(result.current).toBe(appInstance);
   });
 
   test('resolves from explicit container when both container and key are provided despite different context binding', () => {
@@ -136,7 +141,7 @@ describe('useInjectable with key option', () => {
 
     const { result } = renderHook(
       () => {
-        return useInjectable<ITestApp>({
+        return useInjectable({
           container: explicitContainer,
           key: CoreBindings.APPLICATION_INSTANCE,
         });
@@ -146,8 +151,8 @@ describe('useInjectable with key option', () => {
       },
     );
 
-    expect(result.current).toBe(explicitApp);
-    expect(result.current).not.toBe(contextApp);
+    expect<unknown>(result.current).toBe(explicitApp);
+    expect<unknown>(result.current).not.toBe(contextApp);
   });
 
   // A minified build binds `services.Zv` where the code asks for `services.PricingService`; the
@@ -280,29 +285,26 @@ describe('useInjectable infers the instance type of a target', () => {
   });
 });
 
-describe('useInjectable keeps accepting a generic that goes with a target', () => {
-  test("a type the class satisfies and one it does not both compile: the generic is the caller's claim", () => {
+describe('useInjectable with options of either shape', () => {
+  test('answers unknown, and a generic is refused: nobody can claim a type for it', () => {
     const container = new Container({ scope: 'test' });
     container
       .bind({ key: BindingKeys.build<unknown>({ key: 'services.PricingService' }) })
       .toClass(PricingService);
+    const opts: IUseInjectableByTarget<unknown> | IUseInjectableByKey = { target: PricingService };
 
     const { result } = renderHook(
       () => {
-        const asInterface: { label: string } = useInjectable<{ label: string }>({
-          target: PricingService,
-        });
-        const claimed: { unitPrice: number } = useInjectable<{ unitPrice: number }>({
-          target: PricingService,
-        });
+        const value: unknown = useInjectable(opts);
+        // @ts-expect-error - a generic on options of either shape is a claim nothing checks
+        useInjectable<{ unitPrice: number }>(opts);
 
-        return { asInterface, claimed };
+        return value;
       },
       { wrapper: createWrapper({ container }) },
     );
 
-    expect(result.current.asInterface.label).toBe('PricingService');
-    expect(result.current.claimed).toBeInstanceOf(PricingService);
+    expect(result.current).toBeInstanceOf(PricingService);
   });
 });
 
@@ -435,17 +437,17 @@ describe('useInjectable and the scope of the binding', () => {
     const initialProps: { key: TKeys } = { key: CoreBindings.APPLICATION_INSTANCE };
 
     const { result, rerender } = renderHook(
-      (props: { key: TKeys }) => useInjectable<ITestApp>({ key: props.key }),
+      (props: { key: TKeys }) => useInjectable({ key: props.key }),
       {
         initialProps,
         wrapper: createWrapper({ container }),
       },
     );
 
-    expect(result.current.id).toBe('application');
+    expect(result.current).toEqual({ id: 'application' });
 
     rerender({ key: CoreBindings.APPLICATION_INFO });
 
-    expect(result.current.id).toBe('info');
+    expect(result.current).toEqual({ id: 'info' });
   });
 });
