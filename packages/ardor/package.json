@@ -107,7 +107,7 @@
     "@venizia/ignis-boot": "^0.5.0-2",
     "@venizia/ignis-connectors": "^0.5.0-4",
     "@venizia/ignis-filter": "^0.5.0-1",
-    "@venizia/ignis-helpers": "^0.5.0-2",
+    "@venizia/ignis-helpers": "^0.5.0-3",
     "@venizia/ignis-inversion": "^0.5.0-1",
     "@venizia/ignis-kernel": "^0.5.0-3",
     "ra-core": ">=5.15.5",
