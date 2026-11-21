@@ -1,7 +1,8 @@
+import { ArtifactGroup } from '@venizia/ignis-kernel/metadata';
 import { BindingKeys } from '@venizia/ignis-inversion';
 import 'reflect-metadata';
 
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 import { TestArdorApplication } from './test-application';
 import { component, configuration, service } from '@/base/metadata';
@@ -118,18 +119,44 @@ describe('AbstractArdorApplication.artifacts', () => {
     });
 
     // `ArtifactGroup.define()` and `application()` build this shape: no content, no own resolve. It
-    // resolves only through a resolver IGNIS's realm holds, which ARDOR cannot call, so binding none
-    // of its classes silently would hide a missing plugin.
-    test('throws, naming the plugin, when the group has neither content nor resolve', async () => {
-      const application = createApplication({
-        artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+    // resolves through the resolver `@venizia/ignis-boot/auto` installs.
+    describe('and no resolve of its own', () => {
+      afterEach(() => {
+        ArtifactGroup.setResolver({ resolve: undefined });
       });
 
-      const result = await RejectionUtility.rejectionOf({ task: application.start() });
-      expect(result).toMatchObject({
-        message: expect.stringMatching(
-          /\[artifacts\] A group has neither content nor resolve.*IgnisArtifactsPlugin/,
-        ),
+      test('resolves through the resolver installed in the realm', async () => {
+        ArtifactGroup.setResolver({
+          resolve: async () => {
+            @service()
+            class RealmService {}
+
+            return { services: [RealmService] };
+          },
+        });
+        const application = createApplication({
+          artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+        });
+        await application.start();
+
+        expect(
+          application.get<object>({
+            key: BindingKeys.build<object>({ key: 'services.RealmService' }),
+          }).constructor.name,
+        ).toBe('RealmService');
+      });
+
+      test('throws the IGNIS error naming @venizia/ignis-boot/auto when no resolver is installed', async () => {
+        const application = createApplication({
+          artifacts: [new FakeArtifactGroup(undefined) as IArtifactIndex],
+        });
+
+        const result = await RejectionUtility.rejectionOf({ task: application.start() });
+        expect(result).toMatchObject({
+          message: expect.stringMatching(
+            /\[ArtifactGroup\] '<application>' has no content.*Import @venizia\/ignis-boot\/auto/,
+          ),
+        });
       });
     });
 

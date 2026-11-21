@@ -1,5 +1,6 @@
 import {
   ArtifactBindingKeys,
+  ArtifactGroup,
   ArtifactNamespaces,
   BindingNamespaces,
   MetadataRegistry,
@@ -289,36 +290,20 @@ export abstract class AbstractArdorApplication extends Container {
   }
 
   /**
-   * `artifacts()` with each group without `content` replaced by the index its `resolve()` returns.
-   * Resolving imports the modules, which decorates their classes: it must finish before
-   * `registerArtifacts()` reads the discovery list.
+   * `artifacts()` with each group replaced by its index. Resolving imports the modules, which
+   * decorates their classes: it must finish before `registerArtifacts()` reads the discovery list.
    */
   private async resolveArtifactIndexes(): Promise<Array<IArtifactIndex>> {
     const resolved: Array<IArtifactIndex> = [];
 
     for (const entry of this.artifacts()) {
-      const group = entry as {
-        isArtifactGroup?: boolean;
-        content?: IArtifactIndex;
-        resolve?: () => Promise<IArtifactIndex>;
-      };
-
-      if (group.isArtifactGroup !== true || group.content !== undefined) {
+      if (!ArtifactGroup.isGroup(entry)) {
         resolved.push(entry);
         continue;
       }
 
-      // Such a group (`ArtifactGroup.define()`, `application()`) resolves only through a resolver in
-      // IGNIS's realm, which this package cannot reach; skipping it would bind none of its classes.
-      if (typeof group.resolve !== 'function') {
-        throw getError({
-          message:
-            '[artifacts] A group has neither content nor resolve | Return AutoArtifacts from @venizia/ignis-boot/auto, or build with IgnisArtifactsPlugin so the group arrives with its content',
-        });
-      }
-
-      const result = await group.resolve();
-      resolved.push(result);
+      const index = await ArtifactGroup.resolveContent({ group: entry });
+      resolved.push(index);
     }
 
     return resolved;
