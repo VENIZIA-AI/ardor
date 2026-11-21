@@ -1,4 +1,4 @@
-import { HTTP } from '@venizia/ignis-helpers/common';
+import { ContentDispositionTypes, HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 
@@ -24,9 +24,6 @@ export class NetworkResponseReader {
   private static readonly TEXTUAL_RE =
     /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;
 
-  /** A `content-disposition` that marks a file download. */
-  private static readonly ATTACHMENT_RE = /^attachment/i;
-
   /** A response as `INetworkResponse`: JSON read by the request type, a file as a `Blob`. */
   static async read<TResult = unknown>(opts: {
     response: Response;
@@ -42,12 +39,14 @@ export class NetworkResponseReader {
     const contentType = (response.headers?.get(HTTP.Headers.CONTENT_TYPE) ?? '').toLowerCase();
     const contentDisposition = response.headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
 
-    const isAttachment = NetworkResponseReader.ATTACHMENT_RE.test(contentDisposition);
+    const { type: dispositionType } = HttpResponseReader.parseContentDisposition({
+      header: contentDisposition,
+    });
+    const isAttachment = dispositionType?.toLowerCase() === ContentDispositionTypes.ATTACHMENT;
     const isTextual = contentType !== '' && NetworkResponseReader.TEXTUAL_RE.test(contentType);
 
     if (isAttachment || !isTextual) {
-      const blob = await response.blob();
-      const filename = NetworkResponseReader.parseFilename({ header: contentDisposition });
+      const { blob, filename } = await HttpResponseReader.readFile({ response });
 
       return {
         data: blob as TResult,
@@ -194,41 +193,8 @@ export class NetworkResponseReader {
    * as `filename`.
    */
   static readFilename(opts: { headers?: Pick<Headers, 'get'> }): string | undefined {
-    const header = opts.headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
-
-    return NetworkResponseReader.parseFilename({ header });
-  }
-
-  /** The file name a `Content-Disposition` header names, `filename*` before `filename`. */
-  private static parseFilename(opts: { header: string }): string | undefined {
-    const { header } = opts;
-
-    if (!header) {
-      return undefined;
-    }
-
-    const encodedMatch = header.match(/filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i);
-
-    if (encodedMatch) {
-      try {
-        return decodeURIComponent(encodedMatch[2].trim());
-      } catch {
-        return encodedMatch[2].trim();
-      }
-    }
-
-    const quotedMatch = header.match(/filename\s*=\s*"([^"]+)"/i);
-
-    if (quotedMatch) {
-      return quotedMatch[1];
-    }
-
-    const bareMatch = header.match(/filename\s*=\s*([^;]+)/i);
-
-    if (bareMatch) {
-      return bareMatch[1].trim();
-    }
-
-    return undefined;
+    return HttpResponseReader.parseContentDisposition({
+      header: opts.headers?.get(HTTP.Headers.CONTENT_DISPOSITION),
+    }).filename;
   }
 }

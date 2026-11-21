@@ -102,10 +102,17 @@ describe('NetworkResponseReader.readFilename', () => {
     expect(read('attachment; filename=bare.csv')).toBe('bare.csv');
   });
 
-  test('no header, no name, or a bad escape gives undefined or the raw text, never a throw', () => {
+  test('no header, no name, or a bad escape gives undefined, never a throw', () => {
     expect(read()).toBeUndefined();
     expect(read('attachment')).toBeUndefined();
-    expect(read("attachment; filename*=UTF-8''100%.txt")).toBe('100%.txt');
+    // IGNIS drops a filename* it cannot decode: ARDOR used to answer the raw text ('100%.txt').
+    expect(read("attachment; filename*=UTF-8''100%.txt")).toBeUndefined();
+  });
+
+  test('a bad escape in filename* falls back to the plain filename', () => {
+    expect(read('attachment; filename="fallback.txt"; filename*=UTF-8\'\'100%.txt')).toBe(
+      'fallback.txt',
+    );
   });
 
   test('it names the same file as read does', async () => {
