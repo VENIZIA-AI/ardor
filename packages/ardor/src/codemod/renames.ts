@@ -138,7 +138,8 @@ export class RemovedNames {
   static readonly MEMBERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
     ValueUtility: {
-      isObject: 'nothing in ARDOR used it; write typeof value === "object" && value !== null && !Array.isArray(value)',
+      isObject:
+        'nothing in ARDOR used it; write typeof value === "object" && value !== null && !Array.isArray(value)',
       isValidDate: 'nothing in ARDOR used it; write !Number.isNaN(new Date(value).valueOf())',
     },
     NetworkResponseReader: {
