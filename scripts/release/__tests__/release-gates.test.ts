@@ -522,7 +522,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
   test('the actions are pinned by commit with the tag IGNIS uses, and bun and Node are exact', () => {
     expect(workflow).toMatch(/actions\/checkout@[0-9a-f]{40} # v6\.0\.3/);
     expect(workflow).toMatch(/actions\/setup-node@[0-9a-f]{40} # v6\.4\.0/);
-    expect(workflow).toContain('bun-version: 1.4.4');
+    expect(workflow).toContain('bun-version: 1.4.5');
     expect(workflow).toContain('node-version: 24.22.1');
     expect(workflow).not.toContain('bun-version: latest');
     expect(workflow).toContain('FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true');
@@ -2597,7 +2597,7 @@ describe('package-release.yml publishes the atlas pair of each release tag, in a
     expect(checkout).toContain('ref: ${{ github.sha }}');
     expect(checkout).toContain('fetch-depth: 0');
     expect(checkout).toContain('persist-credentials: false');
-    expect(steps.some((step) => step.includes('bun-version: 1.4.4'))).toBe(true);
+    expect(steps.some((step) => step.includes('bun-version: 1.4.5'))).toBe(true);
     expect(
       steps.some((step) => step.startsWith('name: Install') && step.includes('run: bun install')),
     ).toBe(true);
