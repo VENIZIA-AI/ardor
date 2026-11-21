@@ -519,6 +519,12 @@ describe('NamespaceTransform: removed with no replacement', () => {
       ['ValueUtility.isObject', 3],
       ['ValueUtility.isValidDate', 4],
     ]);
+    expect(result.findings[2]?.reason).toBe(
+      'removed: write !Number.isNaN(new Date(value).valueOf())',
+    );
+    expect(result.findings.every((finding) => !finding.reason.includes('nothing in ARDOR'))).toBe(
+      true,
+    );
   });
 
   test('does not list a member of a class imported from elsewhere', () => {

@@ -120,14 +120,13 @@ export class RemovedNames {
       'use HTTP.Headers from @venizia/ignis-helpers/common: the names are the same except X_AUTH_PROVIDER (AUTH_PROVIDER) and X_LOCALE (LOCALE); the two regular expressions have no replacement',
     NetworkHeaders:
       'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
-    Authentication:
-      'nothing in ARDOR used it; write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
+    Authentication: 'write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
     AuthRecovery:
       'renamed: use AuthRecoveryHelper (it has no logger option: it logs under its own name)',
-    isObject: 'removed: write typeof value === "object" && value !== null && !Array.isArray(value)',
-    isValidDate: 'removed: write !Number.isNaN(new Date(value).valueOf())',
-    isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
-    TDataCount: 'nothing in ARDOR used it; declare the shape you need',
+    isObject: 'write typeof value === "object" && value !== null && !Array.isArray(value)',
+    isValidDate: 'write !Number.isNaN(new Date(value).valueOf())',
+    isEditableTarget: 'check the event target in your own code',
+    TDataCount: 'declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
     useInjectableContainer: 'renamed: call useApplicationContainer',
     useSizer:
@@ -136,11 +135,10 @@ export class RemovedNames {
 
   /** Class name to removed static member to the reason. */
   static readonly MEMBERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-    App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
+    App: { DEFAULT_LOCALE: 'the i18n provider defaults to "en"; set the locale you need yourself' },
     ValueUtility: {
-      isObject:
-        'nothing in ARDOR used it; write typeof value === "object" && value !== null && !Array.isArray(value)',
-      isValidDate: 'nothing in ARDOR used it; write !Number.isNaN(new Date(value).valueOf())',
+      isObject: 'write typeof value === "object" && value !== null && !Array.isArray(value)',
+      isValidDate: 'write !Number.isNaN(new Date(value).valueOf())',
     },
     NetworkResponseReader: {
       toError:
