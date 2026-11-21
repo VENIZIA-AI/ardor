@@ -353,7 +353,9 @@ auth-provider-toggle:
   upgrade:
     steps:
       - 'Run `bun run ardor codemod auth-options --write` to add `use: true` to each options object literal.'
-      - 'Fix by hand the options the codemod lists: add `use: true`, or `{ use: false }` for a guest app.'
+      - 'Fix by hand the options the codemod lists, where it leaves them (not a plain object literal): put `use: true` first where the options are built. A variable `const options = { paths }` becomes `const options = { use: true, paths }`. A spread `toValue({ ...base })` becomes `toValue({ use: true, ...base })`. A call `toValue(makeOptions())` becomes `toValue({ use: true, ...makeOptions() })`, or add `use: true` inside `makeOptions`. A test that binds options from a shared fixture does the same in the fixture.'
+      - 'A guest app, or a test that wants no sign-in, binds `{ use: false }` and needs nothing else.'
+      - 'A return type, `as` or `satisfies` that names `IAuthProviderOptions` is listed too: name `TAuthProviderOptions` instead, because `IAuthProviderOptions` has no `use`.'
       - 'Type options returns as `TAuthProviderOptions`, and a `DefaultAuthProvider` subclass constructor parameter too.'
       - 'If you bind your own auth provider under `DEFAULT_AUTH_PROVIDER`, also bind `AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`.'
     before: |-

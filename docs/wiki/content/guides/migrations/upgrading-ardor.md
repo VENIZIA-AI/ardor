@@ -60,7 +60,7 @@ An app with sign-in must say so: the auth options need `use: true`. The codemod 
 ```
 
 - A literal that already has `use`, `true` or `false`, is left as it is.
-- Options that are not a plain object literal (a variable, a call, only a spread) are listed as `left` with their line and not changed. Add `use: true` there by hand.
+- Options that are not a plain object literal (a variable, a call, only a spread) are listed as `left` with their line and not changed. Add `use: true` first where the options are built: `{ use: true, paths }` for a variable, `{ use: true, ...base }` for a spread, `{ use: true, ...makeOptions() }` for a call (or put it inside `makeOptions`). A test that binds options from a shared fixture changes the fixture.
 - A type that no longer fits is listed as `left` too, and the `use: true` is still added: a return type, `as` or `satisfies` of `IAuthProviderOptions`, which has no `use` (type it as `TAuthProviderOptions`).
 - Each change prints a `note` that sign-in is now on. An app with no sign-in binds `{ use: false }` or no options and needs nothing.
 
@@ -88,6 +88,23 @@ src/configurations/shop.ts:20  restDataProvider(): instantiate(CountRestDataProv
 ```
 
 It also lists a bare `<expr>.instantiate(DefaultAuthService)` that a method returns. It says "delete this method" only for a default class under its own `DEFAULT_*` key: under another key, deleting the method would unbind that key, so it says to bind the class there with `.toProvider(X).setScope(BindingScopes.SINGLETON)` in `bindContext()`. For an auth provider of your own under `DEFAULT_AUTH_PROVIDER` it adds the step the migration needs: bind `CoreBindings.AUTH_PROVIDER_OPTIONS` as `{ use: true, ...paths }`, because with no options sign-in is off and `start()` fails.
+
+What to write, by case:
+
+- A default class under its own `DEFAULT_*` key (`DefaultRestDataProvider`, `DefaultAuthProvider`, `DefaultI18nProvider`, `DefaultAuthService`): delete the method, and the `APPLICATION_INSTANCE` it injects if nothing else uses it. 0.4.8 binds it.
+- Your own subclass or another class (for example `CountRestDataProvider`), or a default class under another key: delete the method and bind the class in `bindContext()`, on the key the method was bound under. Keep `.setScope(BindingScopes.SINGLETON)`: a bare `bind()` is transient.
+
+```diff
+-  @provide({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
+-  restDataProvider() {
+-    return this.application.instantiate(CountRestDataProvider).value(this.application);
+-  }
++  bindContext(): void {
++    this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
++      .toProvider(CountRestDataProvider)
++      .setScope(BindingScopes.SINGLETON);
++  }
+```
 
 The exit code is 0, or 1 with `--check` when it found a place. `--write` is a usage error (exit 2): you make the change by hand.
 
