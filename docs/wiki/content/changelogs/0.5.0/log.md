@@ -26,6 +26,7 @@ ARDOR 0.5.0 follows IGNIS 0.5.0. Every key of `CoreBindings`, and every key you 
 - **useBreakpoint** `use-breakpoint` (`@venizia/ardor-react`, `@venizia/ardor`): `useBreakpoint()` returns `{ name, isAtLeast(name), isBelow(name) }` for the current breakpoint, from a table of named widths that follows Tailwind by default (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536). `useBreakpoint({ breakpoints: { compact: 600, wide: 1200 } })` replaces the table and types the names, so `isAtLeast('xxl')` on an unknown name does not compile. `name` is `null` below the smallest breakpoint and in a server render. It reads the viewport through media queries, so browser zoom moves it with the layout, and it re-renders only when the name changes. It is also `Ardor.useBreakpoint`.
 
 ## Changed
+- **Supported runtime: Bun 1.4 or newer** `bun-runtime` (`@venizia/ardor-kernel`, `@venizia/ardor-react`, `@venizia/ardor-admin`, `@venizia/ardor`): the packages declare `engines.bun: >=1.4`. Bun 1.4.5 is recommended: it is a security release with TLS, HTTP and DNS fixes in fetch and node:tls/https/http/dns. It is not required.
 - **useInjectable takes no generic on options of either shape** `use-injectable-no-claim` (`@venizia/ardor-react`, `@venizia/ardor`): a variable typed as both `{ target }` and `{ key }` now returns `unknown`, so `useInjectable<Foo>(opts)` no longer compiles and nobody can claim a type nothing checks. Pass `{ target }` (the class gives the type) or a key made by `BindingKeys.build<T>` (the key gives it), or narrow the value after the call.
 
 ## Fixed
