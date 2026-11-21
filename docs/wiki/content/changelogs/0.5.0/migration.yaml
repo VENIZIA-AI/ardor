@@ -193,6 +193,21 @@ data-source-auth-attempt:
       - Pin the four ARDOR packages to 0.4.8 or earlier, with the IGNIS packages of the 0.4.8 line.
   data: "Nothing stored changes. IGNIS calls the hook on the retry's own 401 too; ARDOR answers false there without refreshing, so a request is refreshed once and retried once, as before."
 
+value-utility-trim:
+  symbols: [ValueUtility.isObject, ValueUtility.isValidDate]
+  upgrade:
+    steps:
+      - 'Replace `ValueUtility.isObject({ value })` with `typeof value === "object" && value !== null && !Array.isArray(value)`.'
+      - 'Replace `ValueUtility.isValidDate({ value })` with `!Number.isNaN(new Date(value).valueOf())`.'
+    before: |-
+      if (ValueUtility.isValidDate({ value: input })) save(input);
+    after: |-
+      if (!Number.isNaN(new Date(input).valueOf())) save(input);
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. `ValueUtility.isDefined`, `isString` and `isNumber` are unchanged.
+
 ignis-http-readers-moved:
   symbols: [HttpResponseReader, THttpHeaders, HttpWireHeaders]
   upgrade:

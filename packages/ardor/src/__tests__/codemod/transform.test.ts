@@ -502,6 +502,25 @@ describe('NamespaceTransform: removed with no replacement', () => {
     ]);
   });
 
+  test('lists ValueUtility.isObject, ValueUtility.isValidDate and the bare isObject at their line', () => {
+    const result = run(
+      [
+        "import { isObject, ValueUtility } from '@venizia/ardor-kernel';",
+        '',
+        'export const a = ValueUtility.isObject({ value: 1 });',
+        'export const b = ValueUtility.isValidDate({ value: 1 });',
+        'export const c = isObject;',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.findings.map((finding) => [finding.name, finding.line])).toEqual([
+      ['isObject', 1],
+      ['ValueUtility.isObject', 3],
+      ['ValueUtility.isValidDate', 4],
+    ]);
+  });
+
   test('does not list a member of a class imported from elsewhere', () => {
     const result = run(
       "import { App } from './mine';\nimport { x } from '@venizia/ardor';\nexport const a = [App.DEFAULT_LOCALE, x];\n",
