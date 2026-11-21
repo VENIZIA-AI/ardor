@@ -174,7 +174,7 @@ First, write the subclass. `refreshToken` sends the refresh request, saves the n
 
 ```ts
 import {
-  Authentication,
+  App,
   DefaultNetworkRequestService,
   RequestMethods,
   RequestTypes,
@@ -200,7 +200,7 @@ export class AppNetworkService extends DefaultNetworkRequestService {
       username: user.username,
       referenceId: user.referenceId,
       provider: user.provider,
-      token: { value: data.token, type: Authentication.TYPE_BEARER },
+      token: { value: data.token, type: App.TOKEN_TYPE },
     });
 
     return true;

@@ -240,3 +240,18 @@ network-headers-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. Header names are lowercase on the wire, as before.
+
+authentication-removed:
+  symbols: [Authentication]
+  upgrade:
+    steps:
+      - 'Replace `Authentication.TYPE_BEARER` with `App.TOKEN_TYPE` (or the string `"Bearer"`), and `Authentication.TYPE_BASIC`, `STRATEGY_BASIC` and `STRATEGY_JWT` with your own strings.'
+      - 'Replace `Authentication.isValid(value)` with your own check.'
+    before: |-
+      token: { value, type: Authentication.TYPE_BEARER },
+    after: |-
+      token: { value, type: App.TOKEN_TYPE },
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. A stored token keeps its own type, and one with none is still sent as Bearer.

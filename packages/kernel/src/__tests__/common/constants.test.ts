@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
   App,
-  Authentication,
   Environments,
   RequestBodyTypes,
   RequestChannel,
@@ -157,24 +156,7 @@ describe('Environments scheme validation and members', () => {
   });
 });
 
-describe('Authentication, RequestChannel, RequestCountData, and LocalStorageKeys scheme validation', () => {
-  test('Authentication.isValid and SCHEME_SET cover all declared schemes and strategies', () => {
-    const declared = [
-      Authentication.TYPE_BASIC,
-      Authentication.TYPE_BEARER,
-      Authentication.STRATEGY_BASIC,
-      Authentication.STRATEGY_JWT,
-    ];
-    expect(Authentication.SCHEME_SET.size).toBe(declared.length);
-
-    for (const entry of declared) {
-      expect(Authentication.isValid(entry)).toBe(true);
-    }
-
-    expect(Authentication.isValid('Digest')).toBe(false);
-    expect(Authentication.isValid('')).toBe(false);
-  });
-
+describe('RequestChannel, RequestCountData, and LocalStorageKeys scheme validation', () => {
   test('RequestChannel.isValid and SCHEME_SET cover declared channels', () => {
     expect(RequestChannel.SCHEME_SET.size).toBe(1);
     expect(RequestChannel.isValid(RequestChannel.WEB)).toBe(true);

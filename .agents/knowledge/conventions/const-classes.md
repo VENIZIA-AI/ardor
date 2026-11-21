@@ -68,8 +68,8 @@ The value type is a closed union - no `| (string & {})` escape - because ARDOR o
 `TStringConstValue` drops `SCHEME_SET`, `isValid` and `prototype` from the union by type.
 
 Every const class carries the `SCHEME_SET` plus `isValid(value: string)` pair: `RequestMethods`,
-`RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`,
-`Authentication` and `LocalStorageKeys`. A new one does too, and
+`RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`
+and `LocalStorageKeys`. A new one does too, and
 names the `isValid` parameter `value`. One is exempt: `App` holds runtime defaults, so it has
 no `SCHEME_SET` or `isValid()`.
 

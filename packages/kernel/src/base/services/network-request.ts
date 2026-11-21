@@ -375,7 +375,7 @@ export class DefaultNetworkRequestService extends BaseService {
       throw getError({ message: '[refreshToken] The refresh response carries no token' });
     }
 
-    return { value, type: typeof type === 'string' ? type : 'Bearer' };
+    return { value, type: typeof type === 'string' ? type : App.TOKEN_TYPE };
   }
 
   /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
@@ -614,7 +614,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     return {
       provider: authToken?.provider,
-      token: `${authToken?.type?.length ? authToken.type : 'Bearer'} ${authToken.value}`,
+      token: `${authToken?.type?.length ? authToken.type : App.TOKEN_TYPE} ${authToken.value}`,
     };
   }
 

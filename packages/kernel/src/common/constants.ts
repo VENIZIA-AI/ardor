@@ -6,30 +6,8 @@ export class App {
   static readonly TIMEZONE_OFFSET = -(new Date().getTimezoneOffset() / 60);
   /** In milliseconds. */
   static readonly DEFAULT_DEBOUNCE_TIME = 500;
-}
-
-/** Authorization schemes (`Basic`, `Bearer`) and strategies (`basic`, `jwt`). */
-export class Authentication {
-  /** The scheme in the `authorization` header. */
-  static readonly TYPE_BASIC = 'Basic';
-  static readonly TYPE_BEARER = 'Bearer';
-
-  /** The name of the auth strategy. */
-  static readonly STRATEGY_BASIC = 'basic';
-  static readonly STRATEGY_JWT = 'jwt';
-
-  /** Every value of this class that `isValid` accepts. */
-  static readonly SCHEME_SET = new Set([
-    this.TYPE_BASIC,
-    this.TYPE_BEARER,
-    this.STRATEGY_BASIC,
-    this.STRATEGY_JWT,
-  ]);
-
-  /** Whether `value` is in `SCHEME_SET`. */
-  static isValid(value: string): boolean {
-    return this.SCHEME_SET.has(value);
-  }
+  /** The authorization scheme of a token that names none. */
+  static readonly TOKEN_TYPE = 'Bearer';
 }
 
 /** HTTP methods. */

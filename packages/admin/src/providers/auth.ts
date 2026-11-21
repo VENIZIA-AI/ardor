@@ -2,6 +2,7 @@ import { type Container, getError, inject, isApplicationError } from '@venizia/i
 import { removeDoubleSlashes } from 'ra-core';
 
 import {
+  App,
   BaseProvider,
   BrowserStorage,
   CoreBindings,
@@ -198,7 +199,7 @@ export class DefaultAuthProvider<
 
     const record =
       typeof token === 'string'
-        ? { value: token, type: 'Bearer' }
+        ? { value: token, type: App.TOKEN_TYPE }
         : (token as { value?: unknown; type?: unknown } | undefined);
 
     if (typeof record?.value !== 'string' || record.value.length === 0) {
@@ -227,7 +228,7 @@ export class DefaultAuthProvider<
       userId: resolvedUserId,
       token: {
         value: record.value,
-        type: typeof record.type === 'string' ? record.type : 'Bearer',
+        type: typeof record.type === 'string' ? record.type : App.TOKEN_TYPE,
       },
       roles: this.readRoleNames({ roles: roles ?? claims?.roles }),
     };

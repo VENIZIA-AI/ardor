@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (103)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -20,7 +20,6 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `Authentication` class
 - `AuthRecovery` class
 - `AuthTokenStore` class
 - `BaseProvider` class
@@ -259,7 +258,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (204)
+### `@venizia/ardor` (203)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -272,7 +271,6 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `Authentication` class
 - `AuthRecovery` class
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
