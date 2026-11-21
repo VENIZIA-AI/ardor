@@ -1,6 +1,7 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
-import { deepMerge, isRecord } from '@/common/merge';
+import { deepMerge } from '@/common/merge';
 import { unwrapMessages } from '@/providers/i18n-sources';
 import type { TFeature } from './feature';
 
@@ -138,7 +139,7 @@ export class FeatureMessages {
   private static leafKeys(opts: { value: unknown; prefix?: string }): Array<string> {
     const { value, prefix } = opts;
 
-    if (!isRecord(value)) {
+    if (!RecordUtility.isPlainRecord(value)) {
       return prefix ? [prefix] : [];
     }
 

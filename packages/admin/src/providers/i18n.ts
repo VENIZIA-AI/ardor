@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { type Container, inject } from '@venizia/ignis-inversion';
 import type { I18nProvider, TranslationMessages } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';
@@ -12,7 +13,7 @@ import {
 } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { deepMerge, isRecord } from '@/common/merge';
+import { deepMerge } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessages } from '@/features/messages';
 import { LazyLocales, LocaleSources } from './i18n-sources';
@@ -232,7 +233,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
           // A number is polyglot's shorthand for the plural count.
           const extra = typeof options === 'number' ? { ['smart_count']: options } : options;
 
-          return i18nProvider.translate(key, { ...(isRecord(extra) ? extra : {}), _: key });
+          return i18nProvider.translate(key, {
+            ...(RecordUtility.isPlainRecord(extra) ? extra : {}),
+            _: key,
+          });
         },
       },
     );

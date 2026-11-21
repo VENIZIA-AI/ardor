@@ -1,6 +1,4 @@
-export const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 
 /**
  * A new object with the sources merged in order: a later source wins, plain objects merge
@@ -18,8 +16,8 @@ export const deepMerge = (opts: { sources: ReadonlyArray<object> }): Record<stri
       }
 
       const current = merged[key];
-      merged[key] = isRecord(value)
-        ? deepMerge({ sources: [isRecord(current) ? current : {}, value] })
+      merged[key] = RecordUtility.isPlainRecord(value)
+        ? deepMerge({ sources: [RecordUtility.isPlainRecord(current) ? current : {}, value] })
         : value;
     }
   }

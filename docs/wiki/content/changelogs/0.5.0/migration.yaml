@@ -255,3 +255,17 @@ authentication-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. A stored token keeps its own type, and one with none is still sent as Bearer.
+
+to-error-removed:
+  symbols: [NetworkResponseReader.toError]
+  upgrade:
+    steps:
+      - 'Replace `NetworkResponseReader.toError({ response })` with `HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY })`, importing `HttpResponseReader` from `@venizia/ignis-helpers/core`.'
+    before: |-
+      throw await NetworkResponseReader.toError({ response });
+    after: |-
+      throw await HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. The error carries the same status, text, code, args and request ids.

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 import { isApplicationError } from '@venizia/ignis-inversion';
 import { RequestCountData, RequestTypes } from '@/common';
 import { NetworkResponseReader } from '@/helpers';
@@ -169,9 +170,10 @@ describe('NetworkResponseReader.convert', () => {
   });
 });
 
-describe('NetworkResponseReader.toError', () => {
+describe('the error of a failed response, read under the ERROR_ROOT_KEY', () => {
   test('is an ApplicationError with the status, the server text and the request id', async () => {
-    const error = await NetworkResponseReader.toError({
+    const error = await HttpResponseReader.toApplicationError({
+      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
       response: json(
         {
           error: {
@@ -196,7 +198,8 @@ describe('NetworkResponseReader.toError', () => {
   });
 
   test('a body that says nothing falls back to the HTTP status', async () => {
-    const error = await NetworkResponseReader.toError({
+    const error = await HttpResponseReader.toApplicationError({
+      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
       response: new Response('', { status: 503 }),
     });
 

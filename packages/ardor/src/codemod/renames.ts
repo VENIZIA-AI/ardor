@@ -134,6 +134,10 @@ export class RemovedNames {
 
   /** Class name to removed static member to the reason. */
   static readonly MEMBERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+    NetworkResponseReader: {
+      toError:
+        'use HttpResponseReader.toApplicationError({ response, rootKey: "error" }) from @venizia/ignis-helpers/core',
+    },
     App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
   };
 

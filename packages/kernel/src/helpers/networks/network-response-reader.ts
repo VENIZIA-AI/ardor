@@ -166,18 +166,6 @@ export class NetworkResponseReader {
     return data === null || data === undefined ? [] : [data];
   }
 
-  /**
-   * A failed response as an `ApplicationError`, mapped like IGNIS `HttpDataSource`: the HTTP status,
-   * the server's code and args, its `extra` with the `requestId` added, and `details.cause`.
-   * `message` is the server's text, not a log line, because react-admin shows it to the user.
-   */
-  static toError(opts: { response: Response }) {
-    return HttpResponseReader.toApplicationError({
-      response: opts.response,
-      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
-    });
-  }
-
   /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
   private static resolveTotal(opts: { headers: Pick<Headers, 'get'>; rowCount: number }): number {
     const range = HttpResponseReader.parseContentRange({

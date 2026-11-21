@@ -130,7 +130,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Fetch transport
 
-ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `NetworkResponseReader.toError`, and a call that carries headers sends those alone.
+ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `HttpResponseReader.toApplicationError`, and a call that carries headers sends those alone.
 
 - `getNetworkService()` returns the fetcher, whose `send` resolves a `Response`.
 - `getWorker()` returns the global `fetch` function.
@@ -240,7 +240,7 @@ export const fileNameOf = (response: Response): string | undefined => {
 
 ## Error handling and 401 recovery
 
-When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `NetworkResponseReader.toError` in `packages/kernel/src/helpers/networks/network-response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
+When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created by IGNIS's `HttpResponseReader.toApplicationError` (`@venizia/ignis-helpers/core`), which reads the error body under the root key `'error'` (`NetworkResponseReader.ERROR_ROOT_KEY`):
 - `error.statusCode`: The HTTP status code of the response.
 - `error.message`: Server normalized text, server message, or `'HTTP ' + response.status`.
 - `error.normalized`: Server normalized details containing `text`, `code` (`error.normalized.code`, defaulting to `'core.system_error'`), and interpolation arguments `args` (`error.normalized.args`).

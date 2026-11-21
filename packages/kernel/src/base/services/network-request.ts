@@ -1,6 +1,11 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
-import { HttpHeaders, NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import {
+  HttpHeaders,
+  HttpResponseReader,
+  NativeFetcher,
+  NativeFetchNetworkRequest,
+} from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -158,27 +163,14 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     if (
-      DefaultNetworkRequestService.isRawBody({ body: opts.body }) &&
+      typeof opts.body !== 'string' &&
+      NativeFetcher.isRawBody(opts.body) &&
       !sent[HTTP.Headers.CONTENT_TYPE]
     ) {
       sent[HTTP.Headers.CONTENT_TYPE] = null;
     }
 
     return sent;
-  }
-
-  /** A body the platform `fetch` gives a content type of its own, or none: it is sent as it is. */
-  private static isRawBody(opts: { body: unknown }): boolean {
-    const { body } = opts;
-
-    return (
-      body instanceof FormData ||
-      body instanceof Blob ||
-      body instanceof URLSearchParams ||
-      body instanceof ArrayBuffer ||
-      ArrayBuffer.isView(body) ||
-      body instanceof ReadableStream
-    );
   }
 
   /**
@@ -896,7 +888,10 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     if (status < 200 || status >= 300) {
-      const result2 = await NetworkResponseReader.toError({ response: fetched });
+      const result2 = await HttpResponseReader.toApplicationError({
+        response: fetched,
+        rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
+      });
       throw result2;
     }
 
