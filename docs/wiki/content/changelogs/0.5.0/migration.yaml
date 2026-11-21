@@ -299,3 +299,19 @@ auth-recovery-helper:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. Only the name and the logger scope change.
+
+use-injectable-no-claim:
+  symbols: [useInjectable, IUseInjectableByTarget, IUseInjectableByKey]
+  upgrade:
+    steps:
+      - 'Find each `useInjectable<X>(opts)` where `opts` is typed as both `{ target }` and `{ key }`: the compiler now refuses the generic.'
+      - 'Pass `{ target }` (the class gives the type) or a key made by `BindingKeys.build<X>` (the key gives it), and drop the generic.'
+      - 'Where one variable has to hold either shape, call `useInjectable(opts)` without a generic and narrow the `unknown` result.'
+    before: |-
+      const service = useInjectable<PricingService>(opts);
+    after: |-
+      const service = useInjectable({ target: PricingService });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. Only the type of the call changes; at run time `useInjectable` resolves the same binding.
