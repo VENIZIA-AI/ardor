@@ -115,6 +115,9 @@ export class TypeExportRenames {
 
 /** Exports and members removed with no code the codemod can write in their place. */
 export class RemovedNames {
+  private static readonly TO_ERROR =
+    'use HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY }) from @venizia/ignis-helpers/core';
+
   static readonly EXPORTS: Readonly<Record<string, string>> = {
     HeaderConstants:
       'use HTTP.Headers from @venizia/ignis-helpers/common: the names are the same except X_AUTH_PROVIDER (AUTH_PROVIDER) and X_LOCALE (LOCALE); the two regular expressions have no replacement',
@@ -122,13 +125,13 @@ export class RemovedNames {
       'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
     Authentication: 'write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
     AuthRecovery:
-      'renamed: use AuthRecoveryHelper (it has no logger option: it logs under its own name)',
+      'use AuthRecoveryHelper, the new name (it has no logger option: it logs under its own name)',
     isObject: 'write typeof value === "object" && value !== null && !Array.isArray(value)',
     isValidDate: 'write !Number.isNaN(new Date(value).valueOf())',
     isEditableTarget: 'check the event target in your own code',
     TDataCount: 'declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
-    useInjectableContainer: 'renamed: call useApplicationContainer',
+    useInjectableContainer: 'call useApplicationContainer, the new name',
     useSizer:
       'use useElementSize({ ref, box: "border-box", round: true }) with a ref in place of the id',
   };
@@ -140,10 +143,8 @@ export class RemovedNames {
       isObject: 'write typeof value === "object" && value !== null && !Array.isArray(value)',
       isValidDate: 'write !Number.isNaN(new Date(value).valueOf())',
     },
-    NetworkResponseReader: {
-      toError:
-        'use HttpResponseReader.toApplicationError({ response, rootKey: "error" }) from @venizia/ignis-helpers/core',
-    },
+    NetworkResponseReader: { toError: RemovedNames.TO_ERROR },
+    ResponseReader: { toError: RemovedNames.TO_ERROR },
   };
 
   /** A property removed from the list filter: listed in a file that imports one of `owners`, as the file may use it. */

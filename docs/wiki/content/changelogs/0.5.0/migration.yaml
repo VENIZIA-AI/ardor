@@ -1,8 +1,9 @@
 typed-core-bindings:
-  symbols: [CoreBindings, ICoreBindingTypes, TCoreBindingType]
+  symbols: [ICoreBindingTypes, TCoreBindingType]
   upgrade:
     steps:
       - 'Bind each value under a `CoreBindings` key with the type that key carries (the table below); a value of another type is a compile error.'
+      - 'Run `bun check`; each error at a bind under a `CoreBindings` key is a place to change.'
       - 'In a test that binds a partial fake, make an untyped key from the constant: `BindingKeys.build<unknown>({ key: CoreBindings.APPLICATION_INFO })`.'
     before: |-
       container.bind({ key: CoreBindings.APPLICATION_INFO }).toValue({ id: 'info' });
@@ -197,6 +198,7 @@ value-utility-trim:
   symbols: [ValueUtility.isObject, ValueUtility.isValidDate]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Replace `ValueUtility.isObject({ value })` with `typeof value === "object" && value !== null && !Array.isArray(value)`.'
       - 'Replace `ValueUtility.isValidDate({ value })` with `!Number.isNaN(new Date(value).valueOf())`.'
     before: |-
@@ -228,6 +230,7 @@ header-constants-removed:
   symbols: [HeaderConstants]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Import `HTTP` from `@venizia/ignis-helpers/common` and read `HTTP.Headers.<NAME>` where you read `HeaderConstants.<NAME>`.'
       - 'Two names change: `X_AUTH_PROVIDER` is `AUTH_PROVIDER` and `X_LOCALE` is `LOCALE`. Every other name is the same.'
       - 'The two regular expressions are removed with no replacement; write your own if you used them.'
@@ -244,9 +247,10 @@ network-headers-removed:
   symbols: [NetworkHeaders, DefaultNetworkRequestService.headers]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [new Headers(a), new Headers(b)] })` from `@venizia/ignis-helpers/core`; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
       - 'Replace `NetworkHeaders.toRecord({ headers })` with `Object.fromEntries(new Headers(headers))`.'
-      - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`.'
+      - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`. The codemod does not list that read: search your subclasses for `this.headers[`.'
     before: |-
       const headers = NetworkHeaders.merge({ sources: [base, extra] });
     after: |-
@@ -260,6 +264,7 @@ authentication-removed:
   symbols: [Authentication]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Replace `Authentication.TYPE_BEARER` with `App.TOKEN_TYPE` (or the string `"Bearer"`), and `Authentication.TYPE_BASIC`, `STRATEGY_BASIC` and `STRATEGY_JWT` with your own strings.'
       - 'Replace `Authentication.isValid(value)` with your own check.'
     before: |-
@@ -275,6 +280,7 @@ to-error-removed:
   symbols: [NetworkResponseReader.toError]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Replace `NetworkResponseReader.toError({ response })` with `HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY })`, importing `HttpResponseReader` from `@venizia/ignis-helpers/core`.'
     before: |-
       throw await NetworkResponseReader.toError({ response });
@@ -289,6 +295,7 @@ auth-recovery-helper:
   symbols: [AuthRecovery, AuthRecoveryHelper]
   upgrade:
     steps:
+      - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
       - 'Rename `AuthRecovery` to `AuthRecoveryHelper` (import and use).'
       - 'Remove the `logger` option from `new AuthRecoveryHelper({ ... })`: the helper logs under its own name.'
     before: |-

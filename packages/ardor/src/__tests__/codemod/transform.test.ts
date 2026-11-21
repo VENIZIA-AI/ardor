@@ -487,6 +487,24 @@ describe('NamespaceTransform: removed with no replacement', () => {
     ]);
   });
 
+  test('lists toError of the 0.4.8 ResponseReader and of NetworkResponseReader', () => {
+    const result = run(
+      [
+        "import { ResponseReader, NetworkResponseReader } from '@venizia/ardor-kernel';",
+        '',
+        'export const a = ResponseReader.toError({ response });',
+        'export const b = NetworkResponseReader.toError({ response });',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.findings.map((finding) => [finding.name, finding.line])).toEqual([
+      ['ResponseReader.toError', 3],
+      ['NetworkResponseReader.toError', 4],
+    ]);
+    expect(result.findings[0]?.reason).toContain('NetworkResponseReader.ERROR_ROOT_KEY');
+  });
+
   test('lists the removed static members with their line', () => {
     const result = run(
       [
@@ -519,6 +537,9 @@ describe('NamespaceTransform: removed with no replacement', () => {
       ['ValueUtility.isObject', 3],
       ['ValueUtility.isValidDate', 4],
     ]);
+    expect(result.findings[0]?.reason).toBe(
+      'removed: write typeof value === "object" && value !== null && !Array.isArray(value)',
+    );
     expect(result.findings[2]?.reason).toBe(
       'removed: write !Number.isNaN(new Date(value).valueOf())',
     );
