@@ -39,7 +39,7 @@ export const parseBuildInfoFileOptions = (opts: IBuildInfoFileOptions): TParsedO
 
   if (!UnresolvedPolicies.isValid(onUnresolved)) {
     throw getError({
-      message: `[buildInfoFile] onUnresolved '${onUnresolved}' is not valid | Use one of: ${[...UnresolvedPolicies.SCHEME_SET].join(', ')}`,
+      message: `[buildInfoFile] onUnresolved '${onUnresolved}' is not valid | Use one of: ${UnresolvedPolicies.values().join(', ')}`,
     });
   }
 

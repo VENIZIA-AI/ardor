@@ -51,8 +51,8 @@ and UI-hooks, or `packages/kernel/src/common/constants.ts` if a new const class 
   or a provider registered on the react-admin data provider pipeline) lives in a module listed in
   `sideEffects`, not in a leaf file.
 - Moving a runtime helper out of a types file is part of the split: `common/<topic>.ts` for code,
-  `common/types/` for types, both behind the same barrel. A const class such as `RequestMethods` keeps
-  its `SCHEME_SET` and `isValid` with it, not split into a separate "helpers" file.
+  `common/types/` for types, both behind the same barrel. A const class such as `RequestMethods` stays
+  whole in its file, not split into a separate "helpers" file.
 - Error helpers built on `getError` / `ApplicationError` from `@venizia/ignis-inversion` stay with the
   domain they describe (network errors with network types, form errors with form types) - do not pull
   them into a generic "errors" hub unless every topic file genuinely shares them.

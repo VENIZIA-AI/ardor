@@ -117,7 +117,7 @@ is a consumed key, so the failure would vanish - the compiler now rejects it. Wr
 
 `RequestMethods`, `RequestTypes` and `RequestBodyTypes` in
 `packages/kernel/src/common/constants.ts` describe the shape of a data provider request - the
-verb, the record type, the body encoding. They are const classes with a `SCHEME_SET` and
+verb, the record type, the body encoding. They are const classes that extend `ConstClass`, with `values()` and
 `isValid` (see [const classes](/conventions/const-classes.md)), not error catalogs. Only the tests
 call `isValid` today and no request error catalog exists: the closed value types
 (`TRequestMethod`, `TRequestType`, `TRequestBodyType`) are the only guard. A runtime check added

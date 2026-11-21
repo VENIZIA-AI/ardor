@@ -100,12 +100,12 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `ICoreBindingTypes` | `interface` | Empty in the kernel. `@venizia/ardor-admin` merges the types of the provider keys and the i18n options into it. | `restDataProvider`, `authProvider`, `i18nProvider`, `i18nProviderOptions` (merged) |
 | `TCoreBindingType<TName>` | `type` | The type merged into `ICoreBindingTypes` under `TName`, or `unknown` when nothing merged it. | - |
 | `LocalStorageKeys` | `class` | The local storage keys for tokens, identities, and permissions, and the three prefixes. | `KEY_AUTH_*`, `PREFIX_AUTH`, `PREFIX_STORE`, `PREFIX_PREFS` |
-| `RequestMethods` | `class` | HTTP method constants, with `SCHEME_SET` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
-| `RequestTypes` | `class` | Data operation constants with `SCHEME_SET` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
-| `RequestBodyTypes` | `class` | Request body formats with `SCHEME_SET` and `isValid`. | `NONE`, `FORM_DATA`, `FORM_URL_ENCODED`, `JSON`, `BINARY` |
-| `Environments` | `class` | Environment constants with `SCHEME_SET` and `isValid`. | `DEVELOPMENT`, `PRODUCTION` |
-| `RequestCountData` | `class` | Count mode constants with `SCHEME_SET` and `isValid`. | `DATA_ONLY: '0'`, `DATA_WITH_COUNT: '1'` |
-| `RequestChannel` | `class` | Client channel constant with `SCHEME_SET` and `isValid`. | `WEB: '100_WEB'` |
+| `RequestMethods` | `class` | HTTP method constants; extends `ConstClass`, so `values()` and `isValid`. | `HEAD`, `OPTIONS`, `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| `RequestTypes` | `class` | Data operation constants; extends `ConstClass`, so `values()` and `isValid`. | `SEND`, and the nine react-admin verbs from `GET_LIST` to `DELETE_MANY` |
+| `RequestBodyTypes` | `class` | Request body formats; extends `ConstClass`, so `values()` and `isValid`. | `NONE`, `FORM_DATA`, `FORM_URL_ENCODED`, `JSON`, `BINARY` |
+| `Environments` | `class` | Environment constants; extends `ConstClass`, so `values()` and `isValid`. | `DEVELOPMENT`, `PRODUCTION` |
+| `RequestCountData` | `class` | Count mode constants; extends `ConstClass`, so `values()` and `isValid`. | `DATA_ONLY: '0'`, `DATA_WITH_COUNT: '1'` |
+| `RequestChannel` | `class` | Client channel constant; extends `ConstClass`, so `values()` and `isValid`. | `WEB: '100_WEB'` |
 | `App` | `class` | Runtime defaults: the timezone, its offset and the debounce time. | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_DEBOUNCE_TIME` |
 
 ### Repositories (@venizia/ardor/repository)
