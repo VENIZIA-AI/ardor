@@ -11,8 +11,7 @@ import {
   LocalStorageKeys,
   StorageAreas,
 } from '@/common';
-import { AuthTokenStore } from '@/helpers';
-import { BrowserStorage, StorageCodecs } from '@/utilities';
+import { AuthTokenStore, BrowserStorage, StorageCodecs } from '@/utilities';
 import { BaseService } from './base';
 
 /** What a subscriber of `DefaultAuthService` is told: `isExternal` is a change another tab of the application made. */

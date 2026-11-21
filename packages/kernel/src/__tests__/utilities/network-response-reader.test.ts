@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 import { isApplicationError } from '@venizia/ignis-inversion';
 import { RequestCountData, RequestTypes } from '@/common';
-import { NetworkResponseReader } from '@/helpers';
+import { NetworkResponseReader } from '@/utilities';
 
 const json = (body: unknown, headers: Record<string, string> = {}, status = 200) => {
   return new Response(JSON.stringify(body), {

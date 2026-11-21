@@ -20,7 +20,7 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `AuthRecovery` class
+- `AuthRecoveryHelper` class
 - `AuthTokenStore` class
 - `BaseProvider` class
 - `BaseService` class
@@ -271,7 +271,7 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `AuthRecovery` class
+- `AuthRecoveryHelper` class
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseProvider` class

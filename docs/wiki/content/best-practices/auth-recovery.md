@@ -66,7 +66,7 @@ How `isNoAuthPath` decides, in order:
 1. `noAuthPaths` - an exact string match against `resource`.
 2. `noAuthPathRegex` - each pattern is tested against `resource` and against `paths.join('/')`. String patterns are compiled with `new RegExp`; an invalid pattern is logged and skipped. `lastIndex` is reset before each test, so global patterns are safe.
 
-To send no token at all - a service that talks to an API with no sign-in - set `noAuthPathRegex: /./`. Every path then matches, the service never attaches a token, and recovery is off with it (`AuthRecovery.canRecover` checks `isNoAuthPath`).
+To send no token at all - a service that talks to an API with no sign-in - set `noAuthPathRegex: /./`. Every path then matches, the service never attaches a token, and recovery is off with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`).
 
 Keep the list small and explicit. The sign-in path and the refresh path belong there. Public, unauthenticated reads belong there. Nothing else does.
 
@@ -95,7 +95,7 @@ class AppNetworkService extends DefaultNetworkRequestService {
 }
 ```
 
-Note that `getRequestHeader` only passes `{ resource }` to `isNoAuthPath`. A regex that relies on the joined `paths` is only consulted where `paths` are supplied, such as in `AuthRecovery.canRecover`.
+Note that `getRequestHeader` only passes `{ resource }` to `isNoAuthPath`. A regex that relies on the joined `paths` is only consulted where `paths` are supplied, such as in `AuthRecoveryHelper.canRecover`.
 
 ## The recovery contract
 
@@ -120,13 +120,13 @@ declare class DefaultNetworkRequestService {
 
 What the service guarantees:
 
-- **Recovery only runs when it can help.** `AuthRecovery.canRecover({ paths })` returns `false` when the path is a no-auth path, or when the joined path contains `refreshTokenPath`. A `401` from either surfaces immediately. A service with no `refreshTokenPath` (or no auth service) that does not override `refreshToken` refreshes nothing: the hook resolves `false`, nothing is retried, and the `401` stands.
-- **One refresh per burst.** `refresh()` (`AuthRecovery.refresh`) stores the in-flight promise. Every `401` that arrives while a refresh is running awaits the same promise. The slot is cleared in `finally`, so the next burst starts a new refresh.
+- **Recovery only runs when it can help.** `AuthRecoveryHelper.canRecover({ paths })` returns `false` when the path is a no-auth path, or when the joined path contains `refreshTokenPath`. A `401` from either surfaces immediately. A service with no `refreshTokenPath` (or no auth service) that does not override `refreshToken` refreshes nothing: the hook resolves `false`, nothing is retried, and the `401` stands.
+- **One refresh per burst.** `refresh()` (`AuthRecoveryHelper.refresh`) stores the in-flight promise. Every `401` that arrives while a refresh is running awaits the same promise. The slot is cleared in `finally`, so the next burst starts a new refresh.
 - **One retry.** When `refresh()` resolves `true`, the original request is sent again once, with the new token. The service does not loop.
 - **Failure is contained.** If `refreshToken` rejects - or throws synchronously, which is why the chain starts with `Promise.resolve().then(...)` - `onAuthFailure` runs once, `refresh()` resolves `false`, and the original `401` is what the caller sees. If `onAuthFailure` itself throws, that is logged and swallowed; it never masks the `401`.
 
 ```ts no-check
-class AuthRecovery {
+class AuthRecoveryHelper {
   ...
 
   refresh(): Promise<boolean> {
@@ -321,7 +321,7 @@ The data provider must be a singleton. Declare it with `@provide` in a `@configu
 - **Expecting recovery with no `refreshTokenPath`.** Without the path the default hook resolves `false`: nothing is refreshed, nothing is retried, and the `401` stands. Set `authRecovery.refreshTokenPath`, or write the subclass, return it from `createNetworkService()`, and bind that provider.
 - **Returning `true` without refreshing.** `true` means "the token is new, retry now". The retry then fails with the same `401`. Resolve `false` when there is nothing to refresh, and throw when the refresh failed - a thrown `refreshToken` is what runs `onAuthFailure`.
 - **Overriding `refreshToken` on the auth provider.** `DefaultAuthProvider.refreshToken()` only calls the service's `refresh()`. The refresh itself belongs to the service's hook, so a `401` and `useRefreshToken` make it in one place.
-- **Using `noAuthPathRegex: /./` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`AuthRecovery.canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.
+- **Using `noAuthPathRegex: /./` to "fix" a `401`.** It turns off the token for every request and turns off recovery with it (`AuthRecoveryHelper.canRecover` checks `isNoAuthPath`, which is always `true` then). It is only for a service that talks to an unauthenticated API.
 - **Using an invalid string in `noAuthPathRegex`.** The service logs it and drops it. The path stays authenticated and you find out from the `401`, not from a build error. Prefer a `RegExp` literal.
 - **Storing the token under your own key.** The default `resolveAuthToken()` reads the token through the auth service the request service was built with (`authService.keys.token`: `LocalStorageKeys.KEY_AUTH_TOKEN`, or the key scoped by the application `id`), or `LocalStorageKeys.KEY_AUTH_TOKEN` with no auth service. A token elsewhere is invisible to it unless you override the hook.
 - **Binding the plain `DefaultRestDataProvider`.** Overriding `createNetworkService()` on a subclass changes nothing until that subclass is what sits under `CoreBindings.DEFAULT_REST_DATA_PROVIDER`.

@@ -30,13 +30,13 @@ import {
   type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
+import { AuthRecoveryHelper } from '@/helpers';
 import {
-  AuthRecovery,
   AuthTokenStore,
   type IEncodedBody,
-  RequestBodyEncoder,
   NetworkResponseReader,
-} from '@/helpers';
+  RequestBodyEncoder,
+} from '@/utilities';
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
@@ -78,7 +78,7 @@ export class DefaultNetworkRequestService extends BaseService {
   /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
   protected timeout: TRequestTimeoutOptions;
 
-  private readonly recovery: AuthRecovery;
+  private readonly recovery: AuthRecoveryHelper;
 
   /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
   private readonly sentSessions = new WeakMap<object, ISentSession>();
@@ -128,8 +128,7 @@ export class DefaultNetworkRequestService extends BaseService {
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
     this.authService = authService;
-    this.recovery = new AuthRecovery({
-      logger: this.logger,
+    this.recovery = new AuthRecoveryHelper({
       getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
       refresh: () => this.refreshToken(),
       onFailure: () => this.onAuthFailure(),
@@ -418,7 +417,7 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecovery`).
+   * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecoveryHelper`).
    * Also what `DefaultAuthProvider.refreshToken` calls, so a refresh is made in one place.
    */
   refresh(): Promise<boolean> {

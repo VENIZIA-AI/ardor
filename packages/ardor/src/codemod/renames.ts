@@ -124,6 +124,8 @@ export class RemovedNames {
       'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
     Authentication:
       'nothing in ARDOR used it; write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
+    AuthRecovery:
+      'renamed: use AuthRecoveryHelper (it has no logger option: it logs under its own name)',
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',

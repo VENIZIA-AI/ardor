@@ -37,7 +37,7 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 ## Body encoding
 
-A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/services/network-request.ts`) builds it by `bodyType`, through the protected hook `encodeBody` and the `RequestBodyEncoder` it delegates to (`packages/kernel/src/helpers/networks/request-body-encoder.ts`) - the `content-type` each type sets is in [Header protocol](/architecture/header-protocol.md):
+A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/services/network-request.ts`) builds it by `bodyType`, through the protected hook `encodeBody` and the `RequestBodyEncoder` it delegates to (`packages/kernel/src/utilities/request-body-encoder.ts`) - the `content-type` each type sets is in [Header protocol](/architecture/header-protocol.md):
 
 - **`x-www-form-urlencoded`** builds a `URLSearchParams`. **`form-data`** builds a `FormData`. Both skip a key only when its value is `undefined` or `null`, so `0`, `false` and `''` are sent. A `Date` becomes ISO-8601, an object or array becomes JSON, any other primitive goes through `String()`.
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
@@ -55,7 +55,7 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 
 ## What comes back
 
-After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/helpers/networks/network-response-reader.ts`) decodes a 2xx response:
+After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/utilities/network-response-reader.ts`) decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
 - A `content-disposition` of type `attachment` (as IGNIS's `HttpResponseReader.parseContentDisposition` reads it, any case), or a `content-type` that is missing or not textual per `NetworkResponseReader.TEXTUAL_RE`, returns the blob as `data` (IGNIS's `HttpResponseReader.readFile`), plus `filename` (`filename*=` first, then a quoted, then a bare `filename=`; a `filename*` that cannot be decoded is dropped and the plain `filename` is used; the public `NetworkResponseReader.readFilename({ headers })` returns the same name through the same parser) and `contentDisposition` when present.

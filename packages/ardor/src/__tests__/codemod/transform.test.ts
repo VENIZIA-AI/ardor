@@ -453,15 +453,16 @@ describe('NamespaceTransform: removed with no replacement', () => {
 
   test('lists a removed export at its import and changes nothing', () => {
     const text = [
-      "import { HeaderConstants, isEditableTarget, type ISyncFC, type TDataCount } from '@venizia/ardor';",
+      "import { AuthRecovery, HeaderConstants, isEditableTarget, type ISyncFC, type TDataCount } from '@venizia/ardor';",
       '',
-      'export const a = [HeaderConstants, isEditableTarget];',
+      'export const a = [AuthRecovery, HeaderConstants, isEditableTarget];',
       '',
     ].join('\n');
     const result = run(text);
 
     expect(result.text).toBe(text);
     expect(result.findings.map((finding) => finding.name)).toEqual([
+      'AuthRecovery',
       'HeaderConstants',
       'isEditableTarget',
       'ISyncFC',

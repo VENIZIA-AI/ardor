@@ -57,7 +57,7 @@ The REST data provider options include an `authRecovery` block with only `refres
 path with no body and saves the `{ token: '<jwt>' }` IGNIS answers through the auth service, keeping the stored
 identity (the retry re-reads it), so the example has no network service or provider subclass. `AdminConfiguration` binds
 only the options (`@provide`); `BaseArdorApplication` binds the default providers. The refresh endpoint itself is not listed in `noAuthPaths`
-(only sign-in is), and `AuthRecovery.canRecover()` (behind `DefaultNetworkRequestService`) excludes `authRecovery.refreshTokenPath`,
+(only sign-in is), and `AuthRecoveryHelper.canRecover()` (behind `DefaultNetworkRequestService`) excludes `authRecovery.refreshTokenPath`,
 so a failed refresh surfaces as a real error instead of looping - the general shape of this mechanism is
 documented in [Auth recovery](/architecture/auth-recovery.md) and [No-auth paths](/architecture/no-auth-paths.md).
 

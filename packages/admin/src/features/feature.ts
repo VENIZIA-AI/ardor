@@ -5,8 +5,8 @@ import type { RouteProps } from 'react-router-dom';
 
 import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
 
-import { LazyLocales } from '@/providers/i18n-sources';
-import { FeatureMessages } from './messages';
+import { FeatureMessagesHelper } from '@/helpers/feature-messages';
+import { LazyLocalesUtility } from '@/utilities/lazy-locales';
 
 /** What a user must be allowed to do, as the permission provider's `canAccess` is asked. */
 export interface IRouteAccess {
@@ -206,8 +206,8 @@ export class Features {
     const locale = i18nProvider.getLocale();
 
     return (
-      FeatureMessages.hasLoader({ features, locale }) ||
-      LazyLocales.isPending({ provider: i18nProvider, locale })
+      FeatureMessagesHelper.hasLoader({ features, locale }) ||
+      LazyLocalesUtility.isPending({ provider: i18nProvider, locale })
     );
   }
 
@@ -225,8 +225,8 @@ export class Features {
     const locale = opts.locale ?? i18nProvider.getLocale();
 
     if (
-      !FeatureMessages.hasLoader({ features, locale }) &&
-      !LazyLocales.isPending({ provider: i18nProvider, locale })
+      !FeatureMessagesHelper.hasLoader({ features, locale }) &&
+      !LazyLocalesUtility.isPending({ provider: i18nProvider, locale })
     ) {
       return;
     }
@@ -243,7 +243,7 @@ export class Features {
     features: Array<TFeature>;
     locales: Array<string>;
   }): Promise<void> {
-    const messages = new FeatureMessages({ features: opts.features });
+    const messages = new FeatureMessagesHelper({ features: opts.features });
 
     await Promise.all(opts.locales.map((locale) => messages.read({ locale })));
   }
