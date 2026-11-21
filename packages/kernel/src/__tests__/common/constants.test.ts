@@ -3,7 +3,6 @@ import {
   App,
   Authentication,
   Environments,
-  HeaderConstants,
   RequestBodyTypes,
   RequestChannel,
   RequestCountData,
@@ -155,37 +154,6 @@ describe('Environments scheme validation and members', () => {
     for (const env of declaredEnvironments) {
       expect(Environments.SCHEME_SET.has(env)).toBe(true);
     }
-  });
-});
-
-describe('HeaderConstants regular expressions', () => {
-  test('TEXTUAL_CONTENT_TYPE_RE matches textual types and rejects binary types', () => {
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/json')).toBe(true);
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/problem+json')).toBe(true);
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('text/html')).toBe(true);
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/x-www-form-urlencoded')).toBe(
-      true,
-    );
-
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('image/png')).toBe(false);
-    expect(HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test('application/octet-stream')).toBe(false);
-  });
-
-  test('ATTACHMENT_CONTENT_DISPOSITION_RE matches attachment header case-insensitively and rejects inline', () => {
-    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('attachment; filename=x')).toBe(
-      true,
-    );
-    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('ATTACHMENT; filename=x')).toBe(
-      true,
-    );
-    expect(
-      HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('Attachment; filename="doc.pdf"'),
-    ).toBe(true);
-
-    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('inline')).toBe(false);
-    expect(HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test('form-data; name="field"')).toBe(
-      false,
-    );
   });
 });
 

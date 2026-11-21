@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (105)
+### `@venizia/ardor-kernel` (104)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -38,7 +38,6 @@ generated:
 - `DefaultNetworkRequestService` class
 - `Environments` class
 - `FileUtility` class
-- `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactIndex` interface
@@ -261,7 +260,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (206)
+### `@venizia/ardor` (205)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -302,7 +301,6 @@ generated:
 - `Environments` class
 - `Features` class
 - `FileUtility` class
-- `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationContextValue` interface
 - `IApplicationInfo` interface

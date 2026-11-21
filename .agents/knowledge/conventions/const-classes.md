@@ -70,9 +70,8 @@ The value type is a closed union - no `| (string & {})` escape - because ARDOR o
 Every const class carries the `SCHEME_SET` plus `isValid(value: string)` pair: `RequestMethods`,
 `RequestTypes`, `RequestBodyTypes`, `Environments`, `RequestCountData`, `RequestChannel`,
 `Authentication` and `LocalStorageKeys`. A new one does too, and
-names the `isValid` parameter `value`. Two are exempt: `HeaderConstants`, the names behind the
-[header protocol](/architecture/header-protocol.md), also holds regexes, and `App` holds runtime
-defaults, so neither has a `SCHEME_SET` or `isValid()`.
+names the `isValid` parameter `value`. One is exempt: `App` holds runtime defaults, so it has
+no `SCHEME_SET` or `isValid()`.
 
 A list of property names is not a value domain, so it stays a `Pick` or an `as const satisfies ReadonlyArray<keyof T>` list: `Pick<DataProvider, 'getList' | ...>` and `ArtifactIndexKinds` name keys of an interface, and the compiler checks them against it, which a const class would lose.
 

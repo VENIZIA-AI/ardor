@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
@@ -5,7 +6,6 @@ import { HttpDataSource, HttpExtraRequest, HttpRepository } from '@/base/reposit
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
-  HeaderConstants,
   type IApplicationInfo,
   type IAuthRecoveryOptions,
   type IAuthTokenRecord,
@@ -230,11 +230,11 @@ describe('DefaultNetworkRequestService', () => {
 
       const headers = service.getRequestHeader({ resource: 'public-health' });
 
-      expect(headers).toHaveProperty(HeaderConstants.TIMEZONE, App.TIMEZONE);
-      expect(headers).toHaveProperty(HeaderConstants.TIMEZONE_OFFSET, `${App.TIMEZONE_OFFSET}`);
+      expect(headers).toHaveProperty(HTTP.Headers.TIMEZONE, App.TIMEZONE);
+      expect(headers).toHaveProperty(HTTP.Headers.TIMEZONE_OFFSET, `${App.TIMEZONE_OFFSET}`);
       expect(headers).toHaveProperty('x-custom-app', 'ignis');
-      expect(HeaderConstants.AUTHORIZATION in headers).toBe(false);
-      expect(HeaderConstants.X_AUTH_PROVIDER in headers).toBe(false);
+      expect(HTTP.Headers.AUTHORIZATION in headers).toBe(false);
+      expect(HTTP.Headers.AUTH_PROVIDER in headers).toBe(false);
     });
 
     test('adds authorization with default Bearer type and x-auth-provider when resource needs auth', () => {
@@ -246,10 +246,10 @@ describe('DefaultNetworkRequestService', () => {
 
       const headers = service.getRequestHeader({ resource: 'protected-resource' });
 
-      expect(headers).toHaveProperty(HeaderConstants.TIMEZONE, App.TIMEZONE);
-      expect(headers).toHaveProperty(HeaderConstants.TIMEZONE_OFFSET, `${App.TIMEZONE_OFFSET}`);
-      expect(headers).toHaveProperty(HeaderConstants.AUTHORIZATION, 'Bearer token-abc');
-      expect(headers).toHaveProperty(HeaderConstants.X_AUTH_PROVIDER, 'oidc');
+      expect(headers).toHaveProperty(HTTP.Headers.TIMEZONE, App.TIMEZONE);
+      expect(headers).toHaveProperty(HTTP.Headers.TIMEZONE_OFFSET, `${App.TIMEZONE_OFFSET}`);
+      expect(headers).toHaveProperty(HTTP.Headers.AUTHORIZATION, 'Bearer token-abc');
+      expect(headers).toHaveProperty(HTTP.Headers.AUTH_PROVIDER, 'oidc');
     });
 
     test('adds authorization with custom token type when specified', () => {
@@ -258,7 +258,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const headers = service.getRequestHeader({ resource: 'protected-resource' });
 
-      expect(headers).toHaveProperty(HeaderConstants.AUTHORIZATION, 'Basic token-custom');
+      expect(headers).toHaveProperty(HTTP.Headers.AUTHORIZATION, 'Basic token-custom');
     });
   });
 
@@ -397,7 +397,7 @@ describe('DefaultNetworkRequestService', () => {
       const service = new ReadOnlyOpenService({ name: 'open-service' });
 
       expect(service.getRequestHeader({ resource: 'public-news' })).not.toHaveProperty(
-        HeaderConstants.AUTHORIZATION,
+        HTTP.Headers.AUTHORIZATION,
       );
       expect(() => service.getRequestHeader({ resource: 'private-news' })).toThrow();
     });
@@ -485,9 +485,9 @@ describe('DefaultNetworkRequestService', () => {
         requestCountData: RequestCountData.DATA_ONLY,
       });
 
-      expect(props.headers).toHaveProperty(HeaderConstants.REQUEST_CHANNEL, RequestChannel.WEB);
+      expect(props.headers).toHaveProperty(HTTP.Headers.REQUEST_CHANNEL, RequestChannel.WEB);
       expect(props.headers).toHaveProperty(
-        HeaderConstants.REQUEST_COUNT_DATA,
+        HTTP.Headers.REQUEST_COUNT_DATA,
         RequestCountData.DATA_ONLY,
       );
 
@@ -500,7 +500,7 @@ describe('DefaultNetworkRequestService', () => {
         !(headersObj instanceof Headers)
       ) {
         const tracingHeader = Object.entries(headersObj).find(
-          ([key]) => key === HeaderConstants.REQUEST_TRACING_ID,
+          ([key]) => key === HTTP.Headers.REQUEST_TRACING_ID,
         );
         expect(tracingHeader).toBeDefined();
 
@@ -533,7 +533,7 @@ describe('DefaultNetworkRequestService', () => {
         });
 
         const tracingId = (props.headers as Record<string, string>)[
-          HeaderConstants.REQUEST_TRACING_ID
+          HTTP.Headers.REQUEST_TRACING_ID
         ];
 
         expect(tracingId).toMatch(
@@ -560,9 +560,9 @@ describe('DefaultNetworkRequestService', () => {
         restDataProviderOptions,
       });
 
-      expect(props.headers).toHaveProperty(HeaderConstants.REQUEST_CHANNEL, '200_MOBILE');
+      expect(props.headers).toHaveProperty(HTTP.Headers.REQUEST_CHANNEL, '200_MOBILE');
       expect(props.headers).toHaveProperty(
-        HeaderConstants.REQUEST_TRACING_ID,
+        HTTP.Headers.REQUEST_TRACING_ID,
         'custom-trace-custom-app',
       );
     });
@@ -578,7 +578,7 @@ describe('DefaultNetworkRequestService', () => {
         restDataProviderOptions: createRestDataProviderOptions(),
       });
 
-      expect(props.headers).toHaveProperty(HeaderConstants.CONTENT_TYPE, 'application/json');
+      expect(props.headers).toHaveProperty(HTTP.Headers.CONTENT_TYPE, 'application/json');
       expect(props.body).toBe(testBody);
     });
 
@@ -763,7 +763,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       expect(props.headers).toHaveProperty(
-        HeaderConstants.CONTENT_TYPE,
+        HTTP.Headers.CONTENT_TYPE,
         'application/x-www-form-urlencoded',
       );
       expect(props.body instanceof URLSearchParams).toBe(true);
@@ -786,7 +786,7 @@ describe('DefaultNetworkRequestService', () => {
         response: {
           data: { id: 1 },
           headers: new Headers({
-            [HeaderConstants.CONTENT_RANGE]: 'items 0-9/57',
+            [HTTP.Headers.CONTENT_RANGE]: 'items 0-9/57',
           }),
         },
       });
@@ -818,7 +818,7 @@ describe('DefaultNetworkRequestService', () => {
           type: RequestTypes.GET_LIST,
           response: {
             data: [{ id: 1 }, { id: 2 }, { id: 3 }],
-            headers: new Headers({ [HeaderConstants.CONTENT_RANGE]: header }),
+            headers: new Headers({ [HTTP.Headers.CONTENT_RANGE]: header }),
           },
         }).total;
 
@@ -849,7 +849,7 @@ describe('DefaultNetworkRequestService', () => {
         response: {
           data: { data: [{ id: 10 }], count: 25 },
           headers: new Headers({
-            [HeaderConstants.CONTENT_RANGE]: 'items 0-0/25',
+            [HTTP.Headers.CONTENT_RANGE]: 'items 0-0/25',
           }),
         },
       });
@@ -867,7 +867,7 @@ describe('DefaultNetworkRequestService', () => {
         response: {
           data: { id: 7, name: 'ARDOR Entity' },
           headers: new Headers({
-            [HeaderConstants.RESPONSE_COUNT_DATA]: '84',
+            [HTTP.Headers.RESPONSE_COUNT_DATA]: '84',
           }),
         },
       });
@@ -881,7 +881,7 @@ describe('DefaultNetworkRequestService', () => {
 
       for (const headers of [
         new Headers(),
-        new Headers({ [HeaderConstants.RESPONSE_COUNT_DATA]: 'many' }),
+        new Headers({ [HTTP.Headers.RESPONSE_COUNT_DATA]: 'many' }),
       ]) {
         const res = service.convertResponse<{ id: number }>({
           type: RequestTypes.GET_ONE,
@@ -1558,8 +1558,8 @@ describe('DefaultNetworkRequestService', () => {
       expect(recordedRequests).toHaveLength(2);
       expect(recordedRequests[0].headers['x-merchant-id']).toBe('merchant-1');
       expect(recordedRequests[0].headers['x-locale']).toBe('vi');
-      expect(recordedRequests[0].headers[HeaderConstants.TIMEZONE]).toBe(App.TIMEZONE);
-      expect(recordedRequests[0].headers[HeaderConstants.TIMEZONE_OFFSET]).toBe(
+      expect(recordedRequests[0].headers[HTTP.Headers.TIMEZONE]).toBe(App.TIMEZONE);
+      expect(recordedRequests[0].headers[HTTP.Headers.TIMEZONE_OFFSET]).toBe(
         `${App.TIMEZONE_OFFSET}`,
       );
       expect(recordedRequests[1].headers['x-merchant-id']).toBe('merchant-2');
@@ -1585,8 +1585,8 @@ describe('DefaultNetworkRequestService', () => {
 
       await orders.find({ filter: {} });
 
-      expect(recordedRequests[0].headers[HeaderConstants.REQUEST_CHANNEL]).toBe('pos');
-      expect(recordedRequests[0].headers[HeaderConstants.REQUEST_TRACING_ID]).toBe('kiosk-trace');
+      expect(recordedRequests[0].headers[HTTP.Headers.REQUEST_CHANNEL]).toBe('pos');
+      expect(recordedRequests[0].headers[HTTP.Headers.REQUEST_TRACING_ID]).toBe('kiosk-trace');
     });
 
     test('sends no token to a no-auth route, and the token elsewhere', async () => {

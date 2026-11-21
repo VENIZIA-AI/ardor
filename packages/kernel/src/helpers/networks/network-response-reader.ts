@@ -1,8 +1,8 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
 import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 
 import {
-  HeaderConstants,
   type INetworkResponse,
   RequestCountData,
   RequestTypes,
@@ -20,6 +20,13 @@ export class NetworkResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';
 
+  /** Content types read as text. */
+  private static readonly TEXTUAL_RE =
+    /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;
+
+  /** A `content-disposition` that marks a file download. */
+  private static readonly ATTACHMENT_RE = /^attachment/i;
+
   /** A response as `INetworkResponse`: JSON read by the request type, a file as a `Blob`. */
   static async read<TResult = unknown>(opts: {
     response: Response;
@@ -32,12 +39,11 @@ export class NetworkResponseReader {
       return { data: {} as TResult };
     }
 
-    const contentType = (response.headers?.get(HeaderConstants.CONTENT_TYPE) ?? '').toLowerCase();
-    const contentDisposition = response.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
+    const contentType = (response.headers?.get(HTTP.Headers.CONTENT_TYPE) ?? '').toLowerCase();
+    const contentDisposition = response.headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
 
-    const isAttachment = HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE.test(contentDisposition);
-    const isTextual =
-      contentType !== '' && HeaderConstants.TEXTUAL_CONTENT_TYPE_RE.test(contentType);
+    const isAttachment = NetworkResponseReader.ATTACHMENT_RE.test(contentDisposition);
+    const isTextual = contentType !== '' && NetworkResponseReader.TEXTUAL_RE.test(contentType);
 
     if (isAttachment || !isTextual) {
       const blob = await response.blob();
@@ -140,7 +146,7 @@ export class NetworkResponseReader {
         }
 
         // A missing or non-numeric header means the server sent no count - never NaN.
-        const count = Number.parseInt(headers?.get(HeaderConstants.RESPONSE_COUNT_DATA) ?? '', 10);
+        const count = Number.parseInt(headers?.get(HTTP.Headers.RESPONSE_COUNT_DATA) ?? '', 10);
 
         return {
           data: data as TData,
@@ -176,7 +182,7 @@ export class NetworkResponseReader {
   /** The total from `Content-Range`, or the page's own row count when the header is absent or malformed. */
   private static resolveTotal(opts: { headers: Pick<Headers, 'get'>; rowCount: number }): number {
     const range = HttpResponseReader.parseContentRange({
-      header: opts.headers?.get(HeaderConstants.CONTENT_RANGE),
+      header: opts.headers?.get(HTTP.Headers.CONTENT_RANGE),
     });
 
     return range?.total ?? opts.rowCount;
@@ -188,7 +194,7 @@ export class NetworkResponseReader {
    * as `filename`.
    */
   static readFilename(opts: { headers?: Pick<Headers, 'get'> }): string | undefined {
-    const header = opts.headers?.get(HeaderConstants.CONTENT_DISPOSITION) ?? '';
+    const header = opts.headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
 
     return NetworkResponseReader.parseFilename({ header });
   }

@@ -8,9 +8,10 @@ description: DefaultNetworkRequestService - HTTP transport, headers, abort and t
 ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps the platform `fetch` API. It builds headers, formats request bodies, parses responses, coordinates 401 token refresh, and shares authentication state with repository data sources.
 
 ```ts
+import { HTTP } from '@venizia/ignis-helpers/common';
+
 import {
   CoreBindings,
-  HeaderConstants,
   type IDataProvider,
   inject,
   RequestCountData,
@@ -50,7 +51,7 @@ export class AuditReportService {
       method: RequestMethods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
-      headers: { ...headers, [HeaderConstants.CONTENT_TYPE]: 'application/json' },
+      headers: { ...headers, [HTTP.Headers.CONTENT_TYPE]: 'application/json' },
       requestCountData: RequestCountData.DATA_ONLY,
     });
 
@@ -68,7 +69,6 @@ export class AuditReportService {
 | `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
 | `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
 | `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
-| `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
 | `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
 | `RequestTypes` | class | React-admin and kernel request type constants |
@@ -195,7 +195,7 @@ export async function readHealth(controller: AbortController): Promise<unknown> 
 
 Headers are assembled in layers:
 1. **Base and session headers:** Constructed from constructor `headers` and dynamic headers added via `setHeaders({ headers })` (or removed via `removeHeaders({ keys })`). Session headers automatically include `timezone` (`App.TIMEZONE`) and `timezone-offset` (`App.TIMEZONE_OFFSET`).
-2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HeaderConstants.X_LOCALE]: locale } })` so that subsequent requests include the active locale.
+2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HTTP.Headers.LOCALE]: locale } })` so that subsequent requests include the active locale.
 3. **Tracing headers:** `x-request-channel` is set to `restDataProviderOptions.requestTracingChannel` (default `RequestChannel.WEB` which is `'100_WEB'`). `x-request-id` is generated via `buildRequestTracingId({ applicationInfo })`, defaulting to `${applicationInfo.name}_${uuidV4()}`.
 4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. With an `authService` (the data provider passes its own), the hook reads `authService.getAuth()`; without one, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type} ${value}`, with `Bearer` as the type when it is empty or absent. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
 

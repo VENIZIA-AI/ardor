@@ -141,51 +141,6 @@ export class Environments {
   }
 }
 
-/** Header names, lowercase, and patterns on header values. */
-export class HeaderConstants {
-  /** The header on a request body and on a response. */
-  static readonly CONTENT_TYPE = 'content-type';
-
-  /**
-   * content-range: <unit> <range-start>-<range-end>/<size>
-   * @format unit start-end/total
-   * The positions are zero-indexed, the end inclusive; the total is `*` if unknown.
-   */
-  static readonly CONTENT_RANGE = 'content-range';
-  /** Names the file of a file response. */
-  static readonly CONTENT_DISPOSITION = 'content-disposition';
-
-  /** Carries `<type> <token>`. */
-  static readonly AUTHORIZATION = 'authorization';
-  /** Names the provider of the token; sent only when the token names one. */
-  static readonly X_AUTH_PROVIDER = 'x-auth-provider';
-  /** The locale of the request, the header `useRequestHeaderLocale` sets by default. */
-  static readonly X_LOCALE = 'x-locale';
-
-  // Lowercase: the service keys its header record by lowercased name.
-  /** Carries `App.TIMEZONE`. */
-  static readonly TIMEZONE = 'timezone';
-  /** Carries `App.TIMEZONE_OFFSET`, in hours. */
-  static readonly TIMEZONE_OFFSET = 'timezone-offset';
-
-  /** Carries the tracing id of a request. */
-  static readonly REQUEST_TRACING_ID = 'x-request-id';
-  /** Carries a `RequestChannel` value. */
-  static readonly REQUEST_CHANNEL = 'x-request-channel';
-
-  /** Carries a `RequestCountData` value: what the request asks the server to return. */
-  static readonly REQUEST_COUNT_DATA = 'x-request-count';
-  /** Carries the count a server sends with a response that is not a list. */
-  static readonly RESPONSE_COUNT_DATA = 'x-response-count';
-
-  /** Content types read as text. */
-  static readonly TEXTUAL_CONTENT_TYPE_RE =
-    /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;
-
-  /** A `content-disposition` that marks a file download. */
-  static readonly ATTACHMENT_CONTENT_DISPOSITION_RE = /^attachment/i;
-}
-
 /** The channels a request says it comes from, sent in `x-request-channel`. */
 export class RequestChannel {
   /** A browser application; what a request says unless `requestTracingChannel` is set. */

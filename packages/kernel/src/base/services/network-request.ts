@@ -6,7 +6,6 @@ import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
   App,
-  HeaderConstants,
   type IApplicationInfo,
   type IAuthTokenRecord,
   type IAuthRecoveryOptions,
@@ -155,15 +154,15 @@ export class DefaultNetworkRequestService extends BaseService {
       ...opts.extra,
     };
 
-    if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
-      sent[HeaderConstants.CONTENT_TYPE] = null;
+    if (opts.headers && !(HTTP.Headers.CONTENT_TYPE in sent)) {
+      sent[HTTP.Headers.CONTENT_TYPE] = null;
     }
 
     if (
       DefaultNetworkRequestService.isRawBody({ body: opts.body }) &&
-      !sent[HeaderConstants.CONTENT_TYPE]
+      !sent[HTTP.Headers.CONTENT_TYPE]
     ) {
-      sent[HeaderConstants.CONTENT_TYPE] = null;
+      sent[HTTP.Headers.CONTENT_TYPE] = null;
     }
 
     return sent;
@@ -640,8 +639,8 @@ export class DefaultNetworkRequestService extends BaseService {
     return NetworkHeaders.merge({
       sources: [
         {
-          [HeaderConstants.TIMEZONE]: App.TIMEZONE,
-          [HeaderConstants.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+          [HTTP.Headers.TIMEZONE]: App.TIMEZONE,
+          [HTTP.Headers.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
         },
         this.headers,
       ],
@@ -658,8 +657,8 @@ export class DefaultNetworkRequestService extends BaseService {
       : RequestChannel.WEB;
 
     return {
-      [HeaderConstants.REQUEST_CHANNEL]: channel,
-      [HeaderConstants.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
+      [HTTP.Headers.REQUEST_CHANNEL]: channel,
+      [HTTP.Headers.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
     };
   }
 
@@ -681,8 +680,8 @@ export class DefaultNetworkRequestService extends BaseService {
     return {
       ...defaultHeaders,
       // A token need not name a provider; never send the string `undefined`.
-      ...(authHeader.provider ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider } : {}),
-      [HeaderConstants.AUTHORIZATION]: authHeader.token,
+      ...(authHeader.provider ? { [HTTP.Headers.AUTH_PROVIDER]: authHeader.provider } : {}),
+      [HTTP.Headers.AUTHORIZATION]: authHeader.token,
     };
   }
 
@@ -712,7 +711,7 @@ export class DefaultNetworkRequestService extends BaseService {
       sources: [
         this.getRequestHeader({ resource }),
         this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-        { [HeaderConstants.REQUEST_COUNT_DATA]: requestCountData },
+        { [HTTP.Headers.REQUEST_COUNT_DATA]: requestCountData },
         extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
       ],
     });
@@ -721,7 +720,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     const props: IGetRequestPropsResult = {
       headers: encoded.contentType
-        ? { ...headers, [HeaderConstants.CONTENT_TYPE]: encoded.contentType }
+        ? { ...headers, [HTTP.Headers.CONTENT_TYPE]: encoded.contentType }
         : headers,
       body: encoded.body,
     };
@@ -871,8 +870,8 @@ export class DefaultNetworkRequestService extends BaseService {
         const authHeader = this.getRequestAuthorizationHeader();
         // The token's provider wins, and a token with none removes the one the call carried.
         const retryHeaders = {
-          [HeaderConstants.AUTHORIZATION]: authHeader.token,
-          [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider ?? null,
+          [HTTP.Headers.AUTHORIZATION]: authHeader.token,
+          [HTTP.Headers.AUTH_PROVIDER]: authHeader.provider ?? null,
         };
 
         const result = await sendOnce(retryHeaders);

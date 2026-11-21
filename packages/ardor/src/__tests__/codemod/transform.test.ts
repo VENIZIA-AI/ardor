@@ -453,15 +453,16 @@ describe('NamespaceTransform: removed with no replacement', () => {
 
   test('lists a removed export at its import and changes nothing', () => {
     const text = [
-      "import { isEditableTarget, type ISyncFC, type TDataCount } from '@venizia/ardor';",
+      "import { HeaderConstants, isEditableTarget, type ISyncFC, type TDataCount } from '@venizia/ardor';",
       '',
-      'export const a = isEditableTarget;',
+      'export const a = [HeaderConstants, isEditableTarget];',
       '',
     ].join('\n');
     const result = run(text);
 
     expect(result.text).toBe(text);
     expect(result.findings.map((finding) => finding.name)).toEqual([
+      'HeaderConstants',
       'isEditableTarget',
       'ISyncFC',
       'TDataCount',
@@ -488,18 +489,15 @@ describe('NamespaceTransform: removed with no replacement', () => {
   test('lists the removed static members with their line', () => {
     const result = run(
       [
-        "import { App, HeaderConstants } from '@venizia/ardor-kernel';",
+        "import { App } from '@venizia/ardor-kernel';",
         '',
         'export const locale = App.DEFAULT_LOCALE;',
-        'export const header = HeaderConstants.RESPONSE_FORMAT;',
-        'export const kept = HeaderConstants.REQUEST_TRACING_ID;',
         '',
       ].join('\n'),
     );
 
     expect(result.findings.map((finding) => [finding.name, finding.line])).toEqual([
       ['App.DEFAULT_LOCALE', 3],
-      ['HeaderConstants.RESPONSE_FORMAT', 4],
     ]);
   });
 

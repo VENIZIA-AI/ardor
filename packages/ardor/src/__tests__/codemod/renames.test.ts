@@ -25,11 +25,9 @@ describe('the codemod tables match the packages', () => {
 
   test('the removed constants are gone from their classes', () => {
     const app = exported.App as Record<string, unknown>;
-    const headers = exported.HeaderConstants as Record<string, unknown>;
 
     expect(app.DEFAULT_LOCALE).toBeUndefined();
-    expect(headers.REQUEST_DEVICE_INFO).toBeUndefined();
-    expect(headers.RESPONSE_FORMAT).toBeUndefined();
+    expect(exported.HeaderConstants).toBeUndefined();
     expect(exported.isEditableTarget).toBeUndefined();
     expect(exported.useSizer).toBeUndefined();
     expect(exported.useInjectableContainer).toBeUndefined();

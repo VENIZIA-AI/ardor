@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 
 import { RejectionHelper } from '@venizia/dev-configs/testing';
@@ -5,7 +6,7 @@ import { HttpDataSource } from '@venizia/ignis-connectors/http';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
-import { HeaderConstants, type IAuthTokenRecord, RequestMethods, RequestTypes } from '@/common';
+import { type IAuthTokenRecord, RequestMethods, RequestTypes } from '@/common';
 
 /**
  * The second HTTP client of ARDOR, IGNIS \`HttpDataSource\` spread with \`getDataSourceAuth()\`, next to
@@ -96,8 +97,8 @@ describe('where the two clients agree', () => {
     await source.request({ paths: ['items'], method: 'GET' });
 
     const [viaService, viaSource] = recorded;
-    expect(viaService.headers[HeaderConstants.AUTHORIZATION]).toBe('Bearer tok-1');
-    expect(viaSource.headers[HeaderConstants.AUTHORIZATION]).toBe('Bearer tok-1');
+    expect(viaService.headers[HTTP.Headers.AUTHORIZATION]).toBe('Bearer tok-1');
+    expect(viaSource.headers[HTTP.Headers.AUTHORIZATION]).toBe('Bearer tok-1');
     expect(viaSource.headers['x-auth-provider']).toBe(viaService.headers['x-auth-provider']);
   });
 
@@ -224,7 +225,7 @@ describe('where the two clients differ, as the docs say', () => {
       paths: ['items'],
       method: RequestMethods.GET,
       type: RequestTypes.GET_ONE,
-      headers: { [HeaderConstants.REQUEST_COUNT_DATA]: 'true' },
+      headers: { [HTTP.Headers.REQUEST_COUNT_DATA]: 'true' },
     });
     await source.request({ paths: ['items'], method: 'GET' });
     const before = requestCount();
@@ -232,12 +233,12 @@ describe('where the two clients differ, as the docs say', () => {
       task: source.request({
         paths: ['items'],
         method: 'GET',
-        headers: { [HeaderConstants.REQUEST_COUNT_DATA]: 'true' },
+        headers: { [HTTP.Headers.REQUEST_COUNT_DATA]: 'true' },
       }),
     });
 
-    expect(recorded[0].headers[HeaderConstants.REQUEST_COUNT_DATA]).toBe('true');
-    expect(recorded[1].headers[HeaderConstants.REQUEST_COUNT_DATA]).toBe('false');
+    expect(recorded[0].headers[HTTP.Headers.REQUEST_COUNT_DATA]).toBe('true');
+    expect(recorded[1].headers[HTTP.Headers.REQUEST_COUNT_DATA]).toBe('false');
     expect(requestCount()).toBe(before);
     expect(error instanceof Error ? error.message : '').toContain(
       'x-request-count is owned by HttpDataSource',
