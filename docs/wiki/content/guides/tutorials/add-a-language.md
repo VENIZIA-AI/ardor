@@ -150,7 +150,7 @@ export const LanguageSwitcher = () => {
 
 Three hooks synchronize locale changes across the application:
 
-- `useRequestHeaderLocale(options?)` (`packages/admin/src/hooks/use-request-header-locale.ts`): Updates HTTP headers on the network service of `DefaultRestDataProvider` (`CoreBindings.DEFAULT_REST_DATA_PROVIDER`). By default, it sets the `x-locale` header (`HeaderConstants.X_LOCALE`). Pass `{ key: 'accept-language' }` to use a different header.
+- `useRequestHeaderLocale(options?)` (`packages/admin/src/hooks/use-request-header-locale.ts`): Updates HTTP headers on the network service of `DefaultRestDataProvider` (`CoreBindings.DEFAULT_REST_DATA_PROVIDER`). By default, it sets the `x-locale` header (`HTTP.Headers.LOCALE`). Pass `{ key: 'accept-language' }` to use a different header.
 - `useHtmlLang()` (`packages/admin/src/hooks/use-html-lang.ts`): Sets `document.documentElement.lang` to the active locale string for screen readers.
 - `useDocumentTitle(options)` (`packages/admin/src/hooks/use-document-title.ts`): Sets `document.title` by joining `title` segments with `appTitle` using `separator` (default `' · '`). Options include `title`, `appTitle`, `separator`, and `enabled` (default `true`). On unmount, it restores the previous title unless a newer title was set.
 

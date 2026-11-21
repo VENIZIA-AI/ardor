@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
-import { AuthTokenStore } from '@/helpers';
+import { AuthTokenStore } from '@/utilities';
 import { FakeStorage } from '@/testing';
 
 // The store's own logger (private), so a test can see the one warning it writes.

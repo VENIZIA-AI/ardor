@@ -6,7 +6,7 @@ import { BuildInfoRegistry, type TBuildInfoRecord } from '@venizia/ignis-helpers
 import { type IBuildInfoSources, UnresolvedPolicies } from '@/vite/common';
 import { resolveBuildInfo, serializeBuildInfoFile, toBuildInfoFile } from '@/vite/resolver';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 const UNSPECIFIED = BuildInfoRegistry.UNSPECIFIED;
 
@@ -130,7 +130,7 @@ describe('resolveBuildInfo', () => {
     const task = resolveWith({
       sources: makeSources({ record: makeRecord({ overrides: { commit: UNSPECIFIED } }) }),
     });
-    const result = await RejectionHelper.rejectionOf({ task });
+    const result = await RejectionUtility.rejectionOf({ task });
     const message = String(result);
 
     expect(message).toContain('APP_BUILD_COMMIT');

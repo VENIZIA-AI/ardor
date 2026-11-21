@@ -1,8 +1,9 @@
+import { BaseHelper, RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
-import { deepMerge, isRecord } from '@/common/merge';
-import { unwrapMessages } from '@/providers/i18n-sources';
-import type { TFeature } from './feature';
+import { deepMerge } from '@/common/merge';
+import type { TFeature } from '@/features/feature';
+import { unwrapMessages } from './locale-sources';
 
 interface IFeatureBundle {
   feature: string;
@@ -14,12 +15,14 @@ interface IFeatureBundle {
  * two features both define throws, naming both: a silent "later wins" is a wrong label nobody
  * notices. The application's own sources are layered on top by the i18n provider, not here.
  */
-export class FeatureMessages {
+export class FeatureMessagesHelper extends BaseHelper {
   private readonly loaded = new Map<string, object>();
   /** Each lazy bundle's load, by locale and feature: one call, kept once it delivered, dropped when it fails. */
   private readonly loads = new Map<string, Promise<object>>();
 
-  constructor(private readonly opts: { features: Array<TFeature> }) {}
+  constructor(private readonly opts: { features: Array<TFeature> }) {
+    super({ scope: FeatureMessagesHelper.name });
+  }
 
   /** Whether some feature in the list loads this locale lazily. */
   static hasLoader(opts: { features: Array<TFeature>; locale: string }): boolean {
@@ -34,7 +37,7 @@ export class FeatureMessages {
 
     return (
       !this.loaded.has(locale) &&
-      FeatureMessages.hasLoader({ features: this.opts.features, locale })
+      FeatureMessagesHelper.hasLoader({ features: this.opts.features, locale })
     );
   }
 
@@ -48,7 +51,7 @@ export class FeatureMessages {
       return loaded;
     }
 
-    return FeatureMessages.combine({
+    return FeatureMessagesHelper.combine({
       locale,
       bundles: this.opts.features.map((feature) => {
         const messages = feature.messages?.[locale];
@@ -89,7 +92,7 @@ export class FeatureMessages {
       }),
     );
 
-    const combined = FeatureMessages.combine({ locale, bundles });
+    const combined = FeatureMessagesHelper.combine({ locale, bundles });
     this.loaded.set(locale, combined);
 
     return combined;
@@ -119,7 +122,7 @@ export class FeatureMessages {
     const owners = new Map<string, string>();
 
     for (const { feature, bundle } of bundles) {
-      for (const key of FeatureMessages.leafKeys({ value: bundle })) {
+      for (const key of FeatureMessagesHelper.leafKeys({ value: bundle })) {
         const owner = owners.get(key);
 
         if (owner) {
@@ -138,12 +141,15 @@ export class FeatureMessages {
   private static leafKeys(opts: { value: unknown; prefix?: string }): Array<string> {
     const { value, prefix } = opts;
 
-    if (!isRecord(value)) {
+    if (!RecordUtility.isPlainRecord(value)) {
       return prefix ? [prefix] : [];
     }
 
     return Object.entries(value).flatMap(([key, child]) => {
-      return FeatureMessages.leafKeys({ value: child, prefix: prefix ? `${prefix}.${key}` : key });
+      return FeatureMessagesHelper.leafKeys({
+        value: child,
+        prefix: prefix ? `${prefix}.${key}` : key,
+      });
     });
   }
 }

@@ -8,9 +8,10 @@ description: DefaultNetworkRequestService - HTTP transport, headers, abort and t
 ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps the platform `fetch` API. It builds headers, formats request bodies, parses responses, coordinates 401 token refresh, and shares authentication state with repository data sources.
 
 ```ts
+import { HTTP } from '@venizia/ignis-helpers/common';
+
 import {
   CoreBindings,
-  HeaderConstants,
   type IDataProvider,
   inject,
   RequestCountData,
@@ -50,7 +51,7 @@ export class AuditReportService {
       method: RequestMethods.POST,
       paths: ['/audit/export'],
       body: JSON.stringify({ category }),
-      headers: { ...headers, [HeaderConstants.CONTENT_TYPE]: 'application/json' },
+      headers: { ...headers, [HTTP.Headers.CONTENT_TYPE]: 'application/json' },
       requestCountData: RequestCountData.DATA_ONLY,
     });
 
@@ -67,8 +68,6 @@ export class AuditReportService {
 | `NativeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
 | `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
 | `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
-| `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
-| `HeaderConstants` | class | Standard HTTP header name constants used across ARDOR |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
 | `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
 | `RequestTypes` | class | React-admin and kernel request type constants |
@@ -131,7 +130,7 @@ The configuration relies on the following defaults and container keys:
 
 ## Fetch transport
 
-ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `NetworkResponseReader.toError`, and a call that carries headers sends those alone.
+ARDOR uses standard platform `fetch` through the IGNIS `NativeFetchNetworkRequest` (`@venizia/ignis-helpers/core`); it keeps no copy of it. `DefaultNetworkRequestService` holds one (`protected networkRequest`, constructed in its constructor at `packages/kernel/src/base/services/network-request.ts`) with `queryString: { nullish: 'skip', nested: 'json' }`, so a filter object is sent as one JSON parameter and a `null` is left out. A path that leaves the base (a dot segment, a backslash, a control character) is refused by IGNIS with a 400 that starts `A request path must stay under the base path`, and a relative base URL needs a page or worker location to resolve against. `doRequest` accepts every status and reads the `Response` itself, so a 4xx or 5xx reaches `HttpResponseReader.toApplicationError`, and a call that carries headers sends those alone.
 
 - `getNetworkService()` returns the fetcher, whose `send` resolves a `Response`.
 - `getWorker()` returns the global `fetch` function.
@@ -191,11 +190,11 @@ export async function readHealth(controller: AbortController): Promise<unknown> 
 
 ## Headers and token resolution
 
-`DefaultNetworkRequestService` manages headers through the `NetworkHeaders` utility class in `packages/kernel/src/helpers/networks/headers.ts`. All header keys are normalized to lowercase by `NetworkHeaders.toRecord` and merged by `NetworkHeaders.merge`, ensuring later values replace earlier values without case collisions.
+`DefaultNetworkRequestService` keeps its headers in a `Headers` object and merges sources with IGNIS's `HttpHeaders.merge` (`@venizia/ignis-helpers/core`). Header names are case-insensitive, so a later value replaces an earlier one without case collisions.
 
 Headers are assembled in layers:
 1. **Base and session headers:** Constructed from constructor `headers` and dynamic headers added via `setHeaders({ headers })` (or removed via `removeHeaders({ keys })`). Session headers automatically include `timezone` (`App.TIMEZONE`) and `timezone-offset` (`App.TIMEZONE_OFFSET`).
-2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HeaderConstants.X_LOCALE]: locale } })` so that subsequent requests include the active locale.
+2. **Locale header:** The `useRequestHeaderLocale` hook connects react-admin locale state with the network service, executing `networkService.setHeaders({ headers: { [HTTP.Headers.LOCALE]: locale } })` so that subsequent requests include the active locale.
 3. **Tracing headers:** `x-request-channel` is set to `restDataProviderOptions.requestTracingChannel` (default `RequestChannel.WEB` which is `'100_WEB'`). `x-request-id` is generated via `buildRequestTracingId({ applicationInfo })`, defaulting to `${applicationInfo.name}_${uuidV4()}`.
 4. **Authorization header:** When `isNoAuthPath({ resource })` returns `false`, `getRequestAuthorizationHeader()` retrieves the authentication token via the protected `resolveAuthToken()` hook. With an `authService` (the data provider passes its own), the hook reads `authService.getAuth()`; without one, `DefaultNetworkRequestService.readAuthTokenFromStorage()` reads `LocalStorageKeys.KEY_AUTH_TOKEN` (`@app/auth/token`) from `localStorage`. The header is set as `${type} ${value}`, with `Bearer` as the type when it is empty or absent. If `provider` is defined on the token record, an `x-auth-provider` header is attached.
 
@@ -241,19 +240,19 @@ export const fileNameOf = (response: Response): string | undefined => {
 
 ## Error handling and 401 recovery
 
-When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `NetworkResponseReader.toError` in `packages/kernel/src/helpers/networks/network-response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
+When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created by IGNIS's `HttpResponseReader.toApplicationError` (`@venizia/ignis-helpers/core`), which reads the error body under the root key `'error'` (`NetworkResponseReader.ERROR_ROOT_KEY`):
 - `error.statusCode`: The HTTP status code of the response.
 - `error.message`: Server normalized text, server message, or `'HTTP ' + response.status`.
 - `error.normalized`: Server normalized details containing `text`, `code` (`error.normalized.code`, defaulting to `'core.system_error'`), and interpolation arguments `args` (`error.normalized.args`).
 - `error.extra`: Server extra metadata, including `requestId` and `upstreamRequestIds`.
 - `error.cause`: Underlying cause details (`server.details?.cause`).
 
-When a request receives a 401 Unauthorized status, `doRequest` triggers token recovery if `AuthRecovery.canRecover({ paths })` returns `true`:
+When a request receives a 401 Unauthorized status, `doRequest` triggers token recovery if `AuthRecoveryHelper.canRecover({ paths })` returns `true`:
 - The resource must not match `noAuthPaths` or `noAuthPathRegex`.
 - The path must not contain `authRecovery.refreshTokenPath`.
 
 Recovery calls `refresh()`, which delegates to the protected `refreshToken()` hook:
-- Concurrent requests share a single in-flight promise (`AuthRecovery.refresh`), preventing duplicate refresh calls.
+- Concurrent requests share a single in-flight promise (`AuthRecoveryHelper.refresh`), preventing duplicate refresh calls.
 - If `refreshToken()` resolves `true`, `doRequest` retrieves updated authorization headers and retries the original request once.
 - If `refreshToken()` resolves `false` (the default without a `refreshTokenPath` or an auth service), no retry is attempted and the 401 error is thrown. With a path, the default posts to it and saves the new token.
 - If `refreshToken()` throws, `onAuthFailure()` runs, and the original 401 error is thrown.

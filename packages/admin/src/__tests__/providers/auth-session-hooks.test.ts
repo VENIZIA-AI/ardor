@@ -16,7 +16,7 @@ import {
   type ISignInSession,
   LocalStorageKeys,
 } from '@venizia/ardor-kernel';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 interface IStartedCall {
   readonly token: IAuthTokenRecord;
@@ -296,7 +296,7 @@ describe('onSessionStarted', () => {
   test('a checkAuth with no session stored announces nothing', async () => {
     const provider = buildProvider();
 
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(hooks.started).toEqual([]);
   });
@@ -361,7 +361,7 @@ describe('onSessionCleared', () => {
     const provider = buildProvider();
     await signIn(provider);
 
-    const rejection = await RejectionHelper.rejectionOf({
+    const rejection = await RejectionUtility.rejectionOf({
       task: provider.checkError({ status: 401 }),
     });
 
@@ -374,7 +374,7 @@ describe('onSessionCleared', () => {
     const provider = buildProvider();
     await signIn(provider);
 
-    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 403 }) });
+    await RejectionUtility.rejectionOf({ task: provider.checkError({ status: 403 }) });
     await provider.checkError({ status: 500 });
 
     expect(hooks.cleared).toEqual([]);
@@ -386,8 +386,8 @@ describe('onSessionCleared', () => {
     await signIn(provider);
     api.whoamiHasData = false;
 
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.REJECTED]);
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).not.toBeNull();
@@ -398,8 +398,8 @@ describe('onSessionCleared', () => {
     await signIn(provider);
     localStorage.clear();
 
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.REJECTED]);
   });
@@ -408,8 +408,8 @@ describe('onSessionCleared', () => {
     const provider = buildProvider();
 
     await provider.logout({});
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
-    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkError({ status: 401 }) });
 
     expect(hooks.cleared).toEqual([]);
   });
@@ -418,7 +418,7 @@ describe('onSessionCleared', () => {
     const provider = buildProvider();
     await signIn(provider);
     api.whoamiHasData = false;
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
     api.whoamiHasData = true;
 
     await provider.checkAuth({});
@@ -477,7 +477,7 @@ describe('a hook that throws or is async', () => {
     expect(localStorage.getItem(LocalStorageKeys.KEY_AUTH_TOKEN)).toBeNull();
 
     await signIn(provider);
-    const rejection = await RejectionHelper.rejectionOf({
+    const rejection = await RejectionUtility.rejectionOf({
       task: provider.checkError({ status: 401 }),
     });
 
@@ -565,7 +565,7 @@ describe('the order react-admin and the network can produce', () => {
     api.whoamiHasData = false;
     api.whoamiDelay = 30;
 
-    const checking = RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    const checking = RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
     storeSession({ token: 'jwt-2', userId: 7 });
     await provider.refreshToken();
     const rejection = await checking;
@@ -579,7 +579,7 @@ describe('the order react-admin and the network can produce', () => {
     const provider = buildProvider();
     await signIn(provider);
 
-    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+    await RejectionUtility.rejectionOf({ task: provider.checkError({ status: 401 }) });
     await provider.logout({});
 
     expect(hooks.cleared).toEqual([SessionClearReasons.UNAUTHORIZED]);
@@ -597,7 +597,7 @@ describe('without paths.checkAuth', () => {
     expect(hooks.started).toHaveLength(1);
 
     localStorage.clear();
-    await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.REJECTED]);
   });
@@ -633,7 +633,7 @@ describe('a change of the session made outside the provider', () => {
 
     service.cleanUp();
     service.cleanUp();
-    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+    await RejectionUtility.rejectionOf({ task: provider.checkError({ status: 401 }) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.EXTERNAL]);
   });
@@ -643,7 +643,7 @@ describe('a change of the session made outside the provider', () => {
     await signIn(provider);
     await provider.logout({});
     await signIn(provider);
-    await RejectionHelper.rejectionOf({ task: provider.checkError({ status: 401 }) });
+    await RejectionUtility.rejectionOf({ task: provider.checkError({ status: 401 }) });
 
     expect(hooks.cleared).toEqual([SessionClearReasons.LOGOUT, SessionClearReasons.UNAUTHORIZED]);
   });
@@ -669,11 +669,11 @@ describe('a change of the session made outside the provider', () => {
 describe('unauthenticatedRejection', () => {
   test('by default every place rejects with a redirect to the login page, and names its reason', async () => {
     const provider = buildProvider();
-    const noToken = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    const noToken = await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
     storeSession({ token: 'stored', userId: 3 });
     api.whoamiHasData = false;
-    const noData = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
-    const unauthorized = await RejectionHelper.rejectionOf({
+    const noData = await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+    const unauthorized = await RejectionUtility.rejectionOf({
       task: provider.checkError({ status: 401 }),
     });
 
@@ -691,10 +691,10 @@ describe('unauthenticatedRejection', () => {
 
   test('a guest app rejects checkAuth with no redirect and no message', async () => {
     const provider = buildProvider({ providerClass: GuestAuthProvider });
-    const noToken = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    const noToken = await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
     storeSession({ token: 'stored', userId: 3 });
     api.whoamiHasData = false;
-    const noData = await RejectionHelper.rejectionOf({ task: provider.checkAuth({}) });
+    const noData = await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
 
     expect(noToken).toEqual({ redirectTo: false, message: false });
     expect(noData).toEqual({ redirectTo: false, message: false });
@@ -704,7 +704,7 @@ describe('unauthenticatedRejection', () => {
     const provider = buildProvider({ providerClass: GuestAuthProvider });
     await signIn(provider);
 
-    const rejection = await RejectionHelper.rejectionOf({
+    const rejection = await RejectionUtility.rejectionOf({
       task: provider.checkError({ status: 401 }),
     });
 
@@ -716,7 +716,7 @@ describe('unauthenticatedRejection', () => {
   test('a 403 and any other status are not affected', async () => {
     const provider = buildProvider({ providerClass: GuestAuthProvider });
 
-    const forbidden = await RejectionHelper.rejectionOf({
+    const forbidden = await RejectionUtility.rejectionOf({
       task: provider.checkError({ status: 403 }),
     });
     await provider.checkError({ status: 500 });

@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { Container } from '@venizia/ignis-inversion';
 
 import { Features } from '@/features/feature';
-import { FeatureMessages } from '@/features/messages';
+import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 beforeEach(() => {
   localStorage.clear();
@@ -23,9 +23,9 @@ const commerce = Features.define({
   },
 });
 
-describe('FeatureMessages', () => {
+describe('FeatureMessagesHelper', () => {
   test('merges the bundles every feature has for a locale', async () => {
-    const messages = new FeatureMessages({ features: [inventory, commerce] });
+    const messages = new FeatureMessagesHelper({ features: [inventory, commerce] });
 
     const result = await messages.read({ locale: 'en' });
     expect(result).toEqual({
@@ -40,9 +40,9 @@ describe('FeatureMessages', () => {
       name: 'shadow',
       messages: { en: { inventory: { title: 'X' } } },
     });
-    const messages = new FeatureMessages({ features: [inventory, shadow] });
+    const messages = new FeatureMessagesHelper({ features: [inventory, shadow] });
 
-    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'en' }) });
+    const result = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'en' }) });
     expect(result).toMatchObject({
       message: expect.stringContaining(
         "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
@@ -55,7 +55,7 @@ describe('FeatureMessages', () => {
 
   test('loads a lazy bundle once, and readNow leaves it out until then', async () => {
     const loader = mock(() => Promise.resolve({ commerce: { title: 'Don hang' } }));
-    const messages = new FeatureMessages({
+    const messages = new FeatureMessagesHelper({
       features: [Features.define({ name: 'commerce', messages: { vi: loader } })],
     });
 
@@ -71,8 +71,10 @@ describe('FeatureMessages', () => {
   });
 
   test('says whether any feature loads a locale lazily', () => {
-    expect(FeatureMessages.hasLoader({ features: [inventory, commerce], locale: 'vi' })).toBe(true);
-    expect(FeatureMessages.hasLoader({ features: [inventory, commerce], locale: 'en' })).toBe(
+    expect(FeatureMessagesHelper.hasLoader({ features: [inventory, commerce], locale: 'vi' })).toBe(
+      true,
+    );
+    expect(FeatureMessagesHelper.hasLoader({ features: [inventory, commerce], locale: 'en' })).toBe(
       false,
     );
   });
@@ -118,11 +120,11 @@ describe('DefaultI18nProvider with features', () => {
 describe('a feature loader that resolves to an ES module', () => {
   const orders = Features.define({
     name: 'orders',
-    messages: { vi: () => import('./fixtures/orders-vi') },
+    messages: { vi: () => import('../features/fixtures/orders-vi') },
   });
 
   test('gives the keys of its default export, unprefixed', async () => {
-    const messages = new FeatureMessages({ features: [orders] });
+    const messages = new FeatureMessagesHelper({ features: [orders] });
 
     const result2 = await messages.read({ locale: 'vi' });
     expect(result2).toEqual({ orders: { title: 'Don hang' } });
@@ -141,11 +143,11 @@ describe('a feature loader that resolves to an ES module', () => {
   test('a loader that resolves to something that is not messages is a failed load', async () => {
     const broken = Features.define({
       name: 'broken',
-      messages: { vi: () => import('./fixtures/not-messages') },
+      messages: { vi: () => import('../features/fixtures/not-messages') },
     });
-    const messages = new FeatureMessages({ features: [broken] });
+    const messages = new FeatureMessagesHelper({ features: [broken] });
 
-    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'vi' }) });
+    const result = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'vi' }) });
 
     expect(result).toMatchObject({ message: expect.stringContaining("loader of 'broken'") });
   });
@@ -165,7 +167,7 @@ describe('loaders that are called while another call is still waiting', () => {
   test('two reads of a feature locale before the loader settles call it once', async () => {
     const { promise, open } = gate();
     const loader = mock(() => promise);
-    const messages = new FeatureMessages({
+    const messages = new FeatureMessagesHelper({
       features: [Features.define({ name: 'commerce', messages: { vi: loader } })],
     });
 
@@ -185,14 +187,14 @@ describe('loaders that are called while another call is still waiting', () => {
     const flaky = mock<() => Promise<object>>()
       .mockRejectedValueOnce(new Error('down'))
       .mockResolvedValueOnce({ b: 'B' });
-    const messages = new FeatureMessages({
+    const messages = new FeatureMessagesHelper({
       features: [
         Features.define({ name: 'a', messages: { vi: delivered } }),
         Features.define({ name: 'b', messages: { vi: flaky } }),
       ],
     });
 
-    const failure = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'vi' }) });
+    const failure = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'vi' }) });
     expect(failure).toMatchObject({ message: 'down' });
 
     const result3 = await messages.read({ locale: 'vi' });

@@ -23,8 +23,8 @@ In `packages/kernel/src/common/constants.ts`, `RequestMethods`, `RequestTypes`, 
 and `Environments` each pair a fixed set of values with a `SCHEME_SET` and an `isValid` check, and
 their value types are closed unions. ARDOR owns these vocabularies outright: an HTTP method is
 closed by the protocol, and the request types, body encodings and environment names are the ones
-ARDOR itself defines and handles. That is what makes narrowing them legitimate. `HeaderConstants` is
-plain `static readonly` header names with neither, and no type narrows a header name - see
+ARDOR itself defines and handles. That is what makes narrowing them legitimate. Header names are
+plain strings that no type narrows: they come from IGNIS's `HTTP.Headers` - see
 [const classes](/conventions/const-classes.md).
 
 Contrast this with something ARDOR does not own, such as the shape of a consuming application's

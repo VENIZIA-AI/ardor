@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { RequestBodyTypes } from '@/common';
-import { RequestBodyEncoder } from '@/helpers';
+import { RequestBodyEncoder } from '@/utilities';
 
 describe('RequestBodyEncoder.encode', () => {
   test('a JSON body passes through as it is, with the JSON content type', () => {

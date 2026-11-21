@@ -106,8 +106,6 @@ export type UserLeaf = TFullPaths<UserRecord>;
 | `Environments` | `class` | Environment constants with `SCHEME_SET` and `isValid`. | `DEVELOPMENT`, `PRODUCTION` |
 | `RequestCountData` | `class` | Count mode constants with `SCHEME_SET` and `isValid`. | `DATA_ONLY: '0'`, `DATA_WITH_COUNT: '1'` |
 | `RequestChannel` | `class` | Client channel constant with `SCHEME_SET` and `isValid`. | `WEB: '100_WEB'` |
-| `Authentication` | `class` | Auth types and strategies with `SCHEME_SET` and `isValid`. | `TYPE_BASIC`, `TYPE_BEARER`, `STRATEGY_BASIC`, `STRATEGY_JWT` |
-| `HeaderConstants` | `class` | HTTP header string constants read and written by network services. | - |
 | `App` | `class` | Runtime defaults: the timezone, its offset and the debounce time. | `TIMEZONE`, `TIMEZONE_OFFSET`, `DEFAULT_DEBOUNCE_TIME` |
 
 ### Repositories (@venizia/ardor/repository)

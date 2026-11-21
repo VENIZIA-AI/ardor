@@ -124,7 +124,7 @@ In `packages/admin/src/providers/rest-data.ts`, `DefaultRestDataProvider` conver
 
 In `DefaultRestDataProvider`:
 
-- `getList` builds an IGNIS filter object containing `where`, `order`, `limit`, and `skip`. Total count comes from `Content-Range`, falling back to the returned row count when absent or malformed (`packages/kernel/src/helpers/networks/network-response-reader.ts`).
+- `getList` builds an IGNIS filter object containing `where`, `order`, `limit`, and `skip`. Total count comes from `Content-Range`, falling back to the returned row count when absent or malformed (`packages/kernel/src/utilities/network-response-reader.ts`).
 - `update` sends a `PATCH` request with `params.data` directly (`packages/admin/src/providers/rest-data.ts`).
 - `deleteMany` and `updateMany` send bulk operations in one HTTP request with the selector in the body. `updateMany` throws if `data` carries a `where` field, and both bulk calls throw when `ids` is empty.
 
