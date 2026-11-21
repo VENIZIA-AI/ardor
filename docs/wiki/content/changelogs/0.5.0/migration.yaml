@@ -205,7 +205,7 @@ value-utility-trim:
       if (!Number.isNaN(new Date(input).valueOf())) save(input);
   downgrade:
     steps:
-      - Pin the four ARDOR packages to 0.4.8 or earlier.
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. `ValueUtility.isDefined`, `isString` and `isNumber` are unchanged.
 
 ignis-http-readers-moved:

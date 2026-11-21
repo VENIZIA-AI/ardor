@@ -10,7 +10,7 @@ const NAMESPACE_USAGE = `Usage: ardor codemod namespace [paths...] [--hooks] [--
 
 Moves the names removed from @venizia/ardor to what replaces them:
 
-  isDefined, isString, isNumber, isObject, isValidDate   ValueUtility.<name>
+  isDefined, isString, isNumber                         ValueUtility.<name>
   isBrowser                                             BrowserUtility.isBrowser
   toDataUrl                                             FileUtility.toDataUrl
   getRuntimeConfig                                      RuntimeConfig.get
@@ -23,7 +23,7 @@ Moves the names removed from @venizia/ardor to what replaces them:
   Logger (a type)                                       ILogger
   ISendResponse                                         INetworkResponse
 
-Removed with nothing to write in their place, so only listed with their line: isEditableTarget,
+Removed with nothing to write in their place, so only listed with their line: isObject and isValidDate (also ValueUtility.isObject and .isValidDate), isEditableTarget,
 TDataCount, ISyncFC, IListFilter.offset (use skip; listed wherever a file that imports IListFilter or ListFilterBuilder reads or sets .offset), useSizer (use useElementSize), useInjectableContainer (renamed useApplicationContainer), App.DEFAULT_LOCALE, HeaderConstants.REQUEST_DEVICE_INFO, HeaderConstants.RESPONSE_FORMAT,
 the enableDebug prop of ArdorApplication (pass logger instead), and a Logger use with no one-line form.
 

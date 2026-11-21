@@ -116,6 +116,8 @@ export class TypeExportRenames {
 /** Exports and members removed with no code the codemod can write in their place. */
 export class RemovedNames {
   static readonly EXPORTS: Readonly<Record<string, string>> = {
+    isObject: 'removed: write typeof value === "object" && value !== null && !Array.isArray(value)',
+    isValidDate: 'removed: write !Number.isNaN(new Date(value).valueOf())',
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
@@ -127,6 +129,10 @@ export class RemovedNames {
   /** Class name to removed static member to the reason. */
   static readonly MEMBERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
+    ValueUtility: {
+      isObject: 'nothing in ARDOR used it; write typeof value === "object" && value !== null && !Array.isArray(value)',
+      isValidDate: 'nothing in ARDOR used it; write !Number.isNaN(new Date(value).valueOf())',
+    },
     HeaderConstants: {
       REQUEST_DEVICE_INFO: 'nothing in ARDOR sent or read this header',
       RESPONSE_FORMAT: 'nothing in ARDOR sent or read this header',
