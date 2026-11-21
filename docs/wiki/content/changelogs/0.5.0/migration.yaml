@@ -322,3 +322,30 @@ use-injectable-no-claim:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. Only the type of the call changes; at run time `useInjectable` resolves the same binding.
+
+const-classes-extend-const-class:
+  symbols:
+    [
+      RequestMethods.SCHEME_SET,
+      RequestTypes.SCHEME_SET,
+      RequestBodyTypes.SCHEME_SET,
+      Environments.SCHEME_SET,
+      RequestChannel.SCHEME_SET,
+      RequestCountData.SCHEME_SET,
+      UnresolvedPolicies.SCHEME_SET,
+    ]
+  upgrade:
+    steps:
+      - 'Run `bun node_modules/.bin/devz codemod const-classes .` (needs `@venizia/dev-configs` 0.5.0-6) to list each place, then `bun node_modules/.bin/devz codemod const-classes . --write` to rewrite each `X.SCHEME_SET.has(value)` of these classes to `X.isValid(value)` and each spread of the set to `X.values()`. It also converts your exported string-literal unions into `ConstClass` classes (`export type TMode = "a" | "b"` becomes `class Modes extends ConstClass`), so review that part of the diff; `--map <file>` with `{ "skip": true }` for an entry leaves a union as it is.'
+      - 'Replace by hand what it lists as manual: a `new Set(X.SCHEME_SET)` is `new Set(X.values())`, and `X.SCHEME_SET.size` is `X.values().length`.'
+      - 'In a browser app, import `ConstClass` from `@venizia/ignis-helpers/common`, never from the helpers root: the root loads Node built-ins.'
+    before: |-
+      if (RequestMethods.SCHEME_SET.has(method)) send(method);
+      const known = [...RequestTypes.SCHEME_SET];
+    after: |-
+      if (RequestMethods.isValid(method)) send(method);
+      const known = RequestTypes.values();
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-6 or earlier and restore the files from git.
+  data: 'Nothing stored changes. The values are the same strings. `isValid` takes `unknown` now and narrows to the union of the values; `values()` answers them as a tuple, base class first. `LocalStorageKeys` keeps its `SCHEME_SET` and its `isValid(value: string)`.'

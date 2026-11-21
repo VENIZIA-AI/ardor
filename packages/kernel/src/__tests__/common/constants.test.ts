@@ -31,7 +31,7 @@ describe('RequestMethods scheme validation and members', () => {
     expect(RequestMethods.isValid('')).toBe(false);
   });
 
-  test('RequestMethods.SCHEME_SET contains exactly the declared request methods', () => {
+  test('RequestMethods.values() contains exactly the declared request methods', () => {
     const declaredMethods = [
       RequestMethods.HEAD,
       RequestMethods.OPTIONS,
@@ -42,10 +42,10 @@ describe('RequestMethods scheme validation and members', () => {
       RequestMethods.DELETE,
     ];
 
-    expect(RequestMethods.SCHEME_SET.size).toBe(declaredMethods.length);
+    expect(RequestMethods.values().length).toBe(declaredMethods.length);
 
     for (const method of declaredMethods) {
-      expect(RequestMethods.SCHEME_SET.has(method)).toBe(true);
+      expect(Array.from<string>(RequestMethods.values())).toContain(method);
     }
   });
 });
@@ -74,7 +74,7 @@ describe('RequestTypes scheme validation and members', () => {
     expect(RequestTypes.isValid('')).toBe(false);
   });
 
-  test('RequestTypes.SCHEME_SET contains exactly the declared request types', () => {
+  test('RequestTypes.values() contains exactly the declared request types', () => {
     const declaredTypes = [
       RequestTypes.SEND,
       RequestTypes.GET_ONE,
@@ -88,10 +88,10 @@ describe('RequestTypes scheme validation and members', () => {
       RequestTypes.DELETE_MANY,
     ];
 
-    expect(RequestTypes.SCHEME_SET.size).toBe(declaredTypes.length);
+    expect(RequestTypes.values().length).toBe(declaredTypes.length);
 
     for (const type of declaredTypes) {
-      expect(RequestTypes.SCHEME_SET.has(type)).toBe(true);
+      expect(Array.from<string>(RequestTypes.values())).toContain(type);
     }
   });
 });
@@ -115,7 +115,7 @@ describe('RequestBodyTypes scheme validation and members', () => {
     expect(RequestBodyTypes.isValid('')).toBe(false);
   });
 
-  test('RequestBodyTypes.SCHEME_SET contains exactly the declared request body types', () => {
+  test('RequestBodyTypes.values() contains exactly the declared request body types', () => {
     const declaredBodyTypes = [
       RequestBodyTypes.NONE,
       RequestBodyTypes.FORM_DATA,
@@ -124,10 +124,10 @@ describe('RequestBodyTypes scheme validation and members', () => {
       RequestBodyTypes.BINARY,
     ];
 
-    expect(RequestBodyTypes.SCHEME_SET.size).toBe(declaredBodyTypes.length);
+    expect(RequestBodyTypes.values().length).toBe(declaredBodyTypes.length);
 
     for (const bodyType of declaredBodyTypes) {
-      expect(RequestBodyTypes.SCHEME_SET.has(bodyType)).toBe(true);
+      expect(Array.from<string>(RequestBodyTypes.values())).toContain(bodyType);
     }
   });
 });
@@ -145,27 +145,27 @@ describe('Environments scheme validation and members', () => {
     expect(Environments.isValid('')).toBe(false);
   });
 
-  test('Environments.SCHEME_SET contains exactly the declared environments', () => {
+  test('Environments.values() contains exactly the declared environments', () => {
     const declaredEnvironments = [Environments.DEVELOPMENT, Environments.PRODUCTION];
 
-    expect(Environments.SCHEME_SET.size).toBe(declaredEnvironments.length);
+    expect(Environments.values().length).toBe(declaredEnvironments.length);
 
     for (const env of declaredEnvironments) {
-      expect(Environments.SCHEME_SET.has(env)).toBe(true);
+      expect(Array.from<string>(Environments.values())).toContain(env);
     }
   });
 });
 
 describe('RequestChannel, RequestCountData, and LocalStorageKeys scheme validation', () => {
-  test('RequestChannel.isValid and SCHEME_SET cover declared channels', () => {
-    expect(RequestChannel.SCHEME_SET.size).toBe(1);
+  test('RequestChannel.isValid and values() cover declared channels', () => {
+    expect(RequestChannel.values().length).toBe(1);
     expect(RequestChannel.isValid(RequestChannel.WEB)).toBe(true);
     expect(RequestChannel.isValid('200_MOBILE')).toBe(false);
   });
 
-  test('RequestCountData.isValid and SCHEME_SET cover declared modes', () => {
+  test('RequestCountData.isValid and values() cover declared modes', () => {
     const declared = [RequestCountData.DATA_ONLY, RequestCountData.DATA_WITH_COUNT];
-    expect(RequestCountData.SCHEME_SET.size).toBe(declared.length);
+    expect(RequestCountData.values().length).toBe(declared.length);
 
     for (const entry of declared) {
       expect(RequestCountData.isValid(entry)).toBe(true);
