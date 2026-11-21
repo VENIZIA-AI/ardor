@@ -25,7 +25,7 @@ which re-exports this package.
 | Bindings | `CoreBindings`, `LocalStorageKeys`, `BindingKeys`, `BindingNamespaces` |
 | Constants | `RequestMethods`, `RequestTypes`, `RequestBodyTypes`, `RequestCountData`, `Environments`, `App`, `StorageAreas`, `RequestChannel` |
 | Network | `RequestBodyEncoder`, `NetworkResponseReader`, `AuthRecoveryHelper`, `AuthTokenStore` (the fetch transport is IGNIS's `NativeFetchNetworkRequest`) |
-| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl`, `RuntimeConfig.get` and `RuntimeConfig.getRequired` (with `RUNTIME_CONFIG_GLOBAL`, `RUNTIME_CONFIG_REQUIRED_CODE` and `RUNTIME_CONFIG_INVALID_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
+| Utilities | `ValueUtility` (`isDefined`, `isString`, `isNumber`), `BrowserUtility.isBrowser`, `FileUtility.toDataUrl` and `FileUtility.save`, `RuntimeConfig.get` and `RuntimeConfig.getRequired` (with `RUNTIME_CONFIG_GLOBAL`, `RUNTIME_CONFIG_REQUIRED_CODE` and `RUNTIME_CONFIG_INVALID_CODE`), `BrowserStorage`, `BrowserClipboard`, `StorageCodecs`; the earlier bare names are removed (`bun run ardor codemod namespace` moves your code) |
 | Types | `IdType`, `IAuthUser`, `ValueOrPromise`, `ValueOf`, `TConstValue`, `TPaths`, `TFullPaths`, `ISendParams`, `IRestDataProviderOptions`, `IApplicationInfo`, ... |
 
 ## License

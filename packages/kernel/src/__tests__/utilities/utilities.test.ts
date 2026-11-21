@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, jest, spyOn, test } from 'bun:test';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { BrowserUtility, FileUtility, ValueUtility } from '@/utilities';
 
@@ -46,6 +46,109 @@ describe('boolean utilities', () => {
 
     if (hadWindow) {
       Reflect.set(globalThis, 'window', originalWindow);
+    }
+  });
+});
+
+describe('FileUtility.save', () => {
+  const stubDocument = () => {
+    const clicks: Array<{ href: string; download: string; isAttached: boolean }> = [];
+    let isAttached = false;
+    const anchor = {
+      href: '',
+      download: '',
+      click: () => {
+        clicks.push({ href: anchor.href, download: anchor.download, isAttached });
+      },
+      remove: () => {
+        isAttached = false;
+      },
+    };
+    const body = {
+      append: () => {
+        isAttached = true;
+      },
+    };
+    const hadDocument = Reflect.has(globalThis, 'document');
+    const originalDocument = Reflect.get(globalThis, 'document');
+    Reflect.set(globalThis, 'document', { createElement: () => anchor, body });
+    const created: Array<Blob> = [];
+    const revoked: Array<string> = [];
+    const createSpy = spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      created.push(blob instanceof Blob ? blob : new Blob());
+
+      return 'blob:stub-1';
+    });
+    const revokeSpy = spyOn(URL, 'revokeObjectURL').mockImplementation((url) => {
+      revoked.push(url);
+    });
+
+    return {
+      clicks,
+      created,
+      revoked,
+      restore: () => {
+        createSpy.mockRestore();
+        revokeSpy.mockRestore();
+
+        if (hadDocument) {
+          Reflect.set(globalThis, 'document', originalDocument);
+        } else {
+          Reflect.deleteProperty(globalThis, 'document');
+        }
+      },
+    };
+  };
+
+  test('clicks an attached anchor that downloads the blob under the file name, then revokes the URL later', () => {
+    jest.useFakeTimers();
+    const stub = stubDocument();
+    const blob = new Blob(['a,b']);
+
+    try {
+      FileUtility.save({ blob, filename: 'report.csv' });
+
+      expect(stub.created).toEqual([blob]);
+      expect(stub.clicks).toEqual([
+        { href: 'blob:stub-1', download: 'report.csv', isAttached: true },
+      ]);
+      // Not revoked in the click itself, nor until the delay has passed.
+      expect(stub.revoked).toEqual([]);
+      jest.advanceTimersByTime(FileUtility.REVOKE_DELAY_MS - 1);
+      expect(stub.revoked).toEqual([]);
+
+      jest.advanceTimersByTime(1);
+      expect(stub.revoked).toEqual(['blob:stub-1']);
+    } finally {
+      stub.restore();
+      jest.useRealTimers();
+    }
+  });
+
+  test('falls back to "download" when the file name is missing or empty', () => {
+    const stub = stubDocument();
+
+    try {
+      FileUtility.save({ blob: new Blob(['x']) });
+      FileUtility.save({ blob: new Blob(['x']), filename: '' });
+
+      expect(stub.clicks.map((entry) => entry.download)).toEqual(['download', 'download']);
+    } finally {
+      stub.restore();
+    }
+  });
+
+  test('throws without a document', () => {
+    const hadDocument = Reflect.has(globalThis, 'document');
+    const originalDocument = Reflect.get(globalThis, 'document');
+    Reflect.deleteProperty(globalThis, 'document');
+
+    try {
+      expect(() => FileUtility.save({ blob: new Blob(['x']) })).toThrow('no document');
+    } finally {
+      if (hadDocument) {
+        Reflect.set(globalThis, 'document', originalDocument);
+      }
     }
   });
 });

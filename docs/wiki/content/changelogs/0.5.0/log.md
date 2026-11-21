@@ -30,6 +30,7 @@ ARDOR 0.5.0 follows IGNIS 0.5.0. Every key of `CoreBindings`, and every key you 
 - **ValueUtility drops isObject and isValidDate** `value-utility-trim` (`@venizia/ardor-kernel`, `@venizia/ardor`): nothing in ARDOR or its examples used them. `isDefined`, `isString` and `isNumber` stay. Use `typeof value === 'object' && value !== null && !Array.isArray(value)` and `!Number.isNaN(new Date(value).valueOf())` where you need them.
 
 ## Added
+- **FileUtility.save** `file-utility-save` (`@venizia/ardor-kernel`, `@venizia/ardor`): `FileUtility.save({ blob, filename })` makes the browser download a blob as a file, so an app no longer writes the object URL and anchor click itself. A missing or empty `filename` saves as `download`. It works in a browser only and throws without a `document`.
 - **useBreakpoint** `use-breakpoint` (`@venizia/ardor-react`, `@venizia/ardor`): `useBreakpoint()` returns `{ name, isAtLeast(name), isBelow(name) }` for the current breakpoint, from a table of named widths that follows Tailwind by default (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536). `useBreakpoint({ breakpoints: { compact: 600, wide: 1200 } })` replaces the table and types the names, so `isAtLeast('xxl')` on an unknown name does not compile. `name` is `null` below the smallest breakpoint and in a server render. It reads the viewport through media queries, so browser zoom moves it with the layout, and it re-renders only when the name changes. It is also `Ardor.useBreakpoint`.
 
 ## Changed
