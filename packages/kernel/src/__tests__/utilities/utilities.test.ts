@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { BrowserUtility, FileUtility, ValueUtility } from '@/utilities';
 
 describe('boolean utilities', () => {
@@ -129,7 +129,7 @@ describe('file utilities', () => {
   test('toDataUrl rejects when the reader fails', async () => {
     await withStubReader({ fail: true, text: '' }, async () => {
       const blob = new Blob(['ARDOR test content'], { type: 'text/plain' });
-      const error = await RejectionHelper.rejectionOf({ task: FileUtility.toDataUrl({ blob }) });
+      const error = await RejectionUtility.rejectionOf({ task: FileUtility.toDataUrl({ blob }) });
 
       expect((error as Error).message).toBe('read failed');
     });

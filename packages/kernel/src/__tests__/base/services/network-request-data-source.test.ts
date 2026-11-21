@@ -1,7 +1,7 @@
 import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { HttpDataSource } from '@venizia/ignis-connectors/http';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
@@ -161,14 +161,14 @@ describe('where the two clients agree', () => {
         { status: 404 },
       );
 
-    const viaService = await RejectionHelper.rejectionOf({
+    const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['items', '9'],
         method: RequestMethods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
-    const viaSource = await RejectionHelper.rejectionOf({
+    const viaSource = await RejectionUtility.rejectionOf({
       task: source.read({ paths: ['items', '9'] }),
     });
 
@@ -209,7 +209,7 @@ describe('where the two clients differ, as the docs say', () => {
       type: RequestTypes.GET_ONE,
       body: { a: 1 },
     });
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: source.request({ paths: ['items'], method: 'GET', body: { a: 1 } }),
     });
 
@@ -229,7 +229,7 @@ describe('where the two clients differ, as the docs say', () => {
     });
     await source.request({ paths: ['items'], method: 'GET' });
     const before = requestCount();
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: source.request({
         paths: ['items'],
         method: 'GET',
@@ -263,14 +263,14 @@ describe('where the two clients differ, as the docs say', () => {
   test('a path that leaves the base: both answer 400 and send nothing, with the same text', async () => {
     const { service, source } = createClients();
 
-    const viaService = await RejectionHelper.rejectionOf({
+    const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['..', 'admin'],
         method: RequestMethods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
-    const viaSource = await RejectionHelper.rejectionOf({
+    const viaSource = await RejectionUtility.rejectionOf({
       task: source.request({ paths: ['..', 'admin'], method: 'GET' }),
     });
 
@@ -293,14 +293,14 @@ describe('where the two clients differ, as the docs say', () => {
     });
     const source = new HttpDataSource({ name: 'relative-source', baseUrl: '/api' });
 
-    const viaService = await RejectionHelper.rejectionOf({
+    const viaService = await RejectionUtility.rejectionOf({
       task: service.doRequest({
         paths: ['items'],
         method: RequestMethods.GET,
         type: RequestTypes.GET_ONE,
       }),
     });
-    const viaSource = await RejectionHelper.rejectionOf({
+    const viaSource = await RejectionUtility.rejectionOf({
       task: source.request({ paths: ['items'], method: 'GET' }),
     });
 

@@ -4,7 +4,7 @@ import { Container } from '@venizia/ignis-inversion';
 import { Features } from '@/features/feature';
 import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { DefaultI18nProvider } from '@/providers/i18n';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 beforeEach(() => {
   localStorage.clear();
@@ -42,7 +42,7 @@ describe('FeatureMessagesHelper', () => {
     });
     const messages = new FeatureMessagesHelper({ features: [inventory, shadow] });
 
-    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'en' }) });
+    const result = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'en' }) });
     expect(result).toMatchObject({
       message: expect.stringContaining(
         "[features] Message 'inventory.title' (en) is defined by both 'inventory' and 'shadow'",
@@ -147,7 +147,7 @@ describe('a feature loader that resolves to an ES module', () => {
     });
     const messages = new FeatureMessagesHelper({ features: [broken] });
 
-    const result = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'vi' }) });
+    const result = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'vi' }) });
 
     expect(result).toMatchObject({ message: expect.stringContaining("loader of 'broken'") });
   });
@@ -194,7 +194,7 @@ describe('loaders that are called while another call is still waiting', () => {
       ],
     });
 
-    const failure = await RejectionHelper.rejectionOf({ task: messages.read({ locale: 'vi' }) });
+    const failure = await RejectionUtility.rejectionOf({ task: messages.read({ locale: 'vi' }) });
     expect(failure).toMatchObject({ message: 'down' });
 
     const result3 = await messages.read({ locale: 'vi' });

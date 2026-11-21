@@ -19,7 +19,7 @@ import {
   type TNoAuthPathRegex,
   type TRequestMethod,
 } from '@/common';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 interface IRecordedRequest {
   method: string;
@@ -903,7 +903,7 @@ describe('DefaultNetworkRequestService', () => {
     test('throws an error when baseUrl is empty', async () => {
       const emptyBaseService = createService({ baseUrl: '' });
 
-      const result = await RejectionHelper.rejectionOf({
+      const result = await RejectionUtility.rejectionOf({
         task: emptyBaseService.doRequest({
           paths: ['items'],
           method: RequestMethods.GET,
@@ -928,7 +928,7 @@ describe('DefaultNetworkRequestService', () => {
       const before = recordedRequests.length;
       const service = createService({ baseUrl: serverBaseUrl, isOpen: true });
 
-      const result = await RejectionHelper.rejectionOf({
+      const result = await RejectionUtility.rejectionOf({
         task: service.doRequest({
           paths,
           method: RequestMethods.GET,
@@ -954,7 +954,7 @@ describe('DefaultNetworkRequestService', () => {
         });
 
         try {
-          const result = await RejectionHelper.rejectionOf({
+          const result = await RejectionUtility.rejectionOf({
             task: service.doRequest({
               paths,
               method: RequestMethods.GET,
@@ -987,7 +987,7 @@ describe('DefaultNetworkRequestService', () => {
       const before = recordedRequests.length;
       const service = createService({ baseUrl: base, isOpen: true });
 
-      const result = await RejectionHelper.rejectionOf({
+      const result = await RejectionUtility.rejectionOf({
         task: service.doRequest({ paths, method: RequestMethods.GET, type: RequestTypes.GET_ONE }),
       });
 
@@ -1523,7 +1523,7 @@ describe('DefaultNetworkRequestService', () => {
         resource: 'tickets',
       });
 
-      const result = await RejectionHelper.rejectionOf({ task: tickets.find({ filter: {} }) });
+      const result = await RejectionUtility.rejectionOf({ task: tickets.find({ filter: {} }) });
       expect(result).toMatchObject({ statusCode: 401 });
       expect(recordedRequests).toHaveLength(1);
       expect(recordedRequests[0].headers.authorization).toBe('Bearer stale-token');
@@ -1626,7 +1626,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const signIn = createRepository({ service, resource: 'sign-in' });
 
-      const result = await RejectionHelper.rejectionOf({ task: signIn.find({ filter: {} }) });
+      const result = await RejectionUtility.rejectionOf({ task: signIn.find({ filter: {} }) });
       expect(result).toMatchObject({ statusCode: 401 });
       expect(refreshToken).not.toHaveBeenCalled();
       expect(recordedRequests).toHaveLength(1);
@@ -1647,7 +1647,7 @@ describe('DefaultNetworkRequestService', () => {
           { status: 409 },
         );
 
-      const result = await RejectionHelper.rejectionOf({
+      const result = await RejectionUtility.rejectionOf({
         task: createRepository({ service, resource: 'users' }).find({ filter: {} }),
       });
       expect(result).toMatchObject({

@@ -1,7 +1,7 @@
 import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
@@ -460,7 +460,7 @@ describe('the totals and counts of a response', () => {
   test('a counted list answered by a bare array throws the documented error', async () => {
     handler = () => Response.json([{ id: 1 }]);
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: getList({ requestCountData: RequestCountData.DATA_WITH_COUNT }),
     });
 
@@ -522,7 +522,7 @@ describe('the errors of a response', () => {
       );
     };
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: createService({ isOpen: true }).doRequest({
         paths: ['relay'],
         method: RequestMethods.GET,
@@ -570,7 +570,7 @@ describe('the 2xx bodies as they are read today', () => {
   });
 
   test('a 2xx body that claims JSON and is not rejects with a 502 ApplicationError, without its content', async () => {
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: readWith({
         body: 'secret <html>',
         headers: { 'content-type': 'application/json' },

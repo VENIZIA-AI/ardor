@@ -6,7 +6,7 @@ import { describe, expect, test } from 'bun:test';
 import { TestArdorApplication } from './test-application';
 import { configuration, provide, service } from '@/base/metadata';
 import { CoreBindings, type IApplicationInfo, type IFeatureBase } from '@/common';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 @configuration()
 class InventoryConfiguration {
@@ -79,7 +79,7 @@ describe('AbstractArdorApplication.features', () => {
   test('throws on two features with one name', async () => {
     const application = createApplication({ features: [inventory, { name: 'inventory' }] });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
     expect(result).toMatchObject({
       message: expect.stringMatching(/\[features\] Two features are named 'inventory'/),
     });
@@ -90,7 +90,7 @@ describe('AbstractArdorApplication.features', () => {
       features: [{ name: 'billing', configurations: [ForgottenConfiguration] }],
     });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
     expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[features\] 'billing' lists ForgottenConfiguration, which was never discovered/,
@@ -114,7 +114,7 @@ describe('AbstractArdorApplication.features', () => {
       features: [{ name: 'orders', artifacts: { services: [OrderService] } }],
     });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
     expect(result).toMatchObject({
       message: expect.stringContaining(
         "[features] 'orders' lists OrderService in artifacts.services, which was never discovered | Decorate it with its stereotype and import its module before start()",

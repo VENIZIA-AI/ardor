@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultAuthService } from '@/base/services/auth';
@@ -127,7 +127,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     const startedAt = performance.now();
     setTimeout(() => controller.abort(), 20);
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: get({ service: createService(), path: 'slow', signal: controller.signal }),
     });
 
@@ -140,7 +140,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     const controller = new AbortController();
     controller.abort();
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: get({ service: createService(), path: 'guarded', signal: controller.signal }),
     });
 
@@ -151,7 +151,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
 
   test('a request that outlives the timeout rejects with a 504 that names the path and the milliseconds', async () => {
     const startedAt = performance.now();
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: get({
         service: createService({ timeout: { use: true, milliseconds: 50 } }),
         path: 'slow',
@@ -169,7 +169,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 20);
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: get({
         service: createService({ timeout: { use: true, milliseconds: 200 } }),
         path: 'slow',
@@ -213,7 +213,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     refreshStatus = 500;
     const controller = new AbortController();
 
-    const aborted = RejectionHelper.rejectionOf({
+    const aborted = RejectionUtility.rejectionOf({
       task: get({ service: createService(), path: 'guarded', signal: controller.signal }),
     });
 
@@ -231,7 +231,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     const controller = new AbortController();
     const startedAt = performance.now();
 
-    const aborted = RejectionHelper.rejectionOf({
+    const aborted = RejectionUtility.rejectionOf({
       task: get({ service: createService(), path: 'guarded', signal: controller.signal }),
     });
 
@@ -248,7 +248,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
     const service = createService();
     const controller = new AbortController();
 
-    const aborted = RejectionHelper.rejectionOf({
+    const aborted = RejectionUtility.rejectionOf({
       task: get({ service, path: 'guarded', signal: controller.signal }),
     });
     const other = get({ service, path: 'guarded' });

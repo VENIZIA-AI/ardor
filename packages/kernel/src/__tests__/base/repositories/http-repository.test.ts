@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { HttpDataSource, HttpRepository } from '@/base/repositories';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { LocalStorageKeys } from '@/common';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 /**
  * ARDOR's contract with the HTTP repository it re-exports from `@venizia/ignis-connectors/http`.
@@ -143,7 +143,7 @@ describe('the re-exported HTTP repository', () => {
     try {
       const repository = repositoryFor({ server: bare });
 
-      const result = await RejectionHelper.rejectionOf({ task: repository.count({ where: {} }) });
+      const result = await RejectionUtility.rejectionOf({ task: repository.count({ where: {} }) });
       expect(result).toMatchObject({
         message: expect.stringMatching(/no Content-Range/),
       });
@@ -284,7 +284,7 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ total: 42 }) });
 
       try {
-        const result = await RejectionHelper.rejectionOf({
+        const result = await RejectionUtility.rejectionOf({
           task: repositoryFor({ server: odd, countPath: 'count' }).count({ where: {} }),
         });
         expect(result).toMatchObject({ message: expect.stringMatching(/no numeric count/) });
@@ -324,7 +324,7 @@ describe('the re-exported HTTP repository', () => {
       const odd = serve({ handler: () => Response.json({ data: [{ id: 'a' }], page: 1 }) });
 
       try {
-        const result = await RejectionHelper.rejectionOf({
+        const result = await RejectionUtility.rejectionOf({
           task: repositoryFor({ server: odd }).find({ filter: {} }),
         });
         expect(result).toMatchObject({ message: expect.stringMatching(/neither an array nor/) });
