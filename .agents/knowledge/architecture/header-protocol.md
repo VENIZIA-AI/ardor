@@ -8,7 +8,7 @@ tags: [headers, network-request, kernel, i18n, auth, tracing]
 
 ARDOR's `DefaultNetworkRequestService` (in the kernel package) builds every outbound request with a consistent set of headers. These come from IGNIS's `HTTP.Headers` (`@venizia/ignis-helpers/common`), so the header names themselves are never hand-typed at call sites.
 
-Every name is lowercase, and the service keys its header record by lowercase name, merging sources so a later one REPLACES an earlier one whatever case either used: custom headers over the timezone pair, the per-request `x-request-*` headers over any custom header of the same name. A plain object spread kept `X-Request-Count` beside `x-request-count`, and `fetch` sent the two joined as `"1, 0"`, which no server parses. `removeHeaders({ keys })` lowercases the names it is given for the same reason, and the merging is `NetworkHeaders.merge({ sources })` (`NetworkHeaders.toRecord({ headers })` is the one reading of `HeadersInit`, shared by the service and the data provider).
+Every name is lowercase, and the service keeps its headers in a `Headers` object, merged with IGNIS's `HttpHeaders.merge` so a later source REPLACES an earlier one whatever case either used: custom headers over the timezone pair, the per-request `x-request-*` headers over any custom header of the same name. A plain object spread kept `X-Request-Count` beside `x-request-count`, and `fetch` sent the two joined as `"1, 0"`, which no server parses. `removeHeaders({ keys })` lowercases the names it is given for the same reason, and the merging is `NetworkHeaders.merge({ sources })` (`NetworkHeaders.toRecord({ headers })` is the one reading of `HeadersInit`, shared by the service and the data provider).
 
 ## timezone and timezone-offset
 
@@ -59,7 +59,7 @@ The `x-locale` header carries the active UI locale. It is opt-in: nothing is sen
 
 ## setHeaders / removeHeaders
 
-The network request service keeps its header set mutable at runtime: `setHeaders({ headers })` merges new key-value pairs into the internal `headers` record (through `NetworkHeaders.merge`, so a name in another case replaces the stored one), and `removeHeaders({ keys })` strips specific keys out. This is how locale (and any static custom header) is updated after the service has already been constructed, without recreating the whole client. It cannot change `authorization` on an authenticated path: stored headers are spread first, then the computed `authorization` and `x-auth-provider` overwrite them. Update the token through the stored session, or override `resolveAuthToken()` to read it from elsewhere.
+The network request service keeps its header set mutable at runtime: `setHeaders({ headers })` merges new key-value pairs into the internal `headers` object (through `HttpHeaders.merge`, so a name in another case replaces the stored one), and `removeHeaders({ keys })` strips specific keys out. This is how locale (and any static custom header) is updated after the service has already been constructed, without recreating the whole client. It cannot change `authorization` on an authenticated path: stored headers are spread first, then the computed `authorization` and `x-auth-provider` overwrite them. Update the token through the stored session, or override `resolveAuthToken()` to read it from elsewhere.
 
 ## content-range and totals
 

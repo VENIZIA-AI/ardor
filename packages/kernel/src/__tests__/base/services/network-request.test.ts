@@ -419,7 +419,7 @@ describe('DefaultNetworkRequestService', () => {
         },
       });
 
-      expect(service['headers']).toEqual({
+      expect(Object.fromEntries(service['headers'])).toEqual({
         'x-base': 'initial',
         'x-shared': 'v2',
         'x-new': 'added',
@@ -437,12 +437,12 @@ describe('DefaultNetworkRequestService', () => {
 
       service.removeHeaders({ keys: ['x-drop-1', 'x-drop-2'] });
 
-      expect(service['headers']).toEqual({
+      expect(Object.fromEntries(service['headers'])).toEqual({
         'x-keep': 'remain',
       });
 
       service.removeHeaders({ keys: [] });
-      expect(service['headers']).toEqual({
+      expect(Object.fromEntries(service['headers'])).toEqual({
         'x-keep': 'remain',
       });
     });
@@ -457,10 +457,10 @@ describe('DefaultNetworkRequestService', () => {
 
       service.setHeaders({ headers: { 'X-Tenant': 'acme', 'x-locale': 'vi' } });
       service.removeHeaders({ keys: ['X-Tenant'] });
-      expect(service['headers']).toEqual({ 'x-locale': 'vi' });
+      expect(Object.fromEntries(service['headers'])).toEqual({ 'x-locale': 'vi' });
 
       service.removeHeaders({ keys: ['X-LOCALE'] });
-      expect(service['headers']).toEqual({});
+      expect(Object.fromEntries(service['headers'])).toEqual({});
     });
 
     test('a setHeaders override in another case replaces the stored value', () => {
@@ -468,7 +468,7 @@ describe('DefaultNetworkRequestService', () => {
 
       service.setHeaders({ headers: { 'X-Tenant': 'south' } });
 
-      expect(service['headers']).toEqual({ 'x-tenant': 'south' });
+      expect(Object.fromEntries(service['headers'])).toEqual({ 'x-tenant': 'south' });
     });
   });
 

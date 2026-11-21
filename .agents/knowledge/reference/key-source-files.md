@@ -33,7 +33,6 @@ Use this as the fast-lookup index before grepping the whole repo. It groups file
 - See [Public surface](/reference/public-surface.md) for the full inventory.
 
 ## Networking
-- `packages/kernel/src/helpers/networks/headers.ts` - `NetworkHeaders`, relevant to [Header protocol](/architecture/header-protocol.md).
 
 ## Error handling
 - `packages/kernel/src/base/decorators/api.ts` - the `@api()` method decorator that logs a failing service call and rethrows it unchanged.

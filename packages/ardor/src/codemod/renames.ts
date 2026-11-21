@@ -120,6 +120,8 @@ export class RemovedNames {
   static readonly EXPORTS: Readonly<Record<string, string>> = {
     HeaderConstants:
       'use HTTP.Headers from @venizia/ignis-helpers/common: the names are the same except X_AUTH_PROVIDER (AUTH_PROVIDER) and X_LOCALE (LOCALE); the two regular expressions have no replacement',
+    NetworkHeaders:
+      'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',

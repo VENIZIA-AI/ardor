@@ -1,6 +1,6 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
-import { NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import { HttpHeaders, NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
@@ -29,7 +29,6 @@ import {
   AuthRecovery,
   AuthTokenStore,
   type IEncodedBody,
-  NetworkHeaders,
   RequestBodyEncoder,
   NetworkResponseReader,
 } from '@/helpers';
@@ -64,8 +63,8 @@ export class DefaultNetworkRequestService extends BaseService {
   protected noAuthPaths?: string[];
   /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
-  /** Headers added to every request, keyed by lowercase name. */
-  protected headers: Record<string, string>;
+  /** Headers added to every request. */
+  protected headers: Headers;
   protected networkRequest: NativeFetchNetworkRequest;
   /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
@@ -118,7 +117,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;
-    this.headers = NetworkHeaders.toRecord({ headers });
+    this.headers = new Headers(headers);
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
@@ -557,9 +556,11 @@ export class DefaultNetworkRequestService extends BaseService {
         return token;
       },
       headersResolver: () => {
-        return NetworkHeaders.merge({
-          sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
-        });
+        return Object.fromEntries(
+          HttpHeaders.merge({
+            layers: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
+          }),
+        );
       },
       onUnauthorized: (context, info) => {
         if (!this.recovery.canRecover({ paths: context.paths })) {
@@ -619,7 +620,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /** Adds headers to every request this service sends; a name already set is replaced, in any case. */
   setHeaders(opts: { headers: HeadersInit }) {
-    this.headers = NetworkHeaders.merge({ sources: [this.headers, opts.headers] });
+    this.headers = HttpHeaders.merge({ layers: [this.headers, new Headers(opts.headers)] });
   }
 
   /** Removes the headers set by name, in any case. */
@@ -628,23 +629,24 @@ export class DefaultNetworkRequestService extends BaseService {
       return;
     }
 
-    // The record is keyed by lowercase name.
     for (const key of opts.keys) {
-      delete this.headers[key.toLowerCase()];
+      this.headers.delete(key);
     }
   }
 
   /** The timezone, then whatever `setHeaders` holds now. Both transports send these. */
   protected getSessionHeaders(): Record<string, string> {
-    return NetworkHeaders.merge({
-      sources: [
-        {
-          [HTTP.Headers.TIMEZONE]: App.TIMEZONE,
-          [HTTP.Headers.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
-        },
-        this.headers,
-      ],
-    });
+    return Object.fromEntries(
+      HttpHeaders.merge({
+        layers: [
+          {
+            [HTTP.Headers.TIMEZONE]: App.TIMEZONE,
+            [HTTP.Headers.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+          },
+          this.headers,
+        ],
+      }),
+    );
   }
 
   /** The request channel (`RequestChannel.WEB` unless configured) and a fresh tracing id. */
@@ -707,14 +709,16 @@ export class DefaultNetworkRequestService extends BaseService {
     const extraHeader = HttpExtraRequest.toHeader({ extra });
 
     // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers = NetworkHeaders.merge({
-      sources: [
-        this.getRequestHeader({ resource }),
-        this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-        { [HTTP.Headers.REQUEST_COUNT_DATA]: requestCountData },
-        extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
-      ],
-    });
+    const headers = Object.fromEntries(
+      HttpHeaders.merge({
+        layers: [
+          this.getRequestHeader({ resource }),
+          this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
+          { [HTTP.Headers.REQUEST_COUNT_DATA]: requestCountData },
+          extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
+        ],
+      }),
+    );
 
     const encoded = this.encodeBody({ bodyType, body });
 

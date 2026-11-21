@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (104)
+### `@venizia/ardor-kernel` (103)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -75,7 +75,6 @@ generated:
 - `LocalStorageKeys` class
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
-- `NetworkHeaders` class
 - `NetworkResponseReader` class
 - `provide` const
 - `repository` const
@@ -260,7 +259,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (205)
+### `@venizia/ardor` (204)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -375,7 +374,6 @@ generated:
 - `LocalStorageKeys` class
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
-- `NetworkHeaders` class
 - `NetworkResponseReader` class
 - `provide` const
 - `repository` const

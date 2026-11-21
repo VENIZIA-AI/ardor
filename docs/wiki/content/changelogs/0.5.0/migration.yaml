@@ -224,3 +224,19 @@ header-constants-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. The header names on the wire are the same strings.
+
+network-headers-removed:
+  symbols: [NetworkHeaders, DefaultNetworkRequestService.headers]
+  upgrade:
+    steps:
+      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [new Headers(a), new Headers(b)] })` from `@venizia/ignis-helpers/core`; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
+      - 'Replace `NetworkHeaders.toRecord({ headers })` with `Object.fromEntries(new Headers(headers))`.'
+      - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`.'
+    before: |-
+      const headers = NetworkHeaders.merge({ sources: [base, extra] });
+    after: |-
+      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [new Headers(base), new Headers(extra)] }));
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. Header names are lowercase on the wire, as before.

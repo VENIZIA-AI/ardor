@@ -68,7 +68,6 @@ export class AuditReportService {
 | `NativeFetchNetworkRequest` | class | The IGNIS transport helper the service sends through: `fetch` with abort support |
 | `NETWORK_TIMEOUT_CODE` | constant | `normalized.code` of the 504 a request rejects with when it outlives `timeout` |
 | `TRequestTimeoutOptions` | type | The `timeout` option: `{ use: false }` or `{ use: true; milliseconds }` |
-| `NetworkHeaders` | class | Header transformation and case-insensitive merge utilities |
 | `RequestBodyTypes` | class | Supported body format constants (`JSON`, `FORM_DATA`, `FORM_URL_ENCODED`, etc.) |
 | `RequestMethods` | class | HTTP method constants (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.) |
 | `RequestTypes` | class | React-admin and kernel request type constants |
@@ -191,7 +190,7 @@ export async function readHealth(controller: AbortController): Promise<unknown> 
 
 ## Headers and token resolution
 
-`DefaultNetworkRequestService` manages headers through the `NetworkHeaders` utility class in `packages/kernel/src/helpers/networks/headers.ts`. All header keys are normalized to lowercase by `NetworkHeaders.toRecord` and merged by `NetworkHeaders.merge`, ensuring later values replace earlier values without case collisions.
+`DefaultNetworkRequestService` keeps its headers in a `Headers` object and merges sources with IGNIS's `HttpHeaders.merge` (`@venizia/ignis-helpers/core`). Header names are case-insensitive, so a later value replaces an earlier one without case collisions.
 
 Headers are assembled in layers:
 1. **Base and session headers:** Constructed from constructor `headers` and dynamic headers added via `setHeaders({ headers })` (or removed via `removeHeaders({ keys })`). Session headers automatically include `timezone` (`App.TIMEZONE`) and `timezone-offset` (`App.TIMEZONE_OFFSET`).
