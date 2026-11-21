@@ -2,7 +2,7 @@
 type: Concept
 title: Network layer
 description: The fetch transport beneath DefaultNetworkRequestService - the IGNIS NativeFetchNetworkRequest it sends through, query and body encoding, headers, response decoding and the traps in each - and where the socket client lives now.
-resource: packages/kernel/src/helpers/networks
+resource: packages/kernel/src/utilities
 tags: [architecture, network, transport, fetch, kernel, ignis]
 ---
 
@@ -43,7 +43,7 @@ A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/servi
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
 - **Every other case** (`json`, `none`, `binary`, or no `bodyType`) passes the body through untouched.
 
-`RequestBodyEncoder.encode` has overloads that type the result: `FormData` for `form-data`, `URLSearchParams` for `x-www-form-urlencoded`, the passed body type for `json`, `none`, `binary` and no type, and `IEncodedBody` (`body: unknown`) for a `bodyType` known only as a `string`. They are types only; `src/__tests__/helpers/networks/request-body-encoder.test.ts` pins them with `@ts-expect-error`.
+`RequestBodyEncoder.encode` has overloads that type the result: `FormData` for `form-data`, `URLSearchParams` for `x-www-form-urlencoded`, the passed body type for `json`, `none`, `binary` and no type, and `IEncodedBody` (`body: unknown`) for a `bodyType` known only as a `string`. They are types only; `src/__tests__/utilities/request-body-encoder.test.ts` pins them with `@ts-expect-error`.
 
 Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s a plain object or an array, so a `binary` body is sent as its bytes and a string is not quoted a second time; no body stays no body. A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, to the logger `doRequest` passes; the body is never logged and the headers pass through `redactSecrets`. With no logger the fetcher logs nothing.
 

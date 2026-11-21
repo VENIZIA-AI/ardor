@@ -208,7 +208,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       headers: headers
         ? Object.fromEntries(
             HttpHeaders.merge({
-              layers: [new Headers(props.headers), new Headers(headers)],
+              layers: [props.headers, headers],
             }),
           )
         : props.headers,

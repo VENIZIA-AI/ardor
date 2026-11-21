@@ -447,11 +447,7 @@ describe('DefaultNetworkRequestService', () => {
       });
     });
 
-    /**
-     * Header names are case-insensitive, and the record is keyed by lowercase name so an override
-     * replaces instead of joining. Removal has to follow the same rule, or a header set as
-     * `X-Tenant` is stored as `x-tenant` and `removeHeaders({ keys: ['X-Tenant'] })` quietly removes nothing.
-     */
+    // Header names are case-insensitive: an override replaces instead of joining, and removal follows the same rule.
     test('removes a header whatever case it was set or named in', () => {
       const service = createService();
 
@@ -461,6 +457,15 @@ describe('DefaultNetworkRequestService', () => {
 
       service.removeHeaders({ keys: ['X-LOCALE'] });
       expect(Object.fromEntries(service['headers'])).toEqual({});
+    });
+
+    test('two spellings of one name in one call keep the last, as a record did, and are not joined', () => {
+      const fromConstructor = createService({ headers: { 'X-A': '1', 'x-a': '2' } });
+      expect(Object.fromEntries(fromConstructor['headers'])).toEqual({ 'x-a': '2' });
+
+      const fromSet = createService();
+      fromSet.setHeaders({ headers: { 'X-B': '1', 'x-b': '2' } });
+      expect(Object.fromEntries(fromSet['headers'])).toEqual({ 'x-b': '2' });
     });
 
     test('a setHeaders override in another case replaces the stored value', () => {

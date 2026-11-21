@@ -17,7 +17,7 @@ import { deepMerge } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { LocaleSourcesHelper } from '@/helpers/locale-sources';
-import { LazyLocalesUtility } from '@/utilities/lazy-locales';
+import { LazyLocales } from '@/utilities/lazy-locales';
 
 /**
  * The options hold data (`i18nSources`, `languages`); the hooks are `resolveInitialLocale` and
@@ -260,7 +260,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
       };
     }
 
-    LazyLocalesUtility.register({
+    LazyLocales.register({
       provider: i18nProvider,
       isPending: (opts) => isPending(opts.locale),
     });

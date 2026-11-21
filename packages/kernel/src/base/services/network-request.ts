@@ -122,7 +122,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;
-    this.headers = new Headers(headers);
+    this.headers = HttpHeaders.merge({ layers: [headers] });
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
@@ -611,7 +611,7 @@ export class DefaultNetworkRequestService extends BaseService {
 
   /** Adds headers to every request this service sends; a name already set is replaced, in any case. */
   setHeaders(opts: { headers: HeadersInit }) {
-    this.headers = HttpHeaders.merge({ layers: [this.headers, new Headers(opts.headers)] });
+    this.headers = HttpHeaders.merge({ layers: [this.headers, opts.headers] });
   }
 
   /** Removes the headers set by name, in any case. */
