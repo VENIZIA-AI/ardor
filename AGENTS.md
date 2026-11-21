@@ -43,7 +43,7 @@ All three are mandatory, for every agent, on every task. The two rules that cost
 Full text, cited by ID: `node_modules/@venizia/vulcan/base/rules.md` (V-*) and `.agents/rules.md`.
 
 - V-W-01: this project: `on-user-word` - Git writes happen only on the user's word, in this conversation.
-- Pack `venizia` (`node_modules/@venizia/vulcan/base/packs/venizia.md`): this project follows it - V-B-05, V-B-09, V-C-07, V-C-08, V-C-20.
+- Pack `venizia` (`node_modules/@venizia/vulcan/base/packs/venizia.md`): this project follows it - V-B-05, V-B-09, V-C-07, V-C-08, V-C-20, V-C-21.
 - V-W-02: Never write to a database. Write the migration file, hand over.
 - V-W-03: Never deploy or hot-apply (kubectl apply, docker compose up, restarts).
 - V-W-06: Approval has a card. Shared writes follow four action classes.

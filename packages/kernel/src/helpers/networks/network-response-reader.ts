@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import { HttpResponseReader } from '@venizia/ignis-kernel/repository';
+import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 
 import {
   HeaderConstants,

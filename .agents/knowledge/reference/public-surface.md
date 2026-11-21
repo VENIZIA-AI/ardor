@@ -120,14 +120,12 @@ generated:
 - `ValueOrPromise` type
 - `ValueUtility` class
 
-### `@venizia/ardor-kernel/repository` (21)
+### `@venizia/ardor-kernel/repository` (18)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
 - `HttpReadShapes` class
 - `HttpRepository` class
-- `HttpResponseReader` class
-- `HttpWireHeaders` class
 - `IAuthToken` interface
 - `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
@@ -141,7 +139,6 @@ generated:
 - `THttpBody` type
 - `THttpExtraQuery` type
 - `THttpFetch` type
-- `THttpHeaders` type
 - `THttpReadShape` type
 
 ### `@venizia/ardor-kernel/testing` (5)
@@ -473,14 +470,12 @@ generated:
 - `ValueUtility` class
 - `vietnameseMessages` const
 
-### `@venizia/ardor/repository` (21)
+### `@venizia/ardor/repository` (18)
 
 - `HttpDataSource` class
 - `HttpExtraRequest` class
 - `HttpReadShapes` class
 - `HttpRepository` class
-- `HttpResponseReader` class
-- `HttpWireHeaders` class
 - `IAuthToken` interface
 - `IHttpCallOptions` interface
 - `IHttpDataSourceSettings` interface
@@ -494,7 +489,6 @@ generated:
 - `THttpBody` type
 - `THttpExtraQuery` type
 - `THttpFetch` type
-- `THttpHeaders` type
 - `THttpReadShape` type
 
 ### `@venizia/ardor/testing` (8)
