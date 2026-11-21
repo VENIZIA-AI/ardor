@@ -239,6 +239,21 @@ export const fileNameOf = (response: Response): string | undefined => {
 };
 ```
 
+To hand a download to the user, read the file and save it. `FileUtility.save({ blob, filename })` makes the browser download the blob under that name, or `download` when there is none; it works in a browser only:
+
+```ts
+import { FileUtility, NetworkResponseReader, RequestTypes } from '@venizia/ardor';
+
+export const saveDownload = async (response: Response): Promise<void> => {
+  const { data, filename } = await NetworkResponseReader.read<Blob>({
+    response,
+    type: RequestTypes.GET_ONE,
+  });
+
+  FileUtility.save({ blob: data, filename });
+};
+```
+
 ## Error handling and 401 recovery
 
 When a response returns a non-2xx HTTP status, `DefaultNetworkRequestService.doRequest` throws an `ApplicationError` created via `getError` by `NetworkResponseReader.toError` in `packages/kernel/src/helpers/networks/network-response-reader.ts`. The error body is parsed using `HttpResponseReader.readError` with root key `'error'`:
