@@ -122,13 +122,13 @@ export class RemovedNames {
       'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
     Authentication: 'write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
     AuthRecovery:
-      'renamed: use AuthRecoveryHelper (it has no logger option: it logs under its own name)',
+      'use AuthRecoveryHelper, the new name (it has no logger option: it logs under its own name)',
     isObject: 'write typeof value === "object" && value !== null && !Array.isArray(value)',
     isValidDate: 'write !Number.isNaN(new Date(value).valueOf())',
     isEditableTarget: 'check the event target in your own code',
     TDataCount: 'declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
-    useInjectableContainer: 'renamed: call useApplicationContainer',
+    useInjectableContainer: 'call useApplicationContainer, the new name',
     useSizer:
       'use useElementSize({ ref, box: "border-box", round: true }) with a ref in place of the id',
   };

@@ -519,6 +519,9 @@ describe('NamespaceTransform: removed with no replacement', () => {
       ['ValueUtility.isObject', 3],
       ['ValueUtility.isValidDate', 4],
     ]);
+    expect(result.findings[0]?.reason).toBe(
+      'removed: write typeof value === "object" && value !== null && !Array.isArray(value)',
+    );
     expect(result.findings[2]?.reason).toBe(
       'removed: write !Number.isNaN(new Date(value).valueOf())',
     );

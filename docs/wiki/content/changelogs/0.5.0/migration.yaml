@@ -1,5 +1,5 @@
 typed-core-bindings:
-  symbols: [CoreBindings, ICoreBindingTypes, TCoreBindingType]
+  symbols: [ICoreBindingTypes, TCoreBindingType]
   upgrade:
     steps:
       - 'Bind each value under a `CoreBindings` key with the type that key carries (the table below); a value of another type is a compile error.'
@@ -207,6 +207,7 @@ value-utility-trim:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. `ValueUtility.isDefined`, `isString` and `isNumber` are unchanged.
+  codemod: namespace
 
 ignis-http-readers-moved:
   symbols: [HttpResponseReader, THttpHeaders, HttpWireHeaders]
@@ -239,6 +240,7 @@ header-constants-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. The header names on the wire are the same strings.
+  codemod: namespace
 
 network-headers-removed:
   symbols: [NetworkHeaders, DefaultNetworkRequestService.headers]
@@ -255,6 +257,7 @@ network-headers-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. Header names are lowercase on the wire, as before.
+  codemod: namespace
 
 authentication-removed:
   symbols: [Authentication]
@@ -270,6 +273,7 @@ authentication-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. A stored token keeps its own type, and one with none is still sent as Bearer.
+  codemod: namespace
 
 to-error-removed:
   symbols: [NetworkResponseReader.toError]
@@ -284,6 +288,7 @@ to-error-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. The error carries the same status, text, code, args and request ids.
+  codemod: namespace
 
 auth-recovery-helper:
   symbols: [AuthRecovery, AuthRecoveryHelper]
@@ -299,6 +304,7 @@ auth-recovery-helper:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
   data: Nothing stored changes. Only the name and the logger scope change.
+  codemod: namespace
 
 use-injectable-no-claim:
   symbols: [useInjectable, IUseInjectableByTarget, IUseInjectableByKey]
