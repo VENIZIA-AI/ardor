@@ -37,24 +37,6 @@ describe('boolean utilities', () => {
     expect(ValueUtility.isNumber({ value: undefined })).toBe(false);
   });
 
-  test('isObject accepts plain objects and rejects arrays and null', () => {
-    expect(ValueUtility.isObject({ value: {} })).toBe(true);
-    expect(ValueUtility.isObject({ value: { framework: 'ARDOR' } })).toBe(true);
-    expect(ValueUtility.isObject({ value: [] })).toBe(false);
-    expect(ValueUtility.isObject({ value: ['ARDOR', 'IGNIS'] })).toBe(false);
-    expect(ValueUtility.isObject({ value: null })).toBe(false);
-    expect(ValueUtility.isObject({ value: undefined })).toBe(false);
-    expect(ValueUtility.isObject({ value: 'ARDOR' })).toBe(false);
-    expect(ValueUtility.isObject({ value: 42 })).toBe(false);
-  });
-
-  test('isValidDate validates dates and timestamp inputs while rejecting invalid dates', () => {
-    expect(ValueUtility.isValidDate({ value: new Date() })).toBe(true);
-    expect(ValueUtility.isValidDate({ value: '2024-01-01T00:00:00.000Z' })).toBe(true);
-    expect(ValueUtility.isValidDate({ value: 1704067200000 })).toBe(true);
-    expect(ValueUtility.isValidDate({ value: 'invalid-date-string' })).toBe(false);
-  });
-
   test('isBrowser is false without a window', () => {
     const hadWindow = Reflect.has(globalThis, 'window');
     const originalWindow = Reflect.get(globalThis, 'window');

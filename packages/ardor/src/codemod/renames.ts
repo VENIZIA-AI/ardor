@@ -29,8 +29,6 @@ export class FunctionRenames {
     isDefined: { owner: 'ValueUtility', member: 'isDefined' },
     isString: { owner: 'ValueUtility', member: 'isString' },
     isNumber: { owner: 'ValueUtility', member: 'isNumber' },
-    isObject: { owner: 'ValueUtility', member: 'isObject' },
-    isValidDate: { owner: 'ValueUtility', member: 'isValidDate' },
     isBrowser: { owner: 'BrowserUtility', member: 'isBrowser' },
     toDataUrl: { owner: 'FileUtility', member: 'toDataUrl' },
     getRuntimeConfig: { owner: 'RuntimeConfig', member: 'get' },
