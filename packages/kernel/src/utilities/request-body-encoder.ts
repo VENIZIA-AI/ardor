@@ -1,7 +1,7 @@
 import { getError } from '@venizia/ignis-inversion';
 
 import { RequestBodyTypes } from '@/common';
-import { ValueUtility } from '@/utilities';
+import { ValueUtility } from './value';
 
 /** A request body as it is sent, with the content type to send it under (none: let `fetch` choose). */
 export interface IEncodedBody {

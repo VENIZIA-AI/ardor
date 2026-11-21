@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
@@ -159,7 +159,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return Response.json({ token: 'fresh' });
     };
 
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(authService.getAuth()).toBeNull();
@@ -178,7 +178,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return Response.json({ token: 'fresh' });
     };
 
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(authService.getAuth()?.value).toBe('bob-token');
@@ -197,7 +197,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return Response.json({ token: 'fresh' });
     };
 
-    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(authService.getAuth()?.value).toBe('second-login');
   });
@@ -213,7 +213,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return Response.json({ token: 'fresh' });
     };
 
-    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(authService.getAuth()?.value).toBe('other-tab');
   });
@@ -246,7 +246,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return new Response('nope', { status: 500 });
     };
 
-    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(failures).toEqual([]);
@@ -280,7 +280,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       });
     };
 
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toEqual([]);
@@ -299,7 +299,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       return Response.json({ token: 'fresh' });
     };
 
-    await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(authService.getAuth()?.value).toBe('stale');
     expect(authService.getUser()).toMatchObject({ userId: 8 });
@@ -325,7 +325,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   test('a refresh request that is answered 401 does not start another refresh', async () => {
     refreshAnswer = () => Response.json({ error: 'expired' }, { status: 401 });
 
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
@@ -334,7 +334,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   test('without refreshTokenPath the 401 stands and no refresh is sent', async () => {
     const service = new DefaultNetworkRequestService({ name: 'no-path', baseUrl, authService });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(0);
@@ -343,7 +343,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   test('without an auth service the 401 stands and no refresh is sent', async () => {
     const service = createService({ withAuthService: false });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
     expect(error).toMatchObject({ statusCode: 401 });
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(0);
@@ -366,7 +366,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       authService,
     });
     refreshAnswer = () => new Response('nope', { status: 500 });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
     expect(error).toMatchObject({ statusCode: 401 });
 
@@ -377,7 +377,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
   test('a response without a token is a failed refresh', async () => {
     refreshAnswer = () => Response.json({ userId: 7 });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
 
@@ -400,7 +400,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     // The refresh succeeds, but the server still refuses the token it handed out.
     refreshAnswer = () =>
       Response.json({ token: { value: 'still-bad', type: 'Bearer' }, userId: 7 });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
 
@@ -430,7 +430,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
       authService,
     });
     refreshAnswer = () => new Response('nope', { status: 500 });
-    const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+    const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
     stop();
 
     expect(error).toMatchObject({ statusCode: 401 });
@@ -527,7 +527,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
         },
       });
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: service.doRequest({
           paths: ['items'],
           method: RequestMethods.POST,

@@ -1,3 +1,4 @@
+import { HttpHeaders } from '@venizia/ignis-helpers/core';
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import type {
   CreateParams,
@@ -33,7 +34,6 @@ import {
   type ICustomParams,
   type IRestDataProviderOptions,
   ValueUtility,
-  NetworkHeaders,
   type ISendParams,
   RequestCountData,
   RequestMethods,
@@ -206,7 +206,11 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       signal,
       ...props,
       headers: headers
-        ? NetworkHeaders.merge({ sources: [props.headers, headers] })
+        ? Object.fromEntries(
+            HttpHeaders.merge({
+              layers: [props.headers, headers],
+            }),
+          )
         : props.headers,
     });
   }

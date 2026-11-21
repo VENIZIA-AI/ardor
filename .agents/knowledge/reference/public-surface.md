@@ -12,7 +12,7 @@ generated:
 
 ## kernel
 
-### `@venizia/ardor-kernel` (105)
+### `@venizia/ardor-kernel` (102)
 
 - `AbstractArdorApplication` class
 - `api` const
@@ -20,8 +20,7 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `Authentication` class
-- `AuthRecovery` class
+- `AuthRecoveryHelper` class
 - `AuthTokenStore` class
 - `BaseProvider` class
 - `BaseService` class
@@ -38,7 +37,6 @@ generated:
 - `DefaultNetworkRequestService` class
 - `Environments` class
 - `FileUtility` class
-- `HeaderConstants` class
 - `IApplicationInfo` interface
 - `IArdorApplication` interface
 - `IArtifactIndex` interface
@@ -76,7 +74,6 @@ generated:
 - `LocalStorageKeys` class
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
-- `NetworkHeaders` class
 - `NetworkResponseReader` class
 - `provide` const
 - `repository` const
@@ -261,7 +258,7 @@ generated:
 
 ## ardor
 
-### `@venizia/ardor` (206)
+### `@venizia/ardor` (203)
 
 - `AbstractArdorApplication` class
 - `AccessDeniedPage` const
@@ -274,8 +271,7 @@ generated:
 - `ArtifactBindingKeys` class
 - `ArtifactNamespaces` class
 - `ArtifactTypes` class
-- `Authentication` class
-- `AuthRecovery` class
+- `AuthRecoveryHelper` class
 - `AuthTokenStore` class
 - `BaseArdorApplication` class
 - `BaseProvider` class
@@ -302,7 +298,6 @@ generated:
 - `Environments` class
 - `Features` class
 - `FileUtility` class
-- `HeaderConstants` class
 - `IApplication` interface
 - `IApplicationContextValue` interface
 - `IApplicationInfo` interface
@@ -377,7 +372,6 @@ generated:
 - `LocalStorageKeys` class
 - `model` const
 - `NETWORK_TIMEOUT_CODE` const
-- `NetworkHeaders` class
 - `NetworkResponseReader` class
 - `provide` const
 - `repository` const

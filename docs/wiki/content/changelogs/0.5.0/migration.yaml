@@ -208,3 +208,79 @@ ignis-http-readers-moved:
     steps:
       - Pin the four ARDOR packages to 0.5.0-2 with IGNIS kernel 0.5.0-1, or to 0.4.8 with the IGNIS 0.4 line.
   data: Nothing stored changes. Only where these classes are imported from changes.
+
+header-constants-removed:
+  symbols: [HeaderConstants]
+  upgrade:
+    steps:
+      - 'Import `HTTP` from `@venizia/ignis-helpers/common` and read `HTTP.Headers.<NAME>` where you read `HeaderConstants.<NAME>`.'
+      - 'Two names change: `X_AUTH_PROVIDER` is `AUTH_PROVIDER` and `X_LOCALE` is `LOCALE`. Every other name is the same.'
+      - 'The two regular expressions are removed with no replacement; write your own if you used them.'
+    before: |-
+      headers[HeaderConstants.X_LOCALE] = locale;
+    after: |-
+      headers[HTTP.Headers.LOCALE] = locale;
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. The header names on the wire are the same strings.
+
+network-headers-removed:
+  symbols: [NetworkHeaders, DefaultNetworkRequestService.headers]
+  upgrade:
+    steps:
+      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [new Headers(a), new Headers(b)] })` from `@venizia/ignis-helpers/core`; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
+      - 'Replace `NetworkHeaders.toRecord({ headers })` with `Object.fromEntries(new Headers(headers))`.'
+      - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`.'
+    before: |-
+      const headers = NetworkHeaders.merge({ sources: [base, extra] });
+    after: |-
+      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [new Headers(base), new Headers(extra)] }));
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. Header names are lowercase on the wire, as before.
+
+authentication-removed:
+  symbols: [Authentication]
+  upgrade:
+    steps:
+      - 'Replace `Authentication.TYPE_BEARER` with `App.TOKEN_TYPE` (or the string `"Bearer"`), and `Authentication.TYPE_BASIC`, `STRATEGY_BASIC` and `STRATEGY_JWT` with your own strings.'
+      - 'Replace `Authentication.isValid(value)` with your own check.'
+    before: |-
+      token: { value, type: Authentication.TYPE_BEARER },
+    after: |-
+      token: { value, type: App.TOKEN_TYPE },
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. A stored token keeps its own type, and one with none is still sent as Bearer.
+
+to-error-removed:
+  symbols: [NetworkResponseReader.toError]
+  upgrade:
+    steps:
+      - 'Replace `NetworkResponseReader.toError({ response })` with `HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY })`, importing `HttpResponseReader` from `@venizia/ignis-helpers/core`.'
+    before: |-
+      throw await NetworkResponseReader.toError({ response });
+    after: |-
+      throw await HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. The error carries the same status, text, code, args and request ids.
+
+auth-recovery-helper:
+  symbols: [AuthRecovery, AuthRecoveryHelper]
+  upgrade:
+    steps:
+      - 'Rename `AuthRecovery` to `AuthRecoveryHelper` (import and use).'
+      - 'Remove the `logger` option from `new AuthRecoveryHelper({ ... })`: the helper logs under its own name.'
+    before: |-
+      const recovery = new AuthRecovery({ logger, getRefreshTokenPath, refresh, onFailure, isNoAuthPath });
+    after: |-
+      const recovery = new AuthRecoveryHelper({ getRefreshTokenPath, refresh, onFailure, isNoAuthPath });
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-3 or earlier.
+  data: Nothing stored changes. Only the name and the logger scope change.

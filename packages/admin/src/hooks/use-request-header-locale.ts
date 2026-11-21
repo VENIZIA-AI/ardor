@@ -1,8 +1,9 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import React from 'react';
 
 import { useLocaleState } from 'ra-core';
 
-import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
+import { CoreBindings } from '@venizia/ardor-kernel';
 import { useProvider } from '@venizia/ardor-react';
 
 /** The header `useRequestHeaderLocale` sends the locale in. */
@@ -19,7 +20,7 @@ export interface IUseRequestHeaderLocaleOptions {
  * service, re-set on each locale change. `opts.key` defaults to `x-locale`; an empty key falls back to it.
  */
 export const useRequestHeaderLocale = (opts?: IUseRequestHeaderLocaleOptions) => {
-  const key = opts?.key?.length ? opts.key : HeaderConstants.X_LOCALE;
+  const key = opts?.key?.length ? opts.key : HTTP.Headers.LOCALE;
 
   const [locale] = useLocaleState();
 

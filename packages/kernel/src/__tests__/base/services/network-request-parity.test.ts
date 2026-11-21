@@ -1,12 +1,12 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import {
   App,
-  HeaderConstants,
   type IAuthTokenRecord,
   RequestBodyTypes,
   RequestChannel,
@@ -119,8 +119,8 @@ describe('the headers a request carries', () => {
     const { headers } = lastRequest();
     expect(headers['x-static']).toBe('static-1');
     expect(headers['content-type']).toBe('application/json; charset=utf-8');
-    expect(headers).not.toHaveProperty(HeaderConstants.REQUEST_COUNT_DATA);
-    expect(headers).not.toHaveProperty(HeaderConstants.AUTHORIZATION);
+    expect(headers).not.toHaveProperty(HTTP.Headers.REQUEST_COUNT_DATA);
+    expect(headers).not.toHaveProperty(HTTP.Headers.AUTHORIZATION);
   });
 
   test('a call with headers sends those alone: the constructor headers and the default content type are not added', async () => {
@@ -137,7 +137,7 @@ describe('the headers a request carries', () => {
     expect(headers['x-own']).toBe('own-1');
     expect(headers).not.toHaveProperty('x-static');
     expect(headers).not.toHaveProperty('content-type');
-    expect(headers).not.toHaveProperty(HeaderConstants.REQUEST_COUNT_DATA);
+    expect(headers).not.toHaveProperty(HTTP.Headers.REQUEST_COUNT_DATA);
   });
 
   test('a header removed with removeHeaders is not sent, with or without call headers', async () => {
@@ -185,15 +185,15 @@ describe('the headers a request carries', () => {
     });
 
     const { headers } = lastRequest();
-    expect(headers[HeaderConstants.TIMEZONE]).toBe(App.TIMEZONE);
-    expect(headers[HeaderConstants.TIMEZONE_OFFSET]).toBe(`${App.TIMEZONE_OFFSET}`);
+    expect(headers[HTTP.Headers.TIMEZONE]).toBe(App.TIMEZONE);
+    expect(headers[HTTP.Headers.TIMEZONE_OFFSET]).toBe(`${App.TIMEZONE_OFFSET}`);
     expect(headers['x-static']).toBe('static-1');
     expect(headers['accept-language']).toBe('vi');
-    expect(headers[HeaderConstants.REQUEST_CHANNEL]).toBe(RequestChannel.WEB);
-    expect(headers[HeaderConstants.REQUEST_TRACING_ID]).toStartWith('parity-app_');
-    expect(headers[HeaderConstants.REQUEST_COUNT_DATA]).toBe(RequestCountData.DATA_ONLY);
-    expect(headers[HeaderConstants.AUTHORIZATION]).toBe('Bearer tok-1');
-    expect(headers[HeaderConstants.X_AUTH_PROVIDER]).toBe('ldap');
+    expect(headers[HTTP.Headers.REQUEST_CHANNEL]).toBe(RequestChannel.WEB);
+    expect(headers[HTTP.Headers.REQUEST_TRACING_ID]).toStartWith('parity-app_');
+    expect(headers[HTTP.Headers.REQUEST_COUNT_DATA]).toBe(RequestCountData.DATA_ONLY);
+    expect(headers[HTTP.Headers.AUTHORIZATION]).toBe('Bearer tok-1');
+    expect(headers[HTTP.Headers.AUTH_PROVIDER]).toBe('ldap');
     expect(headers['content-type']).toBe('application/json');
   });
 
@@ -215,7 +215,7 @@ describe('the headers a request carries', () => {
       ...props,
     });
 
-    expect(lastRequest().headers[HeaderConstants.REQUEST_COUNT_DATA]).toBe(
+    expect(lastRequest().headers[HTTP.Headers.REQUEST_COUNT_DATA]).toBe(
       RequestCountData.DATA_WITH_COUNT,
     );
   });
@@ -250,7 +250,7 @@ describe('the headers a request carries', () => {
     const { authorization: _first, ...firstRest } = first?.headers ?? {};
     const {
       authorization: retryAuthorization,
-      [HeaderConstants.X_AUTH_PROVIDER]: retryProvider,
+      [HTTP.Headers.AUTH_PROVIDER]: retryProvider,
       ...retryRest
     } = retry?.headers ?? {};
     expect(retryAuthorization).toBe('Bearer fresh');
@@ -411,7 +411,7 @@ describe('the totals and counts of a response', () => {
   test('a list takes its total from Content-Range', async () => {
     handler = () => {
       return Response.json([{ id: 1 }, { id: 2 }], {
-        headers: { [HeaderConstants.CONTENT_RANGE]: 'items 0-1/42' },
+        headers: { [HTTP.Headers.CONTENT_RANGE]: 'items 0-1/42' },
       });
     };
 
@@ -427,7 +427,7 @@ describe('the totals and counts of a response', () => {
     handler = () => {
       return Response.json(
         [{ id: 1 }, { id: 2 }, { id: 3 }],
-        contentRange ? { headers: { [HeaderConstants.CONTENT_RANGE]: contentRange } } : {},
+        contentRange ? { headers: { [HTTP.Headers.CONTENT_RANGE]: contentRange } } : {},
       );
     };
 
@@ -448,7 +448,7 @@ describe('the totals and counts of a response', () => {
     handler = () => {
       return Response.json(
         { data: [{ id: 1 }, { id: 2 }], count: 2 },
-        { headers: { [HeaderConstants.CONTENT_RANGE]: 'items 0-1/30' } },
+        { headers: { [HTTP.Headers.CONTENT_RANGE]: 'items 0-1/30' } },
       );
     };
 
@@ -460,7 +460,7 @@ describe('the totals and counts of a response', () => {
   test('a counted list answered by a bare array throws the documented error', async () => {
     handler = () => Response.json([{ id: 1 }]);
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: getList({ requestCountData: RequestCountData.DATA_WITH_COUNT }),
     });
 
@@ -471,7 +471,7 @@ describe('the totals and counts of a response', () => {
     const service = createService({ isOpen: true });
 
     handler = () => {
-      return Response.json({ id: 1 }, { headers: { [HeaderConstants.RESPONSE_COUNT_DATA]: '5' } });
+      return Response.json({ id: 1 }, { headers: { [HTTP.Headers.RESPONSE_COUNT_DATA]: '5' } });
     };
 
     const counted = await service.doRequest({
@@ -522,7 +522,7 @@ describe('the errors of a response', () => {
       );
     };
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: createService({ isOpen: true }).doRequest({
         paths: ['relay'],
         method: RequestMethods.GET,
@@ -570,7 +570,7 @@ describe('the 2xx bodies as they are read today', () => {
   });
 
   test('a 2xx body that claims JSON and is not rejects with a 502 ApplicationError, without its content', async () => {
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: readWith({
         body: 'secret <html>',
         headers: { 'content-type': 'application/json' },

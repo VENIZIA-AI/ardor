@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 import { CoreBindings, type IApplicationInfo, type ValueOrPromise } from '@/common';
 import { TestArdorApplication } from './test-application';
@@ -27,13 +27,13 @@ describe('start(), the application info', () => {
       id: 'a b/../x',
     }));
 
-    await RejectionHelper.expectRejection({ task: application.start(), message: 'name' });
+    await RejectionUtility.expectRejection({ task: application.start(), message: 'name' });
   });
 
   test('rejects an empty name', async () => {
     const application = new InfoApplication(() => ({ ...valid, name: '' }));
 
-    await RejectionHelper.expectRejection({
+    await RejectionUtility.expectRejection({
       task: application.start(),
       message: '[appInfo] IApplicationInfo.name must be a non-empty string',
     });
@@ -42,7 +42,7 @@ describe('start(), the application info', () => {
   test('rejects a name that is only spaces', async () => {
     const application = new InfoApplication(() => ({ ...valid, name: '   ' }));
 
-    await RejectionHelper.expectRejection({ task: application.start(), message: 'name' });
+    await RejectionUtility.expectRejection({ task: application.start(), message: 'name' });
   });
 
   test('rejects a version that is not a string', async () => {
@@ -51,7 +51,7 @@ describe('start(), the application info', () => {
       version: JSON.parse('1'),
     }));
 
-    await RejectionHelper.expectRejection({
+    await RejectionUtility.expectRejection({
       task: application.start(),
       message: '[appInfo] IApplicationInfo.version must be a string',
     });
@@ -60,7 +60,7 @@ describe('start(), the application info', () => {
   test.each(['a b/../x', '..', '', 'a/b'])('rejects the id %p', async (id) => {
     const application = new InfoApplication(() => ({ ...valid, id }));
 
-    await RejectionHelper.expectRejection({
+    await RejectionUtility.expectRejection({
       task: application.start(),
       message: 'IApplicationInfo.id',
     });
@@ -69,19 +69,19 @@ describe('start(), the application info', () => {
   test('rejects when getAppInfo resolves to an invalid value', async () => {
     const application = new InfoApplication(async () => ({ ...valid, name: '' }));
 
-    await RejectionHelper.expectRejection({ task: application.start(), message: 'name' });
+    await RejectionUtility.expectRejection({ task: application.start(), message: 'name' });
   });
 
   test('rejects a value that is not an object', async () => {
     const application = new InfoApplication(() => JSON.parse('null'));
 
-    await RejectionHelper.expectRejection({ task: application.start(), message: 'object' });
+    await RejectionUtility.expectRejection({ task: application.start(), message: 'object' });
   });
 
   test('binds nothing when the info is refused', async () => {
     const application = new InfoApplication(() => ({ ...valid, name: '' }));
 
-    await RejectionHelper.rejectionOf({ task: application.start() });
+    await RejectionUtility.rejectionOf({ task: application.start() });
 
     expect(application.isBound({ key: CoreBindings.APPLICATION_INFO })).toBe(false);
   });

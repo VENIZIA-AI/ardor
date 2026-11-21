@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { HttpResponseReader } from '@venizia/ignis-helpers/core';
 import { isApplicationError } from '@venizia/ignis-inversion';
 import { RequestCountData, RequestTypes } from '@/common';
-import { NetworkResponseReader } from '@/helpers';
+import { NetworkResponseReader } from '@/utilities';
 
 const json = (body: unknown, headers: Record<string, string> = {}, status = 200) => {
   return new Response(JSON.stringify(body), {
@@ -102,10 +103,17 @@ describe('NetworkResponseReader.readFilename', () => {
     expect(read('attachment; filename=bare.csv')).toBe('bare.csv');
   });
 
-  test('no header, no name, or a bad escape gives undefined or the raw text, never a throw', () => {
+  test('no header, no name, or a bad escape gives undefined, never a throw', () => {
     expect(read()).toBeUndefined();
     expect(read('attachment')).toBeUndefined();
-    expect(read("attachment; filename*=UTF-8''100%.txt")).toBe('100%.txt');
+    // IGNIS drops a filename* it cannot decode: ARDOR used to answer the raw text ('100%.txt').
+    expect(read("attachment; filename*=UTF-8''100%.txt")).toBeUndefined();
+  });
+
+  test('a bad escape in filename* falls back to the plain filename', () => {
+    expect(read('attachment; filename="fallback.txt"; filename*=UTF-8\'\'100%.txt')).toBe(
+      'fallback.txt',
+    );
   });
 
   test('it names the same file as read does', async () => {
@@ -162,9 +170,10 @@ describe('NetworkResponseReader.convert', () => {
   });
 });
 
-describe('NetworkResponseReader.toError', () => {
+describe('the error of a failed response, read under the ERROR_ROOT_KEY', () => {
   test('is an ApplicationError with the status, the server text and the request id', async () => {
-    const error = await NetworkResponseReader.toError({
+    const error = await HttpResponseReader.toApplicationError({
+      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
       response: json(
         {
           error: {
@@ -189,7 +198,8 @@ describe('NetworkResponseReader.toError', () => {
   });
 
   test('a body that says nothing falls back to the HTTP status', async () => {
-    const error = await NetworkResponseReader.toError({
+    const error = await HttpResponseReader.toApplicationError({
+      rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
       response: new Response('', { status: 503 }),
     });
 

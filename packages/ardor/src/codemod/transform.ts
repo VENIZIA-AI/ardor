@@ -442,7 +442,7 @@ export class NamespaceTransform {
     rename.references.push({ start, end, text: replacement });
   }
 
-  /** `App.DEFAULT_LOCALE` and the two removed `HeaderConstants`: listed, there is nothing to write instead. */
+  /** `App.DEFAULT_LOCALE`: listed, there is nothing to write instead. */
   private static findRemovedMembers(opts: {
     ts: TTypeScript;
     sourceFile: TS.SourceFile;

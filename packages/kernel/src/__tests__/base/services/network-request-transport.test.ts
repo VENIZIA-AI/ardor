@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestBodyTypes, RequestTypes } from '@/common';
 
@@ -121,7 +121,7 @@ describe('abort signals', () => {
     setTimeout(() => controller.abort(), 50);
     const startedAt = Date.now();
 
-    const result = await RejectionHelper.rejectionOf({
+    const result = await RejectionUtility.rejectionOf({
       task: fetcher.send({
         url: `${baseUrl}/delay`,
         method: 'get',
@@ -139,7 +139,7 @@ describe('abort signals', () => {
     const controller = new AbortController();
     controller.abort();
 
-    const result = await RejectionHelper.rejectionOf({
+    const result = await RejectionUtility.rejectionOf({
       task: fetcher.send({
         url: `${baseUrl}/echo`,
         method: 'get',
@@ -155,7 +155,7 @@ describe('abort signals', () => {
     const controller = new AbortController();
     const startedAt = Date.now();
 
-    const result = await RejectionHelper.rejectionOf({
+    const result = await RejectionUtility.rejectionOf({
       task: fetcher.send({
         url: `${baseUrl}/delay`,
         method: 'get',
@@ -171,7 +171,7 @@ describe('abort signals', () => {
   test('the timeout alone still aborts', async () => {
     const fetcher = createFetcher({ name: 'node-fetch-timeout-only-test' });
 
-    const result = await RejectionHelper.rejectionOf({
+    const result = await RejectionUtility.rejectionOf({
       task: fetcher.send({ url: `${baseUrl}/delay`, method: 'get', timeout: 50 }),
     });
     expect(result).toBeDefined();

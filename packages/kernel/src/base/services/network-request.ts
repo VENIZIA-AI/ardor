@@ -1,12 +1,16 @@
 import { getError } from '@venizia/ignis-inversion';
 import { HTTP } from '@venizia/ignis-helpers/common';
-import { NativeFetchNetworkRequest } from '@venizia/ignis-helpers/core';
+import {
+  HttpHeaders,
+  HttpResponseReader,
+  NativeFetcher,
+  NativeFetchNetworkRequest,
+} from '@venizia/ignis-helpers/core';
 import { UuidV4Generator } from '@venizia/ignis-helpers/uuid';
 import { HttpExtraRequest } from '@venizia/ignis-kernel/repository';
 
 import {
   App,
-  HeaderConstants,
   type IApplicationInfo,
   type IAuthTokenRecord,
   type IAuthRecoveryOptions,
@@ -26,14 +30,13 @@ import {
   type TRequestTimeoutOptions,
   type TRequestType,
 } from '@/common';
+import { AuthRecoveryHelper } from '@/helpers';
 import {
-  AuthRecovery,
   AuthTokenStore,
   type IEncodedBody,
-  NetworkHeaders,
-  RequestBodyEncoder,
   NetworkResponseReader,
-} from '@/helpers';
+  RequestBodyEncoder,
+} from '@/utilities';
 import type { DefaultAuthService } from './auth';
 import { BaseService } from './base';
 
@@ -65,8 +68,8 @@ export class DefaultNetworkRequestService extends BaseService {
   protected noAuthPaths?: string[];
   /** `noAuthPathRegex` compiled; a resource matching any is sent without a token. */
   protected noAuthPathRegexes: RegExp[];
-  /** Headers added to every request, keyed by lowercase name. */
-  protected headers: Record<string, string>;
+  /** Headers added to every request. */
+  protected headers: Headers;
   protected networkRequest: NativeFetchNetworkRequest;
   /** The origin and base path requests are sent to; an empty one makes `doRequest` throw. */
   protected baseUrl: string;
@@ -75,7 +78,7 @@ export class DefaultNetworkRequestService extends BaseService {
   /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
   protected timeout: TRequestTimeoutOptions;
 
-  private readonly recovery: AuthRecovery;
+  private readonly recovery: AuthRecoveryHelper;
 
   /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
   private readonly sentSessions = new WeakMap<object, ISentSession>();
@@ -119,14 +122,13 @@ export class DefaultNetworkRequestService extends BaseService {
 
     DefaultNetworkRequestService.assertTimeout({ timeout });
     this.timeout = timeout;
-    this.headers = NetworkHeaders.toRecord({ headers });
+    this.headers = HttpHeaders.merge({ layers: [headers] });
     this.noAuthPaths = noAuthPaths;
     this.noAuthPathRegexes = this.compileNoAuthPathRegex({ input: noAuthPathRegex });
     this.baseUrl = baseUrl;
     this.authRecovery = authRecovery;
     this.authService = authService;
-    this.recovery = new AuthRecovery({
-      logger: this.logger,
+    this.recovery = new AuthRecoveryHelper({
       getRefreshTokenPath: () => this.authRecovery?.refreshTokenPath,
       refresh: () => this.refreshToken(),
       onFailure: () => this.onAuthFailure(),
@@ -155,32 +157,19 @@ export class DefaultNetworkRequestService extends BaseService {
       ...opts.extra,
     };
 
-    if (opts.headers && !(HeaderConstants.CONTENT_TYPE in sent)) {
-      sent[HeaderConstants.CONTENT_TYPE] = null;
+    if (opts.headers && !(HTTP.Headers.CONTENT_TYPE in sent)) {
+      sent[HTTP.Headers.CONTENT_TYPE] = null;
     }
 
     if (
-      DefaultNetworkRequestService.isRawBody({ body: opts.body }) &&
-      !sent[HeaderConstants.CONTENT_TYPE]
+      typeof opts.body !== 'string' &&
+      NativeFetcher.isRawBody(opts.body) &&
+      !sent[HTTP.Headers.CONTENT_TYPE]
     ) {
-      sent[HeaderConstants.CONTENT_TYPE] = null;
+      sent[HTTP.Headers.CONTENT_TYPE] = null;
     }
 
     return sent;
-  }
-
-  /** A body the platform `fetch` gives a content type of its own, or none: it is sent as it is. */
-  private static isRawBody(opts: { body: unknown }): boolean {
-    const { body } = opts;
-
-    return (
-      body instanceof FormData ||
-      body instanceof Blob ||
-      body instanceof URLSearchParams ||
-      body instanceof ArrayBuffer ||
-      ArrayBuffer.isView(body) ||
-      body instanceof ReadableStream
-    );
   }
 
   /**
@@ -377,7 +366,7 @@ export class DefaultNetworkRequestService extends BaseService {
       throw getError({ message: '[refreshToken] The refresh response carries no token' });
     }
 
-    return { value, type: typeof type === 'string' ? type : 'Bearer' };
+    return { value, type: typeof type === 'string' ? type : App.TOKEN_TYPE };
   }
 
   /** Runs once when `refreshToken` threw. The place to send the user back to sign-in. */
@@ -428,7 +417,7 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /**
-   * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecovery`).
+   * Refreshes the session, once for every 401 in flight on either transport (see `AuthRecoveryHelper`).
    * Also what `DefaultAuthProvider.refreshToken` calls, so a refresh is made in one place.
    */
   refresh(): Promise<boolean> {
@@ -558,9 +547,11 @@ export class DefaultNetworkRequestService extends BaseService {
         return token;
       },
       headersResolver: () => {
-        return NetworkHeaders.merge({
-          sources: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
-        });
+        return Object.fromEntries(
+          HttpHeaders.merge({
+            layers: [this.getSessionHeaders(), opts ? this.getTracingHeaders(opts) : {}],
+          }),
+        );
       },
       onUnauthorized: (context, info) => {
         if (!this.recovery.canRecover({ paths: context.paths })) {
@@ -614,13 +605,13 @@ export class DefaultNetworkRequestService extends BaseService {
 
     return {
       provider: authToken?.provider,
-      token: `${authToken?.type?.length ? authToken.type : 'Bearer'} ${authToken.value}`,
+      token: `${authToken?.type?.length ? authToken.type : App.TOKEN_TYPE} ${authToken.value}`,
     };
   }
 
   /** Adds headers to every request this service sends; a name already set is replaced, in any case. */
   setHeaders(opts: { headers: HeadersInit }) {
-    this.headers = NetworkHeaders.merge({ sources: [this.headers, opts.headers] });
+    this.headers = HttpHeaders.merge({ layers: [this.headers, opts.headers] });
   }
 
   /** Removes the headers set by name, in any case. */
@@ -629,23 +620,24 @@ export class DefaultNetworkRequestService extends BaseService {
       return;
     }
 
-    // The record is keyed by lowercase name.
     for (const key of opts.keys) {
-      delete this.headers[key.toLowerCase()];
+      this.headers.delete(key);
     }
   }
 
   /** The timezone, then whatever `setHeaders` holds now. Both transports send these. */
   protected getSessionHeaders(): Record<string, string> {
-    return NetworkHeaders.merge({
-      sources: [
-        {
-          [HeaderConstants.TIMEZONE]: App.TIMEZONE,
-          [HeaderConstants.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
-        },
-        this.headers,
-      ],
-    });
+    return Object.fromEntries(
+      HttpHeaders.merge({
+        layers: [
+          {
+            [HTTP.Headers.TIMEZONE]: App.TIMEZONE,
+            [HTTP.Headers.TIMEZONE_OFFSET]: `${App.TIMEZONE_OFFSET}`,
+          },
+          this.headers,
+        ],
+      }),
+    );
   }
 
   /** The request channel (`RequestChannel.WEB` unless configured) and a fresh tracing id. */
@@ -658,8 +650,8 @@ export class DefaultNetworkRequestService extends BaseService {
       : RequestChannel.WEB;
 
     return {
-      [HeaderConstants.REQUEST_CHANNEL]: channel,
-      [HeaderConstants.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
+      [HTTP.Headers.REQUEST_CHANNEL]: channel,
+      [HTTP.Headers.REQUEST_TRACING_ID]: this.buildRequestTracingId({ applicationInfo }),
     };
   }
 
@@ -681,8 +673,8 @@ export class DefaultNetworkRequestService extends BaseService {
     return {
       ...defaultHeaders,
       // A token need not name a provider; never send the string `undefined`.
-      ...(authHeader.provider ? { [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider } : {}),
-      [HeaderConstants.AUTHORIZATION]: authHeader.token,
+      ...(authHeader.provider ? { [HTTP.Headers.AUTH_PROVIDER]: authHeader.provider } : {}),
+      [HTTP.Headers.AUTHORIZATION]: authHeader.token,
     };
   }
 
@@ -708,20 +700,22 @@ export class DefaultNetworkRequestService extends BaseService {
     const extraHeader = HttpExtraRequest.toHeader({ extra });
 
     // Merged, not spread, so a per-request value replaces a static header in any case.
-    const headers = NetworkHeaders.merge({
-      sources: [
-        this.getRequestHeader({ resource }),
-        this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
-        { [HeaderConstants.REQUEST_COUNT_DATA]: requestCountData },
-        extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
-      ],
-    });
+    const headers = Object.fromEntries(
+      HttpHeaders.merge({
+        layers: [
+          this.getRequestHeader({ resource }),
+          this.getTracingHeaders({ restDataProviderOptions, applicationInfo }),
+          { [HTTP.Headers.REQUEST_COUNT_DATA]: requestCountData },
+          extraHeader ? { [HttpExtraRequest.HEADER]: extraHeader } : undefined,
+        ],
+      }),
+    );
 
     const encoded = this.encodeBody({ bodyType, body });
 
     const props: IGetRequestPropsResult = {
       headers: encoded.contentType
-        ? { ...headers, [HeaderConstants.CONTENT_TYPE]: encoded.contentType }
+        ? { ...headers, [HTTP.Headers.CONTENT_TYPE]: encoded.contentType }
         : headers,
       body: encoded.body,
     };
@@ -871,8 +865,8 @@ export class DefaultNetworkRequestService extends BaseService {
         const authHeader = this.getRequestAuthorizationHeader();
         // The token's provider wins, and a token with none removes the one the call carried.
         const retryHeaders = {
-          [HeaderConstants.AUTHORIZATION]: authHeader.token,
-          [HeaderConstants.X_AUTH_PROVIDER]: authHeader.provider ?? null,
+          [HTTP.Headers.AUTHORIZATION]: authHeader.token,
+          [HTTP.Headers.AUTH_PROVIDER]: authHeader.provider ?? null,
         };
 
         const result = await sendOnce(retryHeaders);
@@ -893,7 +887,10 @@ export class DefaultNetworkRequestService extends BaseService {
     }
 
     if (status < 200 || status >= 300) {
-      const result2 = await NetworkResponseReader.toError({ response: fetched });
+      const result2 = await HttpResponseReader.toApplicationError({
+        response: fetched,
+        rootKey: NetworkResponseReader.ERROR_ROOT_KEY,
+      });
       throw result2;
     }
 

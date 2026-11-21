@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { describe, expect, mock, test } from 'bun:test';
 
 import { ApplicationProviders, DefaultBindingTags } from '@/components/resolve';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { Features } from '@/features';
 import { CoreBindings, type TAuthProviderOptions } from '@venizia/ardor-kernel';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
@@ -291,7 +291,7 @@ describe('Features.loadMessages', () => {
       changeLocale: () => Promise.reject(getError({ message: 'key defined twice' })),
     };
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: Features.loadMessages({
         features: [featureWithLazyEnglish],
         i18nProvider: i18nProvider as never,

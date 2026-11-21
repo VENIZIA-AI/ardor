@@ -1,5 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
-import type { ILogger } from '@venizia/ignis-helpers/core';
+import { BaseHelper, type ILogger } from '@venizia/ignis-helpers/core';
 
 import type { TI18nSource } from '@/common';
 
@@ -31,17 +31,19 @@ export const unwrapMessages = (opts: { value: unknown; owner: string }): object 
  * messages instead of stopping the admin; a failure is not remembered, so the next
  * `changeLocale()` tries again.
  */
-export class LocaleSources {
+export class LocaleSourcesHelper extends BaseHelper {
   private readonly loaded = new Map<string, object>();
   private readonly loading = new Map<string, Promise<object | undefined>>();
 
-  constructor(private readonly opts: { sources: Record<string, TI18nSource>; logger: ILogger }) {}
+  constructor(private readonly opts: { sources: Record<string, TI18nSource>; logger: ILogger }) {
+    super({ scope: LocaleSourcesHelper.name });
+  }
 
   /** Whether the locale's source is a loader that has not delivered yet. */
   isPending(opts: { locale: string }): boolean {
     const { locale } = opts;
 
-    return LocaleSources.isLoader(this.opts.sources[locale]) && !this.loaded.has(locale);
+    return LocaleSourcesHelper.isLoader(this.opts.sources[locale]) && !this.loaded.has(locale);
   }
 
   /** What is available without waiting: an object source, or a loaded loader. */
@@ -49,7 +51,7 @@ export class LocaleSources {
     const { locale } = opts;
     const source = this.opts.sources[locale];
 
-    return LocaleSources.isLoader(source) ? this.loaded.get(locale) : source;
+    return LocaleSourcesHelper.isLoader(source) ? this.loaded.get(locale) : source;
   }
 
   /** The messages of the locale, a loader called until it delivers; `undefined` when there is none or the load failed. */
@@ -57,7 +59,7 @@ export class LocaleSources {
     const { locale } = opts;
     const source = this.opts.sources[locale];
 
-    if (!LocaleSources.isLoader(source)) {
+    if (!LocaleSourcesHelper.isLoader(source)) {
       return Promise.resolve(source);
     }
 
@@ -105,26 +107,5 @@ export class LocaleSources {
 
       return undefined;
     }
-  }
-}
-
-/**
- * Which locales an i18n provider still has to load, asked by `Features` without knowing the provider:
- * `DefaultI18nProvider` registers the check for the provider it builds.
- */
-export class LazyLocales {
-  private static readonly checks = new WeakMap<object, (opts: { locale: string }) => boolean>();
-
-  static register(opts: {
-    provider: object;
-    isPending: (opts: { locale: string }) => boolean;
-  }): void {
-    LazyLocales.checks.set(opts.provider, opts.isPending);
-  }
-
-  static isPending(opts: { provider: object; locale: string }): boolean {
-    const check = LazyLocales.checks.get(opts.provider);
-
-    return check ? check({ locale: opts.locale }) : false;
   }
 }

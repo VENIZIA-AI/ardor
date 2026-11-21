@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError, inject } from '@venizia/ignis-inversion';
 
 import {
@@ -10,8 +11,7 @@ import {
   LocalStorageKeys,
   StorageAreas,
 } from '@/common';
-import { AuthTokenStore } from '@/helpers';
-import { BrowserStorage, StorageCodecs } from '@/utilities';
+import { AuthTokenStore, BrowserStorage, StorageCodecs } from '@/utilities';
 import { BaseService } from './base';
 
 /** What a subscriber of `DefaultAuthService` is told: `isExternal` is a change another tab of the application made. */
@@ -222,7 +222,7 @@ export class DefaultAuthService extends BaseService {
 
   /** A stored identity is data from the browser: an object whose known fields, when present, have their type. */
   private isAuthUser(value: unknown): value is IAuthUser {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    if (!RecordUtility.isPlainRecord(value)) {
       return false;
     }
 

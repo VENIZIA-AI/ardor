@@ -6,7 +6,7 @@ import React, { type ReactNode } from 'react';
 
 import type { IAuthProvider } from '@/common';
 import { useRefreshToken } from '@/hooks/use-refresh-token';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 interface ICreateMockAuthProviderOptions {
   readonly refreshToken?: () => Promise<boolean>;
@@ -165,7 +165,7 @@ describe('useRefreshToken', () => {
 
     let rejection: unknown;
     await act(async (): Promise<void> => {
-      const result3 = await RejectionHelper.rejectionOf({ task: result.current() });
+      const result3 = await RejectionUtility.rejectionOf({ task: result.current() });
       rejection = result3;
     });
 

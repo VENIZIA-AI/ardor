@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { Container, isApplicationError } from '@venizia/ignis-inversion';
 import {
   type IApplicationInfo,
@@ -93,7 +93,7 @@ describe('DefaultRestDataProvider, abort', () => {
     const startedAt = performance.now();
     const signal = abortSoon();
 
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: createDataProvider().getList('slow', { ...listParams, signal }),
     });
 
@@ -131,7 +131,7 @@ describe('DefaultRestDataProvider, abort', () => {
     },
   ])('$name rejects with the abort too', async ({ run }) => {
     const startedAt = performance.now();
-    const error = await RejectionHelper.rejectionOf({ task: run(abortSoon()) });
+    const error = await RejectionUtility.rejectionOf({ task: run(abortSoon()) });
 
     expect(nameOf(error)).toBe('AbortError');
     expect(performance.now() - startedAt).toBeLessThan(SLOW_MS / 2);
@@ -179,7 +179,7 @@ describe('DefaultRestDataProvider, abort', () => {
 describe('DefaultRestDataProvider, timeout', () => {
   test('a request that outlives the timeout rejects with the timeout code, naming the path', async () => {
     const startedAt = performance.now();
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: createDataProvider({ timeout: { use: true, milliseconds: 50 } }).getList(
         'slow',
         listParams,
@@ -193,7 +193,7 @@ describe('DefaultRestDataProvider, timeout', () => {
   });
 
   test('a user abort with a timeout on rejects with the abort, not the timeout code', async () => {
-    const error = await RejectionHelper.rejectionOf({
+    const error = await RejectionUtility.rejectionOf({
       task: createDataProvider({ timeout: { use: true, milliseconds: 200 } }).getList('slow', {
         ...listParams,
         signal: abortSoon(),
