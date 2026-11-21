@@ -1,4 +1,4 @@
-// The public surface: the feature type and its statics. `FeatureMessages` stays internal to the
+// The public surface: the feature type and its statics. `FeatureMessagesHelper` stays internal to the
 // admin package.
 export {
   Features,

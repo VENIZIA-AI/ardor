@@ -115,7 +115,7 @@ The `Features` helpers: `define()` types a feature, `read()` resolves bound feat
 - **`menu`:** Each entry is `{ label, to, access?, icon? }`. `label` is a translation key; `icon` is a name your shell maps to an icon, since ARDOR renders no menu. See [Menu entries](#menu-entries).
 - **`resources`:** Handled as `feature.resources ?? []` in `packages/admin/src/features/feature.ts`.
 - **`routes`:** Handled as `feature.routes ?? []` in `packages/admin/src/features/feature.ts`. A route without `access` or `auth: { use: true }` is open to anyone who types its path, signed in or not, unless the application sets `requireAuth`. See [A route that needs permission](#a-route-that-needs-permission) and [Public pages and pages outside the layout](#public-pages-and-pages-outside-the-layout).
-- **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/features/messages.ts`.
+- **`messages`:** A dictionary mapping locale codes to message objects or lazy loader functions returning `Promise<object>`. Handled as `feature.messages?.[locale]` in `packages/admin/src/helpers/feature-messages.ts`.
 - **`permissions`:** Descriptive metadata: the permission names the feature's pages use, for a role editor to list. ARDOR enforces nothing with it. A permission is enforced only by `access`, on a route or on a menu entry. See [Permission](./permission).
 - **`[extension]`:** Preserved by `Features.define<TExtension>()`. ARDOR carries the extension and never reads it. An extension must not declare a field ARDOR declares, such as `menu`.
 
@@ -252,7 +252,7 @@ export const IndustryShell: React.FC<{
 
 ## Message loading and suspense
 
-Feature messages are merged per locale by `FeatureMessages` in `packages/admin/src/features/messages.ts`. Message keys remain flat without an artificial prefix.
+Feature messages are merged per locale by `FeatureMessagesHelper` in `packages/admin/src/helpers/feature-messages.ts`. Message keys remain flat without an artificial prefix.
 
 - **Duplicate message keys:** If two features define the same leaf key for a locale, the i18n provider throws when it is built, checking every locale in `languages` and the fallback locale, never when a user switches language:
   `[features] Message '${key}' (${locale}) is defined by both '${owner}' and '${feature}' | Give each feature its own keys, or relabel it in the application's own i18nSources`

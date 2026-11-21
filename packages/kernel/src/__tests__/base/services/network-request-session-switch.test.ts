@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 import { HttpDataSource } from '@venizia/ignis-connectors/http';
 import { getError, isApplicationError } from '@venizia/ignis-inversion';
 
@@ -111,7 +111,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     test('another user signed in meanwhile: the error says the session changed, no refresh, the new session stays', async () => {
       itemsHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
       expect(isApplicationError(error)).toBe(true);
       expect(error).toMatchObject({ statusCode: 401 });
@@ -142,7 +142,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     test('the user signed out meanwhile and nobody signed in: the session changed, no refresh', async () => {
       itemsHook = () => authService.cleanUp();
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(refreshes()).toEqual([]);
@@ -151,7 +151,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     test('another user signed in while the refresh was in flight: the session changed, the new session stays', async () => {
       refreshHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(authService.getAuth()?.value).toBe('bob-token');
@@ -166,7 +166,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         localStorage.setItem(authService.keys.identity, JSON.stringify({ userId: 9 }));
       };
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(createService()) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
       expect(authService.isSwitching()).toBe(true);
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
@@ -188,7 +188,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         authService,
       });
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(requested.filter((entry) => entry.authorization === 'Bearer fresh')).toEqual([]);
@@ -215,7 +215,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         });
 
       test('through doRequest the 401 stands, so the provider sends the user to sign-in', async () => {
-        const error = await RejectionHelper.rejectionOf({ task: getItems(createEnding()) });
+        const error = await RejectionUtility.rejectionOf({ task: getItems(createEnding()) });
 
         expect(isApplicationError(error)).toBe(true);
         expect(codeOf(error)).not.toBe(SESSION_CHANGED_CODE);
@@ -243,7 +243,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
         authService,
       });
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(service) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(service) });
 
       expect(isApplicationError(error)).toBe(true);
       expect(codeOf(error)).not.toBe(SESSION_CHANGED_CODE);
@@ -271,7 +271,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
     test('another token in the store while the request was in flight is a session change, and nothing is replayed', async () => {
       itemsHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({ task: getItems(createBare()) });
+      const error = await RejectionUtility.rejectionOf({ task: getItems(createBare()) });
 
       expect(codeOf(error)).toBe(SESSION_CHANGED_CODE);
       expect(requested.filter((entry) => entry.authorization === 'Bearer bob-token')).toEqual([]);
@@ -285,7 +285,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       expect(auth.authTokenResolver(context)?.value).toBe('stale');
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: auth.onUnauthorized(context, { attempt: 1 }),
       });
 
@@ -320,7 +320,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: auth.onUnauthorized(context, { attempt: 1 }),
       });
 
@@ -348,7 +348,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       authService.cleanUp();
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: auth.onUnauthorized(context, { attempt: 1 }),
       });
 
@@ -374,7 +374,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       });
       itemsHook = () => signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: source.request({ paths: ['items'], method: 'GET' }),
       });
 
@@ -428,7 +428,7 @@ describe('DefaultNetworkRequestService, a 401 that answers a request of a sessio
       auth.authTokenResolver(context);
       signIn({ userId: 8, username: 'bob', token: 'bob-token' });
 
-      const error = await RejectionHelper.rejectionOf({
+      const error = await RejectionUtility.rejectionOf({
         task: auth.onUnauthorized(context, { attempt: 2 }),
       });
 

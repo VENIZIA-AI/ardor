@@ -2,16 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { BuildInfoResolver } from '@venizia/ignis-boot/build-info';
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
 import type { IBuildInfoSources, IFrameworkVersions } from './common';
 
 const MANIFEST_FILE = 'package.json';
 const PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
-
-// A type guard takes its argument as it is: that is what it narrows.
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const getString = (opts: { record: Record<string, unknown>; key: string }): string | undefined => {
   const value = opts.record[opts.key];
@@ -74,7 +71,7 @@ export const findInstalledVersion = async (opts: {
       path: join(directory, 'node_modules', opts.name, MANIFEST_FILE),
     });
 
-    if (isRecord(manifest)) {
+    if (RecordUtility.isPlainRecord(manifest)) {
       return getString({ record: manifest, key: 'version' });
     }
 
@@ -96,7 +93,7 @@ export const readFrameworkVersions = async (opts: {
   const { root, scope } = opts;
   const manifest = await readJsonFile({ path: join(root, MANIFEST_FILE) });
 
-  if (!isRecord(manifest)) {
+  if (!RecordUtility.isPlainRecord(manifest)) {
     throw getError({
       message: `[buildInfoFile] no ${MANIFEST_FILE} in ${root} | Pass the app folder as the root option`,
     });

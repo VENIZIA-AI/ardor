@@ -22,7 +22,6 @@ You have an application whose container class extends `BaseArdorApplication` (`A
 | `IRestDataProviderOptions` | interface | Injected under `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. `url` is required. |
 | `IApplicationInfo` | interface | Injected under `CoreBindings.APPLICATION_INFO`. |
 | `CoreBindings` | class | Keys for the two base constructor injections and the provider slot you replace. |
-| `NetworkHeaders` | class | `merge({ sources })` combines header sources; a later source wins. |
 | `@configuration()`, `@provide()` | decorators | Bind the transport function under a key of your own. |
 | `TRequestType`, `TRequestMethod` | types | Types of the request type and method constants. |
 
@@ -118,10 +117,10 @@ import {
   type INetworkResponse,
   type IRestDataProviderOptions,
   type IRestRequestOptions,
-  NetworkHeaders,
   type TRequestMethod,
   type TRequestType,
 } from '@venizia/ardor';
+import { HttpHeaders } from '@venizia/ignis-helpers/core';
 
 // Same contract as in "The transport contract" above.
 export interface ITransportRequest {
@@ -191,7 +190,11 @@ export class TransportDataProvider<
       paths,
       query,
       // A header the caller named wins over the computed ones, as in the base.
-      headers: headers ? NetworkHeaders.merge({ sources: [props.headers, headers] }) : props.headers,
+      headers: headers
+        ? Object.fromEntries(
+            HttpHeaders.merge({ layers: [new Headers(props.headers), new Headers(headers)] }),
+          )
+        : props.headers,
       body: props.body,
       signal,
     });

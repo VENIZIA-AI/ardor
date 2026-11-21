@@ -118,6 +118,14 @@ export class TypeExportRenames {
 /** Exports and members removed with no code the codemod can write in their place. */
 export class RemovedNames {
   static readonly EXPORTS: Readonly<Record<string, string>> = {
+    HeaderConstants:
+      'use HTTP.Headers from @venizia/ignis-helpers/common: the names are the same except X_AUTH_PROVIDER (AUTH_PROVIDER) and X_LOCALE (LOCALE); the two regular expressions have no replacement',
+    NetworkHeaders:
+      'use HttpHeaders from @venizia/ignis-helpers/core: HttpHeaders.merge({ layers }) answers a Headers object, with a later layer replacing an earlier one in any case',
+    Authentication:
+      'nothing in ARDOR used it; write the scheme you need, or read App.TOKEN_TYPE for "Bearer"',
+    AuthRecovery:
+      'renamed: use AuthRecoveryHelper (it has no logger option: it logs under its own name)',
     isEditableTarget: 'nothing in ARDOR called it; check the event target in your own code',
     TDataCount: 'nothing in ARDOR used it; declare the shape you need',
     ISyncFC: 'write the function type, (props: TProps) => ReactNode',
@@ -128,11 +136,11 @@ export class RemovedNames {
 
   /** Class name to removed static member to the reason. */
   static readonly MEMBERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-    App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
-    HeaderConstants: {
-      REQUEST_DEVICE_INFO: 'nothing in ARDOR sent or read this header',
-      RESPONSE_FORMAT: 'nothing in ARDOR sent or read this header',
+    NetworkResponseReader: {
+      toError:
+        'use HttpResponseReader.toApplicationError({ response, rootKey: "error" }) from @venizia/ignis-helpers/core',
     },
+    App: { DEFAULT_LOCALE: 'nothing in ARDOR read it, and the i18n provider defaults to "en"' },
   };
 
   /** A property removed from the list filter: listed in a file that imports one of `owners`, as the file may use it. */

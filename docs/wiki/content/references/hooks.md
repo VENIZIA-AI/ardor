@@ -419,7 +419,7 @@ export function LocaleHeaderSync() {
 
 - **Parameters**: Optional `opts?: { key?: string }`.
 - **Return value**: `void`.
-- **Gotcha**: Requires `CoreBindings.DEFAULT_REST_DATA_PROVIDER` to be bound in the container. The header name defaults to `HeaderConstants.X_LOCALE` (`'x-locale'`) if `key` is omitted. Defined in `packages/admin/src/hooks/use-request-header-locale.ts`.
+- **Gotcha**: Requires `CoreBindings.DEFAULT_REST_DATA_PROVIDER` to be bound in the container. The header name defaults to `HTTP.Headers.LOCALE` (`'x-locale'`) if `key` is omitted. Defined in `packages/admin/src/hooks/use-request-header-locale.ts`.
 
 ### useFeatures
 

@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { type Container, inject } from '@venizia/ignis-inversion';
 import type { I18nProvider, TranslationMessages } from 'ra-core';
 import polyglotI18nProvider from 'ra-i18n-polyglot';
@@ -12,10 +13,11 @@ import {
 } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { deepMerge, isRecord } from '@/common/merge';
+import { deepMerge } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
-import { FeatureMessages } from '@/features/messages';
-import { LazyLocales, LocaleSources } from './i18n-sources';
+import { FeatureMessagesHelper } from '@/helpers/feature-messages';
+import { LocaleSourcesHelper } from '@/helpers/locale-sources';
+import { LazyLocales } from '@/utilities/lazy-locales';
 
 /**
  * The options hold data (`i18nSources`, `languages`); the hooks are `resolveInitialLocale` and
@@ -44,7 +46,7 @@ import { LazyLocales, LocaleSources } from './i18n-sources';
 export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   private static readonly DEFAULT_LOCALE = 'en';
 
-  protected localeSources: LocaleSources;
+  protected localeSources: LocaleSourcesHelper;
   /** Where the chosen locale is kept; absent when it is not persisted. Set by `value()` before the initial locale is read. */
   private localeKey?: string;
 
@@ -55,7 +57,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     protected features: Array<TFeature> = [],
   ) {
     super({ scope: DefaultI18nProvider.name });
-    this.localeSources = new LocaleSources({
+    this.localeSources = new LocaleSourcesHelper({
       sources: i18nProviderOptions.i18nSources ?? { en: englishMessages },
       logger: this.logger,
     });
@@ -146,7 +148,7 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
 
     const initialLocale = this.resolveInitialLocale({ locales });
 
-    const featureMessages = new FeatureMessages({ features: this.features });
+    const featureMessages = new FeatureMessagesHelper({ features: this.features });
 
     // A key two features define is a mistake of the build, found here for every locale the messages
     // can be read in, never when a user switches language.
@@ -232,7 +234,10 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
           // A number is polyglot's shorthand for the plural count.
           const extra = typeof options === 'number' ? { ['smart_count']: options } : options;
 
-          return i18nProvider.translate(key, { ...(isRecord(extra) ? extra : {}), _: key });
+          return i18nProvider.translate(key, {
+            ...(RecordUtility.isPlainRecord(extra) ? extra : {}),
+            _: key,
+          });
         },
       },
     );

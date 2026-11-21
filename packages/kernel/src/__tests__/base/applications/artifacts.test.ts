@@ -12,7 +12,7 @@ import {
 } from '@venizia/ignis-kernel/metadata';
 import { BindingKeys, BindingScopes } from '@venizia/ignis-inversion';
 import type { IApplicationInfo } from '@/common';
-import { RejectionHelper } from '@venizia/dev-configs/testing';
+import { RejectionUtility } from '@venizia/dev-configs/testing';
 
 class TestApplication extends TestArdorApplication {
   getAppInfo(): IApplicationInfo {
@@ -218,7 +218,7 @@ describe('AbstractArdorApplication.registerArtifacts, derived key collisions', (
     declareMinified({});
     declareMinified({});
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
     expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[registerArtifacts\] Two classes derive the binding key 'services\.Minified'.*pin 'binding/,
@@ -386,7 +386,7 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     })
     class FlaggedService {}
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/FlaggedService.*flag store is down/),
@@ -398,7 +398,7 @@ describe('AbstractArdorApplication.registerArtifacts, the when condition', () =>
     @service({ when: async () => false })
     class AsyncFlaggedService {}
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/AsyncFlaggedService.*synchronous/),
@@ -445,7 +445,7 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     @service({ binding: authKey })
     class MockAuth {}
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.auth'.*RealAuth.*MockAuth/),
@@ -460,7 +460,7 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     @service({ binding: { namespace: 'services', key: 'Billing' } })
     class PinnedBilling {}
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.Billing'.*Billing.*PinnedBilling/),
@@ -508,7 +508,7 @@ describe('AbstractArdorApplication.registerArtifacts, duplicate explicit keys', 
     declareFirst();
     declareSecond();
 
-    const result = await RejectionHelper.rejectionOf({ task: new TestApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new TestApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.auth'.*SameName.*SameName/),
@@ -564,7 +564,7 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
       }
     }
 
-    const result = await RejectionHelper.rejectionOf({ task: new ListingApplication().start() });
+    const result = await RejectionUtility.rejectionOf({ task: new ListingApplication().start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.Locked'.*Locked.*Shared.*bindContext/),
@@ -585,7 +585,7 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
     const application = new ListingApplication();
     application.service(ByHand, { allowOverride: false });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
 
     expect(result).toMatchObject({ message: expect.stringMatching(/'services\.ByHand'.*ByHand/) });
   });
@@ -612,7 +612,7 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
       allowOverride: false,
     });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.auth' is held by Same/),
@@ -631,7 +631,7 @@ describe('AbstractArdorApplication.bindingList, allowOverride false', () => {
       allowOverride: false,
     });
 
-    const result = await RejectionHelper.rejectionOf({ task: application.start() });
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
 
     expect(result).toMatchObject({
       message: expect.stringMatching(/'services\.auth'.*ByHand.*Discovered/),

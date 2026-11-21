@@ -71,7 +71,7 @@ un-awaited one never asserts. The package root `tsconfig.json` carries the Bun t
 sees them. Await the task instead, with no cast:
 
 - a resolution: `expect(await task).toBe(...)`;
-- a rejection: `expect(await RejectionHelper.rejectionOf({ task })).toEqual(...)`, with `RejectionHelper` from
+- a rejection: `expect(await RejectionUtility.rejectionOf({ task })).toEqual(...)`, with `RejectionUtility` from
   `@venizia/dev-configs/testing`, which returns what the task rejected with and fails
   the test when it resolves. For a message, `toMatchObject({ message: expect.stringMatching(/.../) })`
   replaces `toThrow(/.../)`.

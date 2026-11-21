@@ -1,8 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { BaseHelper } from '@venizia/ignis-helpers/core';
-import { AuthRecovery } from '@/helpers';
-
-const logger = new BaseHelper({ scope: 'auth-recovery-test' }).logger;
+import { AuthRecoveryHelper } from '@/helpers';
 
 const create = (opts: {
   refresh?: () => Promise<boolean>;
@@ -12,8 +9,7 @@ const create = (opts: {
 }) => {
   const refresh = mock(opts.refresh ?? (() => Promise.resolve(true)));
   const onFailure = mock(opts.onFailure ?? (() => Promise.resolve()));
-  const recovery = new AuthRecovery({
-    logger,
+  const recovery = new AuthRecoveryHelper({
     getRefreshTokenPath: () => opts.refreshTokenPath,
     refresh,
     onFailure,
@@ -23,7 +19,7 @@ const create = (opts: {
   return { recovery, refresh, onFailure };
 };
 
-describe('AuthRecovery.refresh', () => {
+describe('AuthRecoveryHelper.refresh', () => {
   test('a caller of another session starts its own refresh, and callers of one session share one', async () => {
     const { recovery, refresh } = create({});
 
@@ -102,7 +98,7 @@ describe('AuthRecovery.refresh', () => {
   });
 });
 
-describe('AuthRecovery.canRecover', () => {
+describe('AuthRecoveryHelper.canRecover', () => {
   test('is true for an ordinary path', () => {
     expect(create({}).recovery.canRecover({ paths: ['orders', '7'] })).toBe(true);
   });

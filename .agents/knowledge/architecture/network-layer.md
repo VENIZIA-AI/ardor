@@ -2,7 +2,7 @@
 type: Concept
 title: Network layer
 description: The fetch transport beneath DefaultNetworkRequestService - the IGNIS NativeFetchNetworkRequest it sends through, query and body encoding, headers, response decoding and the traps in each - and where the socket client lives now.
-resource: packages/kernel/src/helpers/networks
+resource: packages/kernel/src/utilities
 tags: [architecture, network, transport, fetch, kernel, ignis]
 ---
 
@@ -37,13 +37,13 @@ Every HTTP call ARDOR makes goes down one stack: `DefaultRestDataProvider` asks 
 
 ## Body encoding
 
-A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/services/network-request.ts`) builds it by `bodyType`, through the protected hook `encodeBody` and the `RequestBodyEncoder` it delegates to (`packages/kernel/src/helpers/networks/request-body-encoder.ts`) - the `content-type` each type sets is in [Header protocol](/architecture/header-protocol.md):
+A body is shaped twice. First `getRequestProps` (`packages/kernel/src/base/services/network-request.ts`) builds it by `bodyType`, through the protected hook `encodeBody` and the `RequestBodyEncoder` it delegates to (`packages/kernel/src/utilities/request-body-encoder.ts`) - the `content-type` each type sets is in [Header protocol](/architecture/header-protocol.md):
 
 - **`x-www-form-urlencoded`** builds a `URLSearchParams`. **`form-data`** builds a `FormData`. Both skip a key only when its value is `undefined` or `null`, so `0`, `false` and `''` are sent. A `Date` becomes ISO-8601, an object or array becomes JSON, any other primitive goes through `String()`.
 - Only `form-data` carries files: a `Blob` or `File` is appended with its `name` as the filename, and a top-level array or `FileList` becomes repeated entries under one key, each item encoded by the same rules. In `x-www-form-urlencoded` a `Blob` is just an object and arrives as `{}`. The `form-data` branch sets no `content-type`, but it does not remove one either: a `content-type` among the service's stored headers still goes out and replaces the multipart boundary.
 - **Every other case** (`json`, `none`, `binary`, or no `bodyType`) passes the body through untouched.
 
-`RequestBodyEncoder.encode` has overloads that type the result: `FormData` for `form-data`, `URLSearchParams` for `x-www-form-urlencoded`, the passed body type for `json`, `none`, `binary` and no type, and `IEncodedBody` (`body: unknown`) for a `bodyType` known only as a `string`. They are types only; `src/__tests__/helpers/networks/request-body-encoder.test.ts` pins them with `@ts-expect-error`.
+`RequestBodyEncoder.encode` has overloads that type the result: `FormData` for `form-data`, `URLSearchParams` for `x-www-form-urlencoded`, the passed body type for `json`, `none`, `binary` and no type, and `IEncodedBody` (`body: unknown`) for a `bodyType` known only as a `string`. They are types only; `src/__tests__/utilities/request-body-encoder.test.ts` pins them with `@ts-expect-error`.
 
 Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`, `URLSearchParams` or `ReadableStream` straight to `fetch` and `JSON.stringify`s a plain object or an array, so a `binary` body is sent as its bytes and a string is not quoted a second time; no body stays no body. A `timeout` is combined with the caller's `signal` through `AbortSignal.any`, so either aborts the request. The request is logged at debug level only, to the logger `doRequest` passes; the body is never logged and the headers pass through `redactSecrets`. With no logger the fetcher logs nothing.
 
@@ -55,10 +55,10 @@ Then the fetcher passes a string, `Blob`, `ArrayBuffer`, typed array, `FormData`
 
 ## What comes back
 
-After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/helpers/networks/network-response-reader.ts`) decodes a 2xx response:
+After the retry and the non-2xx throw (an `ApplicationError`, see [Error flow](/architecture/error-flow.md)), `NetworkResponseReader.read` (`packages/kernel/src/utilities/network-response-reader.ts`) decodes a 2xx response:
 
 - A 204 returns `{ data: {} }`.
-- A `content-disposition` starting with `attachment` (`HeaderConstants.ATTACHMENT_CONTENT_DISPOSITION_RE`), or a `content-type` that is missing or not textual per `HeaderConstants.TEXTUAL_CONTENT_TYPE_RE`, returns `rs.blob()` as `data`, plus `filename` (read from `filename*=` first, then a quoted, then a bare `filename=`; the public `NetworkResponseReader.readFilename({ headers })` returns the same name and is the one parser) and `contentDisposition` when present.
+- A `content-disposition` of type `attachment` (as IGNIS's `HttpResponseReader.parseContentDisposition` reads it, any case), or a `content-type` that is missing or not textual per `NetworkResponseReader.TEXTUAL_RE`, returns the blob as `data` (IGNIS's `HttpResponseReader.readFile`), plus `filename` (`filename*=` first, then a quoted, then a bare `filename=`; a `filename*` that cannot be decoded is dropped and the plain `filename` is used; the public `NetworkResponseReader.readFilename({ headers })` returns the same name through the same parser) and `contentDisposition` when present.
 - Anything else is read as text by IGNIS's `HttpResponseReader.readBody`: an empty body is `null`; a JSON content type is parsed, and a body that claims JSON and is not is a `502` `ApplicationError` that names the type and the length, never the content; any other textual type (`text/plain`, `text/csv`, XML) is returned as its text. `convertResponse` then reads the totals described in [Header protocol](/architecture/header-protocol.md).
 
 A 2xx response with no `content-type` comes back as a `Blob`.

@@ -1,3 +1,4 @@
+import { HTTP } from '@venizia/ignis-helpers/common';
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import React from 'react';
 import { CoreAdminContext, useLocaleState } from 'ra-core';
@@ -6,7 +7,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 
 import { useRequestHeaderLocale } from '@/hooks/use-request-header-locale';
 import { BaseHelper } from '@venizia/ignis-helpers/core';
-import { CoreBindings, HeaderConstants } from '@venizia/ardor-kernel';
+import { CoreBindings } from '@venizia/ardor-kernel';
 import { ApplicationContext } from '@venizia/ardor-react';
 import { BindingKeys, Container } from '@venizia/ignis-inversion';
 
@@ -108,7 +109,7 @@ describe('useRequestHeaderLocale', () => {
 
     expect(harness.setHeadersMock).toHaveBeenCalledTimes(1);
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
-      headers: { [HeaderConstants.X_LOCALE]: harness.expectedLocale },
+      headers: { [HTTP.Headers.LOCALE]: harness.expectedLocale },
     });
     expect(harness.setHeadersMock).toHaveBeenCalledWith({
       headers: { 'x-locale': harness.expectedLocale },
