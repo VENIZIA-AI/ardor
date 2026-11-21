@@ -2,6 +2,9 @@ import { getError } from '@venizia/ignis-inversion';
 
 /** Helpers over `Blob` and file data. */
 export class FileUtility {
+  /** How long a saved file's object URL lives, in milliseconds: a browser that starts the download later (Safari) still finds it. */
+  static readonly REVOKE_DELAY_MS = 30_000;
+
   /** The blob as a `data:` URL. */
   static toDataUrl(opts: { blob: Blob }): Promise<string> {
     // `new Promise`, not `Promise.withResolvers` (ES2024, Chrome 119): a WebView on an older Chrome lacks it.
@@ -42,7 +45,7 @@ export class FileUtility {
     anchor.click();
     anchor.remove();
 
-    // Revoked after the click, not in it: some browsers cancel a download whose URL is revoked at once.
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    // Revoked well after the click: Safari can lose the download when the URL is revoked at once.
+    setTimeout(() => URL.revokeObjectURL(url), FileUtility.REVOKE_DELAY_MS);
   }
 }

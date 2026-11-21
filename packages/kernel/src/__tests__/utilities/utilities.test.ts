@@ -1,4 +1,4 @@
-import { describe, expect, spyOn, test } from 'bun:test';
+import { describe, expect, jest, spyOn, test } from 'bun:test';
 import { RejectionHelper } from '@venizia/dev-configs/testing';
 import { BrowserUtility, FileUtility, ValueUtility } from '@/utilities';
 
@@ -118,7 +118,8 @@ describe('FileUtility.save', () => {
     };
   };
 
-  test('clicks an attached anchor that downloads the blob under the file name, then revokes the URL', async () => {
+  test('clicks an attached anchor that downloads the blob under the file name, then revokes the URL later', () => {
+    jest.useFakeTimers();
     const stub = stubDocument();
     const blob = new Blob(['a,b']);
 
@@ -129,13 +130,16 @@ describe('FileUtility.save', () => {
       expect(stub.clicks).toEqual([
         { href: 'blob:stub-1', download: 'report.csv', isAttached: true },
       ]);
-      // Not revoked in the click itself.
+      // Not revoked in the click itself, nor until the delay has passed.
+      expect(stub.revoked).toEqual([]);
+      jest.advanceTimersByTime(FileUtility.REVOKE_DELAY_MS - 1);
       expect(stub.revoked).toEqual([]);
 
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      jest.advanceTimersByTime(1);
       expect(stub.revoked).toEqual(['blob:stub-1']);
     } finally {
       stub.restore();
+      jest.useRealTimers();
     }
   });
 
