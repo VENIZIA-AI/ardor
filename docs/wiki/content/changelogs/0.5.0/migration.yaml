@@ -277,11 +277,11 @@ authentication-removed:
   data: Nothing stored changes. A stored token keeps its own type, and one with none is still sent as Bearer.
 
 to-error-removed:
-  symbols: [NetworkResponseReader.toError]
+  symbols: [ResponseReader.toError, NetworkResponseReader.toError]
   upgrade:
     steps:
       - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
-      - 'Replace `NetworkResponseReader.toError({ response })` with `HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY })`, importing `HttpResponseReader` from `@venizia/ignis-helpers/core`.'
+      - 'Replace `NetworkResponseReader.toError({ response })` (`ResponseReader.toError` in 0.4.8) with `HttpResponseReader.toApplicationError({ response, rootKey: NetworkResponseReader.ERROR_ROOT_KEY })`, importing `HttpResponseReader` from `@venizia/ignis-helpers/core`.'
     before: |-
       throw await NetworkResponseReader.toError({ response });
     after: |-
