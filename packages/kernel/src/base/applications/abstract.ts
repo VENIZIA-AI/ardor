@@ -2,6 +2,7 @@ import {
   ArtifactBindingKeys,
   ArtifactGroup,
   ArtifactNamespaces,
+  ArtifactTypes,
   BindingNamespaces,
   MetadataRegistry,
 } from '@venizia/ignis-kernel/metadata';
@@ -167,9 +168,11 @@ export abstract class AbstractArdorApplication extends Container {
         this.lockedKeys.set(key, target);
       }
 
+      const definition = metadata ? ArtifactTypes.definitionOf({ type: metadata.type }) : undefined;
+
       this.bind({ key })
         .toClass(target as TClass<unknown>)
-        .setScope(metadata?.scope ?? BindingScopes.SINGLETON);
+        .setScope(metadata?.scope ?? definition?.scope ?? BindingScopes.SINGLETON);
 
       for (const entry of registry.getProvideMetadata({ target })) {
         this.bind({ key: entry.key })
@@ -325,22 +328,47 @@ export abstract class AbstractArdorApplication extends Container {
         continue;
       }
 
-      for (const kind of ArtifactIndexKinds) {
-        for (const [position, target] of (index[kind] ?? []).entries()) {
-          // A cycle leaves `undefined` here: a bundler's eager class list is built while the module of
-          // the class is still evaluating. Say so, rather than fail on `.name` below.
-          if (typeof target !== 'function') {
-            throw getError({
-              message: `[artifacts] '${kind}' lists an entry that is not a class (position ${position}) | Usually an import cycle: the module that imports the index (or @venizia/ignis-boot/auto) must not define decorated classes or be imported by them`,
-            });
-          }
+      for (const { field, targets } of AbstractArdorApplication.listsOf({ index })) {
+        this.assertListed({ field, targets, discovered });
+      }
+    }
+  }
 
-          if (!discovered.has(target)) {
-            throw getError({
-              message: `[artifacts] '${kind}' lists ${target.name}, which was never discovered | Decorate it with its stereotype and regenerate the index`,
-            });
-          }
-        }
+  /** Every class list of an index: the six built-in fields, then `custom.<type>` for each defined type. */
+  private static listsOf(opts: {
+    index: IArtifactIndex;
+  }): Array<{ field: string; targets: ReadonlyArray<unknown> }> {
+    const { index } = opts;
+
+    return [
+      ...ArtifactIndexKinds.map((field) => ({ field, targets: index[field] ?? [] })),
+      ...Object.entries(index.custom ?? {}).map(([type, targets]) => ({
+        field: `custom.${type}`,
+        targets,
+      })),
+    ];
+  }
+
+  private assertListed(opts: {
+    field: string;
+    targets: ReadonlyArray<unknown>;
+    discovered: Set<unknown>;
+  }): void {
+    const { field, targets, discovered } = opts;
+
+    for (const [position, target] of targets.entries()) {
+      // A cycle leaves `undefined` here: a bundler's eager class list is built while the module of
+      // the class is still evaluating. Say so, rather than fail on `.name` below.
+      if (typeof target !== 'function') {
+        throw getError({
+          message: `[artifacts] '${field}' lists an entry that is not a class (position ${position}) | Usually an import cycle: the module that imports the index (or @venizia/ignis-boot/auto) must not define decorated classes or be imported by them`,
+        });
+      }
+
+      if (!discovered.has(target)) {
+        throw getError({
+          message: `[artifacts] '${field}' lists ${target.name}, which was never discovered | Decorate it with its stereotype and regenerate the index`,
+        });
       }
     }
   }
@@ -372,17 +400,19 @@ export abstract class AbstractArdorApplication extends Container {
         }
       }
 
-      for (const group of ArtifactIndexKinds) {
-        for (const [position, target] of (feature.artifacts?.[group] ?? []).entries()) {
+      for (const { field, targets } of AbstractArdorApplication.listsOf({
+        index: feature.artifacts ?? {},
+      })) {
+        for (const [position, target] of targets.entries()) {
           if (typeof target !== 'function') {
             throw getError({
-              message: `[features] '${feature.name}' lists an entry in artifacts.${group} that is not a class (position ${position}) | Usually an import cycle: the feature module must not be imported by the classes it lists`,
+              message: `[features] '${feature.name}' lists an entry in artifacts.${field} that is not a class (position ${position}) | Usually an import cycle: the feature module must not be imported by the classes it lists`,
             });
           }
 
           if (!discovered.has(target)) {
             throw getError({
-              message: `[features] '${feature.name}' lists ${target.name} in artifacts.${group}, which was never discovered | Decorate it with its stereotype and import its module before start()`,
+              message: `[features] '${feature.name}' lists ${target.name} in artifacts.${field}, which was never discovered | Decorate it with its stereotype and import its module before start()`,
             });
           }
         }
