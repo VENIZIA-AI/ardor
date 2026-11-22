@@ -176,6 +176,13 @@ export class Application extends BaseArdorApplication {
 
 Several groups compose in the same array: `[AutoArtifacts, OrdersGroup, BillingGroup]`. A group has no `when`; the `when` of a stereotype is the way to leave a class out. A class that is first imported after `start()` is not bound, in a group as anywhere else.
 
+**`artifacts()` and a group do not choose what is bound.** Discovery binds every stereotyped class that was imported, whichever group or index lists it. A group imports its classes and checks they were discovered; it never limits registration to them. Bindings are lazy, so a class nobody resolves costs nothing. A class that needs a binding only some applications provide (a kit class that reads an app-only service) must say so itself:
+
+- gate it with `when`, reading the application config: `@service({ when: ({ application }) => ... })` leaves it unbound where the config says no; or
+- inject the app-only binding with `@inject({ key, isOptional: true })`, so the class resolves without it.
+
+`assertArdorApplicationBoots` resolves every binding of the five namespaces, so a class that needs an app-only binding and is neither gated nor optional fails that test in an application that lacks the binding.
+
 ## The rules
 
 - **Keep `src/application.ts` free of decorated classes.** The module that imports `AutoArtifacts` must not define a class with a stereotype, and no module that defines one may import it.
