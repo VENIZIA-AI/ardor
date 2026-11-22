@@ -1,5 +1,5 @@
-import { ArtifactGroup } from '@venizia/ignis-kernel/metadata';
-import { BindingKeys } from '@venizia/ignis-inversion';
+import { ArtifactGroup, ArtifactTypes } from '@venizia/ignis-kernel/metadata';
+import { BindingKeys, BindingScopes } from '@venizia/ignis-inversion';
 import 'reflect-metadata';
 
 import { afterEach, describe, expect, test } from 'bun:test';
@@ -18,8 +18,18 @@ class IndexedComponent {}
 @configuration()
 class IndexedConfiguration {}
 
+const transientEmitter = ArtifactTypes.define({
+  type: 'artifact-index-emitter',
+  namespace: 'artifact-index-emitters',
+  scope: BindingScopes.TRANSIENT,
+});
+
+@transientEmitter()
+class IndexedEmitter {}
+
 // Never decorated: an index that lists it names a class discovery never saw.
 class ForgottenService {}
+class ForgottenEmitter {}
 class ForgottenConfiguration {}
 
 // The exact shape `ignis-artifacts generate` emits, empty kinds included.
@@ -85,6 +95,30 @@ describe('AbstractArdorApplication.artifacts', () => {
     expect(result).toMatchObject({
       message: expect.stringMatching(
         /\[artifacts\] 'services' lists ForgottenService, which was never discovered/,
+      ),
+    });
+  });
+
+  test('binds a class of a defined type with the scope of its definition', async () => {
+    const application = createApplication({
+      artifacts: [{ ...generated, custom: { 'artifact-index-emitter': [IndexedEmitter] } }],
+    });
+    await application.start();
+
+    const key = BindingKeys.build<object>({ key: 'artifact-index-emitters.IndexedEmitter' });
+    expect(application.get<object>({ key })).toBeInstanceOf(IndexedEmitter);
+    expect(application.get<object>({ key })).not.toBe(application.get<object>({ key }));
+  });
+
+  test('throws when an index lists a class of a defined type that was never discovered', async () => {
+    const application = createApplication({
+      artifacts: [{ ...generated, custom: { 'artifact-index-emitter': [ForgottenEmitter] } }],
+    });
+
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
+    expect(result).toMatchObject({
+      message: expect.stringMatching(
+        /\[artifacts\] 'custom.artifact-index-emitter' lists ForgottenEmitter, which was never discovered/,
       ),
     });
   });

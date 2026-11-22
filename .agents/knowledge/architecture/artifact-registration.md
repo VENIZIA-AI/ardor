@@ -113,8 +113,10 @@ parent's key is a duplicate like any other. The full boot sequence is [applicati
 
 `registerArtifacts()` first asks each discovered class's `when`, checks the classes left for keys they
 share, then reads the key of each,
-skips a class with none, and binds the rest `toClass()` under the scope the stereotype declares,
-`BindingScopes.SINGLETON` by default. It is not IGNIS's boot sequence. From
+skips a class with none, and binds the rest `toClass()` under the scope the stereotype declares, else the
+scope of its type's `ArtifactTypes.define` definition (`ArtifactTypes.definitionOf`), else
+`BindingScopes.SINGLETON`. `assertIndexed` also walks `IArtifactIndex.custom` (classes by defined-type
+name) with the same cycle and never-discovered checks as the six built-in kinds. It is not IGNIS's boot sequence. From
 `IArtifactRegistrationOptions` it honours **the key, the scope, `when` and `allowOverride`**; `order` and `after` are
 ignored, because every binding is lazy and registration order changes nothing. `allowOverride: false`
 is honoured against `bindingList()` and by the by-hand methods. `when` is called once per class, with `{ application }`, and must return a
