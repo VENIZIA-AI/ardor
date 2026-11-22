@@ -182,9 +182,7 @@ describe('where the two clients agree', () => {
       normalized: { text: 'No such item', code: 'app.items.missing' },
     });
   });
-});
 
-describe('where the two clients differ, as the docs say', () => {
   test('a null query value: both clients leave it out', async () => {
     const { service, source } = createClients();
 
@@ -199,7 +197,9 @@ describe('where the two clients differ, as the docs say', () => {
     expect(recorded[0].params.has('a')).toBe(false);
     expect(recorded[1].params.has('a')).toBe(false);
   });
+});
 
+describe('where the two clients differ, as the docs say', () => {
   test('a list of numbers: doRequest sends one JSON parameter, the data source repeats the key', async () => {
     const { service, source } = createClients();
 
