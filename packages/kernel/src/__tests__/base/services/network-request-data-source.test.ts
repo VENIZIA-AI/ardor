@@ -182,10 +182,8 @@ describe('where the two clients agree', () => {
       normalized: { text: 'No such item', code: 'app.items.missing' },
     });
   });
-});
 
-describe('where the two clients differ, as the docs say', () => {
-  test('a null query value: doRequest leaves it out, the data source sends the text null', async () => {
+  test('a null query value: both clients leave it out', async () => {
     const { service, source } = createClients();
 
     await service.doRequest({
@@ -197,7 +195,24 @@ describe('where the two clients differ, as the docs say', () => {
     await source.request({ paths: ['items'], method: 'GET', query: { a: null, b: 'x' } });
 
     expect(recorded[0].params.has('a')).toBe(false);
-    expect(recorded[1].params.get('a')).toBe('null');
+    expect(recorded[1].params.has('a')).toBe(false);
+  });
+});
+
+describe('where the two clients differ, as the docs say', () => {
+  test('a list of numbers: doRequest sends one JSON parameter, the data source repeats the key', async () => {
+    const { service, source } = createClients();
+
+    await service.doRequest({
+      paths: ['items'],
+      method: RequestMethods.GET,
+      type: RequestTypes.GET_ONE,
+      query: { ids: [1, 2] },
+    });
+    await source.request({ paths: ['items'], method: 'GET', query: { ids: [1, 2] } });
+
+    expect(recorded[0].params.getAll('ids')).toEqual(['[1,2]']);
+    expect(recorded[1].params.getAll('ids')).toEqual(['1', '2']);
   });
 
   test('a body on a GET: doRequest drops it, the data source rejects the call', async () => {
