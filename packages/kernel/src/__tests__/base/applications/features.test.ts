@@ -24,6 +24,9 @@ class OrderLedgerService {}
 
 class OrderService {}
 
+// Never decorated: a feature that lists it under a defined type has lost its binding.
+class ForgottenEmitter {}
+
 const inventory: IFeatureBase = {
   name: 'inventory',
   configurations: [InventoryConfiguration],
@@ -118,6 +121,24 @@ describe('AbstractArdorApplication.features', () => {
     expect(result).toMatchObject({
       message: expect.stringContaining(
         "[features] 'orders' lists OrderService in artifacts.services, which was never discovered | Decorate it with its stereotype and import its module before start()",
+      ),
+    });
+  });
+
+  test('throws when a feature lists a class of a defined type that was never discovered', async () => {
+    const application = createApplication({
+      features: [
+        {
+          name: 'orders',
+          artifacts: { custom: { 'feature-index-emitter': [ForgottenEmitter] } },
+        },
+      ],
+    });
+
+    const result = await RejectionUtility.rejectionOf({ task: application.start() });
+    expect(result).toMatchObject({
+      message: expect.stringContaining(
+        "[features] 'orders' lists ForgottenEmitter in artifacts.custom.feature-index-emitter, which was never discovered",
       ),
     });
   });

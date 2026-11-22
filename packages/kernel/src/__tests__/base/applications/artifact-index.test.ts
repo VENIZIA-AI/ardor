@@ -27,6 +27,9 @@ const transientEmitter = ArtifactTypes.define({
 @transientEmitter()
 class IndexedEmitter {}
 
+@transientEmitter({ scope: BindingScopes.SINGLETON })
+class SingletonEmitter {}
+
 // Never decorated: an index that lists it names a class discovery never saw.
 class ForgottenService {}
 class ForgottenEmitter {}
@@ -108,6 +111,16 @@ describe('AbstractArdorApplication.artifacts', () => {
     const key = BindingKeys.build<object>({ key: 'artifact-index-emitters.IndexedEmitter' });
     expect(application.get<object>({ key })).toBeInstanceOf(IndexedEmitter);
     expect(application.get<object>({ key })).not.toBe(application.get<object>({ key }));
+  });
+
+  test('a class that sets its own scope keeps it over the scope of its type', async () => {
+    const application = createApplication({
+      artifacts: [{ ...generated, custom: { 'artifact-index-emitter': [SingletonEmitter] } }],
+    });
+    await application.start();
+
+    const key = BindingKeys.build<object>({ key: 'artifact-index-emitters.SingletonEmitter' });
+    expect(application.get<object>({ key })).toBe(application.get<object>({ key }));
   });
 
   test('throws when an index lists a class of a defined type that was never discovered', async () => {

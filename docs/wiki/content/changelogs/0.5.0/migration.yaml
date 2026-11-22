@@ -248,14 +248,14 @@ network-headers-removed:
   upgrade:
     steps:
       - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
-      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [new Headers(a), new Headers(b)] })` from `@venizia/ignis-helpers/core`; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
+      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [a, b] })` from `@venizia/ignis-helpers/core`; a layer is a record, a `Headers` or a list of pairs; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
       - 'A layer that is `null` or `undefined` is skipped, as `NetworkHeaders.merge` skipped a missing source, so an optional layer needs no guard.'
       - 'Replace `NetworkHeaders.toRecord({ headers })` with `Object.fromEntries(new Headers(headers))`.'
       - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`. The codemod does not list that read: search your subclasses for `this.headers[`.'
     before: |-
       const headers = NetworkHeaders.merge({ sources: [base, extra] });
     after: |-
-      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [new Headers(base), new Headers(extra)] }));
+      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [base, extra] }));
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.
