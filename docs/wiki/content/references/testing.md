@@ -20,7 +20,7 @@ await assertArdorApplicationBoots(() => new Application());
 In order, and it stops at the first failure with the error the app would raise:
 
 1. Calls `start()`: the artifact index, the stereotype bindings, the features, `bindContext()`.
-2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed.
+2. Resolves every binding of the namespaces `services`, `repositories`, `datasources`, `components` and `configurations`, collects every failure and throws once. The message names each binding that failed and the key or class it needed. Every stereotyped class the application imported is bound, whichever group or index lists it, so a class that needs a binding this application lacks fails here unless it is gated with `when` or injects it with `isOptional: true` (see [Auto-boot](../guides/core-concepts/auto-boot)).
 3. Resolves what `ArdorApplication` resolves on mount: the data provider, the auth provider (only when `AUTH_PROVIDER_OPTIONS` is `{ use: true }`) and the i18n provider, through the same function the component calls.
 4. Reads and mounts the features, and loads the features' messages of every locale the i18n provider offers (`Features.verifyMessages`), so a key two features define, or a feature loader that fails, fails here in any language. The provider's locale is not switched. `fetch` is blocked, so a loader that downloads its messages fails here: limit the check with `locale` to a language whose loader does not.
 

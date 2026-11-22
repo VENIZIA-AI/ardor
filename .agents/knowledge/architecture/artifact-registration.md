@@ -131,6 +131,13 @@ SINGLETON default and `scope` honoured - the same as IGNIS's `bindProvidedKeys`.
 framework keys in a `@configuration()` class get bound. For a transient, a conditional binding or
 anything else a decorator cannot express, bind by hand in `bindContext()`.
 
+`artifacts()` and an `ArtifactGroup` do not scope registration: `registerArtifacts()` binds every
+discovered class that passes `when`, whichever index lists it (the index only imports modules and is
+checked by `assertIndexed`). Bindings are lazy, so an unused class costs nothing. A kit class that
+needs a binding only some applications provide is gated with `when` (reading the application config)
+or injects it with `@inject({ ..., isOptional: true })`. `assertArdorApplicationBoots` resolves every
+binding, so such a class that is neither fails that test where the binding is missing.
+
 The list is read once, inside `preConfigure()`. A class whose module is first imported after
 `start()` - a lazy route chunk - is never bound. Calling `registerArtifacts()` again is not the fix:
 it replaces every discovered binding, so the next resolve of each builds a second instance, and it
