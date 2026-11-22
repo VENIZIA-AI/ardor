@@ -156,7 +156,7 @@
     },
     "packages/admin": {
       "name": "@venizia/ardor-admin",
-      "version": "0.5.0-7",
+      "version": "0.5.0-8",
       "dependencies": {
         "@venizia/ardor-kernel": "workspace:*",
         "@venizia/ardor-react": "workspace:*",
