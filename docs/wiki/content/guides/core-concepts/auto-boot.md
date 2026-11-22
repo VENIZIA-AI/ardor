@@ -102,7 +102,7 @@ Three rules follow from that.
 | 4 | `bindingList()` |
 | 5 | `bindContext()` |
 
-**The scope.** A class is a singleton unless its stereotype says otherwise (`@service({ scope: BindingScopes.TRANSIENT })`).
+**The scope.** A class is a singleton unless its stereotype says otherwise (`@service({ scope: BindingScopes.TRANSIENT })`). A class of a type you declared with `ArtifactTypes.define({ type, namespace, scope })` takes the scope of that definition when its own options give none.
 
 **`when`.** A stereotype option `when` decides whether the class is bound: `@service({ when: ({ application }) => ... })`. It must return a boolean at once. A class whose `when` returns `false` is left out, with its `@provide` methods.
 

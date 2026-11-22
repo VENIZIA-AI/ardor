@@ -176,7 +176,7 @@ ignis-0-5-peers:
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.4.8 or earlier, and the IGNIS packages to the 0.4 line.
-  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-5` for `@venizia/ignis-connectors`, `^0.5.0-4` for `@venizia/ignis-kernel`, `^0.5.0-3` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-1` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them.
+  data: Nothing stored changes. The four ARDOR packages declare `^0.5.0` peers on the IGNIS packages (while IGNIS 0.5.0 is a prerelease the ranges are `^0.5.0-8` for `@venizia/ignis-connectors`, `^0.5.0-7` for `@venizia/ignis-kernel`, `^0.5.0-6` for `@venizia/ignis-helpers` and `@venizia/ignis-boot`, and `^0.5.0-3` for the other IGNIS packages); an app on a 0.4 IGNIS line does not satisfy them.
 
 data-source-auth-attempt:
   symbols:
@@ -248,13 +248,14 @@ network-headers-removed:
   upgrade:
     steps:
       - 'Run `bun run ardor codemod namespace` to list each place (file:line); it writes nothing.'
-      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [new Headers(a), new Headers(b)] })` from `@venizia/ignis-helpers/core`; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
+      - 'Replace `NetworkHeaders.merge({ sources: [a, b] })` with `HttpHeaders.merge({ layers: [a, b] })` from `@venizia/ignis-helpers/core`; a layer is a record, a `Headers` or a list of pairs; it answers a `Headers`, and `Object.fromEntries(...)` gives the record.'
+      - 'A layer that is `null` or `undefined` is skipped, as `NetworkHeaders.merge` skipped a missing source, so an optional layer needs no guard.'
       - 'Replace `NetworkHeaders.toRecord({ headers })` with `Object.fromEntries(new Headers(headers))`.'
       - 'A subclass of `DefaultNetworkRequestService` that reads `this.headers[name]` reads `this.headers.get(name)`. The codemod does not list that read: search your subclasses for `this.headers[`.'
     before: |-
       const headers = NetworkHeaders.merge({ sources: [base, extra] });
     after: |-
-      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [new Headers(base), new Headers(extra)] }));
+      const headers = Object.fromEntries(HttpHeaders.merge({ layers: [base, extra] }));
   downgrade:
     steps:
       - Pin the four ARDOR packages to 0.5.0-3 or earlier.

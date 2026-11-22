@@ -330,6 +330,8 @@ export interface IArtifactIndex {
   repositories?: ReadonlyArray<TClass<unknown>>;
   services?: ReadonlyArray<TClass<unknown>>;
   controllers?: ReadonlyArray<TClass<unknown>>;
+  /** The classes of the types the application declared with `ArtifactTypes.define`, by type name. */
+  custom?: Readonly<Record<string, ReadonlyArray<TClass<unknown>>>>;
 }
 
 /**
