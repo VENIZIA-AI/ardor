@@ -15,7 +15,12 @@ const isCountedBody = (value: unknown): value is { data: unknown; count?: number
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
 };
 
-/** Reads a `Response` into an `INetworkResponse`, and an error response into an error. */
+/**
+ * Reads a `Response` into an `INetworkResponse`, and an error response into an error.
+ *
+ * @useWhen you read a `Response` into a typed result or a typed error
+ * @insteadOf `response.json()` with hand-written error handling
+ */
 export class NetworkResponseReader {
   /** The server wraps an error body under this key; both transports unwrap it. */
   static readonly ERROR_ROOT_KEY = 'error';

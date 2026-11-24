@@ -93,6 +93,9 @@ class GrantPattern {
  *   }
  * }
  * ```
+ *
+ * @useWhen access is decided by roles whose grant patterns sit in a table the application writes
+ * @insteadOf a hand-written permission check in each screen
  */
 export class RolePermissionProvider extends BaseHelper implements IPermissionProvider {
   private readonly grants = new Map<string, ReadonlyArray<IGrant>>();

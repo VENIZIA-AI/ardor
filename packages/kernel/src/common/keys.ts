@@ -26,6 +26,9 @@ export type TCoreBindingType<TName extends string> = TName extends keyof ICoreBi
 /**
  * The container keys the kernel binds and reads, each made by `BindingKeys.build<T>` with the type of
  * its value.
+ *
+ * @useWhen you read or bind a key the kernel owns in the container
+ * @insteadOf a string key written by hand
  */
 export class CoreBindings {
   /** The application itself, bound by `preConfigure`. */
@@ -116,7 +119,12 @@ export interface IScopedKeys {
   permission: string;
 }
 
-/** The `localStorage` keys the kernel owns. */
+/**
+ * The `localStorage` keys the kernel owns.
+ *
+ * @useWhen you read a `localStorage` key the kernel owns
+ * @insteadOf a storage key string written by hand
+ */
 export class LocalStorageKeys {
   /**
    * The session keys of an application with no `id`: `DefaultAuthService.cleanUp` removes them, and

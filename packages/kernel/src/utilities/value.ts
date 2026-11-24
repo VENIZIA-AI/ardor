@@ -1,4 +1,9 @@
-/** Checks of a value's kind. */
+/**
+ * Checks of a value's kind.
+ *
+ * @useWhen you check what type a value has
+ * @insteadOf repeated `typeof` chains
+ */
 export class ValueUtility {
   /** Positional on purpose: a type predicate narrows its own parameter. */
   static isDefined<TValue>(value: TValue | null | undefined): value is TValue {

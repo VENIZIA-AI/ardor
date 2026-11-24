@@ -15,7 +15,12 @@ type TPassThroughBodyType =
   | typeof RequestBodyTypes.NONE
   | typeof RequestBodyTypes.BINARY;
 
-/** Turns a request body into what `fetch` sends, by `RequestBodyTypes`. */
+/**
+ * Turns a request body into what `fetch` sends, by `RequestBodyTypes`.
+ *
+ * @useWhen you turn a request body into what `fetch` sends
+ * @insteadOf `JSON.stringify` and `FormData` built by hand
+ */
 export class RequestBodyEncoder {
   /**
    * The body as it is sent and the content type to send it under. The overloads give the type of what

@@ -57,6 +57,9 @@ const drop = (opts: { list: Array<Element>; item: Element }): void => {
  * A `ResizeObserver` whose `observe()` records the element. `flush` delivers a size to the observers
  * of an element; a callback runs at once, so code that waits for an animation frame still needs the
  * test's own frame control.
+ *
+ * @useWhen a test needs a `ResizeObserver` it can drive
+ * @insteadOf a hand-written `ResizeObserver` stub in the test
  */
 export class FakeResizeObserver implements ResizeObserver {
   /** The observers created since the last `install`, in creation order. */
@@ -141,6 +144,9 @@ const intersectionEntryOf = (opts: {
 /**
  * An `IntersectionObserver` whose `observe()` records the element and reports nothing by itself: `settle`
  * delivers the first report of a browser, `flush` delivers an entry to the observers of an element.
+ *
+ * @useWhen a test needs an `IntersectionObserver` it can drive
+ * @insteadOf a hand-written `IntersectionObserver` stub in the test
  */
 export class FakeIntersectionObserver implements IntersectionObserver {
   /** The observers created since the last `install`, in creation order. */
@@ -238,7 +244,12 @@ export class FakeIntersectionObserver implements IntersectionObserver {
   }
 }
 
-/** The `MediaQueryList` that `matchMedia` answers under `FakeMatchMedia.install`: one per query, `false` until `set`. */
+/**
+ * The `MediaQueryList` that `matchMedia` answers under `FakeMatchMedia.install`: one per query, `false` until `set`.
+ *
+ * @useWhen a test needs `matchMedia` answers it can set per query
+ * @insteadOf a hand-written `window.matchMedia` stub in the test
+ */
 export class FakeMatchMedia extends EventTarget {
   /** The queries asked since the last `install`, with the list each one got. */
   static readonly queries = new Map<string, FakeMatchMedia>();
@@ -314,6 +325,9 @@ export class FakeMatchMedia extends EventTarget {
  * `setItem` and `clear` throw `QuotaExceededError` and `removeItem` throw `SecurityError`. A key named like a member of the fake (`getItem`,
  * `length`, `writes`, `failWrites` and the rest) would shadow it, so `setItem` throws a `TypeError`
  * for it, where the real `Storage` accepts it.
+ *
+ * @useWhen a test needs a `Storage` that can fail on demand
+ * @insteadOf a hand-written `localStorage` stub in the test
  */
 export class FakeStorage implements Storage {
   [name: string]: unknown;
@@ -427,7 +441,12 @@ export class FakeStorage implements Storage {
   }
 }
 
-/** A `navigator.clipboard` that keeps the text in memory; `isDenied` makes both methods reject as a refused permission does. */
+/**
+ * A `navigator.clipboard` that keeps the text in memory; `isDenied` makes both methods reject as a refused permission does.
+ *
+ * @useWhen a test needs a `navigator.clipboard` that can be refused
+ * @insteadOf a hand-written `navigator.clipboard` stub in the test
+ */
 export class FakeClipboard {
   /** The text of every `writeText`, in order. */
   readonly written: Array<string> = [];

@@ -4,6 +4,9 @@ import { BaseHelper } from '@venizia/ignis-helpers/core';
  * What happens after a 401: one refresh shared by every request in flight, and which paths may
  * recover at all. The callbacks are read when called, so a subclass override of the service hooks
  * behind them takes effect.
+ *
+ * @useWhen a 401 must trigger one shared refresh for every request in flight
+ * @insteadOf a refresh and retry written by hand in each request
  */
 export class AuthRecoveryHelper extends BaseHelper {
   /** The refresh in flight for each session (`key`): a request of another session never joins it. */
