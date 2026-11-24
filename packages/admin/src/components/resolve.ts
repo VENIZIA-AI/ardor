@@ -10,12 +10,20 @@ interface IResolvedProviders {
   i18nProvider: I18nProvider;
 }
 
-/** The tag `BaseArdorApplication.bindDefaults()` puts on the bindings it makes, so a binding of the application is told apart. */
+/**
+ * The tag `BaseArdorApplication.bindDefaults()` puts on the bindings it makes, so a binding of the application is told apart.
+ *
+ * @useWhen you must tell the default bindings of the application apart from your own
+ */
 export class DefaultBindingTags {
   static readonly DEFAULT = 'ardor.default';
 }
 
-/** Resolves the providers `ArdorApplication` hands to react-admin. */
+/**
+ * Resolves the providers `ArdorApplication` hands to react-admin.
+ *
+ * @useWhen you need the data, auth and i18n providers the application hands to react-admin
+ */
 export class ApplicationProviders {
   /**
    * What `ArdorApplication` resolves from the container when it mounts: the one place, so a test of

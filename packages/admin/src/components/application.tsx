@@ -239,6 +239,9 @@ const readSessionUser = (opts: { authService: DefaultAuthService }): string | un
  * `reduxStore` is passed) and `Suspense`. While a feature's lazy messages for the current locale
  * load, it renders `suspense` instead of react-admin; a failed load is thrown from render. Remaining
  * props go to react-admin's `CoreAdmin`.
+ *
+ * @useWhen you mount an ARDOR admin app: it resolves the providers, features, resources and routes into react-admin
+ * @insteadOf a hand-wired react-admin `<Admin>` with its own provider setup
  */
 export const ArdorApplication: React.FC<IApplication> = (props: IApplication) => {
   const {

@@ -18,6 +18,9 @@ const accessKey = (opts: { access: IRouteAccess }) => {
  * While a check is pending, or when it fails, the entry is left out. With no `canAccess` (no sign-in,
  * or no permission provider) every entry is listed. Call it inside `ArdorApplication`, such as in a
  * layout; the answers share react-admin's `['auth', 'canAccess']` cache.
+ *
+ * @useWhen a menu must list the entries of the mounted features that the current user may open
+ * @insteadOf a hand-filtered menu list
  */
 export const useMenuEntries = (): Array<TFeatureMenuEntry> => {
   const features = useFeatures();
