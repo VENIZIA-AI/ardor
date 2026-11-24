@@ -1,6 +1,11 @@
 import { ConstClass } from '@venizia/ignis-helpers/common';
 
-/** Values of the running environment, read once when the module loads. */
+/**
+ * Values of the running environment, read once when the module loads.
+ *
+ * @useWhen you need the runtime timezone, the default debounce time or the default token type
+ * @insteadOf a timezone, a debounce number or the string `'Bearer'` written by hand
+ */
 export class App {
   /** The IANA name of the timezone of the runtime. */
   static readonly TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -12,7 +17,12 @@ export class App {
   static readonly TOKEN_TYPE = 'Bearer';
 }
 
-/** HTTP methods. */
+/**
+ * HTTP methods.
+ *
+ * @useWhen you name an HTTP method
+ * @insteadOf string literals such as `'GET'`
+ */
 export class RequestMethods extends ConstClass {
   static readonly HEAD = 'HEAD';
   static readonly OPTIONS = 'OPTIONS';
@@ -23,7 +33,11 @@ export class RequestMethods extends ConstClass {
   static readonly DELETE = 'DELETE';
 }
 
-/** What a request is for, which decides how its response is read: `SEND`, and react-admin's data provider calls. */
+/**
+ * What a request is for, which decides how its response is read: `SEND`, and react-admin's data provider calls.
+ *
+ * @useWhen you say what a request is for, which decides how its response is read
+ */
 export class RequestTypes extends ConstClass {
   /** A request that is not a react-admin call. */
   static readonly SEND = 'SEND';
@@ -40,7 +54,12 @@ export class RequestTypes extends ConstClass {
   static readonly DELETE_MANY = 'DELETE_MANY';
 }
 
-/** The Web Storage areas `BrowserStorage` reads and writes. */
+/**
+ * The Web Storage areas `BrowserStorage` reads and writes.
+ *
+ * @useWhen you pick `localStorage` or `sessionStorage` for `BrowserStorage`
+ * @insteadOf the strings `'local'` and `'session'`
+ */
 export class StorageAreas {
   /** `localStorage`. */
   static readonly LOCAL = 'local';
@@ -48,7 +67,12 @@ export class StorageAreas {
   static readonly SESSION = 'session';
 }
 
-/** How a request body is encoded; see `RequestBodyEncoder`. */
+/**
+ * How a request body is encoded; see `RequestBodyEncoder`.
+ *
+ * @useWhen you pick how a request body is encoded
+ * @insteadOf setting the `Content-Type` and stringifying by hand
+ */
 export class RequestBodyTypes extends ConstClass {
   /** The body goes through as it is. */
   static readonly NONE = 'none';
@@ -58,19 +82,34 @@ export class RequestBodyTypes extends ConstClass {
   static readonly BINARY = 'binary';
 }
 
-/** Names of the build environments. */
+/**
+ * Names of the build environments.
+ *
+ * @useWhen you compare the build environment by name
+ * @insteadOf string literals such as `'production'`
+ */
 export class Environments extends ConstClass {
   static readonly DEVELOPMENT = 'development';
   static readonly PRODUCTION = 'production';
 }
 
-/** The channels a request says it comes from, sent in `x-request-channel`. */
+/**
+ * The channels a request says it comes from, sent in `x-request-channel`.
+ *
+ * @useWhen you set the `x-request-channel` header of a request
+ * @insteadOf a header string written by hand
+ */
 export class RequestChannel extends ConstClass {
   /** A browser application; what a request says unless `requestTracingChannel` is set. */
   static readonly WEB = '100_WEB';
 }
 
-/** Whether a response carries a count, sent in `x-request-count`. */
+/**
+ * Whether a response carries a count, sent in `x-request-count`.
+ *
+ * @useWhen you ask for or read the `x-request-count` header
+ * @insteadOf a header string written by hand
+ */
 export class RequestCountData extends ConstClass {
   /**
    * @description Only the data is returned in the response body

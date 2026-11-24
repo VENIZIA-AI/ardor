@@ -47,10 +47,18 @@ interface ISentSession {
   token?: string;
 }
 
-/** The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight. */
+/**
+ * The `normalized.code` of the 401 that answers a request whose session is gone: the user who sent it signed out or another user signed in while it was in flight.
+ *
+ * @useWhen you tell a request that failed because the session changed from any other 401
+ */
 export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
 
-/** The `normalized.code` of the 504 a request rejects with when it outlives the configured `timeout`. */
+/**
+ * The `normalized.code` of the 504 a request rejects with when it outlives the configured `timeout`.
+ *
+ * @useWhen you tell a request that timed out from any other failure
+ */
 export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
 
 /**
@@ -62,6 +70,9 @@ export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
  *
  * The options hold data (the base URL, headers, the no-auth lists, the refresh path); behaviour is
  * in the protected hooks, each taking one `opts` object, which a subclass overrides.
+ *
+ * @useWhen the data provider needs to send requests with timeout, auth recovery and normalized errors
+ * @insteadOf a hand-written `fetch` wrapper
  */
 export class DefaultNetworkRequestService extends BaseService {
   /** Resources sent without a token, matched exactly. */

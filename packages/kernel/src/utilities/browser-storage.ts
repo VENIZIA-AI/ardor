@@ -16,6 +16,9 @@ interface ISubscription {
  * `localStorage` and `sessionStorage` that never throw: a missing area, a blocked accessor, a quota
  * error or text the codec cannot read gives the fallback or `false`. Nothing touches `window` at
  * import. A key under `LocalStorageKeys.PREFIX_AUTH` is the session and is never written here.
+ *
+ * @useWhen code outside React reads or writes `localStorage` or `sessionStorage` and must never throw
+ * @insteadOf `localStorage.getItem` and `setItem` with try and catch
  */
 export class BrowserStorage {
   private static readonly subs = new Set<ISubscription>();

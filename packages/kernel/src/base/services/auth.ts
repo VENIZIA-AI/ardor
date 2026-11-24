@@ -22,6 +22,9 @@ export interface IAuthChange {
 /**
  * Keeps the signed-in session (token, identity, roles) in `localStorage`, everything under
  * `keys.authPrefix`: `LocalStorageKeys.PREFIX_AUTH`, or `@app/auth/<id>/` when the application has an `id`.
+ *
+ * @useWhen you need the signed-in session (token, identity, roles) kept in `localStorage`
+ * @insteadOf reading and writing the token and roles in storage by hand
  */
 export class DefaultAuthService extends BaseService {
   private readonly listeners = new Set<(change: IAuthChange) => void>();
