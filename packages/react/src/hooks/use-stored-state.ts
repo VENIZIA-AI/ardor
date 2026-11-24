@@ -82,6 +82,9 @@ interface IDecoded<TValue> {
  *   return <button onClick={() => setValue(value === 'light' ? 'dark' : 'light')}>{value}</button>;
  * }
  * ```
+ *
+ * @useWhen a piece of UI state must survive a reload or follow other tabs
+ * @insteadOf reading and writing `localStorage` or `sessionStorage` by hand
  */
 export const useStoredState: IUseStoredState = <TValue>(
   opts: IUseStoredStateOptions<TValue>,

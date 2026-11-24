@@ -40,6 +40,9 @@ export interface IUseResizeEffectOptions {
  *   return <div ref={ref} />;
  * }
  * ```
+ *
+ * @useWhen code must run when an element resizes and needs no size in state
+ * @insteadOf a `ResizeObserver` created in an effect
  */
 export const useResizeEffect = (opts: IUseResizeEffectOptions): void => {
   const { targets, onResize, box = 'content-box', children = false, beforePaint = false } = opts;

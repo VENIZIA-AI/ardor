@@ -23,6 +23,9 @@ const logger = LoggerFactory.getLogger(['useAutosave']);
 /**
  * Calls `onSave` with `data` after it has stopped changing for `interval` milliseconds. The first
  * render does not save. The latest `onSave` is always the one called.
+ *
+ * @useWhen a form or editor must save its data after the user stops changing it
+ * @insteadOf a `setTimeout` in an effect that saves a draft
  */
 export const useAutosave = <TData, TReturn>(opts: IUseAutosaveOptions<TData, TReturn>) => {
   const { data, onSave, interval = 2000, enableSaveOnUnmount, enabled = true } = opts;
