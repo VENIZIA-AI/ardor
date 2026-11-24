@@ -11,7 +11,7 @@ The changelog is one folder per version, `docs/wiki/content/changelogs/<X.Y.Z>/`
 (`knowledge.migrationFrom`). The folder of the next stable is the changelog of the work in progress: every
 change a user sees is a line in it, each prerelease edits it, and it states the net change from the previous
 stable. The files named `YYYY-MM-DD-<slug>.md` up to `knowledge.datedUntil` (2026-11-15) are history: do not
-add or edit one (`vulcan changelog check` fails a dated file later than `datedUntil`). The index (`/changelogs/`) and the
+add or edit one (`vulcan check changelog` fails a dated file later than `datedUntil`). The index (`/changelogs/`) and the
 page of a version (`/changelogs/<X.Y.Z>`) are built from the folders by the shared theme, so there is no table
 row and no sidebar link to add.
 
@@ -67,4 +67,4 @@ List the symbols as the app spells them before the change (a removed or renamed 
 | Command | What it fails |
 |---|---|
 | `make changelog-check` (part of `make lint-all`) | a Breaking or Deprecated item with no block, a block with no item, a package the project does not declare, an invalid `log.md` or block, a codemod name that `ardor codemod --list` does not print (skipped, with a notice, when the runner is not installed: the repository root has no `ardor` bin, so names are not checked here), a dated file later than `datedUntil`, more than one folder without `released:`, a folder in progress that is not above every released one |
-| `bun node_modules/.bin/vulcan changelog check --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |
+| `bun node_modules/.bin/vulcan check changelog --history --base <last stable tag>` | a released folder that changed since the base, a stable at or above `migrationFrom` with no folder, a dated file later than `datedUntil` added or edited |

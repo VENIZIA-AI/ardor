@@ -32,7 +32,7 @@ release can carry a breaking change, labeled in the
 ## Get started
 
 ```bash
-bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
+bun x @venizia/vulcan project init --preset ardor --project demo --frontend-dir apps --app admin
 cd demo && make dev    # the admin on http://localhost:5173/
 ```
 

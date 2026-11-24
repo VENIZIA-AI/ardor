@@ -40,7 +40,7 @@ export const HOME: THomeContent = {
   install: {
     label: 'Create an admin',
     lines: [
-      'bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin',
+      'bun x @venizia/vulcan project init --preset ardor --project demo --frontend-dir apps --app admin',
       'cd demo && make dev',
     ],
   },
@@ -107,7 +107,7 @@ createRoot(document.getElementById('root')!).render(
       body: [
         [
           'cmd',
-          'bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin',
+          'bun x @venizia/vulcan project init --preset ardor --project demo --frontend-dir apps --app admin',
         ],
         ['cmd', 'cd demo && make dev'],
         ['verdict', 'the admin is on http://localhost:5173/'],

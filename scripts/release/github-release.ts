@@ -17,7 +17,7 @@
  * Latest only when no higher stable tag exists. When the run ends in the umbrella and its tag holds
  * `changelogs/<version>/log.md`, its notes are that file without its frontmatter, then the packages, and
  * `migration-<version>.yaml` is attached when the folder's `migration.yaml` holds a block (`release-notes.ts`, the same
- * logic as `vulcan changelog notes`). Otherwise the notes are the dated changelog entries added since the previous
+ * logic as `vulcan migrate notes`). Otherwise the notes are the dated changelog entries added since the previous
  * stable tag. A tag that has a Release is skipped. It never creates, edits or moves the `atlas-index` release, and
  * `--dry-run` writes nothing to GitHub.
  */

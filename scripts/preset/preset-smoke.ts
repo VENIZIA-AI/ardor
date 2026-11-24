@@ -7,12 +7,12 @@
  * every declared one was installed in the project, and `assertImportsDeclared` that every package the
  * app imports is declared (declared-imports.ts reads the source, so the folder's place cannot hide it).
  *
- *   solo      `vulcan init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
+ *   solo      `vulcan project init --preset ardor`: the app passes its checks and builds; no `{{` is left. With a
  *             .env copied from .env.example it passes them again and the dev server reads PORT and API_URL
- *   refusal   `vulcan add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
- *   pair      IGNIS backends, then `vulcan add --preset ardor --api <backend>`; the proxy targets that
+ *   refusal   `vulcan package add --preset ardor` into a catalog pinning an IGNIS outside ARDOR's peer range
+ *   pair      IGNIS backends, then `vulcan package add --preset ardor --api <backend>`; the proxy targets that
  *             backend's port. The IGNIS preset is the one released on npm, or the one packed from `IGNIS_DIR`.
- *   lib       `vulcan add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
+ *   lib       `vulcan package add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
  *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
  *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
@@ -106,7 +106,7 @@ const readJson = (opts: { path: string }): TRecord => {
 };
 
 const tempFolder = makeScratch({ prefix: 'ardor-preset-smoke-' });
-// Its own repository: `vulcan sync` and the linters stop at the nearest `.git`, so they never read
+// Its own repository: `vulcan project sync` and the linters stop at the nearest `.git`, so they never read
 // this repository's `.git/info/exclude` or `.gitignore` (the scratch folder is ignored by both).
 Bun.spawnSync(['git', 'init', '--quiet', tempFolder], { stdout: 'ignore', stderr: 'inherit' });
 let step = 0;
@@ -775,7 +775,7 @@ const install = async (opts: {
   });
   run({
     cwd: opts.project,
-    command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'sync'],
+    command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'project', 'sync'],
   });
 
   for (const app of opts.apps) {
@@ -847,14 +847,13 @@ const install = async (opts: {
 
   run({
     cwd: opts.project,
-    command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'doctor'],
+    command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'project', 'doctor'],
   });
   run({
     cwd: opts.project,
     command: [
       'bun',
       join(opts.project, 'node_modules/.bin/vulcan'),
-      'x',
       'okf',
       'check',
       '--strict',
@@ -926,7 +925,7 @@ const main = async () => {
   ]);
 
   if (scenarios.includes(Scenarios.SOLO)) {
-    console.log('\nscenario solo: vulcan init --preset ardor');
+    console.log('\nscenario solo: vulcan project init --preset ardor');
     const work = join(tempFolder, 'solo');
 
     mkdirSync(work, { recursive: true });
@@ -934,6 +933,7 @@ const main = async () => {
       cwd: work,
       env: NO_INSTALL,
       args: [
+        'project',
         'init',
         '--preset',
         `file:${presetRoot}`,
@@ -1021,6 +1021,7 @@ const main = async () => {
       cwd: work,
       env: NO_INSTALL,
       args: [
+        'project',
         'init',
         '--preset',
         `file:${presetRoot}`,
@@ -1041,6 +1042,7 @@ const main = async () => {
       env: NO_INSTALL,
       expectFailure: true,
       args: [
+        'package',
         'add',
         '--preset',
         `file:${presetRoot}`,
@@ -1068,7 +1070,7 @@ const main = async () => {
   }
 
   if (scenarios.includes(Scenarios.LIB)) {
-    console.log('\nscenario lib: vulcan add --preset ardor --lib merchant');
+    console.log('\nscenario lib: vulcan package add --preset ardor --lib merchant');
     const work = join(tempFolder, 'lib');
 
     mkdirSync(work, { recursive: true });
@@ -1076,6 +1078,7 @@ const main = async () => {
       cwd: work,
       env: NO_INSTALL,
       args: [
+        'project',
         'init',
         '--preset',
         `file:${presetRoot}`,
@@ -1095,7 +1098,7 @@ const main = async () => {
       cwd: project,
       env: NO_INSTALL,
       expectFailure: true,
-      args: ['add', '--preset', `file:${presetRoot}`],
+      args: ['package', 'add', '--preset', `file:${presetRoot}`],
     });
 
     assert({
@@ -1121,7 +1124,7 @@ const main = async () => {
       cwd: project,
       env: NO_INSTALL,
       expectFailure: true,
-      args: ['add', '--preset', `file:${withoutLib}`, '--lib', 'merchant', '--dir', 'libs'],
+      args: ['package', 'add', '--preset', `file:${withoutLib}`, '--lib', 'merchant', '--dir', 'libs'],
     });
 
     assert({
@@ -1133,6 +1136,7 @@ const main = async () => {
       cwd: project,
       env: NO_INSTALL,
       args: [
+        'package',
         'add',
         '--preset',
         `file:${presetRoot}`,
@@ -1235,6 +1239,7 @@ const main = async () => {
       cwd: work,
       env: NO_INSTALL,
       args: [
+        'project',
         'init',
         '--preset',
         `file:${presetRoot}`,
@@ -1743,7 +1748,7 @@ const main = async () => {
   if (scenarios.includes(Scenarios.PAIR)) {
     {
       console.log(
-        '\nscenario pair: IGNIS backends, then vulcan add --preset ardor --api <backend>',
+        '\nscenario pair: IGNIS backends, then vulcan package add --preset ardor --api <backend>',
       );
       const ignisTarballs =
         ignisDirectory === undefined
@@ -1777,6 +1782,7 @@ const main = async () => {
         cwd: work,
         env: NO_INSTALL,
         args: [
+          'project',
           'init',
           '--preset',
           `file:${ignisRoot}`,
@@ -1794,6 +1800,7 @@ const main = async () => {
         cwd: project,
         env: NO_INSTALL,
         args: [
+          'package',
           'add',
           '--preset',
           `file:${ignisRoot}`,
@@ -1825,6 +1832,7 @@ const main = async () => {
           env: NO_INSTALL,
           expectFailure: true,
           args: [
+            'package',
             'add',
             '--preset',
             `file:${presetRoot}`,
@@ -1850,6 +1858,7 @@ const main = async () => {
         cwd: project,
         env: NO_INSTALL,
         args: [
+          'package',
           'add',
           '--preset',
           `file:${presetRoot}`,
@@ -1871,7 +1880,7 @@ const main = async () => {
         command: [
           'script',
           '-qec',
-          [...vulcanCommand(), 'add', '--preset', `file:${presetRoot}`].join(' '),
+          [...vulcanCommand(), 'package', 'add', '--preset', `file:${presetRoot}`].join(' '),
           '/dev/null',
         ],
         input: 'app\n\nportal\ncore-api\n',

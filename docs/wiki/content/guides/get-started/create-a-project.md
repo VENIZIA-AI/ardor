@@ -5,7 +5,7 @@ description: Scaffold a new ARDOR monorepo or add an admin application to an exi
 
 # Create a Project
 
-`bun x @venizia/vulcan init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan add --preset ardor` at its root.
+`bun x @venizia/vulcan project init --preset ardor` creates a monorepo with one ARDOR admin inside it. To add an admin to a monorepo that already exists, run `bun x @venizia/vulcan package add --preset ardor` at its root.
 
 You get an ARDOR admin on Vite and React, styled with Tailwind CSS and shadcn components, with the REST data provider and i18n (no sign-in), plus a Dockerfile for an nginx image that gzips, answers `/health`, sends security headers and reads its configuration when the container starts. `bun x` fetches the latest VULCAN release, so you have the current preset unless you pinned an older one.
 
@@ -14,14 +14,14 @@ You get an ARDOR admin on Vite and React, styled with Tailwind CSS and shadcn co
 Pass each answer as a flag, and `init` asks nothing: `--project` (the monorepo folder), `--frontend-dir` (holds every frontend app), `--app` (the app name) and `--shared-dir` (shared code; leave it out to skip). A name is lowercase letters, digits and `-`:
 
 ```bash
-bun x @venizia/vulcan init --preset ardor --project demo --frontend-dir apps --app admin
+bun x @venizia/vulcan project init --preset ardor --project demo --frontend-dir apps --app admin
 ```
 
 To name the app's package with a scope, add `--scope @acme`: the package is `@acme/admin` and the folder stays `apps/admin`. Without the flag the package is named `admin`.
 
-In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled (the scope is an optional question, empty for none). Then `vulcan sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan sync --agents claude,omp (or none)` for choosing later.
+In a terminal, leave a flag out and `init` asks for it, with nothing pre-filled (the scope is an optional question, empty for none). Then `vulcan project sync` asks which coding agents you use (Enter accepts). Without a terminal it writes the Claude files and prints `vulcan project sync --agents claude,omp (or none)` for choosing later.
 
-The command prints a `created` line for each file of the app, runs `git init`, `bun install`, `vulcan sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan doctor` and `vulcan x okf check --strict`, and ends with:
+The command prints a `created` line for each file of the app, runs `git init`, `bun install`, `vulcan project sync`, the app's four checks (`bun run typecheck`, `bun run lint`, `bun run test`, `bun run compile`), `vulcan project doctor` and `vulcan okf check --strict`, and ends with:
 
 ```text
 Done. Next:
@@ -52,7 +52,7 @@ demo/
     src/themes/index.css  src/utilities/tw.utility.ts
 ```
 
-`vulcan sync` also writes `.mcp.json`, `.agents/vulcan.manifest.json` and your agent files (`CLAUDE.md`, `.claude/`); `.gitignore` keeps the per-machine ones out of git. The compile check leaves `apps/admin/dist/`. Where things live:
+`vulcan project sync` also writes `.mcp.json`, `.agents/vulcan.manifest.json` and your agent files (`CLAUDE.md`, `.claude/`); `.gitignore` keeps the per-machine ones out of git. The compile check leaves `apps/admin/dist/`. Where things live:
 
 - `src/main.tsx` renders `ArdorApplication` with the home page as its `dashboard`.
 - `src/application.ts` is the application, which lists the decorated classes the Vite plugin found (`AutoArtifacts`).
@@ -145,13 +145,13 @@ The app has no sign-in and expects one route of the backend: `GET /api/hello` an
 
 ## Add an Admin to an Existing Monorepo
 
-To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan init --preset ignis`), run this at its root:
+To add an admin to a monorepo that already exists (for example one created with `bun x @venizia/vulcan project init --preset ignis`), run this at its root:
 
 ```bash
-bun x @venizia/vulcan add --preset ardor --app web --frontend-dir apps --api api
+bun x @venizia/vulcan package add --preset ardor --app web --frontend-dir apps --api api
 ```
 
-`--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. `--scope @acme` names the package `@acme/web` and leaves the folder `apps/web`. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
+`--api` names the backend app to proxy `/api` to (here `api`, one of the monorepo's backend apps). For an admin that talks to some other backend, pass `--no-api` instead. Without `--api <app>` or `--no-api`, and without a terminal, the command stops with `vulcan package add: missing --api <app> or --no-api`. In a terminal, `add` asks for what you leave out: the frontend folder (once chosen it is offered as the answer next time), the app name and the backend app. `--scope @acme` names the package `@acme/web` and leaves the folder `apps/web`. The dev server port is 5173, or the next free one when another app already uses it. The proxy target is `http://localhost:<port of that backend app>`, read from the backend's `.env.example`.
 
 The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia/dev-configs` (the admin's lint config needs 0.4.0 or newer): a version already in the catalog wins, so every app shares one copy. If the catalog pins an IGNIS version outside the range ARDOR supports, `add` stops before writing anything and names both versions, for example `the monorepo pins @venizia/ignis-kernel 0.1.0, but the preset needs <the range ARDOR supports> - move the catalog first`.
 
@@ -160,7 +160,7 @@ The monorepo's catalog keeps its versions of the IGNIS packages and of `@venizia
 A feature is a package of routes, resources and messages that more than one app mounts. To add one to the monorepo, run this at its root:
 
 ```bash
-bun x @venizia/vulcan add --preset ardor --lib merchant --dir libs --scope @acme
+bun x @venizia/vulcan package add --preset ardor --lib merchant --dir libs --scope @acme
 ```
 
 `--dir` is the folder of the libraries (without it, VULCAN uses the folder of the libraries the monorepo already has), and `--scope` sets the package scope (without it the package is named `merchant`). Without `--lib` or `--app`, the command asks in a terminal and stops without one.

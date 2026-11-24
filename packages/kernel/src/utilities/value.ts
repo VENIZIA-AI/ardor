@@ -1,3 +1,5 @@
+import type { TNullable } from '@venizia/ignis-helpers/common';
+
 /**
  * Checks of a value's kind.
  *
@@ -6,7 +8,7 @@
  */
 export class ValueUtility {
   /** Positional on purpose: a type predicate narrows its own parameter. */
-  static isDefined<TValue>(value: TValue | null | undefined): value is TValue {
+  static isDefined<TValue>(value: TNullable<TValue>): value is TValue {
     return value !== undefined && value !== null;
   }
 

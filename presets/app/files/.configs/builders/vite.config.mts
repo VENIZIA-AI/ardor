@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  // The backend app `vulcan add --api` chose, unless .env sets API_URL; empty when there is none, and
+  // The backend app `vulcan package add --api` chose, unless .env sets API_URL; empty when there is none, and
   // then nothing is proxied.
   const apiUrl: string = env.API_URL || '{{apiUrl}}';
   const proxy: Record<string, string> = apiUrl === '' ? {} : { '/api': apiUrl };

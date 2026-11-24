@@ -120,3 +120,4 @@ docs/generate
 *.bun-build
 .*.bun-build
 .agents/vulcan.local.json
+/.agents/tmp/
