@@ -14,7 +14,7 @@
  *             backend's port. The IGNIS preset is the one released on npm, or the one packed from `IGNIS_DIR`.
  *   lib       `vulcan package add --preset ardor --lib merchant`: the package it makes passes its checks; `--lib`
  *             on a preset without a lib, and a bare `add` with no terminal, are refused and write nothing.
- *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `add --lib`.
+ *             Runs when asked for, or with VULCAN_LIB=1, because it needs a VULCAN that has `package add --lib`.
  *   docker    the app's Dockerfile, built from the project root and run next to a stub backend: a build
  *             without a commit sha (none, HEAD, too short, not hex) stops, the image carries the commit as its
  *             revision label, and nginx serves the page, the SPA fallback, the hashed assets, `/health`, the security
@@ -878,7 +878,7 @@ const main = async () => {
     );
   }
 
-  // `lib` needs a VULCAN with `add --lib`: it is not in the default run until that is the published one.
+  // `lib` needs a VULCAN with `package add --lib`: it is not in the default run until that is the published one.
   // Bun throws when the executable is not there at all.
   const hasDocker = ((): boolean => {
     try {

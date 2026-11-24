@@ -9,7 +9,7 @@ split-report:
 
 # Fails when an export reachable from a published package has no TSDoc (D-06). Needs `make build-all` first.
 api-undocumented:
-	@$(VULCAN) x atlas api undocumented
+	@$(VULCAN) atlas api undocumented
 
 # Proves VULCAN's atlas serves this checkout over MCP.
 atlas-smoke:
