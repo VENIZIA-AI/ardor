@@ -10,7 +10,12 @@ const subscribe = (listener: () => void) => {
   };
 };
 
-/** Whether the browser is online, kept by the `online` and `offline` events. `true` in a server render. */
+/**
+ * Whether the browser is online, kept by the `online` and `offline` events. `true` in a server render.
+ *
+ * @useWhen the UI must show or react to the browser going offline
+ * @insteadOf `navigator.onLine` with `online` and `offline` listeners
+ */
 export const useOnlineStatus = (): boolean => {
   return React.useSyncExternalStore(
     subscribe,

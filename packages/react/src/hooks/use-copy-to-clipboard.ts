@@ -43,6 +43,9 @@ const copyToClipboard = async (opts: { value: string }): Promise<boolean> => {
  *   return <button onClick={() => copy({ value: 'hello' })}>{isCopied ? 'Copied' : 'Copy'}</button>;
  * }
  * ```
+ *
+ * @useWhen a button copies text and shows that it worked
+ * @insteadOf `navigator.clipboard.writeText`
  */
 export const useCopyToClipboard = (
   opts: IUseCopyToClipboardOptions = {},

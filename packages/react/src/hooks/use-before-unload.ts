@@ -8,7 +8,12 @@ export interface IUseBeforeUnloadOptions {
   message?: string;
 }
 
-/** While `enabled`, asks the browser to confirm before the page is left or reloaded. */
+/**
+ * While `enabled`, asks the browser to confirm before the page is left or reloaded.
+ *
+ * @useWhen the page must warn the user before it is left with unsaved work
+ * @insteadOf a `beforeunload` listener
+ */
 export const useBeforeUnload = (opts: IUseBeforeUnloadOptions) => {
   const { enabled = true, message } = opts;
 

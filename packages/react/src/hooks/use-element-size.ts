@@ -60,6 +60,9 @@ const readSize = (opts: {
  *   return <div ref={ref}>{measured ? `${width} x ${height}` : '...'}</div>;
  * }
  * ```
+ *
+ * @useWhen a component needs the width and height of an element
+ * @insteadOf a `ResizeObserver` that stores the size in state
  */
 export function useElementSize(
   opts: IUseElementSizeOptions & { ref: React.RefObject<Element | null> },

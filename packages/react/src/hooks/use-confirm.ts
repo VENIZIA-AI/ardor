@@ -14,7 +14,12 @@ export interface IUseConfirmReturn {
   handleAbort: () => void;
 }
 
-/** State for a confirmation prompt: `confirm` returns a promise that the prompt's buttons settle. */
+/**
+ * State for a confirmation prompt: `confirm` returns a promise that the prompt's buttons settle.
+ *
+ * @useWhen an action needs a yes or no from the user before it runs
+ * @insteadOf `window.confirm`
+ */
 export const useConfirm = (): IUseConfirmReturn => {
   const settle = React.useRef<((isConfirmed: boolean) => void) | undefined>(undefined);
 

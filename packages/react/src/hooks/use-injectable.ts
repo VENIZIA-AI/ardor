@@ -52,6 +52,8 @@ export type TUseInjectableOptions = IUseInjectableByKey | IUseInjectableByTarget
  *   return <span>{container.isBound({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER }) ? 'bound' : 'unbound'}</span>;
  * }
  * ```
+ *
+ * @useWhen you write your own injectable hook and it must resolve from the same container as the ARDOR hooks
  */
 export const useApplicationContainer = (opts?: { container?: Container }): Container => {
   const applicationContext = React.useContext(ApplicationContext);
@@ -93,6 +95,9 @@ export const useApplicationContainer = (opts?: { container?: Container }): Conta
  *   return <span>{pricing.total({ quantity: 2 })} {typeof dataProvider.getList}</span>;
  * }
  * ```
+ *
+ * @useWhen a component needs an instance from the container that no named hook (service, provider, repository) covers
+ * @insteadOf reading the container from a global
  */
 export function useInjectable<TValue = unknown>(opts: IUseInjectableByKey<TValue>): TValue;
 export function useInjectable<TInstance = unknown>(

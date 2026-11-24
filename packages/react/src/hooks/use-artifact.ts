@@ -34,7 +34,12 @@ const useArtifactInNamespace = (opts: {
   });
 };
 
-/** Resolves the instance bound under the `service` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+/**
+ * Resolves the instance bound under the `service` namespace by `target` or `key`. A `target` bound under another namespace throws.
+ *
+ * @useWhen a component needs an instance bound as a service
+ * @insteadOf constructing the service class by hand
+ */
 export function useService<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance;
@@ -66,6 +71,9 @@ export function useService(opts: IUseArtifactByTarget<unknown> | IUseArtifactByK
  *   return <span>{typeof dataProvider.getList} {typeof authProvider.getRoles}</span>;
  * }
  * ```
+ *
+ * @useWhen a component needs an instance bound as a provider, such as the data or auth provider
+ * @insteadOf constructing or importing a provider by hand
  */
 export function useProvider<TValue = unknown>(opts: IUseArtifactByKey<TValue>): TValue;
 export function useProvider<TInstance = unknown>(opts: IUseArtifactByTarget<TInstance>): TInstance;
@@ -78,7 +86,12 @@ export function useProvider(opts: IUseArtifactByTarget<unknown> | IUseArtifactBy
   });
 }
 
-/** Resolves the instance bound under the `component` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+/**
+ * Resolves the instance bound under the `component` namespace by `target` or `key`. A `target` bound under another namespace throws.
+ *
+ * @useWhen a component needs an instance bound as an ARDOR component
+ * @insteadOf constructing the component class by hand
+ */
 export function useComponent<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance;
@@ -91,7 +104,12 @@ export function useComponent(opts: IUseArtifactByTarget<unknown> | IUseArtifactB
   });
 }
 
-/** Resolves the instance bound under the `configuration` namespace by `target` or `key`. A `target` bound under another namespace throws. */
+/**
+ * Resolves the instance bound under the `configuration` namespace by `target` or `key`. A `target` bound under another namespace throws.
+ *
+ * @useWhen a component needs an instance bound as a configuration
+ * @insteadOf reading configuration from a module-level constant
+ */
 export function useConfiguration<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,
 ): TInstance;
@@ -121,6 +139,9 @@ export function useConfiguration(opts: IUseArtifactByTarget<unknown> | IUseArtif
  *   return <span>Stock: {productRepository.findStock('p1')}</span>;
  * }
  * ```
+ *
+ * @useWhen a component needs an instance bound as a repository
+ * @insteadOf constructing the repository class by hand
  */
 export function useRepository<TInstance = unknown>(
   opts: IUseArtifactByTarget<TInstance> | IUseArtifactByKey,

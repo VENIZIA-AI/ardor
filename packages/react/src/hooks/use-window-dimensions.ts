@@ -9,7 +9,12 @@ const readWindowDimensions = () => {
     : { width: 0, height: 0 };
 };
 
-/** The window's `innerWidth` and `innerHeight`, updated on resize; 0 x 0 where there is no window. */
+/**
+ * The window's `innerWidth` and `innerHeight`, updated on resize; 0 x 0 where there is no window.
+ *
+ * @useWhen a component needs the window's width and height
+ * @insteadOf `window.innerWidth` and `innerHeight` with a `resize` listener
+ */
 export const useWindowDimensions = () => {
   const [windowDimensions, setWindowDimensions] = React.useState(readWindowDimensions);
 
