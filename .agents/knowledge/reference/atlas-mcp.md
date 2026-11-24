@@ -18,7 +18,7 @@ tags: [reference, atlas, mcp, tooling]
 - [Related](#related)
 <!-- okf:generated:contents end -->
 
-`atlas` (registered under that key in `.mcp.json`, a per-machine file that `vulcan sync` writes and git ignores) is the MCP server agents query for this bundle, the wiki and the changelogs (rule
+`atlas` (registered under that key in `.mcp.json`, a per-machine file that `vulcan project sync` writes and git ignores) is the MCP server agents query for this bundle, the wiki and the changelogs (rule
 P-01). ARDOR ships no atlas package of its own: the server is VULCAN's atlas (`@venizia/vulcan-atlas`,
 pinned through `@venizia/vulcan`), run against this checkout. The markdown it serves is read live.
 Nothing behind `symbol`, `version` and `changes` is committed any more: atlas reads symbols from the
@@ -26,10 +26,10 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
 
 ## How it runs
 
-`vulcan sync` registers it as `bun <root>/node_modules/.bin/vulcan x atlas mcp --root <root>`: the bin of this checkout by its path, never a runner that fetches a package by name.
+`vulcan project sync` registers it as `bun <root>/node_modules/.bin/vulcan atlas mcp --root <root>`: the bin of this checkout by its path, never a runner that fetches a package by name.
 
 - **Pinned by the dev dependency.** The atlas version is the one `@venizia/vulcan` pins in the root
-  `package.json`; `scripts/checks/atlas-smoke.ts` runs `bun node_modules/.bin/vulcan x atlas mcp --root .`, the bin of
+  `package.json`; `scripts/checks/atlas-smoke.ts` runs `bun node_modules/.bin/vulcan atlas mcp --root .`, the bin of
   this checkout, so no runner can fetch the unrelated unscoped `vulcan` package.
 - **Bun only.** The index is `bun:sqlite` FTS5; a Node host cannot start the server.
 - **`--root .` makes it ARDOR's.** atlas reads the committed `.agents/vulcan.manifest.json` and
@@ -45,7 +45,7 @@ Nothing behind `symbol`, `version` and `changes` is committed any more: atlas re
   down but a cache present it serves the last commit and says `OFFLINE`.
 - **The server introduces itself as `ardor-atlas`**, and is registered as `atlas`, whether or not a source is served beside this checkout.
 - **Changing the server itself.** Edit the gitignored `.mcp.json` locally to run the atlas CLI of a VULCAN checkout
-  beside this one; the next `vulcan sync` rewrites it.
+  beside this one; the next `vulcan project sync` rewrites it.
   `make atlas-smoke` takes the same override through `ARDOR_ATLAS_CLI`.
 
 ## Corpora
@@ -140,7 +140,7 @@ the wiki, and resolves `useInjectable` to `@venizia/ardor-react`.
 
 ## The prebuilt index of this repository
 
-ARDOR publishes the atlas index of its own commits, so a project that declares ARDOR as a source downloads it instead of building it. The `atlas-index` job of `.github/workflows/deploy-docs.yml` (the Docs workflow) runs on a push to `main`, to `develop` or of a tag, builds the index through VULCAN's action (`VENIZIA-AI/vulcan/.github/actions/atlas-index`, pinned by commit to the installed VULCAN release, a bump is a deliberate pull request), signs it with the Actions secret `ATLAS_INDEX_KEY` and attaches the pair to the release `atlas-index`. The public half of the key is `atlas.index.keys` in `.configs/vulcan.config.mts`, rendered into `.agents/vulcan.manifest.json`; a reader accepts a pair only when a listed key verifies it, and otherwise builds locally as before. In that workflow the job has `contents: write` and nothing else does, and the secret is read only by the publishing step; `scripts/release/__tests__/docs-workflow.test.ts` holds those rules. The release workflow pushes its release commits and tags with the Actions token, and GitHub starts no workflow from those pushes, so a push never makes the pair of a release tag. A manual run does: `gh workflow run deploy-docs.yml --ref develop -f job=atlas-index -f ref=<tag or branch>` publishes the pair of that ref (the action refuses a name that is not a plain tag or branch, and a commit that is not on `main` or `develop`); a manual run for `job=docs`, the default, deploys the wiki as it always did, and one for `atlas-index` deploys nothing. A release run does not need it: `package-release.yml` has an `atlas-index` job of its own that runs the same action, pinned by the same commit, for each tag the release pushed (see [Release and publish](/process/release-publish.md)). The next push to `develop` covers the head. Rotating the key: make a new key, replace the secret, replace the public key in the config and run `vulcan sync`; pairs signed by the old key then stop verifying and readers build locally.
+ARDOR publishes the atlas index of its own commits, so a project that declares ARDOR as a source downloads it instead of building it. The `atlas-index` job of `.github/workflows/deploy-docs.yml` (the Docs workflow) runs on a push to `main`, to `develop` or of a tag, builds the index through VULCAN's action (`VENIZIA-AI/vulcan/.github/actions/atlas-index`, pinned by commit to the installed VULCAN release, a bump is a deliberate pull request), signs it with the Actions secret `ATLAS_INDEX_KEY` and attaches the pair to the release `atlas-index`. The public half of the key is `atlas.index.keys` in `.configs/vulcan.config.mts`, rendered into `.agents/vulcan.manifest.json`; a reader accepts a pair only when a listed key verifies it, and otherwise builds locally as before. In that workflow the job has `contents: write` and nothing else does, and the secret is read only by the publishing step; `scripts/release/__tests__/docs-workflow.test.ts` holds those rules. The release workflow pushes its release commits and tags with the Actions token, and GitHub starts no workflow from those pushes, so a push never makes the pair of a release tag. A manual run does: `gh workflow run deploy-docs.yml --ref develop -f job=atlas-index -f ref=<tag or branch>` publishes the pair of that ref (the action refuses a name that is not a plain tag or branch, and a commit that is not on `main` or `develop`); a manual run for `job=docs`, the default, deploys the wiki as it always did, and one for `atlas-index` deploys nothing. A release run does not need it: `package-release.yml` has an `atlas-index` job of its own that runs the same action, pinned by the same commit, for each tag the release pushed (see [Release and publish](/process/release-publish.md)). The next push to `develop` covers the head. Rotating the key: make a new key, replace the secret, replace the public key in the config and run `vulcan project sync`; pairs signed by the old key then stop verifying and readers build locally.
 
 ## Related
 

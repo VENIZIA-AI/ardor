@@ -76,18 +76,18 @@ const vulcan = (args: string[]): { status: number; stdout: string } | undefined 
     : undefined;
 };
 
-const vulcanRuns = vulcan(['changelog', 'notes', '--version', '0.4.7']) !== undefined;
+const vulcanRuns = vulcan(['migrate', 'notes', '--version', '0.4.7']) !== undefined;
 
 if (!vulcanRuns) {
   // The parity checks below need the VULCAN this repository pins; without it they are skipped, not passed.
   process.stderr.write(
-    'release-notes.test.ts: `vulcan changelog notes` does not run here - the parity tests are skipped\n',
+    'release-notes.test.ts: `vulcan migrate notes` does not run here - the parity tests are skipped\n',
   );
 }
 
-describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan changelog notes`', () => {
+describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan migrate notes`', () => {
   test('the notes of 0.4.7 are byte for byte what the command prints', () => {
-    const printed = vulcan(['changelog', 'notes', '--version', '0.4.7']);
+    const printed = vulcan(['migrate', 'notes', '--version', '0.4.7']);
     const log = readFileSync(join(CHANGELOGS, '0.4.7/log.md'), 'utf8');
 
     expect(printed?.status).toBe(0);
@@ -100,8 +100,8 @@ describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan changelog notes`'
     for (const version of FOLDERS) {
       const log = readFileSync(join(CHANGELOGS, version, 'log.md'), 'utf8');
       const migration = readIf(join(CHANGELOGS, version, 'migration.yaml'));
-      const notes = vulcan(['changelog', 'notes', '--version', version]);
-      const attached = vulcan(['changelog', 'notes', '--version', version, '--migration']);
+      const notes = vulcan(['migrate', 'notes', '--version', version]);
+      const attached = vulcan(['migrate', 'notes', '--version', version, '--migration']);
 
       expect(ReleaseNotes.notesOf({ log, names: NAMES, version })).toBe(notes?.stdout ?? '');
       expect(ReleaseNotes.hasBlocks({ migration })).toBe((attached?.stdout.trim() ?? '') !== '');

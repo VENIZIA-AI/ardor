@@ -93,6 +93,30 @@ export class ProductRepository extends HttpRepository<IProduct> {
 
 See the [repository reference](../references/repository) for the datasource settings, the request each write sends, and what the repository refuses to guess.
 
+### A route beside the CRUD ones
+
+A route that is not a read or a write of the resource, such as `POST products/import`, is called with `this.execute({ paths, body, schema })` inside the repository. It sends through the datasource, with the auth token, and throws as every repository call does. With a zod `schema` it returns the answer, parsed and typed by the schema; an answer the schema refuses throws a `FetchSchemaError` (502). Without a `schema` it returns `void`: the answer is not returned, so there is no type to write.
+
+```ts no-check
+import { z } from 'zod';
+
+const ImportAnswer = z.object({ imported: z.number() });
+
+export class ImportRepository extends HttpRepository {
+  // ... the decorator and the constructor, as in the example above
+
+  // With a schema: returns { imported: number }.
+  importRows(opts: { rows: Array<{ sku: string }> }) {
+    return this.execute({ paths: ['products', 'import'], body: opts, schema: ImportAnswer });
+  }
+
+  // Without one: returns void.
+  clearCache() {
+    return this.execute({ paths: ['products', 'cache'], method: 'DELETE' });
+  }
+}
+```
+
 ## Options objects on every method
 
 Every constructor here takes a single options object. Do the same on every public method you add. `getPrice({ id })`, never `getPrice(id)`. Callers can add a field later without breaking every call site, and the argument names show up at the call site.

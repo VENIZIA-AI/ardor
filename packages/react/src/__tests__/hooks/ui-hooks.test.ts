@@ -12,6 +12,7 @@ import { useBeforeUnload, type IUseBeforeUnloadOptions } from '@/hooks/use-befor
 import { useWindowDimensions } from '@/hooks/use-window-dimensions';
 import { DispatchHooks } from '@/hooks/redux/use-app-dispatch';
 import { SelectorHooks } from '@/hooks/redux/use-app-selector';
+import type { TNullable } from '@venizia/ignis-helpers/common';
 
 // A fake clock, not a sleep: the debounce fires when the test says so, on any runner.
 const useFakeClock = (): void => {
@@ -413,7 +414,7 @@ const createCounterStore = () => {
 };
 
 type TCounterStore = ReturnType<typeof createCounterStore>;
-type TFalsyAction = UnknownAction | undefined | null | false;
+type TFalsyAction = TNullable<UnknownAction | false>;
 type TTestDispatch = Dispatch<UnknownAction> & ((action: TFalsyAction) => UnknownAction);
 
 const createCounterWrapper = ({ store }: { store: TCounterStore }) => {

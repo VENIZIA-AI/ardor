@@ -1,6 +1,7 @@
 import React from 'react';
+import type { TNullable } from '@venizia/ignis-helpers/common';
 
-type TDocumentTitleSegment = string | false | null | undefined;
+type TDocumentTitleSegment = TNullable<string | false>;
 
 /** What `useDocumentTitle` writes into the tab title, and when. */
 export interface IUseDocumentTitleOptions {

@@ -947,7 +947,7 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
           history,
         ) &&
         /\n {10}CHANGELOG_BASE: \$\{\{ needs\.plan\.outputs\.changelog_base \}\}\n/.test(history) &&
-        /\n {8}run: bun node_modules\/\.bin\/vulcan changelog check --history --base "\$CHANGELOG_BASE"\n/.test(
+        /\n {8}run: bun node_modules\/\.bin\/vulcan check changelog --history --base "\$CHANGELOG_BASE"\n/.test(
           history,
         ) &&
         !/continue-on-error/.test(history)

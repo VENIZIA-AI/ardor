@@ -34,7 +34,7 @@ lint-all: lint-packages lint-wiki lint-scripts lint-files changelog-check
 lint-packages: $(LINT_PKG_TARGETS)
 
 changelog-check:
-	@$(VULCAN) changelog check
+	@$(VULCAN) check changelog
 
 lint-fix: lint-fix-packages lint-fix-wiki fmt-files fmt-scripts
 

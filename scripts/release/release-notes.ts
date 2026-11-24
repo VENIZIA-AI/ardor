@@ -3,7 +3,7 @@
  * It imports nothing, so the release scripts load it as it is: the publish job installs nothing.
  *
  * This is the logic of `VersionNotes` of VULCAN's atlas (`packages/atlas/src/changelogs/notes.ts`), which the command
- * `vulcan changelog notes` runs. ARDOR cannot import it from the publish job, so `release-notes.test.ts` checks this
+ * `vulcan migrate notes` runs. ARDOR cannot import it from the publish job, so `release-notes.test.ts` checks this
  * copy against that command on every folder. A change to the rule is made in VULCAN first.
  */
 export class ReleaseNotes {

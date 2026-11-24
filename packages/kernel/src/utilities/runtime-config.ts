@@ -1,4 +1,5 @@
 import { getError } from '@venizia/ignis-inversion';
+import type { TNullable } from '@venizia/ignis-helpers/common';
 
 /**
  * The name `config.js` writes the runtime config under: `window.__APP_CONFIG__`, a record of strings.
@@ -98,7 +99,7 @@ export class RuntimeConfig {
   ): string | undefined;
   static get<TValue>(
     opts: IRuntimeConfigReadOptions & {
-      transform: (raw: string | undefined) => TValue | null | undefined;
+      transform: (raw: string | undefined) => TNullable<TValue>;
       defaultValue: TValue;
     },
   ): TValue;
@@ -138,7 +139,7 @@ export class RuntimeConfig {
   static getRequired(opts: IRuntimeConfigReadOptions & { transform?: undefined }): string;
   static getRequired<TValue>(
     opts: IRuntimeConfigReadOptions & {
-      transform: (raw: string) => TValue | null | undefined;
+      transform: (raw: string) => TNullable<TValue>;
     },
   ): TValue;
   static getRequired(
