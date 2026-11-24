@@ -11,11 +11,7 @@ export default {
   // The base slot V-W-01: git writes happen only on the user's word (ARDOR's own W-01 agrees).
   rules: { 'V-W-01': 'on-user-word' },
 
-  // W-00: no agent signature in a commit message.
-  commit: { message: { agent: { signature: 'deny' } } },
-
-  // A write outside the project folder is denied, not asked about.
-  guard: { outside: 'deny', runners: { allow: ['shadcn', 'vite'] } },
+  guard: { runners: { allow: ['shadcn', 'vite'] } },
 
   events: { log: true },
   project: { key: 'ARDOR' },
@@ -39,7 +35,7 @@ export default {
     },
   },
 
-  // In release order. `ui-kit` has no dioverectory any more; retired, its tags and changelogs still resolve.
+  // In release order. `ui-kit` has no directory any more; retired, its tags and changelogs still resolve.
   packages: [
     { dir: 'kernel', name: '@venizia/ardor-kernel' },
     { dir: 'react', name: '@venizia/ardor-react' },
