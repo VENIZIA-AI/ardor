@@ -70,6 +70,9 @@ const fail = (message: string): never => {
  * `fetch` is replaced for the run by a function that rejects, so nothing leaves the process. The
  * application stays started and is returned. A failed boot leaves a half-started instance, so
  * build a new one (pass a factory) for each call.
+ *
+ * @useWhen a test must prove an ARDOR application starts and every binding resolves
+ * @insteadOf a smoke test that mounts the app in a browser or mocks the container by hand
  */
 export const assertArdorApplicationBoots = async <Application extends AbstractArdorApplication>(
   application: Application | (() => Application | Promise<Application>),
