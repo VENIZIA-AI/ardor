@@ -89,6 +89,9 @@ const unregister = (entry: ITitleEntry) => {
  * puts back the title it replaced - unless someone wrote a newer one since - so one call per screen
  * is enough, with no reset on navigation. A layout passes `fallback: true` for a base title the
  * screens override.
+ *
+ * @useWhen a screen must set the browser tab title and restore it on leave
+ * @insteadOf writing `document.title` in an effect
  */
 export const useDocumentTitle = (opts: IUseDocumentTitleOptions) => {
   const { title, appTitle, separator = ' · ', enabled = true, fallback = false } = opts;

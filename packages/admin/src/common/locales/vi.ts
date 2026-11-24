@@ -1,6 +1,10 @@
 import type { TranslationMessages } from 'ra-core';
 
-/** The built-in Vietnamese messages, the same shape as `englishMessages`. */
+/**
+ * The built-in Vietnamese messages, the same shape as `englishMessages`.
+ *
+ * @useWhen you build the i18n messages of an app and want the built-in Vietnamese ones as the base
+ */
 export const vietnameseMessages: TranslationMessages = {
   ra: {
     action: {

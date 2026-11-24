@@ -72,7 +72,12 @@ export type TFeature<TExtension extends object = {}> = IFeatureBase &
  */
 export const MountedFeaturesContext = createContext<Container | undefined>(undefined);
 
-/** Defines, reads, mounts and loads the messages of the features an application binds. */
+/**
+ * Defines, reads, mounts and loads the messages of the features an application binds.
+ *
+ * @useWhen you define a feature, or read, mount and load the messages of the features an application binds
+ * @insteadOf a hand-built registry of resources, routes and menu entries
+ */
 export class Features {
   /** Types a feature, keeping the shell's extension. */
   static define<TExtension extends object = {}>(

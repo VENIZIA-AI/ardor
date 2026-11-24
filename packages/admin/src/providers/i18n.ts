@@ -42,6 +42,9 @@ import { LazyLocales } from '@/utilities/lazy-locales';
  *   }
  * }
  * ```
+ *
+ * @useWhen you need the i18n provider of an ARDOR admin app, or a base class to override how locale and messages are chosen
+ * @insteadOf a hand-written react-admin `i18nProvider`
  */
 export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
   private static readonly DEFAULT_LOCALE = 'en';

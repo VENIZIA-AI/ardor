@@ -29,7 +29,11 @@ export interface ILoginParams {
   [field: string]: unknown;
 }
 
-/** Why `onSessionCleared` was called. */
+/**
+ * Why `onSessionCleared` was called.
+ *
+ * @useWhen you handle `onSessionCleared` and must tell why the session ended
+ */
 export class SessionClearReasons {
   /** `logout` ran. */
   static readonly LOGOUT = 'logout';
@@ -89,6 +93,9 @@ const readStatus = (error: unknown): unknown => {
  *   }
  * }
  * ```
+ *
+ * @useWhen you need the auth provider of an ARDOR admin app, or a base class to override its hooks
+ * @insteadOf a hand-written react-admin `authProvider`
  */
 export class DefaultAuthProvider<
   TResource extends string = string,

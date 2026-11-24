@@ -32,6 +32,9 @@ import { DefaultRestDataProvider } from '@/providers/rest-data';
  *   }
  * }
  * ```
+ *
+ * @useWhen you write the application class of an ARDOR admin app and bind its context and info
+ * @insteadOf a hand-built application shell that wires the providers itself
  */
 export abstract class BaseArdorApplication extends AbstractArdorApplication {
   /**
