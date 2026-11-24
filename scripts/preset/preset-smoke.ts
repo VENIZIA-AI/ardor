@@ -851,13 +851,7 @@ const install = async (opts: {
   });
   run({
     cwd: opts.project,
-    command: [
-      'bun',
-      join(opts.project, 'node_modules/.bin/vulcan'),
-      'okf',
-      'check',
-      '--strict',
-    ],
+    command: ['bun', join(opts.project, 'node_modules/.bin/vulcan'), 'okf', 'check', '--strict'],
   });
 };
 
@@ -1124,7 +1118,16 @@ const main = async () => {
       cwd: project,
       env: NO_INSTALL,
       expectFailure: true,
-      args: ['package', 'add', '--preset', `file:${withoutLib}`, '--lib', 'merchant', '--dir', 'libs'],
+      args: [
+        'package',
+        'add',
+        '--preset',
+        `file:${withoutLib}`,
+        '--lib',
+        'merchant',
+        '--dir',
+        'libs',
+      ],
     });
 
     assert({
