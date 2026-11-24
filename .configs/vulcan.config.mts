@@ -17,6 +17,9 @@ export default {
   // A write outside the project folder is denied, not asked about.
   guard: { outside: 'deny', runners: { allow: ['shadcn', 'vite'] } },
 
+  events: { log: true },
+  project: { key: 'ARDOR' },
+
   // The wiki palette is read from the manifest copy of this theme (docs/wiki/site/.vitepress/config.mts).
   theme: {
     accent: '#0277bd',
@@ -36,7 +39,7 @@ export default {
     },
   },
 
-  // In release order. `ui-kit` has no directory any more; retired, its tags and changelogs still resolve.
+  // In release order. `ui-kit` has no dioverectory any more; retired, its tags and changelogs still resolve.
   packages: [
     { dir: 'kernel', name: '@venizia/ardor-kernel' },
     { dir: 'react', name: '@venizia/ardor-react' },
@@ -76,6 +79,7 @@ export default {
     ],
   },
 
+  remove: { 'atlas.sources': ['ardor'] },
   atlas: {
     // Tags default to `<dir>-v<version>` and release commits to IGNIS's template; ARDOR uses both.
     // IGNIS's committed manifest on develop, so the atlas answers over the kernel ARDOR builds on.
