@@ -200,7 +200,7 @@ export class CodemodCommand {
         const result = spec.transform({ ts, fileName: path, text, hooks });
 
         for (const finding of result.findings) {
-          (finding.kind === 'note' ? notes : left).push({ path, finding });
+          (finding.level === 'note' ? notes : left).push({ path, finding });
         }
 
         if (result.text === text) {

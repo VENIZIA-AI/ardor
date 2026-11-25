@@ -28,7 +28,7 @@ describe('AuthOptionsTransform: a @provide method', () => {
 
     expect(result.text).toBe(before.replace('return { paths:', 'return { use: true, paths:'));
     expect(result.renamed).toBe(1);
-    expect(result.findings.map((finding) => finding.kind)).toEqual(['note']);
+    expect(result.findings.map((finding) => finding.level)).toEqual(['note']);
   });
 
   test('puts use: true on its own line, with the indent of the first property, in a multi-line literal', () => {
@@ -197,7 +197,7 @@ describe('AuthOptionsTransform: a @provide method', () => {
       expect(result.text).toBe(before);
       expect(result.renamed).toBe(0);
       expect(result.findings).toHaveLength(1);
-      expect(result.findings[0]?.kind).toBeUndefined();
+      expect(result.findings[0]?.level).toBeUndefined();
       expect(result.findings[0]?.name).toBe('CoreBindings.AUTH_PROVIDER_OPTIONS');
       expect(result.findings[0]?.line).toBe(line + 2);
     }
@@ -264,7 +264,7 @@ describe('AuthOptionsTransform: the type of the options', () => {
     expect(result.text).toBe(
       typed({ returnType: ': IAuthProviderOptions', value: '{ use: true, paths: {} }' }),
     );
-    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
+    expect(result.findings.filter((finding) => finding.level === undefined)).toEqual([
       {
         line: 6,
         name: 'IAuthProviderOptions',
@@ -281,7 +281,7 @@ describe('AuthOptionsTransform: the type of the options', () => {
       const result = run(typed({ returnType: '', value }));
 
       expect(result.renamed).toBe(1);
-      expect(result.findings.filter((finding) => finding.kind === undefined)).toHaveLength(1);
+      expect(result.findings.filter((finding) => finding.level === undefined)).toHaveLength(1);
     }
 
     const aliased = run(
@@ -292,7 +292,7 @@ describe('AuthOptionsTransform: the type of the options', () => {
       }),
     );
 
-    expect(aliased.findings.filter((finding) => finding.kind === undefined)).toHaveLength(1);
+    expect(aliased.findings.filter((finding) => finding.level === undefined)).toHaveLength(1);
   });
 
   test('lists the IAuthProviderOptions written as the type argument of bind', () => {
@@ -310,7 +310,7 @@ describe('AuthOptionsTransform: the type of the options', () => {
     const result = run(text);
 
     expect(result.renamed).toBe(1);
-    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([
+    expect(result.findings.filter((finding) => finding.level === undefined)).toEqual([
       {
         line: 5,
         name: 'IAuthProviderOptions',
@@ -328,7 +328,7 @@ describe('AuthOptionsTransform: the type of the options', () => {
       }),
     );
 
-    expect(result.findings.filter((finding) => finding.kind === undefined)).toEqual([]);
+    expect(result.findings.filter((finding) => finding.level === undefined)).toEqual([]);
     expect(result.renamed).toBe(1);
   });
 });

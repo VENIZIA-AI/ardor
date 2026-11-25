@@ -57,7 +57,7 @@ export class BaseApplicationTransform {
           line,
           name: 'export *',
           reason: `it no longer re-exports ${BaseApplicationTransform.NAME}: export it from ${BaseApplicationTransform.ADMIN} if you need it`,
-          kind: 'note',
+          level: 'note',
         });
       }
 

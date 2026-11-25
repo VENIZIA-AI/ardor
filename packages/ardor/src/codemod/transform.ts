@@ -18,7 +18,7 @@ export interface IFinding {
   name: string;
   reason: string;
   /** `note`: something changed on purpose that the owner should know; it does not count as left. */
-  kind?: 'note';
+  level?: 'note';
 }
 
 export interface INamespaceResult {

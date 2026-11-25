@@ -21,7 +21,7 @@ status message must open with the minimap (P-09), and a downstream test suite ru
 
 ## Step 2: run `make vulcan-sync`
 
-ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulcan.config.mts`).
+ARDOR's agent tooling is VULCAN (`@venizia/vulcan`, configured in `.configs/vulcan.config.mts`, which joins the group files of `.configs/vulcan/`).
 `make vulcan-sync` writes the gitignored adapters: `CLAUDE.md` as
 `@AGENTS.md`, the shared hooks merged into your `.claude/settings.json`, and the skill links under
 `.claude/skills/`. `make vulcan-doctor` then reports 0 violations. There are no per-package agent
