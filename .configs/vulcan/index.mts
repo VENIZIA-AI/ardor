@@ -4,3 +4,4 @@ export { guard } from './guard.mts';
 export { board } from './board.mts';
 export { knowledge } from './knowledge.mts';
 export { common } from './common.mts';
+export { check } from './check.mts';
