@@ -121,7 +121,7 @@ export class ArticleRepository extends HttpRepository<Article> {
 | `deleteBy({ where })` | `DELETE /{resource}` | `{ where }` |
 
 - Every write method returns `{ data, count }`, where `count` reflects the server `x-response-count` header.
-- Bulk operations (`updateBy`, `deleteBy`) require a non-empty `where` selector. An empty `where` throws immediately before sending any HTTP request.
+- Bulk operations (`updateBy`, `deleteBy`) require a non-empty `where` selector. An empty `where` throws immediately before sending any HTTP request. IGNIS's `options.force` (an empty `where` on purpose) does not cross HTTP, so the repository has no way to send one.
 - There is no `createAll`: the REST backend contract does not define a bulk creation endpoint.
 
 ```ts

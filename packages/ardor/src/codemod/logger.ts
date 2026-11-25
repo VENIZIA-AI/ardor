@@ -283,7 +283,7 @@ export class LoggerTransform {
           name: 'enableDebug',
           reason:
             'dropped. debug lines are off by default now (a browser, or `DEBUG` unset); turn them on with `LoggerFactory.use({ level: LogLevels.DEBUG })` at startup',
-          kind: 'note',
+          level: 'note',
         });
       }
 

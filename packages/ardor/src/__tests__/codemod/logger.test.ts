@@ -96,7 +96,7 @@ describe('the move off the kernel logger: Logger', () => {
     expect(result.text).toContain("LoggerFactory.getLogger(['A'])");
     expect(result.text).not.toContain('enableDebug');
     expect(result.findings).toHaveLength(1);
-    expect(result.findings[0]?.kind).toBe('note');
+    expect(result.findings[0]?.level).toBe('note');
     expect(result.findings[0]?.reason).toContain('LoggerFactory.use({ level: LogLevels.DEBUG })');
     expect(result.findings[0]?.line).toBe(3);
   });
@@ -153,7 +153,7 @@ describe('the move off the kernel logger: Logger', () => {
     expect(result.text).toContain("export const ok = LoggerFactory.getLogger(['A']);");
     expect(result.text).toContain("import { Logger } from '@venizia/ardor';");
     expect(result.findings.map((finding) => finding.line)).toEqual([4, 5, 6, 7]);
-    expect(result.findings.every((finding) => finding.kind === undefined)).toBe(true);
+    expect(result.findings.every((finding) => finding.level === undefined)).toBe(true);
   });
 
   test('leaves a Logger from another package alone', () => {

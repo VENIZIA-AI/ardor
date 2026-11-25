@@ -107,7 +107,7 @@ export class AuthOptionsTransform {
           line,
           name: `CoreBindings.${AUTH_OPTIONS_MEMBER}`,
           reason: SIGN_IN_ON,
-          kind: 'note',
+          level: 'note',
         });
       }
     }

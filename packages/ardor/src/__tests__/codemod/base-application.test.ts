@@ -194,7 +194,7 @@ describe('BaseApplicationTransform: what it lists', () => {
 
     expect(result.text).toBe(before);
     expect(result.renamed).toBe(0);
-    expect(result.findings.map((finding) => [finding.line, finding.kind])).toEqual([
+    expect(result.findings.map((finding) => [finding.line, finding.level])).toEqual([
       [2, 'note'],
       [3, undefined],
     ]);
