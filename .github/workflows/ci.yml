@@ -25,10 +25,6 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  # Checkout runs `git init`, which prints a hint when no default branch name is configured.
-  GIT_CONFIG_COUNT: 1
-  GIT_CONFIG_KEY_0: init.defaultBranch
-  GIT_CONFIG_VALUE_0: develop
 
 jobs:
   gates:
@@ -38,6 +34,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3
+        # Checkout runs `git init`, which prints a hint when no default branch name is configured.
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: init.defaultBranch
+          GIT_CONFIG_VALUE_0: develop
         with:
           # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0
@@ -92,6 +93,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3
+        # Checkout runs `git init`, which prints a hint when no default branch name is configured.
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: init.defaultBranch
+          GIT_CONFIG_VALUE_0: develop
         with:
           # The atlas computes releases from the tags; a shallow clone has none.
           fetch-depth: 0

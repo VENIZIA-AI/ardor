@@ -1,3 +1,5 @@
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
+
 /**
  * The clipboard of the browser, for code outside React. Nothing throws or rejects: no `navigator`
  * (a server), no `navigator.clipboard` (an insecure context, an old WebView), a denied permission,
@@ -5,6 +7,8 @@
  * touches `navigator` at import.
  */
 export class BrowserClipboard {
+  private static readonly logger = LoggerFactory.getLogger(['BrowserClipboard']);
+
   /** The one catch: every refusal the browser can make is the case this class absorbs. */
   private static async safe<TResult>(opts: {
     run: () => Promise<TResult>;
@@ -14,8 +18,13 @@ export class BrowserClipboard {
       const result = await opts.run();
 
       return result;
-      // eslint-disable-next-line venizia/no-silent-catch -- absorbing a refusing clipboard is the contract of BrowserClipboard
-    } catch {
+    } catch (error) {
+      // The name only: a message may quote what was being copied.
+      BrowserClipboard.logger.debug(
+        '[safe] The clipboard refused | error: %s',
+        error instanceof Error ? error.name : typeof error,
+      );
+
       return opts.fallback;
     }
   }
