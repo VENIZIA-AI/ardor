@@ -203,6 +203,10 @@ jobs:
           VULCAN_CMD: bun x @venizia/vulcan@0.5.0-10
         run: make gates GATE_PACKAGES="${PACKAGES//,/ }"
 
+      # The history check below asks `ardor codemod --list`; the gates build ardor only when the run releases it.
+      - name: Build the codemod bin
+        run: make codemod-bin
+
       # A stable also checks the changelog history since the previous stable tag of ardor (the plan's changelog_base):
       # no released version folder was edited and every entry since then has its migration block. A prerelease, or
       # a stable with no earlier stable, skips it.

@@ -10,7 +10,7 @@ generated:
 
 > Generated from source - do not edit; run `make okf-gen`. Playbook: [build system](/process/build-system.md).
 
-**81 targets.**
+**82 targets.**
 
 | Target | Depends on | Description |
 |---|---|---|
@@ -23,13 +23,14 @@ generated:
 | `make build` | `build-all` | Rebuilds all packages (alias for 'build-all'). |
 | `make build-all` | `kernel react admin ardor` | Rebuilds all packages in dependency order. |
 | `make catalog-check` | - | Gate: every catalogued dep is referenced as "catalog:", none drifted, and no other @venizia/* dep is a range. |
-| `make changelog-check` | - | Gate: the version folders from knowledge.migrationFrom on are valid and every Breaking item carries a migration block. |
+| `make changelog-check` | `codemod-bin` | Gate: the version folders from knowledge.migrationFrom on are valid and every Breaking item carries a migration block. Builds codemod-bin first. |
 | `make clean` | - | Clean build artifacts from all packages. |
 | `make clean-install` | - | Load every published sub-path from packed tarballs in an empty project. |
 | `make clean-install-admin` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-ardor` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-kernel` | - | Load one package's sub-paths from a clean install. Needs a build. |
 | `make clean-install-react` | - | Load one package's sub-paths from a clean install. Needs a build. |
+| `make codemod-bin` | - | Build only the ardor codemod bin, which changelog-check runs. |
 | `make copies-check` | - | Gate: every @venizia/* package resolves to one version (no stable IGNIS copy next to a prerelease). |
 | `make cycles-check` | - | Gate: no import cycle in any dist. Needs a build. |
 | `make docs` | - | Build the wiki (VitePress) with the sidebar gate. |

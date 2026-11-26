@@ -1,7 +1,7 @@
 # Install, clean, git hooks, the package build order and the wiki build.
 
 .PHONY: install clean setup-hooks build build-all docs typecheck typecheck-all typecheck-examples \
-        $(PACKAGES)
+        codemod-bin $(PACKAGES)
 
 # ----------------------------------------------------------------------------
 # INSTALL & CLEAN
@@ -48,6 +48,9 @@ $(PACKAGES):
 docs:
 	@echo "📦 Rebuilding wiki (VitePress)..."
 	@bun run --filter "@venizia/ardor-docs" docs:build
+
+codemod-bin:
+	@$(MAKE) --no-print-directory -C packages/ardor codemod-bin
 
 typecheck: typecheck-all
 

@@ -33,7 +33,8 @@ lint-all: lint-packages lint-wiki lint-scripts lint-files changelog-check
 
 lint-packages: $(LINT_PKG_TARGETS)
 
-changelog-check:
+# VULCAN asks `ardor codemod --list` for the codemod names, and `ardor` is a built file of this repository.
+changelog-check: codemod-bin
 	@$(VULCAN) check changelog
 
 lint-fix: lint-fix-packages lint-fix-wiki fmt-files fmt-scripts
