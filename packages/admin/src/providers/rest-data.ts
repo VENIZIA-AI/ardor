@@ -470,6 +470,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const { method, query, requestCountData, requestType, headers, body, bodyType, extra, signal } =
       params;
 
+    // A number is sent as its text. Anything else passes as it is, so an untyped `null` still removes the header.
+    const texts =
+      headers &&
+      Object.fromEntries(
+        Object.entries(headers).map(([name, value]) => [
+          name,
+          typeof value === 'number' ? String(value) : value,
+        ]),
+      );
+
     return this.request<TResult>({
       resource,
       type: requestType ?? RequestTypes.SEND,
@@ -478,7 +488,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       bodyType,
       query,
       extra,
-      headers: headers as HeadersInit | undefined,
+      headers: texts,
       requestCountData,
       signal,
     });

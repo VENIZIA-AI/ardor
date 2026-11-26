@@ -742,6 +742,21 @@ describe('send behavior', () => {
     expect(firstCallArgs.type).toBe(RequestTypes.SEND);
   });
 
+  test('a number header is sent as its text, and a null one removes the header of that name', async () => {
+    const provider = createProvider({ baseUrl });
+    const headers: Record<string, string | number> = { 'x-count': 5, 'x-request-count': 0 };
+    // What an untyped caller can pass: the type allows no null.
+    Reflect.set(headers, 'x-request-count', null);
+
+    await provider.send({
+      resource: 'analytics',
+      params: { method: RequestMethods.GET, headers },
+    });
+
+    expect(recordedRequests[0].headers.get('x-count')).toBe('5');
+    expect(recordedRequests[0].headers.has('x-request-count')).toBe(false);
+  });
+
   test('forwards form-url-encoded bodyType correctly', async () => {
     const provider = createProvider({ baseUrl });
     await provider.send({
