@@ -90,7 +90,7 @@ export class BrowserStorage {
     storage?: TStorageArea;
     codec: IStorageCodec<TValue>;
   }): boolean;
-  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  /** Without a codec, or with one that may be absent, the value's own type is the stored type. */
   static set<TValue>(opts: {
     key: string;
     value: TValue;
