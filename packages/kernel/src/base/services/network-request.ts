@@ -69,6 +69,8 @@ export class DefaultNetworkRequestService extends AbstractNetworkSessionService 
   /** How long a request may take; see `IRestDataProviderOptions.timeout`. */
   protected timeout: TRequestTimeoutOptions;
 
+  protected override readonly recovery: AuthRecoveryHelper;
+
   constructor(
     opts: INoAuthOptions & {
       /** The name of the underlying network request helper. */

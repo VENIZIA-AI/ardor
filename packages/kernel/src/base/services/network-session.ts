@@ -47,7 +47,7 @@ export abstract class AbstractNetworkSessionService extends BaseService {
   protected authService?: DefaultAuthService;
 
   /** The one refresh every 401 in flight shares; the subclass makes it. */
-  protected recovery: AuthRecoveryHelper;
+  protected abstract readonly recovery: AuthRecoveryHelper;
 
   /** The session each data source request was sent under, keyed by the context object IGNIS hands to both hooks. */
   private readonly sentSessions = new WeakMap<object, ISentSession>();
