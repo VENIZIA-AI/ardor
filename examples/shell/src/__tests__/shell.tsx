@@ -1,5 +1,5 @@
 import { ArdorApplication, CoreBindings, type DefaultAuthService } from '@venizia/ardor';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { Application } from '@/application';
@@ -33,17 +33,22 @@ export const blockNetwork = (): (() => void) => {
   };
 };
 
-/** The shell as main.tsx mounts it, under a memory router: react-admin's own router needs a real browser. */
-export const renderShell = (opts: { application: Application; path: string }): void => {
-  render(
-    <MemoryRouter initialEntries={[opts.path]}>
-      <ArdorApplication
-        container={opts.application}
-        suspense={<p>Loading</p>}
-        loginPage={LoginPage}
-        layout={ShellLayout}
-        dashboard={HomePage}
-      />
-    </MemoryRouter>,
-  );
+/**
+ * The shell as main.tsx mounts it, under a memory router: react-admin's own router needs a real browser.
+ * It resolves once the updates react-admin makes right after the first render have run.
+ */
+export const renderShell = async (opts: { application: Application; path: string }) => {
+  await act(async () => {
+    render(
+      <MemoryRouter initialEntries={[opts.path]}>
+        <ArdorApplication
+          container={opts.application}
+          suspense={<p>Loading</p>}
+          loginPage={LoginPage}
+          layout={ShellLayout}
+          dashboard={HomePage}
+        />
+      </MemoryRouter>,
+    );
+  });
 };

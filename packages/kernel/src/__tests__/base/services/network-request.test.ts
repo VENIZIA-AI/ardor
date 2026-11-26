@@ -20,6 +20,9 @@ import {
   type TRequestMethod,
 } from '@/common';
 import { RejectionUtility } from '@venizia/dev-configs/testing';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 interface IRecordedRequest {
   method: string;
@@ -181,13 +184,8 @@ describe('DefaultNetworkRequestService', () => {
         const contentType = req.headers.get('content-type') ?? '';
 
         if (contentType.includes('application/json')) {
-          try {
-            const result = await req.json();
-            jsonBody = result;
-          } catch (err: unknown) {
-            console.error('[server.fetch] Failed to parse JSON body', err);
-            jsonBody = undefined;
-          }
+          const text = await req.text();
+          jsonBody = text ? JSON.parse(text) : undefined;
         }
 
         recordedRequests.push({
@@ -270,8 +268,6 @@ describe('DefaultNetworkRequestService', () => {
         service.getRequestAuthorizationHeader();
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[auth header expected error]', err);
-
         if (typeof err === 'object' && err !== null && 'statusCode' in err) {
           expect(err.statusCode).toBe(401);
         }
@@ -318,8 +314,6 @@ describe('DefaultNetworkRequestService', () => {
         service.getRequestAuthorizationHeader();
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[empty string token expected error]', err);
-
         if (typeof err === 'object' && err !== null && 'statusCode' in err) {
           expect(err.statusCode).toBe(401);
         }
@@ -1326,7 +1320,6 @@ describe('DefaultNetworkRequestService', () => {
         });
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[expected refreshTokenPath 401]', err);
         expect(
           isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
         ).toEqual({
@@ -1368,7 +1361,6 @@ describe('DefaultNetworkRequestService', () => {
         });
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[expected no-auth 401 error]', err);
         expect(
           isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
         ).toEqual({
@@ -1381,6 +1373,8 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('calls onAuthFailure once and throws original 401 response error when refreshToken rejects', async () => {
+      const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
       let authFailureCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
       service.setToken({ value: 'unrecoverable-token' });
@@ -1413,7 +1407,6 @@ describe('DefaultNetworkRequestService', () => {
         });
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[expected rejected refresh error]', err);
         expect(
           isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
         ).toEqual({
@@ -1423,9 +1416,17 @@ describe('DefaultNetworkRequestService', () => {
       }
 
       expect(authFailureCallCount).toBe(1);
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[refresh] refreshToken failed'),
+        expect.objectContaining({ message: 'Refresh token service offline' }),
+      );
     });
 
     test('calls onAuthFailure once and throws original 401 response error when refreshToken throws synchronously', async () => {
+      const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
       let authFailureCallCount = 0;
       const service = createService({ baseUrl: serverBaseUrl });
       service.setToken({ value: 'unrecoverable-token' });
@@ -1458,7 +1459,6 @@ describe('DefaultNetworkRequestService', () => {
         });
         expect(true).toBe(false);
       } catch (err: unknown) {
-        console.info('[expected rejected refresh error]', err);
         expect(
           isApplicationError(err) && { statusCode: err.statusCode, message: err.message },
         ).toEqual({
@@ -1468,6 +1468,12 @@ describe('DefaultNetworkRequestService', () => {
       }
 
       expect(authFailureCallCount).toBe(1);
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[refresh] refreshToken failed'),
+        expect.objectContaining({ message: 'Refresh token service offline' }),
+      );
     });
 
     // A repository with its own refresh would race the data provider's: two refresh calls, and the
@@ -1767,6 +1773,8 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('a refreshToken that throws resolves false and runs onAuthFailure once', async () => {
+      const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
       const failures = mock(async () => {});
       const service = createService();
       service.setAuthRecovery({
@@ -1777,9 +1785,17 @@ describe('DefaultNetworkRequestService', () => {
       const result = await service.refresh();
       expect(result).toBe(false);
       expect(failures).toHaveBeenCalledTimes(1);
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[refresh] refreshToken failed'),
+        expect.objectContaining({ message: 'refresh rejected' }),
+      );
     });
 
     test('a refreshToken that throws synchronously is still a failed refresh', async () => {
+      const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
       const failures = mock(async () => {});
       const service = createService();
       service.setAuthRecovery({
@@ -1792,6 +1808,12 @@ describe('DefaultNetworkRequestService', () => {
       const result = await service.refresh();
       expect(result).toBe(false);
       expect(failures).toHaveBeenCalledTimes(1);
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[refresh] refreshToken failed'),
+        expect.objectContaining({ message: 'sync failure' }),
+      );
     });
 
     test('callers in flight share one refreshToken call', async () => {
@@ -1811,6 +1833,8 @@ describe('DefaultNetworkRequestService', () => {
     });
 
     test('a failing onAuthFailure does not escape refresh', async () => {
+      const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
       const service = createService();
       service.setAuthRecovery({
         refreshToken: () => Promise.reject(new Error('no')),
@@ -1821,11 +1845,25 @@ describe('DefaultNetworkRequestService', () => {
 
       const result = await service.refresh();
       expect(result).toBe(false);
+
+      expect(logged).toHaveBeenCalledTimes(2);
+      expect(logged).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('[refresh] refreshToken failed'),
+        expect.objectContaining({ message: 'no' }),
+      );
+      expect(logged).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('[refresh] onAuthFailure failed'),
+        expect.objectContaining({ message: 'hook failed' }),
+      );
     });
   });
 
   describe('readAuthTokenFromStorage', () => {
     test('reads the stored token, and is undefined for nothing or for text that is not JSON', () => {
+      const logged = LogWatch.on({ scope: 'AuthTokenStore', method: 'warn' });
+
       localStorage.removeItem(LocalStorageKeys.KEY_AUTH_TOKEN);
       expect(DefaultNetworkRequestService.readAuthTokenFromStorage()).toBeUndefined();
 
@@ -1840,6 +1878,12 @@ describe('DefaultNetworkRequestService', () => {
         value: 'stored',
         type: 'Bearer',
       });
+
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('The stored auth token is not valid JSON'),
+        'SyntaxError',
+      );
     });
   });
 });

@@ -26,8 +26,19 @@ describe('DefaultI18nProvider', () => {
     const container = new Container();
     const provider = new DefaultI18nProvider({});
     const i18n = provider.value(container);
+    const warn = spyOn(provider.logger, 'warn').mockImplementation(() => undefined);
 
-    expect(i18n.translate('missing.action.key')).toBe('missing.action.key');
+    try {
+      expect(i18n.translate('missing.action.key')).toBe('missing.action.key');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('[translate] Missing message'),
+        'missing.action.key',
+        'en',
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test('translates key with custom locale source after changeLocale and falls back to englishMessages for missing source', async () => {

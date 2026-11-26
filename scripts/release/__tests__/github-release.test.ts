@@ -7,6 +7,7 @@ import type { TGh } from '../github-release';
 import { GithubRelease, GithubReleaseConstants } from '../github-release';
 import { MergeBackConstants, ReleaseMergeBack } from '../merge-back';
 import { ReleaseNotes } from '../release-notes';
+import { captureConsole } from './console-capture';
 
 const roots: string[] = [];
 
@@ -333,7 +334,7 @@ describe('GithubRelease.create: a prerelease makes no Release', () => {
     expect(outcome.state).toBe('skipped');
     expect(outcome.message).toContain('only a stable has a GitHub Release');
     expect(stub.calls).toEqual([]);
-    expect(
+    const printed = captureConsole(() =>
       GithubRelease.main({
         args: [
           'create',
@@ -348,7 +349,13 @@ describe('GithubRelease.create: a prerelease makes no Release', () => {
         cwd: root,
         gh: stub.gh,
       }),
-    ).toBe(0);
+    );
+
+    expect(printed.value).toBe(0);
+    expect(printed.out).toEqual([
+      expect.stringContaining('github-release: skipped - 0.4.6-1 is a prerelease'),
+    ]);
+    expect(printed.err).toEqual([]);
     expect(stub.calls).toEqual([]);
   });
 });
@@ -556,7 +563,14 @@ describe('GithubRelease.create: what it refuses, skips or reports', () => {
 describe('GithubRelease.main', () => {
   test('exits 2 with the usage when a flag is missing or the command is unknown', () => {
     for (const args of [['create', '--version', '0.4.6'], ['nope'], []]) {
-      expect(GithubRelease.main({ args, env: {}, cwd: fixture(), gh: stubGh({}).gh })).toBe(2);
+      const root = fixture();
+      const printed = captureConsole(() =>
+        GithubRelease.main({ args, env: {}, cwd: root, gh: stubGh({}).gh }),
+      );
+
+      expect(printed.value).toBe(2);
+      expect(printed.out).toEqual([]);
+      expect(printed.err).toEqual([GithubReleaseConstants.USAGE]);
     }
   });
 
@@ -566,14 +580,20 @@ describe('GithubRelease.main', () => {
 
     writeFileSync(summary, '');
 
-    const code = GithubRelease.main({
-      args: ['create', '--version', '0.4.6', '--kind', 'stable', '--packages', ALL.join(',')],
-      env: { GITHUB_STEP_SUMMARY: summary, RUNNER_TEMP: scratch() },
-      cwd: root,
-      gh: stubGh({}).gh,
-    });
+    const printed = captureConsole(() =>
+      GithubRelease.main({
+        args: ['create', '--version', '0.4.6', '--kind', 'stable', '--packages', ALL.join(',')],
+        env: { GITHUB_STEP_SUMMARY: summary, RUNNER_TEMP: scratch() },
+        cwd: root,
+        gh: stubGh({}).gh,
+      }),
+    );
 
-    expect(code).toBe(0);
+    expect(printed.value).toBe(0);
+    expect(printed.out).toEqual([
+      expect.stringContaining('github-release: created - ardor-v0.4.6: https://github.com/'),
+    ]);
+    expect(printed.err).toEqual([]);
     expect(readFileSync(summary, 'utf8')).toContain('- created: ardor-v0.4.6');
   });
 
@@ -584,9 +604,23 @@ describe('GithubRelease.main', () => {
       cwd: fixture(),
     };
 
-    expect(GithubRelease.main({ ...base, gh: stubGh({ createFails: true }).gh })).toBe(1);
-    expect(GithubRelease.main({ ...base, gh: stubGh({ tagMissing: true }).gh })).toBe(0);
-    expect(GithubRelease.main({ ...base, gh: stubGh({ existing: true }).gh })).toBe(0);
+    const run = (stub: ReturnType<typeof stubGh>) =>
+      captureConsole(() => GithubRelease.main({ ...base, gh: stub.gh }));
+    const failed = run(stubGh({ createFails: true }));
+    const skipped = run(stubGh({ tagMissing: true }));
+    const existing = run(stubGh({ existing: true }));
+
+    expect([failed.value, skipped.value, existing.value]).toEqual([1, 0, 0]);
+    expect(failed.out).toEqual([
+      expect.stringContaining('github-release: failed - gh release create ardor-v0.4.6: HTTP 422'),
+    ]);
+    expect(skipped.out).toEqual([
+      expect.stringContaining('github-release: skipped - ardor-v0.4.6 is not on the remote'),
+    ]);
+    expect(existing.out).toEqual([
+      expect.stringContaining('github-release: exists - ardor-v0.4.6 already has a Release'),
+    ]);
+    expect([...failed.err, ...skipped.err, ...existing.err]).toEqual([]);
   });
 });
 

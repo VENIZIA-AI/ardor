@@ -4,6 +4,15 @@
   // A solution config: the projects are in `.configs/builders/`. `tsconfig.app.json` is the browser app and
   // its Vite config, `tsconfig.api.json` is the stub API (it runs on Bun). `bun check` follows the references.
   "files": [],
+  // `bun test` reads this file only, never a referenced one, so the alias and the decorators are restated here.
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
   "references": [
     { "path": "./.configs/builders/tsconfig.app.json" },
     { "path": "./.configs/builders/tsconfig.api.json" }

@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { makeScratch } from '../../scratch';
 
 import { MergeBackConstants, ReleaseMergeBack } from '../merge-back';
+import { captureConsole } from './console-capture';
 
 const roots: string[] = [];
 
@@ -398,32 +399,54 @@ describe('ReleaseMergeBack.trial: a package.json it cannot read', () => {
 describe('ReleaseMergeBack.main', () => {
   const trialArgs = ['trial', '--main', 'main', '--develop', 'develop'];
   const main = (opts: { args: string[]; cwd: string; output?: string }) =>
-    ReleaseMergeBack.main({
-      args: opts.args,
-      cwd: opts.cwd,
-      env: {
-        RUNNER_TEMP: scratch(),
-        ...(opts.output === undefined ? {} : { GITHUB_OUTPUT: opts.output }),
-      },
-    });
+    captureConsole(() =>
+      ReleaseMergeBack.main({
+        args: opts.args,
+        cwd: opts.cwd,
+        env: {
+          RUNNER_TEMP: scratch(),
+          ...(opts.output === undefined ? {} : { GITHUB_OUTPUT: opts.output }),
+        },
+      }),
+    );
 
   test('an unknown command and a trial without exactly one of version and versions exit 2', () => {
     const root = fixture({ developVersion: '0.4.9-3' });
 
-    expect(main({ args: [], cwd: root })).toBe(2);
-    expect(main({ args: trialArgs, cwd: root })).toBe(2);
-    expect(
-      main({ args: [...trialArgs, '--version', '0.4.9', '--versions', 'a=0.4.9'], cwd: root }),
-    ).toBe(2);
+    const unknown = main({ args: [], cwd: root });
+    const neither = main({ args: trialArgs, cwd: root });
+    const both = main({
+      args: [...trialArgs, '--version', '0.4.9', '--versions', 'a=0.4.9'],
+      cwd: root,
+    });
+
+    expect([unknown.value, neither.value, both.value]).toEqual([2, 2, 2]);
+    expect(unknown.err).toEqual([expect.stringContaining('merge-back: trial (--version <v>')]);
+
+    for (const printed of [neither, both]) {
+      expect(printed.err).toEqual([
+        expect.stringContaining('exactly one of --version <v> or --versions'),
+      ]);
+    }
+
+    expect([...unknown.out, ...neither.out, ...both.out]).toEqual([]);
   });
 
   test('a malformed --versions or an unknown --lock exits 2', () => {
     const root = fixture({ developVersion: '0.4.9-3' });
 
-    expect(main({ args: [...trialArgs, '--versions', 'a'], cwd: root })).toBe(2);
-    expect(main({ args: [...trialArgs, '--version', '0.4.9', '--lock', 'never'], cwd: root })).toBe(
-      2,
-    );
+    const malformed = main({ args: [...trialArgs, '--versions', 'a'], cwd: root });
+    const lock = main({
+      args: [...trialArgs, '--version', '0.4.9', '--lock', 'never'],
+      cwd: root,
+    });
+
+    expect([malformed.value, lock.value]).toEqual([2, 2]);
+    expect(malformed.err).toEqual([
+      expect.stringContaining('--versions is <dir=version>,<dir=version>'),
+    ]);
+    expect(lock.err).toEqual([expect.stringContaining('--lock is keep or regenerate')]);
+    expect([...malformed.out, ...lock.out]).toEqual([]);
   });
 
   test('a trial that goes through exits 0 and writes the head of develop it read', () => {
@@ -432,7 +455,11 @@ describe('ReleaseMergeBack.main', () => {
 
     writeFileSync(output, '');
 
-    expect(main({ args: [...trialArgs, '--version', '0.4.9'], cwd: root, output })).toBe(0);
+    const printed = main({ args: [...trialArgs, '--version', '0.4.9'], cwd: root, output });
+
+    expect(printed.value).toBe(0);
+    expect(printed.out).toEqual([expect.stringContaining('merge-back: goes through (resolved: ')]);
+    expect(printed.err).toEqual([]);
     expect(readFileSync(output, 'utf8')).toBe(
       `develop_sha=${run({ cwd: root, args: ['rev-parse', 'develop'] })}\n`,
     );
@@ -448,7 +475,13 @@ describe('ReleaseMergeBack.main', () => {
     write({ root, path: 'src/shared.ts', text: 'export const shared = 3;\n' });
     run({ cwd: root, args: ['commit', '-q', '-am', 'main edits shared'] });
 
-    expect(main({ args: [...trialArgs, '--version', '0.4.9'], cwd: root })).toBe(1);
+    const printed = main({ args: [...trialArgs, '--version', '0.4.9'], cwd: root });
+
+    expect(printed.value).toBe(1);
+    expect(printed.err).toEqual([
+      expect.stringContaining('ERROR | merge back: src/shared.ts: a conflict'),
+    ]);
+    expect(printed.out).toEqual([expect.stringContaining('merge-back: stops (resolved: ')]);
   });
 
   test('apply needs --from, and merges into the worktree --repo names, leaving the caller untouched', () => {
@@ -463,8 +496,26 @@ describe('ReleaseMergeBack.main', () => {
 
     const before = run({ cwd: root, args: ['rev-parse', 'HEAD'] });
 
-    expect(main({ args: ['apply'], cwd: root })).toBe(2);
-    expect(main({ args: ['apply', '--repo', worktree, '--from', 'release'], cwd: root })).toBe(0);
+    const missing = main({ args: ['apply'], cwd: root });
+
+    expect(missing.value).toBe(2);
+    expect(missing.err).toEqual([
+      expect.stringContaining('merge-back apply: --from <commit> is required'),
+    ]);
+    expect(missing.out).toEqual([]);
+
+    const applied = main({
+      args: ['apply', '--repo', worktree, '--from', 'release'],
+      cwd: root,
+    });
+
+    expect(applied.value).toBe(0);
+    expect(applied.out).toEqual([
+      expect.stringContaining(
+        `merge-back: committed ${run({ cwd: worktree, args: ['rev-parse', 'HEAD'] })}`,
+      ),
+    ]);
+    expect(applied.err).toEqual([]);
     expect(run({ cwd: root, args: ['rev-parse', 'HEAD'] })).toBe(before);
     expect(versionIn({ root: worktree, file: 'packages/a/package.json' })).toBe('0.4.9');
     expect(run({ cwd: worktree, args: ['log', '-1', '--format=%P'] }).split(' ')).toHaveLength(2);

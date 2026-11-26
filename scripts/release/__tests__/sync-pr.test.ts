@@ -6,6 +6,7 @@ import { makeScratch } from '../../scratch';
 
 import { MergeBackConstants, ReleaseMergeBack } from '../merge-back';
 import { ReleaseSyncPr } from '../sync-pr';
+import { captureConsole } from './console-capture';
 
 const roots: string[] = [];
 
@@ -186,13 +187,29 @@ describe('ReleaseSyncPr.main', () => {
   test('open --dry-run prints the branch, the title and the body, and pushes and opens nothing', () => {
     const root = cloned();
 
-    expect(
+    const printed = captureConsole(() =>
       ReleaseSyncPr.main({
         args: ['open', '--tag', 'ardor-v0.4.9-1', '--dry-run'],
         env: {},
         cwd: root,
       }),
-    ).toBe(0);
+    );
+    const commitOfTag = git({ cwd: root, args: ['rev-parse', 'ardor-v0.4.9-1^{commit}'] });
+
+    expect(printed.value).toBe(0);
+    expect(printed.err).toEqual([]);
+    expect(printed.out).toHaveLength(1);
+
+    for (const part of [
+      `sync-pr: sync/ardor-v0.4.9-1 at ${commitOfTag}`,
+      'sync-pr: Sync main: prerelease 0.4.9-1',
+      'the exact commit of the tag `ardor-v0.4.9-1`',
+      'Brings 2 commits:',
+      'Closes #10\nCloses #11',
+    ]) {
+      expect(printed.out[0]).toContain(part);
+    }
+
     expect(git({ cwd: root, args: ['branch', '--list', 'sync/*'] })).toBe('');
   });
 
@@ -201,31 +218,53 @@ describe('ReleaseSyncPr.main', () => {
 
     git({ cwd: root, args: ['tag', '-a', 'ardor-v0.4.8', '-m', 'stable', 'main'] });
 
-    expect(
-      ReleaseSyncPr.main({
-        args: ['open', '--tag', 'ardor-v0.4.8', '--dry-run'],
-        env: {},
-        cwd: root,
-      }),
-    ).toBe(1);
-    expect(ReleaseSyncPr.main({ args: ['open'], env: {}, cwd: root })).toBe(2);
-    expect(ReleaseSyncPr.main({ args: ['merge', '--tag', 'x'], env: {}, cwd: root })).toBe(2);
+    const run = (args: string[]) =>
+      captureConsole(() => ReleaseSyncPr.main({ args, env: {}, cwd: root }));
+    const stable = run(['open', '--tag', 'ardor-v0.4.8', '--dry-run']);
+    const untagged = run(['open']);
+    const unknown = run(['merge', '--tag', 'x']);
+
+    expect([stable.value, untagged.value, unknown.value]).toEqual([1, 2, 2]);
+    expect(stable.err).toEqual([
+      expect.stringContaining(
+        "ERROR | ardor-v0.4.8 is at version '0.4.8', which is not a prerelease",
+      ),
+    ]);
+
+    for (const printed of [untagged, unknown]) {
+      expect(printed.err).toEqual([
+        expect.stringContaining('sync-pr: open|verify --tag <prerelease tag>'),
+      ]);
+    }
+
+    expect([...stable.out, ...untagged.out, ...unknown.out]).toEqual([]);
   });
 
   test('verify exits 0 when the tree of main is the tree of the tag, and 1 when it is not', () => {
     const root = cloned();
 
-    expect(
-      ReleaseSyncPr.main({ args: ['verify', '--tag', 'ardor-v0.4.9-1'], env: {}, cwd: root }),
-    ).toBe(1);
+    const verify = () =>
+      captureConsole(() =>
+        ReleaseSyncPr.main({ args: ['verify', '--tag', 'ardor-v0.4.9-1'], env: {}, cwd: root }),
+      );
+    const behind = verify();
+
+    expect(behind.value).toBe(1);
+    expect(behind.err).toEqual([expect.stringContaining('ERROR | the tree of origin/main (')]);
+    expect(behind.err[0]).toContain('is not the tree of ardor-v0.4.9-1');
+    expect(behind.out).toEqual([]);
 
     git({ cwd: root, args: ['checkout', '-q', 'main'] });
     git({ cwd: root, args: ['merge', '-q', '--no-ff', '-m', 'Sync', 'ardor-v0.4.9-1'] });
     git({ cwd: root, args: ['update-ref', 'refs/remotes/origin/main', 'main'] });
 
-    expect(
-      ReleaseSyncPr.main({ args: ['verify', '--tag', 'ardor-v0.4.9-1'], env: {}, cwd: root }),
-    ).toBe(0);
+    const synced = verify();
+
+    expect(synced.value).toBe(0);
+    expect(synced.out).toEqual([
+      expect.stringContaining('sync-pr: the tree of main is the tree of ardor-v0.4.9-1'),
+    ]);
+    expect(synced.err).toEqual([]);
   });
 });
 
