@@ -31,7 +31,7 @@ Every ARDOR release is listed in the [changelogs](../../changelogs/) with who is
 
 | Command | What it does | For |
 |---------|--------------|-----|
-| `ardor codemod namespace` | Moves the names that 0.4.7 removed to the class members that replace them | 0.4.6 to 0.4.7 |
+| `ardor codemod namespace` | Moves the names that 0.4.7 removed to the class members that replace them, and renames the types 0.5.0 renamed | 0.4.6 to 0.4.7, and 0.5.0 |
 | `ardor codemod auth-options` | Adds `use: true` to the auth provider options of an app with sign-in | 0.4.8 |
 | `ardor codemod base-application-import` | Imports `BaseArdorApplication` from `@venizia/ardor-admin` | 0.4.8 |
 | `ardor codemod default-providers` | Lists the default providers an app builds by hand; it only lists, you edit them | 0.4.8 |
@@ -110,7 +110,7 @@ The exit code is 0, or 1 with `--check` when it found a place. `--write` is a us
 
 ### namespace
 
-`ardor codemod namespace` moves the names that 0.4.7 removed from `@venizia/ardor` to the class members that replace them, in your source files. It also rewrites `NullableType`, `NumberIdType` and `StringIdType` to the plain types, `ISendResponse` to `INetworkResponse`, moves the kernel `Logger` stack to `@venizia/ignis-helpers/core`, and lists, without changing them, the removed names that have no replacement (`isEditableTarget`, `TDataCount`, `ISyncFC`, `.offset` of a list filter, `App.DEFAULT_LOCALE`, `HeaderConstants` (use `HTTP.Headers`), the `enableDebug` prop, and the hooks `useSizer` and `useInjectableContainer`). It reads imports from the four ARDOR packages; with no path it reads the current directory, and a path may be one file. The list of old and new names is in [how to update your project](../../changelogs/2026-11-01-class-namespaces#how-to-upgrade). It reads syntax only, so a name that the file also declares itself, a re-export by name and a class name already taken are listed with their line and left for you.
+`ardor codemod namespace` moves the names that 0.4.7 removed from `@venizia/ardor` to the class members that replace them, in your source files. It also rewrites `NullableType`, `NumberIdType` and `StringIdType` to the plain types, `ISendResponse` to `INetworkResponse`, `IAuthUser` to `IStoredAuthUser`, `IArtifactIndex` to `IArdorArtifactIndex` and `IApplication` to `IArdorApplicationProps`, moves the kernel `Logger` stack to `@venizia/ignis-helpers/core`, and lists, without changing them, the removed names that have no replacement (`isEditableTarget`, `TDataCount`, `ISyncFC`, `.offset` of a list filter, `App.DEFAULT_LOCALE`, `HeaderConstants` (use `HTTP.Headers`), the `enableDebug` prop, and the hooks `useSizer` and `useInjectableContainer`). It reads imports from the four ARDOR packages; with no path it reads the current directory, and a path may be one file. The list of old and new names is in [how to update your project](../../changelogs/2026-11-01-class-namespaces#how-to-upgrade). It reads syntax only, so a name that the file also declares itself, a re-export by name and a class name already taken are listed with their line and left for you.
 
 ```bash
 bun run ardor codemod namespace src

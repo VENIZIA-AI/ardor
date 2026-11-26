@@ -32,7 +32,8 @@ tags: [process, docs, wiki]
    page has no menu link, or if a menu link points at a page that no longer exists. The script's
    `UNLISTED` list exempts the content root `index.md` and any `extensions/components/template/` or
    `extensions/helpers/template/` page (no such page exists today). Next it runs
-   `check-snippets.mts`: every `ts`/`tsx`/`typescript` fence in `content/` is compiled against the
+   `check-snippets.mts`: every `ts`/`tsx`/`typescript` fence in `content/`, except in a dated changelog
+   file (`changelogs/<YYYY-MM-DD>-<slug>.md`, history), is compiled against the
    BUILT packages' `dist` typings, so build the packages first (`make build-all`) or every snippet
    fails. A fence tagged `no-check` (`ts no-check`, `tsx no-check`) opts out only if it is an
    excerpt - it contains `...`, or holds nothing but declarations with no body or initializer; a

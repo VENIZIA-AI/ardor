@@ -201,7 +201,7 @@ A stereotype's `order` and `after` are not read: every binding is lazy, so the o
 
 Signature: `artifacts(): Array<IArdorArtifactIndex>`
 
-Returns artifact index definitions checked by `start()` (default `[]`). `IArdorArtifactIndex` in `packages/kernel/src/common/types.ts` holds indexed classes grouped by kind:
+Returns artifact index definitions checked by `start()` (default `[]`). `IArdorArtifactIndex` in `packages/kernel/src/common/types.ts` holds indexed classes grouped by kind. Its field names come from the installed IGNIS: a group a newer IGNIS adds passes the type, but `start()` does not check it.
 
 | Kind | Type | Description |
 |---|---|---|

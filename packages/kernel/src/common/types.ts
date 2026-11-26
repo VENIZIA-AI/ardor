@@ -323,6 +323,9 @@ export interface IFeatureBase {
  * The index `ignis-artifacts generate` (from `@venizia/ignis-boot`) emits: every stereotyped class,
  * by value, per kind. Referencing them keeps a bundler from dropping a module nothing else imports,
  * and `start()` checks each was discovered. `controllers` stays empty in a browser application.
+ *
+ * The field names come from the installed IGNIS. A group a newer IGNIS adds passes this type, but
+ * `start()` does not check it.
  */
 export interface IArdorArtifactIndex
   extends

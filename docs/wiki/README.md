@@ -40,7 +40,7 @@ docs/wiki/
 
 Every page must be reachable from the sidebar in `site/.vitepress/config.mts`; `scripts/check-sidebar.mts`
 fails the build on an orphan page or a dead link, and `scripts/check-snippets.mts` compiles every
-```` ```ts ```` fence against the built packages.
+```` ```ts ```` fence against the built packages, except in a dated changelog file.
 
 ## MCP
 

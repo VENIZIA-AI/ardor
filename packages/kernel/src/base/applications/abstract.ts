@@ -4,6 +4,7 @@ import {
   ArtifactNamespaces,
   ArtifactTypes,
   BindingNamespaces,
+  type IArtifactRegistrationOptions,
   MetadataRegistry,
 } from '@venizia/ignis-kernel/metadata';
 import {
@@ -15,7 +16,6 @@ import {
   type TBindingKey,
   type TClass,
 } from '@venizia/ignis-inversion';
-import type { IArtifactRegistrationOptions } from '@venizia/ignis-kernel';
 
 import {
   CoreBindings,
@@ -36,7 +36,13 @@ const ArtifactIndexKinds = [
   'controllers',
 ] as const satisfies ReadonlyArray<keyof IArdorArtifactIndex>;
 
-/** Per-registration choices for `service()`, `repository()`, `dataSource()` and `component()`. */
+/**
+ * Per-registration choices for `service()`, `repository()`, `dataSource()` and `component()`.
+ * `binding` binds under that key instead of `<namespace>.<ClassName>`. `scope` defaults to the scope
+ * declared on the class, else `BindingScopes.SINGLETON`. `allowOverride` defaults to `true`; `false`
+ * refuses to replace a binding already under the key, and keeps `bindingList()` from replacing this one
+ * (only `bindContext()` does).
+ */
 export interface IArtifactRegistration extends Pick<
   IArtifactRegistrationOptions,
   'binding' | 'scope' | 'allowOverride'

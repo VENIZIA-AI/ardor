@@ -284,12 +284,12 @@ In a test, `expect(getUser()).toEqual({ userId: 3, tenant: 'acme' })` fails with
  }
 ```
 
-**7. Name your user type in a hook.** An interface that extends `IStoredAuthUser` (`IAuthUser` before 0.5.0) is the user the hook receives, and the override keeps compiling.
+**7. Name your user type in a hook.** An interface that extends `IAuthUser` is the user the hook receives, and the override keeps compiling.
 
 ```ts
-import { DefaultAuthProvider, type IAuthTokenRecord, type IStoredAuthUser } from '@venizia/ardor';
+import { DefaultAuthProvider, type IAuthTokenRecord, type IAuthUser } from '@venizia/ardor';
 
-interface IAppUser extends IStoredAuthUser {
+interface IAppUser extends IAuthUser {
   tenant: string;
 }
 

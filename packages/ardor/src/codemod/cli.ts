@@ -22,6 +22,8 @@ Moves the names removed from @venizia/ardor to what replaces them:
   Logger.getInstance({ scope }), new Logger({ scope })  LoggerFactory.getLogger([scope]) (enableDebug is dropped, with a note)
   Logger (a type)                                       ILogger
   ISendResponse                                         INetworkResponse
+  IAuthUser, IArtifactIndex                             IStoredAuthUser, IArdorArtifactIndex
+  IApplication                                          IArdorApplicationProps
 
 Removed with nothing to write in their place, so only listed with their line: isObject and isValidDate (also ValueUtility.isObject and .isValidDate), isEditableTarget,
 TDataCount, ISyncFC, IListFilter.offset (use skip; listed wherever a file that imports IListFilter or ListFilterBuilder reads or sets .offset), useSizer (use useElementSize), useInjectableContainer (renamed useApplicationContainer), App.DEFAULT_LOCALE, NetworkResponseReader.toError (use HttpResponseReader.toApplicationError), HeaderConstants (use HTTP.Headers), NetworkHeaders (use HttpHeaders), Authentication (use App.TOKEN_TYPE), AuthRecovery (renamed AuthRecoveryHelper),
