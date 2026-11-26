@@ -16,10 +16,8 @@ import {
   StorageAreas,
 } from '@venizia/ardor-kernel';
 import type { IAuthProvider, IAuthRejection, IDataProvider } from '@/common';
-import { CheckAuthUtility } from '@/utilities/check-auth';
-import { ErrorStatusUtility } from '@/utilities/error-status';
+import { AuthSessionUtility } from '@/utilities/auth-session';
 import { ReactAdminAuthFactory } from '@/utilities/react-admin-auth';
-import { SessionHookUtility } from '@/utilities/session-hook';
 import { SignInUtility } from '@/utilities/sign-in';
 import { type ILoginParams, SessionClearReasons, type TSessionClearReason } from './auth-types';
 
@@ -248,7 +246,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
   private runSessionHook(opts: { name: string; run: () => void | Promise<void> }): Promise<void> {
     const done = this.hookQueue.then(async () => {
       try {
-        await SessionHookUtility.settleWithin({
+        await AuthSessionUtility.settleWithin({
           run: opts.run,
           milliseconds: this.sessionHookTimeout,
         });
@@ -458,7 +456,7 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
     }
 
     const checked = this.announcedSession;
-    const { response, isStale } = await CheckAuthUtility.ask({
+    const { response, isStale } = await AuthSessionUtility.askCheckAuth({
       dataProvider: this.restDataProvider,
       resource: checkAuthPath,
     });
@@ -500,9 +498,9 @@ export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
    * `SESSION_CHANGED_CODE`) resolves and leaves the signed-in session alone.
    */
   async checkError(error: unknown) {
-    const status = ErrorStatusUtility.read({ error });
+    const status = AuthSessionUtility.readStatus({ error });
 
-    if (ErrorStatusUtility.isSessionChanged({ error })) {
+    if (AuthSessionUtility.isSessionChanged({ error })) {
       return Promise.resolve();
     }
 
