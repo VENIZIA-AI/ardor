@@ -9,14 +9,14 @@ import {
 } from '@/common';
 import type { DefaultAuthService } from '../services/auth';
 
-interface IGrant extends Pick<IAuthorizationRequest, 'resource' | 'action'> {}
+type TGrant = Pick<IAuthorizationRequest, 'resource' | 'action'>;
 
 class GrantPattern {
   static readonly WILDCARD = '*';
   static readonly SEPARATOR = '.';
 
   /** Splits a grant pattern into its resource and action; throws, naming the role and the pattern, when it is not one. */
-  static parse(opts: { role: string; pattern: unknown }): IGrant {
+  static parse(opts: { role: string; pattern: unknown }): TGrant {
     const { role, pattern } = opts;
 
     if (typeof pattern === 'string') {
@@ -37,7 +37,7 @@ class GrantPattern {
     });
   }
 
-  static matches(opts: { grant: IGrant; resource: string; action: string }): boolean {
+  static matches(opts: { grant: TGrant; resource: string; action: string }): boolean {
     const { grant, resource, action } = opts;
 
     return (
@@ -93,7 +93,7 @@ class GrantPattern {
  * ```
  */
 export class RolePermissionProvider extends BaseHelper implements IPermissionProvider {
-  private readonly grants = new Map<string, ReadonlyArray<IGrant>>();
+  private readonly grants = new Map<string, ReadonlyArray<TGrant>>();
 
   constructor(
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })

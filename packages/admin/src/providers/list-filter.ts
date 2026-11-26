@@ -42,18 +42,14 @@ export class ListFilterBuilder {
     // `signal` is react-admin's abort signal, never a filter key.
     const { pagination, sort, filter: filterInput, meta, signal: _signal, ...rest } = opts.params;
 
-    let filter = {} as IListFilter;
+    let filter: IListFilter;
 
     if (filterInput?.where) {
       filter = { ...filterInput, where: { ...filterInput.where } };
     } else {
       const { include, fields, params, noLimit, ...where } = filterInput ?? {};
 
-      filter['where'] = where;
-      filter['include'] = include;
-      filter['fields'] = fields;
-      filter['params'] = params;
-      filter['noLimit'] = noLimit;
+      filter = { where, include, fields, params, noLimit };
     }
 
     if (sort?.field) {

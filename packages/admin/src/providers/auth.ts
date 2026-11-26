@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import { type Container, getError, inject, isApplicationError } from '@venizia/ignis-inversion';
 import { removeDoubleSlashes } from 'ra-core';
 
@@ -52,9 +53,9 @@ const readStatus = (error: unknown): unknown => {
     return undefined;
   }
 
-  const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
+  const status = 'status' in error ? error.status : undefined;
 
-  return status ?? statusCode;
+  return status ?? ('statusCode' in error ? error.statusCode : undefined);
 };
 
 /**
@@ -193,16 +194,12 @@ export class DefaultAuthProvider<
    * would pass `login` and fail every check after it.
    */
   protected readSignInSession(opts: { data: unknown }): ISignInSession {
-    const { userId, token, roles } = (opts.data ?? {}) as {
-      userId?: unknown;
-      token?: unknown;
-      roles?: unknown;
-    };
+    const body: Record<string, unknown> = RecordUtility.isRecord(opts.data) ? opts.data : {};
+    const { userId, token, roles } = body;
+    const sent = RecordUtility.isRecord(token) ? token : undefined;
 
-    const record =
-      typeof token === 'string'
-        ? { value: token, type: App.TOKEN_TYPE }
-        : (token as { value?: unknown; type?: unknown } | undefined);
+    const record: Record<string, unknown> | undefined =
+      typeof token === 'string' ? { value: token, type: App.TOKEN_TYPE } : sent;
 
     if (typeof record?.value !== 'string' || record.value.length === 0) {
       throw getError({
@@ -250,9 +247,7 @@ export class DefaultAuthProvider<
       );
       const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
 
-      return typeof claims === 'object' && claims !== null
-        ? (claims as Record<string, unknown>)
-        : undefined;
+      return RecordUtility.isRecord(claims) ? claims : undefined;
     } catch (error) {
       // The name only: the message of a JSON parse error quotes the payload it could not parse.
       this.logger.debug(
@@ -275,9 +270,10 @@ export class DefaultAuthProvider<
 
     const names: Array<string> = [];
 
-    for (const role of opts.roles as Array<unknown>) {
-      const named =
-        typeof role === 'object' && role !== null ? (role as Record<string, unknown>) : {};
+    const roles: unknown[] = opts.roles;
+
+    for (const role of roles) {
+      const named: Record<string, unknown> = RecordUtility.isRecord(role) ? role : {};
       const name =
         typeof role === 'string'
           ? role

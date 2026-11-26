@@ -319,8 +319,9 @@ export abstract class AbstractArdorApplication extends Container {
     const { indexes, discovered } = opts;
 
     for (const entry of indexes) {
-      const group = entry as { isArtifactGroup?: boolean; content?: IArdorArtifactIndex };
-      const index = group.isArtifactGroup === true ? group.content : entry;
+      const index: IArdorArtifactIndex | undefined = ArtifactGroup.isGroup(entry)
+        ? entry.content
+        : entry;
 
       if (!index) {
         continue;
