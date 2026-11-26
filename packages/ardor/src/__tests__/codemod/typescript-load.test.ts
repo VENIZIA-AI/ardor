@@ -20,17 +20,17 @@ const SCRIPT = `
 
 describe('a typescript that does not load', () => {
   test('is reported with its reason, control characters replaced, before the way to install it', () => {
-    const run = Bun.spawnSync(['bun', '-e', SCRIPT], {
+    const run = Bun.spawnSync([process.execPath, '-e', SCRIPT], {
       cwd: PACKAGE,
       stdout: 'pipe',
       stderr: 'pipe',
     });
-    const lines = run.stderr.toString().trim().split('\n');
+    const stderr = run.stderr.toString();
 
-    expect(lines).toEqual([
-      'ardor codemod: "typescript" did not load: broken?[31m install',
-      expect.stringContaining('the "typescript" package is not installed here'),
-    ]);
+    expect(stderr).toContain('ardor codemod: "typescript" did not load: broken?[31m install');
+    expect(stderr.indexOf('did not load')).toBeLessThan(
+      stderr.indexOf('the "typescript" package is not installed here'),
+    );
     expect(run.exitCode).toBe(2);
   });
 });

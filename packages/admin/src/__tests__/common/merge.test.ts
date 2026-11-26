@@ -1,75 +1,80 @@
 import { describe, expect, test } from 'bun:test';
+import type { StringMap } from 'ra-core';
 
-import { deepMerge } from '@/common/merge';
+import { mergeMessages } from '@/common/merge';
 
-describe('deepMerge', () => {
-  test('merges plain objects recursively, and a later source wins', () => {
-    const merged = deepMerge({
-      sources: [
-        { ra: { action: { add: 'Add', save: 'Save' } }, title: 'A' },
-        { ra: { action: { add: 'Create' }, page: { list: 'List' } } },
-      ],
-    });
+const merge = (...sources: object[]) => {
+  const target: StringMap = {};
+  const skipped = mergeMessages({ target, sources });
 
-    expect(merged).toEqual({
+  return { target, skipped };
+};
+
+describe('mergeMessages', () => {
+  test('merges groups recursively, and a later source wins', () => {
+    const { target, skipped } = merge(
+      { ra: { action: { add: 'Add', save: 'Save' } }, title: 'A' },
+      { ra: { action: { add: 'Create' }, page: { list: 'List' } } },
+    );
+
+    expect(target).toEqual({
       ra: { action: { add: 'Create', save: 'Save' }, page: { list: 'List' } },
       title: 'A',
     });
+    expect(skipped).toEqual([]);
   });
 
-  test('returns a new object and leaves every source as it was', () => {
+  test('writes into the target and leaves every source as it was', () => {
     const first = { ra: { action: { add: 'Add' } } };
     const second = { ra: { action: { save: 'Save' } } };
 
-    const merged = deepMerge({ sources: [first, second] });
+    const { target } = merge(first, second);
 
-    expect(merged).not.toBe(first);
     expect(first).toEqual({ ra: { action: { add: 'Add' } } });
     expect(second).toEqual({ ra: { action: { save: 'Save' } } });
-    expect(merged.ra).not.toBe(first.ra);
+    expect(target.ra).not.toBe(first.ra);
   });
 
-  test('replaces an array or a string by the later value, and an object by a string', () => {
-    expect(
-      deepMerge({
-        sources: [
-          { a: [1, 2], b: 'x', c: { d: 1 } },
-          { a: [3], b: 'y', c: 'z' },
-        ],
-      }),
-    ).toEqual({
-      a: [3],
-      b: 'y',
-      c: 'z',
-    });
+  test('leaves out what does not fit, naming each dotted key', () => {
+    const { target, skipped } = merge(
+      { a: 'x', b: { c: 'y' } },
+      { a: { d: 'z' }, b: 'gone' },
+      { b: { c: ['y'], e: 1, f: null } },
+    );
+
+    expect(target).toEqual({ a: 'x', b: { c: 'y' } });
+    expect(skipped).toEqual(['a', 'b', 'b.c', 'b.e', 'b.f']);
   });
 
   test('an undefined value does not overwrite a value that is there', () => {
-    expect(
-      deepMerge({
-        sources: [
-          { a: 'x', b: { c: 'y' } },
-          { a: undefined, b: { c: undefined } },
-        ],
-      }),
-    ).toEqual({
-      a: 'x',
-      b: { c: 'y' },
-    });
+    const { target, skipped } = merge(
+      { a: 'x', b: { c: 'y' } },
+      { a: undefined, b: { c: undefined } },
+    );
+
+    expect(target).toEqual({ a: 'x', b: { c: 'y' } });
+    expect(skipped).toEqual([]);
   });
 
   test('does not carry a __proto__ key into the result', () => {
     const polluted: object = JSON.parse('{"__proto__": {"injected": "yes"}, "ok": "fine"}');
 
-    const merged = deepMerge({ sources: [polluted] });
+    const { target } = merge(polluted);
 
-    expect(Object.getPrototypeOf(merged)).toBe(Object.prototype);
-    expect(Reflect.get(merged, 'injected')).toBeUndefined();
-    expect(merged.ok).toBe('fine');
+    expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
+    expect(Reflect.get(target, 'injected')).toBeUndefined();
+    expect(target.ok).toBe('fine');
     expect(Reflect.get({}, 'injected')).toBeUndefined();
   });
 
-  test('answers an empty object for no sources', () => {
-    expect(deepMerge({ sources: [] })).toEqual({});
+  test('takes a key a prototype also names as a new key', () => {
+    const { target, skipped } = merge({ constructor: 'Builder' });
+
+    expect(Object.hasOwn(target, 'constructor')).toBe(true);
+    expect(skipped).toEqual([]);
+  });
+
+  test('leaves the target as it is for no sources', () => {
+    expect(merge().target).toEqual({});
   });
 });

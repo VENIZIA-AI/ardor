@@ -13,7 +13,7 @@ import {
 } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { mergeShaped } from '@/common/merge';
+import { mergeMessages } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { LocaleSourcesHelper } from '@/helpers/locale-sources';
@@ -117,22 +117,27 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     const { locale, messages } = opts;
     const fallback = opts.fallback ?? { locale: this.fallbackLocale, messages: {} };
 
-    const { merged, skipped } = mergeShaped<TranslationMessages>({
-      base: englishMessages,
-      sources: [
-        fallback.messages,
-        messages,
-        this.localeSources.readNow({ locale: fallback.locale }) ?? {},
-        this.localeSources.readNow({ locale }) ?? {},
-      ],
-    });
+    const merged: TranslationMessages = structuredClone(englishMessages);
+    const layers = [
+      { name: `the features (${fallback.locale})`, source: fallback.messages },
+      { name: `the features (${locale})`, source: messages },
+      {
+        name: `i18nSources (${fallback.locale})`,
+        source: this.localeSources.readNow({ locale: fallback.locale }) ?? {},
+      },
+      { name: `i18nSources (${locale})`, source: this.localeSources.readNow({ locale }) ?? {} },
+    ];
 
-    if (skipped.length > 0) {
-      this.logger.warn(
-        '[composeMessages] Messages of the wrong shape are left out for locale %s | keys: %s',
-        locale,
-        skipped.join(', '),
-      );
+    for (const { name, source } of layers) {
+      const skipped = mergeMessages({ target: merged, sources: [source] });
+
+      if (skipped.length > 0) {
+        this.logger.warn(
+          '[composeMessages] Messages of the wrong shape are left out of %s | keys: %s',
+          name,
+          skipped.join(', '),
+        );
+      }
     }
 
     return merged;

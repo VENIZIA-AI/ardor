@@ -1,7 +1,8 @@
 import { BaseHelper, RecordUtility } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
+import type { StringMap } from 'ra-core';
 
-import { deepMerge } from '@/common/merge';
+import { mergeMessages } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { unwrapMessages } from './locale-sources';
 
@@ -51,7 +52,7 @@ export class FeatureMessagesHelper extends BaseHelper {
       return loaded;
     }
 
-    return FeatureMessagesHelper.combine({
+    return this.combine({
       locale,
       bundles: this.opts.features.map((feature) => {
         const messages = feature.messages?.[locale];
@@ -92,7 +93,7 @@ export class FeatureMessagesHelper extends BaseHelper {
       }),
     );
 
-    const combined = FeatureMessagesHelper.combine({ locale, bundles });
+    const combined = this.combine({ locale, bundles });
     this.loaded.set(locale, combined);
 
     return combined;
@@ -117,7 +118,7 @@ export class FeatureMessagesHelper extends BaseHelper {
     return task;
   }
 
-  private static combine(opts: { locale: string; bundles: Array<IFeatureBundle> }): object {
+  private combine(opts: { locale: string; bundles: Array<IFeatureBundle> }): object {
     const { locale, bundles } = opts;
     const owners = new Map<string, string>();
 
@@ -135,7 +136,22 @@ export class FeatureMessagesHelper extends BaseHelper {
       }
     }
 
-    return deepMerge({ sources: bundles.map(({ bundle }) => bundle ?? {}) });
+    const merged: StringMap = {};
+
+    for (const { feature, bundle } of bundles) {
+      const skipped = mergeMessages({ target: merged, sources: [bundle ?? {}] });
+
+      if (skipped.length > 0) {
+        this.logger.warn(
+          '[combine] Messages of the wrong shape are left out of the feature %s (%s) | keys: %s',
+          feature,
+          locale,
+          skipped.join(', '),
+        );
+      }
+    }
+
+    return merged;
   }
 
   private static leafKeys(opts: { value: unknown; prefix?: string }): Array<string> {
