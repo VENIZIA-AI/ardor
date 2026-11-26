@@ -11,12 +11,12 @@ import { DefaultRestDataProvider } from '@/providers/rest-data';
  * default providers, each a singleton, before anything of the application, so the application binds
  * only their options: `REST_DATA_PROVIDER_OPTIONS`, plus `AUTH_PROVIDER_OPTIONS` (`{ use: true }`)
  * for sign-in and `I18N_PROVIDER_OPTIONS` for more than English. A `@provide` method, `bindingList()`
- * or `bindContext()` under the same key replaces a default.
+ * or `bindContext()` under the same key replaces a default. The default data provider reads a list's
+ * total from its `Content-Range` header.
  *
  * @example
  * ```ts
- * import { BindingScopes } from '@venizia/ignis-inversion';
- * import { BaseArdorApplication, CoreBindings, CountRestDataProvider, type IApplicationInfo } from '@venizia/ardor';
+ * import { BaseArdorApplication, CoreBindings, type IApplicationInfo } from '@venizia/ardor';
  *
  * export class Application extends BaseArdorApplication {
  *   getAppInfo(): IApplicationInfo {
@@ -26,9 +26,6 @@ import { DefaultRestDataProvider } from '@/providers/rest-data';
  *   bindContext(): void {
  *     this.bind({ key: CoreBindings.REST_DATA_PROVIDER_OPTIONS }).toValue({ url: '/api' });
  *     this.bind({ key: CoreBindings.AUTH_PROVIDER_OPTIONS }).toValue({ use: true });
- *     this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
- *       .toProvider(CountRestDataProvider)
- *       .setScope(BindingScopes.SINGLETON);
  *   }
  * }
  * ```

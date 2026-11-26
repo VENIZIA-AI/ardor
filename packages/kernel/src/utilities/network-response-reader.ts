@@ -79,8 +79,8 @@ export class NetworkResponseReader {
   /**
    * A response as `INetworkResponse` whose `data` the schema checked and typed. The schema is given
    * the data as it was read: the rows of a list, the `Blob` of a file. What it refuses throws a
-   * `FetchSchemaError` (502), and so does a 204, which has no body to check (code `invalid_json`, as
-   * in the IGNIS fetchers).
+   * `FetchSchemaError` (502), and so does a 204 or an empty body that is no file: there is nothing
+   * to check (code `invalid_json`, as in the IGNIS fetchers).
    */
   static read<TResult>(
     opts: IReadResponseOptions & { schema: IResponseSchema<TResult> },
@@ -98,7 +98,9 @@ export class NetworkResponseReader {
 
     const { status, url } = response;
 
-    if (status === HTTP.ResultCodes.RS_2.NoContent) {
+    const isEmpty = await NetworkResponseReader.isEmptyAnswer({ response });
+
+    if (isEmpty) {
       throw NetworkResponseReader.refusal({ status, url, issues: [NO_BODY_ISSUE] });
     }
 
@@ -128,6 +130,40 @@ export class NetworkResponseReader {
     }
   }
 
+  /** A 204, or a response with an empty body that its headers do not name a file. */
+  private static async isEmptyAnswer(opts: { response: Response }): Promise<boolean> {
+    const { response } = opts;
+
+    if (response.status === HTTP.ResultCodes.RS_2.NoContent) {
+      return true;
+    }
+
+    const { contentType, isAttachment } = NetworkResponseReader.describeBody({ response });
+
+    if (
+      isAttachment ||
+      (contentType !== '' && !NetworkResponseReader.TEXTUAL_RE.test(contentType))
+    ) {
+      return false;
+    }
+
+    // A clone: the body is read once more by what follows.
+    const text = await response.clone().text();
+
+    return text === '';
+  }
+
+  /** What the headers say of the body: its content type, lower-cased, and whether it is an attachment. */
+  private static describeBody(opts: { response: Response }) {
+    const { headers } = opts.response;
+    const contentType = (headers?.get(HTTP.Headers.CONTENT_TYPE) ?? '').toLowerCase();
+    const contentDisposition = headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
+    const { type } = HttpResponseReader.parseContentDisposition({ header: contentDisposition });
+    const isAttachment = type?.toLowerCase() === ContentDispositionTypes.ATTACHMENT;
+
+    return { contentType, contentDisposition, isAttachment };
+  }
+
   private static refusal(opts: {
     status: number;
     url: string;
@@ -146,13 +182,9 @@ export class NetworkResponseReader {
       return { data: {} };
     }
 
-    const contentType = (response.headers?.get(HTTP.Headers.CONTENT_TYPE) ?? '').toLowerCase();
-    const contentDisposition = response.headers?.get(HTTP.Headers.CONTENT_DISPOSITION) ?? '';
-
-    const { type: dispositionType } = HttpResponseReader.parseContentDisposition({
-      header: contentDisposition,
+    const { contentType, contentDisposition, isAttachment } = NetworkResponseReader.describeBody({
+      response,
     });
-    const isAttachment = dispositionType?.toLowerCase() === ContentDispositionTypes.ATTACHMENT;
     const isTextual = contentType !== '' && NetworkResponseReader.TEXTUAL_RE.test(contentType);
 
     if (isAttachment || !isTextual) {

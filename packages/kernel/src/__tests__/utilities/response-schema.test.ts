@@ -3,13 +3,14 @@ import { describe, expect, test } from 'bun:test';
 import { FetchSchemaError } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
-import { type IResponseSchema, RequestCountData, RequestTypes } from '@/common';
+import { type IResponseSchema, RequestCountData, RequestTypes, type TRequestType } from '@/common';
 import { NetworkResponseReader } from '@/utilities';
 
 const SECRET = 'a-token-from-the-body';
 
-const json = (body: unknown, status = 200) => {
-  return new Response(JSON.stringify(body), {
+/** A JSON answer; `text` replaces the encoded body. */
+const json = (body: unknown, status = 200, text = JSON.stringify(body)) => {
+  return new Response(text, {
     status,
     headers: { 'content-type': 'application/json' },
   });
@@ -141,6 +142,55 @@ describe('NetworkResponseReader.read with a schema', () => {
       issues: [{ path: [], code: 'invalid_json' }],
     });
     expect(calls).toBe(0);
+  });
+
+  test('refuses an empty body as no JSON, a list included, without calling the schema', async () => {
+    let calls = 0;
+    const accepting: IResponseSchema = {
+      parse: (data) => {
+        calls += 1;
+
+        return data;
+      },
+    };
+    const cases: Array<{ response: Response; type: TRequestType }> = [
+      { response: new Response(''), type: RequestTypes.GET_LIST },
+      { response: json(null, 200, ''), type: RequestTypes.GET_ONE },
+      { response: new Response(null, { status: 200 }), type: RequestTypes.GET_ONE },
+    ];
+
+    for (const { response, type } of cases) {
+      const refusal = await refusalOf(
+        NetworkResponseReader.read({ response, type, schema: accepting }),
+      );
+
+      expect(refusal).toMatchObject({
+        status: 200,
+        issues: [{ path: [], code: 'invalid_json' }],
+      });
+    }
+
+    expect(calls).toBe(0);
+  });
+
+  test('gives the schema the null of a JSON body that says null', async () => {
+    const result = await NetworkResponseReader.read({
+      response: json(null),
+      type: RequestTypes.GET_ONE,
+      schema: { parse: (data) => data },
+    });
+
+    expect(result.data).toBeNull();
+  });
+
+  test('gives the schema the Blob of an empty file', async () => {
+    const result = await NetworkResponseReader.read({
+      response: new Response('', { headers: { 'content-disposition': 'attachment' } }),
+      type: RequestTypes.GET_ONE,
+      schema: { parse: (data) => data instanceof Blob },
+    });
+
+    expect(result.data).toBe(true);
   });
 
   test('answers an empty object for a 204 with no schema', async () => {

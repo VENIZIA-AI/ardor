@@ -1,13 +1,15 @@
 ---
 title: CountRestDataProvider
-description: A data provider that fetches the list and the total in two requests - GET resource and GET resource/count - for APIs that do not return a total with the list response.
+description: For a backend that sends no Content-Range - a data provider that reads the list and the total in two requests, GET resource and GET resource/count.
 ---
 
 # CountRestDataProvider
 
 `CountRestDataProvider` is a drop-in replacement for `DefaultRestDataProvider`. It changes one thing: how `getList` obtains `total`. Instead of reading the total from the list response, it issues a second request to `resource/count` and takes `total` from that response's `count` field.
 
-Use it when the API does not send a total with the list payload (for example, no `content-range` header) but does expose a `count` endpoint that accepts a `where` filter.
+**Most applications do not need it.** The default, [`DefaultRestDataProvider`](../references/data-provider), reads the total from the `Content-Range` header of the list response, which the list route of an IGNIS CRUD controller sends: one request per list, and nothing to bind. Use `CountRestDataProvider` only when the backend sends no `Content-Range` and does expose a `count` endpoint that accepts a `where` filter.
+
+If your backend sends the header and the total still equals the page size, the browser cannot read it across origins: expose it in the server's CORS settings. In IGNIS, spread `HTTP.CorsHeaders.EXPOSE` into `configs.middlewares.cors.exposeHeaders`.
 
 ## Prerequisites
 
@@ -96,12 +98,12 @@ The result is `Promise.all` over the two responses, mapped to the react-admin `g
 // excerpt of the value resolved by requestList
 const result = {
   data: listResponse.data,
-  total: typeof count === 'number' ? count : 0, // `count` is `data.count` of the count response
+  total: this.toTotal({ counted: countResponse.data.count, resource }),
 };
 // ...
 ```
 
-`total` is `data.count` of the count response when it is a number. A `count` that is missing or no number (a numeric string included), or an answer with no body (204), gives `0`.
+`total` is `data.count` of the count response: a number, or a numeric string such as `"5"`, as a database count often is. A `count` that is missing or `null`, or an answer with no body (204), gives `0`. Any other value gives `0` and a warning that names the route and the value.
 
 ## Binding it
 
@@ -155,7 +157,7 @@ export class AppDataProvider extends CountRestDataProvider<'products' | 'categor
 
 ## Common pitfalls
 
-- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count: number }`. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` silently becomes `0`, and react-admin shows an empty pagination.
+- The API must expose `GET <resource>/count` for every resource that has a list view, and it must answer with `{ count: number }`. A missing endpoint answers 404, which rejects, and so does the whole list (`Promise.all`). A different field name does not reject: `total` becomes `0` with no warning, and react-admin shows an empty pagination.
 - The count request only carries `where`. Filters that rely on `include` or `fields` to restrict rows are not applied to the count.
 - Keys from `meta` and from `filter.params` are copied into `queryKey`, and `queryKey` is spread into both requests. Anything you put there also hits the count endpoint.
 - The count call uses `RequestTypes.SEND`, not `RequestTypes.GET_LIST`. Any logic that branches on request type sees `SEND` for the second call.

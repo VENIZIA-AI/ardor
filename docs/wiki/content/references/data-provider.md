@@ -28,16 +28,16 @@ export class RestDataConfiguration {
 }
 ```
 
-To replace the provider with a subclass, bind the subclass class under the key in `bindContext()`: `.toProvider(MyRestDataProvider).setScope(BindingScopes.SINGLETON)` (see [CountRestDataProvider](../extensions/count-provider)).
+To replace the provider with a subclass, bind the subclass class under the key in `bindContext()`: `.toProvider(MyRestDataProvider).setScope(BindingScopes.SINGLETON)` (the same line binds [CountRestDataProvider](../extensions/count-provider), for a backend that sends no `Content-Range`).
 
 ## What it does
 
-`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) builds the default REST `IDataProvider`. For backends that query a separate count endpoint instead of `Content-Range`, see [CountRestDataProvider](../extensions/count-provider).
+`DefaultRestDataProvider` (`packages/admin/src/providers/rest-data.ts`) builds the default REST `IDataProvider`. It reads a list's total from the `Content-Range` header, which IGNIS CRUD list routes send. Only a backend that sends no such header needs [CountRestDataProvider](../extensions/count-provider).
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
 | `DefaultRestDataProvider<TResource>` | class | Inversion-of-control provider that instantiates and configures the default REST `IDataProvider`. |
-| `CountRestDataProvider<TResource>` | class | Subclass of `DefaultRestDataProvider` that queries `/{resource}/count` for list totals. |
+| `CountRestDataProvider<TResource>` | class | For a backend with no `Content-Range`: a subclass that queries `/{resource}/count` for list totals. |
 | `IRestDataProviderOptions` | interface | Configuration options bound to `CoreBindings.REST_DATA_PROVIDER_OPTIONS`. |
 | `INoAuthOptions` | interface | Base options for paths requested without an `Authorization` header. |
 | `IDataProvider<TResource>` | interface | The twelve-method provider interface consumed by react-admin and ARDOR services. |
@@ -183,7 +183,7 @@ Each react-admin method maps to one HTTP call:
 - **Pagination**: By default, `limit` is set to `perPage` and `skip` to `(page - 1) * perPage`; the page defaults to 1, and a page below 1 reads as page 1. Without a `perPage` (or with 0) neither is sent. If `params.filter.noLimit` is truthy, `limit`, `skip`, `offset`, and `noLimit` are set to `undefined`, disabling pagination.
 - **Top-level query parameters**: Parameters in `params.filter.params` and `params.meta` (excluding `meta.extra`) are moved out of the JSON filter payload and appended directly as top-level query parameters.
 - **Extra parameters**: In `buildListFilter`, every other defined key of `params` (everything except `pagination`, `sort`, `filter`, `meta` and `signal`) is copied into the filter; for `getManyReference`, `target` and `id` are taken out first and become `where[target] = id`.
-- **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`). When a backend provides a dedicated count route instead of `Content-Range`, use `CountRestDataProvider` (see [CountRestDataProvider](../extensions/count-provider)).
+- **Totals**: The provider parses collection totals from the HTTP `Content-Range` header formatted as `<unit> <range-start>-<range-end>/<total>` (for example, `records 0-19/120`). The list route of an IGNIS CRUD controller sends it, so the default needs nothing more. If the header is absent or non-numeric (such as `records 0-19/*`), `total` defaults to the page row count (`data.length`); from another origin, the browser reads the header only when the server lists it in `Access-Control-Expose-Headers`. Only a backend that cannot send `Content-Range` and has a count route needs [CountRestDataProvider](../extensions/count-provider).
 
 ## Abort a request
 
@@ -213,7 +213,7 @@ An aborted request rejects with the signal's reason (an `AbortError`). It is not
 ## Extended provider methods
 
 `IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
-1. `send({ resource, params, schema? })`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh. The answer's `data` is `unknown`; with a `schema` (an object whose `parse` checks the value, a zod schema included) it is what the schema checked and typed, and what the schema refuses throws a `FetchSchemaError` (502) that names paths and rules, never the data. A schema sees the data as read: the rows of a list, the `Blob` of a file. A 204 has no body to check, so a request that carries a schema rejects it (issue `invalid_json`).
+1. `send({ resource, params, schema? })`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh. The answer's `data` is `unknown`; with a `schema` (an object whose `parse` checks the value, a zod schema included) it is what the schema checked and typed, and what the schema refuses throws a `FetchSchemaError` (502) that names paths and rules, never the data. A schema sees the data as read: the rows of a list, the `Blob` of a file. A 204 or an empty body has nothing to check, so a request that carries a schema rejects it (issue `invalid_json`); the schema is not called.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 

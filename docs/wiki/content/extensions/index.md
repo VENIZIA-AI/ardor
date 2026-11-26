@@ -14,7 +14,7 @@ ARDOR provides extension packages and integration patterns to adapt applications
 </a>
 <a href="./count-provider" class="guide-card">
   <h3>CountRestDataProvider</h3>
-  <p>Drop-in REST data provider subclass that queries a separate count endpoint for total records</p>
+  <p>For a backend that sends no Content-Range: reads list totals from a separate count endpoint</p>
 </a>
 <a href="./custom-transport" class="guide-card">
   <h3>Custom Transport</h3>
@@ -33,7 +33,7 @@ ARDOR provides extension packages and integration patterns to adapt applications
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">2</span><h4>Alternative Pagination</h4></div>
   <p><a href="./count-provider">CountRestDataProvider</a></p>
-  <span class="stage-desc">Handle APIs that expose explicit count endpoints instead of Content-Range headers</span>
+  <span class="stage-desc">Only for APIs with a count endpoint and no Content-Range header; the default provider reads the header</span>
 </div>
 <div class="roadmap-stage">
   <div class="stage-header"><span class="stage-num">3</span><h4>Non-HTTP Transports</h4></div>

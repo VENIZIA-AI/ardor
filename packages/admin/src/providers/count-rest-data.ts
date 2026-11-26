@@ -7,8 +7,12 @@ import type { IListFilter } from './list-filter';
 import { DefaultRestDataProvider } from './rest-data';
 
 /**
- * A `DefaultRestDataProvider` whose list reads take their `total` from the count route
- * (`GET /{resource}/count` with the same `where`) instead of the `Content-Range` header.
+ * For a backend whose list routes send no `Content-Range`: the list reads take their `total` from
+ * a count route (`GET /{resource}/count` with the same `where`), a second request per list.
+ *
+ * Keep the default, `DefaultRestDataProvider`, otherwise: it reads the total from the
+ * `Content-Range` that the list routes of an IGNIS CRUD controller send. A browser on another origin
+ * sees that header only when the server exposes it (CORS `Access-Control-Expose-Headers`).
  */
 export class CountRestDataProvider<
   TResource extends string = string,
@@ -45,9 +49,34 @@ export class CountRestDataProvider<
 
       return {
         data: listResult.data,
-        total: typeof counted === 'number' ? counted : 0,
+        total: this.toTotal({ counted, resource }),
         ...('meta' in listResult && listResult.meta ? { meta: listResult.meta } : {}),
       };
     });
+  }
+
+  /** The `count` of a count answer as a total. */
+  private toTotal(opts: { counted: unknown; resource: TResource }): number {
+    const { counted, resource } = opts;
+
+    if (counted === undefined || counted === null) {
+      return 0;
+    }
+
+    // `Number` reads a blank string as 0, so a blank one is no number here.
+    const isNumeric = typeof counted === 'string' && counted.trim() !== '';
+    const total = typeof counted === 'number' || isNumeric ? Number(counted) : Number.NaN;
+
+    if (Number.isFinite(total)) {
+      return total;
+    }
+
+    this.logger.warn(
+      '[requestList] The count is no number, total is 0 | route: %s | count: %o',
+      `/${resource}/count`,
+      counted,
+    );
+
+    return 0;
   }
 }

@@ -114,9 +114,12 @@ import { BindingScopes } from '@venizia/ignis-inversion';
 import {
   BaseArdorApplication,
   CoreBindings,
-  CountRestDataProvider,
+  DefaultRestDataProvider,
   type IApplicationInfo,
 } from '@venizia/ardor';
+
+// A provider of the app's own: its overrides of the default one go here.
+class ShopDataProvider extends DefaultRestDataProvider {}
 
 export class App extends BaseArdorApplication {
   getAppInfo(): IApplicationInfo {
@@ -125,7 +128,7 @@ export class App extends BaseArdorApplication {
 
   bindContext(): void {
     this.bind({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-      .toProvider(CountRestDataProvider)
+      .toProvider(ShopDataProvider)
       .setScope(BindingScopes.SINGLETON);
   }
 }
