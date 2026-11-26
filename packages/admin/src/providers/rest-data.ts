@@ -45,6 +45,8 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
+const recordLogger = LoggerFactory.getLogger(['DefaultRestDataProvider']);
+
 /**
  * The path of one record: the id is a single path segment, whatever characters it holds. An empty
  * id, `.` and `..` (dot segments even when written `%2E`) and a lone surrogate (which cannot be
@@ -57,7 +59,7 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
     segment = encodeURIComponent(`${opts.id}`);
   } catch (error) {
     // A lone surrogate cannot be encoded: the empty segment below refuses it. The id is not logged.
-    LoggerFactory.getLogger(['DefaultRestDataProvider']).debug(
+    recordLogger.debug(
       '[recordPaths] The id cannot be encoded | error: %s',
       error instanceof Error ? error.name : typeof error,
     );

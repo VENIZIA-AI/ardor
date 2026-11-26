@@ -13,7 +13,7 @@ import {
 } from '@venizia/ardor-kernel';
 import type { II18nProviderOptions } from '@/common';
 import { englishMessages } from '@/common/locales';
-import { deepMerge } from '@/common/merge';
+import { mergeMessages } from '@/common/merge';
 import type { TFeature } from '@/features/feature';
 import { FeatureMessagesHelper } from '@/helpers/feature-messages';
 import { LocaleSourcesHelper } from '@/helpers/locale-sources';
@@ -106,6 +106,8 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
    * The messages of a locale, later over earlier: ARDOR's English, the features' and the
    * application's messages of the fallback locale, then the features' (`messages`) and the
    * application's own of the locale. A lazy source that has not loaded or failed to load adds nothing.
+   * A value that does not fit the messages (an array or a number, a message over a group or a group
+   * over a message) is left out and logged by its key.
    */
   protected composeMessages(opts: {
     locale: string;
@@ -115,17 +117,30 @@ export class DefaultI18nProvider extends BaseProvider<I18nProvider> {
     const { locale, messages } = opts;
     const fallback = opts.fallback ?? { locale: this.fallbackLocale, messages: {} };
 
-    // A merge of (partial) message sets is a set of messages, which a merge that takes any object
-    // cannot say in its type: the assertion is here, where the sources are known, not inside it.
-    return deepMerge({
-      sources: [
-        englishMessages,
-        fallback.messages,
-        messages,
-        this.localeSources.readNow({ locale: fallback.locale }) ?? {},
-        this.localeSources.readNow({ locale }) ?? {},
-      ],
-    }) as TranslationMessages;
+    const merged: TranslationMessages = structuredClone(englishMessages);
+    const layers = [
+      { name: `the features (${fallback.locale})`, source: fallback.messages },
+      { name: `the features (${locale})`, source: messages },
+      {
+        name: `i18nSources (${fallback.locale})`,
+        source: this.localeSources.readNow({ locale: fallback.locale }) ?? {},
+      },
+      { name: `i18nSources (${locale})`, source: this.localeSources.readNow({ locale }) ?? {} },
+    ];
+
+    for (const { name, source } of layers) {
+      const skipped = mergeMessages({ target: merged, sources: [source] });
+
+      if (skipped.length > 0) {
+        this.logger.warn(
+          '[composeMessages] Messages of the wrong shape are left out of %s | keys: %s',
+          name,
+          skipped.join(', '),
+        );
+      }
+    }
+
+    return merged;
   }
 
   protected get fallbackLocale(): string {
