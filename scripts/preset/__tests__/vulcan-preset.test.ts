@@ -307,6 +307,7 @@ describe('the real presets declare the six IGNIS packages they build on (#436)',
     '@venizia/ignis-inversion',
     '@venizia/ignis-kernel',
   ];
+
   const declared = (kind: 'app' | 'lib'): Record<string, string> => {
     const preset = JSON.parse(
       readFileSync(join(import.meta.dir, '..', '..', '..', 'presets', kind, 'preset.json'), 'utf8'),

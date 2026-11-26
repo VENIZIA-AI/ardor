@@ -745,6 +745,28 @@ describe('DefaultI18nProvider failed feature messages', () => {
     expect(String(error.mock.calls[0]?.[0])).toContain('failed to load');
   });
 
+  test('a value of the wrong shape in a feature bundle is left out, and the warning names the feature', () => {
+    const warn = spyOn(
+      LoggerFactory.getLogger(['FeatureMessagesHelper']),
+      'warn',
+    ).mockImplementation(() => undefined);
+    spies.push(warn);
+    const reports = Features.define({
+      name: 'reports',
+      messages: { en: { reports: { title: 'Reports', count: 3 } } },
+    });
+
+    const { i18n } = build({ features: [reports] });
+
+    expect(i18n.translate('reports.title')).toBe('Reports');
+    expect(warn).toHaveBeenCalledWith(
+      '[combine] Messages of the wrong shape are left out of the feature %s (%s) | keys: %s',
+      'reports',
+      'en',
+      'reports.count',
+    );
+  });
+
   test('a locale the provider does not offer never makes changeLocale throw or reject', async () => {
     const first = Features.define({ name: 'first', messages: { fr: { shared: 'A' } } });
     const second = Features.define({ name: 'second', messages: { fr: { shared: 'B' } } });

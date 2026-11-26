@@ -50,6 +50,7 @@ export class GatesRefreshed {
     const section = opts.workflow.split(/\njobs:\n/)[1] ?? '';
     const starts = [...section.matchAll(/^  ([\w-]+):\s*$/gm)];
     const index = starts.findIndex((start) => start[1] === 'test');
+
     if (index === -1) {
       throw new Error(`[gates-refreshed] no 'test' job in ${GatesRefreshed.WORKFLOW}`);
     }
@@ -61,6 +62,7 @@ export class GatesRefreshed {
   static stepOf(opts: { workflow: string; name: string }): string {
     const job = GatesRefreshed.testJobOf({ workflow: opts.workflow });
     const step = job.split(/\n {6}- name: /).find((chunk) => chunk.split('\n')[0] === opts.name);
+
     if (step === undefined) {
       throw new Error(
         `[gates-refreshed] no step '${opts.name}' in the Test job of ${GatesRefreshed.WORKFLOW}`,
@@ -84,6 +86,7 @@ export class GatesRefreshed {
       .filter((line) => !line.startsWith('#'));
 
     const shape = GatesRefreshed.REFRESH_LINES;
+
     if (lines.length !== shape.length || lines.some((line, i) => !shape[i]?.test(line))) {
       throw new Error(
         `[gates-refreshed] the run block of '${GatesRefreshed.REFRESH_STEP}' is not the refresh command | found ${JSON.stringify(lines)}`,
@@ -100,6 +103,7 @@ export class GatesRefreshed {
       name: GatesRefreshed.GATES_STEP,
     });
     const found = step.match(/^ {10}VULCAN_CMD: (\S.*)$/m)?.[1]?.trim();
+
     if (found === undefined || found === '') {
       throw new Error(`[gates-refreshed] step '${GatesRefreshed.GATES_STEP}' sets no VULCAN_CMD`);
     }
@@ -140,6 +144,7 @@ export class GatesRefreshed {
       ],
       { stdout: 'ignore' },
     );
+
     if (copied.exitCode !== 0) {
       throw new Error(`[gates-refreshed] copying ${ROOT} to ${opts.to} failed`);
     }
@@ -158,6 +163,7 @@ export class GatesRefreshed {
       ],
     ]) {
       const done = Bun.spawnSync(['git', ...args], { cwd: opts.to, stdout: 'ignore' });
+
       if (done.exitCode !== 0) {
         throw new Error(`[gates-refreshed] git ${args.join(' ')} failed in ${opts.to}`);
       }
@@ -187,10 +193,12 @@ export class GatesRefreshed {
         stderr: 'inherit',
       });
       const code = await proc.exited;
+
       if (code !== 0) {
         console.error(
           `[gates-refreshed] ${step.label} failed (exit ${code}); the copy stays: ${scratch}`,
         );
+
         return code;
       }
     }

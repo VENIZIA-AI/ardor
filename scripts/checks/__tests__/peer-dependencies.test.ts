@@ -23,9 +23,11 @@ type TManifest = {
 };
 
 const directories = readdirSync(PACKAGES_DIR);
+
 const manifestOf = (directory: string): TManifest => {
   return JSON.parse(readFileSync(join(PACKAGES_DIR, directory, 'package.json'), 'utf8'));
 };
+
 const manifests = directories.map((directory) => ({ directory, manifest: manifestOf(directory) }));
 
 /** The package names a source file imports from, by `from '...'`. */
@@ -39,6 +41,7 @@ const importedPackages = (opts: { directory: string }): Set<string> => {
     }
 
     const text = readFileSync(join(entry.parentPath, entry.name), 'utf8');
+
     for (const match of text.matchAll(/from '((?:@[^/']+\/)?[^/'.][^/']*)(?:\/[^']*)?'/g)) {
       found.add(match[1]);
     }
@@ -63,6 +66,7 @@ describe('peer dependencies of the ARDOR packages', () => {
 
     for (const { directory, manifest } of manifests) {
       const peers = manifest.peerDependencies ?? {};
+
       for (const imported of importedPackages({ directory })) {
         if (isIdentityPeer({ name: imported }) && !(imported in peers)) {
           missing.push(`${manifest.name} imports ${imported}`);
@@ -97,6 +101,7 @@ describe('peer dependencies of the ARDOR packages', () => {
 
     const absent: Array<string> = [];
     const unlike: Array<string> = [];
+
     for (const { manifest } of siblings) {
       for (const name of Object.keys(manifest.peerDependencies ?? {})) {
         if (!umbrella?.peerDependencies || !(name in umbrella.peerDependencies)) {
@@ -106,6 +111,7 @@ describe('peer dependencies of the ARDOR packages', () => {
 
         const siblingOptional = manifest.peerDependenciesMeta?.[name]?.optional === true;
         const umbrellaOptional = umbrella.peerDependenciesMeta?.[name]?.optional === true;
+
         // A peer one sibling needs is needed by the umbrella that re-exports it.
         if (!siblingOptional && umbrellaOptional) {
           unlike.push(`${name} is required by ${manifest.name} and optional in the umbrella`);
@@ -123,12 +129,14 @@ describe('peer dependencies of the ARDOR packages', () => {
     for (const { manifest } of manifests) {
       for (const dependency of Object.keys(manifest.dependencies ?? {})) {
         const sibling = byName.get(dependency);
+
         if (!sibling) {
           continue;
         }
 
         for (const [name, range] of Object.entries(sibling.peerDependencies ?? {})) {
           const isOptional = sibling.peerDependenciesMeta?.[name]?.optional === true;
+
           if (!isOptional && manifest.peerDependencies?.[name] !== range) {
             unforwarded.push(`${manifest.name} does not forward ${name} ${range} of ${dependency}`);
           }

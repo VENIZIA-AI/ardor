@@ -59,6 +59,7 @@ const run = async (opts: {
     new Response(child.stderr).text(),
     child.exited,
   ]);
+
   return { ok: status === 0, output: `${stderr}\n${stdout}` };
 };
 
@@ -67,6 +68,7 @@ const firstErrorLine = (opts: { output: string }): string => {
   const found = lines.find((line) =>
     /Cannot find|Could not resolve|not found|Error|error:/.test(line),
   );
+
   return (found ?? lines.find((line) => line.length > 0) ?? '').slice(0, 200);
 };
 
@@ -74,12 +76,15 @@ const newestMtime = (directory: string): number => {
   if (!existsSync(directory)) {
     return 0;
   }
+
   let newest = 0;
+
   for (const entry of readdirSync(directory, { withFileTypes: true, recursive: true })) {
     if (entry.isFile() && !entry.parentPath.includes('__tests__')) {
       newest = Math.max(newest, statSync(join(entry.parentPath, entry.name)).mtimeMs);
     }
   }
+
   return newest;
 };
 
@@ -89,6 +94,7 @@ const assertFreshDist = (opts: { directories: string[] }): void => {
     const packageDirectory = join(REPOSITORY_ROOT, 'packages', directory);
     const source = newestMtime(join(packageDirectory, 'src'));
     const built = newestMtime(join(packageDirectory, 'dist'));
+
     if (built === 0 || source > built) {
       throw new Error(
         `[clean-install] packages/${directory}/dist is missing or older than src - build it first`,
@@ -104,14 +110,17 @@ const assertFreshDist = (opts: { directories: string[] }): void => {
  */
 const assertNoAmbientResolution = (): void => {
   const leaks: string[] = [];
+
   for (const legacy of ['.node_modules', '.node_libraries']) {
     if (existsSync(join(homedir(), legacy))) {
       leaks.push(join(homedir(), legacy));
     }
   }
+
   if (process.env.NODE_PATH) {
     leaks.push(`NODE_PATH=${process.env.NODE_PATH}`);
   }
+
   if (leaks.length > 0) {
     throw new Error(
       `[clean-install] a missing peer could resolve from outside the sandbox: ${leaks.join(', ')}`,
@@ -124,30 +133,37 @@ const pack = async (opts: {
   into: string;
 }): Promise<Map<string, string>> => {
   const tarballs = new Map<string, string>();
+
   for (const directory of opts.directories) {
     const destination = join(opts.into, 'tarballs', directory);
     const packed = await run({
       command: ['bun', 'pm', 'pack', '--ignore-scripts', '--quiet', '--destination', destination],
       cwd: join(REPOSITORY_ROOT, 'packages', directory),
     });
+
     if (!packed.ok) {
       throw new Error(
         `[clean-install] bun pm pack failed in ${directory}: ${firstErrorLine(packed)}`,
       );
     }
+
     const produced = readdirSync(destination).filter((file) => file.endsWith('.tgz'));
+
     if (produced.length !== 1) {
       throw new Error(
         `[clean-install] expected one tarball for ${directory}, found ${produced.length}`,
       );
     }
+
     tarballs.set(readPackageManifest({ package: directory }).name, join(destination, produced[0]));
   }
+
   return tarballs;
 };
 
 const requiredPeers = (opts: { manifest: IPackageManifest }): Record<string, string> => {
   const optional = opts.manifest.peerDependenciesMeta ?? {};
+
   return Object.fromEntries(
     Object.entries(opts.manifest.peerDependencies ?? {}).filter(
       ([name]) => !optional[name]?.optional,
@@ -160,6 +176,7 @@ const findSplitPeers = async (opts: { name: string; sandbox: string }): Promise<
   const byName = new Map(
     listPackageDirectories().map((directory) => {
       const manifest = readPackageManifest({ package: directory });
+
       return [manifest.name, manifest] as const;
     }),
   );
@@ -178,11 +195,13 @@ const findSplitPeers = async (opts: { name: string; sandbox: string }): Promise<
     ],
     cwd: opts.sandbox,
   });
+
   if (!result.ok) {
     return [`the peer identity check failed to run: ${firstErrorLine(result)}`];
   }
 
   const printed = result.output.trim().split('\n').pop() ?? '[]';
+
   return JSON.parse(printed) as string[];
 };
 
@@ -192,8 +211,10 @@ const checkRow = async (opts: {
 }): Promise<Array<{ name: string; ok: boolean; detail: string }>> => {
   const { row, sandbox } = opts;
   const guarded = { CLEAN_INSTALL_SANDBOX: sandbox };
+
   const attempt = async (name: string, command: string[]) => {
     const result = await run({ command, cwd: sandbox, env: guarded });
+
     return { name, ok: result.ok, detail: result.ok ? '' : firstErrorLine(result) };
   };
 
@@ -210,6 +231,7 @@ const checkRow = async (opts: {
   ];
 
   const claim = PURITY_MANIFEST.find((entry) => entry.entry === row.entry);
+
   if (claim) {
     const entryFile = join(sandbox, `entry-${row.subpath.replace(/[^a-z0-9]/gi, '_')}.ts`);
     writeFileSync(
@@ -236,6 +258,7 @@ const main = async (): Promise<number> => {
   const tokens = args.filter((arg) => !arg.startsWith('--'));
 
   const result2 = await run({ command: ['node', '--version'], cwd: REPOSITORY_ROOT });
+
   if (!result2.ok) {
     throw new Error('[clean-install] `node` is not on PATH - the Node checks cannot run');
   }
@@ -245,6 +268,7 @@ const main = async (): Promise<number> => {
     tokens.length > 0
       ? INSTALL_CLAIMS.filter((claim) => tokens.includes(claim.package))
       : INSTALL_CLAIMS;
+
   if (claims.length === 0) {
     throw new Error(`[clean-install] no claim matches ${tokens.join(', ')}`);
   }
@@ -266,6 +290,7 @@ const main = async (): Promise<number> => {
     );
 
     const groups = new Map<string, IInstallRow[]>();
+
     for (const row of rows) {
       for (const linker of LINKERS) {
         const key = `${row.package}|${linker}|${row.extras.join(',')}`;
@@ -299,6 +324,7 @@ const main = async (): Promise<number> => {
         command: ['bun', 'install', `--linker=${linker}`],
         cwd: sandbox,
       });
+
       if (!installed.ok) {
         failures.push(
           `${manifest.name} (${linker}, +${extras.join(' ') || 'none'}) install: ${firstErrorLine(installed)}`,
@@ -308,6 +334,7 @@ const main = async (): Promise<number> => {
 
       checkCount += 2;
       const lock = readFileSync(join(sandbox, 'bun.lock'), 'utf8');
+
       for (const mismatch of findLockMismatches({ lock, tarballs, sandboxed: manifest.name })) {
         failures.push(`${manifest.name} [${linker}] lock: ${mismatch}`);
       }
@@ -317,7 +344,9 @@ const main = async (): Promise<number> => {
       for (const duplicate of findDuplicateCopies({ lock })) {
         failures.push(`${manifest.name} [${linker}] copies: ${duplicate}`);
       }
+
       const splitPeers = await findSplitPeers({ name: manifest.name, sandbox });
+
       for (const problem of splitPeers) {
         failures.push(`${manifest.name} [${linker}] peers: ${problem}`);
       }
@@ -332,6 +361,7 @@ const main = async (): Promise<number> => {
         console.log(
           `  ${failed.length ? '✗' : '✓'} ${row.specifier.padEnd(34)} ${linker.padEnd(8)} ${marks}`,
         );
+
         for (const result of failed) {
           failures.push(`${row.specifier} [${linker}] ${result.name}: ${result.detail}`);
         }
@@ -347,13 +377,16 @@ const main = async (): Promise<number> => {
 
   if (failures.length > 0) {
     console.error(`\n[clean-install] ${failures.length} of ${checkCount} checks failed:`);
+
     for (const failure of failures) {
       console.error(`  - ${failure}`);
     }
+
     return 1;
   }
 
   console.log(`\n[clean-install] ${checkCount} checks passed across ${rows.length} sub-paths.`);
+
   return 0;
 };
 

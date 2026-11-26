@@ -31,6 +31,7 @@ const roots: string[] = [];
 const temp = (): string => {
   const root = makeScratch({ prefix: 'release-gates-' });
   roots.push(root);
+
   return root;
 };
 
@@ -114,6 +115,7 @@ describe('parseChainReleased', () => {
 describe('missingFromRegistry', () => {
   const fetchFrom = (packuments: Record<string, string[]>) => async (opts: { name: string }) => {
     const versions = packuments[opts.name];
+
     return versions === undefined
       ? { ok: false as const, status: 404 }
       : { ok: true as const, versions };
@@ -326,6 +328,7 @@ describe('package-release.yml and release-chain.ts follow IGNIS: gates first, pu
         .map((part) => part.match(/^make --no-print-directory ([\w-]+)$/)?.[1])
         .filter((target): target is string => target !== undefined);
     };
+
     const gatesOf = (names: string[]): string[] => [
       'links-check',
       'copies-check',
@@ -2170,6 +2173,7 @@ describe('release-gates.ts stable-deps on a preset folder (found by the stable r
 
     return root;
   };
+
   const gate = (path: string) =>
     Bun.spawnSync(['bun', join(ROOT, 'scripts/release/release-gates.ts'), 'stable-deps', path], {
       cwd: ROOT,
@@ -2267,6 +2271,7 @@ describe('duplicateCopies: one @venizia package resolves to one version (#434)',
         '@venizia',
         name,
       );
+
     const link = (folder: string, name: string, version: string) => {
       write(root, `${folder}/package.json`, '{}');
       write(

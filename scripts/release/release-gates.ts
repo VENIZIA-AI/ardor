@@ -637,6 +637,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log(`    ✓ all ${targets.size} published entries exist`);
+
     return;
   }
 
@@ -654,6 +655,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ every ARDOR sibling links to the workspace');
+
     return;
   }
 
@@ -684,6 +686,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ every @venizia/* package resolves to one version');
+
     return;
   }
 
@@ -713,6 +716,7 @@ const main = async (): Promise<void> => {
     await Bun.write(second, read.stdout);
     Bun.spawnSync(['rm', '-f', join(first, tarball)]);
     console.log(`    ✓ extracted the manifest from ${tarball}`);
+
     return;
   }
 
@@ -729,6 +733,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ the packed manifest resolves every protocol');
+
     return;
   }
 
@@ -756,6 +761,7 @@ const main = async (): Promise<void> => {
     console.log(
       `    ✓ all ${Object.keys(dependencies).length} runtime dependencies resolve on the registry`,
     );
+
     return;
   }
 
@@ -775,6 +781,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log('    ✓ no @venizia/* range asks for a prerelease');
+
     return;
   }
 
@@ -795,6 +802,7 @@ const main = async (): Promise<void> => {
 
     if (!shouldMoveHighest({ published: version, current: highest })) {
       console.log(`    ✓ highest stays at ${highest ?? '-'} (${version} is not above it)`);
+
       return;
     }
 
@@ -812,6 +820,7 @@ const main = async (): Promise<void> => {
     }
 
     console.log(`    ✓ highest of ${name} moved from ${highest ?? '-'} to ${version}`);
+
     return;
   }
 
@@ -854,6 +863,7 @@ const main = async (): Promise<void> => {
         ? '    ✓ next is at or above latest for every ARDOR package'
         : `    ${healed.length} package(s) healed`,
     );
+
     return;
   }
 

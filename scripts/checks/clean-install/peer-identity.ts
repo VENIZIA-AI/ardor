@@ -35,12 +35,14 @@ const resolveFrom = (opts: { name: string; from: string }): string | undefined =
 /** Where a holder lives: top level when the sandbox depends on it, else resolved through its parent. */
 const locate = (opts: { name: string; parents: string[] }): string | undefined => {
   const top = join(sandbox, 'node_modules', opts.name);
+
   if (existsSync(top)) {
     return realpathSync(top);
   }
 
   for (const parent of opts.parents) {
     const found = resolveFrom({ name: `${opts.name}/package.json`, from: parent });
+
     if (found) {
       return join(found, '..');
     }
@@ -54,10 +56,12 @@ const located: string[] = [];
 
 for (const holder of holders) {
   const directory = locate({ name: holder.name, parents: located });
+
   if (!directory) {
     problems.push(`${holder.name} is not installed`);
     continue;
   }
+
   located.push(directory);
 
   for (const peer of holder.peers) {
@@ -67,6 +71,7 @@ for (const holder of holders) {
     if (own === undefined && application === undefined) {
       continue; // an optional peer nobody installed
     }
+
     if (own !== application) {
       problems.push(`${holder.name} resolves ${peer} to ${own}, the application to ${application}`);
     }

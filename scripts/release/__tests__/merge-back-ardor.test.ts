@@ -376,6 +376,7 @@ describe('ReleaseMergeBack.trial: the stamp the release commit of ardor writes',
 
     return root;
   };
+
   const trial = (opts: { root: string; stampDate?: string }) =>
     ReleaseMergeBack.trial({
       cwd: opts.root,
@@ -385,6 +386,7 @@ describe('ReleaseMergeBack.trial: the stamp the release commit of ardor writes',
       scratchRoot: scratch(),
       stampDate: opts.stampDate,
     });
+
   const onDevelop = (opts: { root: string; text: string }): void => {
     run({ cwd: opts.root, args: ['checkout', '-q', 'develop'] });
     write({ root: opts.root, path: LOG_PATH, text: opts.text });

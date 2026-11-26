@@ -62,7 +62,31 @@ export class IntersectionStore {
     this.disconnect();
     this.observed = next;
     this.publish({ scope, entries: NO_ENTRIES });
-    this.observe(opts);
+
+    const watched = new Set(scope.elements.filter((element) => element !== null));
+
+    if (watched.size === 0 || scope.isRootPending || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    // A delivery the browser queued for an observer that was replaced is not this one's.
+    const observer = new IntersectionObserver(
+      (delivered) => {
+        if (this.observer === observer) {
+          this.receive({ delivered });
+        }
+      },
+      {
+        root: scope.root ?? undefined,
+        rootMargin,
+        threshold: thresholdKey === undefined ? undefined : JSON.parse(thresholdKey),
+      },
+    );
+    this.observer = observer;
+
+    for (const element of watched) {
+      observer.observe(element);
+    }
   }
 
   /** Stops observing; the next `sync` observes again. */
@@ -70,25 +94,6 @@ export class IntersectionStore {
     this.observer?.disconnect();
     this.observer = undefined;
     this.observed = undefined;
-  }
-
-  private observe(opts: IIntersectionRequest): void {
-    const { scope, rootMargin, thresholdKey } = opts;
-    const watched = new Set(scope.elements.filter((element) => element !== null));
-
-    if (watched.size === 0 || scope.isRootPending || typeof IntersectionObserver === 'undefined') {
-      return;
-    }
-
-    this.observer = new IntersectionObserver((delivered) => this.receive({ delivered }), {
-      root: scope.root ?? undefined,
-      rootMargin,
-      threshold: thresholdKey === undefined ? undefined : JSON.parse(thresholdKey),
-    });
-
-    for (const element of watched) {
-      this.observer.observe(element);
-    }
   }
 
   /** Keeps the latest entry of each target; one with the same visibility and ratio changes nothing. */

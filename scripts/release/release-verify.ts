@@ -33,7 +33,7 @@ export class ReleaseVerify {
     const {
       state,
       listVersions,
-      sleepFn = (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+      sleepFn = (ms) => Bun.sleep(ms),
       attempts = DEFAULT_ATTEMPTS,
       intervalMs = DEFAULT_INTERVAL_MS,
     } = opts;
