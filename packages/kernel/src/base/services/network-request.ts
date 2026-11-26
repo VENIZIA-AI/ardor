@@ -17,6 +17,7 @@ import {
   type IDataSourceAuth,
   type IGetRequestPropsParams,
   type IGetRequestPropsResult,
+  type ISignInSession,
   type INetworkResponse,
   type INoAuthOptions,
   LocalStorageKeys,
@@ -351,7 +352,7 @@ export class DefaultNetworkRequestService extends BaseService {
    * refresh keeps the same user, so nothing else is read. Override it for another shape. No token is
    * a throw.
    */
-  protected readRefreshedToken(opts: { data: unknown }): { value: string; type: string } {
+  protected readRefreshedToken(opts: { data: unknown }): ISignInSession['token'] {
     const body: { token?: unknown } =
       typeof opts.data === 'object' && opts.data !== null ? opts.data : {};
     const { token } = body;

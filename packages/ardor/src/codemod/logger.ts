@@ -2,20 +2,8 @@ import type * as TS from 'typescript';
 
 import type { IFinding, TTypeScript } from './transform';
 import { LoggerRenames, NamespaceModules } from './renames';
-
-export interface ILoggerResult {
-  text: string;
-  /** Call sites and annotations rewritten, and imports moved. */
-  renamed: number;
-  /** What was left, and what was changed on purpose. */
-  findings: IFinding[];
-}
-
-interface ITextEdit {
-  start: number;
-  end: number;
-  text: string;
-}
+import type { ICodemodResult } from './command';
+import type { ISourceEdit } from './source';
 
 interface IArdorImport {
   declaration: TS.ImportDeclaration;
@@ -40,9 +28,9 @@ interface IArdorImport {
  * imported, so the file shows exactly where to look.
  */
 export class LoggerTransform {
-  static run(opts: { ts: TTypeScript; fileName: string; text: string }): ILoggerResult {
+  static run(opts: { ts: TTypeScript; fileName: string; text: string }): ICodemodResult {
     const { ts, fileName, text } = opts;
-    const unchanged: ILoggerResult = { text, renamed: 0, findings: [] };
+    const unchanged: ICodemodResult = { text, renamed: 0, findings: [] };
 
     if (!text.includes('@venizia/ardor')) {
       return unchanged;
@@ -67,7 +55,7 @@ export class LoggerTransform {
       return { text, renamed: 0, findings };
     }
 
-    const edits: ITextEdit[] = [];
+    const edits: ISourceEdit[] = [];
     const additions: string[] = [];
     const removed = new Set<TS.ImportSpecifier>(moved.map((entry) => entry.specifier));
     const taken = LoggerTransform.takenNames({ ts, sourceFile, moved: removed });
@@ -205,7 +193,7 @@ export class LoggerTransform {
     logger: IArdorImport;
     imports: IArdorImport[];
     findings: IFinding[];
-    edits: ITextEdit[];
+    edits: ISourceEdit[];
     additions: string[];
     taken: Set<string>;
   }): { renamed: number; isFullyMoved: boolean } {
@@ -407,9 +395,9 @@ export class LoggerTransform {
     sourceFile: TS.SourceFile;
     removed: Set<TS.ImportSpecifier>;
     additions: string[];
-  }): ITextEdit[] {
+  }): ISourceEdit[] {
     const { ts, sourceFile, removed, additions } = opts;
-    const edits: ITextEdit[] = [];
+    const edits: ISourceEdit[] = [];
     const nameOf = (addition: string): string =>
       addition
         .replace(/^type\s+/, '')
@@ -525,7 +513,7 @@ export class LoggerTransform {
     return edits;
   }
 
-  private static apply(opts: { text: string; edits: ITextEdit[] }): string {
+  private static apply(opts: { text: string; edits: ISourceEdit[] }): string {
     // Equal starts: the longer edit first, so an insertion lands before what it precedes.
     const ordered = [...opts.edits].sort((a, b) => b.start - a.start || b.end - a.end);
     let result = opts.text;

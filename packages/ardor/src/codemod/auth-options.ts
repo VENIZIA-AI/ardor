@@ -1,6 +1,6 @@
 import type * as TS from 'typescript';
 
-import type { ICodemodResult } from './command';
+import type { ICodemodResult, ICodemodInput } from './command';
 import { ProvideScan } from './provide-scan';
 import { CodemodSource, type ISourceEdit } from './source';
 import type { IFinding, TTypeScript } from './transform';
@@ -29,12 +29,7 @@ interface IOptionsValue {
 
 /** Adds `use: true` to the auth provider options an app binds, which 0.4.8 reads to turn sign-in on. */
 export class AuthOptionsTransform {
-  static run(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): ICodemodResult {
+  static run(opts: ICodemodInput): ICodemodResult {
     const { ts, fileName, text } = opts;
 
     if (!text.includes(AUTH_OPTIONS_MEMBER) && !text.includes(AUTH_OPTIONS_VALUE)) {

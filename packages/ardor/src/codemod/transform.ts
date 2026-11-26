@@ -9,6 +9,8 @@ import {
   TypeExportRenames,
   TypeRenames,
 } from './renames';
+import type { ICodemodInput, ICodemodResult } from './command';
+import type { ISourceEdit } from './source';
 
 export type TTypeScript = typeof TS;
 
@@ -21,13 +23,6 @@ export interface IFinding {
   level?: 'note';
 }
 
-export interface INamespaceResult {
-  text: string;
-  /** Identifiers rewritten to `Owner.member`. */
-  renamed: number;
-  findings: IFinding[];
-}
-
 interface IRename {
   specifier: TS.ImportSpecifier;
   declaration: TS.ImportDeclaration;
@@ -38,13 +33,7 @@ interface IRename {
   typeText?: string;
   /** The export `typeText` names, imported in place of the old one. */
   importName?: string;
-  references: Array<{ start: number; end: number; text: string }>;
-}
-
-interface ITextEdit {
-  start: number;
-  end: number;
-  text: string;
+  references: ISourceEdit[];
 }
 
 /** What a file binds: names it declares itself, and names it imports (with the module and `type`). */
@@ -64,12 +53,7 @@ interface IBindings {
  * `findings` and left alone.
  */
 export class NamespaceTransform {
-  static run(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): INamespaceResult {
+  static run(opts: ICodemodInput): ICodemodResult {
     const { ts, fileName, text, hooks } = opts;
 
     if (!text.includes('@venizia/ardor')) {
@@ -99,7 +83,7 @@ export class NamespaceTransform {
     NamespaceTransform.collectReferences({ ts, sourceFile, byLocal, findings });
 
     const used = accepted.filter((rename) => rename.references.length > 0);
-    const edits: ITextEdit[] = used.flatMap((rename) =>
+    const edits: ISourceEdit[] = used.flatMap((rename) =>
       rename.references.map((reference) => ({
         start: reference.start,
         end: reference.end,
@@ -536,9 +520,9 @@ export class NamespaceTransform {
     sourceFile: TS.SourceFile;
     used: IRename[];
     bindings: IBindings;
-  }): ITextEdit[] {
+  }): ISourceEdit[] {
     const { ts, sourceFile, used, bindings } = opts;
-    const edits: ITextEdit[] = [];
+    const edits: ISourceEdit[] = [];
     const added = new Set<string>();
     const declarations = new Set(used.map((rename) => rename.declaration));
 
@@ -637,7 +621,7 @@ export class NamespaceTransform {
     declaration: TS.ImportDeclaration;
     clause: TS.ImportClause;
     named: TS.NamedImports;
-  }): ITextEdit {
+  }): ISourceEdit {
     const { sourceFile, declaration, clause, named } = opts;
 
     // `import Default, { a } from 'x'`: drop the braces and the comma, keep the default.
@@ -662,7 +646,7 @@ export class NamespaceTransform {
     return { start, end, text: '' };
   }
 
-  private static apply(opts: { text: string; edits: ITextEdit[] }): string {
+  private static apply(opts: { text: string; edits: ISourceEdit[] }): string {
     const ordered = [...opts.edits].sort((a, b) => b.start - a.start);
     let result = opts.text;
 

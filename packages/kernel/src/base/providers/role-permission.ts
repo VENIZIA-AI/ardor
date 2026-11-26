@@ -1,5 +1,6 @@
 import { BaseHelper } from '@venizia/ignis-helpers/core';
 import { getError, inject } from '@venizia/ignis-inversion';
+import type { IAuthorizationRequest } from '@venizia/ignis-kernel';
 
 import {
   CoreBindings,
@@ -8,10 +9,7 @@ import {
 } from '@/common';
 import type { DefaultAuthService } from '../services/auth';
 
-interface IGrant {
-  resource: string;
-  action: string;
-}
+interface IGrant extends Pick<IAuthorizationRequest, 'resource' | 'action'> {}
 
 class GrantPattern {
   static readonly WILDCARD = '*';
@@ -113,7 +111,7 @@ export class RolePermissionProvider extends BaseHelper implements IPermissionPro
     }
   }
 
-  async canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean> {
+  async canAccess(opts: Parameters<IPermissionProvider['canAccess']>[0]): Promise<boolean> {
     const { resource, action } = opts;
 
     // Roles can outlive the token (another tab, a corrupt key): without a token no one is signed in.

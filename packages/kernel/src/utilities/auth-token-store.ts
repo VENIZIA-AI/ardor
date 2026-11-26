@@ -1,7 +1,12 @@
 import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { getError } from '@venizia/ignis-inversion';
 
-import { type IAuthTokenRecord, type IdType, LocalStorageKeys } from '@/common';
+import {
+  type IAuthTokenRecord,
+  type IdType,
+  type ISignInSession,
+  LocalStorageKeys,
+} from '@/common';
 
 /**
  * The one place that reads and writes the stored auth token, with the browser guard.
@@ -41,7 +46,7 @@ export class AuthTokenStore {
    * (`LocalStorageKeys.KEY_AUTH_TOKEN` by default). Throws when `localStorage` is not available.
    */
   static write(opts: {
-    token: { value: string; type: string };
+    token: ISignInSession['token'];
     provider: string;
     userId?: IdType;
     key?: string;

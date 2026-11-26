@@ -1,16 +1,15 @@
+import type { TFilter } from '@venizia/ignis-filter';
 import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { GetListParams } from 'ra-core';
 
 import { type ICustomParams, ValueUtility } from '@venizia/ardor-kernel';
 
-/** The IGNIS filter a list request sends. Any other key of the list params is a filter key too. */
-export interface IListFilter {
+/**
+ * The IGNIS filter a list request sends. Any other key of the list params is a filter key too.
+ * Each `order` entry is `'<field> <ASC|DESC>'`, and `ListFilterBuilder.build` pages with `skip`.
+ */
+export interface IListFilter extends Pick<TFilter, 'order' | 'limit' | 'skip'> {
   where: Record<string, unknown>;
-  /** Each entry is `'<field> <ASC|DESC>'`. */
-  order?: Array<string>;
-  limit?: number;
-  /** IGNIS's offset; `ListFilterBuilder.build` sets this one. */
-  skip?: number;
   include?: unknown;
   fields?: unknown;
   /** Not part of the filter sent: `ListFilterBuilder.build` moves it into the query string. */

@@ -1,6 +1,6 @@
 import type * as TS from 'typescript';
 
-import type { ICodemodResult } from './command';
+import type { ICodemodResult, ICodemodInput } from './command';
 import { ProvideScan } from './provide-scan';
 import { CodemodSource } from './source';
 import type { IFinding, TTypeScript } from './transform';
@@ -37,12 +37,7 @@ const DROP_INJECTION = 'the APPLICATION_INSTANCE it injects if nothing else uses
  * about each one depends on the code around it.
  */
 export class DefaultProvidersTransform {
-  static run(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): ICodemodResult {
+  static run(opts: ICodemodInput): ICodemodResult {
     const { ts, fileName, text } = opts;
 
     if (!text.includes('instantiate')) {

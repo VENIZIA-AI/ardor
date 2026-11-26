@@ -136,8 +136,8 @@ export interface IStoredAuthUser {
 
 /** What `login` read from the sign-in response. `roles` are names. */
 export interface ISignInSession {
-  userId: number | string;
-  token: { value: string; type: string };
+  userId: IdType;
+  token: Required<Pick<IAuthTokenRecord, 'value' | 'type'>>;
   roles: Array<string>;
 }
 
@@ -338,7 +338,9 @@ export interface IArdorArtifactIndex
  * to do: the backend must check every permission on every request.
  */
 export interface IPermissionProvider {
-  canAccess(opts: { resource: string; action: string; record?: unknown }): Promise<boolean>;
+  canAccess(
+    opts: Pick<Ignis.IAuthorizationRequest, 'resource' | 'action'> & { record?: unknown },
+  ): Promise<boolean>;
 }
 
 /** The options of `RolePermissionProvider`, bound under `CoreBindings.PERMISSION_PROVIDER_OPTIONS`. */

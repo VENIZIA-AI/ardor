@@ -1,13 +1,6 @@
 import { LoggerTransform } from './logger';
-import { type IFinding, NamespaceTransform, type TTypeScript } from './transform';
-
-export interface IMigrationResult {
-  text: string;
-  /** Uses rewritten, across both passes. */
-  renamed: number;
-  /** What was left, and the notes about what was changed on purpose. */
-  findings: IFinding[];
-}
+import { NamespaceTransform } from './transform';
+import type { ICodemodInput, ICodemodResult } from './command';
 
 /**
  * Every pass of `ardor codemod namespace` over one file: the renames to class members and plain
@@ -16,12 +9,7 @@ export interface IMigrationResult {
  * from the original text and only the text comes from the chain.
  */
 export class Migration {
-  static run(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): IMigrationResult {
+  static run(opts: ICodemodInput): ICodemodResult {
     const { ts, fileName, text, hooks } = opts;
     const names = NamespaceTransform.run({ ts, fileName, text, hooks });
     const loggerOnOriginal = LoggerTransform.run({ ts, fileName, text });

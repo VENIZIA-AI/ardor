@@ -16,10 +16,20 @@ import type { IFinding, TTypeScript } from './transform';
 /** A usage error: nothing was read or written. */
 export const USAGE_ERROR_CODE = 2;
 
+/** One file as a codemod is handed it. */
+export interface ICodemodInput {
+  ts: TTypeScript;
+  fileName: string;
+  text: string;
+  hooks: boolean;
+}
+
 /** What one codemod rewrote in one file: the new text, how many places changed, and what it left. */
 export interface ICodemodResult {
   text: string;
+  /** Places rewritten. */
   renamed: number;
+  /** What was left, and the notes about what was changed on purpose. */
   findings: IFinding[];
 }
 
@@ -34,12 +44,7 @@ export interface ICodemodSpec {
   extraFlags: string[];
   /** The codemod only lists places: it never writes, and `--write` is a usage error. */
   isDetectOnly: boolean;
-  transform(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): ICodemodResult;
+  transform(opts: ICodemodInput): ICodemodResult;
 }
 
 export class CodemodFlags {

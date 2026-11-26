@@ -7,6 +7,7 @@ import {
   type IAuthTokenRecord,
   type IStoredAuthUser,
   type IdType,
+  type ISignInSession,
   type IScopedKeys,
   LocalStorageKeys,
   StorageAreas,
@@ -277,7 +278,7 @@ export class DefaultAuthService extends BaseService {
    * not available. Roles are stored only when `roles` is given.
    */
   saveAuth(opts: {
-    userId: number | string;
+    userId: IdType;
 
     /** @default '' */
     username?: string;
@@ -286,7 +287,7 @@ export class DefaultAuthService extends BaseService {
     /** @default '' */
     referenceId?: IdType;
 
-    token: { value: string; type: string };
+    token: ISignInSession['token'];
 
     /**
      * The user's roles, where `getRoles` reads them. Left alone when absent, so a token refresh
