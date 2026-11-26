@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from 'bun:test';
 import { act, cleanup, renderHook } from '@testing-library/react';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 
@@ -87,6 +88,9 @@ describe('useCopyToClipboard isCopied', () => {
   test('a refused copy sets isCopied to false and ends the timer of the copy before', async () => {
     const started = spyOn(globalThis, 'setTimeout');
     const ended = spyOn(globalThis, 'clearTimeout');
+    const warn = spyOn(LoggerFactory.getLogger(['useCopyToClipboard']), 'warn').mockImplementation(
+      () => undefined,
+    );
     const { result } = renderHook(() => useCopyToClipboard({ resetMs: RESET_MS }));
     await copyOnce(() => result.current.copy({ value: 'a' }));
     const call = started.mock.calls.findIndex(([, delay]) => delay === RESET_MS);
@@ -98,6 +102,10 @@ describe('useCopyToClipboard isCopied', () => {
 
     expect(result.current.isCopied).toBe(false);
     expect(ended).toHaveBeenLastCalledWith(timer);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('[copy] The clipboard did not take the text'),
+    );
   });
 
   test('a resetMs of 0 or less starts no timer', async () => {

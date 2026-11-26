@@ -4,14 +4,18 @@ import { tarballUrl, waitForCompletion, waitForTarball } from '../release-wait';
 /** A fetch that answers each call with the next status, and the last one forever. */
 const statuses = (opts: { sequence: Array<number | 'network-error'> }) => {
   const calls: Array<{ url: string; method: string | undefined }> = [];
+
   const fetchFn = async (url: string, init?: { method?: string }) => {
     const step = opts.sequence[Math.min(calls.length, opts.sequence.length - 1)];
     calls.push({ url, method: init?.method });
+
     if (step === 'network-error') {
       throw new Error('socket closed');
     }
+
     return { ok: step >= 200 && step < 300, status: step };
   };
+
   return { fetchFn, calls };
 };
 
@@ -141,14 +145,17 @@ describe('release.ts', () => {
 describe('waitForCompletion', () => {
   const run = (opts: { statuses: Array<{ status: string; conclusion: string }> }) => {
     let polls = 0;
+
     const readRun = async () => {
       const step = opts.statuses[Math.min(polls, opts.statuses.length - 1)]!;
       polls += 1;
+
       return step;
     };
 
     return { readRun, polls: () => polls };
   };
+
   const noSleep = async () => {};
 
   test('returns the conclusion of a run that completes', async () => {

@@ -419,6 +419,7 @@ export class ReleaseMergeBack {
 
           return shown.status === 0 ? shown.stdout : undefined;
         };
+
         const [base, ours, theirs] = [
           readStage({ stage: 1 }),
           readStage({ stage: 2 }),

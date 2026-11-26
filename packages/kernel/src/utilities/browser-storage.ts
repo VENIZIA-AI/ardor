@@ -1,3 +1,4 @@
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { type IStorageCodec, LocalStorageKeys, StorageAreas, type TStorageArea } from '@/common';
 
 /** What `BrowserStorage.subscribe` tells its listener about a change. */
@@ -19,13 +20,19 @@ interface ISubscription {
  */
 export class BrowserStorage {
   private static readonly subs = new Set<ISubscription>();
+  private static readonly logger = LoggerFactory.getLogger(['BrowserStorage']);
 
   /** The one catch: a storage that throws is the case this class absorbs, so every access runs here. */
   private static safe<TResult>(opts: { run: () => TResult; fallback: TResult }): TResult {
     try {
       return opts.run();
-      // eslint-disable-next-line venizia/no-silent-catch -- absorbing a throwing storage is the contract of BrowserStorage
-    } catch {
+    } catch (error) {
+      // The name only: a message may quote the stored text.
+      BrowserStorage.logger.debug(
+        '[safe] The storage refused | error: %s',
+        error instanceof Error ? error.name : typeof error,
+      );
+
       return opts.fallback;
     }
   }
@@ -83,7 +90,7 @@ export class BrowserStorage {
     storage?: TStorageArea;
     codec: IStorageCodec<TValue>;
   }): boolean;
-  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  /** Without a codec, or with one that may be absent, the value's own type is the stored type. */
   static set<TValue>(opts: {
     key: string;
     value: TValue;

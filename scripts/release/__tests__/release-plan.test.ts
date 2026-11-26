@@ -221,14 +221,17 @@ describe('release.ts', () => {
 describe('ReleasePlan.resolveFromManifests', () => {
   const scratch = (versions: Record<string, string>): string => {
     const root = makeScratch({ prefix: 'release-plan-' });
+
     for (const [name, version] of Object.entries(versions)) {
       mkdirSync(join(root, 'packages', name), { recursive: true });
       writeFileSync(join(root, 'packages', name, 'package.json'), JSON.stringify({ version }));
     }
+
     scratches.push(root);
 
     return root;
   };
+
   const scratches: string[] = [];
   const all = (version: string) => ({
     kernel: version,
@@ -555,9 +558,11 @@ describe('ReleasePlan.checkBuiltOn (S4.2)', () => {
 
 describe('release-plan.ts plan', () => {
   const scratches: string[] = [];
+
   const dispatch = (opts: { versions: string; argv: string[]; env?: Record<string, string> }) => {
     const root = makeScratch({ prefix: 'release-plan-cli-' });
     scratches.push(root);
+
     for (const name of ALL) {
       mkdirSync(join(root, 'packages', name), { recursive: true });
       writeFileSync(
@@ -565,6 +570,7 @@ describe('release-plan.ts plan', () => {
         JSON.stringify({ version: opts.versions }),
       );
     }
+
     const output = join(root, 'output.txt');
     const proc = Bun.spawnSync(
       [
@@ -872,6 +878,7 @@ describe('ReleasePlan.changelogOf: what a stable needs of its version folder (#7
 
     return root;
   };
+
   const stable = (packages: string[] = ALL) => ({
     version: '0.4.9',
     kind: 'stable' as const,

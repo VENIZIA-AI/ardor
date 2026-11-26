@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { ReleaseNotes } from '../release-notes';
+import { captureConsole } from './console-capture';
 
 const ROOT = join(import.meta.dir, '..', '..', '..');
 const CHANGELOGS = join(ROOT, 'docs/wiki/content/changelogs');
@@ -56,7 +57,10 @@ describe('ReleaseNotes: the notes of a version folder', () => {
     expect(ReleaseNotes.hasBlocks({ migration: '{}\n' })).toBe(false);
     expect(ReleaseNotes.hasBlocks({ migration: 'an-item:\n  symbols: [A]\n' })).toBe(true);
     // A file that does not parse ships, and the changelog gate is where it fails.
-    expect(ReleaseNotes.hasBlocks({ migration: 'a: [\n' })).toBe(true);
+    const unparsed = captureConsole(() => ReleaseNotes.hasBlocks({ migration: 'a: [\n' }));
+    expect(unparsed.value).toBe(true);
+    expect(unparsed.err).toHaveLength(1);
+    expect(unparsed.err[0]).toContain('migration.yaml does not parse');
     expect(
       ReleaseNotes.hasBlocks({ migration: readIf(join(CHANGELOGS, '0.4.7/migration.yaml')) }),
     ).toBe(true);
@@ -96,8 +100,10 @@ describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan migrate notes`', 
     );
   });
 
-  test('every folder: the same notes, and the same decision on the migration file', () => {
-    for (const version of FOLDERS) {
+  // One test per folder: each starts the command twice, so a single test would grow with every release.
+  test.each(FOLDERS)(
+    '%s: the same notes, and the same decision on the migration file',
+    (version) => {
       const log = readFileSync(join(CHANGELOGS, version, 'log.md'), 'utf8');
       const migration = readIf(join(CHANGELOGS, version, 'migration.yaml'));
       const notes = vulcan(['migrate', 'notes', '--version', version]);
@@ -105,6 +111,6 @@ describe.skipIf(!vulcanRuns)('ReleaseNotes agrees with `vulcan migrate notes`', 
 
       expect(ReleaseNotes.notesOf({ log, names: NAMES, version })).toBe(notes?.stdout ?? '');
       expect(ReleaseNotes.hasBlocks({ migration })).toBe((attached?.stdout.trim() ?? '') !== '');
-    }
-  });
+    },
+  );
 });

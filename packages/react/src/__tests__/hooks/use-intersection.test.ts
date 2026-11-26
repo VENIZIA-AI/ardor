@@ -181,6 +181,41 @@ describe('useIntersection', () => {
     expect(FakeIntersectionObserver.all).toHaveLength(1);
   });
 
+  test('under StrictMode, which mounts every effect twice, one observer stays and delivers', () => {
+    const element = document.createElement('div');
+    const { result } = renderHook(() => useIntersection({ target: element }), {
+      reactStrictMode: true,
+    });
+    const live = FakeIntersectionObserver.all.filter((observer) => !observer.isDisconnected);
+
+    expect(live).toHaveLength(1);
+    expect(live[0]?.targets).toEqual([element]);
+
+    act(() => {
+      live[0]?.callback(
+        [intersectionEntryOf({ target: element, isIntersecting: true, ratio: 1 })],
+        live[0],
+      );
+    });
+
+    expect(result.current).toMatchObject({ isIntersecting: true });
+  });
+
+  test('a delivery from an observer that was replaced changes nothing', () => {
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const ref = refOf(first);
+    const { result, rerender } = renderHook(() => useIntersection({ target: ref }));
+
+    ref.current = second;
+    rerender();
+    expect(FakeIntersectionObserver.all).toHaveLength(2);
+    // What the browser queued for the old observer before it was disconnected.
+    deliver(intersectionEntryOf({ target: second, isIntersecting: true, ratio: 1 }), 0);
+
+    expect(result.current).toBeUndefined();
+  });
+
   test('unmount disconnects', () => {
     const element = document.createElement('div');
     const { unmount } = renderHook(() => useIntersection({ target: element }));

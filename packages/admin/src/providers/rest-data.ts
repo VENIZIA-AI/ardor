@@ -1,4 +1,4 @@
-import { HttpHeaders } from '@venizia/ignis-helpers/core';
+import { HttpHeaders, LoggerFactory } from '@venizia/ignis-helpers/core';
 import { type Container, getError, inject } from '@venizia/ignis-inversion';
 import type {
   CreateParams,
@@ -45,6 +45,8 @@ import type { TExtraRequest } from '@venizia/ignis-kernel/repository';
 import type { IDataProvider, IRestRequestOptions } from '@/common';
 import { type IListFilter, ListFilterBuilder } from './list-filter';
 
+const recordLogger = LoggerFactory.getLogger(['DefaultRestDataProvider']);
+
 /**
  * The path of one record: the id is a single path segment, whatever characters it holds. An empty
  * id, `.` and `..` (dot segments even when written `%2E`) and a lone surrogate (which cannot be
@@ -55,8 +57,12 @@ const recordPaths = (opts: { resource: string; id: Identifier }): Array<string> 
 
   try {
     segment = encodeURIComponent(`${opts.id}`);
-    // eslint-disable-next-line venizia/no-silent-catch -- a lone surrogate cannot be encoded: the empty segment below refuses it
-  } catch {
+  } catch (error) {
+    // A lone surrogate cannot be encoded: the empty segment below refuses it. The id is not logged.
+    recordLogger.debug(
+      '[recordPaths] The id cannot be encoded | error: %s',
+      error instanceof Error ? error.name : typeof error,
+    );
     segment = '';
   }
 
@@ -470,6 +476,16 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
     const { method, query, requestCountData, requestType, headers, body, bodyType, extra, signal } =
       params;
 
+    // A number is sent as its text. Anything else passes as it is, so an untyped `null` still removes the header.
+    const texts =
+      headers &&
+      Object.fromEntries(
+        Object.entries(headers).map(([name, value]) => [
+          name,
+          typeof value === 'number' ? String(value) : value,
+        ]),
+      );
+
     return this.request<TResult>({
       resource,
       type: requestType ?? RequestTypes.SEND,
@@ -478,7 +494,7 @@ export class DefaultRestDataProvider<TResource extends string = string> extends 
       bodyType,
       query,
       extra,
-      headers: headers as HeadersInit | undefined,
+      headers: texts,
       requestCountData,
       signal,
     });

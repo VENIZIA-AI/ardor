@@ -40,7 +40,7 @@ export interface IUseStoredState {
       codec: IStorageCodec<TValue>;
     },
   ): IUseStoredStateReturn<TValue>;
-  // oxlint-disable-next-line typescript/unified-signatures -- the first overload takes the type from the codec, a union would lose that
+  /** Without a codec, or with one that may be absent, the value type is that of `defaultValue`. */
   <TValue>(opts: IUseStoredStateOptions<TValue>): IUseStoredStateReturn<TValue>;
 }
 

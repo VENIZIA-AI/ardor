@@ -30,9 +30,11 @@ const FORBIDDEN_BY_PACKAGE: Record<string, string[]> = {
 const listJavaScript = (directory: string): string[] => {
   return readdirSync(directory).flatMap((name) => {
     const path = join(directory, name);
+
     if (statSync(path).isDirectory()) {
       return listJavaScript(path);
     }
+
     return name.endsWith('.js') ? [path] : [];
   });
 };
@@ -47,10 +49,13 @@ const violations: string[] = [];
 
 for (const [packageName, forbidden] of Object.entries(FORBIDDEN_BY_PACKAGE)) {
   const dist = resolve(REPO, 'packages', packageName, 'dist');
+
   for (const file of listJavaScript(dist)) {
     const text = readFileSync(file, 'utf8');
+
     for (const match of text.matchAll(IMPORT_PATTERN)) {
       const specifier = match[1] ?? match[2] ?? '';
+
       if (isForbidden({ specifier, forbidden })) {
         violations.push(
           `${relative(REPO, file)} imports '${specifier}' - forbidden in ${packageName}`,

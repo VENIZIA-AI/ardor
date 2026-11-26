@@ -10,7 +10,7 @@
     "typecheck": "bun check --no-pretty -p tsconfig.json",
     "lint": "devz lint",
     "lint:fix": "devz lint --fix",
-    "test": "bun test --pass-with-no-tests",
+    "test": "bun test",
     "clean": "sh scripts/clean.sh"
   },
   "dependencies": {
@@ -27,6 +27,7 @@
     "@types/react-dom": "catalog:",
     "@venizia/dev-configs": "catalog:",
     "@venizia/ignis-boot": "catalog:",
+    "@venizia/ignis-helpers": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
     "oxlint": "catalog:",

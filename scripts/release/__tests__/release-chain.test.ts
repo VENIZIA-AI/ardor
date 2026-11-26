@@ -37,6 +37,7 @@ interface IHarness {
 /** The package a command is about: its folder, its tarball, its relock folder, its commit or its tag. */
 const currentOf = (text: string, cwd?: string): string | undefined => {
   const subject = `${cwd ?? ''} ${text}`;
+
   for (const pattern of [
     /packages\/(kernel|react|admin|ardor)\b/,
     /\/(kernel|react|admin|ardor)\.tgz/,
@@ -45,6 +46,7 @@ const currentOf = (text: string, cwd?: string): string | undefined => {
     /\b(kernel|react|admin|ardor)-v\d/,
   ]) {
     const found = pattern.exec(subject);
+
     if (found) {
       return found[1];
     }
@@ -87,18 +89,23 @@ const harness = (opts: {
       const text = command.join(' ');
       events.push(`run ${text}`);
       current = currentOf(text, cwd) ?? current;
+
       if (inScope() && opts.fail?.(text)) {
         return { exitCode: 1, stdout: '' };
       }
+
       if (text === 'git rev-parse HEAD') {
         return { exitCode: 0, stdout: 'abc1234567\n' };
       }
+
       if (text.includes('merge-base --is-ancestor')) {
         return { exitCode: opts.developHolds ? 0 : 1, stdout: '' };
       }
+
       if (text.startsWith('git log -1 --format=%H')) {
         return { exitCode: 0, stdout: opts.noReleaseCommit ? '' : 'deadbeef00\n' };
       }
+
       if (text.startsWith('tar -xzOf')) {
         return {
           exitCode: 0,
@@ -117,20 +124,24 @@ const harness = (opts: {
           }),
         };
       }
+
       return { exitCode: 0, stdout: '' };
     },
     readManifest: ({ path }) => {
       const name = path.split('/')[1] as string;
+
       return { name: NAMES[name] as string, version: opts.manifests?.[name] ?? '0.4.5' };
     },
     hasVersion: async ({ packageName, version }) => {
       events.push(`hasVersion ${packageName}@${version}`);
+
       return (opts.onNpm ?? []).includes(packageName);
     },
     tagOnOrigin: async ({ tag }) => (opts.tagged ?? []).includes(tag),
     waitForTarball: async ({ packageName }) => {
       events.push(`wait ${packageName}`);
       current = Object.keys(NAMES).find((key) => NAMES[key] === packageName) ?? current;
+
       if (opts.failWait && inScope()) {
         throw new Error('still 404');
       }
@@ -139,10 +150,12 @@ const harness = (opts: {
       const key = path.split('/').pop() ?? '';
       shaCalls[key] = (shaCalls[key] ?? 0) + 1;
       const scoped = opts.scope === undefined || key === `${opts.scope}.tgz`;
+
       return opts.shaChanges && scoped && (shaCalls[key] ?? 0) > 1 ? 'changed' : 'abc';
     },
     writeFile: async ({ path, content }) => {
       events.push(`write ${path}`);
+
       if (path.endsWith('state.json')) {
         states.push(content);
       }
@@ -221,6 +234,7 @@ describe('ReleaseChain.plan', () => {
     expect(text(phaseP).at(-1)).toContain(
       'bun scripts/checks/clean-install/cli.ts kernel react admin ardor',
     );
+
     for (const line of text(phaseP)) {
       expect(line).not.toContain('npm publish');
       expect(line).not.toContain('git commit');
@@ -235,6 +249,7 @@ describe('ReleaseChain.plan', () => {
       'react: publish',
     ]);
     expect(phaseB.some((step) => step.kind === 'wait')).toBe(false);
+
     for (const line of text(phaseB)) {
       expect(line).not.toContain('tag-highest');
       expect(line).not.toContain('git ');
@@ -355,6 +370,7 @@ describe('runChain: a clean run', () => {
     const firstPublish = indexOfCommand(commands, 'npm publish');
 
     expect(result.ok).toBe(true);
+
     for (const name of ['kernel', 'react', 'admin', 'ardor']) {
       expect(
         indexOfCommand(commands, `release-gates.ts registry /work/tmp/packed-${name}.json`),
@@ -375,10 +391,12 @@ describe('runChain: a clean run', () => {
 
     expect(publishes).toHaveLength(4);
     expect(firstWait).toBeGreaterThan(lastPublish);
+
     // Between the first and the last publish nothing is waited for, tagged or committed.
     for (const event of e.slice(firstPublish, lastPublish)) {
       expect(event).not.toMatch(/^wait |git commit|git push|git tag|tag-highest|heal-next/);
     }
+
     // And there is one wait for each package, after all the publishes.
     expect(e.filter((event) => event.startsWith('wait '))).toEqual([
       'wait @venizia/ardor-kernel',
@@ -576,6 +594,7 @@ describe('runChain: stops', () => {
       .filter((step) => step.label.startsWith('react:'))
       .filter((step) => !('fatal' in step) || step.fatal)
       .filter((step) => step.kind !== 'record-sha' && step.kind !== 'push-tag');
+
   const stopHarness = (step: (typeof stopPlan.phaseP)[number]) => {
     const failCommand = 'command' in step ? step.command.join(' ') : undefined;
 
@@ -1117,6 +1136,7 @@ describe('ReleaseChain for a stable (C2.1, C3.2a, S4.3, S4.4)', () => {
   const names = ['kernel', 'react', 'admin', 'ardor'];
   const stable = ReleaseChain.plan({ options: stableOptions(names) });
   const prerelease = ReleaseChain.plan({ options: optionsOf(names) });
+
   const commandOf = (steps: typeof stable.phaseR, label: string): string[] => {
     const step = steps.find((candidate) => candidate.label === label);
 
@@ -1437,6 +1457,7 @@ describe('ReleaseChain for a stable: the release commit of ardor dates the versi
     steps
       .filter((step) => step.label.startsWith(`${name}: `))
       .map((step) => step.label.slice(name.length + 2));
+
   const commandOf = (
     steps: ReturnType<typeof ReleaseChain.plan>['phaseR'],
     label: string,

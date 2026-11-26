@@ -3,6 +3,9 @@ import { DefaultAuthService } from '@/base/services/auth';
 import { LocalStorageKeys } from '@/common';
 import { AuthTokenStore } from '@/utilities';
 import { FakeStorage } from '@/testing';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 // The store's own logger (private), so a test can see the one warning it writes.
 const storeLogger = () => AuthTokenStore['logger'];
@@ -511,6 +514,8 @@ describe('subscribe', () => {
   });
 
   test('a listener that throws does not break saveAuth, cleanUp or the other listeners', () => {
+    const logged = LogWatch.on({ scope: 'DefaultAuthService', method: 'error' });
+
     const service = new DefaultAuthService();
     const calls: Array<string> = [];
     const stops = [
@@ -531,5 +536,15 @@ describe('subscribe', () => {
 
     expect(calls).toEqual(['second', 'second']);
     expect(service.getAuth()).toBeNull();
+
+    expect(logged).toHaveBeenCalledTimes(2);
+
+    for (const call of [1, 2]) {
+      expect(logged).toHaveBeenNthCalledWith(
+        call,
+        expect.stringContaining('[notify] A listener failed'),
+        expect.objectContaining({ message: 'listener failed' }),
+      );
+    }
   });
 });

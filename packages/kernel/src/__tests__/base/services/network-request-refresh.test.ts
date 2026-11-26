@@ -6,6 +6,9 @@ import { DefaultAuthService } from '@/base/services/auth';
 import { DefaultNetworkRequestService } from '@/base/services/network-request';
 import { RequestMethods, RequestTypes } from '@/common';
 import { FakeStorage } from '@/testing';
+import { LogWatch } from '../../log-watch';
+
+afterEach(() => LogWatch.restore());
 
 interface IRecorded {
   method: string;
@@ -167,6 +170,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('the answer belongs to the session that asked: another user signed in meanwhile gets no token', async () => {
+    const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
     refreshAnswer = () => {
       authService.cleanUp();
       authService.saveAuth({
@@ -183,9 +188,14 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(error).toMatchObject({ statusCode: 401 });
     expect(authService.getAuth()?.value).toBe('bob-token');
     expect(authService.getUser()).toMatchObject({ userId: 8, username: 'bob' });
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
   });
 
   test('the same user signed in again meanwhile keeps the new session, not the old refresh', async () => {
+    const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
     refreshAnswer = () => {
       authService.cleanUp();
       authService.saveAuth({
@@ -200,9 +210,14 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(authService.getAuth()?.value).toBe('second-login');
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
   });
 
   test('a token saved by another tab meanwhile is not overwritten', async () => {
+    const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
     refreshAnswer = () => {
       authService.saveAuth({
         userId: 7,
@@ -216,6 +231,9 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(authService.getAuth()?.value).toBe('other-tab');
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
   });
 
   test('a refresh that fails after the session changed is not a failure of the new session', async () => {
@@ -254,6 +272,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('another tab that refreshed the same user meanwhile: its token is used for the retry, nothing is overwritten', async () => {
+    const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
     refreshAnswer = () => {
       authService.saveAuth({
         userId: 7,
@@ -268,6 +288,9 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
     expect(response.data).toEqual({ data: 'ok' });
     expect(authService.getAuth()?.value).toBe('fresh');
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
   });
 
   test('a 401 that arrives after another user signed in starts no refresh and spares that session', async () => {
@@ -288,6 +311,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('another user with the very same token is still another session', async () => {
+    const logged = LogWatch.on({ scope: 'DefaultNetworkRequestService', method: 'warn' });
+
     refreshAnswer = () => {
       authService.cleanUp();
       authService.saveAuth({
@@ -303,6 +328,9 @@ describe('DefaultNetworkRequestService default token refresh', () => {
 
     expect(authService.getAuth()?.value).toBe('stale');
     expect(authService.getUser()).toMatchObject({ userId: 8 });
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('its answer is dropped'));
   });
 
   test('the same user id written as a string instead of a number is the same session', async () => {
@@ -323,6 +351,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('a refresh request that is answered 401 does not start another refresh', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     refreshAnswer = () => Response.json({ error: 'expired' }, { status: 401 });
 
     const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
@@ -330,6 +360,12 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(error).toMatchObject({ statusCode: 401 });
     expect(recorded.filter((entry) => entry.pathname === REFRESH_PATH)).toHaveLength(1);
     expect(authService.getAuth()?.value).toBe('stale');
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'HTTP 401' }),
+    );
   });
 
   test('without refreshTokenPath the 401 stands and no refresh is sent', async () => {
@@ -350,6 +386,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('a failed refresh leaves the session as it was and runs onAuthFailure once', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     const failures: Array<number> = [];
 
     class FailureService extends DefaultNetworkRequestService {
@@ -373,15 +411,29 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(failures).toHaveLength(1);
     expect(authService.getAuth()?.value).toBe('stale');
     expect(authService.getRoles()).toEqual(new Set(['admin', 'editor']));
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'HTTP 500' }),
+    );
   });
 
   test('a response without a token is a failed refresh', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     refreshAnswer = () => Response.json({ userId: 7 });
     const error = await RejectionUtility.rejectionOf({ task: getItems(createService()) });
 
     expect(error).toMatchObject({ statusCode: 401 });
 
     expect(authService.getAuth()?.value).toBe('stale');
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: '[refreshToken] The refresh response carries no token' }),
+    );
   });
 
   test('a burst of 401s makes one refresh, and a subscriber of the auth service hears it once', async () => {
@@ -413,6 +465,8 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   });
 
   test('a failed refresh ends the session when the application clears it in onAuthFailure', async () => {
+    const logged = LogWatch.on({ scope: 'AuthRecoveryHelper', method: 'error' });
+
     const heard: Array<boolean> = [];
     const stop = authService.subscribe({ listener: () => heard.push(!!authService.getAuth()) });
 
@@ -441,6 +495,12 @@ describe('DefaultNetworkRequestService default token refresh', () => {
     expect(heard).toEqual([false]);
     // The request that failed is not retried.
     expect(recorded.filter((entry) => entry.pathname === '/items')).toHaveLength(1);
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('[refresh] refreshToken failed'),
+      expect.objectContaining({ message: 'HTTP 500' }),
+    );
   });
 
   describe('the retry of a call with no headers', () => {

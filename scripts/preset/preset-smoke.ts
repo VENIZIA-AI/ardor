@@ -121,6 +121,7 @@ const run = (opts: {
   input?: string;
 }): { code: number; output: string } => {
   step += 1;
+
   const spawn = () => {
     const spawned = Bun.spawnSync(opts.command, {
       cwd: opts.cwd,
@@ -132,6 +133,7 @@ const run = (opts: {
 
     return { proc: spawned, output: `${spawned.stdout.toString()}${spawned.stderr.toString()}` };
   };
+
   let attempt = spawn();
 
   // A fresh @venizia version resolves minutes before its tarball does: retry only that 404.
@@ -395,6 +397,7 @@ const addOverrides = (opts: {
 }) => {
   const path = join(opts.project, 'package.json');
   const manifest = readJson({ path });
+
   const place = (tarball: string): string => {
     if (opts.vendor !== true) {
       return `file:${tarball}`;
@@ -405,6 +408,7 @@ const addOverrides = (opts: {
 
     return `file:./vendor/${basename(tarball)}`;
   };
+
   const overrides = Object.fromEntries(
     [...opts.tarballs].map(([name, tarball]) => [name, place(tarball)]),
   );
@@ -432,6 +436,7 @@ const assertDeclaredDependenciesInstalled = (opts: { project: string; folder: st
   const manifest = readJson({ path: join(opts.project, opts.folder, 'package.json') });
   const declared = ['dependencies', 'devDependencies'].flatMap((field) => {
     const group = manifest[field];
+
     return isRecord(group) ? Object.keys(group) : [];
   });
   const missing = declared.filter(
@@ -679,6 +684,7 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
   });
   let output = '';
   const decoder = new TextDecoder();
+
   const collect = async (stream: ReadableStream<Uint8Array>) => {
     for await (const chunk of stream) {
       output += decoder.decode(chunk);
@@ -693,10 +699,12 @@ const assertDevServer = async (opts: { cwd: string; envFile?: boolean }) => {
   // Vite listens on `localhost`, which a CI runner may resolve to ::1 only; ask every address.
   const hosts = ['localhost', '127.0.0.1', '[::1]'];
   let lastFailure = 'none';
+
   const answer = async (path: string): Promise<Response | undefined> => {
     for (const host of hosts) {
       try {
         const result = await fetch(`http://${host}:${port}${path}`);
+
         return result;
       } catch (error) {
         lastFailure = `${host}: ${String(error)}`;
@@ -1325,6 +1333,7 @@ const main = async () => {
         condition: unstamped.output.includes('APP_BUILD_COMMIT'),
         message: 'a build without APP_BUILD_COMMIT stops and says to pass it',
       });
+
       for (const value of ['HEAD', 'abc123', 'ABCDEF1234', '0123456789abcdeg']) {
         const rejected = docker(
           ['build', '-f', dockerfile, '-t', image, '--build-arg', `APP_BUILD_COMMIT=${value}`, '.'],
@@ -1336,6 +1345,7 @@ const main = async () => {
           message: `a build whose commit is "${value}" (not a sha of 7 or more hex digits) stops`,
         });
       }
+
       docker([
         'build',
         '-f',
@@ -1418,10 +1428,12 @@ const main = async () => {
         'API_UPSTREAM=http://api:3000',
         image,
       ]);
+
       const get = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
             const result = await fetch(`http://localhost:${port}${path}`);
+
             return result;
           } catch {
             await Bun.sleep(500);
@@ -1439,6 +1451,7 @@ const main = async () => {
       });
       // The runtime config: with no VITE_ variable, config.js is an empty frozen object and is never cached.
       const bare = await get('/config.js');
+
       const evaluateConfig = (source: string): { config: unknown; frozen: boolean } => {
         const sandbox: { window: Record<string, unknown> } = { window: {} };
 
@@ -1449,6 +1462,7 @@ const main = async () => {
           frozen: Object.isFrozen(sandbox.window.__APP_CONFIG__),
         };
       };
+
       const result = await bare.text();
       const bareConfig = evaluateConfig(result);
 
@@ -1569,10 +1583,12 @@ const main = async () => {
         'API_UPSTREAM=http://no-such-host.invalid:3000',
         image,
       ]);
+
       const orphan = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
             const result = await fetch(`http://localhost:${orphanPort}${path}`);
+
             return result;
           } catch {
             await Bun.sleep(500);
@@ -1609,10 +1625,12 @@ const main = async () => {
         'API_UPSTREAM=',
         image,
       ]);
+
       const gateway = async (path: string): Promise<Response> => {
         for (let attempt = 0; attempt < 40; attempt += 1) {
           try {
             const result = await fetch(`http://localhost:${gatewayPort}${path}`);
+
             return result;
           } catch {
             await Bun.sleep(500);

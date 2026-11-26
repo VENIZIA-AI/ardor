@@ -433,3 +433,18 @@ application-info-open-keys:
     steps:
       - Pin the four ARDOR packages to 0.5.0-12 or earlier. A `type` alias fits that release too; remove any key of your own from an `IApplicationInfo` literal.
   data: Nothing stored changes. Only what TypeScript accepts changes.
+
+auth-provider-resource-generic-removed:
+  symbols: [DefaultAuthProvider]
+  upgrade:
+    steps:
+      - 'Run `bun check`; each "Type ''DefaultAuthProvider'' is not generic" is a type argument to remove.'
+      - 'In a subclass with its own constructor, type the data provider parameter as `IDataProvider`, with no type argument.'
+    before: |-
+      class ShopAuthProvider extends DefaultAuthProvider<'auth/sign-in'> {}
+    after: |-
+      class ShopAuthProvider extends DefaultAuthProvider {}
+  downgrade:
+    steps:
+      - Pin the four ARDOR packages to 0.5.0-12 or earlier. A class with no type argument compiles there too.
+  data: Nothing stored changes. Only what TypeScript accepts changes.

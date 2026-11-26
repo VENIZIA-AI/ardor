@@ -1,4 +1,14 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  spyOn,
+} from 'bun:test';
+import { LoggerFactory } from '@venizia/ignis-helpers/core';
 import { BindingKeys, Container, getError, inject, type TClass } from '@venizia/ignis-inversion';
 
 import type { IAuthProvider, IDataProvider } from '@/common';
@@ -845,7 +855,15 @@ describe('data stored by the signed-in user', () => {
   test('an override that throws does not stop the session from ending', async () => {
     const cleared: Array<string> = [];
 
+    const disposers: Array<() => void> = [];
+
     class ThrowingProvider extends DefaultAuthProvider {
+      override value(container: Container): IAuthProvider {
+        disposers.push(() => this.dispose());
+
+        return super.value(container);
+      }
+
       protected override clearStoredData(): void {
         throw new Error('boom');
       }
@@ -854,14 +872,33 @@ describe('data stored by the signed-in user', () => {
         cleared.push(opts.reason);
       }
     }
-    const { authService, provider } = build(ThrowingProvider);
-    signIn(authService);
-    await provider.checkAuth({});
+    const logged = spyOn(
+      LoggerFactory.getLogger(['DefaultAuthProvider']),
+      'error',
+    ).mockImplementation(() => undefined);
 
-    authService.cleanUp();
-    await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+    try {
+      const { authService, provider } = build(ThrowingProvider);
+      signIn(authService);
+      await provider.checkAuth({});
 
-    expect(cleared).toHaveLength(1);
+      authService.cleanUp();
+      await RejectionUtility.rejectionOf({ task: provider.checkAuth({}) });
+
+      expect(cleared).toHaveLength(1);
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('[clearStoredData] failed, the session ends anyway'),
+        expect.objectContaining({ message: 'boom' }),
+      );
+    } finally {
+      // A provider left listening answers the storage events of later test files.
+      for (const dispose of disposers) {
+        dispose();
+      }
+
+      logged.mockRestore();
+    }
   });
 
   test('two applications with ids on one origin sweep their own store keys only', async () => {

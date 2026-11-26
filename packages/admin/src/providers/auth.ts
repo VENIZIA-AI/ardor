@@ -93,12 +93,10 @@ const readStatus = (error: unknown): unknown => {
  * }
  * ```
  */
-export class DefaultAuthProvider<
-  TResource extends string = string,
-> extends BaseProvider<IAuthProvider> {
+export class DefaultAuthProvider extends BaseProvider<IAuthProvider> {
   constructor(
     @inject({ key: CoreBindings.DEFAULT_REST_DATA_PROVIDER })
-    protected restDataProvider: IDataProvider<TResource>,
+    protected restDataProvider: IDataProvider,
     @inject({ key: CoreBindings.AUTH_PROVIDER_OPTIONS, isOptional: true })
     protected authProviderOptions: TAuthProviderOptions = { use: false },
     @inject({ key: CoreBindings.DEFAULT_AUTH_SERVICE })
@@ -510,7 +508,7 @@ export class DefaultAuthProvider<
    */
   async login(params: ILoginParams): Promise<unknown> {
     const response = await this.restDataProvider.send({
-      resource: this.signInPath as TResource,
+      resource: this.signInPath,
       params: { method: RequestMethods.POST, body: this.buildSignInBody({ params }) },
     });
 
@@ -609,7 +607,7 @@ export class DefaultAuthProvider<
   private async askCheckAuth(opts: { resource: string }) {
     try {
       const response = await this.restDataProvider.send({
-        resource: opts.resource as TResource,
+        resource: opts.resource,
         params: { method: RequestMethods.GET },
       });
 

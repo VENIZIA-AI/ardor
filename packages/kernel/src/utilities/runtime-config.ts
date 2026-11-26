@@ -88,14 +88,21 @@ export class RuntimeConfig {
   static get(
     opts: IRuntimeConfigReadOptions & { defaultValue?: undefined; transform?: undefined },
   ): string | undefined;
+  /**
+   * A `transform` that may answer `undefined` or `null` needs the `defaultValue` that then applies. One
+   * that throws raises an `ApplicationError` of `RUNTIME_CONFIG_INVALID_CODE`.
+   */
   static get<TValue>(
     opts: IRuntimeConfigReadOptions & {
       transform: (raw: string | undefined) => TNullable<TValue>;
       defaultValue: TValue;
     },
   ): TValue;
+  /**
+   * A `transform` that always answers a value needs no `defaultValue`. One that throws raises an
+   * `ApplicationError` of `RUNTIME_CONFIG_INVALID_CODE`.
+   */
   static get<TValue>(
-    // oxlint-disable-next-line typescript/unified-signatures -- a union would let a transform that may answer undefined pass without a defaultValue
     opts: IRuntimeConfigReadOptions & {
       transform: (raw: string | undefined) => TValue;
       defaultValue?: TValue;
