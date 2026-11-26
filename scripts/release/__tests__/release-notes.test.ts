@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { ReleaseNotes } from '../release-notes';
+import { captureConsole } from './console-capture';
 
 const ROOT = join(import.meta.dir, '..', '..', '..');
 const CHANGELOGS = join(ROOT, 'docs/wiki/content/changelogs');
@@ -56,7 +57,10 @@ describe('ReleaseNotes: the notes of a version folder', () => {
     expect(ReleaseNotes.hasBlocks({ migration: '{}\n' })).toBe(false);
     expect(ReleaseNotes.hasBlocks({ migration: 'an-item:\n  symbols: [A]\n' })).toBe(true);
     // A file that does not parse ships, and the changelog gate is where it fails.
-    expect(ReleaseNotes.hasBlocks({ migration: 'a: [\n' })).toBe(true);
+    const unparsed = captureConsole(() => ReleaseNotes.hasBlocks({ migration: 'a: [\n' }));
+    expect(unparsed.value).toBe(true);
+    expect(unparsed.err).toHaveLength(1);
+    expect(unparsed.err[0]).toContain('migration.yaml does not parse');
     expect(
       ReleaseNotes.hasBlocks({ migration: readIf(join(CHANGELOGS, '0.4.7/migration.yaml')) }),
     ).toBe(true);

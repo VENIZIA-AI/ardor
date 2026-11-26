@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { lstatSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
@@ -35,21 +35,13 @@ export class CodemodFiles {
   /** Tracked files plus untracked files git does not ignore; `undefined` outside a repository. */
   private static fromGit(opts: { target: string }): string[] | undefined {
     const { target } = opts;
-    let output: string;
+    // Not a git repository, or no git: the caller walks the folder instead.
+    const output = CodemodFiles.git({
+      cwd: target,
+      args: ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+    });
 
-    try {
-      output = execFileSync(
-        'git',
-        ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-        {
-          cwd: target,
-          encoding: 'utf8',
-          maxBuffer: 256 * 1024 * 1024,
-          stdio: ['ignore', 'pipe', 'ignore'],
-        },
-      );
-      // eslint-disable-next-line venizia/no-silent-catch -- not a git repository (or no git) is an answer: the caller walks the folder instead
-    } catch {
+    if (output === undefined) {
       return undefined;
     }
 
@@ -59,6 +51,18 @@ export class CodemodFiles {
       .filter((path) => !path.split('/').some((segment) => SKIPPED_DIRECTORIES.has(segment)))
       .map((path) => join(target, path))
       .filter((path) => lstatSync(path, { throwIfNoEntry: false })?.isFile() === true);
+  }
+
+  /** What `git` printed, or `undefined` when it cannot be started or exits with an error. */
+  private static git(opts: { cwd: string; args: string[] }): string | undefined {
+    const run = spawnSync('git', opts.args, {
+      cwd: opts.cwd,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+
+    return run.error || run.status !== 0 ? undefined : run.stdout;
   }
 
   private static fromWalk(opts: { target: string }): string[] {
@@ -93,17 +97,9 @@ export class CodemodFiles {
     const paths = new Set<string>();
 
     for (const query of queries) {
-      let output: string;
+      const output = CodemodFiles.git({ cwd, args: query });
 
-      try {
-        output = execFileSync('git', query, {
-          cwd,
-          encoding: 'utf8',
-          maxBuffer: 256 * 1024 * 1024,
-          stdio: ['ignore', 'pipe', 'ignore'],
-        });
-        // eslint-disable-next-line venizia/no-silent-catch -- git cannot answer for this folder: the caller treats the file as unknown to git
-      } catch {
+      if (output === undefined) {
         return undefined;
       }
 

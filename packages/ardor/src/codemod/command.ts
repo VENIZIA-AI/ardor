@@ -161,8 +161,12 @@ export class CodemodCommand {
 
       // TypeScript is CommonJS: Node puts the module on `default`, a bundler may not.
       return loaded.default ?? loaded;
-      // eslint-disable-next-line venizia/no-silent-catch -- no `typescript` installed is an answer, not a failure: the caller prints how to install it
-    } catch {
+    } catch (error) {
+      // Why it did not load; the caller prints how to install it.
+      console.error(
+        `ardor codemod: "typescript" did not load: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
       return undefined;
     }
   }
