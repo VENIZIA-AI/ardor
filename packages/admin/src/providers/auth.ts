@@ -749,7 +749,7 @@ export class DefaultAuthProvider<
       // Absent without a permission provider, so react-admin keeps allowing everything.
       ...(permissionProvider
         ? {
-            canAccess: (params: { resource: string; action: string; record?: unknown }) => {
+            canAccess: (params: Parameters<IPermissionProvider['canAccess']>[0]) => {
               const { resource, action, record } = params;
 
               return permissionProvider.canAccess({ resource, action, record });

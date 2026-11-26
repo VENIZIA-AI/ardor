@@ -7,6 +7,7 @@ import type { RouteProps } from 'react-router-dom';
 import { CoreBindings, type IFeatureBase } from '@venizia/ardor-kernel';
 
 import { FeatureMessagesHelper } from '@/helpers/feature-messages';
+import type { TI18nSource } from '@/common';
 import { LazyLocales } from '@/utilities/lazy-locales';
 
 /** What a user must be allowed to do, as the permission provider's `canAccess` is asked. */
@@ -35,7 +36,7 @@ export type TArdorRoute = RouteProps & {
 };
 
 /** Per locale: the messages, or a loader for them. */
-export type TFeatureMessages = Record<string, object | (() => Promise<object>)>;
+export type TFeatureMessages = Record<string, TI18nSource>;
 
 /** A menu link of a feature, as `useMenuEntries` lists it. ARDOR renders no menu: the shell does. */
 export interface IMenuEntry {

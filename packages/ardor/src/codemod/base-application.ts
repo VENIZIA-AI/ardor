@@ -1,6 +1,6 @@
 import type * as TS from 'typescript';
 
-import type { ICodemodResult } from './command';
+import type { ICodemodResult, ICodemodInput } from './command';
 import { CodemodSource, type ISourceEdit } from './source';
 import type { IFinding, TTypeScript } from './transform';
 
@@ -20,12 +20,7 @@ export class BaseApplicationTransform {
   static readonly KERNEL = '@venizia/ardor-kernel';
   static readonly ADMIN = '@venizia/ardor-admin';
 
-  static run(opts: {
-    ts: TTypeScript;
-    fileName: string;
-    text: string;
-    hooks: boolean;
-  }): ICodemodResult {
+  static run(opts: ICodemodInput): ICodemodResult {
     const { ts, fileName, text } = opts;
 
     if (!text.includes(BaseApplicationTransform.KERNEL)) {
