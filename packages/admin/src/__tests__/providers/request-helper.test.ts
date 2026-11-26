@@ -1,6 +1,13 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
-import { RequestMethods, RequestTypes, type IApplicationInfo } from '@venizia/ardor-kernel';
+import {
+  type IApplicationInfo,
+  type INetworkResponse,
+  type IResponseSchema,
+  RequestMethods,
+  RequestTypes,
+} from '@venizia/ardor-kernel';
 import type { RaRecord } from 'ra-core';
+import type { IRestRequestOptions } from '@/common';
 import { CountRestDataProvider } from '@/providers/count-rest-data';
 import { DefaultRestDataProvider } from '@/providers/rest-data';
 
@@ -13,10 +20,17 @@ interface IRecorded {
 }
 
 class ExposedProvider extends DefaultRestDataProvider {
-  public override request<TResult = unknown>(
-    opts: Parameters<DefaultRestDataProvider['request']>[0],
-  ) {
-    return super.request<TResult>(opts);
+  public override request<TResult>(
+    opts: IRestRequestOptions & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the data is unknown. */
+  public override request(
+    opts: IRestRequestOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse>;
+  public override request(
+    opts: IRestRequestOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
+    return super.request(opts);
   }
 
   public override requestList<TRecord extends RaRecord = RaRecord>(
@@ -81,7 +95,7 @@ const create = () => new ExposedProvider({ url: baseUrl, noAuthPathRegex: /./ },
 
 describe('request', () => {
   test('sends the method, the path, the query and the JSON body, and answers the data', async () => {
-    const result = await create().request<{ ok: boolean }>({
+    const result = await create().request({
       resource: 'posts',
       type: RequestTypes.CREATE,
       method: RequestMethods.POST,

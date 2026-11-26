@@ -219,4 +219,10 @@ export const englishMessages = {
       home: 'Go to the home page',
     },
   },
+  // The code of the error a response schema throws, so `useNotifyError` has a text for it.
+  core: {
+    fetch: {
+      schema_mismatch: 'The server answered something unexpected.',
+    },
+  },
 };

@@ -213,7 +213,7 @@ An aborted request rejects with the signal's reason (an `AbortError`). It is not
 ## Extended provider methods
 
 `IDataProvider` extends react-admin's nine data methods with three more methods, `send`, `getNetworkService` and `getDataSourceAuth`, and the optional `supportAbortSignal` flag:
-1. `send<TResult = unknown>(opts: { resource: TResource; params: ISendParams }): Promise<INetworkResponse<TResult>>`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh.
+1. `send({ resource, params, schema? })`: Issues arbitrary HTTP requests through the configured network transport with automatic authorization, tracing, and 401 refresh. The answer's `data` is `unknown`; with a `schema` (an object whose `parse` checks the value, a zod schema included) it is what the schema checked and typed, and what the schema refuses throws a `FetchSchemaError` (502) that names paths and rules, never the data. A schema sees the data as read: the rows of a list, `{}` of a 204, the `Blob` of a file.
 2. `getNetworkService(): DefaultNetworkRequestService`: Returns the underlying `DefaultNetworkRequestService` to configure dynamic headers, inspect the base URL, or execute direct network requests.
 3. `getDataSourceAuth(): IDataSourceAuth`: Returns authentication resolvers (`authTokenResolver`, `headersResolver`, `onUnauthorized`, `errorRootKey`) to configure an `HttpDataSource` in a repository so it shares headers, token, and 401 refresh with the data provider.
 
@@ -222,13 +222,31 @@ import { getError } from '@venizia/ignis-inversion';
 
 import {
   type IDataProvider,
+  type IResponseSchema,
   RequestBodyTypes,
   RequestCountData,
   RequestMethods,
 } from '@venizia/ardor';
 
+// What checks the answer: any object with `parse`, a zod schema included.
+const exportAnswer: IResponseSchema<{ downloadUrl: string }> = {
+  parse: (data) => {
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !('downloadUrl' in data) ||
+      typeof data.downloadUrl !== 'string'
+    ) {
+      throw getError({ message: '[exportProducts] the answer holds no downloadUrl' });
+    }
+
+    return { downloadUrl: data.downloadUrl };
+  },
+};
+
 export async function exportProducts(dataProvider: IDataProvider): Promise<string> {
-  const response = await dataProvider.send<{ downloadUrl: string }>({
+  const response = await dataProvider.send({
+    schema: exportAnswer,
     resource: 'products/export',
     params: {
       method: RequestMethods.POST,

@@ -9,11 +9,13 @@ ARDOR sends HTTP requests through `DefaultNetworkRequestService`, which wraps th
 
 ```ts
 import { HTTP } from '@venizia/ignis-helpers/common';
+import { getError } from '@venizia/ignis-inversion';
 
 import {
   CoreBindings,
   type IDataProvider,
   inject,
+  type IResponseSchema,
   RequestCountData,
   RequestMethods,
   RequestTypes,
@@ -26,6 +28,30 @@ export interface AuditReport {
   generatedAt: string;
   recordCount: number;
 }
+
+// Any object with `parse` is a schema: it answers the checked value and throws what it refuses.
+const auditReportSchema: IResponseSchema<AuditReport> = {
+  parse: (data) => {
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !('id' in data) ||
+      typeof data.id !== 'string' ||
+      !('filename' in data) ||
+      typeof data.filename !== 'string' ||
+      !('generatedAt' in data) ||
+      typeof data.generatedAt !== 'string' ||
+      !('recordCount' in data) ||
+      typeof data.recordCount !== 'number'
+    ) {
+      throw getError({ message: '[exportAuditLog] the answer is not a report' });
+    }
+
+    const { id, filename, generatedAt, recordCount } = data;
+
+    return { id, filename, generatedAt, recordCount };
+  },
+};
 
 @service()
 export class AuditReportService {
@@ -46,7 +72,9 @@ export class AuditReportService {
     // `doRequest` sends only the headers it is given; `getRequestHeader` returns the session headers, including the ones set above, and `Authorization`.
     const headers = networkService.getRequestHeader({ resource: '/audit/export' });
 
-    const response = await networkService.doRequest<AuditReport>({
+    const response = await networkService.doRequest({
+      // `data` is what the schema checked and typed; without one it is `unknown`.
+      schema: auditReportSchema,
       type: RequestTypes.SEND,
       method: RequestMethods.POST,
       paths: ['/audit/export'],
@@ -241,10 +269,28 @@ export const fileNameOf = (response: Response): string | undefined => {
 To hand a download to the user, read the file and save it. `FileUtility.save({ blob, filename })` makes the browser download the blob under that name, or `download` when there is none; it works in a browser only:
 
 ```ts
-import { FileUtility, NetworkResponseReader, RequestTypes } from '@venizia/ardor';
+import { getError } from '@venizia/ignis-inversion';
+
+import {
+  FileUtility,
+  type IResponseSchema,
+  NetworkResponseReader,
+  RequestTypes,
+} from '@venizia/ardor';
+
+const file: IResponseSchema<Blob> = {
+  parse: (data) => {
+    if (!(data instanceof Blob)) {
+      throw getError({ message: '[saveDownload] the answer is not a file' });
+    }
+
+    return data;
+  },
+};
 
 export const saveDownload = async (response: Response): Promise<void> => {
-  const { data, filename } = await NetworkResponseReader.read<Blob>({
+  const { data, filename } = await NetworkResponseReader.read({
+    schema: file,
     response,
     type: RequestTypes.GET_ONE,
   });

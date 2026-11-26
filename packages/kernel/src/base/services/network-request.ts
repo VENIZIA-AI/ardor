@@ -19,6 +19,7 @@ import {
   type IGetRequestPropsResult,
   type ISignInSession,
   type INetworkResponse,
+  type IResponseSchema,
   type INoAuthOptions,
   LocalStorageKeys,
   RequestChannel,
@@ -57,6 +58,19 @@ export const SESSION_CHANGED_CODE = 'ardor.network.session_changed';
  * The `normalized.code` of the 504 a request rejects with when it outlives the configured `timeout`.
  */
 export const NETWORK_TIMEOUT_CODE = 'ardor.network.timeout';
+
+/** What `doRequest` takes besides a schema. */
+type TDoRequestOptions = IGetRequestPropsResult & {
+  /** @default this.baseUrl */
+  baseUrl?: string;
+  query?: Record<string, unknown>;
+  type: TRequestType;
+  method: TRequestMethod;
+  paths: string[];
+  requestCountData?: TConstValue<typeof RequestCountData>;
+  /** Aborts this request only: a refresh its 401 started runs on for the other requests. */
+  signal?: AbortSignal;
+};
 
 /**
  * Sends the requests of the data provider with its own sender. The repositories of
@@ -729,10 +743,8 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /** Reads a response by the request type. See `NetworkResponseReader.convert`. */
-  convertResponse<TData = unknown>(
-    opts: Parameters<typeof NetworkResponseReader.convert<TData>>[0],
-  ) {
-    return NetworkResponseReader.convert<TData>(opts);
+  convertResponse(opts: Parameters<typeof NetworkResponseReader.convert>[0]) {
+    return NetworkResponseReader.convert(opts);
   }
 
   /**
@@ -740,21 +752,17 @@ export class DefaultNetworkRequestService extends BaseService {
    * service's) is empty. A 401 on a path that can recover triggers `refresh` and, if it refreshed,
    * one retry with the new token. Any other non-2xx response, or a retry that still fails, throws
    * the error read from the response. An aborted `signal` rejects with its reason, and a request
-   * that outlives the service's `timeout` rejects with a 504 coded `NETWORK_TIMEOUT_CODE`.
+   * that outlives the service's `timeout` rejects with a 504 coded `NETWORK_TIMEOUT_CODE`. With a
+   * `schema`, `data` is what it checked and typed; what it refuses throws a `FetchSchemaError` (502).
    */
-  async doRequest<TResult = unknown>(
-    opts: IGetRequestPropsResult & {
-      /** @default this.baseUrl */
-      baseUrl?: string;
-      query?: Record<string, unknown>;
-      type: TRequestType;
-      method: TRequestMethod;
-      paths: string[];
-      requestCountData?: TConstValue<typeof RequestCountData>;
-      /** Aborts this request only: a refresh its 401 started runs on for the other requests. */
-      signal?: AbortSignal;
-    },
-  ): Promise<INetworkResponse<TResult>> {
+  doRequest<TResult>(
+    opts: TDoRequestOptions & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the `data` of the response is `unknown`. */
+  doRequest(opts: TDoRequestOptions & { schema?: IResponseSchema }): Promise<INetworkResponse>;
+  async doRequest(
+    opts: TDoRequestOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
     const { baseUrl = this.baseUrl, paths, signal } = opts;
 
     if (!baseUrl) {
@@ -774,7 +782,7 @@ export class DefaultNetworkRequestService extends BaseService {
         : (timeoutSignal ?? signal);
 
     try {
-      const response = await this.sendAndRead<TResult>({ ...opts, url, signal: sendSignal });
+      const response = await this.sendAndRead({ ...opts, url, signal: sendSignal });
 
       return response;
     } catch (error) {
@@ -796,18 +804,11 @@ export class DefaultNetworkRequestService extends BaseService {
   }
 
   /** `doRequest` once the URL is checked: the send, the refresh and retry after a 401, then the read. */
-  private async sendAndRead<TResult>(
-    opts: IGetRequestPropsResult & {
-      url: string;
-      query?: Record<string, unknown>;
-      type: TRequestType;
-      method: TRequestMethod;
-      paths: string[];
-      requestCountData?: TConstValue<typeof RequestCountData>;
-      signal?: AbortSignal;
-    },
-  ): Promise<INetworkResponse<TResult>> {
-    const { url, type, method, paths, body, headers, query, requestCountData, signal } = opts;
+  private async sendAndRead(
+    opts: TDoRequestOptions & { url: string; schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
+    const { url, type, method, paths, body, headers, query, requestCountData, signal, schema } =
+      opts;
 
     const sendOnce = (retryHeaders?: Record<string, string | null>) => {
       return this.networkRequest.getNetworkService().send(
@@ -899,10 +900,11 @@ export class DefaultNetworkRequestService extends BaseService {
       throw result2;
     }
 
-    const response = await NetworkResponseReader.read<TResult>({
+    const response = await NetworkResponseReader.read({
       response: fetched,
       type,
       requestCountData,
+      schema,
     });
 
     return response;

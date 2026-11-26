@@ -109,7 +109,7 @@ describe('DefaultNetworkRequestService default token refresh', () => {
   };
 
   const getItems = (service: DefaultNetworkRequestService) => {
-    return service.doRequest<{ data: string }>({
+    return service.doRequest({
       paths: ['items'],
       method: RequestMethods.GET,
       type: RequestTypes.GET_ONE,

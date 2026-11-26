@@ -780,7 +780,7 @@ describe('DefaultNetworkRequestService', () => {
     test('yields total from content-range header and wraps non-array data into an array for GET_LIST', () => {
       const service = createService();
 
-      const res = service.convertResponse<{ id: number } | { id: number }[]>({
+      const res = service.convertResponse({
         type: RequestTypes.GET_LIST,
         response: {
           data: { id: 1 },
@@ -798,7 +798,7 @@ describe('DefaultNetworkRequestService', () => {
     test('sets total equal to row count when content-range header is absent for GET_LIST', () => {
       const service = createService();
 
-      const res = service.convertResponse<{ id: number }[]>({
+      const res = service.convertResponse({
         type: RequestTypes.GET_LIST,
         response: {
           data: [{ id: 1 }, { id: 2 }, { id: 3 }],
@@ -813,7 +813,7 @@ describe('DefaultNetworkRequestService', () => {
     test('reads the total of an unsatisfied range and falls back to the row count on a malformed header', () => {
       const service = createService();
       const totalFor = (header: string) =>
-        service.convertResponse<{ id: number }[]>({
+        service.convertResponse({
           type: RequestTypes.GET_LIST,
           response: {
             data: [{ id: 1 }, { id: 2 }, { id: 3 }],
@@ -842,7 +842,7 @@ describe('DefaultNetworkRequestService', () => {
         });
       }).toThrow('Invalid response format');
 
-      const validRes = service.convertResponse<{ id: number }[]>({
+      const validRes = service.convertResponse({
         type: RequestTypes.GET_LIST,
         requestCountData: RequestCountData.DATA_WITH_COUNT,
         response: {
@@ -861,7 +861,7 @@ describe('DefaultNetworkRequestService', () => {
     test('returns data and count parsed from x-response-count for non-list request types', () => {
       const service = createService();
 
-      const res = service.convertResponse<{ id: number; name: string }>({
+      const res = service.convertResponse({
         type: RequestTypes.GET_ONE,
         response: {
           data: { id: 7, name: 'ARDOR Entity' },
@@ -882,7 +882,7 @@ describe('DefaultNetworkRequestService', () => {
         new Headers(),
         new Headers({ [HTTP.Headers.RESPONSE_COUNT_DATA]: 'many' }),
       ]) {
-        const res = service.convertResponse<{ id: number }>({
+        const res = service.convertResponse({
           type: RequestTypes.GET_ONE,
           response: { data: { id: 7 }, headers },
         });
@@ -1046,7 +1046,7 @@ describe('DefaultNetworkRequestService', () => {
 
       const service = createService({ baseUrl: serverBaseUrl });
 
-      const res = await service.doRequest<{ id: number; title: string }>({
+      const res = await service.doRequest({
         paths: ['records', '101'],
         method: RequestMethods.GET,
         type: RequestTypes.GET_ONE,
@@ -1270,13 +1270,13 @@ describe('DefaultNetworkRequestService', () => {
       };
 
       const [resA, resB] = await Promise.all([
-        service.doRequest<{ recovered: boolean }>({
+        service.doRequest({
           paths: ['concurrent-a'],
           method: RequestMethods.GET,
           type: RequestTypes.GET_ONE,
           headers: service.getRequestHeader({ resource: 'concurrent-a' }),
         }),
-        service.doRequest<{ recovered: boolean }>({
+        service.doRequest({
           paths: ['concurrent-b'],
           method: RequestMethods.GET,
           type: RequestTypes.GET_ONE,
@@ -1504,7 +1504,7 @@ describe('DefaultNetworkRequestService', () => {
       });
 
       const [viaProvider, viaRepository] = await Promise.all([
-        service.doRequest<Array<{ id: string }>>({
+        service.doRequest({
           paths: ['orders'],
           method: RequestMethods.GET,
           type: RequestTypes.GET_ONE,
@@ -1672,7 +1672,7 @@ describe('DefaultNetworkRequestService', () => {
     }) => {
       const { service, requestCountData } = opts;
 
-      return service.doRequest<Array<Record<string, string>>>({
+      return service.doRequest({
         paths: ['tickets'],
         method: RequestMethods.GET,
         type: RequestTypes.GET_LIST,

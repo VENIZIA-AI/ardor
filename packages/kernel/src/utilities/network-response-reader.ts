@@ -1,9 +1,15 @@
 import { ContentDispositionTypes, HTTP } from '@venizia/ignis-helpers/common';
 import { getError } from '@venizia/ignis-inversion';
-import { HttpResponseReader } from '@venizia/ignis-helpers/core';
+import {
+  FetchSchemaError,
+  HttpResponseReader,
+  type IFetchSchemaIssue,
+  RecordUtility,
+} from '@venizia/ignis-helpers/core';
 
 import {
   type INetworkResponse,
+  type IResponseSchema,
   RequestCountData,
   RequestTypes,
   type TConstValue,
@@ -13,6 +19,34 @@ import {
 /** A list body that carries its rows and its total: `{ data, count }`. Null and primitives are not one. */
 const isCountedBody = (value: unknown): value is { data: unknown; count?: number } => {
   return typeof value === 'object' && value !== null && 'data' in value && 'count' in value;
+};
+
+/** What `read` takes besides a schema. */
+interface IReadResponseOptions {
+  response: Response;
+  type: TRequestType;
+  requestCountData?: TConstValue<typeof RequestCountData>;
+}
+
+const isPathPart = (value: unknown): value is string | number => {
+  return typeof value === 'string' || typeof value === 'number';
+};
+
+/**
+ * Where and by which rule a schema refused: the `issues` of what it threw, as zod shapes them. Never
+ * the message or a value, which may quote the body.
+ */
+const issuesOf = (error: unknown): IFetchSchemaIssue[] => {
+  const issues = RecordUtility.isRecord(error) ? error.issues : undefined;
+
+  if (!Array.isArray(issues)) {
+    return [];
+  }
+
+  return issues.filter(RecordUtility.isRecord).map(({ path, code }) => ({
+    path: Array.isArray(path) ? path.filter(isPathPart) : [],
+    code: typeof code === 'string' ? code : 'custom',
+  }));
 };
 
 /**
@@ -26,16 +60,63 @@ export class NetworkResponseReader {
   private static readonly TEXTUAL_RE =
     /^(application\/(json|.*\+json|xml|.*\+xml|x-www-form-urlencoded|javascript|graphql)|text\/)/i;
 
-  /** A response as `INetworkResponse`: JSON read by the request type, a file as a `Blob`. */
-  static async read<TResult = unknown>(opts: {
-    response: Response;
-    type: TRequestType;
-    requestCountData?: TConstValue<typeof RequestCountData>;
-  }): Promise<INetworkResponse<TResult>> {
+  /**
+   * A response as `INetworkResponse` whose `data` the schema checked and typed. The schema is given
+   * the data as it was read: the rows of a list, `{}` of a 204, the `Blob` of a file. What it refuses
+   * throws a `FetchSchemaError` (502).
+   */
+  static read<TResult>(
+    opts: IReadResponseOptions & { schema: IResponseSchema<TResult> },
+  ): Promise<INetworkResponse<TResult>>;
+  /** A response as `INetworkResponse`: JSON read by the request type, a file as a `Blob`. `data` is `unknown`. */
+  static read(opts: IReadResponseOptions & { schema?: IResponseSchema }): Promise<INetworkResponse>;
+  static async read(
+    opts: IReadResponseOptions & { schema?: IResponseSchema },
+  ): Promise<INetworkResponse> {
+    const { schema, response } = opts;
+    const read = await NetworkResponseReader.readUnchecked(opts);
+
+    return schema
+      ? NetworkResponseReader.checkData({
+          response: read,
+          schema,
+          status: response.status,
+          url: response.url,
+        })
+      : read;
+  }
+
+  /**
+   * The response with its `data` checked and typed by the schema, for a transport that builds an
+   * `INetworkResponse` itself. What the schema refuses throws a `FetchSchemaError` (502) that names
+   * paths and rules, never the data.
+   */
+  static checkData<TResult>(opts: {
+    response: INetworkResponse;
+    schema: IResponseSchema<TResult>;
+    /** The status the data came with. @default 200 */
+    status?: number;
+    url?: string;
+  }): INetworkResponse<TResult> {
+    const { response, schema, status = HTTP.ResultCodes.RS_2.Ok, url = '' } = opts;
+
+    try {
+      return { ...response, data: schema.parse(response.data) };
+    } catch (error) {
+      // Without the query: it may carry a token or user data.
+      throw new FetchSchemaError({
+        status,
+        url: url.split('?')[0] ?? '',
+        issues: issuesOf(error),
+      });
+    }
+  }
+
+  private static async readUnchecked(opts: IReadResponseOptions): Promise<INetworkResponse> {
     const { response, type, requestCountData } = opts;
 
     if (response.status === 204) {
-      return { data: {} as TResult };
+      return { data: {} };
     }
 
     const contentType = (response.headers?.get(HTTP.Headers.CONTENT_TYPE) ?? '').toLowerCase();
@@ -51,7 +132,7 @@ export class NetworkResponseReader {
       const { blob, filename } = await HttpResponseReader.readFile({ response });
 
       return {
-        data: blob as TResult,
+        data: blob,
         ...(filename ? { filename } : {}),
         ...(contentDisposition ? { contentDisposition } : {}),
       };
@@ -69,10 +150,10 @@ export class NetworkResponseReader {
       headers: response.headers,
     });
 
-    const converted = NetworkResponseReader.convert<TResult>({
+    const converted = NetworkResponseReader.convert({
       type,
       requestCountData,
-      response: { headers: response.headers, data: body as TResult },
+      response: { headers: response.headers, data: body },
     });
 
     return extra ? { ...converted, extra } : converted;
@@ -83,17 +164,18 @@ export class NetworkResponseReader {
    * array and `total` from `Content-Range`, else the row count; with `RequestCountData.DATA_WITH_COUNT`
    * the body must be `{ data, count }`, or it throws. Any other type gives `data` as is, and `count`
    * from `x-response-count` when that is a number; with `DATA_WITH_COUNT` it returns the
-   * `{ data, count }` body unchanged.
+   * keys of a `{ data, count }` body, a `count` that is no number left out, and no `data` for a body
+   * that is no plain object.
    */
-  static convert<TData = unknown>(opts: {
+  static convert(opts: {
     response: {
-      data: TData | { data: TData; count?: number };
+      data: unknown;
       headers: Pick<Headers, 'get'>;
     };
     type: string;
     requestCountData?: TConstValue<typeof RequestCountData>;
   }): {
-    data: TData;
+    data: unknown;
     count?: number;
     total?: number;
   } {
@@ -121,7 +203,7 @@ export class NetworkResponseReader {
           });
 
           return {
-            data: normalizedData as TData,
+            data: normalizedData,
             count: data.count ?? normalizedData.length,
             total,
           };
@@ -135,20 +217,27 @@ export class NetworkResponseReader {
         });
 
         return {
-          data: normalizedData as TData,
+          data: normalizedData,
           total,
         };
       }
       default: {
         if (requestCountData === RequestCountData.DATA_WITH_COUNT) {
-          return data as { data: TData; count?: number };
+          // The `{ data, count }` body, with a `count` only when it is a number.
+          if (!RecordUtility.isPlainRecord(data)) {
+            return { data: undefined };
+          }
+
+          const { count } = data;
+
+          return { ...data, data: data.data, count: typeof count === 'number' ? count : undefined };
         }
 
         // A missing or non-numeric header means the server sent no count - never NaN.
         const count = Number.parseInt(headers?.get(HTTP.Headers.RESPONSE_COUNT_DATA) ?? '', 10);
 
         return {
-          data: data as TData,
+          data,
           count: Number.isNaN(count) ? undefined : count,
         };
       }

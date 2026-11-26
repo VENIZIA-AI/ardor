@@ -25,8 +25,11 @@ export class FileUtility {
    *
    * @example
    * ```ts
-   * const { data, filename } = await NetworkResponseReader.read<Blob>({ response, type });
-   * FileUtility.save({ blob: data, filename });
+   * const { data, filename } = await NetworkResponseReader.read({ response, type });
+   *
+   * if (data instanceof Blob) {
+   *   FileUtility.save({ blob: data, filename });
+   * }
    * ```
    */
   static save(opts: { blob: Blob; filename?: string }): void {

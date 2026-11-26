@@ -1,4 +1,5 @@
-import { type IDataProvider } from '@venizia/ardor';
+import { type IDataProvider, type IResponseSchema } from '@venizia/ardor';
+import { getError } from '@venizia/ignis-inversion';
 import { useQuery } from '@tanstack/react-query';
 import { useDataProvider } from 'ra-core';
 
@@ -16,6 +17,22 @@ const Logo = () => (
   </svg>
 );
 
+// What `send` checks the answer against; a zod schema would do the same.
+const HELLO: IResponseSchema<{ message: string }> = {
+  parse: (data) => {
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !('message' in data) ||
+      typeof data.message !== 'string'
+    ) {
+      throw getError({ message: '[hello] the answer holds no message' });
+    }
+
+    return { message: data.message };
+  },
+};
+
 // What the app shows: the name, and what the backend answers to `GET /api/hello`. The call goes through
 // the data provider's `send`, which adds the `/api` prefix and the headers every request of the app has.
 export const Home = () => {
@@ -23,7 +40,7 @@ export const Home = () => {
   const hello = useQuery({
     queryKey: ['hello'],
     queryFn: () =>
-      dataProvider.send<{ message: string }>({ resource: 'hello', params: { method: 'GET' } }),
+      dataProvider.send({ resource: 'hello', params: { method: 'GET' }, schema: HELLO }),
     retry: false,
   });
 

@@ -175,13 +175,15 @@ export class PricingService extends BaseService {
 When a method goes through the kernel transport, unwrap the response before returning. The caller wants the payload, not the envelope. Keep the envelope handling inside the service. `IDataProvider.send` is the transport call: it takes the resource and an `ISendParams` and answers an `INetworkResponse`.
 
 ```ts
+import { getError } from '@venizia/ignis-inversion';
+
 import {
   api,
   BaseService,
   CoreBindings,
   type IDataProvider,
   inject,
-  type INetworkResponse,
+  type IResponseSchema,
   RequestMethods,
   service,
 } from '@venizia/ardor';
@@ -190,6 +192,25 @@ interface IQuote {
   id: number;
   total: number;
 }
+
+const isQuote = (value: unknown): value is IQuote =>
+  typeof value === 'object' &&
+  value !== null &&
+  'id' in value &&
+  typeof value.id === 'number' &&
+  'total' in value &&
+  typeof value.total === 'number';
+
+// A zod schema would do the same: `parse` answers the checked value and throws what it refuses.
+const quoteListSchema: IResponseSchema<Array<IQuote>> = {
+  parse: (data) => {
+    if (!Array.isArray(data) || !data.every(isQuote)) {
+      throw getError({ message: '[list] the answer is not a list of quotes' });
+    }
+
+    return data;
+  },
+};
 
 @service()
 export class QuoteService extends BaseService {
@@ -201,8 +222,10 @@ export class QuoteService extends BaseService {
   }
 
   @api()
-  async list(): Promise<INetworkResponse<Array<IQuote>>['data']> {
-    const response = await this.dataProvider.send<Array<IQuote>>({
+  async list(): Promise<Array<IQuote>> {
+    const response = await this.dataProvider.send({
+      // Checks the answer and types `data`; a zod schema fits.
+      schema: quoteListSchema,
       resource: 'quotes',
       params: { method: RequestMethods.GET },
     });

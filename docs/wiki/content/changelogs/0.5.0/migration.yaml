@@ -448,3 +448,27 @@ auth-provider-resource-generic-removed:
     steps:
       - Pin the four ARDOR packages to 0.5.0-12 or earlier. A class with no type argument compiles there too.
   data: Nothing stored changes. Only what TypeScript accepts changes.
+
+unchecked-response-types-removed:
+  symbols:
+    [
+      IDataProvider,
+      DefaultRestDataProvider,
+      DefaultNetworkRequestService,
+      NetworkResponseReader,
+      IResponseSchema,
+    ]
+  upgrade:
+    steps:
+      - 'Run `bun check`. "Expected 0 type arguments" and "Property ''schema'' is missing" mark each `send`, `doRequest`, `request`, `read` or `convertResponse` that named a type nothing checked; an error on the use of `data` marks one whose type came from the code around it.'
+      - 'At each place, drop the type argument and pass a `schema`: a zod schema, or an object whose `parse` returns the checked value and throws otherwise. Without a schema, narrow `data` before you use it.'
+      - 'In a subclass that overrides `send` or `request`, declare the two overloads, and hand an answer your own transport built to `NetworkResponseReader.checkData` when a schema is given.'
+      - 'An `IDataProvider` you write as an object, a test fake included, needs a `send` of both shapes: write it as such a method and let `NetworkResponseReader.checkData` apply the schema.'
+    before: |-
+      const response = await dataProvider.send<{ message: string }>({ resource: 'hello', params: { method: 'GET' } });
+    after: |-
+      const response = await dataProvider.send({ resource: 'hello', params: { method: 'GET' }, schema: helloSchema });
+  downgrade:
+    steps:
+      - 'Pin the four ARDOR packages to 0.5.0-12 or earlier, remove each `schema` property and name the type with a type argument again.'
+  data: Nothing stored or sent changes. A response that does not fit its schema is now refused where it passed through before.

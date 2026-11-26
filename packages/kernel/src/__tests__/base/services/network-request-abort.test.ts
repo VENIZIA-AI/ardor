@@ -116,7 +116,7 @@ describe('DefaultNetworkRequestService, abort and timeout', () => {
   }) => {
     const { service, path, signal } = opts;
 
-    return service.doRequest<{ data: string }>({
+    return service.doRequest({
       paths: [path],
       method: RequestMethods.GET,
       type: RequestTypes.GET_ONE,

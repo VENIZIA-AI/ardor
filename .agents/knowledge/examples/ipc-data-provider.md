@@ -39,7 +39,7 @@ Worker port.
 
 Before touching ARDOR at all, model whatever channel you're bridging to. Here it's a `COMMANDS`
 map keyed by resource name, each entry a function taking `ISendParams` and returning raw data. An
-`invoke()` helper looks up the command and returns a `Promise<INetworkResponse<TResponse>>`, rejecting
+`invoke()` helper looks up the command and returns a `Promise<INetworkResponse>` (its `data` is `unknown`), rejecting
 with a `{ message, statusCode }` shape if the command doesn't exist - matching the error shape the
 rest of ARDOR expects, per [Error flow](/architecture/error-flow.md).
 
@@ -47,11 +47,30 @@ rest of ARDOR expects, per [Error flow](/architecture/error-flow.md).
 
 ```ts
 export class IpcDataProvider extends DefaultRestDataProvider {
-  override send<TResponse = unknown>(opts: {
+  override send<TResult>(opts: {
     resource: string;
     params: ISendParams;
-  }): Promise<INetworkResponse<TResponse>> {
-    return invoke<TResponse>({ command: opts.resource, payload: opts.params });
+    schema: IResponseSchema<TResult>;
+  }): Promise<INetworkResponse<TResult>>;
+  /** As above with no schema: the data is unknown. */
+  override send(opts: {
+    resource: string;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse>;
+  override send(opts: {
+    resource: string;
+    params: ISendParams;
+    schema?: IResponseSchema;
+  }): Promise<INetworkResponse> {
+    const { resource, params, schema } = opts;
+    const answered = invoke({ command: resource, payload: params });
+
+    if (!schema) {
+      return answered;
+    }
+
+    return answered.then((response) => NetworkResponseReader.checkData({ response, schema }));
   }
 }
 ```

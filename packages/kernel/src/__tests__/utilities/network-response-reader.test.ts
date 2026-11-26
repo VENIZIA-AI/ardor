@@ -134,7 +134,7 @@ describe('NetworkResponseReader.convert', () => {
 
   test('a row that is not a list becomes a list of one, with its own count as the total', () => {
     expect(
-      NetworkResponseReader.convert<unknown>({
+      NetworkResponseReader.convert({
         response: { data: { id: 1 }, headers },
         type: RequestTypes.GET_LIST,
       }),

@@ -1,3 +1,4 @@
+import { RecordUtility } from '@venizia/ignis-helpers/core';
 import type { RaRecord } from 'ra-core';
 
 import { RequestMethods, RequestTypes, type TRequestType } from '@venizia/ardor-kernel';
@@ -30,7 +31,7 @@ export class CountRestDataProvider<
     const list = super.requestList<RecordType>(opts);
 
     // The count route has no extras: its request carries none.
-    const count = this.request<{ count?: number }>({
+    const count = this.request({
       resource,
       type: RequestTypes.SEND,
       method: RequestMethods.GET,
@@ -40,9 +41,11 @@ export class CountRestDataProvider<
     });
 
     return Promise.all([list, count]).then(([listResult, countResult]) => {
+      const counted = RecordUtility.read({ value: countResult.data, path: ['count'] });
+
       return {
         data: listResult.data,
-        total: countResult?.data?.count ?? 0,
+        total: typeof counted === 'number' ? counted : 0,
         ...('meta' in listResult && listResult.meta ? { meta: listResult.meta } : {}),
       };
     });
