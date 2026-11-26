@@ -209,6 +209,7 @@ describe('useIntersection', () => {
 
     ref.current = second;
     rerender();
+    expect(FakeIntersectionObserver.all).toHaveLength(2);
     // What the browser queued for the old observer before it was disconnected.
     deliver(intersectionEntryOf({ target: second, isIntersecting: true, ratio: 1 }), 0);
 
