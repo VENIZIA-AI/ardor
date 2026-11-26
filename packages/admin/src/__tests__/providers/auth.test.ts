@@ -1459,6 +1459,44 @@ describe('readSignInSession as a hook', () => {
   });
 });
 
+describe('the readers readSignInSession calls', () => {
+  test('an override of decodeJwtClaims gives the user id and the roles of a token-only answer', async () => {
+    class OpaqueTokenAuthProvider extends DefaultAuthProvider {
+      protected override decodeJwtClaims(opts: { jwt: string }) {
+        return { userId: `user-of-${opts.jwt}`, roles: ['from-claims'] };
+      }
+    }
+
+    await signInWith({
+      providerClass: OpaqueTokenAuthProvider,
+      data: { token: 'opaque-token' },
+    }).login({ username: 'alice' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_IDENTITY })).toMatchObject({
+      userId: 'user-of-opaque-token',
+    });
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_PERMISSION })).toEqual(['from-claims']);
+  });
+
+  test('an override of readRoleNames reads roles of another shape', async () => {
+    class ListedRolesAuthProvider extends DefaultAuthProvider {
+      protected override readRoleNames(opts: { roles: unknown }) {
+        return typeof opts.roles === 'string' ? opts.roles.split(',') : [];
+      }
+    }
+
+    await signInWith({
+      providerClass: ListedRolesAuthProvider,
+      data: { userId: 'u-6', token: { value: 'listed-token' }, roles: 'admin,editor' },
+    }).login({ username: 'alice' });
+
+    expect(readStorageJson({ key: LocalStorageKeys.KEY_AUTH_PERMISSION })).toEqual([
+      'admin',
+      'editor',
+    ]);
+  });
+});
+
 // A type-level guard, checked by `bun check` (typecheck covers the tests): 0.1.4-3 typed `login`
 // as `(params) => Promise<unknown>`, and a subclass that overrides it so must keep compiling.
 describe('login signature', () => {
