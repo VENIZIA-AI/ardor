@@ -24,7 +24,7 @@ tags: [process, git, contributing]
    core.hooksPath .githooks`, pointing git at the repo's `.githooks/` directory instead of
    `.git/hooks/`.
 6. `.githooks/pre-commit` then runs on every commit: it `cd`s to the repo root and runs `make
-   lint-all` (the four packages, `docs/wiki`, `scripts/`, the manifests and the files outside the projects)
+   lint-all` (the four packages, `docs/wiki`, the examples, `scripts/`, the manifests and the files outside the projects)
    under `set -e` - any lint failure aborts the commit before it is created. That is the hook's only check - no test step and
    no other gate. The tests and the remaining gates (purity, size-check and the rest) run only in
    the CI workflow, which runs on a pull request and on demand (see [Testing](/process/testing.md)),

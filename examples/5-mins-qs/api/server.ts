@@ -2,6 +2,8 @@
 // the list contract ARDOR's data provider reads (JSON rows + `content-range: records a-b/total`).
 import 'reflect-metadata';
 
+import { RecordUtility } from '@venizia/ignis-helpers/core';
+
 const PRODUCTS = Array.from({ length: 27 }, (_, index) => ({
   id: index + 1,
   name: `Product ${String(index + 1).padStart(2, '0')}`,
@@ -16,6 +18,12 @@ const json = (body: unknown, init: ResponseInit = {}) =>
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
   });
 
+const numberAt = (opts: { source: unknown; path: string[] }): number | undefined => {
+  const found = RecordUtility.read({ value: opts.source, path: opts.path });
+
+  return typeof found === 'number' ? found : undefined;
+};
+
 const server = Bun.serve({
   port: 3100,
   fetch: async (request) => {
@@ -23,17 +31,17 @@ const server = Bun.serve({
 
     // IGNIS's sign-in route and body: `{ identifier: { scheme, value }, credential: { scheme, value } }`.
     if (url.pathname === '/api/auth/sign-in' && request.method === 'POST') {
-      const result = await request.json();
-      const body = result as {
-        identifier?: { value?: string };
-        credential?: { value?: string };
-      };
-      if (body.identifier?.value !== 'admin' || body.credential?.value !== 'admin') {
+      const body: unknown = await request.json();
+      const identifier = RecordUtility.read({ value: body, path: ['identifier', 'value'] });
+      const credential = RecordUtility.read({ value: body, path: ['credential', 'value'] });
+
+      if (identifier !== 'admin' || credential !== 'admin') {
         return json(
           { error: { message: 'Invalid credentials', statusCode: 401 } },
           { status: 401 },
         );
       }
+
       // IGNIS answers whatever the application's signIn returns; this is the recommended shape.
       return json({ userId: 1, roles: ['admin'], token: { value: TOKEN, type: 'Bearer' } });
     }
@@ -43,27 +51,26 @@ const server = Bun.serve({
     }
 
     if (url.pathname === '/api/products' && request.method === 'GET') {
-      const filter = JSON.parse(url.searchParams.get('filter') ?? '{}') as {
-        limit?: number;
-        skip?: number;
-        where?: { price?: { gte?: number } };
-      };
-      const minimumPrice = filter.where?.price?.gte;
+      const filter: unknown = JSON.parse(url.searchParams.get('filter') ?? '{}');
+      const minimumPrice = numberAt({ source: filter, path: ['where', 'price', 'gte'] });
       const matching =
         minimumPrice === undefined ? PRODUCTS : PRODUCTS.filter((row) => row.price >= minimumPrice);
-      const skip = filter.skip ?? 0;
-      const limit = filter.limit ?? matching.length;
+      const skip = numberAt({ source: filter, path: ['skip'] }) ?? 0;
+      const limit = numberAt({ source: filter, path: ['limit'] }) ?? matching.length;
       const rows = matching.slice(skip, skip + limit);
       // An empty page has a size but no range; IGNIS writes `records */N` for it.
       const range = rows.length
         ? `records ${skip}-${skip + rows.length - 1}/${matching.length}`
         : `records */${matching.length}`;
+
       return json(rows, { headers: { 'content-range': range } });
     }
 
     const single = url.pathname.match(/^\/api\/products\/(\d+)$/);
+
     if (single && request.method === 'GET') {
       const product = PRODUCTS.find((row) => row.id === Number(single[1]));
+
       return product
         ? json(product)
         : json({ error: { message: 'Not found', statusCode: 404 } }, { status: 404 });
