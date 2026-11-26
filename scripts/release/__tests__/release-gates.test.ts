@@ -943,6 +943,10 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
         names.filter((name) => name === HISTORY_STEP).length === 1 &&
         names.indexOf(HISTORY_STEP) > names.indexOf('Install') &&
         names.indexOf('Install') > -1 &&
+        // The check runs `ardor codemod --list`, a built file: a run without ardor has not built it.
+        names.indexOf('Build the codemod bin') > -1 &&
+        names.indexOf('Build the codemod bin') < names.indexOf(HISTORY_STEP) &&
+        steps.some((step) => /\n {8}run: make codemod-bin\n/.test(step.text)) &&
         /\n {8}if: \$\{\{ needs\.plan\.outputs\.kind == 'stable' && needs\.plan\.outputs\.changelog_base != '' \}\}\n/.test(
           history,
         ) &&
@@ -1478,6 +1482,11 @@ describe('package-release.yml and release-chain.ts guards, one mutation per guar
           "if: ${{ needs.plan.outputs.kind == 'stable' && needs.plan.outputs.changelog_base != '' }}",
           "if: ${{ needs.plan.outputs.changelog_base != '' }}",
         ),
+    },
+    {
+      guard: 'changelogHistoryForAStable',
+      name: 'the codemod bin is not built before the history check',
+      mutate: (text) => text.replace('        run: make codemod-bin\n', '        run: true\n'),
     },
     {
       guard: 'changelogHistoryForAStable',
