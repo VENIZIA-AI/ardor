@@ -175,7 +175,7 @@ describe('the re-exported HTTP repository', () => {
 
   /**
    * Server-to-server, made falsifiable. Bun has no `localStorage`, but this suite's preload
-   * (`__tests__/setup.ts`) installs one - so it is deleted for the duration, and the deletion is
+   * (`__tests__/setup/index.ts`) installs one - so it is deleted for the duration, and the deletion is
    * asserted rather than assumed: a delete that silently failed would leave the token reachable and
    * the test green for the wrong reason.
    */
